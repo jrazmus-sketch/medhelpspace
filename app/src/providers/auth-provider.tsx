@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
 } from "react";
@@ -44,11 +45,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(!USE_MOCK_DATA);
   const { setTheme } = useTheme();
+  // Prevent profile theme from overriding a manual toggle the user made this session.
+  // Resets on sign-out so a fresh login re-applies the new profile's preference.
+  const profileThemeApplied = useRef(false);
 
   const applyProfileSideEffects = useCallback(
     (p: Profile) => {
-      // Restore user's theme preference
-      if (p.theme_preference) setTheme(p.theme_preference);
+      // Only apply profile theme on first profile load; never override a manual toggle
+      if (p.theme_preference && !profileThemeApplied.current) {
+        setTheme(p.theme_preference);
+        profileThemeApplied.current = true;
+      }
       // Restore admin locale (member site ignores this)
       if (p.admin_locale) i18n.changeLanguage(p.admin_locale);
     },
@@ -114,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    profileThemeApplied.current = false;
   }, []);
 
   const role = profile?.role ?? "member";
