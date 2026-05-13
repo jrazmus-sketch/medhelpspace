@@ -65,6 +65,7 @@
   /* Fonts */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bricolage);
 }
 
 /* ── Light mode tokens ─────────────────────────────────────────────────────── */
@@ -429,4 +430,177 @@
   --c-spec-10: #b8e05a;
   --c-spec-11: #82b4ff;
   --c-spec-12: #fbbf5a;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LANDING PAGE — tokens, animations, utilities
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Landing surface tokens ──────────────────────────────────── */
+:root {
+  --lp-hero-bg:    #f7f4fd;
+  --lp-alt-bg:     #f0ebfa;
+  --lp-problem-bg: #ffffff;
+  --lp-dark-bg:    #07070f;
+  --lp-dark-card:  #0f0f1a;
+}
+.dark {
+  --lp-hero-bg:    #07070f;
+  --lp-alt-bg:     #0a0a14;
+  --lp-problem-bg: #0d0d18;
+  --lp-dark-bg:    #07070f;
+  --lp-dark-card:  #0f0f1a;
+}
+
+/* ── Landing keyframes ───────────────────────────────────────── */
+@keyframes lp-fade-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lp-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes lp-scale-in {
+  from { opacity: 0; transform: scale(0.88) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes lp-slide-left {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes lp-slide-right {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes lp-word-out {
+  0%, 10%  { opacity: 1; transform: translateY(0); }
+  20%, 100%{ opacity: 0; transform: translateY(-14px); }
+}
+@keyframes lp-word-in {
+  0%, 10%  { opacity: 0; transform: translateY(14px); }
+  20%, 100%{ opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lp-mesh {
+  0%,100% { background-position: 0% 60%; }
+  50%     { background-position: 100% 40%; }
+}
+
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-5px); }
+}
+
+@keyframes lp-chip-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lp-bar-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── Scroll-reveal base ──────────────────────────────────────── */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-reveal.lp-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.lp-reveal-left {
+  opacity: 0;
+  transform: translateX(-28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-reveal-left.lp-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.lp-reveal-right {
+  opacity: 0;
+  transform: translateX(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-reveal-right.lp-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Stagger delay helpers */
+.lp-d1  { transition-delay: 80ms; }
+.lp-d2  { transition-delay: 160ms; }
+.lp-d3  { transition-delay: 240ms; }
+.lp-d4  { transition-delay: 320ms; }
+.lp-d5  { transition-delay: 400ms; }
+.lp-d6  { transition-delay: 480ms; }
+.lp-d7  { transition-delay: 560ms; }
+.lp-d8  { transition-delay: 640ms; }
+.lp-d9  { transition-delay: 720ms; }
+.lp-d10 { transition-delay: 800ms; }
+.lp-d11 { transition-delay: 880ms; }
+.lp-d12 { transition-delay: 960ms; }
+
+/* ── Hero mesh background ────────────────────────────────────── */
+.lp-hero-mesh {
+  background-color: var(--lp-hero-bg);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 20%, color-mix(in srgb, var(--brand) 12%, transparent), transparent),
+    radial-gradient(ellipse 60% 40% at 85% 80%, color-mix(in srgb, var(--brand) 8%, transparent), transparent);
+}
+.dark .lp-hero-mesh {
+  background-color: var(--lp-hero-bg);
+  background-image:
+    radial-gradient(ellipse 70% 50% at 15% 20%, rgba(122,29,145,0.18), transparent),
+    radial-gradient(ellipse 60% 40% at 85% 80%, rgba(139,123,255,0.12), transparent);
+}
+
+/* ── Nav scroll state ────────────────────────────────────────── */
+.lp-nav-scrolled {
+  background: color-mix(in srgb, var(--background) 85%, transparent) !important;
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Announcement marquee ────────────────────────────────────── */
+@keyframes lp-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.lp-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: lp-marquee 22s linear infinite;
+}
+@media (min-width: 768px) {
+  .lp-marquee-track { animation: none; }
+}
+
+/* ── Feature tab active indicator ───────────────────────────── */
+.lp-tab-active-bar {
+  transform-origin: left;
+  animation: lp-bar-grow 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+/* ── Theme demo mockup ───────────────────────────────────────── */
+.lp-mockup-dark  { --mk-bg: #0a0a0a; --mk-card: #141414; --mk-text: #ededed; --mk-sub: #a8a8a8; --mk-brand: #8b7bff; --mk-border: rgba(255,255,255,0.09); }
+.lp-mockup-light { --mk-bg: #ffffff; --mk-card: #faf8fd; --mk-text: #09090d; --mk-sub: #6b5f7a; --mk-brand: #7a1d91; --mk-border: #e2d9ef; }
+
+/* ── Stat counter ────────────────────────────────────────────── */
+.lp-stat-number {
+  font-family: var(--font-bricolage);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
