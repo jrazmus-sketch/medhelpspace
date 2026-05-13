@@ -1,0 +1,10 @@
+{
+  "name": "medhelpspace-scripts",
+  "private": true,
+  "description": "Migration and tooling scripts for MedHelpSpace",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "dotenv": "^17.4.2",
+    "postgres": "^3.4.5"
+  }
+}

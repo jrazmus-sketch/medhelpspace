@@ -1,0 +1,432 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ── Dark-mode variant: applied when <html> has .dark class (next-themes) ── */
+@custom-variant dark (&:is(.dark *));
+
+/* ── Tailwind token → CSS-variable bridge ─────────────────────────────────── */
+@theme inline {
+  /* Core semantic tokens */
+  --color-background:   var(--background);
+  --color-foreground:   var(--foreground);
+  --color-card:         var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:      var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:      var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:    var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:        var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:       var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:  var(--destructive);
+  --color-border:       var(--border);
+  --color-input:        var(--input);
+  --color-ring:         var(--ring);
+
+  /* Brand purple */
+  --color-brand:          var(--brand);
+  --color-brand-fg:       var(--brand-fg);
+  --color-brand-muted:    var(--brand-muted);
+
+  /* Layered dark surfaces */
+  --color-surface-0:  var(--surface-0);
+  --color-surface-1:  var(--surface-1);
+  --color-surface-2:  var(--surface-2);
+  --color-surface-3:  var(--surface-3);
+
+  /* Radii */
+  --radius-sm:  calc(var(--radius) * 0.6);
+  --radius-md:  calc(var(--radius) * 0.85);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+
+  /* Sidebar (keep shadcn compat) */
+  --color-sidebar:                var(--sidebar);
+  --color-sidebar-foreground:     var(--sidebar-foreground);
+  --color-sidebar-primary:        var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:         var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border:         var(--sidebar-border);
+  --color-sidebar-ring:           var(--sidebar-ring);
+
+  /* Chart colors */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Fonts */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── Light mode tokens ─────────────────────────────────────────────────────── */
+:root {
+  /* Neutrals */
+  --background:   #ffffff;
+  --foreground:   #09090d;         /* AAA on white: 21:1 */
+  --card:         #ffffff;
+  --card-foreground: #09090d;
+  --popover:      #ffffff;
+  --popover-foreground: #09090d;
+
+  /* Brand purple — #7a1d91 */
+  --primary:              #7a1d91;
+  --primary-foreground:   #ffffff;
+  --brand:                #7a1d91;
+  --brand-fg:             #ffffff;
+  --brand-muted:          #ede0f6;  /* very light purple for hover states */
+
+  /* Secondary / muted (light purple tint) */
+  --secondary:            #f5f0fb;
+  --secondary-foreground: #3d0f4a;
+  --muted:                #f5f0fb;
+  --muted-foreground:     #6b5f7a;
+
+  /* Accent */
+  --accent:               #ede0f6;
+  --accent-foreground:    #7a1d91;
+
+  /* Feedback */
+  --destructive:          #dc2626;
+
+  /* Borders / inputs */
+  --border:   #e2d9ef;
+  --input:    #e2d9ef;
+  --ring:     #7a1d91;
+
+  /* Layered surfaces (same as background in light mode) */
+  --surface-0:  #ffffff;
+  --surface-1:  #faf8fd;
+  --surface-2:  #f5f0fb;
+  --surface-3:  #ede0f6;
+
+  /* Layout radius — 4px sharp, matches design */
+  --radius: 4px;
+
+  /* Sidebar */
+  --sidebar:                  #faf8fd;
+  --sidebar-foreground:       #09090d;
+  --sidebar-primary:          #7a1d91;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent:           #ede0f6;
+  --sidebar-accent-foreground: #7a1d91;
+  --sidebar-border:           #e2d9ef;
+  --sidebar-ring:             #7a1d91;
+
+  /* Charts */
+  --chart-1: #7a1d91;
+  --chart-2: #a855f7;
+  --chart-3: #c084e8;
+  --chart-4: #e879f9;
+  --chart-5: #f0abfc;
+}
+
+/* ── Dark mode tokens ──────────────────────────────────────────────────────── */
+.dark {
+  /* Neutral dark surfaces — ink palette */
+  --background:   #0a0a0a;
+  --surface-0:    #0a0a0a;
+  --surface-1:    #141414;    /* cards */
+  --surface-2:    #1d1d1d;    /* elevated cards, dropdowns */
+  --surface-3:    #272727;    /* tooltips, popovers */
+
+  --foreground:   #ededed;
+  --card:         #141414;
+  --card-foreground: #ededed;
+  --popover:      #1d1d1d;
+  --popover-foreground: #ededed;
+
+  /* Brand violet */
+  --primary:              #8b7bff;
+  --primary-foreground:   #16122e;
+  --brand:                #8b7bff;
+  --brand-fg:             #16122e;
+  --brand-muted:          rgba(139, 123, 255, 0.15);
+  --brand-2:              #b0a4ff;   /* lighter accent — design's accent-2 */
+
+  /* Extended text scale — design's text-3 / text-4 */
+  --muted-2:              #727272;   /* labels, captions, descriptions */
+  --muted-3:              #4a4a4a;   /* timestamps, faintest text */
+
+  /* Secondary / muted */
+  --secondary:            #1d1d1d;
+  --secondary-foreground: #ededed;
+  --muted:                #1d1d1d;
+  --muted-foreground:     #a8a8a8;
+
+  /* Accent (shadcn hover state) */
+  --accent:               #272727;
+  --accent-foreground:    #8b7bff;
+
+  /* Feedback */
+  --destructive:          #f87171;
+
+  /* Borders / inputs */
+  --border:   rgba(255, 255, 255, 0.09);
+  --input:    rgba(255, 255, 255, 0.11);
+  --ring:     #8b7bff;
+
+  /* Sidebar */
+  --sidebar:                  #141414;
+  --sidebar-foreground:       #ededed;
+  --sidebar-primary:          #8b7bff;
+  --sidebar-primary-foreground: #16122e;
+  --sidebar-accent:           #272727;
+  --sidebar-accent-foreground: #8b7bff;
+  --sidebar-border:           rgba(255, 255, 255, 0.09);
+  --sidebar-ring:             #8b7bff;
+
+  /* Charts */
+  --chart-1: #8b7bff;
+  --chart-2: #b0a4ff;
+  --chart-3: #6b91ff;
+  --chart-4: #5eb3ff;
+  --chart-5: #66e0ff;
+}
+
+/* ── Base styles ───────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01","ss02","cv11";
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  /* Geist Mono OpenType features */
+  code, kbd, pre, .font-mono {
+    font-feature-settings: "ss02","zero";
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Ambient violet glow in dark mode — top-right corner */
+  .dark body {
+    background-image: radial-gradient(900px 600px at 100% -5%, rgba(139, 123, 255, 0.08), transparent 60%);
+  }
+
+  /* Media (EKG strips, images) — subtle frame in dark mode */
+  .dark img:not([data-no-frame]) {
+    @apply rounded-md ring-1 ring-white/5;
+  }
+}
+
+/* ── Plain-content prose renderer ─────────────────────────────────────────── */
+.prose-content {
+  color: var(--foreground);
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.prose-content h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+  border-bottom: 2px solid var(--brand);
+  padding-bottom: 0.3rem;
+}
+
+.prose-content h2:first-child {
+  margin-top: 0;
+}
+
+.prose-content h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.prose-content p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.prose-content p:empty,
+.prose-content p:has(> br:only-child) {
+  display: none;
+}
+
+/* &nbsp;-only spacer paragraphs */
+.prose-content p.spacer {
+  margin-bottom: 0.25rem;
+}
+
+.prose-content strong {
+  font-weight: 700;
+}
+
+.prose-content em {
+  font-style: italic;
+}
+
+.prose-content a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-content a:hover {
+  opacity: 0.8;
+}
+
+.prose-content ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-content li {
+  margin-bottom: 0.25rem;
+}
+
+.prose-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.prose-content th,
+.prose-content td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose-content th {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+/* Brand inline color: WP used #b046e9; renderer replaces with this class */
+.prose-content .prose-brand-color {
+  color: #b046e9;
+}
+.dark .prose-content .prose-brand-color {
+  color: var(--brand);
+}
+
+/* Override WP inline color styles in dark mode — they're all hardcoded light values */
+.dark .prose-content [style*="color"] {
+  color: var(--foreground) !important;
+}
+
+/* ── Track signature colors ───────────────────────────────────────────────── */
+:root {
+  --c-questoes:   #7c3aed;
+  --c-resumos:    #6d28d9;
+  --c-medvoice:   #4f46e5;
+  --c-formula:    #2563eb;
+  --c-audiocards: #0284c7;
+  --c-pop:        #06b6d4;
+  --c-medhelp60:  #94a3b8;
+  --c-success:    #059669;
+}
+
+.dark {
+  --c-questoes:   #b39bff;
+  --c-resumos:    #9789ff;
+  --c-medvoice:   #7d83ff;
+  --c-formula:    #6b91ff;
+  --c-audiocards: #5eb3ff;
+  --c-pop:        #66e0ff;
+  --c-medhelp60:  #3a4055;
+  --c-success:    #5dd6a8;
+}
+
+/* ── Utility layer additions ───────────────────────────────────────────────── */
+@layer utilities {
+  /* Brand accent border utility (purple tint on card edges) */
+  .border-brand-accent {
+    border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+  }
+
+  .dark .border-brand-accent {
+    border-color: color-mix(in srgb, var(--brand) 25%, transparent);
+  }
+
+  /* Gradient text for headings */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, var(--brand), color-mix(in srgb, var(--brand) 60%, #e879f9));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Card with purple accent left border */
+  .card-accent-left {
+    border-left: 3px solid var(--brand);
+  }
+}
+
+/* ── Dashboard animations ──────────────────────────────────────────────────── */
+
+/* Donut chart draw-in: animates stroke-dashoffset from full-circumference to target */
+@keyframes donut-draw {
+  from { stroke-dashoffset: var(--donut-start, 500); }
+}
+
+/* Card entrance: staggered fade-up for grid sections */
+@keyframes dash-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* One-shot CTA pulse — draws attention without looping */
+@keyframes dash-pulse-once {
+  0%, 100% { transform: scale(1); box-shadow: none; }
+  45%       { transform: scale(1.05); box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 20%, transparent); }
+}
+
+/* ── Per-specialty identity colors ─────────────────────────────────────────── */
+:root {
+  --c-spec-1:  #e84343;   /* cardiologia    */
+  --c-spec-2:  #f97316;   /* pneumologia    */
+  --c-spec-3:  #d4a017;   /* reumatologia   */
+  --c-spec-4:  #16a34a;   /* clínica médica */
+  --c-spec-5:  #0d9488;   /* gastro         */
+  --c-spec-6:  #0891b2;   /* neurologia     */
+  --c-spec-7:  #7c3aed;   /* obstetrícia    */
+  --c-spec-8:  #db2777;   /* ginecologia    */
+  --c-spec-9:  #e11d48;   /* pediatria      */
+  --c-spec-10: #65a30d;   /* infectologia   */
+  --c-spec-11: #2563eb;   /* nefrologia     */
+  --c-spec-12: #b45309;   /* dermatologia   */
+}
+
+.dark {
+  --c-spec-1:  #ff8080;
+  --c-spec-2:  #ffb070;
+  --c-spec-3:  #ffd96b;
+  --c-spec-4:  #6ee79b;
+  --c-spec-5:  #5dd8c8;
+  --c-spec-6:  #4dc8e8;
+  --c-spec-7:  #b59dff;
+  --c-spec-8:  #f786c0;
+  --c-spec-9:  #ff7b9b;
+  --c-spec-10: #b8e05a;
+  --c-spec-11: #82b4ff;
+  --c-spec-12: #fbbf5a;
+}

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MedHelp · Logo concepts</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+
+<style>
+  html, body{ margin:0; padding:0; background:#0f0f12; color:#e8e6f0; font-family:"Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .ab{
+    width:100%; height:100%;
+    display:grid; grid-template-columns: 1fr 1fr; gap:1px;
+    background: #2a2a30;
+    overflow: hidden;
+  }
+  .pane{ display:flex; flex-direction: column; align-items:center; justify-content:center; gap: 22px; padding: 28px; position: relative; }
+  .pane.dark{ background: #0a0a0a; color: #ebe8ff; }
+  .pane.light{ background: #f4f0e8; color: #1a1813; }
+  .pane .corner{
+    position: absolute; top: 14px; left: 16px;
+    font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase;
+    color: currentColor; opacity: .5; font-weight: 600;
+  }
+
+  .lockup{
+    display: flex; flex-direction: column; align-items:center; gap: 14px;
+  }
+  .lockup.row{ flex-direction: row; gap: 16px; }
+
+  .mark-lg{ width: 110px; height: 110px; }
+  .mark-md{ width: 64px; height: 64px; }
+  .mark-sm{ width: 28px; height: 28px; }
+
+  .wm{
+    font-weight: 600; letter-spacing: -.025em; font-size: 28px;
+    line-height: 1;
+  }
+  .wm.lg{ font-size: 32px; }
+  .wm.sm{ font-size: 16px; letter-spacing:-.02em; }
+  .wm .help{ font-weight: 400; opacity: .85; }
+  .wm .space{ font-weight: 400; opacity: .55; }
+
+  .footnote{
+    position:absolute; bottom: 14px; left: 0; right: 0;
+    text-align: center; font-size: 10.5px; letter-spacing: .14em;
+    text-transform: uppercase; color: currentColor; opacity: .42; font-weight: 600;
+  }
+
+  /* mark color uses accent on dark, deep ink on light, via currentColor */
+  .pane.dark .mark-c{ color: #b39bff; }
+  .pane.light .mark-c{ color: #5a3eff; }
+
+  .row-icons{ display:flex; gap: 18px; align-items: center; }
+
+  .pill{
+    width: 64px; height: 64px; border-radius: 14px;
+    display: grid; place-items: center;
+    background: #5a3eff;
+  }
+  .pane.dark .pill{ background: #7d6cff; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="logo-marks.jsx"></script>
+<script type="text/babel">
+function Wordmark({ size = "lg" }) {
+  return (
+    <div className={`wm ${size}`}>
+      <span>Med</span><span className="help">Help</span><span className="space">Space</span>
+    </div>
+  );
+}
+
+function Pane({ Mark, side, name, app = false }) {
+  return (
+    <div className={`pane ${side}`}>
+      <div className="corner">{side === "dark" ? "Escuro" : "Claro"}</div>
+      {!app ? (
+        <>
+          <div className="lockup">
+            <div className="mark-c mark-lg"><Mark/></div>
+            <Wordmark size="lg"/>
+          </div>
+          <div className="row-icons mark-c">
+            <div className="mark-md"><Mark/></div>
+            <div className="mark-sm"><Mark/></div>
+            <div className="wm sm">
+              <span>Med</span><span className="help">Help</span><span className="space">Space</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="lockup">
+          <div className="pill">
+            <div className="mark-md" style={{ color: "#fff" }}><Mark/></div>
+          </div>
+          <Wordmark size="lg"/>
+        </div>
+      )}
+      <div className="footnote">{name}</div>
+    </div>
+  );
+}
+
+function conceptBody(Mark, label, app) {
+  return (
+    <div className="ab">
+      <Pane Mark={Mark} side="dark" name={label} app={app}/>
+      <Pane Mark={Mark} side="light" name={label} app={app}/>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection
+        id="marks"
+        title="MedHelpSpace — explorações de marca"
+        subtitle="Mesma alma (sorriso amigável + referência médica) — geometria reconstruída do zero. Cada artboard mostra escuro/claro lado-a-lado."
+      >
+        <DCArtboard id="c1" label="01 · Estetoscópio sorridente" width={620} height={400}>
+          {conceptBody(MarkStethoSmile, "01 · Estetoscópio sorridente", false)}
+        </DCArtboard>
+        <DCArtboard id="c2" label="02 · Só o sorriso" width={620} height={400}>
+          {conceptBody(MarkSmileOnly, "02 · Só o sorriso", false)}
+        </DCArtboard>
+        <DCArtboard id="c3" label="03 · Sorriso-pulso" width={620} height={400}>
+          {conceptBody(MarkPulseSmile, "03 · Sorriso-pulso", false)}
+        </DCArtboard>
+        <DCArtboard id="c4" label="04 · Monograma M + pulso" width={620} height={400}>
+          {conceptBody(MarkMPulse, "04 · Monograma M + pulso", false)}
+        </DCArtboard>
+        <DCArtboard id="c5" label="05 · Coração + ouvidos" width={620} height={400}>
+          {conceptBody(MarkHeartEars, "05 · Coração + ouvidos", false)}
+        </DCArtboard>
+        <DCArtboard id="c6" label="06 · Sorriso · variante grossa" width={620} height={400}>
+          {conceptBody(MarkSmileBold, "06 · Sorriso · variante grossa", false)}
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="app"
+        title="Tratamento de app icon"
+        subtitle="Como cada marca se comporta dentro de um pill / favicon."
+      >
+        <DCArtboard id="a1" label="01 · App" width={620} height={400}>
+          {conceptBody(MarkStethoSmile, "01 · App", true)}
+        </DCArtboard>
+        <DCArtboard id="a2" label="02 · App" width={620} height={400}>
+          {conceptBody(MarkSmileOnly, "02 · App", true)}
+        </DCArtboard>
+        <DCArtboard id="a3" label="03 · App" width={620} height={400}>
+          {conceptBody(MarkPulseSmile, "03 · App", true)}
+        </DCArtboard>
+        <DCArtboard id="a4" label="04 · App" width={620} height={400}>
+          {conceptBody(MarkMPulse, "04 · App", true)}
+        </DCArtboard>
+        <DCArtboard id="a5" label="05 · App" width={620} height={400}>
+          {conceptBody(MarkHeartEars, "05 · App", true)}
+        </DCArtboard>
+        <DCArtboard id="a6" label="06 · App" width={620} height={400}>
+          {conceptBody(MarkSmileBold, "06 · App", true)}
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Large data files — do not commit
+db.sql
+*.gz
+*.sql.gz
+
+# Migration output — regenerable from db.sql + parser.py
+parsed/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Node (root-level scripts)
+node_modules/
+
+# Claude Code local project settings
+.claude/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Secrets — never commit
+.env
+.env.local
+.env*.local
+
+# Next.js build output (also ignored in app/.gitignore)
+app/.next/
+app/out/
+
+# Vercel
+.vercel
