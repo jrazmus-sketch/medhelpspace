@@ -8,7 +8,7 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // Skip auth checks entirely when running in mock-data mode (no Supabase URL).
 const MOCK_MODE = !SUPABASE_URL;
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Mock mode: let everything through ──────────────────────────────────────
