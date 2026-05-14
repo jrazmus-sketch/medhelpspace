@@ -1,44 +1,199 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 
-// Two repeating 1200px ECG tiles — animation shifts by exactly one tile for seamless loop
-const ECG_PATH =
-  "M 0,45 L 370,45 C 381,45 387,37 398,37 C 409,37 415,45 426,45 L 452,45 L 461,53 L 480,3 L 499,62 L 516,45 L 536,45 C 549,45 566,30 584,28 C 602,26 617,39 632,45 L 1200,45 " +
-  "L 1570,45 C 1581,45 1587,37 1598,37 C 1609,37 1615,45 1626,45 L 1652,45 L 1661,53 L 1680,3 L 1699,62 L 1716,45 L 1736,45 C 1749,45 1766,30 1784,28 C 1802,26 1817,39 1832,45 L 2400,45";
+function ecgSample(phase: number): number {
+  // Flat isoelectric baseline
+  if (phase < 0.38) return 0;
+  // P wave — naturally rounded, sin is authentic
+  if (phase < 0.46) return Math.sin(((phase - 0.38) / 0.08) * Math.PI) * 0.13;
+  // PR flat
+  if (phase < 0.50) return 0;
+  // Q — sharp linear downstroke
+  if (phase < 0.514) return -((phase - 0.50) / 0.014);
+  // R upstroke — near-vertical linear spike (goes from -1.0 to +1.0)
+  if (phase < 0.530) return -1 + ((phase - 0.514) / 0.016) * 2.0;
+  // R peak clamp
+  if (phase < 0.536) return 1.0;
+  // R downstroke — near-vertical linear spike
+  if (phase < 0.558) return 1.0 - ((phase - 0.536) / 0.022) * 1.28;
+  // S to baseline — linear recovery
+  if (phase < 0.576) return -0.28 + ((phase - 0.558) / 0.018) * 0.28;
+  // ST flat
+  if (phase < 0.63) return 0;
+  // T wave — moderate rounded dome (sin is authentic for T wave)
+  if (phase < 0.82) return Math.sin(((phase - 0.63) / 0.19) * Math.PI) * 0.18;
+  return 0;
+}
 
-function EcgAnimation() {
+function EcgBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const CYCLE = 900;
+    const SPEED = 2.2;
+    let W = 0, H = 0;
+    let MID = 0;
+    let AMP = 0;
+
+    // Rolling point history — the full path is redrawn each frame from this buffer.
+    // This eliminates dot-chain artifacts and lets the browser anti-alias the whole polyline.
+    type Pt = { x: number; y: number };
+    const pts: Pt[] = [];
+    let runX = 0;
+    let raf: number;
+
+    function strokeSeg(seg: Pt[], width: number, color: string) {
+      if (seg.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(seg[0].x, seg[0].y);
+      for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = "butt";
+      ctx.lineJoin = "miter";  // ECG peaks are always sharp/angular
+      ctx.miterLimit = 10;
+      ctx.stroke();
+    }
+
+    // Retry until the canvas has non-zero layout dimensions (layout may not be
+    // ready at useEffect mount time when the parent is absolutely positioned).
+    function init() {
+      const nW = canvas.offsetWidth || window.innerWidth;
+      const nH = canvas.offsetHeight || window.innerHeight;
+      if (!nW || !nH) { raf = requestAnimationFrame(init); return; }
+      W = nW; H = nH;
+      canvas.width = W; canvas.height = H;
+      MID = H * 0.48; AMP = H * 0.18;
+      frame();
+    }
+
+    function frame() {
+      runX += SPEED;
+      pts.push({ x: runX % W, y: MID - ecgSample((runX % CYCLE) / CYCLE) * AMP });
+      // 80% coverage — 20% deliberate gap that sweeps like a real ECG monitor scan.
+      if (pts.length > Math.ceil((W * 0.80) / SPEED)) pts.shift();
+
+      ctx.clearRect(0, 0, W, H);
+
+      if (pts.length < 2) { 
+        ctx.fillStyle = "rgba(8,3,26,0.40)";
+        ctx.fillRect(0, 0, W, H);
+        raf = requestAnimationFrame(frame); 
+        return; 
+      }
+
+      // Split at canvas wrap-around points
+      const segs: Pt[][] = [];
+      let seg: Pt[] = [pts[0]];
+      for (let i = 1; i < pts.length; i++) {
+        if (Math.abs(pts[i].x - pts[i - 1].x) > SPEED * 4) { segs.push(seg); seg = []; }
+        seg.push(pts[i]);
+      }
+      segs.push(seg);
+
+      // 2-pass stroke: wide soft glow + crisp bright core
+      segs.forEach(s => {
+        strokeSeg(s, 16, "rgba(110,70,230,0.055)");
+        ctx.save();
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = "rgba(140,100,255,0.75)";
+        strokeSeg(s, 2, "rgba(205,182,255,0.64)");
+        ctx.restore();
+      });
+
+      // Intentional scan-line gap: fade the trace ends so the gap looks deliberate.
+      const t0x = pts[0].x;               // tail (oldest point) x
+      const tNx = pts[pts.length - 1].x;  // head (newest point) x
+      // Scale FADE to screen width so it never exceeds the gap on small screens
+      const FADE = Math.max(1, Math.min(W * 0.08, 100));
+
+      ctx.globalCompositeOperation = "destination-out";
+
+      const gradErase = (x0: number, x1: number, a0: number, a1: number) => {
+        const g = ctx.createLinearGradient(x0, 0, x1, 0);
+        g.addColorStop(0, `rgba(0,0,0,${a0})`);
+        g.addColorStop(1, `rgba(0,0,0,${a1})`);
+        ctx.fillStyle = g;
+        ctx.fillRect(x0, 0, x1 - x0, H);
+      };
+
+      // 1. Tail fade: erase from t0x tapering to 0 going FADE px rightward into trace
+      const tailEnd = t0x + FADE;
+      if (tailEnd <= W) {
+        gradErase(t0x, tailEnd, 1, 0);
+      } else {
+        const alphaAtW = 1 - (W - t0x) / FADE;
+        gradErase(t0x, W, 1, alphaAtW);
+        gradErase(0, tailEnd - W, alphaAtW, 0);
+      }
+
+      // 2. Head fade: 0 at (tNx - FADE) tapering to 1 at tNx
+      const headStart = tNx - FADE;
+      if (headStart >= 0) {
+        gradErase(headStart, tNx, 0, 1);
+      } else {
+        const alphaAt0 = 1 - tNx / FADE;
+        gradErase(W + headStart, W, 0, alphaAt0);
+        gradErase(0, tNx, alphaAt0, 1);
+      }
+
+      // 3. Draw the dark background *behind* the faded trace so we don't double-darken the gap
+      ctx.globalCompositeOperation = "destination-over";
+      ctx.fillStyle = "rgba(8,3,26,0.40)";
+      ctx.fillRect(0, 0, W, H);
+      
+      // Restore default composite operation for the next frame
+      ctx.globalCompositeOperation = "source-over";
+
+      raf = requestAnimationFrame(frame);
+    }
+
+    init();
+
+    function onResize() {
+      const nW = canvas.offsetWidth || window.innerWidth;
+      const nH = canvas.offsetHeight || window.innerHeight;
+      if (nW === W && nH === H) return;
+      W = nW; H = nH;
+      canvas.width = W; canvas.height = H;
+      MID = H * 0.48; AMP = H * 0.18;
+      pts.length = 0; runX = 0;
+    }
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
+  }, []);
+
   return (
-    <div
-      className="pointer-events-none absolute inset-x-0 overflow-hidden"
-      style={{ top: "50%", transform: "translateY(-50%)", height: 90, zIndex: 1 }}
-      aria-hidden="true"
-    >
-      {/* Dark band that grounds the line */}
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.30)" }} />
-
-      {/* Scrolling ECG */}
-      <svg
-        width="2400"
-        height="90"
-        style={{ position: "absolute", left: 0, top: 0, animation: "ecg-scroll 9s linear infinite" }}
+    // Outer clip: keeps rotated corners inside the section
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: 1 }} aria-hidden="true">
+      {/* Inner: 15% oversized so rotated corners don't peek through, centered transform */}
+      <div
+        style={{
+          position: "absolute",
+          inset: "-15% -8%",
+          // ECG paper grid — CSS background survives canvas clearRect
+          backgroundImage: [
+            "linear-gradient(rgba(120,90,220,0.18) 1px, transparent 1px)",
+            "linear-gradient(90deg, rgba(120,90,220,0.18) 1px, transparent 1px)",
+            "linear-gradient(rgba(100,70,200,0.08) 1px, transparent 1px)",
+            "linear-gradient(90deg, rgba(100,70,200,0.08) 1px, transparent 1px)",
+          ].join(", "),
+          backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
+          transform: "perspective(1000px) rotateX(22deg)",
+          transformOrigin: "50% 50%",
+        }}
       >
-        <defs>
-          <filter id="ecg-glow" x="-5%" y="-120%" width="110%" height="340%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        {/* Soft wide glow layer */}
-        <path d={ECG_PATH} fill="none" stroke="rgba(139,123,255,0.25)" strokeWidth="8" />
-        {/* Crisp line on top */}
-        <path d={ECG_PATH} fill="none" stroke="rgba(139,123,255,0.70)" strokeWidth="1.8" filter="url(#ecg-glow)" />
-      </svg>
+        <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
+      </div>
     </div>
   );
 }
@@ -213,15 +368,19 @@ export function HeroSection() {
         background: "radial-gradient(ellipse 160% 90% at 50% 20%, #140830 0%, #08031a 50%, #020108 100%)",
       }}
     >
-      {/* ECG line — behind everything, across the vertical middle */}
-      <EcgAnimation />
+      {/* Multi-trace ECG background animation */}
+      <EcgBackground />
 
-      {/* Subtle brand glow from below */}
+      {/* Vignette — darkens edges so tilted ECG plane fades naturally */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(139,123,255,0.08), transparent 65%)",
-          zIndex: 1,
+          background: [
+            "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(139,123,255,0.10), transparent 65%)",
+            "radial-gradient(ellipse 100% 60% at 50% 0%, rgba(2,1,8,0.55), transparent 55%)",
+            "linear-gradient(to right, rgba(2,1,8,0.35) 0%, transparent 20%, transparent 80%, rgba(2,1,8,0.35) 100%)",
+          ].join(", "),
+          zIndex: 2,
         }}
         aria-hidden="true"
       />
