@@ -75,7 +75,7 @@ export function ProblemSection() {
             className="mt-2 text-[clamp(2.2rem,5.5vw,5rem)] font-black leading-[1.05] tracking-[-0.025em]"
             style={{
               fontFamily: "var(--font-bricolage)",
-              color: "var(--lp-fg-15)",
+              color: "var(--lp-fg-40)",
             }}
           >
             Ele derruba quando o esforço
