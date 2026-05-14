@@ -59,34 +59,31 @@ export function FaqSection() {
   return (
     <section
       className="px-5 py-20 md:px-8 md:py-28"
-      style={{ background: "#030303" }}
+      style={{ background: "var(--lp-alt)", borderTop: "1px solid var(--lp-border)" }}
     >
-      <div
-        className="mx-auto max-w-3xl"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
-      >
+      <div className="mx-auto max-w-3xl">
         {/* Header */}
-        <div className="pt-16 text-center md:pt-24">
+        <div className="pb-12 text-center">
           <div
-            className="mb-8 text-[10px] uppercase tracking-[0.25em] text-white/25"
-            style={{ fontFamily: "var(--font-geist-mono)" }}
+            className="mb-8 text-[10px] uppercase tracking-[0.25em]"
+            style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
             Dúvidas frequentes
           </div>
           <h2
-            className="text-[clamp(2rem,4vw,3.2rem)] font-black leading-tight tracking-[-0.025em] text-white"
-            style={{ fontFamily: "var(--font-bricolage)" }}
+            className="text-[clamp(2rem,4vw,3.2rem)] font-black leading-tight tracking-[-0.025em]"
+            style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
             Perguntas Frequentes
           </h2>
         </div>
 
         {/* Items */}
-        <div className="mt-12 flex flex-col">
+        <div className="flex flex-col">
           {FAQS.map((faq, i) => (
             <div
               key={faq.q}
-              style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+              style={{ borderTop: "1px solid var(--lp-border)" }}
             >
               <button
                 onClick={() => setOpen(open === i ? null : i)}
@@ -94,15 +91,16 @@ export function FaqSection() {
                 aria-expanded={open === i}
               >
                 <span
-                  className="text-sm font-semibold text-white/75 transition-colors hover:text-white sm:text-base"
+                  className="text-sm font-semibold transition-colors sm:text-base"
+                  style={{ color: open === i ? "var(--lp-fg)" : "var(--lp-fg-55)" }}
                 >
                   {faq.q}
                 </span>
                 <span
                   className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border text-xs transition-all duration-200"
                   style={{
-                    borderColor: open === i ? "rgba(139,123,255,0.5)" : "rgba(255,255,255,0.12)",
-                    color: open === i ? "var(--brand)" : "rgba(255,255,255,0.3)",
+                    borderColor: open === i ? "var(--brand)" : "var(--lp-border)",
+                    color: open === i ? "var(--brand)" : "var(--lp-fg-25)",
                     transform: open === i ? "rotate(45deg)" : "none",
                   }}
                 >
@@ -113,14 +111,16 @@ export function FaqSection() {
                 className="overflow-hidden transition-all duration-300 ease-in-out"
                 style={{ maxHeight: open === i ? "300px" : "0px" }}
               >
-                <p className="pb-5 text-sm leading-relaxed text-white/40 sm:text-[0.95rem]">
+                <p
+                  className="pb-5 text-sm leading-relaxed sm:text-[0.95rem]"
+                  style={{ color: "var(--lp-fg-40)" }}
+                >
                   {faq.a}
                 </p>
               </div>
             </div>
           ))}
-          {/* Last border */}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+          <div style={{ borderTop: "1px solid var(--lp-border)" }} />
         </div>
       </div>
     </section>

@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 const STATS = [
-  { value: 204, label: "simulados comentados", suffix: "" },
-  { value: 3506, label: "flashcards", suffix: "" },
-  { value: 12, label: "especialidades", suffix: "" },
-  { value: 94, label: "áudios MedVoice", suffix: "" },
+  { value: 204, label: "simulados comentados" },
+  { value: 3506, label: "flashcards" },
+  { value: 12, label: "especialidades" },
+  { value: 94, label: "áudios MedVoice" },
 ];
 
 function Counter({ target, duration = 1400 }: { target: number; duration?: number }) {
@@ -42,20 +42,16 @@ function Counter({ target, duration = 1400 }: { target: number; duration?: numbe
     requestAnimationFrame(raf);
   }, [started, target, duration]);
 
-  return (
-    <span ref={ref}>
-      {count.toLocaleString("pt-BR")}
-    </span>
-  );
+  return <span ref={ref}>{count.toLocaleString("pt-BR")}</span>;
 }
 
 export function StatsNumbers() {
   return (
     <section
       style={{
-        background: "#030303",
-        borderTop: "1px solid rgba(255,255,255,0.07)",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        background: "var(--lp-alt)",
+        borderTop: "1px solid var(--lp-border)",
+        borderBottom: "1px solid var(--lp-border)",
       }}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4">
@@ -64,19 +60,18 @@ export function StatsNumbers() {
             key={stat.label}
             className="flex flex-col items-center justify-center px-6 py-14 text-center md:px-10"
             style={{
-              borderRight: i < STATS.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none",
+              borderRight: i < STATS.length - 1 ? "1px solid var(--lp-border)" : "none",
             }}
           >
             <div
-              className="text-[clamp(2.8rem,5vw,4.5rem)] font-bold leading-none tracking-[-0.03em] text-white"
-              style={{ fontFamily: "var(--font-geist-mono)" }}
+              className="text-[clamp(2.8rem,5vw,4.5rem)] font-bold leading-none tracking-[-0.03em]"
+              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
             >
               <Counter target={stat.value} />
-              {stat.suffix}
             </div>
             <div
-              className="mt-3 text-[10px] uppercase tracking-[0.2em] text-white/30"
-              style={{ fontFamily: "var(--font-geist-mono)" }}
+              className="mt-3 text-[10px] uppercase tracking-[0.2em]"
+              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
             >
               {stat.label}
             </div>

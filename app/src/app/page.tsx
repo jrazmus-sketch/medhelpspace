@@ -17,7 +17,8 @@ export const metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen" style={{ background: "#030303" }}>
+    <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
+      <div className="lp-grain" aria-hidden="true" />
       <LandingNav />
       <main>
         <HeroSection />

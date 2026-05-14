@@ -598,6 +598,52 @@
 .lp-mockup-dark  { --mk-bg: #0a0a0a; --mk-card: #141414; --mk-text: #ededed; --mk-sub: #a8a8a8; --mk-brand: #8b7bff; --mk-border: rgba(255,255,255,0.09); }
 .lp-mockup-light { --mk-bg: #ffffff; --mk-card: #faf8fd; --mk-text: #09090d; --mk-sub: #6b5f7a; --mk-brand: #7a1d91; --mk-border: #e2d9ef; }
 
+/* ── Landing page theme tokens ───────────────────────────────── */
+:root {
+  --lp-base:   #f8f6f3;
+  --lp-alt:    #efece5;
+  --lp-alt-2:  #e6e1d5;
+  --lp-fg:     #0d0c09;
+  --lp-fg-55:  rgba(13,12,9,0.55);
+  --lp-fg-40:  rgba(13,12,9,0.40);
+  --lp-fg-25:  rgba(13,12,9,0.25);
+  --lp-fg-15:  rgba(13,12,9,0.15);
+  --lp-fg-08:  rgba(13,12,9,0.08);
+  --lp-fg-05:  rgba(13,12,9,0.05);
+  --lp-border: rgba(13,12,9,0.08);
+  --lp-glow:   rgba(122,29,145,0.06);
+}
+
+.dark {
+  --lp-base:   #030303;
+  --lp-alt:    #06060d;
+  --lp-alt-2:  #0b0b18;
+  --lp-fg:     #ffffff;
+  --lp-fg-55:  rgba(255,255,255,0.55);
+  --lp-fg-40:  rgba(255,255,255,0.40);
+  --lp-fg-25:  rgba(255,255,255,0.25);
+  --lp-fg-15:  rgba(255,255,255,0.15);
+  --lp-fg-08:  rgba(255,255,255,0.08);
+  --lp-fg-05:  rgba(255,255,255,0.05);
+  --lp-border: rgba(255,255,255,0.07);
+  --lp-glow:   rgba(139,123,255,0.09);
+}
+
+/* ── Landing page grain overlay ──────────────────────────────── */
+.lp-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+.dark .lp-grain {
+  opacity: 0.03;
+}
+
 /* ── Cinematic landing — scroll-reveal + scroll-dot ─────────── */
 .lp-cin-block {
   opacity: 0;

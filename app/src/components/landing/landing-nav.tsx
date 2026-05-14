@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -18,29 +18,28 @@ export function LandingNav() {
     <header
       className="fixed inset-x-0 top-0 z-50 transition-all duration-300"
       style={{
-        background: scrolled ? "rgba(3,3,3,0.88)" : "transparent",
-        backdropFilter: scrolled ? "blur(16px)" : "none",
-        borderBottom: scrolled ? "1px solid rgba(255,255,255,0.06)" : "none",
+        background: scrolled ? "color-mix(in srgb, var(--lp-base) 90%, transparent)" : "transparent",
+        backdropFilter: scrolled ? "blur(20px)" : "none",
+        borderBottom: scrolled ? "1px solid var(--lp-border)" : "none",
       }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
-        {/* Logo */}
         <Link
           href="/"
-          className="text-lg font-extrabold tracking-tight text-white"
-          style={{ fontFamily: "var(--font-bricolage)" }}
+          className="text-lg font-extrabold tracking-tight"
+          style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
         >
           MedHelp<span style={{ color: "var(--brand)" }}>Space</span>
         </Link>
 
-        {/* Right side */}
         <div className="flex items-center gap-4">
           <button
             aria-label="Alternar tema"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-white/40 transition-colors hover:text-white/70"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
+            style={{ color: "var(--lp-fg-40)" }}
           >
-            {theme === "dark" ? (
+            {resolvedTheme === "dark" ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
               </svg>
@@ -53,7 +52,8 @@ export function LandingNav() {
 
           <Link
             href="/login"
-            className="hidden text-sm font-medium text-white/45 transition-colors hover:text-white sm:block"
+            className="hidden text-sm font-medium transition-colors sm:block"
+            style={{ color: "var(--lp-fg-40)" }}
           >
             Entrar
           </Link>
