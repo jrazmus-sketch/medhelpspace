@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 export function ProblemSection() {
@@ -24,13 +25,30 @@ export function ProblemSection() {
   return (
     <section
       ref={ref}
-      className="lp-cin-block px-5 py-28 md:px-8 md:py-36"
+      className="lp-cin-block relative overflow-hidden px-5 py-28 md:px-8 md:py-36"
       style={{ background: "var(--lp-alt)" }}
     >
+      {/* Background image — bottom-anchored, slightly lowered opacity */}
+      <div className="pointer-events-none absolute inset-0" style={{ opacity: 0.32 }}>
+        <Image
+          src="/images/students.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center bottom" }}
+        />
+      </div>
+
+      {/* Gradient overlay: opaque section bg at top, transparent from midpoint down */}
       <div
-        className="mx-auto max-w-5xl"
-        style={{ borderTop: "1px solid var(--lp-border)" }}
-      >
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "linear-gradient(to bottom, var(--lp-alt) 0%, var(--lp-alt) 25%, transparent 60%)",
+        }}
+      />
+
+      {/* Content */}
+      <div className="relative mx-auto max-w-5xl" style={{ zIndex: 1, borderTop: "1px solid var(--lp-border)" }}>
         <div className="pt-16 text-center md:pt-24">
           <div
             className="mb-10 text-[10px] uppercase tracking-[0.25em]"
