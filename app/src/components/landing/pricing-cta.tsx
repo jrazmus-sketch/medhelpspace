@@ -1,11 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
 
-const CHECKOUT_2026 = "https://medhelpspace.com.br/?add-to-cart=8041";
-const CHECKOUT_2027 = "https://medhelpspace.com.br/?add-to-cart=8043";
+const COHORTS = [
+  {
+    label: "Revalida 2026.2",
+    price: "R$ 3.990",
+    checkout: "https://medhelpspace.com.br/?add-to-cart=8041",
+  },
+  {
+    label: "Revalida 2027.1",
+    price: "R$ 4.990",
+    checkout: "https://medhelpspace.com.br/?add-to-cart=8043",
+  },
+];
 
 const INCLUDED = [
   "Estudo por Questões",
@@ -20,6 +30,8 @@ const INCLUDED = [
 
 export function PricingCTA() {
   const ref = useRef<HTMLElement>(null);
+  const [selected, setSelected] = useState(0);
+  const cohort = COHORTS[selected];
 
   useEffect(() => {
     const el = ref.current;
@@ -52,125 +64,111 @@ export function PricingCTA() {
         }}
       />
 
-      <div className="relative mx-auto max-w-5xl">
-        <div className="text-center">
+      <div className="relative mx-auto max-w-xl">
+        {/* Header */}
+        <div className="mb-10 text-center">
           <div
             className="mb-8 text-[10px] uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
             Comece sua preparação
           </div>
-
           <h2
-            className="text-[clamp(2.8rem,6vw,5.5rem)] font-black leading-[1.0] tracking-[-0.03em]"
+            className="text-[clamp(2.8rem,6vw,5rem)] font-black leading-[1.0] tracking-[-0.03em]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            Comece agora.
+            Escolha sua turma.
           </h2>
           <p className="mt-4 text-base" style={{ color: "var(--lp-fg-40)" }}>
-            Escolha a turma da sua prova. Acesso imediato ao sistema completo.
+            O sistema é o mesmo — a turma define o seu calendário de preparação.
           </p>
         </div>
 
-        {/* Price cards */}
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 md:gap-6">
-          {/* 2026.2 */}
-          <div
-            className="flex flex-col rounded-2xl p-6 md:p-8"
-            style={{ border: "1px solid var(--lp-border)", background: "var(--lp-fg-05)" }}
-          >
+        {/* Single card */}
+        <div
+          className="rounded-2xl p-6 md:p-8"
+          style={{ border: "1px solid var(--lp-border)", background: "var(--lp-fg-05)" }}
+        >
+          {/* Cohort selector */}
+          <div className="mb-6">
             <div
-              className="mb-4 text-[10px] uppercase tracking-[0.2em]"
+              className="mb-3 text-[10px] uppercase tracking-[0.2em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
             >
-              Turma · Revalida 2026.2
+              Qual é a sua prova?
             </div>
-            <div
-              className="text-[clamp(2.5rem,5vw,3.8rem)] font-bold leading-none tracking-[-0.03em]"
-              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
-            >
-              R$ 3.990
-            </div>
-            <div className="mt-1 text-xs" style={{ color: "var(--lp-fg-25)" }}>ou parcele em até 12x no cartão</div>
-
-            <ul className="my-8 flex flex-col gap-2.5">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm" style={{ color: "var(--lp-fg-40)" }}>
-                  <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--lp-fg-25)" }} />
-                  {item}
-                </li>
+            <div className="flex gap-2">
+              {COHORTS.map((c, i) => (
+                <button
+                  key={c.label}
+                  onClick={() => setSelected(i)}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-all"
+                  style={
+                    selected === i
+                      ? {
+                          background: "var(--brand)",
+                          color: "#ffffff",
+                          boxShadow: "0 0 20px var(--lp-glow)",
+                        }
+                      : {
+                          background: "var(--lp-fg-05)",
+                          border: "1px solid var(--lp-border)",
+                          color: "var(--lp-fg-40)",
+                        }
+                  }
+                >
+                  {c.label}
+                </button>
               ))}
-            </ul>
-
-            <a
-              href={CHECKOUT_2026}
-              className="mt-auto block w-full rounded-xl border py-3.5 text-center text-sm font-bold transition-all active:scale-95"
-              style={{
-                borderColor: "var(--lp-border)",
-                color: "var(--lp-fg)",
-              }}
-            >
-              Comprar 2026.2 →
-            </a>
+            </div>
           </div>
 
-          {/* 2027.1 — featured */}
-          <div
-            className="relative flex flex-col rounded-2xl p-6 md:p-8"
+          {/* Price — animates on cohort switch */}
+          <div className="mb-1 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={selected}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18 }}
+                className="text-[clamp(2.8rem,6vw,4rem)] font-bold leading-none tracking-[-0.03em]"
+                style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
+              >
+                {cohort.price}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          <div className="mb-8 text-xs" style={{ color: "var(--lp-fg-25)" }}>
+            ou parcele em até 12x no cartão
+          </div>
+
+          {/* Feature list */}
+          <ul className="mb-8 flex flex-col gap-2.5">
+            {INCLUDED.map((item) => (
+              <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--lp-fg-55)" }}>
+                <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--brand)" }} />
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          {/* CTA */}
+          <a
+            href={cohort.checkout}
+            className="block w-full rounded-xl py-4 text-center text-base font-bold text-white transition-all hover:opacity-85 active:scale-95"
             style={{
-              border: "1px solid rgba(139,123,255,0.35)",
-              background: "rgba(139,123,255,0.04)",
-              boxShadow: "0 0 60px rgba(139,123,255,0.07)",
+              background: "var(--brand)",
+              boxShadow: "0 0 32px var(--lp-glow)",
             }}
           >
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span
-                className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white"
-                style={{ background: "var(--brand)", fontFamily: "var(--font-geist-mono)" }}
-              >
-                Mais tempo
-              </span>
-            </div>
-
-            <div
-              className="mb-4 text-[10px] uppercase tracking-[0.2em]"
-              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--brand)" }}
-            >
-              Turma · Revalida 2027.1
-            </div>
-            <div
-              className="text-[clamp(2.5rem,5vw,3.8rem)] font-bold leading-none tracking-[-0.03em]"
-              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
-            >
-              R$ 4.990
-            </div>
-            <div className="mt-1 text-xs" style={{ color: "var(--lp-fg-25)" }}>ou parcele em até 12x no cartão</div>
-
-            <ul className="my-8 flex flex-col gap-2.5">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm" style={{ color: "var(--lp-fg-55)" }}>
-                  <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--brand)" }} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <a
-              href={CHECKOUT_2027}
-              className="mt-auto block w-full rounded-xl py-3.5 text-center text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95"
-              style={{
-                background: "var(--brand)",
-                boxShadow: "0 0 32px rgba(139,123,255,0.2)",
-              }}
-            >
-              Comprar 2027.1 →
-            </a>
-          </div>
+            Comprar Agora →
+          </a>
         </div>
 
         {/* Trust signals */}
         <div
-          className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[11px]"
+          className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[11px]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
         >
           <span>✓ Acesso imediato</span>
