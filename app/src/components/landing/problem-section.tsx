@@ -33,9 +33,17 @@ export function ProblemSection() {
         <Image
           src="/images/students.webp"
           alt=""
-          fill
+          width={1600}
+          height={1600}
           sizes="100vw"
-          style={{ objectFit: "cover", objectPosition: "center bottom" }}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "100%",
+            height: "auto",
+            display: "block",
+          }}
         />
       </div>
 
