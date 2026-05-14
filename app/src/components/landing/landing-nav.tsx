@@ -27,7 +27,7 @@ export function LandingNav() {
         <Link
           href="/"
           className="text-lg font-extrabold tracking-tight"
-          style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
+          style={{ fontFamily: "var(--font-bricolage)", color: scrolled ? "var(--lp-fg)" : "#ffffff" }}
         >
           MedHelp<span style={{ color: "var(--brand)" }}>Space</span>
         </Link>
@@ -37,7 +37,7 @@ export function LandingNav() {
             aria-label="Alternar tema"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
-            style={{ color: "var(--lp-fg-40)" }}
+            style={{ color: scrolled ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
           >
             {resolvedTheme === "dark" ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,7 +53,7 @@ export function LandingNav() {
           <Link
             href="/login"
             className="hidden text-sm font-medium transition-colors sm:block"
-            style={{ color: "var(--lp-fg-40)" }}
+            style={{ color: scrolled ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
           >
             Entrar
           </Link>
