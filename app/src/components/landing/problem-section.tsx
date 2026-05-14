@@ -3,10 +3,12 @@
 import { useEffect, useRef } from "react";
 
 export function ProblemSection() {
-  const ref = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
+  // Scroll-reveal
   useEffect(() => {
-    const el = ref.current;
+    const el = sectionRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
@@ -21,15 +23,42 @@ export function ProblemSection() {
     return () => obs.disconnect();
   }, []);
 
+  // Parallax: image moves at 20% of the section's scroll speed
+  useEffect(() => {
+    const section = sectionRef.current;
+    const img = imgRef.current;
+    if (!section || !img) return;
+
+    let raf: number;
+
+    function update() {
+      const rect = section!.getBoundingClientRect();
+      const offset = (rect.top + rect.height / 2 - window.innerHeight / 2) * 0.2;
+      img!.style.transform = `translateY(${offset}px)`;
+    }
+
+    function onScroll() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    }
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
     <section
-      ref={ref}
+      ref={sectionRef}
       className="lp-cin-block relative overflow-hidden px-5 py-28 md:px-8 md:py-36"
       style={{ background: "var(--lp-alt)" }}
     >
-      {/* Background image — bottom-anchored, slightly lowered opacity */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src="/images/students.webp"
         alt=""
         aria-hidden="true"
@@ -42,6 +71,7 @@ export function ProblemSection() {
           display: "block",
           opacity: 0.32,
           pointerEvents: "none",
+          willChange: "transform",
         }}
       />
 
