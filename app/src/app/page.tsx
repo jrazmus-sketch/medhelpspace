@@ -1,15 +1,10 @@
-import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { HeroSection } from "@/components/landing/hero-section";
 import { ProblemSection } from "@/components/landing/problem-section";
-import { FeaturesSection } from "@/components/landing/features-section";
+import { StatsNumbers } from "@/components/landing/stats-numbers";
+import { CinematicFeatures } from "@/components/landing/cinematic-features";
 import { SixtyDSection } from "@/components/landing/sixty-d-section";
-import { ThemeDemoSection } from "@/components/landing/theme-demo-section";
-import { ComparisonSection } from "@/components/landing/comparison-section";
-import { PlatformTour } from "@/components/landing/platform-tour";
-import { StatsSection } from "@/components/landing/stats-section";
-import { FounderSection } from "@/components/landing/founder-section";
-import { MidCta } from "@/components/landing/mid-cta";
+import { PricingCTA } from "@/components/landing/pricing-cta";
 import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
@@ -22,24 +17,18 @@ export const metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <AnnouncementBar />
+    <div className="min-h-screen" style={{ background: "#030303" }}>
       <LandingNav />
       <main>
         <HeroSection />
         <ProblemSection />
-        <FeaturesSection />
+        <StatsNumbers />
+        <CinematicFeatures />
         <SixtyDSection />
-        <ThemeDemoSection />
-        <ComparisonSection />
-        <PlatformTour />
-        <StatsSection />
-        <FounderSection />
-        <MidCta />
+        <PricingCTA />
         <FaqSection />
       </main>
       <LandingFooter />
-      {/* Fixed mobile bottom CTA — appears after scrolling past hero */}
       <StickyCTABar />
     </div>
   );

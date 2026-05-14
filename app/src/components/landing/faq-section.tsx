@@ -1,9 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useReveal } from "@/hooks/use-reveal";
-import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
 
 const FAQS = [
   {
@@ -11,12 +8,12 @@ const FAQS = [
     a: "Para quem quer passar com método: rotina corrida ou não, treino do jeito que cai, menos pegadinha e mais segurança — sem conteúdo infinito.",
   },
   {
-    q: "O que diferencia o MedHelpSpace Revalida dos outros cursos?",
+    q: "O que diferencia o MedHelpSpace dos outros cursos?",
     a: "Aqui você não compra aula — você entra num sistema de aprovação. O foco é marcar ponto: treino por padrões, revisão objetiva e repetição que fixa. E você ainda recebe algo que quase ninguém entrega: MemoreCards exclusivos no MedHelp 60D + simulados completos para treinar o dia da prova.",
   },
   {
     q: "O que eu recebo ao me inscrever?",
-    a: "Acesso imediato ao sistema completo: Estudos por Questões, Resumos Narrativos, MedVoice, Audiocards e Fórmula MedHelp. O MedHelp 60D já está incluído na compra — ele só é liberado 60 dias antes da prova, como revisão final guiada.",
+    a: "Acesso imediato ao sistema completo: Estudos por Questões, Resumos Narrativos, MedVoice, Audiocards e Fórmula MedHelp. O MedHelp 60D já está incluído na compra — liberado automaticamente 60 dias antes da prova.",
   },
   {
     q: "O acesso é imediato?",
@@ -28,7 +25,7 @@ const FAQS = [
   },
   {
     q: "Preciso ter muito tempo livre?",
-    a: "Não. Foi feito para rotina real: blocos curtos, constância e treino objetivo. Você faz no seu ritmo, com flexibilidade real, mesmo com faculdade, plantões e trabalho.",
+    a: "Não. Foi feito para rotina real: blocos curtos, constância e treino objetivo. Você faz no seu ritmo, mesmo com faculdade, plantões e trabalho.",
   },
   {
     q: "O MedHelp 60D é liberado quando?",
@@ -48,7 +45,7 @@ const FAQS = [
   },
   {
     q: "Tem atualizações?",
-    a: "Sim. O MedHelpSpace é atualizado continuamente — sempre que a prova muda o jeito de cobrar, a gente ajusta o treino. Você segue focado em padrões recorrentes + variações prováveis, sem virar conteúdo infinito.",
+    a: "Sim. O MedHelpSpace é atualizado continuamente — sempre que a prova muda o jeito de cobrar, a gente ajusta o treino.",
   },
   {
     q: "Como funciona o suporte?",
@@ -58,57 +55,72 @@ const FAQS = [
 
 export function FaqSection() {
   const [open, setOpen] = useState<number | null>(null);
-  const ref = useReveal(0.08);
 
   return (
-    <section className="bg-[var(--lp-alt-bg)] px-5 py-20 md:px-8 md:py-28">
-      <div className="mx-auto max-w-3xl">
-        <div ref={ref} className="lp-reveal mb-12 text-center">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand">
+    <section
+      className="px-5 py-20 md:px-8 md:py-28"
+      style={{ background: "#030303" }}
+    >
+      <div
+        className="mx-auto max-w-3xl"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        {/* Header */}
+        <div className="pt-16 text-center md:pt-24">
+          <div
+            className="mb-8 text-[10px] uppercase tracking-[0.25em] text-white/25"
+            style={{ fontFamily: "var(--font-geist-mono)" }}
+          >
             Dúvidas frequentes
-          </p>
+          </div>
           <h2
-            className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl"
+            className="text-[clamp(2rem,4vw,3.2rem)] font-black leading-tight tracking-[-0.025em] text-white"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
             Perguntas Frequentes
           </h2>
         </div>
 
-        <div className="flex flex-col gap-2">
+        {/* Items */}
+        <div className="mt-12 flex flex-col">
           {FAQS.map((faq, i) => (
             <div
               key={faq.q}
-              className={cn(
-                "overflow-hidden rounded-xl border transition-all duration-200",
-                open === i
-                  ? "border-brand/30 bg-brand/5"
-                  : "border-border bg-background hover:border-brand/15",
-              )}
+              style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
             >
               <button
                 onClick={() => setOpen(open === i ? null : i)}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-foreground sm:text-base"
+                className="flex w-full items-center justify-between gap-4 py-5 text-left"
                 aria-expanded={open === i}
               >
-                <span>{faq.q}</span>
-                <Plus
-                  className={cn(
-                    "h-4 w-4 shrink-0 text-brand transition-transform duration-200",
-                    open === i ? "rotate-45" : "",
-                  )}
-                />
+                <span
+                  className="text-sm font-semibold text-white/75 transition-colors hover:text-white sm:text-base"
+                >
+                  {faq.q}
+                </span>
+                <span
+                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border text-xs transition-all duration-200"
+                  style={{
+                    borderColor: open === i ? "rgba(139,123,255,0.5)" : "rgba(255,255,255,0.12)",
+                    color: open === i ? "var(--brand)" : "rgba(255,255,255,0.3)",
+                    transform: open === i ? "rotate(45deg)" : "none",
+                  }}
+                >
+                  +
+                </span>
               </button>
               <div
                 className="overflow-hidden transition-all duration-300 ease-in-out"
-                style={{ maxHeight: open === i ? "400px" : "0px" }}
+                style={{ maxHeight: open === i ? "300px" : "0px" }}
               >
-                <p className="px-5 pb-5 text-sm leading-relaxed text-foreground/60 sm:text-base">
+                <p className="pb-5 text-sm leading-relaxed text-white/40 sm:text-[0.95rem]">
                   {faq.a}
                 </p>
               </div>
             </div>
           ))}
+          {/* Last border */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
         </div>
       </div>
     </section>

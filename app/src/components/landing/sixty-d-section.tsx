@@ -1,210 +1,133 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { useReveal } from "@/hooks/use-reveal";
-
-const TIMELINE_STEPS = [
-  {
-    icon: "✅",
-    label: "Compra",
-    desc: "Acesso imediato ao sistema completo",
-    active: true,
-  },
-  {
-    icon: "📚",
-    label: "Estudo",
-    desc: "Questões, resumos, MedVoice, Fórmula e Audiocards",
-    active: true,
-  },
-  {
-    icon: "🔓",
-    label: "MedHelp 60D",
-    desc: "Libera automaticamente 60 dias antes da sua prova",
-    highlight: true,
-  },
-  {
-    icon: "🏆",
-    label: "Prova",
-    desc: "Revalida 2026.2 ou 2027.1",
-    active: false,
-  },
-];
-
-const INCLUDED_60D = [
-  {
-    title: "Revalida Up",
-    desc: "Mini-resumos com padrão + decisão treinada — revisão ultrarrápida de tudo que cai.",
-    color: "var(--c-pop)",
-  },
-  {
-    title: "MemoreCards",
-    desc: "Biblioteca de cards visuais de alta fixação, organizados por especialidade.",
-    color: "var(--c-pop)",
-  },
-  {
-    title: "Simulados Completos",
-    desc: "100 questões por simulado para treinar o ritmo e o raciocínio do dia da prova.",
-    color: "var(--c-pop)",
-  },
-];
 
 export function SixtyDSection() {
-  const headerRef = useReveal();
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const container = timelineRef.current;
-    if (!container) return;
+    const el = ref.current;
+    if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          container.classList.add("lp-visible");
+          el.classList.add("lp-cin-visible");
           obs.disconnect();
         }
       },
-      { threshold: 0.2 },
+      { threshold: 0.12 },
     );
-    obs.observe(container);
+    obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
   return (
     <section
+      ref={ref}
       id="medhelp60d"
-      className="relative overflow-hidden px-5 py-20 md:px-8 md:py-28"
-      style={{ background: "var(--lp-dark-bg)" }}
+      className="lp-cin-block px-5 py-24 md:px-8 md:py-32"
+      style={{ background: "#030303" }}
     >
-      {/* Background accent */}
       <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% -10%, color-mix(in srgb, var(--c-pop) 12%, transparent), transparent 60%)",
-        }}
-      />
-
-      <div className="relative mx-auto max-w-5xl">
-
-        {/* Header */}
-        <div ref={headerRef} className="lp-reveal mb-14 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--c-pop)]/30 bg-[var(--c-pop)]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--c-pop)]">
-            🔓 Fase Final
+        className="mx-auto max-w-5xl"
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <div className="pt-16 md:pt-24">
+          {/* Label */}
+          <div className="mb-8 flex items-center gap-3">
+            <span
+              className="text-[10px] uppercase tracking-[0.25em] text-white/20"
+              style={{ fontFamily: "var(--font-geist-mono)" }}
+            >
+              06
+            </span>
+            <span
+              className="h-px w-8"
+              style={{ background: "var(--c-pop)", opacity: 0.6 }}
+            />
+            <span
+              className="text-[10px] uppercase tracking-[0.2em]"
+              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-pop)" }}
+            >
+              MedHelp 60D
+            </span>
           </div>
-          <h2
-            className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-[2.8rem]"
+
+          {/* Headline */}
+          <h3
+            className="max-w-3xl text-[clamp(1.9rem,4.5vw,3.8rem)] font-black leading-[1.08] tracking-[-0.02em] text-white"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
-            MedHelp 60D
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-white/55 sm:text-lg">
-            A fase final do sistema. Libera automaticamente 60 dias antes da sua prova — sem precisar fazer nada.
+            Fase final do sistema.
+            <span style={{ color: "rgba(255,255,255,0.2)" }}> Liberada 60 dias antes da prova.</span>
+          </h3>
+
+          {/* Body */}
+          <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/40 sm:text-[1.05rem]">
+            Aqui você revisa padrões recorrentes do INEP e as variações que a prova pode trazer,
+            sem se perder em excesso. Já incluso na compra — libera automaticamente.
           </p>
-        </div>
 
-        {/* Timeline */}
-        <div
-          ref={timelineRef}
-          className="lp-band-content mb-16"
-        >
-          <div className="relative flex flex-col gap-0 md:flex-row md:items-start">
-            {/* Connecting line — desktop */}
-            <div className="absolute left-0 right-0 top-5 hidden h-px bg-white/10 md:block">
+          {/* What's inside */}
+          <div className="mt-10 grid gap-px sm:grid-cols-3">
+            {[
+              { name: "Revalida Up", desc: "Mini-resumos: padrão + decisão treinada" },
+              { name: "MemoreCards", desc: "Cards visuais de alta fixação por especialidade" },
+              { name: "Simulados 100Q", desc: "Treino completo do dia da prova" },
+            ].map((item) => (
               <div
-                className="lp-timeline-line h-full"
-                style={{ background: `linear-gradient(to right, var(--c-pop), color-mix(in srgb, var(--c-pop) 40%, white))` }}
-              />
-            </div>
-            {/* Connecting line — mobile */}
-            <div className="absolute bottom-0 left-5 top-0 w-px bg-white/10 md:hidden" />
-
-            {TIMELINE_STEPS.map((step, i) => (
-              <div
-                key={step.label}
-                className="relative flex flex-1 flex-row items-start gap-4 pb-8 md:flex-col md:items-center md:gap-3 md:pb-0 md:text-center"
-                style={{ animationDelay: `${i * 100}ms` }}
+                key={item.name}
+                className="px-0 py-6 sm:px-6"
+                style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
               >
-                {/* Icon bubble */}
                 <div
-                  className="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 text-base md:mx-auto"
+                  className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em]"
+                  style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-pop)" }}
+                >
+                  {item.name}
+                </div>
+                <div className="text-sm text-white/40">{item.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Timeline strip */}
+          <div className="mt-12 flex items-center gap-0">
+            {[
+              { label: "Compra", sub: "Acesso imediato" },
+              { label: "Estudo", sub: "Questões · Resumos · MedVoice · Fórmula · Audiocards" },
+              { label: "60D antes", sub: "MedHelp 60D liberado" },
+              { label: "Prova", sub: "Revalida 2026.2 / 2027.1" },
+            ].map((step, i) => (
+              <div key={step.label} className="flex flex-1 flex-col items-center">
+                <div
+                  className="flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold"
                   style={{
-                    borderColor: step.highlight
-                      ? "var(--c-pop)"
-                      : step.active
-                      ? "rgba(255,255,255,0.35)"
-                      : "rgba(255,255,255,0.12)",
-                    background: step.highlight
-                      ? "color-mix(in srgb, var(--c-pop) 20%, transparent)"
-                      : "rgba(255,255,255,0.04)",
-                    boxShadow: step.highlight
-                      ? "0 0 20px color-mix(in srgb, var(--c-pop) 30%, transparent)"
-                      : "none",
+                    borderColor: i === 2 ? "var(--c-pop)" : "rgba(255,255,255,0.15)",
+                    color: i === 2 ? "var(--c-pop)" : "rgba(255,255,255,0.3)",
+                    background: i === 2 ? "rgba(6,182,212,0.08)" : "transparent",
+                    boxShadow: i === 2 ? "0 0 16px rgba(6,182,212,0.2)" : "none",
+                    fontFamily: "var(--font-geist-mono)",
                   }}
                 >
-                  {step.icon}
+                  {i + 1}
                 </div>
-                <div className="pt-1 md:pt-0">
-                  <div
-                    className="mb-1 text-sm font-bold"
-                    style={{ color: step.highlight ? "var(--c-pop)" : "rgba(255,255,255,0.85)" }}
-                  >
-                    {step.label}
-                  </div>
-                  <div className="text-xs leading-relaxed text-white/40 md:max-w-[140px]">
-                    {step.desc}
-                  </div>
+                <div
+                  className="mt-2 text-center text-[9px] font-bold uppercase tracking-[0.15em]"
+                  style={{
+                    color: i === 2 ? "var(--c-pop)" : "rgba(255,255,255,0.35)",
+                    fontFamily: "var(--font-geist-mono)",
+                  }}
+                >
+                  {step.label}
+                </div>
+                <div className="mt-1 hidden max-w-[90px] text-center text-[8px] leading-tight text-white/20 sm:block">
+                  {step.sub}
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        {/* What's included grid */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          {INCLUDED_60D.map((item, i) => (
-            <div
-              key={item.title}
-              className="rounded-2xl border p-5"
-              style={{
-                borderColor: "color-mix(in srgb, var(--c-pop) 20%, transparent)",
-                background: "color-mix(in srgb, var(--c-pop) 5%, rgba(255,255,255,0.02))",
-                animationName: "lp-fade-up",
-                animationDuration: "0.7s",
-                animationFillMode: "both",
-                animationDelay: `${200 + i * 100}ms`,
-                animationTimingFunction: "cubic-bezier(0.16,1,0.3,1)",
-              }}
-            >
-              <div
-                className="mb-1 text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--c-pop)" }}
-              >
-                {item.title}
-              </div>
-              <p className="text-sm leading-relaxed text-white/55">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <p className="mb-5 text-sm text-white/40">
-            Já incluso em ambas as turmas. Não precisa pagar a mais — libera sozinho na hora certa.
-          </p>
-          <Link
-            href="/loja"
-            className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-base font-bold text-white transition-all hover:-translate-y-0.5 active:scale-95"
-            style={{
-              background: "var(--c-pop)",
-              boxShadow: "0 8px 32px color-mix(in srgb, var(--c-pop) 35%, transparent)",
-            }}
-          >
-            Garantir minha vaga
-            <span aria-hidden>→</span>
-          </Link>
-        </div>
-
       </div>
     </section>
   );

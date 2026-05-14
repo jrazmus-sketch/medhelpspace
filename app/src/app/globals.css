@@ -598,6 +598,24 @@
 .lp-mockup-dark  { --mk-bg: #0a0a0a; --mk-card: #141414; --mk-text: #ededed; --mk-sub: #a8a8a8; --mk-brand: #8b7bff; --mk-border: rgba(255,255,255,0.09); }
 .lp-mockup-light { --mk-bg: #ffffff; --mk-card: #faf8fd; --mk-text: #09090d; --mk-sub: #6b5f7a; --mk-brand: #7a1d91; --mk-border: #e2d9ef; }
 
+/* ── Cinematic landing — scroll-reveal + scroll-dot ─────────── */
+.lp-cin-block {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1),
+              transform 0.85s cubic-bezier(0.16,1,0.3,1);
+}
+.lp-cin-block.lp-cin-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes lp-scroll-dot {
+  0%   { transform: translateY(0);   opacity: 1; }
+  80%  { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0);   opacity: 0; }
+}
+
 /* ── Stat counter ────────────────────────────────────────────── */
 .lp-stat-number {
   font-family: var(--font-bricolage);
