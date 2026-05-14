@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 export function ProblemSection() {
@@ -29,23 +28,22 @@ export function ProblemSection() {
       style={{ background: "var(--lp-alt)" }}
     >
       {/* Background image — bottom-anchored, slightly lowered opacity */}
-      <div className="pointer-events-none absolute inset-0" style={{ opacity: 0.32 }}>
-        <Image
-          src="/images/students.webp"
-          alt=""
-          width={1600}
-          height={1600}
-          sizes="100vw"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            height: "auto",
-            display: "block",
-          }}
-        />
-      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/students.webp"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          width: "100%",
+          height: "auto",
+          display: "block",
+          opacity: 0.32,
+          pointerEvents: "none",
+        }}
+      />
 
       {/* Gradient overlay: opaque section bg at top, transparent from midpoint down */}
       <div
