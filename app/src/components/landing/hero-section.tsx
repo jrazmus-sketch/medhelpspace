@@ -13,11 +13,8 @@ function QuizCard() {
       transition={{ delay: 0.35, duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="flex-1 min-w-0 rounded-2xl p-4 text-left md:p-5"
       style={{
-        background: "rgba(255,255,255,0.07)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+        background: "#0b0b16",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.50)",
       }}
     >
       {/* Header */}
@@ -96,11 +93,8 @@ function MedVoiceCard() {
       transition={{ delay: 0.50, duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
       className="flex-1 min-w-0 rounded-2xl p-4 text-left md:p-5"
       style={{
-        background: "rgba(255,255,255,0.07)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        border: "1px solid rgba(255,255,255,0.10)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
+        background: "#0b0b16",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.50)",
       }}
     >
       {/* Header */}
@@ -235,10 +229,10 @@ export function HeroSection() {
         />
       </motion.div>
 
-      {/* Dark scrim — heavier, more atmospheric */}
+      {/* Dark scrim — heavy, photo is atmosphere only */}
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: "rgba(0,0,0,0.74)" }}
+        style={{ background: "rgba(0,0,0,0.86)" }}
         aria-hidden="true"
       />
 
