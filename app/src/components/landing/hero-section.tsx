@@ -52,7 +52,7 @@ function EcgBackground() {
     let raf: number;
 
     function strokeSeg(seg: Pt[], width: number, color: string) {
-      if (seg.length < 2) return;
+      if (seg.length < 2 || !ctx) return;
       ctx.beginPath();
       ctx.moveTo(seg[0].x, seg[0].y);
       for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
