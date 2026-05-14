@@ -35,8 +35,9 @@ function EcgBackground() {
     if (!canvasRef.current) return;
     const canvas: HTMLCanvasElement = canvasRef.current;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const ctxOrNull = canvas.getContext("2d");
+    if (!ctxOrNull) return;
+    const ctx: CanvasRenderingContext2D = ctxOrNull;
 
     const CYCLE = 900;
     const SPEED = 2.2;
