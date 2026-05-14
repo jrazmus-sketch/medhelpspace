@@ -821,113 +821,6 @@ export default async function MemberDashboardPage() {
         </div>
       </section>
 
-      {/* ── PROGRESSO charts ── */}
-      <SecHeader title="Progresso" />
-      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[10px] sm:gap-[14px] mb-[10px] sm:mb-[14px]">
-
-        {/* 1. Donut — accuracy */}
-        <div style={{ ...card, ...cardEnter(0), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div style={LABEL_STYLE}>Acerto</div>
-            {quizTotal > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-success)" }}>↑ em progresso</div>}
-          </div>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-            <DonutChart value={quizPct} color="var(--c-questoes)" />
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2 }}>
-              <div className="tabular-nums" style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
-                {quizTotal > 0 ? `${Math.round(quizPct * 100)}%` : "—"}
-              </div>
-              <div style={{ fontSize: 9.5, color: "var(--muted-foreground)", letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 500 }}>acerto</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: "var(--muted-foreground)" }}>
-            <span className="tabular-nums" style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
-              {fmtBr(quizTotal)}
-            </span>
-            questões
-          </div>
-        </div>
-
-        {/* 2. Audio — sparkline placeholder with proper empty state */}
-        <div style={{ ...cardAlt, ...cardEnter(80), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div style={{ ...LABEL_STYLE, color: "var(--c-medvoice)" }}>Áudio · 5 sem.</div>
-          </div>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {/* Ghost bars showing empty state */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 44 }}>
-                {[8, 14, 10, 20, 12, 18, 9, 22, 11, 16, 8, 19, 13].map((h, i) => (
-                  <div key={i} style={{ width: 5, height: h, borderRadius: 2, background: `color-mix(in srgb, var(--c-medvoice) ${12 + i * 4}%, transparent)` }} />
-                ))}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", letterSpacing: ".04em" }}>disponível em breve</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: "var(--muted-foreground)" }}>
-            <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
-              0<span style={{ fontSize: 13, color: "var(--muted-foreground)", fontWeight: 400 }}>h</span>
-            </span>
-            este mês
-          </div>
-        </div>
-
-        {/* 3. Topics — specialty accuracy bars */}
-        <div style={{ ...card, ...cardEnter(160), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div style={{ ...LABEL_STYLE, color: "var(--c-formula)" }}>Tópicos</div>
-          </div>
-          <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-            {specialtyBars.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 9, width: "100%" }}>
-                {specialtyBars.slice(0, 4).map((it) => {
-                  const total = it.right + it.wrong || 1;
-                  const pct = (it.right / total) * 100;
-                  return (
-                    <div key={it.label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 28px", gap: 10, alignItems: "center", fontSize: 11.5 }}>
-                      <div style={{ color: "var(--muted-foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11 }}>{it.label}</div>
-                      <div style={{ height: 5, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${pct}%`, background: it.color, borderRadius: 999 }} />
-                      </div>
-                      <div style={{ color: "var(--muted-foreground)", textAlign: "right", fontFamily: "var(--font-geist-mono)", fontSize: 10.5 }}>{Math.round(pct)}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p style={{ fontSize: 12, color: "var(--muted-foreground)", margin: 0, lineHeight: 1.6 }}>
-                Responda questões para ver dados de especialidade.
-              </p>
-            )}
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: "var(--muted-foreground)" }}>
-            <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
-              {specAccMap.size}
-            </span>
-            especialidades
-          </div>
-        </div>
-
-        {/* 4. Consistency heatmap */}
-        <div style={{ ...cardAlt, ...cardEnter(240), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <div style={{ ...LABEL_STYLE, color: "var(--c-pop)" }}>Constância · 5 sem.</div>
-            {streak > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-pop)" }}>{streak} dias</div>}
-          </div>
-          <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-            <HeatmapGrid cells={heatCells} dayLabels={heatDayLabels} />
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "var(--muted-foreground)", alignItems: "center" }}>
-            {[["zero", "var(--surface-3)"], ["poucos", "color-mix(in srgb, var(--c-pop) 45%, transparent)"], ["muitos", "var(--c-pop)"]].map(([label, bg]) => (
-              <span key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                <span style={{ width: 9, height: 9, borderRadius: 2, background: bg, display: "inline-block" }} />
-                {label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── TRILHAS ── */}
       <SecHeader title="Trilhas" count="05" moreLabel="Ver todas →" moreHref="/app/trilhas" />
       <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[10px] sm:gap-3">
@@ -1055,6 +948,113 @@ export default async function MemberDashboardPage() {
           </div>
         </>
       )}
+
+      {/* ── PROGRESSO charts ── */}
+      <SecHeader title="Progresso" />
+      <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-[10px] sm:gap-[14px] mb-[10px] sm:mb-[14px]">
+
+        {/* 1. Donut — accuracy */}
+        <div style={{ ...card, ...cardEnter(0), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={LABEL_STYLE}>Acerto</div>
+            {quizTotal > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-success)" }}>↑ em progresso</div>}
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+            <DonutChart value={quizPct} color="var(--c-questoes)" />
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2 }}>
+              <div className="tabular-nums" style={{ fontSize: 26, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
+                {quizTotal > 0 ? `${Math.round(quizPct * 100)}%` : "—"}
+              </div>
+              <div style={{ fontSize: 9.5, color: "var(--muted-foreground)", letterSpacing: ".14em", textTransform: "uppercase", fontWeight: 500 }}>acerto</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: "var(--muted-foreground)" }}>
+            <span className="tabular-nums" style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
+              {fmtBr(quizTotal)}
+            </span>
+            questões
+          </div>
+        </div>
+
+        {/* 2. Audio — sparkline placeholder with proper empty state */}
+        <div style={{ ...cardAlt, ...cardEnter(80), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={{ ...LABEL_STYLE, color: "var(--c-medvoice)" }}>Áudio · 5 sem.</div>
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {/* Ghost bars showing empty state */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+              <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 44 }}>
+                {[8, 14, 10, 20, 12, 18, 9, 22, 11, 16, 8, 19, 13].map((h, i) => (
+                  <div key={i} style={{ width: 5, height: h, borderRadius: 2, background: `color-mix(in srgb, var(--c-medvoice) ${12 + i * 4}%, transparent)` }} />
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", letterSpacing: ".04em" }}>disponível em breve</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: "var(--muted-foreground)" }}>
+            <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
+              0<span style={{ fontSize: 13, color: "var(--muted-foreground)", fontWeight: 400 }}>h</span>
+            </span>
+            este mês
+          </div>
+        </div>
+
+        {/* 3. Topics — specialty accuracy bars */}
+        <div style={{ ...card, ...cardEnter(160), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={{ ...LABEL_STYLE, color: "var(--c-formula)" }}>Tópicos</div>
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+            {specialtyBars.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 9, width: "100%" }}>
+                {specialtyBars.slice(0, 4).map((it) => {
+                  const total = it.right + it.wrong || 1;
+                  const pct = (it.right / total) * 100;
+                  return (
+                    <div key={it.label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 28px", gap: 10, alignItems: "center", fontSize: 11.5 }}>
+                      <div style={{ color: "var(--muted-foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11 }}>{it.label}</div>
+                      <div style={{ height: 5, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${pct}%`, background: it.color, borderRadius: 999 }} />
+                      </div>
+                      <div style={{ color: "var(--muted-foreground)", textAlign: "right", fontFamily: "var(--font-geist-mono)", fontSize: 10.5 }}>{Math.round(pct)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--muted-foreground)", margin: 0, lineHeight: 1.6 }}>
+                Responda questões para ver dados de especialidade.
+              </p>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 12.5, color: "var(--muted-foreground)" }}>
+            <span style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1, color: "var(--foreground)" }}>
+              {specAccMap.size}
+            </span>
+            especialidades
+          </div>
+        </div>
+
+        {/* 4. Consistency heatmap */}
+        <div style={{ ...cardAlt, ...cardEnter(240), padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, minHeight: 210 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div style={{ ...LABEL_STYLE, color: "var(--c-pop)" }}>Constância · 5 sem.</div>
+            {streak > 0 && <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-pop)" }}>{streak} dias</div>}
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+            <HeatmapGrid cells={heatCells} dayLabels={heatDayLabels} />
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11, color: "var(--muted-foreground)", alignItems: "center" }}>
+            {[["zero", "var(--surface-3)"], ["poucos", "color-mix(in srgb, var(--c-pop) 45%, transparent)"], ["muitos", "var(--c-pop)"]].map(([label, bg]) => (
+              <span key={label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: bg, display: "inline-block" }} />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── ESTA SEMANA ── */}
       <SecHeader title="Esta semana" moreLabel="Relatório →" moreHref="/app/relatorio" />
