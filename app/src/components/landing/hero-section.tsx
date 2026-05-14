@@ -207,7 +207,7 @@ function QuizCard() {
       className="w-full rounded-2xl p-4 text-left"
       style={{
         background: "#12112a",
-        border: "1px solid rgba(139,123,255,0.14)",
+        border: "1px solid rgba(122,29,145,0.40)",
         boxShadow: "0 16px 48px rgba(0,0,0,0.55)",
       }}
     >
@@ -242,15 +242,15 @@ function QuizCard() {
             key={opt.label}
             className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs"
             style={{
-              background: opt.correct ? "rgba(139,123,255,0.20)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${opt.correct ? "rgba(139,123,255,0.40)" : "rgba(255,255,255,0.06)"}`,
+              background: opt.correct ? "rgba(122,29,145,0.18)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${opt.correct ? "rgba(122,29,145,0.55)" : "rgba(255,255,255,0.06)"}`,
               color: opt.correct ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
             }}
           >
             <span
               className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[9px] font-bold"
               style={{
-                background: opt.correct ? "rgba(139,123,255,0.50)" : "rgba(255,255,255,0.07)",
+                background: opt.correct ? "rgba(122,29,145,0.90)" : "rgba(255,255,255,0.07)",
                 color: opt.correct ? "#fff" : "rgba(255,255,255,0.38)",
                 fontFamily: "var(--font-geist-mono)",
               }}
@@ -259,7 +259,7 @@ function QuizCard() {
             </span>
             <span className="flex-1">{opt.text}</span>
             {opt.correct && (
-              <span className="text-[9px]" style={{ color: "rgba(139,123,255,0.85)" }}>✓</span>
+              <span className="text-[9px]" style={{ color: "rgba(200,120,220,0.90)" }}>✓</span>
             )}
           </div>
         ))}
@@ -280,7 +280,7 @@ function MedVoiceCard() {
       className="w-full rounded-2xl p-4 text-left"
       style={{
         background: "#12112a",
-        border: "1px solid rgba(139,123,255,0.14)",
+        border: "1px solid rgba(122,29,145,0.40)",
         boxShadow: "0 16px 48px rgba(0,0,0,0.55)",
       }}
     >
@@ -309,7 +309,7 @@ function MedVoiceCard() {
             className="flex-1 rounded-sm"
             style={{
               height: `${h}%`,
-              background: i < filled ? "rgba(139,123,255,0.72)" : "rgba(255,255,255,0.12)",
+              background: i < filled ? "rgba(122,29,145,0.90)" : "rgba(255,255,255,0.12)",
             }}
           />
         ))}
@@ -317,7 +317,7 @@ function MedVoiceCard() {
 
       <div className="mb-3">
         <div className="h-0.5 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.10)" }}>
-          <div className="h-full rounded-full" style={{ width: "48%", background: "rgba(139,123,255,0.68)" }} />
+          <div className="h-full rounded-full" style={{ width: "48%", background: "rgba(122,29,145,0.90)" }} />
         </div>
         <div className="mt-1 flex justify-between">
           <span className="text-[9px]" style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.28)" }}>02:10</span>
@@ -329,7 +329,7 @@ function MedVoiceCard() {
         <button style={{ color: "rgba(255,255,255,0.30)" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
         </button>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "rgba(139,123,255,0.78)" }}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "#7a1d91" }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
         </div>
         <button style={{ color: "rgba(255,255,255,0.30)" }}>
@@ -376,7 +376,7 @@ export function HeroSection() {
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
-            "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(139,123,255,0.10), transparent 65%)",
+            "radial-gradient(ellipse 80% 50% at 50% 100%, rgba(122,29,145,0.18), transparent 65%)",
             "radial-gradient(ellipse 100% 60% at 50% 0%, rgba(2,1,8,0.55), transparent 55%)",
             "linear-gradient(to right, rgba(2,1,8,0.35) 0%, transparent 20%, transparent 80%, rgba(2,1,8,0.35) 100%)",
           ].join(", "),
@@ -435,7 +435,7 @@ export function HeroSection() {
             className="rounded-xl px-8 py-4 text-base font-bold text-white transition-all hover:opacity-85 hover:-translate-y-px active:scale-95"
             style={{
               background: "var(--brand)",
-              boxShadow: "0 0 40px rgba(139,123,255,0.28)",
+              boxShadow: "0 0 40px rgba(122,29,145,0.45)",
             }}
           >
             Comprar Agora →
