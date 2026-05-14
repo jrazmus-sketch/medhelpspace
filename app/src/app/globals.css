@@ -819,6 +819,17 @@
   gap: 6px;
 }
 
+/* ── Hero ECG animation ──────────────────────────────────────── */
+@keyframes ecg-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-1200px); }
+}
+/* Stagger cards on sm+ only; no offset on mobile (stack layout) */
+@media (min-width: 640px) {
+  .hero-card-left  { transform: translateY(-14px); }
+  .hero-card-right { transform: translateY(14px); }
+}
+
 /* ── App mockup shared shell ─────────────────────────────────── */
 .lp-mockup-shell {
   background: var(--background);
