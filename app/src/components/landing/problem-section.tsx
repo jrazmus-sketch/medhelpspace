@@ -33,7 +33,9 @@ export function ProblemSection() {
 
     function update() {
       const rect = section!.getBoundingClientRect();
-      const offset = (rect.top + rect.height / 2 - window.innerHeight / 2) * 0.2;
+      // Only push image downward (positive Y) — keeps bottom: 0 as the floor.
+      // Negative values would lift the image and expose a gap at the section bottom.
+      const offset = Math.max(0, (rect.top + rect.height / 2 - window.innerHeight / 2) * 0.2);
       img!.style.transform = `translateY(${offset}px)`;
     }
 
