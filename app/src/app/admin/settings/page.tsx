@@ -3,7 +3,7 @@
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { useAuth } from "@/providers/auth-provider";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/theme-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateProfile } from "@/actions/admin";
 import { useState, useTransition, useEffect } from "react";

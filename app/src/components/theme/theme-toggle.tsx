@@ -1,7 +1,7 @@
 "use client";
 
 import { Moon, Sun, Monitor } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/theme-provider";
 import { useEffect, useState, useCallback } from "react";
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ export function ThemeToggle() {
   useEffect(() => setMounted(true), []);
 
   const handleTheme = useCallback(
-    async (value: string) => {
+    async (value: "light" | "dark" | "system") => {
       setTheme(value);
       if (!USE_MOCK_DATA && profile) {
         const supabase = createClient();

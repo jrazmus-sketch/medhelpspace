@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useAuth } from "@/providers/auth-provider";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/theme-provider";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body
         className="min-h-screen bg-background antialiased"
       >
+        <Script id="theme-init" strategy="beforeInteractive" src="/theme-init.js" />
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>

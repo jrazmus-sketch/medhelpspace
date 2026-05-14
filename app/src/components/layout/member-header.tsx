@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Settings, User, Shield, Sun, Moon, Monitor } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,7 +35,7 @@ export function MemberHeader() {
   const { profile, isAnyAdmin } = useAuth();
   const { theme, setTheme } = useTheme();
 
-  async function handleTheme(value: string) {
+  async function handleTheme(value: "light" | "dark" | "system") {
     setTheme(value);
     if (!USE_MOCK_DATA && profile) {
       const supabase = createClient();

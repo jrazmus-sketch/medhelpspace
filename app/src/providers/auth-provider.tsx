@@ -9,7 +9,7 @@ import {
   useCallback,
 } from "react";
 import type { User as AuthUser, Session, AuthChangeEvent } from "@supabase/supabase-js";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA, MOCK_USER, MOCK_USER_WITH_COHORT } from "@/lib/mock-data";
 import i18n from "@/lib/i18n";
