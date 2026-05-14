@@ -176,7 +176,7 @@ function EcgBackground() {
   return (
     // Outer clip: keeps rotated corners inside the section
     <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: 1 }} aria-hidden="true">
-      {/* Layer 1 — ECG paper grid (tilted) */}
+      {/* Inner: 15% oversized so rotated corners don't peek through, centered transform */}
       <div
         style={{
           position: "absolute",
@@ -190,38 +190,6 @@ function EcgBackground() {
           backgroundSize: "80px 80px, 80px 80px, 20px 20px, 20px 20px",
           transform: "perspective(1000px) rotateX(22deg)",
           transformOrigin: "50% 50%",
-          zIndex: 1,
-        }}
-      />
-
-      {/* Layer 2 — vertical photo, left-aligned, opacity-faded top→bottom */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/images/medical-equipment.png"
-        alt=""
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          height: "100%",
-          width: "auto",
-          maxWidth: "none",
-          objectFit: "cover",
-          objectPosition: "left center",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.20) 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.20) 100%)",
-          zIndex: 2,
-        }}
-      />
-
-      {/* Layer 3 — ECG canvas animation (tilted, on top of photo) */}
-      <div
-        style={{
-          position: "absolute",
-          inset: "-15% -8%",
-          transform: "perspective(1000px) rotateX(22deg)",
-          transformOrigin: "50% 50%",
-          zIndex: 3,
         }}
       >
         <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
