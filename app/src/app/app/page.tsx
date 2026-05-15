@@ -478,7 +478,13 @@ export default async function MemberDashboardPage() {
             margin: "0 0 22px",
           }}>
             {lastPage
-              ? <>Continue em <strong className="text-foreground font-medium">{lastPage.title}</strong>.</>
+              ? <Link
+                  href={lastPageSpec ? `/app/${lastPageSpec.slug}/${lastPage.slug}` : `/app/${lastPage.slug}`}
+                  style={{ color: "inherit", textDecoration: "none" }}
+                  className="hover:text-foreground transition-colors"
+                >
+                  Continuar em <strong className="text-foreground font-medium">{lastPage.title}</strong> →
+                </Link>
               : <>Comece a explorar o conteúdo.</>
             }
           </p>
