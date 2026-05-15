@@ -182,28 +182,51 @@ function ReadingViz() {
 
 function ContinueCard({
   lastPage, lastTrack, lastPageSpec, cardStyle,
+  lastPageQuizStats, coveredSpecialtyIds, specialtiesAll,
 }: {
   lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null;
   lastTrack: { id: number; name: string; slug: string } | null;
   lastPageSpec: { name: string; slug: string } | null | undefined;
   cardStyle: React.CSSProperties;
+  lastPageQuizStats: { total: number; attempted: number; correct: number } | null;
+  coveredSpecialtyIds: Set<number>;
+  specialtiesAll: { id: number; name: string }[];
 }) {
   const baseStyle: React.CSSProperties = { ...cardStyle, padding: "18px 20px", display: "flex", flexDirection: "column", minHeight: 200 };
+
+  const coverageRow = specialtiesAll.length > 0 && (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 12 }}>
+      <span style={{ fontSize: 10, color: "var(--muted-3, #4a4a4a)", letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, flexShrink: 0 }}>
+        Cobertura
+      </span>
+      <div style={{ display: "flex", gap: 3, flex: 1, flexWrap: "wrap" }}>
+        {specialtiesAll.map((spec) => (
+          <div
+            key={spec.id}
+            title={spec.name}
+            style={{
+              width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+              background: coveredSpecialtyIds.has(spec.id) ? "var(--brand)" : "var(--surface-3)",
+            }}
+          />
+        ))}
+      </div>
+      <span style={{ fontSize: 10.5, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)", flexShrink: 0 }}>
+        {coveredSpecialtyIds.size}/{specialtiesAll.length}
+      </span>
+    </div>
+  );
 
   if (!lastPage) {
     return (
       <div style={baseStyle}>
         <div style={LABEL_STYLE}>Continuar</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, paddingTop: 12 }}>
-          <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 36 }}>
-            {[5, 10, 7, 14, 9, 12, 6, 13, 8].map((h, i) => (
-              <div key={i} style={{ width: 4, height: h, borderRadius: 2, background: `color-mix(in srgb, var(--brand) ${18 + i * 7}%, transparent)` }} />
-            ))}
-          </div>
           <div style={{ fontSize: 12.5, color: "var(--muted-foreground)", lineHeight: 1.5, textAlign: "center" }}>
             Acesse qualquer página<br />para retomar de onde parou.
           </div>
         </div>
+        {coverageRow}
       </div>
     );
   }
@@ -229,6 +252,30 @@ function ContinueCard({
           {subLabel && (
             <div style={{ fontSize: 11.5, color: "var(--muted-2, #727272)", marginTop: 4 }}>{subLabel}</div>
           )}
+
+          {/* Quiz progress bar */}
+          {lastPageQuizStats && lastPageQuizStats.total > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ height: 3, background: "var(--surface-3)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{
+                  height: "100%",
+                  width: `${Math.min(100, (lastPageQuizStats.attempted / lastPageQuizStats.total) * 100)}%`,
+                  background: "var(--c-questoes)",
+                  borderRadius: 2,
+                }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5 }}>
+                <span style={{ fontSize: 11, color: "var(--muted-foreground)" }}>
+                  {lastPageQuizStats.attempted}/{lastPageQuizStats.total} questões
+                </span>
+                {lastPageQuizStats.attempted > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--c-questoes)" }}>
+                    {Math.round((lastPageQuizStats.correct / lastPageQuizStats.attempted) * 100)}% acerto
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         {kind !== "audio" && (
           kind === "flashcard" ? <FlashcardViz /> :
@@ -237,7 +284,11 @@ function ContinueCard({
           <ReadingViz />
         )}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 14 }}>
+
+      {/* Specialty coverage dots */}
+      {coverageRow}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 12 }}>
         {kind === "audio" ? <WaveformViz /> : <div style={{ flex: 1 }} />}
         <Link href={href} style={{
           display: "inline-flex", alignItems: "center", gap: 5,
@@ -424,15 +475,15 @@ export default async function MemberDashboardPage() {
     : null;
   const examDateLabel = activeCohort?.test_date ? fmtDate(new Date(activeCohort.test_date)) : null;
 
-  // Quiz attempts
-  let quizAttempts: { is_correct: boolean; created_at: string }[] = [];
+  // Quiz attempts — include question_id for coverage + per-page stats
+  let quizAttempts: { is_correct: boolean; created_at: string; question_id: number }[] = [];
   if (user) {
     try {
       const { data } = await admin
         .from("quiz_attempts")
-        .select("is_correct, created_at")
+        .select("is_correct, created_at, question_id")
         .eq("user_id", user.id);
-      quizAttempts = data ?? [];
+      quizAttempts = (data ?? []) as typeof quizAttempts;
     } catch { /* table not migrated yet */ }
   }
 
@@ -461,6 +512,45 @@ export default async function MemberDashboardPage() {
     }
   }
   const lastPageSpec = lastPage?.specialty_id ? specById.get(lastPage.specialty_id) : null;
+
+  // Specialty coverage + last-page quiz stats (parallel, from existing quiz_attempts data)
+  let lastPageQuizStats: { total: number; attempted: number; correct: number } | null = null;
+  const coveredSpecialtyIds = new Set<number>();
+
+  if (user && quizAttempts.length > 0) {
+    const attemptedQIds = [...new Set(quizAttempts.map((a) => a.question_id).filter(Boolean))];
+
+    const [coverageQsResult, lastPageQsResult] = await Promise.all([
+      attemptedQIds.length > 0
+        ? admin.from("quiz_questions").select("id, page_id").in("id", attemptedQIds)
+        : Promise.resolve({ data: [] as { id: number; page_id: number }[] }),
+      lastPage?.type === "h5p-quiz"
+        ? admin.from("quiz_questions").select("id").eq("page_id", lastPage.id)
+        : Promise.resolve({ data: [] as { id: number }[] }),
+    ]);
+
+    // Build specialty coverage: quiz_questions → pages → specialty_id
+    const pageIds = [...new Set((coverageQsResult.data ?? []).map((q) => q.page_id).filter(Boolean))];
+    if (pageIds.length > 0) {
+      const { data: specPages } = await admin
+        .from("pages")
+        .select("specialty_id")
+        .in("id", pageIds)
+        .not("specialty_id", "is", null);
+      for (const p of (specPages ?? [])) {
+        if (p.specialty_id) coveredSpecialtyIds.add(p.specialty_id);
+      }
+    }
+
+    // Last-page quiz stats
+    if (lastPage?.type === "h5p-quiz" && (lastPageQsResult.data ?? []).length > 0) {
+      const pageQIdSet = new Set((lastPageQsResult.data ?? []).map((q) => q.id as number));
+      const pageAttempts = quizAttempts.filter((a) => pageQIdSet.has(a.question_id));
+      const attempted = new Set(pageAttempts.map((a) => a.question_id)).size;
+      const correct = pageAttempts.filter((a) => a.is_correct).length;
+      lastPageQuizStats = { total: pageQIdSet.size, attempted, correct };
+    }
+  }
 
   const now = new Date();
   const dayLabel = `${DAY_NAMES[now.getDay()].toLowerCase()}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
@@ -643,7 +733,15 @@ export default async function MemberDashboardPage() {
         </div>
 
         {/* Continue — takes 2/3 of the row */}
-        <ContinueCard lastPage={lastPage} lastTrack={lastTrack} lastPageSpec={lastPageSpec} cardStyle={cardAlt} />
+        <ContinueCard
+          lastPage={lastPage}
+          lastTrack={lastTrack}
+          lastPageSpec={lastPageSpec}
+          cardStyle={cardAlt}
+          lastPageQuizStats={lastPageQuizStats}
+          coveredSpecialtyIds={coveredSpecialtyIds}
+          specialtiesAll={(specialtiesAll ?? []) as { id: number; name: string }[]}
+        />
       </section>
 
       {/* ── STATS STRIP ── */}
