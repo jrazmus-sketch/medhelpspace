@@ -336,8 +336,8 @@
 
 /* ── Audio lesson transcript styles ──────────────────────────────────────── */
 
-/* De-bold everything inside transcript body — WP wrapped all text in <strong> */
-.prose-transcript strong {
+/* De-bold transcript body — combined selector (0-2-1) beats .prose-content strong (0-1-1) */
+.prose-content.prose-transcript strong {
   font-weight: 400;
 }
 
@@ -348,7 +348,8 @@
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  margin: 2rem 0 1rem;
+  /* Extra top margin creates clear visual break from preceding body text */
+  margin: 3rem 0 0.75rem;
   padding: 0.5rem 1rem;
   color: #fff;
   background: var(--brand);
@@ -370,6 +371,32 @@
 /* First bloco sits flush with the container top */
 .transcript-body .bloco-header:first-child {
   margin-top: -1.25rem;
+}
+
+/* MedVoice intro brand header — reformatted from the fixed intro sentence */
+.mv-intro-block {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.mv-intro-title {
+  display: block;
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--c-medvoice);
+  line-height: 1.3;
+  margin-bottom: 0.2rem;
+}
+
+.mv-intro-sub {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--foreground);
+  opacity: 0.75;
+  margin-bottom: 0;
 }
 
 /* Collapsible transcript toggle */

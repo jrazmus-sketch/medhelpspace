@@ -11,9 +11,19 @@ const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 const BLOCO_A_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<\/span>\s*<br\s*\/?>/gi;
 const BLOCO_B_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<br\s*\/?>/gi;
 
+// Every MedVoice transcript opens with this fixed sentence — reformat as a branded header.
+// DB text: "Você está ouvindo o MedVoice – A Clínica Fala, uma experiência do MedHelpSpace Revalida."
+const MV_INTRO_RE =
+  /Você\s+está\s+ouvindo\s+o\s+(MedVoice\s*[–—-]\s*A\s+Cl[íi]nica\s+Fala),?\s*(?:uma\s+experiência\s+do\s+)(MedHelpSpace\s+Revalida)[.!]?/gi;
+
 function processHtml(html: string): string {
   return html
     .replace(INLINE_PURPLE_RE, 'class="prose-brand-color"')
+    .replace(
+      MV_INTRO_RE,
+      (_m, title, sub) =>
+        `<span class="mv-intro-block"><span class="mv-intro-title">${title.trim()}</span><span class="mv-intro-sub">${sub.trim()}</span></span>`,
+    )
     .replace(BLOCO_A_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`)
     .replace(BLOCO_B_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`);
 }
