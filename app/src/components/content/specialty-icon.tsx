@@ -2,7 +2,7 @@ import {
   Heart, Brain, Wind, Bone, Zap, Droplets, Droplet,
   FlaskConical, Shield, Sparkles, Baby, Globe,
   Stethoscope, Scissors, Lightbulb, Activity,
-  Flower2, HeartPulse,
+  Venus, Sprout,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -22,8 +22,8 @@ const SPECIALTY_ICONS: Record<string, IconConfig> = {
   infectologia:             { Icon: Shield,       stops: ["#22c55e", "#86efac"] },
   dermatologia:             { Icon: Sparkles,     stops: ["#f472b6", "#fb7185"] },
   hematologia:              { Icon: Droplet,      stops: ["#dc2626", "#f472b6"] },
-  ginecologia:              { Icon: Flower2,      stops: ["#e879f9", "#f472b6"] },
-  obstetricia:              { Icon: HeartPulse,   stops: ["#f97316", "#fbbf24"] },
+  ginecologia:              { Icon: Venus,        stops: ["#e879f9", "#f472b6"] },
+  obstetricia:              { Icon: Sprout,       stops: ["#34d399", "#6ee7b7"] },
   pediatria:                { Icon: Baby,         stops: ["#fbbf24", "#fb923c"] },
   psiquiatria:              { Icon: Lightbulb,    stops: ["#8b5cf6", "#a78bfa"] },
   "clinica-medica":         { Icon: Stethoscope,  stops: ["#64748b", "#3b82f6"] },
