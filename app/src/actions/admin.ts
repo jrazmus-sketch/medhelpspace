@@ -317,6 +317,98 @@ export async function setViewAs(mode: string) {
   revalidatePath("/app", "layout");
 }
 
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export type AnnouncementInput = {
+  title: string;
+  body_html: string | null;
+  category_id: number;
+  priority: "normal" | "urgent";
+  status: "draft" | "published" | "scheduled";
+  pinned: boolean;
+  publish_at: string;
+  cohort_id: number | null;
+};
+
+export async function createAnnouncement(data: AnnouncementInput) {
+  const { user } = await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("announcements").insert({
+    ...data,
+    created_by: user.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/notifications");
+}
+
+export async function updateAnnouncement(id: number, data: AnnouncementInput) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("announcements")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/notifications");
+  revalidatePath("/app", "layout");
+}
+
+export async function deleteAnnouncement(id: number) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("announcements").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/notifications");
+  revalidatePath("/app", "layout");
+}
+
+export async function createAnnouncementCategory(data: { slug: string; label: string; color: string }) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("announcement_categories")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .single();
+  const { error } = await admin.from("announcement_categories").insert({
+    ...data,
+    sort_order: (existing?.sort_order ?? -1) + 1,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/notifications");
+}
+
+export async function deleteAnnouncementCategory(id: number) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin.from("announcement_categories").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/notifications");
+}
+
+export async function updateSiteSetting(key: string, value: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("site_settings")
+    .upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
+  revalidatePath("/app", "layout");
+}
+
+// Member-facing — no admin guard; auth check only
+export async function markAnnouncementsRead(ids: number[]) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || ids.length === 0) return;
+  const admin = createAdminClient();
+  await admin.from("announcement_reads").upsert(
+    ids.map((announcement_id) => ({ announcement_id, user_id: user.id })),
+    { onConflict: "announcement_id,user_id" },
+  );
+}
+
 // ── Profile ───────────────────────────────────────────────────────────────────
 
 export async function updateProfile(formData: FormData) {

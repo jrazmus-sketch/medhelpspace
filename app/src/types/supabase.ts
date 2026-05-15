@@ -204,6 +204,46 @@ export interface UserWithCohort extends User {
 /** Alias for UserWithCohort */
 export type ProfileWithCohort = UserWithCohort;
 
+// ── Notifications ────────────────────────────────────────────────────────────
+
+export type AnnouncementPriority = "normal" | "urgent";
+export type AnnouncementStatus = "draft" | "published" | "scheduled";
+
+export interface AnnouncementCategory {
+  id: number;
+  slug: string;
+  label: string;
+  color: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface Announcement {
+  id: number;
+  title: string;
+  body_html: string | null;
+  category_id: number;
+  priority: AnnouncementPriority;
+  status: AnnouncementStatus;
+  pinned: boolean;
+  publish_at: string;
+  cohort_id: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnouncementRead {
+  announcement_id: number;
+  user_id: string;
+  read_at: string;
+}
+
+export interface AnnouncementWithCategory extends Announcement {
+  category: AnnouncementCategory;
+  is_read: boolean;
+}
+
 export interface DashboardData {
   user: UserWithCohort;
   specialties: Specialty[];
