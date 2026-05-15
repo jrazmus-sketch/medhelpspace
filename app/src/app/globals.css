@@ -336,41 +336,38 @@
 
 /* ── Audio lesson transcript styles ──────────────────────────────────────── */
 
-/* De-bold transcript body — combined selector (0-2-1) beats .prose-content strong (0-1-1) */
-.prose-content.prose-transcript strong {
-  font-weight: 400;
+/* De-bold transcript body -- covers paragraphs, <strong>, <b>, and WP inline bold styles */
+.prose-content.prose-transcript p,
+.prose-content.prose-transcript p strong,
+.prose-content.prose-transcript p b {
+  font-weight: 400 !important;
 }
 
-/* Bloco header: full-width purple divider bar with left-aligned label */
+/* Bloco header: branded section label with left-border accent */
 .bloco-header {
   font-family: var(--font-display, sans-serif);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  /* Extra top margin creates clear visual break from preceding body text */
   margin: 3rem 0 0.75rem;
-  padding: 0.5rem 1rem;
-  color: #fff;
-  background: var(--brand);
+  padding: 0.35rem 0 0.35rem 0.875rem;
+  color: var(--brand);
+  background: transparent;
+  border-left: 3px solid var(--brand);
   display: block;
   border-radius: 0;
 }
 
+/* Dark mode: use lighter brand purple for legibility against near-black background */
 .dark .bloco-header {
-  background: color-mix(in srgb, var(--brand) 80%, var(--c-medvoice));
-  text-shadow: 0 0 24px color-mix(in srgb, var(--c-medvoice) 55%, transparent);
+  color: #c084e8;
+  border-left-color: #c084e8;
 }
 
-/* Inside the transcript panel: break out to the panel's left/right edges */
-.transcript-body .bloco-header {
-  margin-left: -1rem;
-  margin-right: -1rem;
-}
-
-/* First bloco sits flush with the container top */
+/* Inside the transcript panel */
 .transcript-body .bloco-header:first-child {
-  margin-top: -1.25rem;
+  margin-top: 1.5rem;
 }
 
 /* MedVoice intro brand header — reformatted from the fixed intro sentence */

@@ -5,27 +5,69 @@ import { AudioPlayer } from "./audio-player";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
-// Actual MedVoice DB structure — Bloco title is a colored span followed by <br/>:
+// Bloco title is a colored span followed by <br/>:
 //   Case A: <span style="color:#7e04bf;">Bloco N – Title</span><br />  (span closes before br)
 //   Case B: <span style="color:#000000;">Bloco N – Title<br />body</span>  (br inside span)
 const BLOCO_A_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<\/span>\s*<br\s*\/?>/gi;
 const BLOCO_B_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<br\s*\/?>/gi;
 
-// Every MedVoice transcript opens with this fixed sentence — reformat as a branded header.
-// DB text: "Você está ouvindo o MedVoice – A Clínica Fala, uma experiência do MedHelpSpace Revalida."
-const MV_INTRO_RE =
-  /Você\s+está\s+ouvindo\s+o\s+(MedVoice\s*[–—-]\s*A\s+Cl[íi]nica\s+Fala),?\s*(?:uma\s+experiência\s+do\s+)(MedHelpSpace\s+Revalida)[.!]?/gi;
+// Standalone brand header that appears as its own <p> before Bloco 1:
+// <p><span color=purple><strong>MedVoice – A Clínica Fala</strong><span fw=400><br/></span><span fw=400>MedHelpSpace Revalida</span></span></p>
+const MV_STANDALONE_RE =
+  /<p[^>]*>\s*<span[^>]*>\s*<strong[^>]*>(MedVoice[^<]*?)<\/strong>(?:<span[^>]*>\s*(?:<br\s*\/?>)?\s*<\/span>)*\s*<span[^>]*>(MedHelpSpace\s+Revalida)<\/span>\s*<\/span>\s*<\/p>/gi;
+
+// The same info appears again as a sentence inside Bloco 1 — just delete it (standalone already shows it).
+const MV_INLINE_RE =
+  /Você\s+está\s+ouvindo\s+o\s+MedVoice[^<]*?Fala,\s*uma\s+experiência\s+do\s+(?:<a[^>]*>)?MedHelpSpace\s+Revalida(?:<\/a>)?[.!]?\s*/gi;
+
+// Remove &nbsp;-only paragraphs that WP inserts as spacers after the brand header
+const NBSP_P_RE = /<p[^>]*>\s*(?:&nbsp;| )\s*<\/p>/gi;
+
+// Strip full-paragraph <strong> wrapper -- WP/Divi artifact in MedVoice transcripts
+// Only matches when <strong> wraps the entire paragraph content (no text outside it)
+const PARA_BOLD_RE = /(<p(?:\s[^>]*)?>)\s*<strong(?:\s[^>]*)?>([\s\S]*?)<\/strong>\s*(<\/p>)/gi;
 
 function processHtml(html: string): string {
-  return html
+  let result = html
     .replace(INLINE_PURPLE_RE, 'class="prose-brand-color"')
+    // Format the standalone brand header paragraph at the top of each lesson
     .replace(
-      MV_INTRO_RE,
+      MV_STANDALONE_RE,
       (_m, title, sub) =>
-        `<span class="mv-intro-block"><span class="mv-intro-title">${title.trim()}</span><span class="mv-intro-sub">${sub.trim()}</span></span>`,
+        `<div class="mv-intro-block"><span class="mv-intro-title">${title.trim()}</span><span class="mv-intro-sub">${sub.trim()}</span></div>`,
     )
-    .replace(BLOCO_A_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`)
-    .replace(BLOCO_B_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`);
+    // Delete the duplicate sentence buried inside Bloco 1 body content
+    .replace(MV_INLINE_RE, "")
+    // Remove &nbsp; spacer paragraphs
+    .replace(NBSP_P_RE, "")
+    // Use <div> not <span> so the browser properly closes any enclosing <p> (prevents overlap)
+    .replace(BLOCO_A_RE, (_m, title) => `<div class="bloco-header">${title.trim()}</div>`)
+    .replace(BLOCO_B_RE, (_m, title) => `<div class="bloco-header">${title.trim()}</div>`)
+    // Strip full-paragraph bold -- WP artifact where entire transcript paragraphs are in <strong>
+    .replace(PARA_BOLD_RE, "$1$2$3");
+
+  // Hoist mv-intro-block to the very top and delete any plain-text duplicate paragraphs.
+  // WP HTML sometimes has a differently-structured copy of the title before the first Bloco
+  // header that does not match MV_STANDALONE_RE; remove it so only the formatted version shows.
+  if (result.includes('<div class="mv-intro-block">')) {
+    const introRe = /<div class="mv-intro-block">[\s\S]*?<\/div>/;
+    const introMatch = result.match(introRe);
+    if (introMatch) {
+      result = result.replace(introRe, "");
+      // Remove orphaned plain paragraphs that contain only the brand header text
+      result = result.replace(
+        /<p[^>]*>\s*(?:<[^>]+>\s*)*MedVoice[^<]*?(?:\s*<\/[^>]+>)*\s*<\/p>/gi,
+        "",
+      );
+      result = result.replace(
+        /<p[^>]*>\s*(?:<[^>]+>\s*)*MedHelpSpace\s+Revalida(?:\s*<\/[^>]+>)*\s*<\/p>/gi,
+        "",
+      );
+      result = introMatch[0] + result;
+    }
+  }
+
+  return result;
 }
 
 export async function TextLessonRenderer({
