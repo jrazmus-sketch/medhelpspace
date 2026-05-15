@@ -101,7 +101,7 @@ export async function TextLessonRenderer({
 
   return (
     <div className="flex gap-8 lg:gap-10">
-      <LessonSidebar entries={entries} activeId={activeLesson.id} />
+      <LessonSidebar entries={entries} activeId={activeLesson.id} pageId={pageId} />
 
       <div className="flex-1 min-w-0">
         {/* Section title */}
