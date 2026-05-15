@@ -312,7 +312,12 @@ const LABEL_STYLE: React.CSSProperties = {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default async function MemberDashboardPage() {
+export default async function MemberDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ especialidade?: string }>;
+}) {
+  const { especialidade: selectedSpecSlug = null } = await searchParams;
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -400,9 +405,19 @@ export default async function MemberDashboardPage() {
   const activityDates = quizAttempts.map((a) => a.created_at.split("T")[0]);
   const streak = calcStreak(activityDates);
 
-  // Specialties
-  const { data: specialtiesAll } = await admin.from("specialties").select("id, slug, name, display_order").order("display_order");
+  // Specialties + tracks (both needed for specialty grid and last-page lookup)
+  const [{ data: specialtiesAll }, { data: allTracksData }] = await Promise.all([
+    admin.from("specialties").select("id, slug, name, display_order").order("display_order"),
+    admin.from("tracks").select("id, name, slug"),
+  ]);
   const specById = new Map((specialtiesAll ?? []).map((s) => [s.id as number, s]));
+  const allTracks = allTracksData ?? [];
+  const trackBySlug = new Map(allTracks.map(t => [t.slug as string, t as { id: number; name: string; slug: string }]));
+
+  // Selected specialty (from URL query param)
+  const selectedSpec = selectedSpecSlug
+    ? (specialtiesAll ?? []).find(s => s.slug === selectedSpecSlug) ?? null
+    : null;
 
   // Last page + track
   let lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null = null;
@@ -411,11 +426,43 @@ export default async function MemberDashboardPage() {
     const { data } = await admin.from("pages").select("id, title, slug, type, specialty_id, track_id").eq("id", lastPageId).single();
     lastPage = data ?? null;
     if (lastPage?.track_id) {
-      const { data: trackData } = await admin.from("tracks").select("id, name, slug").eq("id", lastPage.track_id).single();
-      lastTrack = trackData ?? null;
+      lastTrack = allTracks.find(t => t.id === lastPage!.track_id) ?? null;
     }
   }
   const lastPageSpec = lastPage?.specialty_id ? specById.get(lastPage.specialty_id) : null;
+
+  // MedVoice page for selected specialty (direct content link, not shown in specialty hub)
+  let medvoiceSpecPage: { slug: string } | null = null;
+  if (selectedSpec) {
+    const mvTrackId = trackBySlug.get("medvoice")?.id;
+    if (mvTrackId) {
+      const { data } = await admin
+        .from("pages")
+        .select("slug")
+        .eq("specialty_id", selectedSpec.id)
+        .eq("track_id", mvTrackId)
+        .eq("status", "publish")
+        .limit(1)
+        .single();
+      medvoiceSpecPage = data ?? null;
+    }
+  }
+
+  // Study type cards for selected specialty
+  const studyCards = selectedSpec ? [
+    {
+      num: "01", name: "Questões",       desc: "Questões comentadas no estilo INEP",    Icon: ClipboardList, color: "var(--c-questoes)",   href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
+    {
+      num: "02", name: "Resumos",        desc: "Casos clínicos com raciocínio",          Icon: ScrollText,    color: "var(--c-resumos)",    href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
+    {
+      num: "03", name: "MedVoice",       desc: "Aulas em áudio, ouça onde quiser",       Icon: Mic,           color: "var(--c-medvoice)",   href: medvoiceSpecPage ? `/app/${selectedSpec.slug}/${medvoiceSpecPage.slug}` : `/app/medvoice`,   locked: false },
+    {
+      num: "04", name: "Fórmula",        desc: "Algoritmos de decisão clínica",          Icon: FlaskConical,  color: "var(--c-formula)",    href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
+    {
+      num: "05", name: "AudioCards",     desc: "Flashcards narrados para fixação",       Icon: Headphones,    color: "var(--c-audiocards)", href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
+    {
+      num: "06", name: "MedHelp 60D",   desc: daysUntilUnlock ? `Libera em ${fmtBr(daysUntilUnlock)} dias` : "Conteúdo de revisão final", Icon: Lock, color: "var(--c-medhelp60, #3a4055)", href: null, locked: true },
+  ] : [];
 
   const now = new Date();
   const dayLabel = `${DAY_NAMES[now.getDay()].toLowerCase()}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
@@ -544,42 +591,52 @@ export default async function MemberDashboardPage() {
       {/* ── SPECIALTY GRID ── */}
       {specialtiesAll && specialtiesAll.length > 0 && (
         <div className="mb-5 sm:mb-7">
-          <div style={{ ...LABEL_STYLE, marginBottom: 8 }}>Especialidades</div>
+          <div style={{ ...LABEL_STYLE, marginBottom: 8 }}>
+            Especialidades
+            {selectedSpec && (
+              <span style={{ marginLeft: 10, fontWeight: 400, letterSpacing: 0, textTransform: "none", fontSize: 11, color: "var(--muted-foreground)" }}>
+                — clique em outra ou na selecionada para limpar
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-[6px] sm:gap-2">
-            {specialtiesAll.map((spec, i) => (
-              <Link
-                key={spec.id}
-                href={`/app/${spec.slug}`}
-                style={{
-                  background: "var(--surface-1)",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "10px 12px",
-                  display: "flex",
-                  alignItems: "center",
-                  textDecoration: "none",
-                  position: "relative",
-                  overflow: "hidden",
-                  transition: "background .12s",
-                  minHeight: 42,
-                }}
-                className="group hover:bg-surface-2"
-              >
-                {/* Top accent stripe */}
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: 2,
-                  background: SPEC_ACCENT_COLORS[i % SPEC_ACCENT_COLORS.length],
-                }} />
-                <span style={{
-                  fontSize: 12.5,
-                  fontWeight: 500,
-                  color: "var(--foreground)",
-                  letterSpacing: "-.01em",
-                  lineHeight: 1.25,
-                }}>
-                  {spec.name}
-                </span>
-              </Link>
-            ))}
+            {specialtiesAll.map((spec, i) => {
+              const isSelected = selectedSpec?.slug === spec.slug;
+              return (
+                <Link
+                  key={spec.id}
+                  href={isSelected ? "/app" : `/app?especialidade=${spec.slug}`}
+                  scroll={false}
+                  style={{
+                    background: isSelected ? "color-mix(in srgb, var(--brand) 14%, var(--surface-1))" : "var(--surface-1)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "10px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    textDecoration: "none",
+                    position: "relative",
+                    overflow: "hidden",
+                    transition: "background .12s",
+                    minHeight: 42,
+                    outline: isSelected ? "1.5px solid color-mix(in srgb, var(--brand) 50%, transparent)" : "none",
+                    outlineOffset: "-1.5px",
+                  }}
+                  className={isSelected ? "" : "group hover:bg-surface-2"}
+                >
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 2,
+                    background: isSelected ? "var(--brand)" : SPEC_ACCENT_COLORS[i % SPEC_ACCENT_COLORS.length],
+                  }} />
+                  <span style={{
+                    fontSize: 12.5, fontWeight: isSelected ? 600 : 500,
+                    color: isSelected ? "var(--brand)" : "var(--foreground)",
+                    letterSpacing: "-.01em", lineHeight: 1.25,
+                  }}>
+                    {spec.name}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
@@ -679,126 +736,183 @@ export default async function MemberDashboardPage() {
         </div>
       </div>
 
-      {/* ── TRILHAS ── */}
-      <SecHeader title="Trilhas" count="05" moreLabel="Ver todas →" moreHref="/app/trilhas" />
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[10px] sm:gap-3">
-        {activeTracks.map((track, idx) => (
-          <Link
-            key={track.id}
-            href={`/app/${track.slug}`}
-            style={{
-              background: "var(--surface-1)",
-              borderRadius: "var(--radius)",
-              padding: "22px 20px 18px",
-              display: "flex", flexDirection: "column", gap: 16,
-              position: "relative", overflow: "hidden",
-              minHeight: 190, textDecoration: "none",
-              transition: "transform .15s, background .15s",
-              ...cardEnter(idx * 55),
-            }}
-            className="group hover:-translate-y-[2px] hover:bg-surface-2"
-          >
-            {/* Top color strip */}
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: track.color, borderRadius: "var(--radius) var(--radius) 0 0" }} />
-
-            {/* Corner: number + hover arrow */}
-            <span style={{ position: "absolute", right: 14, top: 14, display: "flex", alignItems: "center", gap: 3 }}>
-              <span style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)", fontWeight: 500 }}>
-                {track.num}
-              </span>
-              <ChevronRight
-                size={12} strokeWidth={2.5}
-                className="opacity-0 group-hover:opacity-50 transition-opacity"
-                style={{ color: "var(--muted-foreground)" }}
-              />
-            </span>
-
-            {/* Icon swatch */}
-            <div style={{
-              width: 38, height: 38, borderRadius: "var(--radius-sm)",
-              background: track.color,
-              color: "#16122e",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+      {/* ── TRILHAS / SPECIALTY CONTENT ── */}
+      {selectedSpec ? (
+        <>
+          {/* Selected specialty: 6 study type cards */}
+          <div style={{
+            display: "flex", alignItems: "baseline", justifyContent: "space-between",
+            marginTop: "clamp(28px, 5vw, 48px)", marginBottom: 16,
+            paddingTop: 20, borderTop: "1px solid var(--surface-2)",
+          }}>
+            <h2 style={{
+              margin: 0, fontSize: "clamp(17px, 3vw, 22px)", fontWeight: 600,
+              letterSpacing: "-.025em", display: "flex", alignItems: "baseline", gap: 10,
             }}>
-              <track.Icon size={18} strokeWidth={1.7} />
-            </div>
+              {selectedSpec.name}
+              <span style={{ fontSize: 12, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)", fontWeight: 400 }}>
+                06
+              </span>
+            </h2>
+            <Link
+              href="/app"
+              scroll={false}
+              style={{ fontSize: 13, color: "var(--muted-foreground)", textDecoration: "none" }}
+              className="hover:text-foreground transition-colors"
+            >
+              ← Todas as especialidades
+            </Link>
+          </div>
 
-            {/* Title + desc */}
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.2, color: "var(--foreground)" }}>
-                {track.name}
-              </div>
-              <div className="hidden sm:block" style={{ fontSize: 11.5, color: "var(--muted-2, #727272)", marginTop: 4, lineHeight: 1.45 }}>
-                {track.desc}
-              </div>
-            </div>
-
-            {/* Footer: progress or start CTA */}
-            <div style={{ marginTop: "auto", paddingTop: 10 }}>
-              {track.progress === 0 ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>
-                  Começar <ChevronRight size={11} strokeWidth={2.5} />
-                </span>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ flex: 1, height: 3, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${track.progress * 100}%`, background: track.color, borderRadius: 999 }} />
+          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[10px] sm:gap-3">
+            {studyCards.map((card, idx) => {
+              const inner = (
+                <>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: card.color, borderRadius: "var(--radius) var(--radius) 0 0", opacity: card.locked ? 0.4 : 1 }} />
+                  <span style={{ position: "absolute", right: 14, top: 14, fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)", fontWeight: 500 }}>
+                    {card.num}
+                  </span>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: "var(--radius-sm)", flexShrink: 0,
+                    background: card.locked ? "var(--surface-2)" : card.color,
+                    color: card.locked ? "var(--muted-2, #727272)" : "#16122e",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <card.Icon size={18} strokeWidth={1.7} />
                   </div>
-                  <div className="tabular-nums" style={{ fontSize: 11, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)" }}>
-                    {Math.round(track.progress * 100)}%
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.2, color: card.locked ? "var(--muted-2, #727272)" : "var(--foreground)" }}>
+                      {card.name}
+                    </div>
+                    <div className="hidden sm:block" style={{ fontSize: 11, color: "var(--muted-2, #727272)", marginTop: 4, lineHeight: 1.4 }}>
+                      {card.desc}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: "auto", paddingTop: 10 }}>
+                    {card.locked ? (
+                      <span style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)" }}>
+                        {daysUntilUnlock != null ? `${fmtBr(daysUntilUnlock)}d` : "bloqueado"}
+                      </span>
+                    ) : (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>
+                        Acessar <ChevronRight size={11} strokeWidth={2.5} />
+                      </span>
+                    )}
+                  </div>
+                </>
+              );
+
+              const cardBase: React.CSSProperties = {
+                background: card.locked ? "var(--surface-2)" : "var(--surface-1)",
+                borderRadius: "var(--radius)",
+                padding: "22px 20px 18px",
+                display: "flex", flexDirection: "column", gap: 14,
+                position: "relative", overflow: "hidden",
+                minHeight: 180,
+                ...cardEnter(idx * 45),
+              };
+
+              return card.locked || !card.href ? (
+                <div key={card.num} style={cardBase}>{inner}</div>
+              ) : (
+                <Link
+                  key={card.num}
+                  href={card.href}
+                  style={{ ...cardBase, textDecoration: "none", transition: "transform .15s, background .15s" }}
+                  className="group hover:-translate-y-[2px] hover:bg-surface-2"
+                >
+                  {inner}
+                </Link>
+              );
+            })}
+          </section>
+        </>
+      ) : (
+        <>
+          {/* Default: all tracks overview */}
+          <SecHeader title="Trilhas" count="05" moreLabel="Ver todas →" moreHref="/app/trilhas" />
+          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[10px] sm:gap-3">
+            {activeTracks.map((track, idx) => (
+              <Link
+                key={track.id}
+                href={`/app/${track.slug}`}
+                style={{
+                  background: "var(--surface-1)",
+                  borderRadius: "var(--radius)",
+                  padding: "22px 20px 18px",
+                  display: "flex", flexDirection: "column", gap: 16,
+                  position: "relative", overflow: "hidden",
+                  minHeight: 190, textDecoration: "none",
+                  transition: "transform .15s, background .15s",
+                  ...cardEnter(idx * 55),
+                }}
+                className="group hover:-translate-y-[2px] hover:bg-surface-2"
+              >
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: track.color, borderRadius: "var(--radius) var(--radius) 0 0" }} />
+                <span style={{ position: "absolute", right: 14, top: 14, display: "flex", alignItems: "center", gap: 3 }}>
+                  <span style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)", fontWeight: 500 }}>{track.num}</span>
+                  <ChevronRight size={12} strokeWidth={2.5} className="opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: "var(--muted-foreground)" }} />
+                </span>
+                <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: track.color, color: "#16122e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <track.Icon size={18} strokeWidth={1.7} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.2, color: "var(--foreground)" }}>{track.name}</div>
+                  <div className="hidden sm:block" style={{ fontSize: 11.5, color: "var(--muted-2, #727272)", marginTop: 4, lineHeight: 1.45 }}>{track.desc}</div>
+                </div>
+                <div style={{ marginTop: "auto", paddingTop: 10 }}>
+                  {track.progress === 0 ? (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>
+                      Começar <ChevronRight size={11} strokeWidth={2.5} />
+                    </span>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, height: 3, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${track.progress * 100}%`, background: track.color, borderRadius: 999 }} />
+                      </div>
+                      <div className="tabular-nums" style={{ fontSize: 11, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)" }}>
+                        {Math.round(track.progress * 100)}%
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </section>
+
+          {/* Em breve: locked 60D */}
+          {lockedTrack && (
+            <>
+              <SecHeader title="Em breve" />
+              <div style={{
+                display: "flex", alignItems: "center", gap: 20, padding: "20px 22px",
+                borderRadius: "var(--radius)",
+                outline: "1px dashed color-mix(in srgb, var(--foreground) 14%, transparent)",
+                outlineOffset: "-1px",
+              }}>
+                <div style={{ width: 44, height: 44, borderRadius: "var(--radius-sm)", background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-2, #727272)", flexShrink: 0 }}>
+                  <Lock size={20} strokeWidth={1.6} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-.015em", color: "var(--muted-2, #727272)" }}>{lockedTrack.name}</div>
+                  <div style={{ fontSize: 12.5, color: "var(--muted-3, #4a4a4a)", marginTop: 3, lineHeight: 1.4 }}>
+                    {lockedTrack.desc}
+                    {daysUntilUnlock != null && (
+                      <> &mdash; libera em <strong style={{ color: "var(--muted-2, #727272)" }}>{fmtBr(daysUntilUnlock)} dias</strong></>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          </Link>
-        ))}
-      </section>
-
-      {/* ── EM BREVE: locked 60D module ── */}
-      {lockedTrack && (
-        <>
-          <SecHeader title="Em breve" />
-          <div style={{
-            display: "flex", alignItems: "center", gap: 20,
-            padding: "20px 22px",
-            borderRadius: "var(--radius)",
-            outline: "1px dashed color-mix(in srgb, var(--foreground) 14%, transparent)",
-            outlineOffset: "-1px",
-          }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: "var(--radius-sm)",
-              background: "var(--surface-2)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "var(--muted-2, #727272)", flexShrink: 0,
-            }}>
-              <Lock size={20} strokeWidth={1.6} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-.015em", color: "var(--muted-2, #727272)" }}>
-                {lockedTrack.name}
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--muted-3, #4a4a4a)", marginTop: 3, lineHeight: 1.4 }}>
-                {lockedTrack.desc}
-                {daysUntilUnlock != null && (
-                  <> &mdash; libera em <strong style={{ color: "var(--muted-2, #727272)" }}>{fmtBr(daysUntilUnlock)} dias</strong></>
+                {lockedTrack.unlockIn != null && (
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div className="tabular-nums" style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 600, letterSpacing: "-.04em", lineHeight: 1, color: "var(--muted-2, #727272)" }}>
+                      {fmtBr(lockedTrack.unlockIn)}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: "var(--muted-3, #4a4a4a)", marginTop: 4, letterSpacing: ".06em", textTransform: "uppercase" }}>dias</div>
+                  </div>
                 )}
               </div>
-            </div>
-            {lockedTrack.unlockIn != null && (
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div className="tabular-nums" style={{
-                  fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 600,
-                  letterSpacing: "-.04em", lineHeight: 1,
-                  color: "var(--muted-2, #727272)",
-                }}>
-                  {fmtBr(lockedTrack.unlockIn)}
-                </div>
-                <div style={{ fontSize: 10.5, color: "var(--muted-3, #4a4a4a)", marginTop: 4, letterSpacing: ".06em", textTransform: "uppercase" }}>
-                  dias
-                </div>
-              </div>
-            )}
-          </div>
+            </>
+          )}
         </>
       )}
 
