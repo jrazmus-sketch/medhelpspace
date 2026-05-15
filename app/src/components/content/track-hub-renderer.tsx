@@ -22,7 +22,7 @@ export async function TrackHubRenderer({
       .order("title"),
     admin
       .from("specialties")
-      .select("id, slug, name, display_order")
+      .select("id, slug, name, display_order, group_label")
       .order("display_order"),
   ]);
 
@@ -32,12 +32,12 @@ export async function TrackHubRenderer({
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
 
-  type Spec = { id: number; slug: string; name: string; display_order: number };
+  type Spec = { id: number; slug: string; name: string; display_order: number; group_label: string | null };
   const specMap = new Map<number, Spec>(
     (specialties ?? []).map((s) => [s.id as number, s as Spec]),
   );
 
-  // Group by specialty, preserving display_order
+  // Group pages by specialty, preserving display_order
   const groupMap = new Map<number, { spec: Spec; pages: typeof pages }>();
   for (const page of pages) {
     const spec = specMap.get(page.specialty_id!);
@@ -50,29 +50,69 @@ export async function TrackHubRenderer({
     (a, b) => (a.spec.display_order ?? 99) - (b.spec.display_order ?? 99),
   );
 
-  // One page per specialty → specialty icon grid (no redundant section headers)
+  // One page per specialty → section-grouped specialty icon grid
   const isFlat = groups.every((g) => g.pages.length === 1);
 
   if (isFlat) {
+    // Build super-groups by group_label; ungrouped specialties use their own name
+    type SuperGroup = { label: string; minOrder: number; items: { spec: Spec; href: string }[] };
+    const superMap = new Map<string, SuperGroup>();
+
+    for (const { spec, pages: gPages } of groups) {
+      const label = spec.group_label ?? spec.name;
+      if (!superMap.has(label)) {
+        superMap.set(label, { label, minOrder: spec.display_order, items: [] });
+      }
+      superMap.get(label)!.items.push({
+        spec,
+        href: `/app/${spec.slug}/${gPages[0].slug}`,
+      });
+    }
+
+    const superGroups = [...superMap.values()].sort((a, b) => a.minOrder - b.minOrder);
+
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {groups.map(({ spec, pages: groupPages }) => (
-          <SpecialtyCard
-            key={spec.id}
-            spec={spec}
-            href={`/app/${spec.slug}/${groupPages[0].slug}`}
-          />
+      <div className="space-y-10">
+        {superGroups.map((sg) => (
+          <section key={sg.label}>
+            <h2
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--muted-2, #727272)",
+                marginBottom: 14,
+              }}
+            >
+              {sg.label}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {sg.items.map(({ spec, href }) => (
+                <SpecialtyCard key={spec.id} spec={spec} href={href} />
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     );
   }
 
-  // Multiple pages per some specialties → grouped sections
+  // Multiple pages per some specialties → grouped sections with page cards
   return (
     <div className="space-y-8">
       {groups.map(({ spec, pages: groupPages }) => (
         <section key={spec.id}>
-          <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <h2
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--muted-2, #727272)",
+              marginBottom: 14,
+            }}
+          >
             {spec.name}
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
