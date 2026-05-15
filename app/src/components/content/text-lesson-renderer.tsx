@@ -5,9 +5,9 @@ import { AudioPlayer } from "./audio-player";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
-// Matches lines like: <p><strong>Bloco 1 – Título</strong></p>  (various dash chars, optional strong)
+// Matches: <p><strong>Bloco 1 – Título da Seção</strong></p>  (various dash chars, strong optional)
 const BLOCO_RE =
-  /<p[^>]*>(?:<strong[^>]*>)?\s*(Bloco\s+\d+\s*[–—\-][^<]{1,120?}?)\s*(?:<\/strong>)?<\/p>/gi;
+  /<p[^>]*>(?:<strong[^>]*>)?\s*(Bloco\s+\d+\s*[–—-][^<]{1,120})\s*(?:<\/strong>)?<\/p>/gi;
 
 function processHtml(html: string): string {
   return html

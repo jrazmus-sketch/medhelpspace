@@ -341,27 +341,32 @@
   font-weight: 400;
 }
 
-/* Bloco header: styled section titles converted from "Bloco N – Name" paragraphs */
+/* Bloco header: full-width purple divider bar with left-aligned label */
 .bloco-header {
   font-family: var(--font-display, sans-serif);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  padding: 0.45rem 0.9rem;
-  border-radius: var(--radius);
-  margin: 2rem 0 0.75rem;
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 7%, var(--surface-1));
-  border-left: 3px solid var(--brand);
+  /* Extend edge-to-edge inside .transcript-body (which has 1rem horizontal padding) */
+  margin: 2rem -1rem 1rem;
+  padding: 0.5rem 1rem;
+  color: #fff;
+  background: var(--brand);
   display: block;
+  border-radius: 0;
 }
 
 .dark .bloco-header {
-  color: rgba(255, 255, 255, 0.92);
-  background: color-mix(in srgb, var(--c-medvoice) 22%, var(--surface-1));
-  border-left-color: var(--c-medvoice);
-  text-shadow: 0 0 20px color-mix(in srgb, var(--c-medvoice) 65%, transparent);
+  /* Slightly warmer purple in dark so it pops off the dark surface */
+  background: color-mix(in srgb, var(--brand) 80%, var(--c-medvoice));
+  text-shadow: 0 0 24px color-mix(in srgb, var(--c-medvoice) 55%, transparent);
+}
+
+/* First bloco in a section sits flush with the top of the container */
+.transcript-body .bloco-header:first-child,
+.prose-transcript .bloco-header:first-child {
+  margin-top: -1.25rem;
 }
 
 /* Collapsible transcript toggle */
