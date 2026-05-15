@@ -6,16 +6,23 @@ import { LessonCompleteButton } from "./lesson-complete-button";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
-// Bloco title is a colored span followed by <br/>:
-//   Case A: <span style="color:#7e04bf;">Bloco N – Title</span><br />  (span closes before br)
-//   Case B: <span style="color:#000000;">Bloco N – Title<br />body</span>  (br inside span)
+// Bloco title variants — WP/Divi produces several structures depending on how the editor saved it:
+//   A: <span>Bloco N – Title</span><br/>           (span closes, br follows directly)
+//   B: <span>Bloco N – Title<br/>body</span>       (br inside open span)
+//   C: <span><strong>Title</strong></span><br/>    (strong wraps title inside span)
+//   D: <span>Title</span><span><br/>               (br is in the next sibling span)
 const BLOCO_A_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<\/span>\s*<br\s*\/?>/gi;
 const BLOCO_B_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<br\s*\/?>/gi;
+const BLOCO_C_RE = /<span[^>]*>\s*<strong[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<\/strong>\s*<\/span>\s*<br\s*\/?>/gi;
+const BLOCO_D_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<\/span>\s*<span[^>]*>\s*<br\s*\/?>/gi;
 
-// Standalone brand header that appears as its own <p> before Bloco 1:
-// <p><span color=purple><strong>MedVoice – A Clínica Fala</strong><span fw=400><br/></span><span fw=400>MedHelpSpace Revalida</span></span></p>
+// Standalone brand header — two WP structures:
+//   Original: <p><span><strong>MedVoice</strong><span fw=400><br/></span><span fw=400>MedHelpSpace Revalida</span></span></p>
+//   Alt:      <p><span><strong>MedVoice<br/></strong>MedHelpSpace Revalida</span></p>  (br inside strong, subtitle is bare text)
 const MV_STANDALONE_RE =
   /<p[^>]*>\s*<span[^>]*>\s*<strong[^>]*>(MedVoice[^<]*?)<\/strong>(?:<span[^>]*>\s*(?:<br\s*\/?>)?\s*<\/span>)*\s*<span[^>]*>(MedHelpSpace\s+Revalida)<\/span>\s*<\/span>\s*<\/p>/gi;
+const MV_STANDALONE_ALT_RE =
+  /<p[^>]*>\s*<span[^>]*>\s*<strong[^>]*>(MedVoice[^<]*?)<br\s*\/?><\/strong>(MedHelpSpace\s+Revalida)<\/span>\s*<\/p>/gi;
 
 // The same info appears again as a sentence inside Bloco 1 — just delete it (standalone already shows it).
 const MV_INLINE_RE =
@@ -29,21 +36,25 @@ const NBSP_P_RE = /<p[^>]*>\s*(?:&nbsp;| )\s*<\/p>/gi;
 const PARA_BOLD_RE = /(<p(?:\s[^>]*)?>)\s*<strong(?:\s[^>]*)?>([\s\S]*?)<\/strong>\s*(<\/p>)/gi;
 
 function processHtml(html: string): string {
+  const INTRO_REPLACEMENT = (_m: string, title: string, sub: string) =>
+    `<div class="mv-intro-block"><span class="mv-intro-title">${title.trim()}</span><span class="mv-intro-sub">${sub.trim()}</span></div>`;
+  const BLOCO_REPLACEMENT = (_m: string, title: string) =>
+    `<div class="bloco-header">${title.trim()}</div>`;
+
   let result = html
     .replace(INLINE_PURPLE_RE, 'class="prose-brand-color"')
-    // Format the standalone brand header paragraph at the top of each lesson
-    .replace(
-      MV_STANDALONE_RE,
-      (_m, title, sub) =>
-        `<div class="mv-intro-block"><span class="mv-intro-title">${title.trim()}</span><span class="mv-intro-sub">${sub.trim()}</span></div>`,
-    )
+    // Format the standalone brand header (both WP structures)
+    .replace(MV_STANDALONE_RE, INTRO_REPLACEMENT)
+    .replace(MV_STANDALONE_ALT_RE, INTRO_REPLACEMENT)
     // Delete the duplicate sentence buried inside Bloco 1 body content
     .replace(MV_INLINE_RE, "")
     // Remove &nbsp; spacer paragraphs
     .replace(NBSP_P_RE, "")
-    // Use <div> not <span> so the browser properly closes any enclosing <p> (prevents overlap)
-    .replace(BLOCO_A_RE, (_m, title) => `<div class="bloco-header">${title.trim()}</div>`)
-    .replace(BLOCO_B_RE, (_m, title) => `<div class="bloco-header">${title.trim()}</div>`)
+    // Bloco headers — run C and D before A/B so more-specific patterns win
+    .replace(BLOCO_C_RE, BLOCO_REPLACEMENT)
+    .replace(BLOCO_D_RE, BLOCO_REPLACEMENT)
+    .replace(BLOCO_A_RE, BLOCO_REPLACEMENT)
+    .replace(BLOCO_B_RE, BLOCO_REPLACEMENT)
     // Strip full-paragraph bold -- WP artifact where entire transcript paragraphs are in <strong>
     .replace(PARA_BOLD_RE, "$1$2$3");
 
