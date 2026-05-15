@@ -41,29 +41,29 @@ const GREETINGS: { lines: [string, string]; from: number; to: number; maxDays?: 
   { lines: ["7 dias.",        "Foco total."],        from: 0,  to: 24, maxDays: 7  },
   { lines: ["Última semana.", "É agora."],           from: 0,  to: 24, maxDays: 7  },
   // Urgência — últimos 30 dias
-  { lines: ["Reta final,",    "doctor."],            from: 0,  to: 24, maxDays: 30 },
+  { lines: ["Reta final,",    "doutor."],            from: 0,  to: 24, maxDays: 30 },
   { lines: ["30 dias.",       "Bora revisar."],      from: 0,  to: 24, maxDays: 30 },
   { lines: ["Reta final.",    "Vai fundo."],         from: 0,  to: 24, maxDays: 30 },
   // Madrugada (0–5)
   { lines: ["Ainda acordado?", "Respeito."],         from: 0,  to: 6  },
   { lines: ["Dedicação",       "total."],            from: 0,  to: 6  },
   // Manhã (6–11)
-  { lines: ["Bom dia,",        "doctor."],           from: 6,  to: 12 },
+  { lines: ["Bom dia,",        "doutor."],           from: 6,  to: 12 },
   { lines: ["Manhã de",        "revisão."],          from: 6,  to: 12 },
   { lines: ["Bom dia!",        "Bora estudar."],     from: 6,  to: 12 },
   // Tarde (12–17)
-  { lines: ["Boa tarde,",      "doctor."],           from: 12, to: 18 },
+  { lines: ["Boa tarde,",      "doutor."],           from: 12, to: 18 },
   { lines: ["Tarde boa",       "para revisar."],     from: 12, to: 18 },
-  { lines: ["Continue",        "esta tarde."],       from: 12, to: 18 },
+  { lines: ["Em frente,",      "esta tarde."],       from: 12, to: 18 },
   // Noite (18–23)
-  { lines: ["Boa noite,",      "doctor."],           from: 18, to: 24 },
+  { lines: ["Boa noite,",      "doutor."],           from: 18, to: 24 },
   { lines: ["Noite de",        "estudo."],           from: 18, to: 24 },
   { lines: ["Bora revisar",    "esta noite."],       from: 18, to: 24 },
   // Anytime
   { lines: ["Bom te ver",      "de volta."],         from: 0,  to: 24 },
   { lines: ["Que bom",         "te ver aqui."],      from: 0,  to: 24 },
   { lines: ["De volta",        "aos estudos."],      from: 0,  to: 24 },
-  { lines: ["Vamos nessa,",    "doctor."],           from: 0,  to: 24 },
+  { lines: ["Vamos nessa,",    "doutor."],           from: 0,  to: 24 },
 ];
 
 function pickGreeting(now: Date, examDays: number | null): [string, string] {
