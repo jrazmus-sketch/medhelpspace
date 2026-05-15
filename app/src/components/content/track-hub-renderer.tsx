@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { Card, CardContent } from "@/components/ui/card";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export async function TrackHubRenderer({
@@ -40,9 +42,7 @@ export async function TrackHubRenderer({
   for (const page of pages) {
     const spec = specMap.get(page.specialty_id!);
     if (!spec) continue;
-    if (!groupMap.has(spec.id)) {
-      groupMap.set(spec.id, { spec, pages: [] });
-    }
+    if (!groupMap.has(spec.id)) groupMap.set(spec.id, { spec, pages: [] });
     groupMap.get(spec.id)!.pages.push(page);
   }
 
@@ -50,23 +50,24 @@ export async function TrackHubRenderer({
     (a, b) => (a.spec.display_order ?? 99) - (b.spec.display_order ?? 99),
   );
 
-  if (groups.length <= 1) {
+  // One page per specialty → specialty icon grid (no redundant section headers)
+  const isFlat = groups.every((g) => g.pages.length === 1);
+
+  if (isFlat) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-        {pages.map((page) => {
-          const spec = specMap.get(page.specialty_id!);
-          return spec ? (
-            <PageCard
-              key={page.id}
-              label={page.title}
-              href={`/app/${spec.slug}/${page.slug}`}
-            />
-          ) : null;
-        })}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {groups.map(({ spec, pages: groupPages }) => (
+          <SpecialtyCard
+            key={spec.id}
+            spec={spec}
+            href={`/app/${spec.slug}/${groupPages[0].slug}`}
+          />
+        ))}
       </div>
     );
   }
 
+  // Multiple pages per some specialties → grouped sections
   return (
     <div className="space-y-8">
       {groups.map(({ spec, pages: groupPages }) => (
@@ -86,6 +87,61 @@ export async function TrackHubRenderer({
         </section>
       ))}
     </div>
+  );
+}
+
+function SpecialtyCard({
+  spec,
+  href,
+}: {
+  spec: { slug: string; name: string };
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      style={{
+        background: "var(--surface-1)",
+        borderRadius: "var(--radius)",
+        padding: "18px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        textDecoration: "none",
+        outline: "1px solid var(--surface-2)",
+        outlineOffset: "-1px",
+        transition: "background .12s",
+      }}
+      className="hover:bg-surface-2 group"
+    >
+      <SpecialtyIcon specialtySlug={spec.slug} size={28} />
+      <div>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            letterSpacing: "-.01em",
+            color: "var(--foreground)",
+            lineHeight: 1.25,
+          }}
+        >
+          {spec.name}
+        </div>
+        <div
+          style={{
+            marginTop: 6,
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            fontSize: 12,
+            fontWeight: 500,
+            color: "var(--brand)",
+          }}
+        >
+          Ouvir <ChevronRight size={10} strokeWidth={2.5} />
+        </div>
+      </div>
+    </Link>
   );
 }
 
