@@ -3,8 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import {
   ClipboardList, ScrollText, Mic, FlaskConical, Headphones,
-  Lock, ChevronRight, Bell,
+  Lock, ChevronRight,
 } from "lucide-react";
+import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import type { Cohort, CohortModuleAccess } from "@/types/supabase";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -537,59 +538,8 @@ export default async function MemberDashboardPage() {
         </div>
       </section>
 
-      {/* ── NOTIFICATION WIREFRAME ── */}
-      <div style={{
-        display: "flex", alignItems: "flex-start", gap: 14,
-        padding: "14px 18px",
-        borderRadius: "var(--radius)",
-        background: "color-mix(in srgb, var(--brand) 5%, transparent)",
-        border: "1px dashed color-mix(in srgb, var(--brand) 32%, transparent)",
-        borderLeft: "3px solid var(--brand)",
-        marginBottom: 20,
-        position: "relative",
-      }}>
-        {/* WIREFRAME label */}
-        <div style={{
-          position: "absolute", top: 9, right: 50,
-          fontSize: 8.5, fontFamily: "var(--font-geist-mono)",
-          letterSpacing: ".18em", textTransform: "uppercase",
-          color: "color-mix(in srgb, var(--brand) 45%, transparent)",
-          fontWeight: 700,
-        }}>
-          WIREFRAME
-        </div>
-
-        {/* Icon */}
-        <div style={{
-          width: 34, height: 34, borderRadius: "var(--radius-sm)", flexShrink: 0,
-          background: "color-mix(in srgb, var(--brand) 14%, transparent)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "var(--brand)",
-        }}>
-          <Bell size={16} strokeWidth={1.6} />
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minWidth: 0, paddingRight: 40 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--foreground)", letterSpacing: "-.01em", marginBottom: 3 }}>
-            Nova atualização do MedHelp Space
-          </div>
-          <div style={{ fontSize: 12.5, color: "var(--muted-foreground)", lineHeight: 1.55 }}>
-            Novos conteúdos de Cardiologia foram adicionados. Confira os resumos e simulados atualizados para sua prova.
-          </div>
-        </div>
-
-        {/* Timestamp + dismiss */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
-          <div style={{
-            width: 22, height: 22, borderRadius: "50%",
-            background: "var(--surface-2)", border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "var(--muted-foreground)", fontSize: 14, cursor: "pointer",
-          }}>×</div>
-          <div style={{ fontSize: 10.5, color: "var(--muted-3, #4a4a4a)", whiteSpace: "nowrap" }}>há 2 horas</div>
-        </div>
-      </div>
+      {/* ── NOTIFICATIONS ── */}
+      <NotificationStrip />
 
       {/* ── SPECIALTY GRID ── */}
       {specialtiesAll && specialtiesAll.length > 0 && (
