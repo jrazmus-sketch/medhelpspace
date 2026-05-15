@@ -7,6 +7,7 @@ import Link from "next/link";
 
 export type SuperGroupData = {
   label: string;
+  iconSlug: string;
   items: {
     spec: { id: number; slug: string; name: string };
     href: string;
@@ -55,17 +56,20 @@ export function TrackHubAccordion({ groups }: { groups: SuperGroupData[] }) {
                 textAlign: "left",
               }}
             >
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  color: "var(--foreground)",
-                }}
-              >
-                {group.label}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <SpecialtyIcon specialtySlug={group.iconSlug} size={22} />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "var(--foreground)",
+                  }}
+                >
+                  {group.label}
+                </span>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
                 <span
                   style={{

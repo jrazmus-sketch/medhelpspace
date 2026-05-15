@@ -53,13 +53,16 @@ export async function TrackHubRenderer({
   const isFlat = groups.every((g) => g.pages.length === 1);
 
   if (isFlat) {
-    type SuperGroup = { label: string; minOrder: number; items: { spec: Spec; href: string }[] };
+    type SuperGroup = { label: string; iconSlug: string; minOrder: number; items: { spec: Spec; href: string }[] };
     const superMap = new Map<string, SuperGroup>();
 
     for (const { spec, pages: gPages } of groups) {
       const label = spec.group_label ?? spec.name;
       if (!superMap.has(label)) {
-        superMap.set(label, { label, minOrder: spec.display_order, items: [] });
+        // Groups with 1 specialty use that specialty's icon.
+        // Multi-specialty groups (Clínica Médica) use the "clinica-medica" icon.
+        const iconSlug = spec.group_label ? "clinica-medica" : spec.slug;
+        superMap.set(label, { label, iconSlug, minOrder: spec.display_order, items: [] });
       }
       superMap.get(label)!.items.push({ spec, href: `/app/${spec.slug}/${gPages[0].slug}` });
     }
