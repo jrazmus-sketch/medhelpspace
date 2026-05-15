@@ -7,6 +7,7 @@ import { FlashcardRenderer } from "@/components/content/flashcard-renderer";
 import { MemorecardsRenderer } from "@/components/content/memorecards-renderer";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { PageTracker } from "@/components/content/page-tracker";
+import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { notFound } from "next/navigation";
 
 export default async function ContentPage({
@@ -16,7 +17,7 @@ export default async function ContentPage({
   params: Promise<{ specialty: string; slug: string }>;
   searchParams: Promise<{ s?: string }>;
 }) {
-  const { slug } = await params;
+  const { slug, specialty } = await params;
   const { s } = await searchParams;
   const admin = createAdminClient();
 
@@ -36,7 +37,10 @@ export default async function ContentPage({
       <Breadcrumbs className="mb-6" />
 
       <header className="mb-8">
-        <h1 className="text-3xl font-bold leading-tight">{page.title}</h1>
+        <div className="flex items-center gap-3">
+          <SpecialtyIcon specialtySlug={specialty} size={38} />
+          <h1 className="text-3xl font-bold leading-tight">{page.title}</h1>
+        </div>
       </header>
 
       <PageBody
