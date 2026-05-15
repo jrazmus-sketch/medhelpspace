@@ -334,6 +334,95 @@
   color: var(--foreground) !important;
 }
 
+/* ── Audio lesson transcript styles ──────────────────────────────────────── */
+
+/* De-bold everything inside transcript body — WP wrapped all text in <strong> */
+.prose-transcript strong {
+  font-weight: 400;
+}
+
+/* Bloco header: styled section titles converted from "Bloco N – Name" paragraphs */
+.bloco-header {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+  margin: 2rem 0 0.75rem;
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-1));
+  border-left: 3px solid var(--brand);
+  display: block;
+}
+
+.dark .bloco-header {
+  color: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--c-medvoice) 22%, var(--surface-1));
+  border-left-color: var(--c-medvoice);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--c-medvoice) 65%, transparent);
+}
+
+/* Collapsible transcript toggle */
+.transcript-toggle {
+  margin-top: 1.5rem;
+}
+
+.transcript-toggle summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  transition: color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.transcript-toggle summary::-webkit-details-marker { display: none; }
+
+.transcript-toggle summary:hover {
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--c-medvoice) 40%, var(--border));
+}
+
+.transcript-toggle[open] summary {
+  color: var(--foreground);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--c-medvoice) 6%, var(--surface-1));
+}
+
+.transcript-toggle .transcript-body {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+  padding: 1.25rem 1rem 1rem;
+  background: var(--surface-1);
+}
+
+/* Chevron indicator via content on summary */
+.transcript-toggle summary::after {
+  content: "▸";
+  margin-left: auto;
+  font-size: 0.65rem;
+  opacity: 0.5;
+  transition: transform 0.2s;
+}
+
+.transcript-toggle[open] summary::after {
+  transform: rotate(90deg);
+}
+
 /* ── Track signature colors ───────────────────────────────────────────────── */
 :root {
   --c-questoes:   #7c3aed;

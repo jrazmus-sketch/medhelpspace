@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LessonSidebar } from "./lesson-sidebar";
+import { AudioPlayer } from "./audio-player";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
+// Matches lines like: <p><strong>Bloco 1 – Título</strong></p>  (various dash chars, optional strong)
+const BLOCO_RE =
+  /<p[^>]*>(?:<strong[^>]*>)?\s*(Bloco\s+\d+\s*[–—\-][^<]{1,120?}?)\s*(?:<\/strong>)?<\/p>/gi;
+
 function processHtml(html: string): string {
-  return html.replace(INLINE_PURPLE_RE, 'class="prose-brand-color"');
+  return html
+    .replace(INLINE_PURPLE_RE, 'class="prose-brand-color"')
+    .replace(BLOCO_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`);
 }
 
 export async function TextLessonRenderer({
@@ -47,19 +54,28 @@ export async function TextLessonRenderer({
 
         {/* Audio player */}
         {activeLesson.audio_url && (
-          <audio
-            controls
-            src={activeLesson.audio_url}
-            className="w-full mb-5 rounded-lg"
-          />
+          <AudioPlayer src={activeLesson.audio_url} title="MedVoice · Áudio" />
         )}
 
         {/* Transcript */}
         {activeLesson.body_html ? (
-          <div
-            className="prose-content"
-            dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
-          />
+          activeLesson.audio_url ? (
+            /* Audio lesson: transcript collapsed by default */
+            <details className="transcript-toggle">
+              <summary>Transcrição do áudio</summary>
+              <div className="transcript-body">
+                <div
+                  className="prose-content prose-transcript"
+                  dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
+                />
+              </div>
+            </details>
+          ) : (
+            <div
+              className="prose-content"
+              dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
+            />
+          )
         ) : (
           <p className="text-muted-foreground text-sm italic">Conteúdo em preparação.</p>
         )}
