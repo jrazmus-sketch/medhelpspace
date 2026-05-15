@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LessonSidebar } from "./lesson-sidebar";
 
@@ -7,7 +8,13 @@ function processHtml(html: string): string {
   return html.replace(INLINE_PURPLE_RE, 'class="prose-brand-color"');
 }
 
-export async function TextLessonRenderer({ pageId }: { pageId: number }) {
+export async function TextLessonRenderer({
+  pageId,
+  selectedLessonId,
+}: {
+  pageId: number;
+  selectedLessonId?: number;
+}) {
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
     .from("lessons")
@@ -21,47 +28,74 @@ export async function TextLessonRenderer({ pageId }: { pageId: number }) {
 
   const entries = lessons.map((l) => ({ id: l.id, title: l.title }));
 
+  const activeIdx = selectedLessonId
+    ? Math.max(0, lessons.findIndex((l) => l.id === selectedLessonId))
+    : 0;
+  const activeLesson = lessons[activeIdx];
+  const prevLesson = activeIdx > 0 ? lessons[activeIdx - 1] : null;
+  const nextLesson = activeIdx < lessons.length - 1 ? lessons[activeIdx + 1] : null;
+
   return (
     <div className="flex gap-8 lg:gap-10">
-      <LessonSidebar entries={entries} />
+      <LessonSidebar entries={entries} activeId={activeLesson.id} />
+
       <div className="flex-1 min-w-0">
-        {lessons.map((lesson, i) => (
-          <section
-            key={lesson.id}
-            id={`section-${lesson.id}`}
-            className="mb-12 scroll-mt-24"
-          >
-            <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-brand text-foreground">
-              {lesson.title}
-            </h2>
-            {lesson.audio_url && (
-              <audio
-                controls
-                src={lesson.audio_url}
-                className="w-full mb-5 rounded-lg"
-              />
-            )}
-            {lesson.body_html ? (
-              <div
-                className="prose-content"
-                dangerouslySetInnerHTML={{ __html: processHtml(lesson.body_html) }}
-              />
-            ) : (
-              <p className="text-muted-foreground text-sm italic">Conteúdo em preparação.</p>
-            )}
-            {i < lessons.length - 1 && (
-              <div className="mt-8 pt-6 border-t border-border">
-                <a
-                  href={`#section-${lessons[i + 1].id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:opacity-80 transition-opacity"
-                >
-                  Próxima seção: {lessons[i + 1].title}
-                  <span aria-hidden="true">→</span>
-                </a>
-              </div>
-            )}
-          </section>
-        ))}
+        {/* Section title */}
+        <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-brand text-foreground">
+          {activeLesson.title}
+        </h2>
+
+        {/* Audio player */}
+        {activeLesson.audio_url && (
+          <audio
+            controls
+            src={activeLesson.audio_url}
+            className="w-full mb-5 rounded-lg"
+          />
+        )}
+
+        {/* Transcript */}
+        {activeLesson.body_html ? (
+          <div
+            className="prose-content"
+            dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
+          />
+        ) : (
+          <p className="text-muted-foreground text-sm italic">Conteúdo em preparação.</p>
+        )}
+
+        {/* Prev / Next navigation */}
+        <div className="mt-10 pt-6 border-t border-border flex items-center justify-between gap-4">
+          {prevLesson ? (
+            <Link
+              href={`?s=${prevLesson.id}`}
+              scroll={false}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-w-0 max-w-[42%]"
+            >
+              <span className="text-brand shrink-0">←</span>
+              <span className="truncate">{prevLesson.title}</span>
+            </Link>
+          ) : (
+            <div />
+          )}
+
+          <span className="text-xs text-muted-foreground font-mono shrink-0 tabular-nums">
+            {activeIdx + 1} / {lessons.length}
+          </span>
+
+          {nextLesson ? (
+            <Link
+              href={`?s=${nextLesson.id}`}
+              scroll={false}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-w-0 max-w-[42%] justify-end"
+            >
+              <span className="truncate">{nextLesson.title}</span>
+              <span className="text-brand shrink-0">→</span>
+            </Link>
+          ) : (
+            <span className="text-sm text-muted-foreground">Concluído ✓</span>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,62 +1,51 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
 
 interface SidebarEntry {
   id: number;
   title: string;
 }
 
-function useActiveSection(entries: SidebarEntry[]): number | null {
-  const [activeId, setActiveId] = useState<number | null>(entries[0]?.id ?? null);
-
-  useEffect(() => {
-    if (entries.length === 0) return;
-    const observer = new IntersectionObserver(
-      (obs) => {
-        for (const entry of obs) {
-          if (entry.isIntersecting) {
-            const id = parseInt(entry.target.id.replace("section-", ""), 10);
-            setActiveId(id);
-            break;
-          }
-        }
-      },
-      { rootMargin: "0px 0px -60% 0px", threshold: 0 },
-    );
-    for (const e of entries) {
-      const el = document.getElementById(`section-${e.id}`);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, [entries]);
-
-  return activeId;
-}
-
-export function LessonSidebar({ entries }: { entries: SidebarEntry[] }) {
-  const activeId = useActiveSection(entries);
+export function LessonSidebar({
+  entries,
+  activeId,
+}: {
+  entries: SidebarEntry[];
+  activeId: number;
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navList = (
     <ul className="space-y-0.5">
-      {entries.map((e) => (
-        <li key={e.id}>
-          <a
-            href={`#section-${e.id}`}
-            onClick={() => setMobileOpen(false)}
-            className={[
-              "block text-sm leading-snug py-1.5 px-2 rounded-md transition-colors",
-              activeId === e.id
-                ? "bg-brand-muted text-brand font-medium"
-                : "text-muted-foreground hover:text-foreground hover:bg-surface-2",
-            ].join(" ")}
-          >
-            {e.title}
-          </a>
-        </li>
-      ))}
+      {entries.map((e, i) => {
+        const isActive = e.id === activeId;
+        return (
+          <li key={e.id}>
+            <Link
+              href={`?s=${e.id}`}
+              scroll={false}
+              onClick={() => setMobileOpen(false)}
+              className={[
+                "flex items-center gap-2 text-sm leading-snug py-1.5 px-2 rounded-md transition-colors",
+                isActive
+                  ? "bg-brand-muted text-brand font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-surface-2",
+              ].join(" ")}
+            >
+              <span
+                className="shrink-0 tabular-nums font-mono"
+                style={{ fontSize: 10, opacity: isActive ? 0.7 : 0.4, minWidth: "1.5ch" }}
+              >
+                {i + 1}
+              </span>
+              {e.title}
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 
@@ -78,9 +67,9 @@ export function LessonSidebar({ entries }: { entries: SidebarEntry[] }) {
         )}
       </div>
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — sticky, scrolls independently if list is long */}
       <nav className="hidden lg:block w-52 shrink-0">
-        <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
+        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Seções
           </p>
