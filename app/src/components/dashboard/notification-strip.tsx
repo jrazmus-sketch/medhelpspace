@@ -96,7 +96,7 @@ export function NotificationStrip() {
             color: "var(--brand)", fontFamily: "var(--font-geist-mono)",
             whiteSpace: "nowrap",
           }}>
-            Novidades
+            Notificações
           </span>
           {newCount > 0 && (
             <span style={{
