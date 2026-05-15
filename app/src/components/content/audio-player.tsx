@@ -23,10 +23,13 @@ function fmt(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ src, title }: { src: string; title?: string }) {
+export function AudioPlayer({ src, title, lessonId }: { src: string; title?: string; lessonId?: number }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
+  const completedFiredRef = useRef(false);
+  const lessonIdRef = useRef(lessonId);
+  lessonIdRef.current = lessonId;
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -36,7 +39,20 @@ export function AudioPlayer({ src, title }: { src: string; title?: string }) {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onTime = () => setCurrentTime(audio.currentTime);
+    const onTime = () => {
+      setCurrentTime(audio.currentTime);
+      if (
+        lessonIdRef.current != null &&
+        !completedFiredRef.current &&
+        audio.duration > 0 &&
+        audio.currentTime / audio.duration >= 0.95
+      ) {
+        completedFiredRef.current = true;
+        window.dispatchEvent(
+          new CustomEvent("mhs:lesson-complete", { detail: { lessonId: lessonIdRef.current } }),
+        );
+      }
+    };
     const onMeta = () => setDuration(audio.duration);
     const onEnd = () => setPlaying(false);
     audio.addEventListener("timeupdate", onTime);
@@ -54,6 +70,7 @@ export function AudioPlayer({ src, title }: { src: string; title?: string }) {
     setPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    completedFiredRef.current = false;
     const audio = audioRef.current;
     if (audio) {
       audio.load();

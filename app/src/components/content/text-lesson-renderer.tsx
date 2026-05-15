@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LessonSidebar } from "./lesson-sidebar";
 import { AudioPlayer } from "./audio-player";
+import { LessonCompleteButton } from "./lesson-complete-button";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
@@ -111,7 +112,7 @@ export async function TextLessonRenderer({
 
         {/* Audio player */}
         {activeLesson.audio_url && (
-          <AudioPlayer src={activeLesson.audio_url} title="MedVoice · Áudio" />
+          <AudioPlayer src={activeLesson.audio_url} title="MedVoice · Áudio" lessonId={activeLesson.id} />
         )}
 
         {/* Transcript */}
@@ -138,8 +139,15 @@ export async function TextLessonRenderer({
           <p className="text-muted-foreground text-sm italic">Conteúdo em preparação.</p>
         )}
 
+        {/* Complete button — text-only sections only (audio sections complete via 95% playback) */}
+        {!activeLesson.audio_url && (
+          <div className="mt-8 flex justify-end">
+            <LessonCompleteButton lessonId={activeLesson.id} pageId={pageId} />
+          </div>
+        )}
+
         {/* Prev / Next navigation */}
-        <div className="mt-10 pt-6 border-t border-border flex items-center justify-between gap-4">
+        <div className="mt-6 pt-6 border-t border-border flex items-center justify-between gap-4">
           {prevLesson ? (
             <Link
               href={`?s=${prevLesson.id}`}

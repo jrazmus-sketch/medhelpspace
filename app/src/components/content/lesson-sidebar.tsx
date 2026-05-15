@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, Check } from "lucide-react";
 import Link from "next/link";
 
@@ -14,7 +14,12 @@ interface SidebarEntry {
 // + server action). localStorage means phone and desktop show different progress.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const storageKey = (pageId: number) => `mhs-lesson-progress-${pageId}`;
+// Completion sources:
+//  - Audio sections: AudioPlayer fires mhs:lesson-complete at 95% playback
+//  - Text-only sections: LessonCompleteButton dispatches mhs:lesson-complete on click
+// Navigation alone never marks a section complete.
+
+const storageKey = (pageId: number) => `mhs-lesson-done-${pageId}`;
 
 function loadCompleted(pageId: number): Set<number> {
   try {
@@ -41,27 +46,27 @@ export function LessonSidebar({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
-  const prevActiveRef = useRef<number | null>(null);
 
   // Load persisted progress from localStorage after mount (avoids hydration mismatch)
   useEffect(() => {
     setCompleted(loadCompleted(pageId));
   }, [pageId]);
 
-  // When the active section changes, mark the previous one complete
+  // Listen for completion events from AudioPlayer (95% played) and LessonCompleteButton
   useEffect(() => {
-    const prev = prevActiveRef.current;
-    if (prev !== null && prev !== activeId) {
+    const handler = (e: Event) => {
+      const { lessonId } = (e as CustomEvent<{ lessonId: number }>).detail;
       setCompleted((current) => {
-        if (current.has(prev)) return current;
+        if (current.has(lessonId)) return current;
         const next = new Set(current);
-        next.add(prev);
+        next.add(lessonId);
         saveCompleted(pageId, next);
         return next;
       });
-    }
-    prevActiveRef.current = activeId;
-  }, [activeId, pageId]);
+    };
+    window.addEventListener("mhs:lesson-complete", handler);
+    return () => window.removeEventListener("mhs:lesson-complete", handler);
+  }, [pageId]);
 
   const completedCount = completed.size;
   const allDone = completedCount >= entries.length;
