@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
 import {
   ClipboardList, ScrollText, Mic, FlaskConical, Headphones,
-  Lock, ChevronRight,
+  Lock, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import type { Cohort, CohortModuleAccess } from "@/types/supabase";
@@ -12,19 +12,26 @@ import type { Cohort, CohortModuleAccess } from "@/types/supabase";
 
 const MEDHELP_60D_MODULE_ID = 1;
 
-const TRACK_DEFS = [
-  { num: "01", id: "questoes",   slug: "simulados",       name: "Estudo por Questões", desc: "Banco com correção comentada por especialidade.", Icon: ClipboardList, color: "var(--c-questoes)"   },
-  { num: "02", id: "resumos",    slug: "resumos",          name: "Resumos Narrativos",  desc: "Resumos no formato de caso clínico.",              Icon: ScrollText,    color: "var(--c-resumos)"    },
-  { num: "03", id: "medvoice",   slug: "medvoice",         name: "MedVoice",            desc: "Aulas em áudio por especialidade.",                Icon: Mic,           color: "var(--c-medvoice)"   },
-  { num: "04", id: "formula",    slug: "formula-medhelp",  name: "Fórmula MedHelp",     desc: "Método estruturado de raciocínio clínico.",        Icon: FlaskConical,  color: "var(--c-formula)"    },
-  { num: "05", id: "audiocards", slug: "audiocards",       name: "AudioCards",          desc: "Flashcards narrados para fixação.",                Icon: Headphones,    color: "var(--c-audiocards)" },
-  { num: "06", id: "medhelp60",  slug: "medhelp-60d",      name: "MedHelp 60D",         desc: "Liberado 60 dias antes da prova.",                 Icon: Lock,          color: "var(--c-medhelp60, #3a4055)", locked: true },
-] as const;
+type StudyTab = {
+  id: string;
+  label: string;
+  Icon: LucideIcon;
+  color: string;
+  view: string | null;
+  trackSlug: string | null;
+  locked: boolean;
+};
 
-const SPEC_ACCENT_COLORS = [
-  "var(--c-spec-1)", "var(--c-spec-2)", "var(--c-spec-3)",
-  "var(--c-spec-4)", "var(--c-spec-5)", "var(--c-spec-6)",
+const STUDY_TABS: StudyTab[] = [
+  { id: "questoes",   label: "Questões",    Icon: ClipboardList, color: "var(--c-questoes)",           view: "simulados", trackSlug: null,         locked: false },
+  { id: "resumos",    label: "Resumos",     Icon: ScrollText,    color: "var(--c-resumos)",            view: "resumos",   trackSlug: null,         locked: false },
+  { id: "medvoice",   label: "MedVoice",    Icon: Mic,           color: "var(--c-medvoice)",           view: null,        trackSlug: "medvoice",   locked: false },
+  { id: "formula",    label: "Fórmula",     Icon: FlaskConical,  color: "var(--c-formula)",            view: "formula",   trackSlug: null,         locked: false },
+  { id: "audiocards", label: "AudioCards",  Icon: Headphones,    color: "var(--c-audiocards)",         view: null,        trackSlug: "audiocards", locked: false },
+  { id: "medhelp60",  label: "MedHelp 60D", Icon: Lock,          color: "var(--c-medhelp60, #3a4055)", view: null,        trackSlug: null,         locked: true  },
 ];
+
+const VALID_TAB_IDS = STUDY_TABS.map(t => t.id);
 
 const DAY_NAMES   = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_NAMES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
@@ -315,9 +322,9 @@ const LABEL_STYLE: React.CSSProperties = {
 export default async function MemberDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ especialidade?: string }>;
+  searchParams: Promise<{ trilha?: string }>;
 }) {
-  const { especialidade: selectedSpecSlug = null } = await searchParams;
+  const { trilha: trilhaParam } = await searchParams;
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -414,10 +421,9 @@ export default async function MemberDashboardPage({
   const allTracks = allTracksData ?? [];
   const trackBySlug = new Map(allTracks.map(t => [t.slug as string, t as { id: number; name: string; slug: string }]));
 
-  // Selected specialty (from URL query param)
-  const selectedSpec = selectedSpecSlug
-    ? (specialtiesAll ?? []).find(s => s.slug === selectedSpecSlug) ?? null
-    : null;
+  // Active study type tab (from URL query param; defaults to "questoes")
+  const selectedTabId = VALID_TAB_IDS.includes(trilhaParam ?? "") ? (trilhaParam ?? "questoes") : "questoes";
+  const selectedTab = STUDY_TABS.find(t => t.id === selectedTabId) ?? STUDY_TABS[0];
 
   // Last page + track
   let lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null = null;
@@ -431,52 +437,30 @@ export default async function MemberDashboardPage({
   }
   const lastPageSpec = lastPage?.specialty_id ? specById.get(lastPage.specialty_id) : null;
 
-  // MedVoice page for selected specialty (direct content link, not shown in specialty hub)
-  let medvoiceSpecPage: { slug: string } | null = null;
-  if (selectedSpec) {
-    const mvTrackId = trackBySlug.get("medvoice")?.id;
-    if (mvTrackId) {
-      const { data } = await admin
-        .from("pages")
-        .select("slug")
-        .eq("specialty_id", selectedSpec.id)
-        .eq("track_id", mvTrackId)
-        .eq("status", "publish")
-        .limit(1)
-        .single();
-      medvoiceSpecPage = data ?? null;
+  // Fetch content pages for the active study type tab (specialty_id → slug map)
+  const specPageMap = new Map<number, string>();
+  if (!selectedTab.locked) {
+    if (selectedTab.trackSlug) {
+      const trackId = trackBySlug.get(selectedTab.trackSlug)?.id;
+      if (trackId) {
+        const { data } = await admin.from("pages").select("specialty_id, slug")
+          .eq("track_id", trackId).not("specialty_id", "is", null).eq("status", "publish");
+        for (const p of (data ?? [])) {
+          if (p.specialty_id != null) specPageMap.set(p.specialty_id, p.slug);
+        }
+      }
+    } else if (selectedTab.view) {
+      const { data } = await admin.from("pages").select("specialty_id, slug")
+        .eq("view", selectedTab.view).not("specialty_id", "is", null).eq("status", "publish");
+      for (const p of (data ?? [])) {
+        if (p.specialty_id != null) specPageMap.set(p.specialty_id, p.slug);
+      }
     }
   }
-
-  // Study type cards for selected specialty
-  const studyCards = selectedSpec ? [
-    {
-      num: "01", name: "Questões",       desc: "Questões comentadas no estilo INEP",    Icon: ClipboardList, color: "var(--c-questoes)",   href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
-    {
-      num: "02", name: "Resumos",        desc: "Casos clínicos com raciocínio",          Icon: ScrollText,    color: "var(--c-resumos)",    href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
-    {
-      num: "03", name: "MedVoice",       desc: "Aulas em áudio, ouça onde quiser",       Icon: Mic,           color: "var(--c-medvoice)",   href: medvoiceSpecPage ? `/app/${selectedSpec.slug}/${medvoiceSpecPage.slug}` : `/app/medvoice`,   locked: false },
-    {
-      num: "04", name: "Fórmula",        desc: "Algoritmos de decisão clínica",          Icon: FlaskConical,  color: "var(--c-formula)",    href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
-    {
-      num: "05", name: "AudioCards",     desc: "Flashcards narrados para fixação",       Icon: Headphones,    color: "var(--c-audiocards)", href: `/app/${selectedSpec.slug}`,                                                                 locked: false },
-    {
-      num: "06", name: "MedHelp 60D",   desc: daysUntilUnlock ? `Libera em ${fmtBr(daysUntilUnlock)} dias` : "Conteúdo de revisão final", Icon: Lock, color: "var(--c-medhelp60, #3a4055)", href: null, locked: true },
-  ] : [];
 
   const now = new Date();
   const dayLabel = `${DAY_NAMES[now.getDay()].toLowerCase()}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
   const [greetLine1, greetLine2] = pickGreeting(now, examDays);
-
-  // Tracks split into active vs locked
-  const tracks: Array<typeof TRACK_DEFS[number] & { locked: boolean; progress: number; unlockIn?: number }> =
-    TRACK_DEFS.map((t) => {
-      if (t.id === "medhelp60") return { ...t, locked: true, unlockIn: daysUntilUnlock ?? 250, progress: 0 };
-      const progress = t.id === "questoes" && quizTotal > 0 ? Math.min(1, quizPct) : 0;
-      return { ...t, locked: false, progress };
-    });
-  const activeTracks = tracks.filter(t => !t.locked);
-  const lockedTrack = tracks.find(t => t.locked) ?? null;
 
   const cohortBadge = activeCohort?.name
     ?.replace(/revalida-/i, "Turma ")
@@ -588,59 +572,6 @@ export default async function MemberDashboardPage({
       {/* ── NOTIFICATIONS ── */}
       <NotificationStrip />
 
-      {/* ── SPECIALTY GRID ── */}
-      {specialtiesAll && specialtiesAll.length > 0 && (
-        <div className="mb-5 sm:mb-7">
-          <div style={{ ...LABEL_STYLE, marginBottom: 8 }}>
-            Especialidades
-            {selectedSpec && (
-              <span style={{ marginLeft: 10, fontWeight: 400, letterSpacing: 0, textTransform: "none", fontSize: 11, color: "var(--muted-foreground)" }}>
-                — clique em outra ou na selecionada para limpar
-              </span>
-            )}
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-[6px] sm:gap-2">
-            {specialtiesAll.map((spec, i) => {
-              const isSelected = selectedSpec?.slug === spec.slug;
-              return (
-                <Link
-                  key={spec.id}
-                  href={isSelected ? "/app" : `/app?especialidade=${spec.slug}`}
-                  scroll={false}
-                  style={{
-                    background: isSelected ? "color-mix(in srgb, var(--brand) 14%, var(--surface-1))" : "var(--surface-1)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "10px 12px",
-                    display: "flex",
-                    alignItems: "center",
-                    textDecoration: "none",
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: "background .12s",
-                    minHeight: 42,
-                    outline: isSelected ? "1.5px solid color-mix(in srgb, var(--brand) 50%, transparent)" : "none",
-                    outlineOffset: "-1.5px",
-                  }}
-                  className={isSelected ? "" : "group hover:bg-surface-2"}
-                >
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, right: 0, height: 2,
-                    background: isSelected ? "var(--brand)" : SPEC_ACCENT_COLORS[i % SPEC_ACCENT_COLORS.length],
-                  }} />
-                  <span style={{
-                    fontSize: 12.5, fontWeight: isSelected ? 600 : 500,
-                    color: isSelected ? "var(--brand)" : "var(--foreground)",
-                    letterSpacing: "-.01em", lineHeight: 1.25,
-                  }}>
-                    {spec.name}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* ── PLAN + CONTINUE ── */}
       <section className="grid md:grid-cols-[1fr_2fr] gap-[10px] sm:gap-[14px] mb-[10px] sm:mb-[14px]">
 
@@ -736,185 +667,95 @@ export default async function MemberDashboardPage({
         </div>
       </div>
 
-      {/* ── TRILHAS / SPECIALTY CONTENT ── */}
-      {selectedSpec ? (
-        <>
-          {/* Selected specialty: 6 study type cards */}
+      {/* ── ESTUDAR — unified study type × specialty navigation ── */}
+      <div style={{ marginTop: "clamp(28px, 5vw, 48px)", paddingTop: 20, borderTop: "1px solid var(--surface-2)" }}>
+        <div style={{ ...LABEL_STYLE, marginBottom: 14 }}>Como quero estudar</div>
+
+        {/* Tab bar — horizontally scrollable on mobile */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 16, scrollbarWidth: "none" }}>
+          {STUDY_TABS.map((tab) => {
+            const isActive = tab.id === selectedTabId;
+            return (
+              <Link
+                key={tab.id}
+                href={`/app?trilha=${tab.id}`}
+                scroll={false}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 7,
+                  padding: "0 16px", height: 38, borderRadius: "var(--radius-sm)",
+                  background: isActive ? tab.color : "var(--surface-1)",
+                  color: isActive ? "#16122e" : tab.locked ? "var(--muted-3, #4a4a4a)" : "var(--foreground)",
+                  fontSize: 13, fontWeight: isActive ? 600 : 500,
+                  textDecoration: "none", flexShrink: 0, whiteSpace: "nowrap",
+                  transition: "background .12s",
+                  outline: isActive ? "none" : "1px solid var(--surface-2)",
+                  outlineOffset: "-1px",
+                  opacity: tab.locked && !isActive ? 0.45 : 1,
+                }}
+              >
+                <tab.Icon size={13} strokeWidth={isActive ? 2.2 : 1.8} />
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Content area */}
+        {selectedTab.locked ? (
+          /* Locked state (MedHelp 60D) */
           <div style={{
-            display: "flex", alignItems: "baseline", justifyContent: "space-between",
-            marginTop: "clamp(28px, 5vw, 48px)", marginBottom: 16,
-            paddingTop: 20, borderTop: "1px solid var(--surface-2)",
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", gap: 14, padding: "56px 20px",
+            background: "var(--surface-1)", borderRadius: "var(--radius)",
+            outline: "1px dashed color-mix(in srgb, var(--foreground) 14%, transparent)",
+            outlineOffset: "-1px",
           }}>
-            <h2 style={{
-              margin: 0, fontSize: "clamp(17px, 3vw, 22px)", fontWeight: 600,
-              letterSpacing: "-.025em", display: "flex", alignItems: "baseline", gap: 10,
-            }}>
-              {selectedSpec.name}
-              <span style={{ fontSize: 12, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)", fontWeight: 400 }}>
-                06
-              </span>
-            </h2>
-            <Link
-              href="/app"
-              scroll={false}
-              style={{ fontSize: 13, color: "var(--muted-foreground)", textDecoration: "none" }}
-              className="hover:text-foreground transition-colors"
-            >
-              ← Todas as especialidades
-            </Link>
+            <div style={{ width: 52, height: 52, borderRadius: "var(--radius-sm)", background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Lock size={22} strokeWidth={1.5} style={{ color: "var(--muted-foreground)" }} />
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-.015em", color: "var(--muted-foreground)" }}>MedHelp 60D</div>
+              <div style={{ fontSize: 13, color: "var(--muted-3, #4a4a4a)", marginTop: 6 }}>
+                {daysUntilUnlock != null
+                  ? `Libera em ${fmtBr(daysUntilUnlock)} dias`
+                  : "Conteúdo de revisão intensiva — módulo final"}
+              </div>
+            </div>
           </div>
-
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-[10px] sm:gap-3">
-            {studyCards.map((card, idx) => {
-              const inner = (
-                <>
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: card.color, borderRadius: "var(--radius) var(--radius) 0 0", opacity: card.locked ? 0.4 : 1 }} />
-                  <span style={{ position: "absolute", right: 14, top: 14, fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)", fontWeight: 500 }}>
-                    {card.num}
-                  </span>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: "var(--radius-sm)", flexShrink: 0,
-                    background: card.locked ? "var(--surface-2)" : card.color,
-                    color: card.locked ? "var(--muted-2, #727272)" : "#16122e",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <card.Icon size={18} strokeWidth={1.7} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.2, color: card.locked ? "var(--muted-2, #727272)" : "var(--foreground)" }}>
-                      {card.name}
-                    </div>
-                    <div className="hidden sm:block" style={{ fontSize: 11, color: "var(--muted-2, #727272)", marginTop: 4, lineHeight: 1.4 }}>
-                      {card.desc}
-                    </div>
-                  </div>
-                  <div style={{ marginTop: "auto", paddingTop: 10 }}>
-                    {card.locked ? (
-                      <span style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)" }}>
-                        {daysUntilUnlock != null ? `${fmtBr(daysUntilUnlock)}d` : "bloqueado"}
-                      </span>
-                    ) : (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>
-                        Acessar <ChevronRight size={11} strokeWidth={2.5} />
-                      </span>
-                    )}
-                  </div>
-                </>
-              );
-
-              const cardBase: React.CSSProperties = {
-                background: card.locked ? "var(--surface-2)" : "var(--surface-1)",
-                borderRadius: "var(--radius)",
-                padding: "22px 20px 18px",
-                display: "flex", flexDirection: "column", gap: 14,
-                position: "relative", overflow: "hidden",
-                minHeight: 180,
-                ...cardEnter(idx * 45),
-              };
-
-              return card.locked || !card.href ? (
-                <div key={card.num} style={cardBase}>{inner}</div>
-              ) : (
+        ) : (
+          /* Specialty grid */
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            {(specialtiesAll ?? []).map((spec) => {
+              const pageSlug = specPageMap.get(spec.id);
+              const href = pageSlug ? `/app/${spec.slug}/${pageSlug}` : `/app/${spec.slug}`;
+              return (
                 <Link
-                  key={card.num}
-                  href={card.href}
-                  style={{ ...cardBase, textDecoration: "none", transition: "transform .15s, background .15s" }}
-                  className="group hover:-translate-y-[2px] hover:bg-surface-2"
+                  key={spec.id}
+                  href={href}
+                  style={{
+                    background: "var(--surface-1)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "14px 14px 12px",
+                    display: "flex", flexDirection: "column", gap: 8,
+                    textDecoration: "none", position: "relative", overflow: "hidden",
+                    transition: "background .12s",
+                  }}
+                  className="group hover:bg-surface-2"
                 >
-                  {inner}
+                  {/* Top bar in selected tab's color */}
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: selectedTab.color }} />
+                  <span style={{ fontSize: 13, fontWeight: 500, letterSpacing: "-.01em", color: "var(--foreground)", lineHeight: 1.3, paddingTop: 2 }}>
+                    {spec.name}
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 600, color: "var(--brand)" }}>
+                    Acessar <ChevronRight size={10} strokeWidth={2.5} />
+                  </span>
                 </Link>
               );
             })}
-          </section>
-        </>
-      ) : (
-        <>
-          {/* Default: all tracks overview */}
-          <SecHeader title="Trilhas" count="05" moreLabel="Ver todas →" moreHref="/app/trilhas" />
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[10px] sm:gap-3">
-            {activeTracks.map((track, idx) => (
-              <Link
-                key={track.id}
-                href={`/app/${track.slug}`}
-                style={{
-                  background: "var(--surface-1)",
-                  borderRadius: "var(--radius)",
-                  padding: "22px 20px 18px",
-                  display: "flex", flexDirection: "column", gap: 16,
-                  position: "relative", overflow: "hidden",
-                  minHeight: 190, textDecoration: "none",
-                  transition: "transform .15s, background .15s",
-                  ...cardEnter(idx * 55),
-                }}
-                className="group hover:-translate-y-[2px] hover:bg-surface-2"
-              >
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: track.color, borderRadius: "var(--radius) var(--radius) 0 0" }} />
-                <span style={{ position: "absolute", right: 14, top: 14, display: "flex", alignItems: "center", gap: 3 }}>
-                  <span style={{ fontSize: 11, color: "var(--muted-3, #4a4a4a)", fontFamily: "var(--font-geist-mono)", fontWeight: 500 }}>{track.num}</span>
-                  <ChevronRight size={12} strokeWidth={2.5} className="opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: "var(--muted-foreground)" }} />
-                </span>
-                <div style={{ width: 38, height: 38, borderRadius: "var(--radius-sm)", background: track.color, color: "#16122e", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <track.Icon size={18} strokeWidth={1.7} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-.015em", lineHeight: 1.2, color: "var(--foreground)" }}>{track.name}</div>
-                  <div className="hidden sm:block" style={{ fontSize: 11.5, color: "var(--muted-2, #727272)", marginTop: 4, lineHeight: 1.45 }}>{track.desc}</div>
-                </div>
-                <div style={{ marginTop: "auto", paddingTop: 10 }}>
-                  {track.progress === 0 ? (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: "var(--brand)" }}>
-                      Começar <ChevronRight size={11} strokeWidth={2.5} />
-                    </span>
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ flex: 1, height: 3, background: "var(--surface-2)", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ height: "100%", width: `${track.progress * 100}%`, background: track.color, borderRadius: 999 }} />
-                      </div>
-                      <div className="tabular-nums" style={{ fontSize: 11, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)" }}>
-                        {Math.round(track.progress * 100)}%
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </section>
-
-          {/* Em breve: locked 60D */}
-          {lockedTrack && (
-            <>
-              <SecHeader title="Em breve" />
-              <div style={{
-                display: "flex", alignItems: "center", gap: 20, padding: "20px 22px",
-                borderRadius: "var(--radius)",
-                outline: "1px dashed color-mix(in srgb, var(--foreground) 14%, transparent)",
-                outlineOffset: "-1px",
-              }}>
-                <div style={{ width: 44, height: 44, borderRadius: "var(--radius-sm)", background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-2, #727272)", flexShrink: 0 }}>
-                  <Lock size={20} strokeWidth={1.6} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-.015em", color: "var(--muted-2, #727272)" }}>{lockedTrack.name}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--muted-3, #4a4a4a)", marginTop: 3, lineHeight: 1.4 }}>
-                    {lockedTrack.desc}
-                    {daysUntilUnlock != null && (
-                      <> &mdash; libera em <strong style={{ color: "var(--muted-2, #727272)" }}>{fmtBr(daysUntilUnlock)} dias</strong></>
-                    )}
-                  </div>
-                </div>
-                {lockedTrack.unlockIn != null && (
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div className="tabular-nums" style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 600, letterSpacing: "-.04em", lineHeight: 1, color: "var(--muted-2, #727272)" }}>
-                      {fmtBr(lockedTrack.unlockIn)}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: "var(--muted-3, #4a4a4a)", marginTop: 4, letterSpacing: ".06em", textTransform: "uppercase" }}>dias</div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </>
-      )}
+          </div>
+        )}
+      </div>
 
     </div>
   );
