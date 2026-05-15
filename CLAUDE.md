@@ -198,20 +198,25 @@ UpdraftPlus lines end with `); \n` (space before `\n`). Always use
 
 ### MedVoice audio — populated
 
-Bunny CDN structure: `https://medhelpspace.b-cdn.net/MedVoice-Audio/{specialty-slug}-feito/{title-slug}-m.mp3`
+Bunny CDN structure — two-tier:
+- Original 7 specialties: `MedVoice-Audio/{specialty-slug}-feito/{title-slug}-m.mp3`
+- 10 newer specialties: `MedVoice-Audio/clinica-medica-feito/{short-folder}/{title-slug}-m.mp3`
+  - Folder names: `cardio-feito`, `dermato-feito`, `endocrino-feito`, `gastro-feito`,
+    `hemato-feito`, `infecto-feito`, `nefro-feito`, `neuro-feito`, `pneumo-feito`,
+    `psiquiatria-feito`, `reumato-feito`
 
 - Title slug = lesson title lowercased, accents stripped (NFD), spaces→hyphens, `-m.mp3` suffix
 - Script: `scripts/populate-medvoice-audio.js` — dry run by default, `--apply` to commit
+- `PAGE_TO_SUBFOLDER` map stores full paths; `buildUrl` no longer appends `-feito`
 
-**7 specialties have audio (94 lessons populated):**
-`cirurgia-geral`, `clinica-medica`, `ginecologia`, `medicina-de-emergencia`, `obstetricia`, `pediatria`, `saude-coletiva`
+**All 17 MedVoice specialties now have audio (156 lessons populated):**
+`cirurgia-geral`, `clinica-medica`, `ginecologia`, `medicina-de-emergencia`, `obstetricia`,
+`pediatria`, `saude-coletiva`, `cardiologia`, `dermatologia`, `endocrinologia`,
+`gastroenterologia`, `hematologia`, `infectologia`, `nefrologia`, `neurologia`,
+`pneumologia`, `psiquiatria`, `reumatologia`
 
 **Gotcha:** the DB page slug for medicina-de-emergencia is `emergencia-medvoice` (not
 `medicina-de-emergencia-medvoice`). The script has a manual mapping for this.
-
-**Not yet populated:** cardiologia, dermatologia, endocrinologia, gastroenterologia,
-hematologia, infectologia, nefrologia, neurologia, pneumologia, psiquiatria, reumatologia
-(no Bunny folders exist for these yet).
 
 **Audiocards audio:** not yet uploaded to Bunny. Same approach will apply when ready —
 update script with audiocards folder structure and re-run.
@@ -243,7 +248,7 @@ shortcodes). All other MedVoice pages are `text-lesson` type. Both are handled b
 - [x] H5P content extracted
 - [x] Migration dry run
 - [x] Migration to target Supabase project
-- [x] MedVoice audio URLs populated (94 lessons, 7 specialties)
+- [x] MedVoice audio URLs populated (156 lessons, all 17 specialties)
 
 ### Frontend phases
 

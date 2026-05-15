@@ -46,17 +46,32 @@ function buildConnectionUrl() {
 
 const CDN_BASE = 'https://medhelpspace.b-cdn.net/MedVoice-Audio';
 
-// Maps page slug → Bunny folder name (without -feito suffix).
-// Pages not listed here will be skipped (no audio uploaded for them).
-const PAGE_TO_FOLDER = {
-  'cirurgia-geral-medvoice':         'cirurgia-geral',
-  'clinica-medica-medvoice':         'clinica-medica',
-  'ginecologia-medvoice':            'ginecologia',
-  'medicina-de-emergencia-medvoice': 'medicina-de-emergencia',
-  'emergencia-medvoice':             'medicina-de-emergencia', // DB slug differs from Bunny folder
-  'obstetricia-medvoice':            'obstetricia',
-  'pediatria-medvoice':              'pediatria',
-  'saude-coletiva-medvoice':         'saude-coletiva',
+// Maps page slug → full subfolder path under CDN_BASE (no trailing slash).
+// Original 7 specialties sit at the top level ({specialty}-feito/).
+// The 10 newer specialties are nested under clinica-medica-feito/.
+const PAGE_TO_SUBFOLDER = {
+  // Top-level specialties (original structure)
+  'cirurgia-geral-medvoice':         'cirurgia-geral-feito',
+  'clinica-medica-medvoice':         'clinica-medica-feito',
+  'ginecologia-medvoice':            'ginecologia-feito',
+  'medicina-de-emergencia-medvoice': 'medicina-de-emergencia-feito',
+  'emergencia-medvoice':             'medicina-de-emergencia-feito', // DB slug differs from Bunny folder
+  'obstetricia-medvoice':            'obstetricia-feito',
+  'pediatria-medvoice':              'pediatria-feito',
+  'saude-coletiva-medvoice':         'saude-coletiva-feito',
+
+  // Nested under clinica-medica-feito/ (Bunny folder structure)
+  'cardiologia-medvoice':            'clinica-medica-feito/cardio-feito',
+  'dermatologia-medvoice':           'clinica-medica-feito/dermato-feito',
+  'endocrinologia-medvoice':         'clinica-medica-feito/endocrino-feito',
+  'gastroenterologia-medvoice':      'clinica-medica-feito/gastro-feito',
+  'hematologia-medvoice':            'clinica-medica-feito/hemato-feito',
+  'infectologia-medvoice':           'clinica-medica-feito/infecto-feito',
+  'nefrologia-medvoice':             'clinica-medica-feito/nefro-feito',
+  'neurologia-medvoice':             'clinica-medica-feito/neuro-feito',
+  'pneumologia-medvoice':            'clinica-medica-feito/pneumo-feito',
+  'psiquiatria-medvoice':            'clinica-medica-feito/psiquiatria-feito',
+  'reumatologia-medvoice':           'clinica-medica-feito/reumato-feito',
 };
 
 function slugify(title) {
@@ -70,8 +85,8 @@ function slugify(title) {
     .replace(/-+/g, '-');             // collapse double hyphens
 }
 
-function buildUrl(folder, lessonTitle) {
-  return `${CDN_BASE}/${folder}-feito/${slugify(lessonTitle)}-m.mp3`;
+function buildUrl(subfolder, lessonTitle) {
+  return `${CDN_BASE}/${subfolder}/${slugify(lessonTitle)}-m.mp3`;
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
@@ -112,7 +127,7 @@ async function main() {
   const skipped = [];
 
   for (const row of rows) {
-    const folder = PAGE_TO_FOLDER[row.page_slug];
+    const folder = PAGE_TO_SUBFOLDER[row.page_slug];
     if (!folder) {
       skipped.push(row);
       continue;
