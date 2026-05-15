@@ -168,6 +168,43 @@
       "revoke_sessions": "Sessions revoked"
     }
   },
+  "pageEdit": {
+    "backToList": "← Pages",
+    "sectionIdentity": "Identity",
+    "sectionStatus": "Status",
+    "sectionTaxonomy": "Classification",
+    "sectionNotes": "Notes",
+    "titleLabel": "Title",
+    "slugLabel": "Slug",
+    "slugReset": "auto-generate",
+    "statusLabel": "Status",
+    "pageTypeLabel": "Page type",
+    "specialtyLabel": "Specialty",
+    "trackLabel": "Track",
+    "viewLabel": "View",
+    "moduleLabel": "Module",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Internal notes for the content team…",
+    "noSpecialty": "— no specialty",
+    "noTrack": "— no track",
+    "noView": "— no view",
+    "noModule": "— no module",
+    "slugTaken": "This slug is already used by another page.",
+    "sectionLessons": "Lessons",
+    "noLessons": "No lessons yet.",
+    "addLesson": "Add lesson",
+    "lessonTitle": "Lesson title",
+    "lessonBody": "Lesson content",
+    "lessonAudioUrl": "Audio URL",
+    "saveLessons": "Save lessons",
+    "lessonsSaved": "Lessons saved",
+    "deleteLesson": "Delete lesson",
+    "moveUp": "Move up",
+    "moveDown": "Move down"
+  },
+  "adminBar": {
+    "viewSite": "View site"
+  },
   "auth": {
     "signIn": "Sign in",
     "signOut": "Sign out",

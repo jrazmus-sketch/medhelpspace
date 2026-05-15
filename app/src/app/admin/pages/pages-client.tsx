@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
+import { Pencil } from "lucide-react";
 
 type PageRow = {
   id: number;
@@ -27,6 +29,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export function PagesClient({ rows }: { rows: PageRow[] }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "published" | "draft">("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -90,6 +93,7 @@ export function PagesClient({ rows }: { rows: PageRow[] }) {
               <th className="px-4 py-3">{t("pages.status")}</th>
               <th className="px-4 py-3">{t("pages.specialty")}</th>
               <th className="px-4 py-3">{t("pages.notes")}</th>
+              <th className="px-4 py-3 w-12"></th>
             </tr>
           </thead>
           <tbody>
@@ -120,6 +124,15 @@ export function PagesClient({ rows }: { rows: PageRow[] }) {
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground text-xs">{row.specialty ?? "—"}</td>
                   <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[200px] truncate">{row.notes ?? ""}</td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      onClick={() => router.push(`/admin/pages/${row.id}/edit`)}
+                      title={t("common.edit")}
+                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}

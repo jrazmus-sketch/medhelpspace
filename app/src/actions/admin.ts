@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { VIEWAS_COOKIE } from "@/lib/viewas";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -198,6 +200,121 @@ export async function revokeUserSessions(targetUserId: string) {
   const { error } = await admin.auth.admin.signOut(targetUserId, "global");
   if (error) throw new Error(error.message);
   await writeAuditLog(user.id, "revoke_sessions", targetUserId, {});
+}
+
+// ── Page metadata ─────────────────────────────────────────────────────────────
+
+export type PageMetadataInput = {
+  title: string;
+  slug: string;
+  status: "published" | "draft";
+  specialty_id: number | null;
+  track_id: number | null;
+  view: string | null;
+  content_module_id: number | null;
+  notes: string | null;
+};
+
+export async function updatePageMetadata(pageId: number, data: PageMetadataInput) {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  // Ensure slug is unique (ignore current page's own row)
+  const { count } = await admin
+    .from("pages")
+    .select("id", { count: "exact", head: true })
+    .eq("slug", data.slug)
+    .neq("id", pageId);
+
+  if ((count ?? 0) > 0) {
+    throw new Error("SLUG_TAKEN");
+  }
+
+  const { error } = await admin
+    .from("pages")
+    .update({
+      title: data.title.trim(),
+      slug: data.slug.trim(),
+      status: data.status,
+      specialty_id: data.specialty_id,
+      track_id: data.track_id,
+      view: data.view,
+      content_module_id: data.content_module_id,
+      notes: data.notes?.trim() || null,
+    })
+    .eq("id", pageId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/pages");
+  revalidatePath(`/admin/pages/${pageId}/edit`);
+}
+
+// ── Lessons ───────────────────────────────────────────────────────────────────
+
+export type LessonInput = {
+  id: number | null;
+  title: string;
+  body_html: string;
+  audio_url: string | null;
+  position: number;
+};
+
+export async function updateLessons(pageId: number, lessons: LessonInput[]) {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("lessons")
+    .select("id")
+    .eq("page_id", pageId);
+
+  const existingIds = new Set((existing ?? []).map((r) => r.id as number));
+  const incomingIds = new Set(
+    lessons.filter((l) => l.id !== null).map((l) => l.id as number),
+  );
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    await admin.from("lessons").delete().in("id", toDelete);
+  }
+
+  for (const lesson of lessons) {
+    if (lesson.id !== null) {
+      await admin
+        .from("lessons")
+        .update({
+          title: lesson.title,
+          body_html: lesson.body_html || null,
+          audio_url: lesson.audio_url || null,
+          position: lesson.position,
+        })
+        .eq("id", lesson.id);
+    } else {
+      await admin.from("lessons").insert({
+        page_id: pageId,
+        title: lesson.title,
+        body_html: lesson.body_html || null,
+        audio_url: lesson.audio_url || null,
+        position: lesson.position,
+      });
+    }
+  }
+
+  revalidatePath(`/admin/pages/${pageId}/edit`);
+}
+
+// ── View As ───────────────────────────────────────────────────────────────────
+
+export async function setViewAs(mode: string) {
+  await requireAdmin();
+  const store = await cookies();
+  if (mode === "admin") {
+    store.delete(VIEWAS_COOKIE);
+  } else {
+    store.set(VIEWAS_COOKIE, mode, { path: "/", httpOnly: true, sameSite: "lax" });
+  }
+  revalidatePath("/app", "layout");
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────────

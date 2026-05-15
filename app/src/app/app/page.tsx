@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import Link from "next/link";
 import {
   ClipboardList, ScrollText, Mic, FlaskConical, Headphones,
@@ -28,7 +30,7 @@ const STUDY_TYPES: StudyType[] = [
   { id: "medvoice",   label: "MedVoice",            desc: "Áudios por tema — a Clínica Fala",          Icon: Mic,           color: "var(--c-medvoice)",   href: "/app/medvoice",         locked: false },
   { id: "formula",    label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",       Icon: FlaskConical,  color: "var(--c-formula)",    href: "/app/formula-medhelp",  locked: false },
   { id: "audiocards", label: "AudioCards",           desc: "Revisão em áudio, cartão por cartão",       Icon: Headphones,    color: "var(--c-audiocards)", href: "/app/audiocards",       locked: false },
-  { id: "medhelp60",  label: "MedHelp 60D",         desc: "Revisão intensiva — últimos 60 dias",       Icon: Lock,          color: "#6b7280",             href: null,                    locked: true  },
+  { id: "medhelp60",  label: "MedHelp 60D",         desc: "Revisão intensiva — últimos 60 dias",       Icon: Lock,          color: "#7c3aed",             href: null,                    locked: true  },
 ];
 
 const DAY_NAMES   = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -348,44 +350,79 @@ export default async function MemberDashboardPage() {
     }
   }
 
-  // Cohort membership
-  const { data: memberships } = user
-    ? await admin
-        .from("user_cohort_memberships")
-        .select("cohort_id, joined_at, cohort:cohorts(*)")
-        .eq("user_id", user.id)
-    : { data: [] };
+  // View-as mode
+  const viewas = parseViewAs((await cookies()).get(VIEWAS_COOKIE)?.value);
+
+  // Cohort + module access — varies by view-as mode
+  let activeCohort: Cohort | null = null;
+  let studyDays = 0;
+  let daysUntilUnlock: number | null = null;
 
   const today = new Date().toISOString();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cohorts: Cohort[] = ((memberships ?? []) as any[]).map((m) => m.cohort as Cohort).filter(Boolean);
-  const activeCohort = cohorts.find(
-    (c) => c.membership_starts_at <= today && c.membership_ends_at >= today,
-  ) ?? cohorts[cohorts.length - 1] ?? null;
+  if (viewas.type === "admin") {
+    // Real user's own membership
+    const { data: memberships } = user
+      ? await admin
+          .from("user_cohort_memberships")
+          .select("cohort_id, joined_at, cohort:cohorts(*)")
+          .eq("user_id", user.id)
+      : { data: [] };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const membership = (memberships as any[])?.[0] as { joined_at: string } | undefined;
-  const studyDays = membership
-    ? Math.max(0, Math.floor((Date.now() - new Date(membership.joined_at).getTime()) / 86_400_000))
-    : 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cohortList: Cohort[] = ((memberships ?? []) as any[]).map((m) => m.cohort as Cohort).filter(Boolean);
+    activeCohort =
+      cohortList.find((c) => c.membership_starts_at <= today && c.membership_ends_at >= today) ??
+      cohortList[cohortList.length - 1] ??
+      null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const membership = (memberships as any[])?.[0] as { joined_at: string } | undefined;
+    studyDays = membership
+      ? Math.max(0, Math.floor((Date.now() - new Date(membership.joined_at).getTime()) / 86_400_000))
+      : 0;
+
+    if (activeCohort) {
+      const { data: moduleAccess } = await admin
+        .from("cohort_module_access")
+        .select("*")
+        .eq("cohort_id", activeCohort.id);
+      const access60d = (moduleAccess as CohortModuleAccess[] ?? []).find(
+        (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
+      );
+      daysUntilUnlock = access60d
+        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - Date.now()) / 86_400_000))
+        : null;
+    }
+  } else if (viewas.type === "unlocked") {
+    // Show everything as if unlocked — no cohort context needed
+    daysUntilUnlock = 0;
+  } else {
+    // Simulate a specific cohort's access
+    const { data: simCohort } = await admin
+      .from("cohorts")
+      .select("*")
+      .eq("slug", viewas.slug)
+      .single();
+    if (simCohort) {
+      activeCohort = simCohort as Cohort;
+      const { data: moduleAccess } = await admin
+        .from("cohort_module_access")
+        .select("*")
+        .eq("cohort_id", simCohort.id);
+      const access60d = (moduleAccess as CohortModuleAccess[] ?? []).find(
+        (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
+      );
+      daysUntilUnlock = access60d
+        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - Date.now()) / 86_400_000))
+        : null;
+    }
+  }
 
   const examDays = activeCohort?.test_date
     ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - Date.now()) / 86_400_000))
     : null;
   const examDateLabel = activeCohort?.test_date ? fmtDate(new Date(activeCohort.test_date)) : null;
-
-  // Module access (60D)
-  const { data: moduleAccess } = activeCohort
-    ? await admin.from("cohort_module_access").select("*").eq("cohort_id", activeCohort.id)
-    : { data: [] };
-
-  const access60d = (moduleAccess as CohortModuleAccess[] ?? []).find(
-    (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
-  );
-  const daysUntilUnlock = access60d
-    ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - Date.now()) / 86_400_000))
-    : null;
 
   // Quiz attempts
   let quizAttempts: { is_correct: boolean; created_at: string }[] = [];
@@ -429,9 +466,18 @@ export default async function MemberDashboardPage() {
   const dayLabel = `${DAY_NAMES[now.getDay()].toLowerCase()}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
   const [greetLine1, greetLine2] = pickGreeting(now, examDays);
 
-  const cohortBadge = activeCohort?.name
-    ?.replace(/revalida-/i, "Turma ")
-    .replace(/-(\d+)$/, "·$1");
+  const cohortBadge =
+    viewas.type === "unlocked"
+      ? "Tudo liberado"
+      : activeCohort?.name?.replace(/revalida-/i, "Turma ").replace(/-(\d+)$/, "·$1");
+
+  // Make MedHelp 60D card dynamic based on unlock state
+  const is60dUnlocked = daysUntilUnlock === 0;
+  const studyTypes = STUDY_TYPES.map((t) =>
+    t.id === "medhelp60"
+      ? { ...t, locked: !is60dUnlocked, color: is60dUnlocked ? "#7c3aed" : "#6b7280" }
+      : t,
+  );
 
   const cardAlt: React.CSSProperties = { background: "var(--surface-2)", borderRadius: "var(--radius)" };
 
@@ -650,7 +696,7 @@ export default async function MemberDashboardPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {STUDY_TYPES.map((type, i) => {
+          {studyTypes.map((type, i) => {
             const cardStyle: React.CSSProperties = {
               borderRadius: "var(--radius)",
               padding: "22px 20px",

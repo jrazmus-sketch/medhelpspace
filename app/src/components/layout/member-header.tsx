@@ -56,7 +56,7 @@ export function MemberHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/90 backdrop-blur-md">
+    <header className="border-b border-border/40 bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-[52px] max-w-[1400px] items-center gap-3 px-[10px] md:px-8">
 
         {/* Logo */}

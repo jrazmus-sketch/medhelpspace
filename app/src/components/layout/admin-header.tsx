@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Globe, LogOut } from "lucide-react";
+import { Globe, LogOut, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
@@ -87,6 +87,13 @@ export function AdminHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/app"
+            className="hidden items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:flex"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            {t("adminBar.viewSite")}
+          </Link>
           {/* Language toggle */}
           <Button
             variant="ghost"
@@ -121,10 +128,6 @@ export function AdminHeader() {
                   <div className="text-sm font-medium">{displayName}</div>
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push("/app")}>
-                ← Site do membro
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />

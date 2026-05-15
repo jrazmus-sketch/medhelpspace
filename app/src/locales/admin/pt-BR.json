@@ -168,6 +168,43 @@
       "revoke_sessions": "Sessões revogadas"
     }
   },
+  "pageEdit": {
+    "backToList": "← Páginas",
+    "sectionIdentity": "Identificação",
+    "sectionStatus": "Status",
+    "sectionTaxonomy": "Classificação",
+    "sectionNotes": "Observações",
+    "titleLabel": "Título",
+    "slugLabel": "Slug",
+    "slugReset": "gerar automaticamente",
+    "statusLabel": "Status",
+    "pageTypeLabel": "Tipo de página",
+    "specialtyLabel": "Especialidade",
+    "trackLabel": "Trilha",
+    "viewLabel": "Visualização",
+    "moduleLabel": "Módulo",
+    "notesLabel": "Observações",
+    "notesPlaceholder": "Notas internas para a equipe de conteúdo…",
+    "noSpecialty": "— sem especialidade",
+    "noTrack": "— sem trilha",
+    "noView": "— sem visualização",
+    "noModule": "— sem módulo",
+    "slugTaken": "Este slug já está em uso por outra página.",
+    "sectionLessons": "Aulas",
+    "noLessons": "Nenhuma aula ainda.",
+    "addLesson": "Adicionar aula",
+    "lessonTitle": "Título da aula",
+    "lessonBody": "Conteúdo da aula",
+    "lessonAudioUrl": "URL do áudio",
+    "saveLessons": "Salvar aulas",
+    "lessonsSaved": "Aulas salvas",
+    "deleteLesson": "Excluir aula",
+    "moveUp": "Mover para cima",
+    "moveDown": "Mover para baixo"
+  },
+  "adminBar": {
+    "viewSite": "Ver site"
+  },
   "auth": {
     "signIn": "Entrar",
     "signOut": "Sair",
