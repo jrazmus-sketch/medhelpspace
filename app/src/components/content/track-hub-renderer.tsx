@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { SpecialtyIcon } from "@/components/content/specialty-icon";
+import { TrackHubAccordion } from "@/components/content/track-hub-accordion";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 export async function TrackHubRenderer({
@@ -50,11 +49,10 @@ export async function TrackHubRenderer({
     (a, b) => (a.spec.display_order ?? 99) - (b.spec.display_order ?? 99),
   );
 
-  // One page per specialty → section-grouped specialty icon grid
+  // One page per specialty → accordion grouped by exam area
   const isFlat = groups.every((g) => g.pages.length === 1);
 
   if (isFlat) {
-    // Build super-groups by group_label; ungrouped specialties use their own name
     type SuperGroup = { label: string; minOrder: number; items: { spec: Spec; href: string }[] };
     const superMap = new Map<string, SuperGroup>();
 
@@ -63,39 +61,12 @@ export async function TrackHubRenderer({
       if (!superMap.has(label)) {
         superMap.set(label, { label, minOrder: spec.display_order, items: [] });
       }
-      superMap.get(label)!.items.push({
-        spec,
-        href: `/app/${spec.slug}/${gPages[0].slug}`,
-      });
+      superMap.get(label)!.items.push({ spec, href: `/app/${spec.slug}/${gPages[0].slug}` });
     }
 
     const superGroups = [...superMap.values()].sort((a, b) => a.minOrder - b.minOrder);
 
-    return (
-      <div className="space-y-10">
-        {superGroups.map((sg) => (
-          <section key={sg.label}>
-            <h2
-              style={{
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: "var(--muted-2, #727272)",
-                marginBottom: 14,
-              }}
-            >
-              {sg.label}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {sg.items.map(({ spec, href }) => (
-                <SpecialtyCard key={spec.id} spec={spec} href={href} />
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
-    );
+    return <TrackHubAccordion groups={superGroups} />;
   }
 
   // Multiple pages per some specialties → grouped sections with page cards
@@ -127,61 +98,6 @@ export async function TrackHubRenderer({
         </section>
       ))}
     </div>
-  );
-}
-
-function SpecialtyCard({
-  spec,
-  href,
-}: {
-  spec: { slug: string; name: string };
-  href: string;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        background: "var(--surface-1)",
-        borderRadius: "var(--radius)",
-        padding: "18px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        textDecoration: "none",
-        outline: "1px solid var(--surface-2)",
-        outlineOffset: "-1px",
-        transition: "background .12s",
-      }}
-      className="hover:bg-surface-2 group"
-    >
-      <SpecialtyIcon specialtySlug={spec.slug} size={28} />
-      <div>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            letterSpacing: "-.01em",
-            color: "var(--foreground)",
-            lineHeight: 1.25,
-          }}
-        >
-          {spec.name}
-        </div>
-        <div
-          style={{
-            marginTop: 6,
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-            fontSize: 12,
-            fontWeight: 500,
-            color: "var(--brand)",
-          }}
-        >
-          Ouvir <ChevronRight size={10} strokeWidth={2.5} />
-        </div>
-      </div>
-    </Link>
   );
 }
 
