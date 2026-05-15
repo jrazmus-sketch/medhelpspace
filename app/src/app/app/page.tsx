@@ -8,6 +8,7 @@ import {
   Lock, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
+import { WaveformProgress } from "@/components/dashboard/waveform-progress";
 import type { Cohort, CohortModuleAccess } from "@/types/supabase";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -102,30 +103,6 @@ function getContentKind(type: string, trackSlug: string | null): ContentKind {
   return "reading";
 }
 
-function WaveformViz() {
-  const bars = [4, 9, 6, 14, 8, 11, 5, 13, 7, 10, 4, 12, 8, 6, 11, 9, 14, 5, 7, 10, 8, 13, 6, 9, 11];
-  const progress = 0.48;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 2.5, height: 20 }}>
-        {bars.map((h, i) => (
-          <div key={i} style={{
-            width: 3, height: h, maxHeight: 20, borderRadius: 2, flexShrink: 0,
-            background: i / bars.length < progress ? "var(--brand)" : "rgba(255,255,255,0.1)",
-          }} />
-        ))}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,0.08)", borderRadius: 1, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${progress * 100}%`, background: "var(--brand)", borderRadius: 1 }} />
-        </div>
-        <span style={{ fontSize: 10.5, color: "var(--muted-2, #727272)", fontFamily: "var(--font-geist-mono)", fontWeight: 500, flexShrink: 0 }}>
-          {Math.round(progress * 100)}%
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function FlashcardViz() {
   return (
@@ -182,13 +159,14 @@ function ReadingViz() {
 
 function ContinueCard({
   lastPage, lastTrack, lastPageSpec, cardStyle,
-  lastPageQuizStats, coveredSpecialtyIds, specialtiesAll,
+  lastPageQuizStats, lastPageLessonCount, coveredSpecialtyIds, specialtiesAll,
 }: {
   lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null;
   lastTrack: { id: number; name: string; slug: string } | null;
   lastPageSpec: { name: string; slug: string } | null | undefined;
   cardStyle: React.CSSProperties;
   lastPageQuizStats: { total: number; attempted: number; correct: number } | null;
+  lastPageLessonCount: number;
   coveredSpecialtyIds: Set<number>;
   specialtiesAll: { id: number; name: string }[];
 }) {
@@ -289,7 +267,7 @@ function ContinueCard({
       {coverageRow}
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 12 }}>
-        {kind === "audio" ? <WaveformViz /> : <div style={{ flex: 1 }} />}
+        {kind === "audio" ? <WaveformProgress pageId={lastPage.id} totalLessons={lastPageLessonCount} /> : <div style={{ flex: 1 }} />}
         <Link href={href} style={{
           display: "inline-flex", alignItems: "center", gap: 5,
           height: 32, padding: "0 14px", borderRadius: "var(--radius-sm)",
@@ -512,6 +490,16 @@ export default async function MemberDashboardPage() {
     }
   }
   const lastPageSpec = lastPage?.specialty_id ? specById.get(lastPage.specialty_id) : null;
+
+  // Lesson count for audio/text-lesson pages (used by WaveformProgress on dashboard)
+  let lastPageLessonCount = 0;
+  if (lastPage && (lastPage.type === "text-lesson" || lastPage.type === "audio-lesson")) {
+    const { count } = await admin
+      .from("lessons")
+      .select("*", { count: "exact", head: true })
+      .eq("page_id", lastPage.id);
+    lastPageLessonCount = count ?? 0;
+  }
 
   // Specialty coverage + last-page quiz stats (parallel, from existing quiz_attempts data)
   let lastPageQuizStats: { total: number; attempted: number; correct: number } | null = null;
@@ -739,6 +727,7 @@ export default async function MemberDashboardPage() {
           lastPageSpec={lastPageSpec}
           cardStyle={cardAlt}
           lastPageQuizStats={lastPageQuizStats}
+          lastPageLessonCount={lastPageLessonCount}
           coveredSpecialtyIds={coveredSpecialtyIds}
           specialtiesAll={(specialtiesAll ?? []) as { id: number; name: string }[]}
         />
