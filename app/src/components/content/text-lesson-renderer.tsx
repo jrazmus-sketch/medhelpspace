@@ -5,22 +5,27 @@ import { AudioPlayer } from "./audio-player";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
-// Matches: <p><strong>Bloco 1 – Título da Seção</strong></p>  (various dash chars, strong optional)
-const BLOCO_RE =
-  /<p[^>]*>(?:<strong[^>]*>)?\s*(Bloco\s+\d+\s*[–—-][^<]{1,120})\s*(?:<\/strong>)?<\/p>/gi;
+// Actual MedVoice DB structure — Bloco title is a colored span followed by <br/>:
+//   Case A: <span style="color:#7e04bf;">Bloco N – Title</span><br />  (span closes before br)
+//   Case B: <span style="color:#000000;">Bloco N – Title<br />body</span>  (br inside span)
+const BLOCO_A_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<\/span>\s*<br\s*\/?>/gi;
+const BLOCO_B_RE = /<span[^>]*>\s*(Bloco\s+\d+\s*[–—-][^<]{1,120}?)\s*<br\s*\/?>/gi;
 
 function processHtml(html: string): string {
   return html
     .replace(INLINE_PURPLE_RE, 'class="prose-brand-color"')
-    .replace(BLOCO_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`);
+    .replace(BLOCO_A_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`)
+    .replace(BLOCO_B_RE, (_m, title) => `<span class="bloco-header">${title.trim()}</span>`);
 }
 
 export async function TextLessonRenderer({
   pageId,
   selectedLessonId,
+  isTranscript = false,
 }: {
   pageId: number;
   selectedLessonId?: number;
+  isTranscript?: boolean;
 }) {
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
@@ -60,7 +65,7 @@ export async function TextLessonRenderer({
         {/* Transcript */}
         {activeLesson.body_html ? (
           activeLesson.audio_url ? (
-            /* Audio lesson: transcript collapsed by default */
+            /* Has audio: collapse transcript behind a toggle */
             <details className="transcript-toggle">
               <summary>Transcrição do áudio</summary>
               <div className="transcript-body">
@@ -71,8 +76,9 @@ export async function TextLessonRenderer({
               </div>
             </details>
           ) : (
+            /* No audio yet (or non-transcript page): show content directly */
             <div
-              className="prose-content"
+              className={`prose-content${isTranscript ? " prose-transcript" : ""}`}
               dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
             />
           )

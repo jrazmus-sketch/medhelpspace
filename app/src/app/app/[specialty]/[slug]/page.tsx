@@ -49,6 +49,8 @@ export default async function ContentPage({
 
 const FLASHCARDS_TRACK_ID = 3;
 const MEDHELP_60D_MODULE_ID = 1;
+const MEDVOICE_TRACK_ID = 1;
+const AUDIOCARDS_TRACK_ID = 2;
 
 function PageBody({
   page,
@@ -61,8 +63,17 @@ function PageBody({
     case "plain-content":
       return <PlainContentRenderer pageId={page.id} />;
     case "text-lesson":
-    case "audio-lesson":
-      return <TextLessonRenderer pageId={page.id} selectedLessonId={selectedLessonId} />;
+    case "audio-lesson": {
+      const isTranscript =
+        page.track_id === MEDVOICE_TRACK_ID || page.track_id === AUDIOCARDS_TRACK_ID;
+      return (
+        <TextLessonRenderer
+          pageId={page.id}
+          selectedLessonId={selectedLessonId}
+          isTranscript={isTranscript}
+        />
+      );
+    }
     case "h5p-quiz":
       if (page.track_id === FLASHCARDS_TRACK_ID) return <FlashcardRenderer pageId={page.id} />;
       if (page.content_module_id === MEDHELP_60D_MODULE_ID) return <MemorecardsRenderer pageId={page.id} />;

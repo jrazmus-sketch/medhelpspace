@@ -348,8 +348,7 @@
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  /* Extend edge-to-edge inside .transcript-body (which has 1rem horizontal padding) */
-  margin: 2rem -1rem 1rem;
+  margin: 2rem 0 1rem;
   padding: 0.5rem 1rem;
   color: #fff;
   background: var(--brand);
@@ -358,14 +357,18 @@
 }
 
 .dark .bloco-header {
-  /* Slightly warmer purple in dark so it pops off the dark surface */
   background: color-mix(in srgb, var(--brand) 80%, var(--c-medvoice));
   text-shadow: 0 0 24px color-mix(in srgb, var(--c-medvoice) 55%, transparent);
 }
 
-/* First bloco in a section sits flush with the top of the container */
-.transcript-body .bloco-header:first-child,
-.prose-transcript .bloco-header:first-child {
+/* Inside the transcript panel: break out to the panel's left/right edges */
+.transcript-body .bloco-header {
+  margin-left: -1rem;
+  margin-right: -1rem;
+}
+
+/* First bloco sits flush with the container top */
+.transcript-body .bloco-header:first-child {
   margin-top: -1.25rem;
 }
 
