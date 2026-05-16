@@ -1,6 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = "MedHelpSpace <pagamentos@medhelpspace.com.br>";
 
 export async function sendPurchaseConfirmation({
@@ -14,6 +13,8 @@ export async function sendPurchaseConfirmation({
 }) {
   if (!process.env.RESEND_API_KEY) return; // silently skip in dev without key
 
+  // Lazy-init so module evaluation never throws during build
+  const resend = new Resend(process.env.RESEND_API_KEY);
   const displayName = name || to.split("@")[0];
 
   await resend.emails.send({
