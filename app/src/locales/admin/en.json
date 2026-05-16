@@ -9,7 +9,8 @@
     "members": "Members",
     "cohorts": "Cohorts",
     "settings": "Settings",
-    "auditLog": "Audit Log"
+    "auditLog": "Audit Log",
+    "billing": "Billing"
   },
   "common": {
     "save": "Save",
@@ -233,6 +234,31 @@
     "targetCohort": "Target cohort",
     "targetAll": "All members",
     "confirmDelete": "Confirm delete"
+  },
+  "billing": {
+    "title": "Billing",
+    "export": "Export CSV",
+    "searchPlaceholder": "Search by email, name, cohort…",
+    "allStatuses": "All statuses",
+    "totalOrders": "Total orders",
+    "paidOrders": "Paid",
+    "pendingOrders": "Pending",
+    "totalRevenue": "Total revenue",
+    "colDate": "Date",
+    "colUser": "User",
+    "colCohort": "Cohort",
+    "colAmount": "Amount",
+    "colMethod": "Method",
+    "colStatus": "Status",
+    "statusPaid": "Paid",
+    "statusPending": "Pending",
+    "statusDeclined": "Declined",
+    "statusCancelled": "Cancelled",
+    "statusRefunded": "Refunded",
+    "refund": "Refund",
+    "refundTitle": "Confirm refund",
+    "refundDesc": "Issue a full refund to {{email}}? Their cohort membership will be revoked.",
+    "confirmRefund": "Confirm refund"
   },
   "adminBar": {
     "viewSite": "View site"

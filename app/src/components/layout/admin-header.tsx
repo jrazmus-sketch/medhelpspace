@@ -26,7 +26,7 @@ export function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { profile, isSuperAdmin } = useAuth();
+  const { profile, isSuperAdmin, isBillingAdmin } = useAuth();
 
   const displayName = profile?.display_name ?? "A";
   const initial = displayName.charAt(0).toUpperCase();
@@ -53,6 +53,7 @@ export function AdminHeader() {
     { href: "/admin/notifications", label: t("nav.notifications") },
     { href: "/admin/members", label: t("nav.members") },
     { href: "/admin/cohorts", label: t("nav.cohorts") },
+    ...(isSuperAdmin() || isBillingAdmin() ? [{ href: "/admin/billing", label: t("nav.billing") }] : []),
     ...(isSuperAdmin() ? [{ href: "/admin/audit-log", label: t("nav.auditLog") }] : []),
     { href: "/admin/settings", label: t("nav.settings") },
   ];

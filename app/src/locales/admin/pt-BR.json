@@ -9,7 +9,8 @@
     "members": "Membros",
     "cohorts": "Turmas",
     "settings": "Configurações",
-    "auditLog": "Log de auditoria"
+    "auditLog": "Log de auditoria",
+    "billing": "Financeiro"
   },
   "common": {
     "save": "Salvar",
@@ -233,6 +234,31 @@
     "targetCohort": "Turma alvo",
     "targetAll": "Todos os membros",
     "confirmDelete": "Confirmar exclusão"
+  },
+  "billing": {
+    "title": "Financeiro",
+    "export": "Exportar CSV",
+    "searchPlaceholder": "Buscar por e-mail, nome, turma…",
+    "allStatuses": "Todos os status",
+    "totalOrders": "Total de pedidos",
+    "paidOrders": "Pagos",
+    "pendingOrders": "Pendentes",
+    "totalRevenue": "Receita total",
+    "colDate": "Data",
+    "colUser": "Usuário",
+    "colCohort": "Turma",
+    "colAmount": "Valor",
+    "colMethod": "Método",
+    "colStatus": "Status",
+    "statusPaid": "Pago",
+    "statusPending": "Pendente",
+    "statusDeclined": "Recusado",
+    "statusCancelled": "Cancelado",
+    "statusRefunded": "Estornado",
+    "refund": "Estornar",
+    "refundTitle": "Confirmar estorno",
+    "refundDesc": "Estornar o valor total para {{email}}? A matrícula na turma será cancelada.",
+    "confirmRefund": "Confirmar estorno"
   },
   "adminBar": {
     "viewSite": "Ver site"
