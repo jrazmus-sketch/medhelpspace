@@ -368,7 +368,7 @@ export default async function MemberDashboardPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const membership = (memberships as any[])?.[0] as { joined_at: string } | undefined;
     studyDays = membership
-      ? Math.max(0, Math.floor((now - new Date(membership.joined_at).getTime()) / 86_400_000))
+      ? Math.max(0, Math.floor((nowMs - new Date(membership.joined_at).getTime()) / 86_400_000))
       : 0;
 
     if (activeCohort) {
