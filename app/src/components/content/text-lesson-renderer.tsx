@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { safe } from "@/lib/sanitize";
 import { LessonSidebar } from "./lesson-sidebar";
 import { AudioPlayer } from "./audio-player";
@@ -103,6 +105,38 @@ export async function TextLessonRenderer({
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
 
+  // Fetch user's completed lessons + saved audio positions for this page
+  let completedIds: number[] = [];
+  const positionByLesson = new Map<number, number>();
+  if (!USE_MOCK_DATA) {
+    try {
+      const userClient = await createClient();
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) {
+        const lessonIds = lessons.map((l) => l.id);
+        const [completionsRes, positionsRes] = await Promise.all([
+          userClient
+            .from("lesson_completions")
+            .select("lesson_id")
+            .eq("user_id", user.id)
+            .eq("page_id", pageId),
+          userClient
+            .from("lesson_progress")
+            .select("lesson_id, position_seconds")
+            .eq("user_id", user.id)
+            .in("lesson_id", lessonIds),
+        ]);
+        completedIds = (completionsRes.data ?? []).map((c) => c.lesson_id as number);
+        for (const p of positionsRes.data ?? []) {
+          positionByLesson.set(p.lesson_id as number, p.position_seconds as number);
+        }
+      }
+    } catch {
+      // Non-critical — sidebar starts empty, completions still record
+    }
+  }
+  const completedSet = new Set(completedIds);
+
   const entries = lessons.map((l) => ({ id: l.id, title: l.title }));
 
   const activeIdx = selectedLessonId
@@ -114,7 +148,12 @@ export async function TextLessonRenderer({
 
   return (
     <div className="flex gap-8 lg:gap-10">
-      <LessonSidebar entries={entries} activeId={activeLesson.id} pageId={pageId} />
+      <LessonSidebar
+        entries={entries}
+        activeId={activeLesson.id}
+        pageId={pageId}
+        initialCompleted={completedIds}
+      />
 
       <div className="flex-1 min-w-0">
         {/* Section title */}
@@ -124,7 +163,12 @@ export async function TextLessonRenderer({
 
         {/* Audio player */}
         {activeLesson.audio_url && (
-          <AudioPlayer src={activeLesson.audio_url} title="MedVoice · Áudio" lessonId={activeLesson.id} />
+          <AudioPlayer
+            src={activeLesson.audio_url}
+            title="MedVoice · Áudio"
+            lessonId={activeLesson.id}
+            initialPosition={positionByLesson.get(activeLesson.id) ?? 0}
+          />
         )}
 
         {/* Transcript */}
@@ -154,7 +198,11 @@ export async function TextLessonRenderer({
         {/* Complete button — text-only sections only (audio sections complete via 95% playback) */}
         {!activeLesson.audio_url && (
           <div className="mt-8 flex justify-end">
-            <LessonCompleteButton lessonId={activeLesson.id} pageId={pageId} />
+            <LessonCompleteButton
+              lessonId={activeLesson.id}
+              pageId={pageId}
+              initialDone={completedSet.has(activeLesson.id)}
+            />
           </div>
         )}
 

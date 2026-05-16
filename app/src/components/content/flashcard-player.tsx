@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { recordFlashcardAttempt } from "@/actions/flashcard-attempts";
+import { updateFlashcardSM2 } from "@/actions/flashcard-sm2";
 import { safe } from "@/lib/sanitize";
 
 export interface FlashCard {
@@ -23,9 +24,11 @@ type Phase = "play" | "group-done" | "deck-done";
 
 interface Props {
   groups: CardGroup[];
+  dueTodayCount?: number;
+  totalCards?: number;
 }
 
-export function FlashcardPlayer({ groups }: Props) {
+export function FlashcardPlayer({ groups, dueTodayCount, totalCards }: Props) {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [groupIdx, setGroupIdx] = useState(0);
   const [cardIdx, setCardIdx] = useState(0);
@@ -72,6 +75,7 @@ export function FlashcardPlayer({ groups }: Props) {
       if (!card || phase !== "play") return;
       setResults((prev) => ({ ...prev, [card.id]: result }));
       void recordFlashcardAttempt(card.id, result, sessionId);
+      void updateFlashcardSM2(card.id, result);
       if (isLastCard) {
         setPhase(isLastGroup ? "deck-done" : "group-done");
       } else {
@@ -276,6 +280,22 @@ export function FlashcardPlayer({ groups }: Props) {
 
   return (
     <div className="space-y-5 max-w-xl">
+      {/* SM-2 due-today header */}
+      {dueTodayCount != null && totalCards != null && totalCards > 0 && !retryIds && (
+        <div className="flex items-center justify-between text-xs px-3 py-2 rounded-md bg-surface-1 border border-border">
+          <span className="text-muted-foreground">
+            <span className="font-semibold text-brand tabular-nums">{dueTodayCount}</span>
+            {" "}para revisar hoje
+            {dueTodayCount < totalCards && (
+              <span className="opacity-60"> · {totalCards - dueTodayCount} já dominadas</span>
+            )}
+          </span>
+          <span className="text-muted-foreground/70 font-mono text-[10px]">
+            SM-2
+          </span>
+        </div>
+      )}
+
       <GroupTabs groups={groups} activeIdx={groupIdx} results={results} onSelect={goToGroup} />
 
       {/* Progress */}

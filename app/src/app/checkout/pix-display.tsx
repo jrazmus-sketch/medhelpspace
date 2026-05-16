@@ -5,13 +5,14 @@ import { Check, Copy, RefreshCw } from "lucide-react";
 
 interface Props {
   chargeId: string;
+  cohortSlug: string;
   qrText: string;
   qrImageUrl: string | null;
   expiresAt: string | null;
   onPaid: () => void;
 }
 
-export function PixDisplay({ chargeId, qrText, qrImageUrl, expiresAt, onPaid }: Props) {
+export function PixDisplay({ chargeId, cohortSlug, qrText, qrImageUrl, expiresAt, onPaid }: Props) {
   const [copied, setCopied] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [expired, setExpired] = useState(false);
@@ -86,7 +87,7 @@ export function PixDisplay({ chargeId, qrText, qrImageUrl, expiresAt, onPaid }: 
           </p>
         </div>
         <a
-          href={`/checkout?cohort=${chargeId.split("_")[0]}`}
+          href={`/checkout?cohort=${cohortSlug}`}
           className="rounded-xl border border-border px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-muted/40"
         >
           ← Voltar e tentar novamente

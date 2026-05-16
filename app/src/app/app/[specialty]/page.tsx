@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireActiveMembership } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { TrackHubRenderer } from "@/components/content/track-hub-renderer";
@@ -42,6 +43,7 @@ export default async function SpecialtyHubPage({
   params: Promise<{ specialty: string }>;
 }) {
   const { specialty: slug } = await params;
+  await requireActiveMembership();
   const supabase = await createClient();
 
   const { data: specialties } = await supabase

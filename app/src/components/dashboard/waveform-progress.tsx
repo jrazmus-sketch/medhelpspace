@@ -7,21 +7,26 @@ const BARS = [4, 9, 6, 14, 8, 11, 5, 13, 7, 10, 4, 12, 8, 6, 11, 9, 14, 5, 7, 10
 export function WaveformProgress({
   pageId,
   totalLessons,
+  initialCompletedCount,
 }: {
   pageId: number;
   totalLessons: number;
+  initialCompletedCount: number;
 }) {
-  const [completedCount, setCompletedCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(initialCompletedCount);
 
+  // Listen for in-session completions so the dashboard updates without a refresh
+  // if the user marks something complete via the floating dashboard
+  // (the source of truth is the lesson_completions table, seeded server-side)
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`mhs-lesson-done-${pageId}`);
-      if (raw) {
-        const ids = JSON.parse(raw) as number[];
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCompletedCount(Math.min(ids.length, totalLessons));
-      }
-    } catch {}
+    const handler = () => {
+      // We don't know which page the event was for, but the server is the
+      // source of truth. Best we can do client-side is bump by 1 if the
+      // event fires while looking at the dashboard (rare case).
+      setCompletedCount((c) => Math.min(c + 1, totalLessons));
+    };
+    window.addEventListener("mhs:lesson-complete", handler);
+    return () => window.removeEventListener("mhs:lesson-complete", handler);
   }, [pageId, totalLessons]);
 
   const progress = totalLessons > 0 ? completedCount / totalLessons : 0;

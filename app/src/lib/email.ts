@@ -1,6 +1,12 @@
 import { Resend } from "resend";
 
 const FROM = "MedHelpSpace <pagamentos@medhelpspace.com.br>";
+const APP_URL = "https://medhelpspace.com.br";
+
+function getResend(): Resend | null {
+  if (!process.env.RESEND_API_KEY) return null;
+  return new Resend(process.env.RESEND_API_KEY);
+}
 
 export async function sendPurchaseConfirmation({
   to,
@@ -11,10 +17,8 @@ export async function sendPurchaseConfirmation({
   name: string;
   cohortName: string;
 }) {
-  if (!process.env.RESEND_API_KEY) return; // silently skip in dev without key
-
-  // Lazy-init so module evaluation never throws during build
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = getResend();
+  if (!resend) return;
   const displayName = name || to.split("@")[0];
 
   await resend.emails.send({
@@ -23,6 +27,182 @@ export async function sendPurchaseConfirmation({
     subject: `Acesso liberado — MedHelpSpace Revalida ${cohortName}`,
     html: purchaseConfirmationHtml({ displayName, cohortName }),
   });
+}
+
+// ── 60D unlock notification ───────────────────────────────────────────────────
+
+export async function send60DUnlockEmail({
+  to,
+  name,
+  testDate,
+}: {
+  to: string;
+  name: string;
+  testDate: string; // YYYY-MM-DD
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const displayName = name || to.split("@")[0];
+  const formattedDate = new Date(testDate + "T12:00:00").toLocaleDateString("pt-BR", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "MedHelp 60D liberado — sua reta final começa agora",
+    html: lifecycleEmailHtml({
+      displayName,
+      headline: "MedHelp 60D está liberado",
+      body: `
+        Faltam 60 dias para sua prova (${formattedDate}). O módulo intensivo
+        <strong>MedHelp 60D</strong> agora está disponível — Revalida Up,
+        Memorecards e todos os recursos de reta final.
+      `,
+      ctaLabel: "Acessar MedHelp 60D →",
+      ctaHref: `${APP_URL}/app`,
+    }),
+  });
+}
+
+// ── Membership expiry warning (7 days before) ────────────────────────────────
+
+export async function sendExpiryWarningEmail({
+  to,
+  name,
+  cohortName,
+  endsAt,
+}: {
+  to: string;
+  name: string;
+  cohortName: string;
+  endsAt: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const displayName = name || to.split("@")[0];
+  const formattedDate = new Date(endsAt).toLocaleDateString("pt-BR", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "Seu acesso encerra em 7 dias",
+    html: lifecycleEmailHtml({
+      displayName,
+      headline: "Seu acesso encerra em 7 dias",
+      body: `
+        Seu acesso à turma <strong>${cohortName}</strong> termina em
+        ${formattedDate}. Aproveite os últimos dias para revisar o que ficou
+        pendente. Se quiser continuar estudando, você pode renovar agora.
+      `,
+      ctaLabel: "Renovar acesso →",
+      ctaHref: `${APP_URL}/app/acesso-encerrado`,
+    }),
+  });
+}
+
+// ── Membership expiry notice (after expiration) ───────────────────────────────
+
+export async function sendExpiryNoticeEmail({
+  to,
+  name,
+  cohortName,
+}: {
+  to: string;
+  name: string;
+  cohortName: string;
+}) {
+  const resend = getResend();
+  if (!resend) return;
+  const displayName = name || to.split("@")[0];
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "Seu acesso ao MedHelpSpace foi encerrado",
+    html: lifecycleEmailHtml({
+      displayName,
+      headline: "Acesso encerrado",
+      body: `
+        Seu acesso à turma <strong>${cohortName}</strong> foi encerrado.
+        Esperamos que você tenha tido uma ótima preparação.
+        Para continuar estudando na próxima turma, é só renovar.
+      `,
+      ctaLabel: "Ver próximas turmas →",
+      ctaHref: `${APP_URL}/app/acesso-encerrado`,
+    }),
+  });
+}
+
+// ── Shared lifecycle template ─────────────────────────────────────────────────
+
+function lifecycleEmailHtml({
+  displayName, headline, body, ctaLabel, ctaHref,
+}: {
+  displayName: string;
+  headline: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${headline}</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+          <tr>
+            <td style="background:#7a1d91;padding:28px 40px;">
+              <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-.3px;">
+                MedHelpSpace Revalida
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <p style="margin:0 0 6px;font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.1em;font-weight:600;">
+                Olá, ${displayName}
+              </p>
+              <p style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111827;letter-spacing:-.4px;line-height:1.2;">
+                ${headline}
+              </p>
+              <p style="margin:0 0 28px;font-size:15px;color:#4b5563;line-height:1.65;">
+                ${body.trim()}
+              </p>
+              <table cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+                <tr>
+                  <td style="background:#7a1d91;border-radius:10px;">
+                    <a href="${ctaHref}"
+                       style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-.2px;">
+                      ${ctaLabel}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
+              <p style="margin:0;font-size:11.5px;color:#9ca3af;line-height:1.5;">
+                MedHelpSpace Revalida &nbsp;·&nbsp;
+                <a href="${APP_URL}" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 function purchaseConfirmationHtml({

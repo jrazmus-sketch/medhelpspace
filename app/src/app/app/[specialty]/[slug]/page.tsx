@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireActiveMembership } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { PlainContentRenderer } from "@/components/content/plain-content-renderer";
 import { TextLessonRenderer } from "@/components/content/text-lesson-renderer";
@@ -28,6 +29,8 @@ export default async function ContentPage({
     .single();
 
   if (!page) notFound();
+
+  await requireActiveMembership(page.content_module_id);
 
   const selectedLessonId = s ? parseInt(s, 10) : undefined;
 

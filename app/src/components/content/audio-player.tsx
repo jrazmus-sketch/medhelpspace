@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { Play, Pause } from "lucide-react";
+import { saveLessonPosition } from "@/actions/lesson-progress";
 
 const BARS = Array.from({ length: 48 }, (_, i) => {
   const t = i / 47;
@@ -23,13 +24,27 @@ function fmt(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ src, title, lessonId }: { src: string; title?: string; lessonId?: number }) {
+export function AudioPlayer({
+  src,
+  title,
+  lessonId,
+  initialPosition = 0,
+}: {
+  src: string;
+  title?: string;
+  lessonId?: number;
+  initialPosition?: number;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
   const completedFiredRef = useRef(false);
+  const seekRestoredRef = useRef(false);
   const lessonIdRef = useRef(lessonId);
+  const initialPositionRef = useRef(initialPosition);
+  const lastSavedRef = useRef(0);
   useLayoutEffect(() => { lessonIdRef.current = lessonId; }, [lessonId]);
+  useLayoutEffect(() => { initialPositionRef.current = initialPosition; }, [initialPosition]);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -40,7 +55,17 @@ export function AudioPlayer({ src, title, lessonId }: { src: string; title?: str
     const audio = audioRef.current;
     if (!audio) return;
     const onTime = () => {
-      setCurrentTime(audio.currentTime);
+      const now = audio.currentTime;
+      setCurrentTime(now);
+      // Persist position every ~10 seconds while playing
+      if (
+        lessonIdRef.current != null &&
+        !audio.paused &&
+        Math.abs(now - lastSavedRef.current) >= 10
+      ) {
+        lastSavedRef.current = now;
+        saveLessonPosition(lessonIdRef.current, now).catch(() => { /* silent */ });
+      }
       if (
         lessonIdRef.current != null &&
         !completedFiredRef.current &&
@@ -53,14 +78,37 @@ export function AudioPlayer({ src, title, lessonId }: { src: string; title?: str
         );
       }
     };
-    const onMeta = () => setDuration(audio.duration);
+    const onMeta = () => {
+      setDuration(audio.duration);
+      // Restore saved position once, after metadata loads — never seek past 95%
+      if (
+        !seekRestoredRef.current &&
+        initialPositionRef.current > 0 &&
+        audio.duration > 0 &&
+        initialPositionRef.current / audio.duration < 0.95
+      ) {
+        seekRestoredRef.current = true;
+        audio.currentTime = initialPositionRef.current;
+        setCurrentTime(initialPositionRef.current);
+        lastSavedRef.current = initialPositionRef.current;
+      }
+    };
+    const onPause = () => {
+      // Save final position on pause so resume is accurate
+      if (lessonIdRef.current != null && audio.currentTime > 1) {
+        lastSavedRef.current = audio.currentTime;
+        saveLessonPosition(lessonIdRef.current, audio.currentTime).catch(() => { /* silent */ });
+      }
+    };
     const onEnd = () => setPlaying(false);
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("pause", onPause);
     audio.addEventListener("ended", onEnd);
     return () => {
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("pause", onPause);
       audio.removeEventListener("ended", onEnd);
     };
   }, []);
@@ -69,11 +117,13 @@ export function AudioPlayer({ src, title, lessonId }: { src: string; title?: str
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlaying(false);
-     
+
     setCurrentTime(0);
-     
+
     setDuration(0);
     completedFiredRef.current = false;
+    seekRestoredRef.current = false;
+    lastSavedRef.current = 0;
     const audio = audioRef.current;
     if (audio) {
       audio.load();

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import { WaveformProgress } from "@/components/dashboard/waveform-progress";
+import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 import type { Cohort, CohortModuleAccess } from "@/types/supabase";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -150,7 +151,8 @@ function ReadingViz() {
 
 function ContinueCard({
   lastPage, lastTrack, lastPageSpec, cardStyle,
-  lastPageQuizStats, lastPageLessonCount, coveredSpecialtyIds, specialtiesAll,
+  lastPageQuizStats, lastPageLessonCount, lastPageCompletedCount,
+  coveredSpecialtyIds, specialtiesAll,
 }: {
   lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null;
   lastTrack: { id: number; name: string; slug: string } | null;
@@ -158,6 +160,7 @@ function ContinueCard({
   cardStyle: React.CSSProperties;
   lastPageQuizStats: { total: number; attempted: number; correct: number } | null;
   lastPageLessonCount: number;
+  lastPageCompletedCount: number;
   coveredSpecialtyIds: Set<number>;
   specialtiesAll: { id: number; name: string }[];
 }) {
@@ -258,7 +261,7 @@ function ContinueCard({
       {coverageRow}
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 12 }}>
-        {kind === "audio" ? <WaveformProgress pageId={lastPage.id} totalLessons={lastPageLessonCount} /> : <div style={{ flex: 1 }} />}
+        {kind === "audio" ? <WaveformProgress pageId={lastPage.id} totalLessons={lastPageLessonCount} initialCompletedCount={lastPageCompletedCount} /> : <div style={{ flex: 1 }} />}
         <Link href={href} style={{
           display: "inline-flex", alignItems: "center", gap: 5,
           height: 32, padding: "0 14px", borderRadius: "var(--radius-sm)",
@@ -413,15 +416,37 @@ export default async function MemberDashboardPage() {
     : null;
   const examDateLabel = activeCohort?.test_date ? fmtDate(new Date(activeCohort.test_date)) : null;
 
-  // Quiz attempts — include question_id for coverage + per-page stats
-  let quizAttempts: { is_correct: boolean; created_at: string; question_id: number }[] = [];
+  // Quiz attempts — include question_id for coverage + per-page stats, specialty_id for daily plan
+  let quizAttempts: { is_correct: boolean; created_at: string; question_id: number; specialty_id: number | null }[] = [];
   if (user) {
     try {
       const { data } = await admin
         .from("quiz_attempts")
-        .select("is_correct, created_at, question_id")
+        .select("is_correct, created_at, question_id, specialty_id")
         .eq("user_id", user.id);
       quizAttempts = (data ?? []) as typeof quizAttempts;
+    } catch { /* table not migrated yet */ }
+  }
+
+  // Derived study plan (from study_plans preferences + signals)
+  const derivedPlan = user ? await getDerivedPlanForUser(user.id) : null;
+
+  // Daily plan signals — derived from today's quiz + lesson activity
+  const todayKey = new Date().toISOString().split("T")[0];
+  const todayAttempts = quizAttempts.filter((a) => a.created_at.startsWith(todayKey));
+  const questionsTodayCount = todayAttempts.length;
+  const specialtiesTodayCount = new Set(
+    todayAttempts.map((a) => a.specialty_id).filter((s): s is number => s != null),
+  ).size;
+  let lessonsTodayCount = 0;
+  if (user) {
+    try {
+      const { count } = await admin
+        .from("lesson_completions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("completed_at", `${todayKey}T00:00:00`);
+      lessonsTodayCount = count ?? 0;
     } catch { /* table not migrated yet */ }
   }
 
@@ -453,12 +478,24 @@ export default async function MemberDashboardPage() {
 
   // Lesson count for audio/text-lesson pages (used by WaveformProgress on dashboard)
   let lastPageLessonCount = 0;
+  let lastPageCompletedCount = 0;
   if (lastPage && (lastPage.type === "text-lesson" || lastPage.type === "audio-lesson")) {
     const { count } = await admin
       .from("lessons")
       .select("*", { count: "exact", head: true })
       .eq("page_id", lastPage.id);
     lastPageLessonCount = count ?? 0;
+
+    if (user) {
+      try {
+        const { count: doneCount } = await admin
+          .from("lesson_completions")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("page_id", lastPage.id);
+        lastPageCompletedCount = doneCount ?? 0;
+      } catch { /* table not migrated yet */ }
+    }
   }
 
   // Specialty coverage + last-page quiz stats (parallel, from existing quiz_attempts data)
@@ -661,23 +698,72 @@ export default async function MemberDashboardPage() {
           <div style={{ position: "relative" }}>
             <div style={{ fontSize: 10.5, letterSpacing: ".16em", textTransform: "uppercase", fontWeight: 600, opacity: .55 }}>Plano de hoje</div>
             <h3 style={{ margin: "6px 0 0", fontSize: 22, letterSpacing: "-.025em", lineHeight: 1.05, fontWeight: 600 }}>
-              Estude<br />com foco
+              {derivedPlan?.paused ? "Plano em pausa" : "Estude com foco"}
             </h3>
           </div>
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 7 }}>
-            {[
-              { task: "Responder 15 questões hoje", done: false },
-              { task: "Revisar especialidade fraca",  done: false },
-              { task: "Ouvir um áudio MedVoice",      done: false },
-            ].map(({ task, done }) => (
-              <div key={task} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13 }}>
-                <div style={{ width: 16, height: 16, borderRadius: 4, background: done ? "rgba(255,255,255,.6)" : "rgba(255,255,255,.15)", border: "1.5px solid rgba(255,255,255,.3)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {done && <span style={{ fontSize: 9, color: "var(--brand)" }}>✓</span>}
-                </div>
-                <span style={{ opacity: done ? 0.5 : 0.85, textDecoration: done ? "line-through" : "none" }}>{task}</span>
-              </div>
-            ))}
+
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8 }}>
+            {derivedPlan?.paused ? (
+              <p style={{ fontSize: 12.5, opacity: 0.75, lineHeight: 1.5 }}>
+                Retoma {derivedPlan.pausedUntil ? `em ${derivedPlan.pausedUntil}` : "quando você quiser"}.
+              </p>
+            ) : derivedPlan && derivedPlan.items.length > 0 ? (
+              <>
+                {derivedPlan.items.slice(0, 3).map((item, i) => (
+                  <Link
+                    key={i}
+                    href={item.href}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      fontSize: 12.5,
+                      lineHeight: 1.3,
+                      color: "rgba(255,255,255,0.92)",
+                      textDecoration: "none",
+                      padding: "5px 0",
+                    }}
+                  >
+                    <div style={{
+                      width: 5, height: 5, borderRadius: "50%", background: "rgba(255,255,255,0.7)", flexShrink: 0,
+                    }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+                      {item.title}
+                    </span>
+                  </Link>
+                ))}
+                {derivedPlan.items.length > 3 && (
+                  <p style={{ fontSize: 11, opacity: 0.55, margin: 0 }}>
+                    + {derivedPlan.items.length - 3} mais
+                  </p>
+                )}
+              </>
+            ) : (
+              <p style={{ fontSize: 12.5, opacity: 0.75, lineHeight: 1.5 }}>
+                Você cobriu o material das suas prioridades. Explore outras especialidades quando quiser.
+              </p>
+            )}
           </div>
+
+          {!derivedPlan?.paused && derivedPlan && derivedPlan.items.length > 0 && (
+            <Link
+              href="/app/plano"
+              style={{
+                position: "relative",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                marginTop: 14,
+                fontSize: 12,
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.85)",
+                textDecoration: "none",
+                alignSelf: "flex-start",
+              }}
+            >
+              Ver plano completo →
+            </Link>
+          )}
         </div>
 
         {/* Continue — takes 2/3 of the row */}
@@ -688,6 +774,7 @@ export default async function MemberDashboardPage() {
           cardStyle={cardAlt}
           lastPageQuizStats={lastPageQuizStats}
           lastPageLessonCount={lastPageLessonCount}
+          lastPageCompletedCount={lastPageCompletedCount}
           coveredSpecialtyIds={coveredSpecialtyIds}
           specialtiesAll={(specialtiesAll ?? []) as { id: number; name: string }[]}
         />

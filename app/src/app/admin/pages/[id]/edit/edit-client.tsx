@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { updatePageMetadata, updateLessons } from "@/actions/admin";
-import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow } from "./page";
+import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow, QuizQuestionRow, FlashcardRow } from "./page";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { QuizEditor } from "./quiz-editor";
+import { FlashcardEditor } from "./flashcard-editor";
 import { Check, AlertCircle, ArrowLeft, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +52,13 @@ type Props = {
   tracks: TrackOption[];
   modules: ModuleOption[];
   lessons: LessonRow[];
+  quizQuestions: QuizQuestionRow[];
+  flashcards: FlashcardRow[];
+  isQuiz: boolean;
+  isFlashcards: boolean;
 };
 
-export function PageEditClient({ page, specialties, tracks, modules, lessons }: Props) {
+export function PageEditClient({ page, specialties, tracks, modules, lessons, quizQuestions, flashcards, isQuiz, isFlashcards }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -60,8 +66,8 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
   const [slugOverride, setSlugOverride] = useState(page.slug);
   const [slugManual, setSlugManual] = useState(false);
   const slug = slugManual ? slugOverride : slugify(title);
-  const [status, setStatus] = useState<"published" | "draft">(
-    page.status === "published" ? "published" : "draft",
+  const [status, setStatus] = useState<"publish" | "draft">(
+    page.status === "publish" ? "publish" : "draft",
   );
   const [specialtyId, setSpecialtyId] = useState<number | "">(page.specialty_id ?? "");
   const [trackId, setTrackId] = useState<number | "">(page.track_id ?? "");
@@ -163,9 +169,9 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
     }
   }
 
-  const showLessons = page.page_type === "text-lesson" || page.page_type === "audio-lesson";
+  const showLessons = page.type === "text-lesson" || page.type === "audio-lesson";
 
-  const typeColor = TYPE_COLORS[page.page_type] ?? TYPE_COLORS.default;
+  const typeColor = TYPE_COLORS[page.type] ?? TYPE_COLORS.default;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -182,7 +188,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
         <span className="text-muted-foreground">/</span>
         <h1 className="text-lg font-semibold truncate">{page.title}</h1>
         <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0", typeColor)}>
-          {page.page_type}
+          {page.type}
         </span>
       </div>
 
@@ -232,14 +238,14 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
             {t("pageEdit.sectionStatus")}
           </h2>
           <div className="flex gap-2">
-            {(["draft", "published"] as const).map((s) => (
+            {(["draft", "publish"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setStatus(s)}
                 className={cn(
                   "rounded-lg border px-4 py-1.5 text-sm font-medium transition-colors",
                   status === s
-                    ? s === "published"
+                    ? s === "publish"
                       ? "border-green-500 bg-green-500/10 text-green-700 dark:text-green-400"
                       : "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                     : "border-border text-muted-foreground hover:border-foreground/30",
@@ -497,6 +503,12 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
           </div>
         </div>
       )}
+
+      {/* Quiz questions editor */}
+      {isQuiz && <QuizEditor pageId={page.id} initial={quizQuestions} />}
+
+      {/* Flashcards editor */}
+      {isFlashcards && <FlashcardEditor pageId={page.id} initial={flashcards} />}
     </div>
   );
 }

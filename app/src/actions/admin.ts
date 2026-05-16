@@ -207,7 +207,7 @@ export async function revokeUserSessions(targetUserId: string) {
 export type PageMetadataInput = {
   title: string;
   slug: string;
-  status: "published" | "draft";
+  status: "publish" | "draft";
   specialty_id: number | null;
   track_id: number | null;
   view: string | null;
@@ -298,6 +298,108 @@ export async function updateLessons(pageId: number, lessons: LessonInput[]) {
         audio_url: lesson.audio_url || null,
         position: lesson.position,
       });
+    }
+  }
+
+  revalidatePath(`/admin/pages/${pageId}/edit`);
+}
+
+// ── Quiz questions ────────────────────────────────────────────────────────────
+
+export type QuizAnswerInput = {
+  text: string;
+  correct: boolean;
+  feedback: string;
+};
+
+export type QuizQuestionInput = {
+  id: number | null;
+  question: string;
+  answers: QuizAnswerInput[];
+  media_url: string | null;
+  position: number;
+};
+
+export async function updateQuizQuestions(pageId: number, questions: QuizQuestionInput[]) {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("quiz_questions")
+    .select("id")
+    .eq("page_id", pageId);
+  const existingIds = new Set((existing ?? []).map((r) => r.id as number));
+  const incomingIds = new Set(
+    questions.filter((q) => q.id !== null).map((q) => q.id as number),
+  );
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    await admin.from("quiz_questions").delete().in("id", toDelete);
+  }
+
+  for (const q of questions) {
+    if (!q.question.trim()) continue;
+    const payload = {
+      question: q.question,
+      answers: q.answers,
+      media_url: q.media_url || null,
+      position: q.position,
+    };
+    if (q.id !== null) {
+      await admin.from("quiz_questions").update(payload).eq("id", q.id);
+    } else {
+      await admin.from("quiz_questions").insert({ page_id: pageId, ...payload });
+    }
+  }
+
+  revalidatePath(`/admin/pages/${pageId}/edit`);
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+
+export type FlashcardInput = {
+  id: number | null;
+  group_position: number;
+  group_label: string | null;
+  position: number;
+  text: string;
+  answer: string;
+  image_url: string | null;
+  tip: string | null;
+};
+
+export async function updateFlashcards(pageId: number, cards: FlashcardInput[]) {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("flashcard_items")
+    .select("id")
+    .eq("page_id", pageId);
+  const existingIds = new Set((existing ?? []).map((r) => r.id as number));
+  const incomingIds = new Set(cards.filter((c) => c.id !== null).map((c) => c.id as number));
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    await admin.from("flashcard_items").delete().in("id", toDelete);
+  }
+
+  for (const c of cards) {
+    if (!c.text.trim() || !c.answer.trim()) continue;
+    const payload = {
+      group_position: c.group_position,
+      group_label: c.group_label,
+      position: c.position,
+      text: c.text,
+      answer: c.answer,
+      image_url: c.image_url || null,
+      tip: c.tip || null,
+    };
+    if (c.id !== null) {
+      await admin.from("flashcard_items").update(payload).eq("id", c.id);
+    } else {
+      await admin.from("flashcard_items").insert({ page_id: pageId, ...payload });
     }
   }
 

@@ -2,32 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
-
-function isDone(pageId: number, lessonId: number): boolean {
-  try {
-    const raw = localStorage.getItem(`mhs-lesson-done-${pageId}`);
-    if (!raw) return false;
-    return (JSON.parse(raw) as number[]).includes(lessonId);
-  } catch {
-    return false;
-  }
-}
+import { recordLessonCompletion } from "@/actions/lesson-completions";
 
 export function LessonCompleteButton({
   lessonId,
   pageId,
+  initialDone,
 }: {
   lessonId: number;
   pageId: number;
+  initialDone: boolean;
 }) {
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(initialDone);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDone(isDone(pageId, lessonId));
-  }, [lessonId, pageId]);
-
-  // Also listen for the event in case it fires before state re-check
+  // Listen for the event in case AudioPlayer or sidebar marks this lesson complete
   useEffect(() => {
     const handler = (e: Event) => {
       const { lessonId: id } = (e as CustomEvent<{ lessonId: number }>).detail;
@@ -39,10 +27,15 @@ export function LessonCompleteButton({
 
   function handleClick() {
     if (done) return;
+    setDone(true);
+    // Dispatch event so sidebar/dashboard listeners update too
     window.dispatchEvent(
       new CustomEvent("mhs:lesson-complete", { detail: { lessonId } }),
     );
-    setDone(true);
+    // Persist to server (idempotent)
+    recordLessonCompletion(lessonId, pageId).catch(() => {
+      // Silent — optimistic UI already updated
+    });
   }
 
   if (done) {

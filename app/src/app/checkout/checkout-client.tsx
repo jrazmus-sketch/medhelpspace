@@ -98,6 +98,7 @@ export function CheckoutClient({
     return (
       <PixDisplay
         chargeId={result.chargeId}
+        cohortSlug={cohortSlug}
         qrText={result.pixQrText}
         qrImageUrl={result.pixQrImageUrl}
         expiresAt={result.pixExpiresAt}

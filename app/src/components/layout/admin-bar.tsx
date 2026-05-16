@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Shield, ChevronDown, LayoutDashboard, Eye, Check, X } from "lucide-react";
+import { Shield, ChevronDown, LayoutDashboard, Eye, Check, X, Pencil } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 import { setViewAs } from "@/actions/admin";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,7 @@ export function AdminBar({ viewas, cohorts }: Props) {
 
   const { profile, isAnyAdmin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
@@ -140,6 +141,13 @@ export function AdminBar({ viewas, cohorts }: Props) {
 
   const roleLabel = profile.role.replace(/_/g, " ");
 
+  // Detect content pages: /app/[specialty]/[slug] — extract slug
+  const contentSlug = (() => {
+    if (!pathname) return null;
+    const m = pathname.match(/^\/app\/[^/]+\/([^/?#]+)/);
+    return m ? m[1] : null;
+  })();
+
   return (
     <div className="relative flex h-8 items-center gap-3 bg-brand px-3 md:px-6">
       <Shield className="h-3.5 w-3.5 shrink-0 text-brand-fg/80" />
@@ -207,6 +215,17 @@ export function AdminBar({ viewas, cohorts }: Props) {
             </>
           )}
         </div>
+
+        {contentSlug && (
+          <Link
+            href={`/admin/pages/edit?slug=${encodeURIComponent(contentSlug)}`}
+            className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold text-brand-fg transition-colors hover:bg-brand-fg/15"
+          >
+            <Pencil className="h-3 w-3" />
+            <span className="hidden md:inline">Editar esta página</span>
+            <span className="md:hidden">Editar</span>
+          </Link>
+        )}
 
         <Link
           href="/admin"

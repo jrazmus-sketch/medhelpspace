@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Settings, User, Shield, Sun, Moon, Monitor } from "lucide-react";
+import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -29,7 +29,7 @@ const NAV_LINKS = [
   { href: "/app/audiocards",   label: "AudioCards"              },
 ];
 
-export function MemberHeader() {
+export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isAnyAdmin } = useAuth();
@@ -91,6 +91,16 @@ export function MemberHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <Link
+            href="/app/buscar"
+            aria-label="Buscar"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <Search className="h-4 w-4" />
+          </Link>
+
+          {bellSlot}
+
           <ThemeToggle />
 
           <DropdownMenu>

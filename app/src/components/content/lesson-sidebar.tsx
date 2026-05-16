@@ -3,55 +3,32 @@
 import { useState, useEffect } from "react";
 import { Menu, X, Check } from "lucide-react";
 import Link from "next/link";
+import { recordLessonCompletion } from "@/actions/lesson-completions";
 
 interface SidebarEntry {
   id: number;
   title: string;
 }
 
-// ─── Phase 1: localStorage progress ──────────────────────────────────────────
-// PHASE 2 (pre-launch critical): migrate to server-side (lesson_completions table
-// + server action). localStorage means phone and desktop show different progress.
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Server-side persistence via lesson_completions table — cross-device synced.
 // Completion sources:
 //  - Audio sections: AudioPlayer fires mhs:lesson-complete at 95% playback
 //  - Text-only sections: LessonCompleteButton dispatches mhs:lesson-complete on click
 // Navigation alone never marks a section complete.
 
-const storageKey = (pageId: number) => `mhs-lesson-done-${pageId}`;
-
-function loadCompleted(pageId: number): Set<number> {
-  try {
-    const raw = localStorage.getItem(storageKey(pageId));
-    if (raw) return new Set(JSON.parse(raw) as number[]);
-  } catch {}
-  return new Set();
-}
-
-function saveCompleted(pageId: number, ids: Set<number>) {
-  try {
-    localStorage.setItem(storageKey(pageId), JSON.stringify([...ids]));
-  } catch {}
-}
-
 export function LessonSidebar({
   entries,
   activeId,
   pageId,
+  initialCompleted,
 }: {
   entries: SidebarEntry[];
   activeId: number;
   pageId: number;
+  initialCompleted: number[];
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [completed, setCompleted] = useState<Set<number>>(new Set());
-
-  // Load persisted progress from localStorage after mount (avoids hydration mismatch)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCompleted(loadCompleted(pageId));
-  }, [pageId]);
+  const [completed, setCompleted] = useState<Set<number>>(() => new Set(initialCompleted));
 
   // Listen for completion events from AudioPlayer (95% played) and LessonCompleteButton
   useEffect(() => {
@@ -61,7 +38,10 @@ export function LessonSidebar({
         if (current.has(lessonId)) return current;
         const next = new Set(current);
         next.add(lessonId);
-        saveCompleted(pageId, next);
+        // Fire-and-forget server persistence (idempotent upsert)
+        recordLessonCompletion(lessonId, pageId).catch(() => {
+          // Silent — optimistic UI already reflects completion
+        });
         return next;
       });
     };

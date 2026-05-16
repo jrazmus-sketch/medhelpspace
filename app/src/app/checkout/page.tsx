@@ -32,14 +32,25 @@ export default async function CheckoutPage({
     redirect(`/login?redirect=${encodeURIComponent(`/checkout?cohort=${cohortSlug}`)}`);
   }
 
-  // Check for existing membership
-  const { data: membership } = await supabase
+  // Block only if user has an ACTIVE membership in this specific cohort.
+  // An expired membership, or a membership in a different cohort, should not block.
+  const now = new Date().toISOString();
+  const { data: memberships } = await supabase
     .from("user_cohort_memberships")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .select("cohort:cohorts(slug, membership_starts_at, membership_ends_at)")
+    .eq("user_id", user.id);
 
-  const alreadyMember = !!membership;
+  const alreadyMember = (memberships ?? []).some((m) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const c = (m as any).cohort as { slug: string; membership_starts_at: string; membership_ends_at: string } | null;
+    if (!c) return false;
+    return (
+      c.slug === cohortSlug &&
+      c.membership_starts_at <= now &&
+      c.membership_ends_at >= now
+    );
+  });
 
   // Fetch the user's display name for the form
   const { data: profile } = await supabase

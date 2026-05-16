@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/lifecycle-notifications",
+      "schedule": "0 11 * * *"
+    }
+  ]
+}
