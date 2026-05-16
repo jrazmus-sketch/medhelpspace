@@ -15,7 +15,7 @@ export function FounderSection() {
             className="pointer-events-none absolute -top-4 -left-4 select-none text-[120px] font-black leading-none text-brand/8 md:-top-6 md:-left-8 md:text-[180px]"
             aria-hidden
           >
-            "
+            {'"'}
           </div>
 
           {/* Quote */}

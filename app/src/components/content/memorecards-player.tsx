@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { safe } from "@/lib/sanitize";
 import type { SlideData } from "./memorecards-renderer";
 
 interface Props {
@@ -125,7 +126,7 @@ function SlideContent({ slide }: { slide: SlideData }) {
       <div className="flex flex-col sm:flex-row gap-4 p-6 h-full">
         <div
           className="flex-1 [&_p]:mb-2 [&_strong]:font-semibold [&_span]:leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: slide.content_html }}
+          dangerouslySetInnerHTML={{ __html: safe(slide.content_html) }}
         />
         {validUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -147,7 +148,7 @@ function SlideContent({ slide }: { slide: SlideData }) {
   return (
     <div
       className="p-6 h-full [&_p]:mb-2 [&_strong]:font-semibold [&_span]:leading-relaxed [&_br]:block"
-      dangerouslySetInnerHTML={{ __html: slide.content_html ?? "" }}
+      dangerouslySetInnerHTML={{ __html: safe(slide.content_html ?? "") }}
     />
   );
 }

@@ -18,6 +18,7 @@ export function WaveformProgress({
       const raw = localStorage.getItem(`mhs-lesson-done-${pageId}`);
       if (raw) {
         const ids = JSON.parse(raw) as number[];
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCompletedCount(Math.min(ids.length, totalLessons));
       }
     } catch {}

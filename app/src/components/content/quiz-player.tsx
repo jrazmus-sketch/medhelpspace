@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { safe } from "@/lib/sanitize";
 import type { QuizQuestionData } from "./quiz-renderer";
 
 interface Props {
@@ -119,7 +120,7 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
                 </span>
                 <div
                   className="min-w-0 flex-1 text-muted-foreground line-clamp-2 [&_h3]:inline [&_h3]:text-xs [&_h3]:font-normal [&_p]:inline [&_strong]:font-normal"
-                  dangerouslySetInnerHTML={{ __html: q.question }}
+                  dangerouslySetInnerHTML={{ __html: safe(q.question) }}
                 />
               </div>
             );
@@ -182,7 +183,7 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
       {/* Question text */}
       <div
         className="prose-content"
-        dangerouslySetInnerHTML={{ __html: question.question }}
+        dangerouslySetInnerHTML={{ __html: safe(question.question) }}
       />
 
       {/* Answer options */}
@@ -205,7 +206,7 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
 
           return (
             <button key={idx} className={cls} onClick={() => handleSelect(idx)} disabled={answered}>
-              <div dangerouslySetInnerHTML={{ __html: answer.text }} />
+              <div dangerouslySetInnerHTML={{ __html: safe(answer.text) }} />
             </button>
           );
         })}
@@ -216,7 +217,7 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
         <div className="rounded-lg border border-brand/20 bg-brand-muted p-4">
           <div
             className="prose-content text-sm"
-            dangerouslySetInnerHTML={{ __html: feedback }}
+            dangerouslySetInnerHTML={{ __html: safe(feedback) }}
           />
         </div>
       )}

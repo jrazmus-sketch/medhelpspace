@@ -107,8 +107,6 @@ export default async function SpecialtyHubPage({
     admin.from("tracks").select("id, slug, name"),
   ]);
 
-  const trackById = new Map((allTracks ?? []).map(t => [t.id as number, t]));
-
   // Build type option cards: view-based hub pages
   type TypeOption = { key: string; cfg: TypeConfig; href: string };
   const typeOptions: TypeOption[] = [];

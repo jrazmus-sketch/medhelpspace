@@ -26,6 +26,7 @@ export async function getCurrentProfile(userId: string): Promise<UserWithCohort 
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cohorts: Cohort[] = ((data as any).user_cohort_memberships ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((m: any) => m.cohort as Cohort)
     .filter(Boolean);
 

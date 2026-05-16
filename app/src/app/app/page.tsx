@@ -82,15 +82,6 @@ function pickGreeting(now: Date, examDays: number | null): [string, string] {
   return safe[dayIndex % safe.length].lines;
 }
 
-// ── Animation helpers ─────────────────────────────────────────────────────────
-
-function cardEnter(delay = 0): React.CSSProperties {
-  return {
-    animation: `dash-fade-up 0.45s cubic-bezier(.16,1,.3,1) both`,
-    animationDelay: `${delay}ms`,
-  };
-}
-
 // ── Continue card visualizations ──────────────────────────────────────────────
 
 type ContentKind = "audio" | "flashcard" | "quiz" | "lesson" | "reading";
@@ -307,38 +298,6 @@ function calcStreak(dates: string[]): number {
   return streak;
 }
 
-// ── Section header ────────────────────────────────────────────────────────────
-
-function SecHeader({ title, count, moreLabel, moreHref }: {
-  title: string; count?: string; moreLabel?: string; moreHref?: string;
-}) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "baseline", justifyContent: "space-between",
-      marginTop: "clamp(28px, 5vw, 48px)", marginBottom: 16,
-      paddingTop: 20, borderTop: "1px solid var(--surface-2)",
-    }}>
-      <h2 style={{
-        margin: 0, fontSize: "clamp(17px, 3vw, 22px)", fontWeight: 600,
-        letterSpacing: "-.025em", display: "flex", alignItems: "baseline", gap: 10,
-      }}>
-        {title}
-        {count && (
-          <span style={{ fontSize: 12, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)", letterSpacing: 0, fontWeight: 400 }}>
-            {count}
-          </span>
-        )}
-      </h2>
-      {moreLabel && moreHref && (
-        <Link href={moreHref} style={{ fontSize: 13, color: "var(--muted-foreground)", textDecoration: "none" }}
-          className="hover:text-foreground transition-colors">
-          {moreLabel}
-        </Link>
-      )}
-    </div>
-  );
-}
-
 // ── Label style ───────────────────────────────────────────────────────────────
 
 const LABEL_STYLE: React.CSSProperties = {
@@ -387,7 +346,8 @@ export default async function MemberDashboardPage() {
   let studyDays = 0;
   let daysUntilUnlock: number | null = null;
 
-  const today = new Date().toISOString();
+  const now = Date.now();
+  const today = new Date(now).toISOString();
 
   if (viewas.type === "admin") {
     // Real user's own membership
@@ -408,7 +368,7 @@ export default async function MemberDashboardPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const membership = (memberships as any[])?.[0] as { joined_at: string } | undefined;
     studyDays = membership
-      ? Math.max(0, Math.floor((Date.now() - new Date(membership.joined_at).getTime()) / 86_400_000))
+      ? Math.max(0, Math.floor((now - new Date(membership.joined_at).getTime()) / 86_400_000))
       : 0;
 
     if (activeCohort) {
@@ -420,7 +380,7 @@ export default async function MemberDashboardPage() {
         (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
       );
       daysUntilUnlock = access60d
-        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - Date.now()) / 86_400_000))
+        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - now) / 86_400_000))
         : null;
     }
   } else if (viewas.type === "unlocked") {
@@ -443,13 +403,13 @@ export default async function MemberDashboardPage() {
         (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
       );
       daysUntilUnlock = access60d
-        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - Date.now()) / 86_400_000))
+        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - now) / 86_400_000))
         : null;
     }
   }
 
   const examDays = activeCohort?.test_date
-    ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - Date.now()) / 86_400_000))
+    ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - now) / 86_400_000))
     : null;
   const examDateLabel = activeCohort?.test_date ? fmtDate(new Date(activeCohort.test_date)) : null;
 

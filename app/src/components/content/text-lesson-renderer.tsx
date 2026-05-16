@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { safe } from "@/lib/sanitize";
 import { LessonSidebar } from "./lesson-sidebar";
 import { AudioPlayer } from "./audio-player";
 import { LessonCompleteButton } from "./lesson-complete-button";
@@ -135,7 +136,7 @@ export async function TextLessonRenderer({
               <div className="transcript-body">
                 <div
                   className="prose-content prose-transcript"
-                  dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
+                  dangerouslySetInnerHTML={{ __html: safe(processHtml(activeLesson.body_html)) }}
                 />
               </div>
             </details>
@@ -143,7 +144,7 @@ export async function TextLessonRenderer({
             /* No audio yet (or non-transcript page): show content directly */
             <div
               className={`prose-content${isTranscript ? " prose-transcript" : ""}`}
-              dangerouslySetInnerHTML={{ __html: processHtml(activeLesson.body_html) }}
+              dangerouslySetInnerHTML={{ __html: safe(processHtml(activeLesson.body_html)) }}
             />
           )
         ) : (

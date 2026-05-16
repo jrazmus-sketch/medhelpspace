@@ -2,7 +2,8 @@
 
 import { Moon, Sun, Monitor } from "lucide-react";
 import { useTheme } from "@/components/theme/theme-provider";
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,10 +16,8 @@ import { USE_MOCK_DATA } from "@/lib/mock-data";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsMounted();
   const { profile } = useAuth();
-
-  useEffect(() => setMounted(true), []);
 
   const handleTheme = useCallback(
     async (value: "light" | "dark" | "system") => {

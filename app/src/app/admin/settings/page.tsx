@@ -6,7 +6,8 @@ import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/components/theme/theme-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateProfile } from "@/actions/admin";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 
@@ -17,8 +18,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   async function handleThemeChange(next: "system" | "light" | "dark") {
     setTheme(next);

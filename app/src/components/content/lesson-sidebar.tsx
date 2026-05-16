@@ -49,6 +49,7 @@ export function LessonSidebar({
 
   // Load persisted progress from localStorage after mount (avoids hydration mismatch)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCompleted(loadCompleted(pageId));
   }, [pageId]);
 
@@ -140,7 +141,7 @@ export function LessonSidebar({
 
       {/* Desktop sidebar */}
       <nav className="hidden lg:block w-52 shrink-0">
-        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 scrollbar-brand">
           {/* Header row */}
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

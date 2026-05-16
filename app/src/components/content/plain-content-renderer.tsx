@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { safe } from "@/lib/sanitize";
 import { TocPanel } from "./toc-panel";
 
 interface TocEntry {
@@ -77,7 +78,7 @@ export async function PlainContentRenderer({ pageId }: { pageId: number }) {
     <div className={showToc ? "flex gap-10" : undefined}>
       <article
         className="prose-content min-w-0 flex-1"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: safe(html) }}
       />
       {showToc && <TocPanel entries={toc} />}
     </div>

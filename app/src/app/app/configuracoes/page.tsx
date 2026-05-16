@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
+import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/components/theme/theme-provider";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
@@ -13,10 +14,9 @@ const THEMES = [
 ] as const;
 
 export default function ConfiguracoesPage() {
-  const { profile } = useAuth();
+  useAuth();
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   // Password change state
   const [isPending, startTransition] = useTransition();

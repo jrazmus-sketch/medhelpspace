@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
@@ -57,8 +57,9 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
   const router = useRouter();
 
   const [title, setTitle] = useState(page.title);
-  const [slug, setSlug] = useState(page.slug);
+  const [slugOverride, setSlugOverride] = useState(page.slug);
   const [slugManual, setSlugManual] = useState(false);
+  const slug = slugManual ? slugOverride : slugify(title);
   const [status, setStatus] = useState<"published" | "draft">(
     page.status === "published" ? "published" : "draft",
   );
@@ -86,9 +87,6 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
   const [lessonsSaved, setLessonsSaved] = useState(false);
   const [lessonsError, setLessonsError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!slugManual) setSlug(slugify(title));
-  }, [title, slugManual]);
 
   async function handleSave() {
     setError(null);
@@ -212,7 +210,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
               {t("pageEdit.slugLabel")}
               {slugManual && (
                 <button
-                  onClick={() => { setSlugManual(false); setSlug(slugify(title)); }}
+                  onClick={() => { setSlugManual(false); setSlugOverride(slugify(title)); }}
                   className="text-xs text-brand hover:underline"
                 >
                   {t("pageEdit.slugReset")}
@@ -222,7 +220,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons }: 
             <input
               type="text"
               value={slug}
-              onChange={(e) => { setSlugManual(true); setSlug(e.target.value); }}
+              onChange={(e) => { setSlugManual(true); setSlugOverride(e.target.value); }}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30"
             />
           </div>

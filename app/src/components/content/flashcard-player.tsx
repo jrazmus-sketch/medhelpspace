@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { recordFlashcardAttempt } from "@/actions/flashcard-attempts";
+import { safe } from "@/lib/sanitize";
 
 export interface FlashCard {
   id: number;
@@ -47,15 +48,21 @@ export function FlashcardPlayer({ groups }: Props) {
   const isLastGroup = groupIdx === activeDeck.length - 1;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCardIdx(0);
+     
     setFlipped(false);
   }, [groupIdx]);
 
   useEffect(() => {
     if (retryIds !== null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGroupIdx(0);
+       
       setCardIdx(0);
+       
       setFlipped(false);
+       
       setPhase("play");
     }
   }, [retryIds]);
@@ -323,7 +330,7 @@ export function FlashcardPlayer({ groups }: Props) {
             )}
             <div
               className="text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
-              dangerouslySetInnerHTML={{ __html: card.text }}
+              dangerouslySetInnerHTML={{ __html: safe(card.text) }}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Clique para ver · <kbd className="font-sans">Espaço</kbd>
@@ -337,7 +344,7 @@ export function FlashcardPlayer({ groups }: Props) {
           >
             <div
               className="text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
-              dangerouslySetInnerHTML={{ __html: card.answer }}
+              dangerouslySetInnerHTML={{ __html: safe(card.answer) }}
             />
             {card.tip && (
               <p className="text-xs text-muted-foreground border-t border-border pt-2 mt-1 italic w-full text-center">

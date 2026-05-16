@@ -26,7 +26,7 @@ export function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { profile, signOut, isSuperAdmin } = useAuth();
+  const { profile, isSuperAdmin } = useAuth();
 
   const displayName = profile?.display_name ?? "A";
   const initial = displayName.charAt(0).toUpperCase();

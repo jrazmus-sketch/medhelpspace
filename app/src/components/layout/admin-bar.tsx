@@ -64,8 +64,10 @@ export function AdminBar({ viewas, cohorts }: Props) {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     try {
+       
       setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
     } catch {
       // localStorage unavailable

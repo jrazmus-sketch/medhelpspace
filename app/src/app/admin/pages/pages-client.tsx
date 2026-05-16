@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { Badge } from "@/components/ui/badge";
 import { Pencil } from "lucide-react";
 
 type PageRow = {

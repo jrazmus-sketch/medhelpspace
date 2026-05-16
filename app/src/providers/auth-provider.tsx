@@ -11,7 +11,7 @@ import {
 import type { User as AuthUser, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
-import { USE_MOCK_DATA, MOCK_USER, MOCK_USER_WITH_COHORT } from "@/lib/mock-data";
+import { USE_MOCK_DATA, MOCK_USER_WITH_COHORT } from "@/lib/mock-data";
 import i18n from "@/lib/i18n";
 import type { User as Profile } from "@/types/supabase";
 
@@ -42,7 +42,9 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(
+    USE_MOCK_DATA ? MOCK_USER_WITH_COHORT : null,
+  );
   const [loading, setLoading] = useState(!USE_MOCK_DATA);
   const { setTheme } = useTheme();
   // Prevent profile theme from overriding a manual toggle the user made this session.
@@ -63,9 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    // ── Mock mode: return static profile immediately ─────────────────────────
+    // ── Mock mode: profile is pre-initialized; just apply side effects ───────
     if (USE_MOCK_DATA) {
-      setProfile(MOCK_USER_WITH_COHORT);
       applyProfileSideEffects(MOCK_USER_WITH_COHORT);
       return;
     }
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // ── Real Supabase auth ───────────────────────────────────────────────────
     const supabase = createClient();
 
-    async function fetchProfile(_uid: string): Promise<Profile | null> {
+    async function fetchProfile(): Promise<Profile | null> {
       try {
         const res = await fetch("/api/profile");
         if (!res.ok) return null;
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(session?.user ?? null);
       if (session?.user) {
-        const p = await fetchProfile(session.user.id);
+        const p = await fetchProfile();
         setProfile(p);
         if (p) applyProfileSideEffects(p);
       }
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        const p = await fetchProfile(session.user.id);
+        const p = await fetchProfile();
         setProfile(p);
         if (p) applyProfileSideEffects(p);
       } else {

@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NotificationStripClient } from "./notification-strip-client";

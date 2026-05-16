@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { Play, Pause } from "lucide-react";
 
 const BARS = Array.from({ length: 48 }, (_, i) => {
@@ -29,7 +29,7 @@ export function AudioPlayer({ src, title, lessonId }: { src: string; title?: str
   const draggingRef = useRef(false);
   const completedFiredRef = useRef(false);
   const lessonIdRef = useRef(lessonId);
-  lessonIdRef.current = lessonId;
+  useLayoutEffect(() => { lessonIdRef.current = lessonId; }, [lessonId]);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -67,8 +67,11 @@ export function AudioPlayer({ src, title, lessonId }: { src: string; title?: str
 
   // Reset when src changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlaying(false);
+     
     setCurrentTime(0);
+     
     setDuration(0);
     completedFiredRef.current = false;
     const audio = audioRef.current;

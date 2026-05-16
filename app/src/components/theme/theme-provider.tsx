@@ -50,7 +50,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = readStored();
     const r = resolve(stored);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setThemeState(stored);
+     
     setResolvedTheme(r);
     applyClass(r);
   }, []);

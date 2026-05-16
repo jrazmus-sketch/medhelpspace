@@ -20,7 +20,8 @@ export function TrackHubAccordion({ groups }: { groups: SuperGroupData[] }) {
   function toggle(label: string) {
     setOpen((prev) => {
       const next = new Set(prev);
-      next.has(label) ? next.delete(label) : next.add(label);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
       return next;
     });
   }
