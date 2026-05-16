@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search } from "lucide-react";
+import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -20,13 +20,14 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
-const NAV_LINKS = [
-  { href: "/app",              label: "Início",     exact: true },
-  { href: "/app/simulados",    label: "Questões"                },
-  { href: "/app/resumos",      label: "Resumos"                 },
-  { href: "/app/medvoice",     label: "MedVoice"                },
-  { href: "/app/formula-medhelp", label: "Fórmula"             },
-  { href: "/app/audiocards",   label: "AudioCards"              },
+const NAV_LINKS: { href: string; label: string; exact?: boolean; highlight?: boolean }[] = [
+  { href: "/app",                 label: "Início",     exact: true                  },
+  { href: "/app/plano",           label: "Meu Plano",                  highlight: true },
+  { href: "/app/simulados",       label: "Questões"                                  },
+  { href: "/app/resumos",         label: "Resumos"                                   },
+  { href: "/app/medvoice",        label: "MedVoice"                                  },
+  { href: "/app/formula-medhelp", label: "Fórmula"                                   },
+  { href: "/app/audiocards",      label: "AudioCards"                                },
 ];
 
 export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) {
@@ -71,19 +72,22 @@ export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) 
 
         {/* Nav */}
         <nav className="hidden items-center gap-0.5 md:flex">
-          {NAV_LINKS.map(({ href, label, exact }) => {
+          {NAV_LINKS.map(({ href, label, exact, highlight }) => {
             const active = exact ? pathname === href : pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
+                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
                   active
                     ? "bg-foreground text-background"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    : highlight
+                      ? "text-brand hover:bg-brand/10"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
+                {highlight && <Calendar className="h-3.5 w-3.5" />}
                 {label}
               </Link>
             );
@@ -127,6 +131,10 @@ export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) 
 
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => router.push("/app/plano")}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Meu Plano de Estudos
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/app/perfil")}>
                   <User className="mr-2 h-4 w-4" />
                   Meu perfil

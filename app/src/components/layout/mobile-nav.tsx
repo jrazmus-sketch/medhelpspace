@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ClipboardList, Mic, ScrollText, FlaskConical } from "lucide-react";
+import { Home, Calendar, ClipboardList, Mic, ScrollText, FlaskConical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/app",                  label: "Início",   Icon: Home,          exact: true },
+  { href: "/app/plano",            label: "Plano",    Icon: Calendar                   },
   { href: "/app/simulados",        label: "Questões", Icon: ClipboardList              },
   { href: "/app/medvoice",         label: "MedVoice", Icon: Mic                        },
   { href: "/app/resumos",          label: "Resumos",  Icon: ScrollText                 },

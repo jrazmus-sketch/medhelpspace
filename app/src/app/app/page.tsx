@@ -695,12 +695,22 @@ export default async function MemberDashboardPage() {
             {now.getDate()}
           </div>
 
-          <div style={{ position: "relative" }}>
+          {/* Header — clickable, goes to /app/plano */}
+          <Link
+            href="/app/plano"
+            style={{
+              position: "relative",
+              display: "block",
+              textDecoration: "none",
+              color: "inherit",
+            }}
+            className="hover:opacity-90 transition-opacity"
+          >
             <div style={{ fontSize: 10.5, letterSpacing: ".16em", textTransform: "uppercase", fontWeight: 600, opacity: .55 }}>Plano de hoje</div>
             <h3 style={{ margin: "6px 0 0", fontSize: 22, letterSpacing: "-.025em", lineHeight: 1.05, fontWeight: 600 }}>
               {derivedPlan?.paused ? "Plano em pausa" : "Estude com foco"}
             </h3>
-          </div>
+          </Link>
 
           <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8 }}>
             {derivedPlan?.paused ? (
@@ -745,25 +755,35 @@ export default async function MemberDashboardPage() {
             )}
           </div>
 
-          {!derivedPlan?.paused && derivedPlan && derivedPlan.items.length > 0 && (
-            <Link
-              href="/app/plano"
-              style={{
-                position: "relative",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                marginTop: 14,
-                fontSize: 12,
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.85)",
-                textDecoration: "none",
-                alignSelf: "flex-start",
-              }}
-            >
-              Ver plano completo →
-            </Link>
-          )}
+          {/* CTA button — always visible regardless of plan state */}
+          <Link
+            href="/app/plano"
+            style={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              marginTop: 14,
+              padding: "9px 16px",
+              background: "rgba(255,255,255,0.15)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              borderRadius: "var(--radius-sm)",
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: "#fff",
+              textDecoration: "none",
+              alignSelf: "flex-start",
+            }}
+            className="hover:bg-white/25 transition-colors"
+          >
+            {derivedPlan?.paused
+              ? "Gerenciar plano"
+              : derivedPlan && derivedPlan.items.length > 0
+                ? "Ver plano completo"
+                : "Configurar meu plano"}
+            <span aria-hidden="true">→</span>
+          </Link>
         </div>
 
         {/* Continue — takes 2/3 of the row */}
