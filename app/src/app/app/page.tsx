@@ -346,8 +346,8 @@ export default async function MemberDashboardPage() {
   let studyDays = 0;
   let daysUntilUnlock: number | null = null;
 
-  const now = Date.now();
-  const today = new Date(now).toISOString();
+  const nowMs = Date.now();
+  const today = new Date(nowMs).toISOString();
 
   if (viewas.type === "admin") {
     // Real user's own membership
@@ -380,7 +380,7 @@ export default async function MemberDashboardPage() {
         (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
       );
       daysUntilUnlock = access60d
-        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - now) / 86_400_000))
+        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - nowMs) / 86_400_000))
         : null;
     }
   } else if (viewas.type === "unlocked") {
@@ -403,13 +403,13 @@ export default async function MemberDashboardPage() {
         (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
       );
       daysUntilUnlock = access60d
-        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - now) / 86_400_000))
+        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - nowMs) / 86_400_000))
         : null;
     }
   }
 
   const examDays = activeCohort?.test_date
-    ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - now) / 86_400_000))
+    ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - nowMs) / 86_400_000))
     : null;
   const examDateLabel = activeCohort?.test_date ? fmtDate(new Date(activeCohort.test_date)) : null;
 
