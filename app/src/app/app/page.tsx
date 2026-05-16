@@ -284,6 +284,10 @@ function fmtDate(d: Date) {
 function fmtBr(n: number) {
   return n.toLocaleString("pt-BR");
 }
+function formatPauseDate(dateKey: string): string {
+  const d = new Date(dateKey + "T12:00:00");
+  return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
+}
 function calcStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const unique = [...new Set(dates)].sort().reverse();
@@ -715,7 +719,7 @@ export default async function MemberDashboardPage() {
           <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8 }}>
             {derivedPlan?.paused ? (
               <p style={{ fontSize: 12.5, opacity: 0.75, lineHeight: 1.5 }}>
-                Retoma {derivedPlan.pausedUntil ? `em ${derivedPlan.pausedUntil}` : "quando você quiser"}.
+                Retoma {derivedPlan.nextAvailableDate ? `em ${formatPauseDate(derivedPlan.nextAvailableDate)}` : "quando você quiser"}.
               </p>
             ) : derivedPlan && derivedPlan.items.length > 0 ? (
               <>

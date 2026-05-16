@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
-import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
+import { getDerivedPlanForUser, getStudyPlanPrefs, getStudyPlanPauses } from "@/lib/study-plan/fetch";
 import { PlanoClient } from "./plano-client";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -27,23 +27,27 @@ export default async function PlanoPage() {
 
   const admin = createAdminClient();
 
-  const [plan, prefsRes, specialtiesRes] = await Promise.all([
+  const [plan, { prefs, welcomedAt }, pauses, specialtiesRes, membershipRes] = await Promise.all([
     getDerivedPlanForUser(user.id),
-    admin
-      .from("study_plans")
-      .select("intensity, focus_specialty_id, email_weekly_summary, email_daily_plan, paused_until")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+    getStudyPlanPrefs(user.id),
+    getStudyPlanPauses(user.id),
     admin.from("specialties").select("id, name, slug").order("display_order"),
+    admin
+      .from("user_cohort_memberships")
+      .select("cohort:cohorts(name, test_date)")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle(),
   ]);
 
-  const prefs = prefsRes.data ?? {
-    intensity: "padrao",
-    focus_specialty_id: null,
-    email_weekly_summary: true,
-    email_daily_plan: false,
-    paused_until: null,
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cohort = (membershipRes.data as any)?.cohort as { name: string; test_date: string | null } | null;
+  const examDate = cohort?.test_date ?? null;
+  const examDateLabel = examDate
+    ? new Date(examDate + "T12:00:00").toLocaleDateString("pt-BR", {
+        day: "numeric", month: "long", year: "numeric",
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 pb-20">
@@ -67,14 +71,12 @@ export default async function PlanoPage() {
 
       <PlanoClient
         plan={plan}
-        prefs={{
-          intensity: prefs.intensity as "leve" | "padrao" | "intenso",
-          focus_specialty_id: prefs.focus_specialty_id,
-          email_weekly_summary: prefs.email_weekly_summary,
-          email_daily_plan: prefs.email_daily_plan,
-          paused_until: prefs.paused_until,
-        }}
+        prefs={prefs}
         specialties={(specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[]}
+        pauses={pauses}
+        welcomedAt={welcomedAt}
+        examDate={examDate}
+        examDateLabel={examDateLabel}
       />
     </div>
   );

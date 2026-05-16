@@ -1,16 +1,28 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { derivePlan, type DerivedPlan, type StudyPlanPrefs, type Signals } from "./derive";
+import {
+  derivePlan,
+  defaultPrefs,
+  type DerivedPlan,
+  type StudyPlanPrefs,
+  type Signals,
+  type ContentType,
+  type Intensity,
+  type WeaknessSensitivity,
+} from "./derive";
 
 /**
- * Server-side helper: fetches all signals + preferences for a user, derives today's plan.
- * Returns null if user has no cohort (rare edge case — they shouldn't be here).
+ * Server-side helper: fetches all V2 signals + preferences for a user, derives today's plan.
  */
 export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan | null> {
   const admin = createAdminClient();
 
-  // Parallel data fetch
+  const todayKey = new Date().toISOString().split("T")[0];
+
   const [
     prefsRes,
+    pausesRes,
+    focusRes,
+    excludedRes,
     membershipRes,
     specialtiesRes,
     pagesRes,
@@ -19,9 +31,29 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
   ] = await Promise.all([
     admin
       .from("study_plans")
-      .select("intensity, focus_specialty_id, paused_until")
+      .select(`
+        intensity, available_days, recurring_off_days, weekly_hours,
+        temp_intensity, temp_intensity_until, weakness_sensitivity, include_60d,
+        flashcard_daily_cap, preferred_content_types, content_type_weights,
+        intensification_start_days
+      `)
       .eq("user_id", userId)
       .maybeSingle(),
+    admin
+      .from("study_plan_pauses")
+      .select("pause_from, pause_until, reason")
+      .eq("user_id", userId)
+      .gte("pause_until", todayKey)
+      .order("pause_from"),
+    admin
+      .from("study_plan_focus_specialties")
+      .select("specialty_id, priority")
+      .eq("user_id", userId)
+      .order("priority"),
+    admin
+      .from("study_plan_excluded_specialties")
+      .select("specialty_id")
+      .eq("user_id", userId),
     admin
       .from("user_cohort_memberships")
       .select("cohort:cohorts(test_date)")
@@ -32,7 +64,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
       .select("id, slug, title, type, specialty_id, track_id, content_module_id, view")
       .eq("status", "publish")
       .not("specialty_id", "is", null)
-      .order("id"), // stable for "next sequential" semantics
+      .order("id"),
     admin
       .from("quiz_attempts")
       .select("specialty_id, is_correct, created_at, page_id")
@@ -43,28 +75,45 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
       .eq("user_id", userId),
   ]);
 
-  // Default prefs if user has no row yet (zero-question onboarding)
-  const prefs: StudyPlanPrefs = prefsRes.data
-    ? {
-        intensity: prefsRes.data.intensity as StudyPlanPrefs["intensity"],
-        focus_specialty_id: prefsRes.data.focus_specialty_id ?? null,
-        paused_until: prefsRes.data.paused_until ?? null,
-      }
-    : { intensity: "padrao", focus_specialty_id: null, paused_until: null };
+  // Build prefs object, applying defaults for missing fields
+  const defaults = defaultPrefs();
+  const focusIds = (focusRes.data ?? []).map((r) => r.specialty_id as number);
+  const excludedIds = (excludedRes.data ?? []).map((r) => r.specialty_id as number);
+
+  const raw = prefsRes.data;
+  const prefs: StudyPlanPrefs = {
+    intensity: (raw?.intensity as Intensity) ?? defaults.intensity,
+    available_days: raw?.available_days ?? defaults.available_days,
+    recurring_off_days: raw?.recurring_off_days ?? defaults.recurring_off_days,
+    weekly_hours: raw?.weekly_hours ?? null,
+    temp_intensity: (raw?.temp_intensity as Intensity | null) ?? null,
+    temp_intensity_until: raw?.temp_intensity_until ?? null,
+    weakness_sensitivity: (raw?.weakness_sensitivity as WeaknessSensitivity) ?? defaults.weakness_sensitivity,
+    include_60d: raw?.include_60d ?? defaults.include_60d,
+    flashcard_daily_cap: raw?.flashcard_daily_cap ?? null,
+    preferred_content_types:
+      (raw?.preferred_content_types as ContentType[]) ?? defaults.preferred_content_types,
+    content_type_weights:
+      (raw?.content_type_weights as Record<ContentType, number>) ?? defaults.content_type_weights,
+    intensification_start_days: raw?.intensification_start_days ?? defaults.intensification_start_days,
+    focus_specialty_ids: focusIds,
+    excluded_specialty_ids: excludedIds,
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const membership = (membershipRes.data ?? [])[0] as any;
-  const cohort = membership?.cohort ? { test_date: membership.cohort.test_date as string | null } : null;
+  const cohort = membership?.cohort
+    ? { test_date: membership.cohort.test_date as string | null }
+    : null;
 
-  // Count flashcards due today (or earlier)
-  const todayKey = new Date().toISOString().split("T")[0];
+  // Flashcards due today
   const { count: flashcardsDueToday } = await admin
     .from("flashcard_progress")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
     .lte("due_date", todayKey);
 
-  // Pre-compute lessons-per-page (for "fully completed" detection)
+  // Lessons per page (for "fully completed" detection)
   const pageIds = (completionsRes.data ?? []).map((c) => c.page_id);
   const uniquePageIds = [...new Set(pageIds)];
   const lessonsByPageId = new Map<number, number>();
@@ -83,6 +132,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     lessonCompletions: (completionsRes.data ?? []) as Signals["lessonCompletions"],
     flashcardsDueToday: flashcardsDueToday ?? 0,
     lessonsByPageId,
+    pauses: (pausesRes.data ?? []) as Signals["pauses"],
   };
 
   return derivePlan({
@@ -93,4 +143,83 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     pages: (pagesRes.data ?? []) as any,
     signals,
   });
+}
+
+/**
+ * Lightweight: just fetch raw prefs (for editing UI). Skips deriving the plan.
+ */
+export async function getStudyPlanPrefs(userId: string): Promise<{
+  prefs: StudyPlanPrefs;
+  welcomedAt: string | null;
+}> {
+  const admin = createAdminClient();
+  const [planRes, focusRes, excludedRes] = await Promise.all([
+    admin
+      .from("study_plans")
+      .select(`
+        intensity, available_days, recurring_off_days, weekly_hours,
+        temp_intensity, temp_intensity_until, weakness_sensitivity, include_60d,
+        flashcard_daily_cap, preferred_content_types, content_type_weights,
+        intensification_start_days, welcomed_at
+      `)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    admin
+      .from("study_plan_focus_specialties")
+      .select("specialty_id, priority")
+      .eq("user_id", userId)
+      .order("priority"),
+    admin
+      .from("study_plan_excluded_specialties")
+      .select("specialty_id")
+      .eq("user_id", userId),
+  ]);
+
+  const defaults = defaultPrefs();
+  const focusIds = (focusRes.data ?? []).map((r) => r.specialty_id as number);
+  const excludedIds = (excludedRes.data ?? []).map((r) => r.specialty_id as number);
+  const raw = planRes.data;
+
+  return {
+    prefs: {
+      intensity: (raw?.intensity as Intensity) ?? defaults.intensity,
+      available_days: raw?.available_days ?? defaults.available_days,
+      recurring_off_days: raw?.recurring_off_days ?? defaults.recurring_off_days,
+      weekly_hours: raw?.weekly_hours ?? null,
+      temp_intensity: (raw?.temp_intensity as Intensity | null) ?? null,
+      temp_intensity_until: raw?.temp_intensity_until ?? null,
+      weakness_sensitivity: (raw?.weakness_sensitivity as WeaknessSensitivity) ?? defaults.weakness_sensitivity,
+      include_60d: raw?.include_60d ?? defaults.include_60d,
+      flashcard_daily_cap: raw?.flashcard_daily_cap ?? null,
+      preferred_content_types:
+        (raw?.preferred_content_types as ContentType[]) ?? defaults.preferred_content_types,
+      content_type_weights:
+        (raw?.content_type_weights as Record<ContentType, number>) ?? defaults.content_type_weights,
+      intensification_start_days: raw?.intensification_start_days ?? defaults.intensification_start_days,
+      focus_specialty_ids: focusIds,
+      excluded_specialty_ids: excludedIds,
+    },
+    welcomedAt: (raw?.welcomed_at as string | null) ?? null,
+  };
+}
+
+/**
+ * Get also the pauses (for the pause editor) and active pauses count.
+ */
+export async function getStudyPlanPauses(userId: string): Promise<{
+  pause_from: string;
+  pause_until: string;
+  reason: string | null;
+  id: number;
+}[]> {
+  const admin = createAdminClient();
+  const todayKey = new Date().toISOString().split("T")[0];
+  const { data } = await admin
+    .from("study_plan_pauses")
+    .select("id, pause_from, pause_until, reason")
+    .eq("user_id", userId)
+    .gte("pause_until", todayKey)
+    .order("pause_from");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []) as any;
 }
