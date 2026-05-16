@@ -482,6 +482,41 @@
   --c-success:    #5dd6a8;
 }
 
+/* ── Thin brand scrollbar ──────────────────────────────────────────────────── */
+.scrollbar-brand {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--brand) 38%, transparent) transparent;
+}
+
+.scrollbar-brand::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-brand::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-brand::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+  border-radius: 99px;
+}
+
+.scrollbar-brand::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--brand) 65%, transparent);
+}
+
+.dark .scrollbar-brand {
+  scrollbar-color: rgba(192, 132, 232, 0.3) transparent;
+}
+
+.dark .scrollbar-brand::-webkit-scrollbar-thumb {
+  background: rgba(192, 132, 232, 0.3);
+}
+
+.dark .scrollbar-brand::-webkit-scrollbar-thumb:hover {
+  background: rgba(192, 132, 232, 0.55);
+}
+
 /* ── Utility layer additions ───────────────────────────────────────────────── */
 @layer utilities {
   /* Brand accent border utility (purple tint on card edges) */

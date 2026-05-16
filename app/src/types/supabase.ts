@@ -244,6 +244,30 @@ export interface AnnouncementWithCategory extends Announcement {
   is_read: boolean;
 }
 
+// ── Orders / payments ────────────────────────────────────────────────────────
+
+export type OrderStatus = "pending" | "paid" | "cancelled" | "declined" | "refunded";
+export type OrderPaymentMethod = "pix" | "credit_card";
+
+export interface Order {
+  id: string;                     // UUID
+  user_id: string;
+  cohort_id: number;
+  pagbank_charge_id: string | null;
+  amount_cents: number;
+  currency: string;
+  payment_method: OrderPaymentMethod;
+  status: OrderStatus;
+  pix_qr_text: string | null;
+  pix_qr_image_url: string | null;
+  pix_expires_at: string | null;
+  cc_installments: number | null;
+  cc_brand: string | null;
+  pagbank_response: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DashboardData {
   user: UserWithCohort;
   specialties: Specialty[];

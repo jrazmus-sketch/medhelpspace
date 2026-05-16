@@ -4,12 +4,8 @@ import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { Check, Lock } from "lucide-react";
 
-// TODO: Replace these with the real PagBank checkout URLs for each cohort.
-// On the old site, the WooCommerce "add-to-cart" links were:
-// 2026.2: https://medhelpspace.com.br/?add-to-cart=<product_id>
-// Replace both URLs below with the direct PagBank checkout page links.
-const CHECKOUT_2026 = "https://medhelpspace.com.br/?add-to-cart=8041";
-const CHECKOUT_2027 = "https://medhelpspace.com.br/?add-to-cart=8043";
+const CHECKOUT_2026 = "/checkout?cohort=revalida-2026-2";
+const CHECKOUT_2027 = "/checkout?cohort=revalida-2027-1";
 
 const INCLUDED = [
   "Estudo por Questões — questões oficiais + simulados comentados",
@@ -92,12 +88,12 @@ export default function LojaPage() {
 
                 <IncludedList />
 
-                <a
+                <Link
                   href={CHECKOUT_2026}
                   className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
                 >
                   Comprar 2026.2
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -133,12 +129,12 @@ export default function LojaPage() {
 
                 <IncludedList />
 
-                <a
+                <Link
                   href={CHECKOUT_2027}
                   className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
                 >
                   Comprar 2027.1
-                </a>
+                </Link>
               </div>
             </div>
           </div>
