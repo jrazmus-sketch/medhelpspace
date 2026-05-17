@@ -4,11 +4,7 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { CheckoutClient } from "./checkout-client";
-
-const COHORT_CONFIG: Record<string, { name: string; priceLabel: string; amountCents: number }> = {
-  "revalida-2026-2": { name: "Revalida 2026.2", priceLabel: "R$ 3.990", amountCents: 399000 },
-  "revalida-2027-1": { name: "Revalida 2027.1", priceLabel: "R$ 4.990", amountCents: 499000 },
-};
+import { COHORT_PRODUCTS } from "@/lib/pricing";
 
 export const metadata = { title: "Finalizar compra — MedHelpSpace" };
 
@@ -20,7 +16,7 @@ export default async function CheckoutPage({
   const { cohort: cohortSlug } = await searchParams;
 
   // Unknown cohort → back to store
-  const config = cohortSlug ? COHORT_CONFIG[cohortSlug] : null;
+  const config = cohortSlug ? COHORT_PRODUCTS[cohortSlug] : null;
   if (!config) {
     redirect("/loja");
   }

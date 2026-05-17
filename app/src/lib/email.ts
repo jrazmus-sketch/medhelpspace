@@ -138,7 +138,7 @@ export async function sendExpiryNoticeEmail({
 
 // ── Shared lifecycle template ─────────────────────────────────────────────────
 
-function lifecycleEmailHtml({
+export function lifecycleEmailHtml({
   displayName, headline, body, ctaLabel, ctaHref,
 }: {
   displayName: string;
@@ -191,9 +191,17 @@ function lifecycleEmailHtml({
           </tr>
           <tr>
             <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
-              <p style="margin:0;font-size:11.5px;color:#9ca3af;line-height:1.5;">
+              <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
                 MedHelpSpace Revalida &nbsp;·&nbsp;
                 <a href="${APP_URL}" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a>
+              </p>
+              <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.5;">
+                CNPJ CNPJ_TO_FILL_IN &nbsp;·&nbsp; Contato:
+                <a href="mailto:privacidade@medhelpspace.com.br" style="color:#9ca3af;text-decoration:underline;">privacidade@medhelpspace.com.br</a>
+              </p>
+              <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+                Para gerenciar suas notificações por email, acesse suas
+                <a href="${APP_URL}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
               </p>
             </td>
           </tr>
@@ -249,7 +257,7 @@ function purchaseConfirmationHtml({
               <table cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
                 <tr>
                   <td style="background:#7a1d91;border-radius:10px;">
-                    <a href="https://medhelpspace.com.br/app"
+                    <a href="${APP_URL}/app"
                        style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-.2px;">
                       Entrar no sistema →
                     </a>
@@ -292,9 +300,17 @@ function purchaseConfirmationHtml({
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
-              <p style="margin:0;font-size:11.5px;color:#9ca3af;line-height:1.5;">
+              <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
                 MedHelpSpace Revalida &nbsp;·&nbsp;
-                <a href="https://medhelpspace.com.br" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a>
+                <a href="${APP_URL}" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a>
+              </p>
+              <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.5;">
+                CNPJ CNPJ_TO_FILL_IN &nbsp;·&nbsp; Contato:
+                <a href="mailto:privacidade@medhelpspace.com.br" style="color:#9ca3af;text-decoration:underline;">privacidade@medhelpspace.com.br</a>
+              </p>
+              <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+                Para gerenciar suas notificações por email, acesse suas
+                <a href="${APP_URL}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
               </p>
             </td>
           </tr>

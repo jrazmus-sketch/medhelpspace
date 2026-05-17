@@ -28,8 +28,10 @@ export async function PATCH(request: Request) {
     Object.entries(body).filter(([k]) => allowed.includes(k)),
   );
 
-  const admin = createAdminClient();
-  const { error } = await admin
+  // Use the user-scoped client — RLS profiles_update_own enforces id = auth.uid()
+  // AND blocks role changes (WITH CHECK current_user_role() match). That's our
+  // second line of defense against the allowed-fields filter being bugged.
+  const { error } = await supabase
     .from("profiles")
     .update(updates)
     .eq("id", user.id);

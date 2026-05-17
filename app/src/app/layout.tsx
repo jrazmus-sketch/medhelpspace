@@ -25,12 +25,37 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://medhelpspace.com.br"),
   title: {
     default: "MedHelpSpace Revalida",
     template: "%s | MedHelpSpace",
   },
   description:
     "Plataforma de preparação para o Revalida — questões comentadas, resumos e flashcards.",
+  openGraph: {
+    siteName: "MedHelpSpace",
+    title: "MedHelpSpace Revalida",
+    description:
+      "Plataforma de preparação para o Revalida — questões comentadas, resumos e flashcards.",
+    url: "https://medhelpspace.com.br",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: "https://medhelpspace.com.br/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "MedHelpSpace Revalida",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MedHelpSpace Revalida",
+    description:
+      "Plataforma de preparação para o Revalida — questões comentadas, resumos e flashcards.",
+    images: ["https://medhelpspace.com.br/og-image.png"],
+  },
 };
 
 export default function RootLayout({

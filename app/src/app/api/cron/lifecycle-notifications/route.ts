@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Resend } from "resend";
+import crypto from "node:crypto";
+import { lifecycleEmailHtml } from "@/lib/email";
 
 // Mirror of scripts/send-lifecycle-notifications.js, ported for Vercel Cron.
 // Schedule: configured in app/vercel.json (daily 11:00 UTC = 08:00 BRT).
@@ -35,35 +37,17 @@ type LogLine = string;
 const log: LogLine[] = [];
 function push(line: string) { log.push(line); }
 
-// ── Email template (same as cron script) ─────────────────────────────────────
-
-function lifecycleHtml({ displayName, headline, body, ctaLabel, ctaHref }: {
-  displayName: string; headline: string; body: string; ctaLabel: string; ctaHref: string;
-}) {
-  return `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"/><title>${headline}</title></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 20px;"><tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
-<tr><td style="background:#7a1d91;padding:28px 40px;"><p style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.3px;">MedHelpSpace Revalida</p></td></tr>
-<tr><td style="padding:40px;">
-<p style="margin:0 0 6px;font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.1em;font-weight:600;">Olá, ${displayName}</p>
-<p style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111827;letter-spacing:-.4px;line-height:1.2;">${headline}</p>
-<p style="margin:0 0 28px;font-size:15px;color:#4b5563;line-height:1.65;">${body}</p>
-<table cellpadding="0" cellspacing="0"><tr><td style="background:#7a1d91;border-radius:10px;">
-<a href="${ctaHref}" style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#fff;text-decoration:none;letter-spacing:-.2px;">${ctaLabel}</a>
-</td></tr></table></td></tr>
-<tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;"><p style="margin:0;font-size:11.5px;color:#9ca3af;">MedHelpSpace Revalida · <a href="${APP_URL}" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a></p></td></tr>
-</table></td></tr></table></body></html>`;
-}
-
 // ── Main handler ─────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   // Vercel Cron auth: Bearer header must match CRON_SECRET env
   const authHeader = request.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET ?? ""}`;
-  if (!process.env.CRON_SECRET || authHeader !== expected) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const expected = Buffer.from(`Bearer ${process.env.CRON_SECRET}`, "utf8");
+  const actual = Buffer.from(authHeader ?? "", "utf8");
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -77,30 +61,39 @@ export async function GET(request: NextRequest) {
 
   // ── Shared helpers (closure over supabase/resend) ────────────────────────
 
-  async function alreadySent(userId: string, kind: string, contextId: string) {
-    const { data } = await supabase
+  // Reserve an email_log slot by relying on the UNIQUE (user_id, kind, context_id)
+  // constraint. Returns the new row id, or null if a row already exists (duplicate).
+  // The insert-first pattern means we hold the "lock" before the side-effect, so
+  // concurrent runs don't double-send.
+  async function reserveEmailLog(
+    userId: string, kind: string, contextId: string,
+  ): Promise<number | null> {
+    const { data, error } = await supabase
       .from("email_log")
+      .insert({ user_id: userId, kind, context_id: contextId })
       .select("id")
-      .eq("user_id", userId).eq("kind", kind).eq("context_id", contextId)
-      .maybeSingle();
-    return !!data;
-  }
-
-  async function logSent(userId: string, kind: string, contextId: string) {
-    await supabase.from("email_log").insert({ user_id: userId, kind, context_id: contextId });
+      .single();
+    // 23505 = unique_violation → already sent
+    if (error?.code === "23505") return null;
+    if (error) throw error;
+    return (data?.id as number) ?? null;
   }
 
   async function sendOne(opts: {
     to: string; subject: string; html: string; userId: string; kind: string; contextId: string;
   }) {
     const tag = `[${opts.kind} → ${opts.to}]`;
-    if (await alreadySent(opts.userId, opts.kind, opts.contextId)) { push(`  SKIP ${tag} — already sent`); return; }
+    // Fail loud if Resend is unconfigured — skip BEFORE reserving the log slot,
+    // so a missing key doesn't silently mark emails as "sent".
     if (!resend) { push(`  SKIP ${tag} — no RESEND_API_KEY`); return; }
+    const logId = await reserveEmailLog(opts.userId, opts.kind, opts.contextId);
+    if (logId === null) { push(`  SKIP ${tag} — already sent`); return; }
     try {
       await resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
-      await logSent(opts.userId, opts.kind, opts.contextId);
       push(`  SEND ${tag} ✓`);
     } catch (e) {
+      // Roll back the reservation so the next cron run retries.
+      await supabase.from("email_log").delete().eq("id", logId);
       push(`  FAIL ${tag} — ${e instanceof Error ? e.message : String(e)}`);
     }
   }
@@ -110,12 +103,16 @@ export async function GET(request: NextRequest) {
     href: string | null; icon: string | null; contextId: string;
   }) {
     const bellKind = `bell-${opts.kind}`;
-    if (await alreadySent(opts.userId, bellKind, opts.contextId)) return;
-    await supabase.from("user_notifications").insert({
+    const logId = await reserveEmailLog(opts.userId, bellKind, opts.contextId);
+    if (logId === null) return; // already delivered
+    const { error } = await supabase.from("user_notifications").insert({
       user_id: opts.userId, kind: opts.kind, title: opts.title,
       body: opts.body, href: opts.href, icon: opts.icon,
     });
-    await logSent(opts.userId, bellKind, opts.contextId);
+    if (error) {
+      // Roll back the reservation so the next run retries.
+      await supabase.from("email_log").delete().eq("id", logId);
+    }
   }
 
   async function getCohortMembers(cohortId: number) {
@@ -123,18 +120,15 @@ export async function GET(request: NextRequest) {
       .from("user_cohort_memberships").select("user_id").eq("cohort_id", cohortId);
     const userIds = (memberships ?? []).map((m) => m.user_id as string);
     if (userIds.length === 0) return [];
-    const { data: users } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const userMap = new Map((users?.users ?? []).map((u) => [u.id, u]));
-    const { data: profiles } = await supabase.from("profiles").select("id, display_name").in("id", userIds);
-    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-    return userIds.map((id) => {
-      const u = userMap.get(id);
-      return {
-        user_id: id,
-        email: u?.email ?? null,
-        display_name: (profileMap.get(id)?.display_name as string | null) ?? null,
-      };
-    }).filter((m): m is { user_id: string; email: string; display_name: string | null } => !!m.email);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, email, display_name")
+      .in("id", userIds);
+    return (profiles ?? [])
+      .filter((p): p is { id: string; email: string; display_name: string | null } =>
+        typeof p.email === "string" && p.email.length > 0,
+      )
+      .map((p) => ({ user_id: p.id, email: p.email, display_name: p.display_name }));
   }
 
   async function getActiveStudents() {
@@ -150,22 +144,27 @@ export async function GET(request: NextRequest) {
     });
     const userIds = active.map((m) => m.user_id as string);
     if (userIds.length === 0) return [];
-    const { data: users } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const userMap = new Map((users?.users ?? []).map((u) => [u.id, u]));
     const [{ data: profiles }, { data: plans }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name").in("id", userIds),
-      supabase.from("study_plans").select("user_id, intensity, email_daily_plan, email_weekly_summary, paused_until").in("user_id", userIds),
+      supabase.from("profiles").select("id, email, display_name").in("id", userIds),
+      supabase.from("study_plans")
+        .select("user_id, intensity, email_daily_plan, email_weekly_summary, paused_until")
+        .in("user_id", userIds),
     ]);
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
     const planMap = new Map((plans ?? []).map((p) => [p.user_id, p]));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return active.map((m: any) => ({
-      user_id: m.user_id as string,
-      email: userMap.get(m.user_id)?.email ?? null,
-      display_name: (profileMap.get(m.user_id)?.display_name as string | null) ?? null,
-      cohort: m.cohort,
-      plan: planMap.get(m.user_id) ?? null,
-    })).filter((s) => !!s.email);
+    return active.map((m: any) => {
+      const profile = profileMap.get(m.user_id);
+      return {
+        user_id: m.user_id as string,
+        email: (profile?.email as string | null) ?? null,
+        display_name: (profile?.display_name as string | null) ?? null,
+        cohort: m.cohort,
+        plan: planMap.get(m.user_id) ?? null,
+      };
+    }).filter((s): s is typeof s & { email: string } =>
+      typeof s.email === "string" && s.email.length > 0,
+    );
   }
 
   // ── [1/7] 60D unlock ─────────────────────────────────────────────────────
@@ -194,7 +193,7 @@ export async function GET(request: NextRequest) {
           await sendOne({
             to: m.email,
             subject: "MedHelp 60D liberado — sua reta final começa agora",
-            html: lifecycleHtml({
+            html: lifecycleEmailHtml({
               displayName,
               headline: "MedHelp 60D está liberado",
               body: `Faltam 60 dias para sua prova (${fmtPtBr(cohort.test_date)}). O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Revalida Up, Memorecards e todos os recursos de reta final.`,
@@ -246,7 +245,7 @@ export async function GET(request: NextRequest) {
         await sendOne({
           to: m.email,
           subject: "Seu acesso encerra em 7 dias",
-          html: lifecycleHtml({
+          html: lifecycleEmailHtml({
             displayName,
             headline: "Seu acesso encerra em 7 dias",
             body: `Seu acesso à turma <strong>${cohort.name}</strong> termina em ${fmtPtBr(cohort.membership_ends_at.split("T")[0])}. Aproveite os últimos dias para revisar o que ficou pendente. Se quiser continuar estudando, você pode renovar agora.`,
@@ -283,7 +282,7 @@ export async function GET(request: NextRequest) {
         await sendOne({
           to: m.email,
           subject: "Seu acesso ao MedHelpSpace foi encerrado",
-          html: lifecycleHtml({
+          html: lifecycleEmailHtml({
             displayName,
             headline: "Acesso encerrado",
             body: `Seu acesso à turma <strong>${cohort.name}</strong> foi encerrado. Esperamos que você tenha tido uma ótima preparação. Para continuar estudando na próxima turma, é só renovar.`,
@@ -338,7 +337,7 @@ export async function GET(request: NextRequest) {
         : `Esta semana: <strong>${totalQ} questões</strong> respondidas${accuracy != null ? ` com <strong>${accuracy}% de acerto</strong>` : ""}, <strong>${lessonsDone} aulas</strong> concluídas, em <strong>${daysActive} dia${daysActive !== 1 ? "s" : ""}</strong> ativos.${daysToExam != null ? ` Faltam ${daysToExam} dias para a prova.` : ""}`;
       await sendOne({
         to: s.email, subject: "Resumo semanal do seu plano de estudos",
-        html: lifecycleHtml({
+        html: lifecycleEmailHtml({
           displayName, headline: "Seu resumo da semana", body,
           ctaLabel: "Ver plano e ajustar →", ctaHref: `${APP_URL}/app/plano`,
         }),
@@ -372,7 +371,7 @@ export async function GET(request: NextRequest) {
         : null;
       await sendOne({
         to: s.email, subject: "Seu plano de estudos para hoje",
-        html: lifecycleHtml({
+        html: lifecycleEmailHtml({
           displayName, headline: "Plano de hoje",
           body: `Seu plano personalizado está pronto na plataforma. Abra para ver as tarefas específicas baseadas no seu desempenho atual.${daysToExam != null ? ` <br/><br/>Faltam <strong>${daysToExam} dias</strong> para sua prova.` : ""}`,
           ctaLabel: "Abrir plano de hoje →", ctaHref: `${APP_URL}/app/plano`,
@@ -388,27 +387,38 @@ export async function GET(request: NextRequest) {
     const students = await getActiveStudents();
     const threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     const threeIso = threeDaysAgo.toISOString();
+    const userIds = students
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((s: any) => !(s.plan?.paused_until && s.plan.paused_until >= todayKey()))
+      .map((s) => s.user_id as string);
+
     let nudged = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const s of students as any[]) {
-      if (s.plan?.paused_until && s.plan.paused_until >= todayKey()) continue;
-      const [{ data: lastQuiz }, { data: lastLesson }] = await Promise.all([
-        supabase.from("quiz_attempts").select("created_at").eq("user_id", s.user_id).order("created_at", { ascending: false }).limit(1),
-        supabase.from("lesson_completions").select("completed_at").eq("user_id", s.user_id).order("completed_at", { ascending: false }).limit(1),
-      ]);
-      const lastQ = lastQuiz?.[0]?.created_at as string | undefined;
-      const lastL = lastLesson?.[0]?.completed_at as string | undefined;
-      const last = [lastQ, lastL].filter(Boolean).sort().pop();
-      if (!last) continue;
-      if (last > threeIso) continue;
-      const contextId = `last-${last.split("T")[0]}`;
-      await insertNotification({
-        userId: s.user_id, kind: "missed-3-days",
-        title: "Que tal voltar com calma?",
-        body: "Você não precisa fazer tudo hoje — apenas uma sessão curta já mantém o ritmo.",
-        href: "/app/plano", icon: "calendar", contextId,
-      });
-      nudged++;
+    if (userIds.length > 0) {
+      // Single grouped query instead of N×2 per-user lookups.
+      const { data: activityRows, error: actErr } = await supabase
+        .rpc("get_last_activity_per_user", { user_ids: userIds });
+      if (actErr) {
+        push(`  ERROR fetching last activity: ${actErr.message}`);
+      } else {
+        const activityMap = new Map(
+          (activityRows ?? []).map((r: { user_id: string; last_activity: string }) =>
+            [r.user_id, r.last_activity],
+          ),
+        );
+        for (const userId of userIds) {
+          const last = activityMap.get(userId);
+          if (!last) continue;          // never studied — skip
+          if (last > threeIso) continue; // active within 3 days — skip
+          const contextId = `last-${last.split("T")[0]}`;
+          await insertNotification({
+            userId, kind: "missed-3-days",
+            title: "Que tal voltar com calma?",
+            body: "Você não precisa fazer tudo hoje — apenas uma sessão curta já mantém o ritmo.",
+            href: "/app/plano", icon: "calendar", contextId,
+          });
+          nudged++;
+        }
+      }
     }
     push(`  Nudged ${nudged} students.`);
   }

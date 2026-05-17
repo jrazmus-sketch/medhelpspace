@@ -51,7 +51,7 @@ export function NotificationStripClient({
       if (unreadIds.length > 0) {
         setReadSet(new Set(announcements.map((a) => a.id)));
         startTransition(() => {
-          markAnnouncementsRead(unreadIds).catch(() => {});
+          markAnnouncementsRead(unreadIds).catch((e) => console.error("markAnnouncementsRead failed:", e));
         });
       }
     }

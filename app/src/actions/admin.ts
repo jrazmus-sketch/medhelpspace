@@ -175,21 +175,15 @@ export async function changeUserRole(targetUserId: string, newRole: string) {
 
 export async function sendPasswordReset(email: string) {
   const { user } = await requireAdmin();
-  // Call GoTrue /recover endpoint with service role key — sends the reset email
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/recover`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-        Authorization: `Bearer ${process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || ""}`,
-      },
-      body: JSON.stringify({ email }),
-    },
-  );
-  if (!res.ok) throw new Error(`Password reset failed: ${res.status}`);
+  // Mirror the member-facing flow at app/auth/recover/route.ts: route the
+  // recovery link through /auth/confirm so the token is verified and a session
+  // is established before the user lands on /reset-password.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://medhelpspace.com.br";
   const admin = createAdminClient();
+  const { error } = await admin.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/auth/confirm`,
+  });
+  if (error) throw new Error(`Password reset failed: ${error.message}`);
   const { data: target } = await admin.from("profiles").select("id").eq("email", email).single();
   await writeAuditLog(user.id, "password_reset", target?.id ?? null, { email });
 }

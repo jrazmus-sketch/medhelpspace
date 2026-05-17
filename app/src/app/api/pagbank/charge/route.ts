@@ -2,15 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createCharge, getPagBankEnv, getWebhookBaseUrl } from "@/lib/pagbank/api";
+import { createCharge, getWebhookBaseUrl } from "@/lib/pagbank/api";
 import type { PagBankChargeRequest } from "@/lib/pagbank/types";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
-
-// Hardcoded product config — prices are a business decision, not a DB concern
-const COHORT_PRODUCTS: Record<string, { name: string; amountCents: number }> = {
-  "revalida-2026-2": { name: "Revalida 2026.2", amountCents: 399000 },
-  "revalida-2027-1": { name: "Revalida 2027.1", amountCents: 499000 },
-};
+import { COHORT_PRODUCTS } from "@/lib/pricing";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -112,7 +107,6 @@ export async function POST(request: NextRequest) {
   }
 
   const webhookUrl = `${getWebhookBaseUrl()}/api/pagbank/webhook`;
-  const env = getPagBankEnv();
 
   const chargeReq: PagBankChargeRequest = {
     reference_id: order.id,
@@ -148,7 +142,14 @@ export async function POST(request: NextRequest) {
   // Update order with PagBank charge data
   const qrCode = charge.qr_codes?.[0];
   const ccBrand = charge.payment_method?.card?.brand ?? null;
-  const isSandbox = env === "sandbox";
+
+  // Guard: PIX charge must include the documented QRCODE.PNG link.
+  // A missing link means PagBank returned a malformed response — treat as API failure.
+  if (paymentMethod === "pix" && qrCode && !qrCode.links?.find((l) => l.rel === "QRCODE.PNG")?.href) {
+    console.error("PagBank PIX charge missing QRCODE.PNG link. charge.id:", charge.id, "qrCode:", qrCode);
+    await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+    return NextResponse.json({ error: "Erro ao processar pagamento (QR indisponível)" }, { status: 502 });
+  }
 
   // Leave status as 'pending' when PAID; finalizePaidOrder atomically transitions
   // it under WHERE status != 'paid' so a concurrent webhook can't trigger the
@@ -160,10 +161,7 @@ export async function POST(request: NextRequest) {
     status: willFinalize ? "pending" : mapChargeStatus(charge.status),
     pix_qr_text: qrCode?.text ?? null,
     // QR code PNG: sandbox has different domain from the stored URL pattern
-    pix_qr_image_url: qrCode
-      ? qrCode.links?.find((l) => l.rel === "QRCODE.PNG")?.href ??
-        `https://${isSandbox ? "sandbox." : ""}api.pagseguro.com/qrcode/${qrCode.id}/png`
-      : null,
+    pix_qr_image_url: qrCode?.links?.find((l) => l.rel === "QRCODE.PNG")?.href ?? null,
     pix_expires_at: qrCode?.expiration_date ?? null,
     cc_installments: paymentMethod === "credit_card" ? installments : null,
     cc_brand: ccBrand,
@@ -185,10 +183,7 @@ export async function POST(request: NextRequest) {
     status: charge.status,
     // Pix
     pixQrText: qrCode?.text ?? null,
-    pixQrImageUrl: qrCode
-      ? qrCode.links?.find((l) => l.rel === "QRCODE.PNG")?.href ??
-        `https://${isSandbox ? "sandbox." : ""}api.pagseguro.com/qrcode/${qrCode.id}/png`
-      : null,
+    pixQrImageUrl: qrCode?.links?.find((l) => l.rel === "QRCODE.PNG")?.href ?? null,
     pixExpiresAt: qrCode?.expiration_date ?? null,
     // CC
     ccBrand,
