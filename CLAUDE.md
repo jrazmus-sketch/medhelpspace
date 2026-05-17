@@ -4,6 +4,15 @@
 
 - **Mobile-first layout**: Every layout change must be optimized for mobile in the same session. Think through the mobile experience deeply before finishing — don't leave responsive fixes for later.
 
+## Skills to reach for
+
+Four slash commands are wired up and auto-detect this project's conventions. Prefer them over hand-rolling each task.
+
+- **`/schema-patch`** — when adding a column/table, RLS change, or any DB migration. Picks the next `schema-patch-<slug>.sql` filename, scaffolds with idempotent guards + RLS + rollback notes, runs via `node scripts/run-sql.js`, updates the Status tracker below.
+- **`/new-query`** — when adding a typed data fetcher. Scaffolds `app/src/lib/queries/<table>.ts` (three-part pattern: keys + mock-aware fetch + optional hook). Defaults to **server-only** to honor the "browser client hangs" invariant in *Data fetching pattern* below.
+- **`/mobile-check`** — invoke after any layout/UI edit to enforce the mobile-first rule above. Drives Chrome DevTools through 375/414/768 widths, screenshots each, checks overflow + tap targets + tiny text + console errors.
+- **`/pre-launch-audit`** — when finishing a sprint or about to ship. Triaged P0/P1/P2 sweep for stray dev artifacts, auth gaps, env hygiene, error handling. Reports only; doesn't auto-fix.
+
 ## What this project is
 
 Migrating medhelpspace.com.br — a Brazilian Portuguese medical exam prep

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createCharge, getPagBankEnv, getWebhookBaseUrl } from "@/lib/pagbank/api";
 import type { PagBankChargeRequest } from "@/lib/pagbank/types";
+import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 
 // Hardcoded product config — prices are a business decision, not a DB concern
 const COHORT_PRODUCTS: Record<string, { name: string; amountCents: number }> = {
@@ -65,6 +66,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Você já tem acesso a esta turma" }, { status: 409 });
   }
 
+  // Pix: reuse a still-valid pending order if one exists, so a double-click or
+  // page refresh doesn't produce two QR codes the user could accidentally pay.
+  // The unique partial index idx_orders_one_pending_pix_per_user_cohort enforces
+  // this at the DB level; we expire stale rows here so a long-abandoned order
+  // doesn't block a fresh charge.
+  if (paymentMethod === "pix") {
+    const nowIso = new Date().toISOString();
+
+    await admin
+      .from("orders")
+      .update({ status: "cancelled" })
+      .eq("user_id", user.id)
+      .eq("cohort_id", cohort.id)
+      .eq("payment_method", "pix")
+      .eq("status", "pending")
+      .lt("pix_expires_at", nowIso);
+
+    const reusable = await findReusablePixOrder(admin, user.id, cohort.id, nowIso);
+    if (reusable) return NextResponse.json(reusable);
+  }
+
   // Create pending order in DB first so we have a reference_id for PagBank
   const { data: order, error: orderError } = await admin
     .from("orders")
@@ -80,6 +102,11 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (orderError || !order) {
+    // 23505 = unique_violation. Concurrent Pix request won the race — return that one.
+    if (paymentMethod === "pix" && orderError?.code === "23505") {
+      const reusable = await findReusablePixOrder(admin, user.id, cohort.id, new Date().toISOString());
+      if (reusable) return NextResponse.json(reusable);
+    }
     console.error("Failed to create order:", orderError);
     return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 });
   }
@@ -123,9 +150,14 @@ export async function POST(request: NextRequest) {
   const ccBrand = charge.payment_method?.card?.brand ?? null;
   const isSandbox = env === "sandbox";
 
+  // Leave status as 'pending' when PAID; finalizePaidOrder atomically transitions
+  // it under WHERE status != 'paid' so a concurrent webhook can't trigger the
+  // purchase email twice.
+  const willFinalize = charge.status === "PAID";
+
   await admin.from("orders").update({
     pagbank_charge_id: charge.id,
-    status: mapChargeStatus(charge.status),
+    status: willFinalize ? "pending" : mapChargeStatus(charge.status),
     pix_qr_text: qrCode?.text ?? null,
     // QR code PNG: sandbox has different domain from the stored URL pattern
     pix_qr_image_url: qrCode
@@ -138,9 +170,13 @@ export async function POST(request: NextRequest) {
     pagbank_response: charge as unknown as Record<string, unknown>,
   }).eq("id", order.id);
 
-  // If CC was immediately paid (rare but possible), provision now
-  if (charge.status === "PAID") {
-    await provisionMembership(admin, user.id, cohort.id);
+  if (willFinalize) {
+    await finalizePaidOrder(admin, {
+      orderId: order.id,
+      userId: user.id,
+      cohortId: cohort.id,
+      charge,
+    });
   }
 
   return NextResponse.json({
@@ -176,13 +212,34 @@ function mapChargeStatus(s: string): string {
   }
 }
 
-async function provisionMembership(
+async function findReusablePixOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
   userId: string,
   cohortId: number,
+  nowIso: string,
 ) {
-  await admin
-    .from("user_cohort_memberships")
-    .upsert({ user_id: userId, cohort_id: cohortId }, { onConflict: "user_id,cohort_id" });
+  const { data } = await admin
+    .from("orders")
+    .select("id, pagbank_charge_id, pix_qr_text, pix_qr_image_url, pix_expires_at")
+    .eq("user_id", userId)
+    .eq("cohort_id", cohortId)
+    .eq("payment_method", "pix")
+    .eq("status", "pending")
+    .gt("pix_expires_at", nowIso)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data?.pix_qr_text) return null;
+
+  return {
+    orderId: data.id,
+    chargeId: data.pagbank_charge_id,
+    status: "PENDING",
+    pixQrText: data.pix_qr_text,
+    pixQrImageUrl: data.pix_qr_image_url,
+    pixExpiresAt: data.pix_expires_at,
+    ccBrand: null,
+  };
 }
