@@ -35,3 +35,10 @@ app/out/
 
 # Vercel
 .vercel
+
+# Raw image scratch folder — large, unoptimized stock downloads.
+# Curated + optimized images belong in app/public/images/ instead.
+images/
+
+# Local lint output dump — regenerable via `npm run lint`
+app/lint_results.txt
