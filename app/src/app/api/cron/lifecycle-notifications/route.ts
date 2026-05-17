@@ -400,9 +400,9 @@ export async function GET(request: NextRequest) {
       if (actErr) {
         push(`  ERROR fetching last activity: ${actErr.message}`);
       } else {
-        const activityMap = new Map(
+        const activityMap = new Map<string, string>(
           (activityRows ?? []).map((r: { user_id: string; last_activity: string }) =>
-            [r.user_id, r.last_activity],
+            [r.user_id, r.last_activity] as [string, string],
           ),
         );
         for (const userId of userIds) {
