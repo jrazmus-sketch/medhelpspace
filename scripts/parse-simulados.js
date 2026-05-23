@@ -38,7 +38,13 @@ function decodeEntities(s) {
 
 function htmlToLines(html) {
   let s = html;
-  s = s.replace(/<br\s*\/?>/gi, '\n');
+  // Encode bare "<" that's not actually opening an HTML tag. Common cause:
+  // lab reference values like "< 5 mg/L" — without this, the tag-stripper
+  // <[^>]+> treats the bare "<" as a tag opener and eats everything up to
+  // the next ">" (which is often the closing of the next real <br />).
+  s = s.replace(/<(?![\/a-zA-Z!])/g, '&lt;');
+  // Match <br>, <br/>, <br />, AND <br data-start="..." /> (with attributes).
+  s = s.replace(/<br\b[^>]*\/?>/gi, '\n');
   s = s.replace(/<\/p>/gi, '\n\n');
   s = s.replace(/<\/div>/gi, '\n');
   s = s.replace(/<[^>]+>/g, '');
@@ -107,7 +113,12 @@ function escapeHtml(s) {
 // ---------- Question splitting ----------
 
 function splitQuestions(plainText) {
-  const re = /^Quest[aã]o\s+(\d+)\b/gm;
+  // Case-insensitive: some source pages use "QUESTÃO 1" all-caps.
+  // No \b after \d+: some pages concatenate the header with question text
+  // ("Questão 1Um homem de..."), giving a digit→letter transition that is
+  // NOT a word boundary. \d+ is greedy so it still captures multi-digit
+  // numbers like "10" correctly.
+  const re = /^Quest[aã]o\s+(\d+)/gmi;
   const matches = [...plainText.matchAll(re)].map(m => ({
     number: parseInt(m[1], 10),
     idx: m.index,
@@ -127,20 +138,25 @@ function parseQuestionChunk(chunkText, qNumber) {
   const firstNL = chunkText.indexOf('\n');
   const afterHeader = firstNL === -1 ? '' : chunkText.slice(firstNL + 1).trim();
 
-  const optRe = /^\(([A-D])\)\s*/gm;
+  // Brazilian medical exams use 4 OR 5 options. Match (A)..(E) at line start.
+  const optRe = /^\(([A-E])\)\s*/gm;
   const optMatches = [...afterHeader.matchAll(optRe)].map(m => ({
     letter: m[1],
     idx: m.index,
     after: m.index + m[0].length,
   }));
   if (optMatches.length < 4) {
-    throw new Error(`Q${qNumber}: expected 4 options, found ${optMatches.length}`);
+    throw new Error(`Q${qNumber}: expected at least 4 options, found ${optMatches.length}`);
+  }
+  if (optMatches.length > 5) {
+    throw new Error(`Q${qNumber}: expected 4 or 5 options, found ${optMatches.length}`);
   }
 
   const stem = afterHeader.slice(0, optMatches[0].idx).trim();
 
+  // Iterate over however many options the question actually has (4 or 5).
   const options = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < optMatches.length; i++) {
     const start = optMatches[i].after;
     const end = i + 1 < optMatches.length ? optMatches[i + 1].idx : afterHeader.length;
     options.push(afterHeader.slice(start, end).trim());
@@ -149,18 +165,19 @@ function parseQuestionChunk(chunkText, qNumber) {
 }
 
 function parseAnswerChunk(chunkText, qNumber) {
-  const correctRe = /Alternativa\s+correta:\s*\(([A-D])\)/i;
+  // Accept (A)..(E) for the correct-answer marker.
+  const correctRe = /Alternativa\s+correta:\s*\(([A-E])\)/i;
   const cm = chunkText.match(correctRe);
   if (!cm) throw new Error(`Q${qNumber}: missing "Alternativa correta" marker`);
   const correctLetter = cm[1];
   const correctIdx = chunkText.indexOf(cm[0]);
   const explanationRaw = chunkText.slice(correctIdx + cm[0].length).trim();
 
-  const distractorFb = { A: null, B: null, C: null, D: null };
+  const distractorFb = { A: null, B: null, C: null, D: null, E: null };
   const incorrectSecRe = /An[aá]lise\s+das\s+alternativas\s+incorretas:\s*([\s\S]*?)(?=\n\s*(?:PEGA REVALIDA|Resumo-chave|Quest[aã]o\s+\d|$))/i;
   const im = explanationRaw.match(incorrectSecRe);
   if (im) {
-    const lineRe = /\(([A-D])\)\s*([\s\S]*?)(?=\n\(\w\)|$)/g;
+    const lineRe = /\(([A-E])\)\s*([\s\S]*?)(?=\n\(\w\)|$)/g;
     const lines = [...im[1].matchAll(lineRe)];
     for (const lm of lines) {
       distractorFb[lm[1]] = lm[2].trim();
@@ -248,7 +265,8 @@ function parseAnswerChunk(chunkText, qNumber) {
         const { stem, options } = parseQuestionChunk(q.text, q.number);
         const { correctLetter, distractorFb, explanationText } = parseAnswerChunk(a.text, q.number);
 
-        const letters = ['A','B','C','D'];
+        // Letters array sized to actual option count (4 or 5).
+        const letters = ['A','B','C','D','E'].slice(0, options.length);
         const answers = letters.map((L, idx) => ({
           text: options[idx],
           correct: L === correctLetter,

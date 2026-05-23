@@ -110,7 +110,8 @@ const postgres = require('postgres');
         // Wrap each option text in the project's established H5P-quiz format:
         // <div><strong>(A) ...</strong></div> — matches the 204 existing
         // h5p-quiz pages so the QuizPlayer renders them consistently.
-        const letters = ['A','B','C','D'];
+        // Up to 5 options (A..E) for INEP-style 5-alternative questions.
+        const letters = ['A','B','C','D','E'];
         const answersWithPrefix = q.answers.map((a, i) => ({
           text: `<div><strong>(${letters[i]}) ${escapeHtml(a.text)}</strong></div>`,
           correct: a.correct,

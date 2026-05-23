@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Revisão de Simulados — Karina</title>
+<title>Revisão de Simulados — Karina (versão atualizada)</title>
 <style>
   body {
     font-family: Georgia, 'Times New Roman', serif;
@@ -34,7 +34,7 @@
   }
   p { margin: 12px 0; }
   ul { margin: 12px 0; padding-left: 28px; }
-  li { margin: 6px 0; }
+  li { margin: 8px 0; }
   a {
     color: #7a1d91;
     text-decoration: underline;
@@ -67,11 +67,11 @@
     padding: 16px 20px;
     margin: 16px 0 32px 0;
   }
-  .pattern-box {
-    background: #f9f9f9;
-    border: 1px solid #ddd;
+  .good-news {
+    background: #e8f5e9;
+    border-left: 4px solid #2e7d32;
     padding: 16px 20px;
-    margin: 12px 0;
+    margin: 16px 0;
   }
   code {
     font-family: 'Courier New', monospace;
@@ -90,151 +90,66 @@
 </head>
 <body>
 
-<h1>Revisão de Simulados — Páginas que precisam da sua atenção</h1>
+<h1>Revisão de Simulados — versão atualizada</h1>
 
 <div class="intro-box">
-  <p>Olá Karina! Este relatório lista as páginas de simulados que <strong>não conseguimos converter automaticamente</strong> para o novo formato interativo do site.</p>
-  <p>Para cada página, indicamos exatamente <strong>o que está diferente</strong> e <strong>o que precisa ser ajustado</strong> no texto original. Anote suas observações no Google Doc que o Justin te enviou.</p>
+  <p>Olá Karina! <strong>Esqueça o relatório anterior</strong> — eu descobri que vários dos problemas que tinha listado para você revisar eram, na verdade, problemas no nosso programa de conversão, e não no conteúdo do site antigo.</p>
+  <p>Depois de corrigir esses problemas no programa, a lista de páginas que precisam da sua atenção ficou <strong>muito menor</strong>: apenas <strong>7 itens</strong> em vez dos 35 originais.</p>
 </div>
 
-<h2>Como o sistema novo funciona (em poucas palavras)</h2>
-
-<p>O site novo transforma cada simulado num <strong>quiz interativo</strong>: o aluno responde uma questão de cada vez, vê na hora se acertou, e recebe a explicação do gabarito. Para fazer isso automaticamente em todas as páginas de simulado, o programa precisa que cada página siga <strong>sempre o mesmo padrão</strong>:</p>
-
-<div class="pattern-box">
-  <ol>
-    <li><strong>Duas abas (seções)</strong> com os títulos exatos:
-      <ul>
-        <li><code>Simulado 1 - Perguntas</code></li>
-        <li><code>Simulado 1 - Respostas</code></li>
-      </ul>
-    </li>
-    <li><strong>10 questões</strong> na aba de Perguntas, numeradas de <code>Questão 1</code> a <code>Questão 10</code>.</li>
-    <li>Cada questão com <strong>4 alternativas</strong> marcadas com <code>(A)</code>, <code>(B)</code>, <code>(C)</code>, <code>(D)</code> no início.</li>
-    <li>Cada resposta na aba de Respostas com o marcador exato <code>✔ Alternativa correta: (X)</code> (onde X é a letra correta).</li>
-  </ol>
+<div class="good-news">
+  <p><strong>Boas notícias:</strong></p>
+  <ul>
+    <li><strong>163 de 169 páginas</strong> de simulado foram convertidas com sucesso para o novo formato interativo.</li>
+    <li>Várias páginas que estavam na lista anterior (todas as de reumatologia, várias de psiquiatria, intoxicações exógenas, ventilação mecânica, etc.) <strong>foram convertidas automaticamente</strong> após eu corrigir o programa. Você não precisa fazer nada nelas.</li>
+  </ul>
 </div>
 
-<p>Quando uma página foge desse padrão — mesmo que seja só um detalhe — o programa não consegue ler. Convertemos <strong>134 páginas com sucesso</strong>, mas <strong>35 páginas</strong> precisam de ajuste no texto original antes de podermos rodá-las.</p>
+<h2>O que muda na lista</h2>
 
-<p>Assim que você terminar a revisão, o Justin vai reprocessar as páginas corrigidas — <strong>não é necessário refazer nada</strong>, só ajustar o texto onde indicarmos abaixo.</p>
+<p>Encontrei 5 problemas técnicos no programa que estavam fazendo ele rejeitar páginas perfeitamente formatadas:</p>
 
-<h2>Categoria 1 — Pequena correção em apenas 1 ou 2 questões (17 páginas)</h2>
+<ol>
+  <li>O programa não entendia valores de exame com sinal de menor que (como <code>&lt; 5 mg/L</code>) — ele apagava a alternativa por engano.</li>
+  <li>O programa não reconhecia cabeçalhos em letra maiúscula (<code>QUESTÃO 1</code> em vez de <code>Questão 1</code>) — afetava toda a reumatologia.</li>
+  <li>O programa precisava de espaço entre o número da questão e o texto (afetava <code>intoxicações exógenas</code> e <code>ventilação mecânica</code>).</li>
+  <li>O programa só aceitava 4 alternativas — várias questões têm 5 alternativas (A, B, C, D, E).</li>
+  <li>O programa não reconhecia alguns formatos de quebra de linha do WordPress (afetava <code>mecanismo de parto</code>).</li>
+</ol>
 
-<p>Estas páginas estão <strong>quase prontas</strong>: 8, 9 ou 10 questões funcionam normalmente, mas há <strong>1 ou 2 questões específicas</strong> onde as alternativas <code>(A) (B) (C) (D)</code> não estão formatadas como nas outras. Provavelmente faltou colocar uma letra entre parênteses, ou as alternativas estão separadas de um jeito diferente.</p>
+<p>Todos esses problemas foram corrigidos. As páginas afetadas foram reprocessadas automaticamente e já estão no novo formato.</p>
 
-<p><strong>O que verificar em cada uma:</strong> abra a página, vá na questão indicada, e confira se as 4 alternativas estão escritas como <code>(A) texto</code>, <code>(B) texto</code>, <code>(C) texto</code>, <code>(D) texto</code>.</p>
+<h2>Páginas que ainda precisam da sua revisão</h2>
 
-<h3>Cardiologia</h3>
+<p>Sobrou apenas <strong>7 itens</strong>. Para cada um, indico exatamente o que está diferente:</p>
+
+<h3>1. Página com apenas 3 alternativas em uma questão</h3>
 <ul>
-  <li><a href="https://medhelpspace.vercel.app/app/cardiologia/crise-hipertensiva-simulados">Crise Hipertensiva — Simulados</a> — verificar <em class="problem">Questão 9</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/cardiologia/dislipidemias-simulados">Dislipidemias — Simulados</a> — verificar <em class="problem">Questão 6</em></li>
+  <li><a href="https://medhelpspace.vercel.app/app/cirurgia-geral/tec-simulados">TEC (Trauma Cranioencefálico) — Simulados</a> — <em class="problem">Questão 9 tem só 3 alternativas (A, B, C). Falta a alternativa (D)</em>. Verificar se a alternativa (D) existe em algum lugar e adicionar.</li>
 </ul>
 
-<h3>Cirurgia Geral</h3>
+<h3>2. Páginas com conteúdo vazio ou em branco</h3>
+<p>Estas páginas existem no site antigo mas as abas de Perguntas e Respostas estão praticamente em branco (apenas o cabeçalho do simulado). É possível que o conteúdo nunca tenha sido adicionado, ou que tenha sido apagado por engano:</p>
 <ul>
-  <li><a href="https://medhelpspace.vercel.app/app/cirurgia-geral/doencas-hepatobiliares-simulados">Doenças Hepatobiliares — Simulados</a> — verificar <em class="problem">Questão 4</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/cirurgia-geral/tec-simulados">TEC (Trauma Cranioencefálico) — Simulados</a> — verificar <em class="problem">Questão 9</em></li>
+  <li><a href="https://medhelpspace.vercel.app/app/ginecologia/distopias-genitais-simulados">Distopias Genitais — Simulados</a> — verificar se o conteúdo do simulado existe e copiar para a página.</li>
+  <li><a href="https://medhelpspace.vercel.app/app/pneumologia/atelectasia-simulados">Atelectasia — Simulados</a> — verificar se o conteúdo do simulado existe e copiar para a página.</li>
+  <li><a href="https://medhelpspace.vercel.app/app/saude-coletiva/medicina-do-trabalho-simulados">Medicina do Trabalho — Simulados</a> — verificar se o conteúdo do simulado existe e copiar para a página.</li>
 </ul>
 
-<h3>Endocrinologia</h3>
+<h3>3. Página onde a aba de Respostas está em branco</h3>
 <ul>
-  <li><a href="https://medhelpspace.vercel.app/app/endocrinologia/nodulo-e-cancer-de-tireoide-simulados">Nódulo e Câncer de Tireoide — Simulados</a> — verificar <em class="problem">Questão 2</em></li>
+  <li><a href="https://medhelpspace.vercel.app/app/pediatria/imunizacoes-simulados">Imunizações — Simulados</a> — a aba de Perguntas tem as 10 questões normalmente, mas a aba <em class="problem">Simulado 1 - Respostas está em branco</em>. Verificar se o gabarito existe em algum lugar e copiar para essa aba.</li>
 </ul>
 
-<h3>Hematologia</h3>
+<h3>4. Página com problema na nomeação das abas</h3>
 <ul>
-  <li><a href="https://medhelpspace.vercel.app/app/hematologia/anemia-falciforme-simulados">Anemia Falciforme — Simulados</a> — verificar <em class="problem">Questão 2</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/hematologia/anemia-hemolitica-simulados">Anemia Hemolítica — Simulados</a> — verificar <em class="problem">Questões 1 e 2</em></li>
+  <li><a href="https://medhelpspace.vercel.app/app/psiquiatria/efeitos-do-alcool-e-abstinencia-simulados">Efeitos do Álcool e Abstinência — Simulados</a> — esta página tem <em class="problem">duas abas chamadas "Simulado 1 - Perguntas"</em>, e nenhuma chamada "Simulado 1 - Respostas". Provavelmente a segunda aba era pra se chamar "Simulado 1 - Respostas" e o título foi copiado errado. Verificar e renomear a segunda aba.</li>
 </ul>
 
-<h3>Infectologia</h3>
+<h3>5. Página onde o conteúdo está trocado (problema separado)</h3>
+<p>Este é um item especial — não é um problema de formatação, mas de conteúdo trocado:</p>
 <ul>
-  <li><a href="https://medhelpspace.vercel.app/app/infectologia/infeccao-do-trato-urinario-simulados">Infecção do Trato Urinário — Simulados</a> — verificar <em class="problem">Questão 4</em></li>
-</ul>
-
-<h3>Nefrologia</h3>
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/nefrologia/doenca-renal-cronica-simulados">Doença Renal Crônica — Simulados</a> — verificar <em class="problem">Questão 8</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/nefrologia/sindrome-nefritica-simulados">Síndrome Nefrítica — Simulados</a> — verificar <em class="problem">Questão 5</em></li>
-</ul>
-
-<h3>Obstetrícia</h3>
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/obstetricia/assistencia-pre-natal-simulados">Assistência Pré-Natal — Simulados</a> — verificar <em class="problem">Questões 5 e 8</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/obstetricia/diabetes-da-gestacao-simulados">Diabetes da Gestação — Simulados</a> — verificar <em class="problem">Questões 4 e 10</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/obstetricia/prematuridade-simulados">Prematuridade — Simulados</a> — verificar <em class="problem">Questão 2</em></li>
-</ul>
-
-<h3>Pediatria</h3>
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/pediatria/reanimacao-neonatal-simulados">Reanimação Neonatal — Simulados</a> — verificar <em class="problem">Questão 3</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/pediatria/taquipneia-transitoria-do-recem-nascido-simulados">Taquipneia Transitória do Recém-Nascido — Simulados</a> — verificar <em class="problem">Questão 2</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/pediatria/torchs-simulados">TORCHS — Simulados</a> — verificar <em class="problem">Questões 3 e 10</em></li>
-  <li><a href="https://medhelpspace.vercel.app/app/pediatria/triagem-neonatal-simulados">Triagem Neonatal — Simulados</a> — verificar <em class="problem">Questões 2, 5, 6 e 10</em></li>
-</ul>
-
-<h3>Saúde Coletiva</h3>
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/saude-coletiva/indicadores-de-saude-simulados">Indicadores de Saúde — Simulados</a> — verificar <em class="problem">Questão 10</em></li>
-</ul>
-
-<h2>Categoria 2 — Toda a especialidade segue um padrão diferente (10 páginas)</h2>
-
-<h3>Reumatologia (6 páginas) — aba "Perguntas" com nome diferente</h3>
-
-<p><strong>O problema:</strong> o programa não está encontrando a aba <code>Simulado 1 - Perguntas</code> em nenhuma página de reumatologia. Provavelmente o título da primeira aba está escrito de um jeito diferente (por exemplo <code>Simulado 1 - Questões</code>, <code>Perguntas do Simulado 1</code>, ou algo parecido). É só uma correção no <strong>título da aba</strong>, o conteúdo deve estar certo.</p>
-
-<p><strong>O que verificar:</strong> em cada uma das páginas abaixo, ver se o título da primeira aba é exatamente <code>Simulado 1 - Perguntas</code> (com hífen e maiúsculas como mostrado). Se for diferente, anotar como está escrito.</p>
-
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/reumatologia/artrite-infecciosa-simulados">Artrite Infecciosa — Simulados</a></li>
-  <li><a href="https://medhelpspace.vercel.app/app/reumatologia/artrite-reumatoide-simulados">Artrite Reumatoide — Simulados</a></li>
-  <li><a href="https://medhelpspace.vercel.app/app/reumatologia/febre-reumatica-simulados">Febre Reumática — Simulados</a></li>
-  <li><a href="https://medhelpspace.vercel.app/app/reumatologia/fibromialgia-simulados">Fibromialgia — Simulados</a></li>
-  <li><a href="https://medhelpspace.vercel.app/app/reumatologia/lupus-simulados">Lúpus — Simulados</a></li>
-  <li><a href="https://medhelpspace.vercel.app/app/reumatologia/vasculite-de-pequenos-vasos-simulados">Vasculite de Pequenos Vasos — Simulados</a></li>
-</ul>
-
-<h3>Psiquiatria (4 páginas) — marcador da resposta correta em formato diferente</h3>
-
-<p><strong>O problema:</strong> nas 3 primeiras páginas, o programa não está encontrando o marcador exato <code>✔ Alternativa correta: (X)</code> no gabarito das questões. Pode estar escrito como <code>Resposta correta</code>, <code>Gabarito</code>, ou sem o símbolo <code>✔</code>. A quarta página (Efeitos do Álcool e Abstinência) não tem a aba de Respostas — ou ela está com outro título, ou faltou criar.</p>
-
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/psiquiatria/efeitos-do-alcool-e-abstinencia-simulados">Efeitos do Álcool e Abstinência — Simulados</a> — <em class="problem">a aba "Simulado 1 - Respostas" está faltando ou com outro nome</em>. Verificar se as respostas existem em algum lugar da página.</li>
-  <li><a href="https://medhelpspace.vercel.app/app/psiquiatria/emergencias-psiquiatricas-simulados">Emergências Psiquiátricas — Simulados</a> — verificar <em class="problem">Questões 4 e 9</em> na aba de Respostas (marcador da resposta correta)</li>
-  <li><a href="https://medhelpspace.vercel.app/app/psiquiatria/transtorno-de-ansiedade-simulados">Transtorno de Ansiedade — Simulados</a> — verificar <em class="problem">Questões 5 e 10</em> na aba de Respostas</li>
-  <li><a href="https://medhelpspace.vercel.app/app/psiquiatria/transtornos-alimentares-simulados">Transtornos Alimentares — Simulados</a> — verificar <em class="problem">Questão 9</em> na aba de Respostas</li>
-</ul>
-
-<h2>Categoria 3 — Aba de "Respostas" faltando ou com nome diferente (3 páginas)</h2>
-
-<p><strong>O problema:</strong> o programa achou as 10 questões normalmente, mas não conseguiu encontrar a aba <code>Simulado 1 - Respostas</code>. Pode estar com outro título (<code>Gabarito</code>, <code>Comentários</code>, etc.), ou a aba pode não ter sido criada.</p>
-
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/emergencia/intoxicacoes-exogenas-simulados">Intoxicações Exógenas — Simulados</a> — verificar se existe aba de respostas/gabarito</li>
-  <li><a href="https://medhelpspace.vercel.app/app/emergencia/ventilacao-mecanica-simulados">Ventilação Mecânica — Simulados</a> — verificar se existe aba de respostas/gabarito</li>
-  <li><a href="https://medhelpspace.vercel.app/app/pediatria/imunizacoes-simulados">Imunizações — Simulados</a> — verificar se existe aba de respostas/gabarito</li>
-</ul>
-
-<h2>Categoria 4 — Conteúdo incompleto ou faltando (4 páginas)</h2>
-
-<p>Aqui o problema é mais sério — o programa <strong>não conseguiu encontrar quase nada</strong> que reconhecesse como questão. Pode ser que a página esteja vazia, que o conteúdo esteja num formato totalmente diferente (PDF, imagem, etc.), ou que esteja faltando o simulado inteiro.</p>
-
-<ul>
-  <li><a href="https://medhelpspace.vercel.app/app/obstetricia/mecanismo-de-parto-simulados">Mecanismo de Parto — Simulados</a> — encontramos <em class="problem">9 perguntas mas 10 respostas</em>. Falta uma pergunta, ou tem uma resposta a mais. Verificar se a numeração das questões está certa e se todas as 10 estão presentes.</li>
-  <li><a href="https://medhelpspace.vercel.app/app/ginecologia/distopias-genitais-simulados">Distopias Genitais — Simulados</a> — <em class="problem">nenhuma questão foi encontrada</em>. Verificar se a página tem o simulado escrito no formato padrão.</li>
-  <li><a href="https://medhelpspace.vercel.app/app/pneumologia/atelectasia-simulados">Atelectasia — Simulados</a> — <em class="problem">nenhuma questão foi encontrada</em>. Verificar se a página tem o simulado.</li>
-  <li><a href="https://medhelpspace.vercel.app/app/saude-coletiva/medicina-do-trabalho-simulados">Medicina do Trabalho — Simulados</a> — <em class="problem">nenhuma questão foi encontrada</em>.</li>
-</ul>
-
-<h2>Categoria 5 — Páginas com 3 simulados em vez de 1 (2 páginas)</h2>
-
-<p><strong>Não precisa revisar agora.</strong> Estas duas páginas têm <strong>30 questões cada</strong> (três simulados de 10), num formato diferente das outras. O Justin vai tratá-las separadamente — só estou avisando por completude.</p>
-
-<ul>
-  <li>discursivas-simulados</li>
-  <li>objetivas-simulados</li>
+  <li><a href="https://medhelpspace.vercel.app/app/cardiologia/taquiarritmias-simulados">Taquiarritmias — Simulados</a> — esta página deveria ter um simulado sobre <strong>taquiarritmias</strong> (cardiologia), mas o conteúdo que aparece é, na verdade, sobre <strong>abdome agudo hemorrágico</strong> (cirurgia, casos de trauma). Parece que o conteúdo foi colocado na página errada. Verificar e substituir pelo simulado correto de taquiarritmias.</li>
 </ul>
 
 <h2>Resumo</h2>
@@ -242,58 +157,49 @@
 <table>
   <thead>
     <tr>
-      <th>Categoria</th>
-      <th>Páginas</th>
-      <th>O que fazer</th>
+      <th>Item</th>
+      <th>Quantidade</th>
+      <th>Ação</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>1 — Pequena correção em 1-2 questões</td>
-      <td>17</td>
-      <td>Verificar formato das alternativas (A)(B)(C)(D) nas questões indicadas</td>
+      <td>Faltando alternativa (D)</td>
+      <td>1 questão</td>
+      <td>Adicionar alternativa (D)</td>
     </tr>
     <tr>
-      <td>2 — Reumatologia (título da aba)</td>
-      <td>6</td>
-      <td>Verificar título da aba "Perguntas"</td>
+      <td>Conteúdo em branco</td>
+      <td>3 páginas</td>
+      <td>Adicionar/recuperar conteúdo</td>
     </tr>
     <tr>
-      <td>2 — Psiquiatria (marcador do gabarito)</td>
-      <td>4</td>
-      <td>Verificar formato do marcador "✔ Alternativa correta: (X)"</td>
+      <td>Aba de Respostas em branco</td>
+      <td>1 página</td>
+      <td>Copiar gabarito para a aba</td>
     </tr>
     <tr>
-      <td>3 — Aba de Respostas faltando</td>
-      <td>3</td>
-      <td>Verificar se existe aba de gabarito</td>
+      <td>Aba com nome errado</td>
+      <td>1 página</td>
+      <td>Renomear segunda aba para "Respostas"</td>
     </tr>
     <tr>
-      <td>4 — Conteúdo incompleto</td>
-      <td>4</td>
-      <td>Verificar se a página tem simulado e está completa</td>
-    </tr>
-    <tr>
-      <td>5 — Três simulados (Justin cuida)</td>
-      <td>2</td>
-      <td>—</td>
+      <td>Conteúdo trocado</td>
+      <td>1 página</td>
+      <td>Substituir conteúdo</td>
     </tr>
     <tr>
       <td><strong>Total</strong></td>
-      <td><strong>36</strong></td>
+      <td><strong>7 itens</strong></td>
       <td></td>
     </tr>
   </tbody>
 </table>
 
 <div class="closing">
-  <p><strong>Por favor</strong>, abra o Google Doc que o Justin te enviou e, para cada página, anote:</p>
-  <ol>
-    <li><strong>Como o texto está hoje</strong> (por exemplo: "o título da aba é <code>Questões do Simulado 1</code> em vez de <code>Simulado 1 - Perguntas</code>")</li>
-    <li><strong>Se você consegue corrigir</strong> ou se precisa de ajuda</li>
-  </ol>
-  <p>Quando você terminar, o Justin roda o programa de novo e essas páginas vão ficar automaticamente no novo formato interativo, junto com as outras 134 que já estão prontas.</p>
-  <p>Qualquer dúvida, pode me chamar!</p>
+  <p><strong>Por favor</strong>, abra o Google Doc que o Justin te enviou e anote suas observações para cada um desses 7 itens.</p>
+  <p>Quando você terminar, o Justin reprocessa essas páginas e elas ficam no novo formato automaticamente.</p>
+  <p>Muito obrigado pela paciência — e desculpe a confusão com a primeira lista!</p>
 </div>
 
 </body>

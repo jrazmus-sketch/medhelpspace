@@ -1,0 +1,1073 @@
+=== Inspecting 69 flagged question(s) across 25 pages ===
+
+
+================================================================================
+PAGE: anemia-falciforme-simulados   (id=3997)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q2 (option-count) ---
+Parser said: Q2: Q2: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 2
+Um lactente de 7 meses, diagnosticado com anemia falciforme, é trazido ao pronto atendimento por febre iniciada há 6 horas. A mãe relata que a criança está mais sonolenta, recusando alimentação e chorosa. Nega tosse, diarreia ou vômitos. Informa que a criança faz uso irregular de medicação profilática e perdeu consultas de seguimento. Ao exame, o lactente está prostrado, com extremidades frias e tempo de enchimento capilar de 4 segundos, sem foco infeccioso evidente.
+Sinais vitais: PA = 78 x 46 mmHg; FC = 172 bpm; FR = 42 irpm; Temp. = 39,2 °C; SatO₂ = 97% (ar ambiente).
+Exame laboratorial | Resultado | Valor de referência
+Hemoglobina | 7,6 g/dL | 10,5 a 13,5 g/dL
+Leucócitos | 19.800/mm³ | 6.000 a 17.500/mm³
+Plaquetas | 520.000/mm³ | 150.000 a 450.000/mm³
+Reticulócitos | 8,2% | 0,5 a 2,5%
+PCR | 86 mg/L |
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...mediata mais apropriada?<br />(A) Administrar antitérmico e ...
+  [std-paren] (B)  context: ...se houver piora clínica.<br />(B) Coletar hemoculturas e ini...
+  [std-paren] (C)  context: ...ição volêmica e suporte.<br />(C) Solicitar eletroforese de ...
+  [std-paren] (D)  context: ...essidade de antibiótico.<br />(D) Iniciar corticoterapia sis...
+  [no-open-paren] (A)  context: ...ediata mais apropriada?<br />(A) Administrar antitérmico e o...
+  [no-open-paren] (B)  context: ...e houver piora clínica.<br />(B) Coletar hemoculturas e inic...
+  [no-open-paren] (C)  context: ...ção volêmica e suporte.<br />(C) Solicitar eletroforese de h...
+  [no-open-paren] (D)  context: ...ssidade de antibiótico.<br />(D) Iniciar corticoterapia sist...
+Raw HTML (first 400 chars):
+Questão 2</strong></span><br /><span style="color: #000000;"><strong>Um lactente de 7 meses, diagnosticado com anemia falciforme, é trazido ao pronto atendimento por febre iniciada há 6 horas. A mãe relata que a criança está mais sonolenta, recusando alimentação e chorosa. Nega tosse, diarreia ou vômitos. Informa que a criança faz uso irregular de medicação profilática e perdeu consultas de seguim
+
+================================================================================
+PAGE: anemia-hemolitica-simulados   (id=4003)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q1 (option-count) ---
+Parser said: Q1: Q1: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 1
+Um recém-nascido (RN) a termo, com 39 semanas de idade gestacional, 12 horas de vida, apresenta icterícia progressiva ainda na maternidade, alcançando tronco superior (zona II–III de Kramer). Mãe primigesta, sem intercorrências no parto. Tipagem sanguínea: mãe O⁺, RN A⁺. A mãe relata que um irmão mais velho “precisou de fototerapia” em outra gestação. Ao exame, o RN encontra-se ativo, mamando, sem sinais de infecção.
+Sinais vitais: FC = 148 bpm; FR = 40 irpm; Temp. = 36,8 °C; SatO₂ = 98% (ar ambiente).
+Exame laboratorial | Resultado | Valor de referência
+Bilirrubina total | 16,2 mg/dL | (12h:
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...a inicial mais adequada?<br />(A) Icterícia fisiológica; ori...
+  [std-paren] (B)  context: ...ara reavaliação clínica.<br />(B) Icterícia hemolítica prová...
+  [std-paren] (C)  context: ... Coombs direto negativo.<br />(C) Deficiência de G6PD; inici...
+  [std-paren] (D)  context: ...bilirrubina em 12 horas.<br />(D) Colestase neonatal; solici...
+  [no-open-paren] (A)  context: ... inicial mais adequada?<br />(A) Icterícia fisiológica; orie...
+  [no-open-paren] (B)  context: ...ra reavaliação clínica.<br />(B) Icterícia hemolítica prováv...
+  [no-open-paren] (C)  context: ...Coombs direto negativo.<br />(C) Deficiência de G6PD; inicia...
+  [no-open-paren] (D)  context: ...ilirrubina em 12 horas.<br />(D) Colestase neonatal; solicit...
+Raw HTML (first 400 chars):
+Questão 1<br />Um recém-nascido (RN) a termo, com 39 semanas de idade gestacional, 12 horas de vida, apresenta icterícia progressiva ainda na maternidade, alcançando tronco superior (zona II–III de Kramer). Mãe primigesta, sem intercorrências no parto. Tipagem sanguínea: mãe O⁺, RN A⁺. A mãe relata que um irmão mais velho “precisou de fototerapia” em outra gestação. Ao exame, o RN encontra-se ativ
+
+--- Q2 (option-count) ---
+Parser said: Q2: Q2: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 2
+Um homem de 28 anos procura atendimento por icterícia, colúria e fadiga iniciadas há 2 dias, associadas a dor lombar e mal-estar. Há 1 semana, iniciou uso de antibiótico prescrito em pronto atendimento por infecção urinária. Relata episódio semelhante na infância “após remédio”, sem investigação. Ao exame, encontra-se ictérico, sem febre, sem dor abdominal. Não há esplenomegalia palpável.
+Sinais vitais: PA = 118 x 74 mmHg; FC = 104 bpm; FR = 18 irpm; Temp. = 36,7 °C.
+Exame laboratorial | Resultado | Valor de referência
+Hemoglobina | 9,2 g/dL | 13,0 a 17,0 g/dL
+VCM | 90 fL | 80 a 96 fL
+Reticulócitos | 9,5% | 0,5 a 2,0%
+Bilirrubina total | 5,8 mg/dL | até 1,2 mg/dL
+Bilirrubina indireta | 5,1 mg/dL | até 0,9 mg/dL
+LDH | 980 U/L | 120 a 246 U/L
+Haptoglobina |
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...agnóstica mais provável?<br />(A) Anemia hemolítica autoimun...
+  [std-paren] (B)  context: ...lítica autoimune quente.<br />(B) Deficiência de G6PD com he...
+  [std-paren] (C)  context: ...esencadeada por fármaco.<br />(C) Esferocitose hereditária c...
+  [std-paren] (D)  context: ...tica por parvovírus B19.<br />(D) Hemoglobinúria paroxística...
+  [no-open-paren] (A)  context: ...gnóstica mais provável?<br />(A) Anemia hemolítica autoimune...
+  [no-open-paren] (B)  context: ...ítica autoimune quente.<br />(B) Deficiência de G6PD com hem...
+  [no-open-paren] (C)  context: ...sencadeada por fármaco.<br />(C) Esferocitose hereditária co...
+  [no-open-paren] (D)  context: ...ica por parvovírus B19.<br />(D) Hemoglobinúria paroxística ...
+  [letter-dot] (C)  context: ...; FR = 18 irpm; Temp. = 36,7 °C.<br />Exame laboratorial | R...
+Raw HTML (first 400 chars):
+Questão 2<br />Um homem de 28 anos procura atendimento por icterícia, colúria e fadiga iniciadas há 2 dias, associadas a dor lombar e mal-estar. Há 1 semana, iniciou uso de antibiótico prescrito em pronto atendimento por infecção urinária. Relata episódio semelhante na infância “após remédio”, sem investigação. Ao exame, encontra-se ictérico, sem febre, sem dor abdominal. Não há esplenomegalia pal
+
+================================================================================
+PAGE: assistencia-pre-natal-simulados   (id=4430)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q5 (option-count) ---
+Parser said: Q5: Q5: expected 4 options, found 2
+Cleaned plain text (parser's view):
+-----
+Questão 5
+
+Uma gestante de 24 anos, primigesta, com 22 semanas de gestação, comparece à consulta de rotina relatando “cansaço” e palpitações leves aos esforços. Nega sangramentos, febre ou perda ponderal. Refere dieta pobre em carne vermelha. Não faz uso regular de suplementação de ferro. Ao exame, encontra-se hipocorada +/4+, sem icterícia. Útero compatível com IG.Sinais vitais: PA = 104 × 64 mmHg; FC = 102 bpm; FR = 18 irpm; T = 36,7 °C; SatO₂ = 98% (ar ambiente).Exames laboratoriais: Hb 9,6 g/dL; Ht 30%; VCM 72 fL; RDW aumentado; ferritina 10 ng/mL; leucócitos 7.800/mm³; plaquetas 390.000/mm³.
+
+A conduta mais adequada para esse quadro, no contexto do pré-natal, é:
+(A) iniciar sulfato ferroso em dose terapêutica e orientar retorno para reavaliação laboratorial em 4–6 semanas.
+(B) indicar transfusão de concentrado de hemácias por se tratar de anemia na gestação com Hb
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...ontexto do pré-natal, é:<br />(A) iniciar sulfato ferroso em...
+  [std-paren] (B)  context: ...ratorial em 4–6 semanas.<br />(B) indicar transfusão de conc...
+  [std-paren] (C)  context: ...stação com Hb < 10 g/dL.<br />(C) prescrever ácido fólico em...
+  [std-paren] (D)  context: ...e deficiência de folato.<br />(D) não tratar, pois anemia é ...
+  [no-open-paren] (A)  context: ...ntexto do pré-natal, é:<br />(A) iniciar sulfato ferroso em ...
+  [no-open-paren] (B)  context: ...atorial em 4–6 semanas.<br />(B) indicar transfusão de conce...
+  [no-open-paren] (C)  context: ...tação com Hb < 10 g/dL.<br />(C) prescrever ácido fólico em ...
+  [no-open-paren] (D)  context: ... deficiência de folato.<br />(D) não tratar, pois anemia é f...
+Raw HTML (first 400 chars):
+Questão 5</span></strong></p> <p><strong><span style="color: #000000;">Uma gestante de 24 anos, primigesta, com 22 semanas de gestação, comparece à consulta de rotina relatando “cansaço” e palpitações leves aos esforços. Nega sangramentos, febre ou perda ponderal. Refere dieta pobre em carne vermelha. Não faz uso regular de suplementação de ferro. Ao exame, encontra-se hipocorada +/4+, sem icterí
+
+--- Q8 (option-count) ---
+Parser said: Q8: Q8: expected 4 options, found 1
+Cleaned plain text (parser's view):
+-----
+Questão 8
+
+Gestante de 30 anos, G2P0A1, com 21 semanas de gestação, comparece ao ambulatório trazendo ultrassonografia transvaginal realizada por queixa de “pressão pélvica” (sem dor e sem sangramento). O exame descreve colo uterino com 18 mm, fechado, com funilamento discreto. Nega contrações regulares. Na gestação anterior, teve parto prematuro espontâneo com 33 semanas. Não há sinais de infecção urinária. Ao exame, colo sem dilatação ao toque. Sinais vitais: PA = 112 × 72 mmHg; FC = 86 bpm; FR = 16 irpm; T = 36,7 °C; SatO₂ = 98% (ar ambiente).
+Exames laboratoriais: hemograma sem leucocitose; EAS sem alterações. Ultrassonografia obstétrica (21 semanas): feto único, líquido amniótico normal, placenta posterior.
+
+A conduta mais adequada para reduzir risco de prematuridade nesse cenário é:
+(A) indicar cerclagem imediatamente, independentemente de sintomas, por colo
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...uridade nesse cenário é:<br />(A) indicar cerclagem imediata...
+  [std-paren] (B)  context: ...edente de prematuridade.<br />(B) prescrever tocolítico (nif...
+  [std-paren] (C)  context: ...alho de parto prematuro.<br />(C) administrar corticoide ant...
+  [std-paren] (D)  context: ...e mensal até 34 semanas.<br />(D) orientar repouso absoluto ...
+  [no-open-paren] (A)  context: ...ridade nesse cenário é:<br />(A) indicar cerclagem imediatam...
+  [no-open-paren] (B)  context: ...dente de prematuridade.<br />(B) prescrever tocolítico (nife...
+  [no-open-paren] (C)  context: ...lho de parto prematuro.<br />(C) administrar corticoide ante...
+  [no-open-paren] (D)  context: ... mensal até 34 semanas.<br />(D) orientar repouso absoluto d...
+Raw HTML (first 400 chars):
+Questão 8</span></strong></p> <p><strong><span style="color: #000000;">Gestante de 30 anos, G2P0A1, com 21 semanas de gestação, comparece ao ambulatório trazendo ultrassonografia transvaginal realizada por queixa de “pressão pélvica” (sem dor e sem sangramento). O exame descreve colo uterino com 18 mm, fechado, com funilamento discreto. Nega contrações regulares. Na gestação anterior, teve parto 
+
+================================================================================
+PAGE: crise-hipertensiva-simulados   (id=3890)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q9 (option-count) ---
+Parser said: Q9: Q9: expected 4 options, found 2
+Cleaned plain text (parser's view):
+-----
+Questão 9
+Um homem de 57 anos, hipertenso e diabético, procura emergência por fraqueza súbita no lado direito do corpo e dificuldade para falar iniciadas há 1 hora. Ao exame, apresenta hemiparesia direita e afasia. Não há sinais meníngeos.
+Sinais vitais: FC 88 bpm; PA 214 × 118 mmHg; FR 16 irpm; SatO₂ 97% (ar ambiente); T 36,7 °C.
+Glicemia capilar: 148 mg/dL.
+No manejo inicial desse paciente, a conduta mais adequada em relação à pressão arterial, antes de definir terapias específicas para o evento neurológico, é
+(A) evitar redução abrupta e conduzir em protocolo de AVC, com controle pressórico conforme critérios do tratamento específico e monitorização.
+(B) reduzir a PA imediatamente para valores
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... o evento neurológico, é<br />(A) evitar redução abrupta e c...
+  [std-paren] (B)  context: ...ecífico e monitorização.<br />(B) reduzir a PA imediatamente...
+  [std-paren] (C)  context: ...om medicação sublingual.<br />(C) administrar diurético intr...
+  [std-paren] (D)  context: ...ológico após 30 minutos.<br />(D) iniciar clonidina oral em ...
+  [no-open-paren] (A)  context: ...o evento neurológico, é<br />(A) evitar redução abrupta e co...
+  [no-open-paren] (B)  context: ...cífico e monitorização.<br />(B) reduzir a PA imediatamente ...
+  [no-open-paren] (C)  context: ...m medicação sublingual.<br />(C) administrar diurético intra...
+  [no-open-paren] (D)  context: ...lógico após 30 minutos.<br />(D) iniciar clonidina oral em d...
+  [letter-dot] (C)  context: ...O₂ 97% (ar ambiente); T 36,7 °C.<br />Glicemia capilar: 148 ...
+Raw HTML (first 400 chars):
+Questão 9<br />Um homem de 57 anos, hipertenso e diabético, procura emergência por fraqueza súbita no lado direito do corpo e dificuldade para falar iniciadas há 1 hora. Ao exame, apresenta hemiparesia direita e afasia. Não há sinais meníngeos.<br />Sinais vitais: FC 88 bpm; PA 214 × 118 mmHg; FR 16 irpm; SatO₂ 97% (ar ambiente); T 36,7 °C.<br />Glicemia capilar: 148 mg/dL.<br />No manejo inicial 
+
+================================================================================
+PAGE: diabetes-da-gestacao-simulados   (id=4436)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q4 (option-count) ---
+Parser said: Q4: Q4: expected 4 options, found 1
+Cleaned plain text (parser's view):
+-----
+Questão 04
+
+Uma gestante de 29 anos, G1P0A0, com 30 semanas, foi diagnosticada com diabetes gestacional há 4 semanas e está em acompanhamento. Está em dieta fracionada e caminhadas leves 5x/semana. Traz caderno de automonitorização.
+Sinais vitais: PA = 112 × 70 mmHg; FC = 86 bpm; FR = 16 irpm; T = 36,6 °C; SatO₂ = 98% (ar ambiente).
+Glicemias capilares (últimos 7 dias): jejum variando entre 102–112 mg/dL; 1 hora pós-prandial entre 135–160 mg/dL.
+USG obstétrica: feto em percentil 70, líquido amniótico normal.
+
+A conduta terapêutica mais adequada, considerando falha do controle com medidas não farmacológicas, é:
+(A) manter apenas dieta e exercício, pois o percentil fetal ainda é
+-----
+Could not locate "Questão 4" in raw HTML.
+
+--- Q10 (option-count) ---
+Parser said: Q10: Q10: expected 4 options, found 1
+Cleaned plain text (parser's view):
+-----
+Questão 10
+
+Recém-nascido a termo, 3 horas de vida, peso 4.250 g, filho de mãe com diabetes gestacional tratada com insulina. Está em alojamento conjunto, mamou uma vez e agora está sonolento.
+Sinais vitais do RN: FC = 148 bpm; FR = 46 irpm; T = 36,4 °C; SatO₂ = 98% (ar ambiente).
+Glicemia capilar do RN: 38 mg/dL.
+
+Diante do achado e do contexto clínico, a conduta inicial mais adequada é:
+(A) manter observação, pois hipoglicemia neonatal só é relevante se
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...inicial mais adequada é:<br />(A) manter observação, pois hi...
+  [std-paren] (B)  context: ...relevante se < 25 mg/dL.<br />(B) iniciar glicose EV imediat...
+  [std-paren] (C)  context: ...fusão conforme resposta.<br />(C) oferecer apenas alimentaçã...
+  [std-paren] (D)  context: ...esmo se houver sintomas.<br />(D) suspender aleitamento mate...
+  [no-open-paren] (A)  context: ...nicial mais adequada é:<br />(A) manter observação, pois hip...
+  [no-open-paren] (B)  context: ...elevante se < 25 mg/dL.<br />(B) iniciar glicose EV imediata...
+  [no-open-paren] (C)  context: ...usão conforme resposta.<br />(C) oferecer apenas alimentação...
+  [no-open-paren] (D)  context: ...smo se houver sintomas.<br />(D) suspender aleitamento mater...
+Raw HTML (first 400 chars):
+Questão 10 </span></strong></p> <p><strong><span style="color: #000000;">Recém-nascido a termo, 3 horas de vida, peso 4.250 g, filho de mãe com diabetes gestacional tratada com insulina. Está em alojamento conjunto, mamou uma vez e agora está sonolento.<br />Sinais vitais do RN: FC = 148 bpm; FR = 46 irpm; T = 36,4 °C; SatO₂ = 98% (ar ambiente).<br />Glicemia capilar do RN: 38 mg/dL.</span></stro
+
+================================================================================
+PAGE: dislipidemias-simulados   (id=3917)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q6 (option-count) ---
+Parser said: Q6: Q6: expected 4 options, found 3
+Cleaned plain text (parser's view):
+-----
+Questão 6
+
+Uma mulher de 62 anos procura emergência por dor muscular intensa em coxas e braços há 3 dias. Ela iniciou sinvastatina há 3 semanas após exames “alterados”. Relata que, desde ontem, a urina ficou escura. Nega febre e trauma. Na triagem, está hemodinamicamente estável. Ao exame, apresenta dor à palpação muscular difusa, sem sinais de artrite. O restante do exame é normal. Sinais vitais: FC 88 bpm; PA 138 × 80 mmHg; FR 18 irpm; SatO₂ 98% (ar ambiente); T 36,6 °C. Laboratório: CK total 9 600 U/L; creatinina 1,9 mg/dL; potássio 5,7 mEq/L.
+EAS: fita positiva para “sangue” +++, sem hemácias ao microscópio.
+
+A conduta inicial mais adequada é
+(A) manter a estatina e prescrever analgésico, pois a mialgia é efeito comum e autolimitado.
+(B) suspender a estatina e iniciar hidratação vigorosa, avaliando risco de lesão renal por rabdomiólise.
+(C) trocar sinvastatina por ezetimiba em dose máxima e dar alta imediata, pois CK
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... inicial mais adequada é<br />(A) manter a estatina e prescr...
+  [std-paren] (B)  context: ...to comum e autolimitado.<br />(B) suspender a estatina e ini...
+  [std-paren] (C)  context: ... renal por rabdomiólise.<br />(C) trocar sinvastatina por ez...
+  [std-paren] (D)  context: ...K < 10 000 não preocupa.<br />(D) iniciar diurético para “la...
+  [no-open-paren] (A)  context: ...inicial mais adequada é<br />(A) manter a estatina e prescre...
+  [no-open-paren] (B)  context: ...o comum e autolimitado.<br />(B) suspender a estatina e inic...
+  [no-open-paren] (C)  context: ...renal por rabdomiólise.<br />(C) trocar sinvastatina por eze...
+  [no-open-paren] (D)  context: ... < 10 000 não preocupa.<br />(D) iniciar diurético para “lav...
+  [letter-dot] (C)  context: ...O₂ 98% (ar ambiente); T 36,6 °C. Laboratório: CK total 9 600...
+Raw HTML (first 400 chars):
+Questão 6</span></strong></p> <p><strong><span style="color: #000000;">Uma mulher de 62 anos procura emergência por dor muscular intensa em coxas e braços há 3 dias. Ela iniciou sinvastatina há 3 semanas após exames “alterados”. Relata que, desde ontem, a urina ficou escura. Nega febre e trauma. Na triagem, está hemodinamicamente estável. Ao exame, apresenta dor à palpação muscular difusa, sem si
+
+================================================================================
+PAGE: doenca-renal-cronica-simulados   (id=4078)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q8 (option-count) ---
+Parser said: Q8: Q8: expected 4 options, found 1
+Cleaned plain text (parser's view):
+-----
+Questão 8
+Uma mulher de 60 anos, com diabete melito tipo 2 e doença renal crônica, comparece para consulta de seguimento. Está em uso de metformina e relata que, nos últimos meses, ganhou peso e tem dificuldade de controlar glicemia. Possui história de infarto agudo do miocárdio há 6 anos. Nega infecções urinárias recorrentes. Sem queixas urinárias no momento.
+Sinais vitais: PA = 134 x 80 mmHg; FC = 82 bpm; FR = 16 irpm; Temp. = 36,2 °C.
+
+Exames laboratoriais:
+Hemoglobina glicada = 7,6% (VR: 4,5 a 5,6%)
+Creatinina = 1,28 mg/dL (VR: 0,60 a 1,30 mg/dL)
+TFG estimada (CKD-EPI) = 46 mL/min/1,73 m² (VR: > 90 mL/min/1,73 m²)
+Albuminúria/creatininúria = 320 mg/g (VR:
+
+Diante desse cenário, assinale a alternativa que apresenta a conduta farmacológica com melhor evidência de reduzir progressão renal e risco cardiovascular:
+(A) Suspender metformina e iniciar insulina basal imediatamente, pois TFG
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... e risco cardiovascular:<br />(A) Suspender metformina e ini...
+  [std-paren] (B)  context: ...contraindica metformina.<br />(B) Associar inibidor de SGLT2...
+  [std-paren] (C)  context: ...enal e efeitos adversos.<br />(C) Solicitar proteinúria de 2...
+  [std-paren] (D)  context: ...olada é pouco confiável.<br />(D) Prescrever sulfonilureia e...
+  [no-open-paren] (A)  context: ...e risco cardiovascular:<br />(A) Suspender metformina e inic...
+  [no-open-paren] (B)  context: ...ontraindica metformina.<br />(B) Associar inibidor de SGLT2,...
+  [no-open-paren] (C)  context: ...nal e efeitos adversos.<br />(C) Solicitar proteinúria de 24...
+  [no-open-paren] (D)  context: ...lada é pouco confiável.<br />(D) Prescrever sulfonilureia em...
+  [letter-dot] (C)  context: ...; FR = 16 irpm; Temp. = 36,2 °C.</strong></span></p> <p><sp...
+Raw HTML (first 400 chars):
+Questão 8</strong></span><br /><span style="color: #000000;"><strong>Uma mulher de 60 anos, com diabete melito tipo 2 e doença renal crônica, comparece para consulta de seguimento. Está em uso de metformina e relata que, nos últimos meses, ganhou peso e tem dificuldade de controlar glicemia. Possui história de infarto agudo do miocárdio há 6 anos. Nega infecções urinárias recorrentes. Sem queixas 
+
+================================================================================
+PAGE: doencas-hepatobiliares-simulados   (id=4247)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q4 (option-count) ---
+Parser said: Q4: Q4: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 4
+Homem de 42 anos chega ao pronto-socorro com dor epigástrica intensa irradiada para dorso, náuseas e vômitos. Está ictérico 2+/4+. Exames: lipase 1.250 U/L (VR
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... de intervenção precoce?<br />(A) Febre persistente e sinais...
+  [std-paren] (B)  context: ... indicando CPRE precoce.<br />(B) Dor controlada e queda da ...
+  [std-paren] (C)  context: ...indicando alta imediata.<br />(C) Amilase normal, indicando ...
+  [std-paren] (D)  context: ...cessidade de TC urgente.<br />(D) Ausência de dilatação de c...
+  [no-open-paren] (A)  context: ...de intervenção precoce?<br />(A) Febre persistente e sinais ...
+  [no-open-paren] (B)  context: ...indicando CPRE precoce.<br />(B) Dor controlada e queda da l...
+  [no-open-paren] (C)  context: ...ndicando alta imediata.<br />(C) Amilase normal, indicando o...
+  [no-open-paren] (D)  context: ...essidade de TC urgente.<br />(D) Ausência de dilatação de co...
+Raw HTML (first 400 chars):
+Questão 4<br />Homem de 42 anos chega ao pronto-socorro com dor epigástrica intensa irradiada para dorso, náuseas e vômitos. Está ictérico 2+/4+. Exames: lipase 1.250 U/L (VR < 160), bilirrubina direta 4,0 mg/dL, FA e GGT elevadas. Ultrassonografia: vesícula com cálculos; via biliar extra-hepática discretamente dilatada.<br />Nesse contexto, qual achado/conduta sugere maior probabilidade de pancre
+
+================================================================================
+PAGE: emergencias-psiquiatricas-simulados   (id=4161)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q4 (missing-marker) ---
+Parser said: Q4: Q4: missing "Alternativa correta" marker
+Respostas chunk plain text (first 600 chars):
+Questão 4
+Um homem de 47 anos é trazido ao pronto-socorro pelo SAMU após ser encontrado em casa com sonolência e fala arrastada. Familiares relatam que, após receber notícia de demissão, ele ingeriu quantidade desconhecida de comprimidos “para dormir”, associados a álcool. Na chegada, encontra-se com rebaixamento do nível de consciência, responde a estímulo doloroso e apresenta respiração superficial. Sinais vitais: temperatura axilar = 36,1 °C; frequência cardíaca = 58 bpm; frequência respiratória = 8 irpm; pressão arterial = 94 x 56 mmHg; saturação de O₂ = 88% em ar ambiente. Pupilas isocóri
+Marker variants seen in this chunk:
+  FOUND: /Alternativa\s+correta/i  → "ídoto. ✔ Alternativa correta: (E) priorizar estabilização A"
+  FOUND: /Correta\s*:/i  → "ternativa correta: (E) priorizar estabilização ABC, com supo"
+  FOUND: /✔/u  → "ntídoto. ✔ Alternativa correta: (E) priorizar estabilização"
+
+--- Q9 (missing-marker) ---
+Parser said: Q9: Q9: missing "Alternativa correta" marker
+Respostas chunk plain text (first 600 chars):
+Questão 9
+Um homem de 44 anos procura a emergência relatando ideias persistentes de morte há 1 semana, com piora nas últimas 24 horas. Diz que “não aguenta mais” e que pensou em “acabar com tudo”. Quando questionado, revela que separou os medicamentos de uso domiciliar e escreveu uma carta de despedida, mas foi interrompido por um familiar. Nega uso de drogas ilícitas. Ao exame físico: sem alterações clínicas relevantes. Sinais vitais: temperatura axilar = 36,6 °C; frequência cardíaca = 88 bpm; frequência respiratória = 16 irpm; pressão arterial = 124 x 78 mmHg; saturação de O₂ = 98% em ar amb
+Marker variants seen in this chunk:
+  FOUND: /Alternativa\s+correta/i  → "icida. ✔ Alternativa correta: (E) garantir medidas de segur"
+  FOUND: /Correta\s*:/i  → "ternativa correta: (E) garantir medidas de segurança imediat"
+  FOUND: /✔/u  → "suicida. ✔ Alternativa correta: (E) garantir medidas de seg"
+
+================================================================================
+PAGE: imunizacoes-simulados   (id=4517)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q1 (no-respostas) ---
+Parser said: Q1: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q2 (no-respostas) ---
+Parser said: Q2: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q3 (no-respostas) ---
+Parser said: Q3: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q4 (no-respostas) ---
+Parser said: Q4: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q5 (no-respostas) ---
+Parser said: Q5: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q6 (no-respostas) ---
+Parser said: Q6: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q7 (no-respostas) ---
+Parser said: Q7: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q8 (no-respostas) ---
+Parser said: Q8: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q9 (no-respostas) ---
+Parser said: Q9: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+--- Q10 (no-respostas) ---
+Parser said: Q10: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+================================================================================
+PAGE: indicadores-de-saude-simulados   (id=4407)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q10 (option-count) ---
+Parser said: Q10: Q10: expected 4 options, found 2
+Cleaned plain text (parser's view):
+-----
+Questão 10
+Uma cidade quer monitorar o impacto de intervenções em saneamento sobre a diarreia aguda em crianças menores de 5 anos.
+Considere que, em ambos os anos, a população de menores de 5 anos (população sob risco) é conhecida e pode ser utilizada como denominador.
+
+No ano 1, foram registrados 8.000 episódios de diarreia aguda atendidos/notificados na rede em menores de 5 anos e 40 óbitos por diarreia nessa faixa etária.
+No ano 2, após ampliação de água tratada, houve 5.000 episódios atendidos/notificados e 35 óbitos por diarreia em menores de 5 anos.
+
+Qual combinação de indicadores é mais adequada para avaliar, simultaneamente, a mudança na ocorrência do agravo e na gravidade do desfecho, com seus denominadores apropriados?
+
+(A) prevalência de diarreia e mortalidade proporcional por todas as causas.
+(B) coeficiente (taxa) de incidência de diarreia em
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...yle="color: #000000;"><strong>(A) prevalência de diarreia e ...
+  [std-paren] (B)  context: ...nal por todas as causas.<br />(B) coeficiente (taxa) de inci...
+  [std-paren] (C)  context: ...e episódios/casos em <5.<br />(C) mortalidade infantil e tax...
+  [std-paren] (D)  context: ...axa bruta de natalidade.<br />(D) razão de mortalidade mater...
+  [no-open-paren] (A)  context: ...le="color: #000000;"><strong>(A) prevalência de diarreia e m...
+  [no-open-paren] (B)  context: ...al por todas as causas.<br />(B) coeficiente (taxa) de incid...
+  [no-open-paren] (C)  context: ... episódios/casos em <5.<br />(C) mortalidade infantil e taxa...
+  [no-open-paren] (D)  context: ...xa bruta de natalidade.<br />(D) razão de mortalidade matern...
+Raw HTML (first 400 chars):
+Questão 10<br />Uma cidade quer monitorar o impacto de intervenções em saneamento sobre a diarreia aguda em crianças menores de 5 anos.<br />Considere que, em ambos os anos, a população de menores de 5 anos (população sob risco) é conhecida e pode ser utilizada como denominador.</strong></span></p> <p><span style="color: #000000;"><strong>No ano 1, foram registrados 8.000 episódios de diarreia ag
+
+================================================================================
+PAGE: infeccao-do-trato-urinario-simulados   (id=4042)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q4 (option-count) ---
+Parser said: Q4: Q4: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 4
+Um homem de 58 anos, diabético, procura a emergência com febre há 2 dias, calafrios e confusão mental progressiva. Refere disúria há 1 semana. Está em uso de sonda vesical de demora há 10 dias após cirurgia ortopédica.
+Ao exame físico: sonolento, desorientado no tempo, extremidades frias, tempo de enchimento capilar de 4 segundos. Sem sinais de meningismo. Abdome sem dor à palpação.
+Sinais vitais:
+PA = 86 x 54 mmHg
+FC = 128 bpm
+FR = 26 irpm
+Temperatura axilar = 38,9 °C
+SatO₂ = 95% em ar ambiente
+Exames:
+Hemograma: leucócitos = 22.000/mm³, plaquetas = 110.000/mm³
+Creatinina = 2,1 mg/dL (VR: 0,6–1,2)
+Lactato = 4,2 mmol/L (VR:
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...o manejo desse paciente?<br />(A) Trocar ou remover a sonda ...
+  [std-paren] (B)  context: ...olêmica e monitorização.<br />(B) Aguardar resultado de uroc...
+  [std-paren] (C)  context: ...em risco de resistência.<br />(C) Prescrever antibiótico ora...
+  [std-paren] (D)  context: ...tável ambulatorialmente.<br />(D) Realizar apenas hidratação...
+  [no-open-paren] (A)  context: ... manejo desse paciente?<br />(A) Trocar ou remover a sonda v...
+  [no-open-paren] (B)  context: ...lêmica e monitorização.<br />(B) Aguardar resultado de urocu...
+  [no-open-paren] (C)  context: ...m risco de resistência.<br />(C) Prescrever antibiótico oral...
+  [no-open-paren] (D)  context: ...ável ambulatorialmente.<br />(D) Realizar apenas hidratação ...
+Raw HTML (first 400 chars):
+Questão 4</strong></span><br /><span style="color: #000000;"><strong>Um homem de 58 anos, diabético, procura a emergência com febre há 2 dias, calafrios e confusão mental progressiva. Refere disúria há 1 semana. Está em uso de sonda vesical de demora há 10 dias após cirurgia ortopédica.<br />Ao exame físico: sonolento, desorientado no tempo, extremidades frias, tempo de enchimento capilar de 4 seg
+
+================================================================================
+PAGE: intoxicacoes-exogenas-simulados   (id=3948)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q1 (no-respostas) ---
+Parser said: Q1: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q2 (no-respostas) ---
+Parser said: Q2: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q3 (no-respostas) ---
+Parser said: Q3: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q4 (no-respostas) ---
+Parser said: Q4: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q5 (no-respostas) ---
+Parser said: Q5: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q6 (no-respostas) ---
+Parser said: Q6: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q7 (no-respostas) ---
+Parser said: Q7: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q8 (no-respostas) ---
+Parser said: Q8: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q9 (no-respostas) ---
+Parser said: Q9: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+--- Q10 (no-respostas) ---
+Parser said: Q10: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 1Um homem de 19 anos é levado ao pronto-socorro por amigos após ser encontrado inconsciente em uma festa. Segundo os acompanhantes, ele foi visto utilizando comprimidos e, possivelmente, uma substância em pó por via inalatória, além de ingestão alcoólica em pequena quantidade. Ao exame, apresenta-se sonolento, com resposta apenas à dor, pupilas puntiformes e respiração superficial. Não há sinais de trauma craniano ou outras lesões externas. Durante a avaliação inicial, identifica-se pulso carotídeo presente e regular. A equipe dispõe de bolsa-válvula-máscara, oxigênio suplementar e antídotos de uso emergencial.Sinais vitais: PA = 96 × 60 mmHg; FC = 56 bpm; FR = 6 irpm; SpO₂ = 82% em ar ambiente; T = 36,1 °C
+
+================================================================================
+PAGE: mecanismo-de-parto-simulados   (id=4453)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q2 (no-respostas) ---
+Parser said: Q2: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q3 (no-respostas) ---
+Parser said: Q3: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q4 (no-respostas) ---
+Parser said: Q4: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q5 (no-respostas) ---
+Parser said: Q5: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q6 (no-respostas) ---
+Parser said: Q6: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q7 (no-respostas) ---
+Parser said: Q7: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q8 (no-respostas) ---
+Parser said: Q8: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q9 (no-respostas) ---
+Parser said: Q9: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+--- Q10 (no-respostas) ---
+Parser said: Q10: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+Questão 01
+Uma gestante de 24 anos, G1P0A0, com 39 semanas e 4 dias, chega à maternidade com contrações regulares há 6 horas. Nega sangramento e perda de líquido. Sinais vitais: PA = 118 × 72 mmHg; FC = 92 bpm; FR = 18 irpm; T = 36,6 °C; SatO₂ = 98% em ar ambiente. Exame obstétrico: AU = 35 cm; apresentação cefálica; dorso à direita; BCF = 144 bpm; dinâmica uterina = 3 contrações/10 min, duração de 45 s. Toque vaginal: colo com 6 cm de dilatação, 80% de esvaecimento, membranas íntegras; sutura sagital no diâmetro transverso; fontanela posterior palpável à direita e fontanela anterior à esquerda; plano 0 de De Lee.
+
+Com base no achado ao toque vaginal no momento do exame, a variedade de posição fetal é:
+(A) occipto-
+
+================================================================================
+PAGE: nodulo-e-cancer-de-tireoide-simulados   (id=3968)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q2 (option-count) ---
+Parser said: Q2: Q2: expected 4 options, found 1
+Cleaned plain text (parser's view):
+-----
+Questão 2
+Uma mulher de 29 anos, previamente saudável, refere que encontrou um nódulo em pescoço durante autoexame. Nega sintomas compressivos e não apresenta sinais de disfunção tireoidiana. Ao exame, nódulo palpável em lobo esquerdo, de aproximadamente 1,2 cm, móvel e indolor. Sem linfonodos palpáveis.
+Sinais vitais: pressão arterial 112 x 70 mmHg; frequência cardíaca 72 bpm; temperatura 36,4 °C.
+Exames laboratoriais: TSH 2,1 mUI/L (VR: 0,4 a 4,5 mUI/L).
+Ultrassonografia: nódulo sólido hipoecoico de 1,2 cm, margens irregulares, microcalcificações puntiformes e formato mais alto que largo; sem sinais de tireoidite; sem linfonodos suspeitos.
+
+A conduta mais apropriada para esse caso é:
+(A) Acompanhar com ultrassonografia em 12 a 24 meses, pois nódulos
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...priada para esse caso é:<br />(A) Acompanhar com ultrassonog...
+  [std-paren] (B)  context: ... raramente são malignos.<br />(B) Realizar punção aspirativa...
+  [std-paren] (C)  context: ...ográficas de alto risco.<br />(C) Solicitar cintilografia co...
+  [std-paren] (D)  context: ...nódulo hiperfuncionante.<br />(D) Iniciar levotiroxina para ...
+  [no-open-paren] (A)  context: ...riada para esse caso é:<br />(A) Acompanhar com ultrassonogr...
+  [no-open-paren] (B)  context: ...raramente são malignos.<br />(B) Realizar punção aspirativa ...
+  [no-open-paren] (C)  context: ...gráficas de alto risco.<br />(C) Solicitar cintilografia com...
+  [no-open-paren] (D)  context: ...ódulo hiperfuncionante.<br />(D) Iniciar levotiroxina para s...
+  [letter-dot] (C)  context: ...aca 72 bpm; temperatura 36,4 °C.<br />Exames laboratoriais: ...
+Raw HTML (first 400 chars):
+Questão 2<br />Uma mulher de 29 anos, previamente saudável, refere que encontrou um nódulo em pescoço durante autoexame. Nega sintomas compressivos e não apresenta sinais de disfunção tireoidiana. Ao exame, nódulo palpável em lobo esquerdo, de aproximadamente 1,2 cm, móvel e indolor. Sem linfonodos palpáveis.<br />Sinais vitais: pressão arterial 112 x 70 mmHg; frequência cardíaca 72 bpm; temperatu
+
+================================================================================
+PAGE: prematuridade-simulados   (id=4457)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q2 (option-count) ---
+Parser said: Q2: Q2: expected 4 options, found 1
+Cleaned plain text (parser's view):
+-----
+Questão 02
+
+Gestante de 30 anos, G1P0A0, com 23 semanas e 1 dia, sem queixas, realiza ultrassonografia de rotina que evidencia colo uterino 20 mm. Nega parto prematuro prévio (é primigesta), nega procedimentos cervicais prévios.
+Sinais vitais: PA = 116 × 74 mmHg; FC = 78 bpm; FR = 16 irpm; T = 36,5 °C; SatO₂ = 99% (ar ambiente).
+A conduta mais adequada para reduzir risco de prematuridade neste cenário é
+(A) cerclagem profilática imediata por colo
+-----
+Could not locate "Questão 2" in raw HTML.
+
+================================================================================
+PAGE: reanimacao-neonatal-simulados   (id=4537)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q3 (option-count) ---
+Parser said: Q3: Q3: expected 4 options, found 2
+Cleaned plain text (parser's view):
+-----
+Questão 3
+Um recém-nascido a termo, de cesariana por descolamento prematuro de placenta, nasce sem choro e em apneia. Após medidas iniciais por 30 segundos, inicia-se ventilação com pressão positiva por máscara facial. Apesar de técnica adequada aparente, não se observa movimentação torácica satisfatória e a frequência cardíaca não melhora. A equipe confirma posicionamento em leve extensão e tenta manter vedação, sem sucesso.
+Sinais vitais após 30 segundos de VPP: FC 70 bpm; apneia; SpO₂ (pré-ductal) 60%; tórax sem expansão visível.
+Qual é a próxima ação mais adequada para corrigir a ventilação e otimizar a resposta do RN?
+(A) Aumentar imediatamente a concentração de oxigênio para 100%, mantendo a mesma técnica.
+(B) Iniciar massagem cardíaca externa, pois FC
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...imizar a resposta do RN?<br />(A) Aumentar imediatamente a c...
+  [std-paren] (B)  context: ...antendo a mesma técnica.<br />(B) Iniciar massagem cardíaca ...
+  [std-paren] (C)  context: ...s FC < 100 bpm após VPP.<br />(C) Seguir passos corretivos d...
+  [std-paren] (D)  context: ...r via aérea alternativa.<br />(D) Administrar adrenalina por...
+  [no-open-paren] (A)  context: ...mizar a resposta do RN?<br />(A) Aumentar imediatamente a co...
+  [no-open-paren] (B)  context: ...ntendo a mesma técnica.<br />(B) Iniciar massagem cardíaca e...
+  [no-open-paren] (C)  context: ... FC < 100 bpm após VPP.<br />(C) Seguir passos corretivos da...
+  [no-open-paren] (D)  context: ... via aérea alternativa.<br />(D) Administrar adrenalina por ...
+Raw HTML (first 400 chars):
+Questão 3</strong></span><br /><span style="color: #000000;"><strong>Um recém-nascido a termo, de cesariana por descolamento prematuro de placenta, nasce sem choro e em apneia. Após medidas iniciais por 30 segundos, inicia-se ventilação com pressão positiva por máscara facial. Apesar de técnica adequada aparente, não se observa movimentação torácica satisfatória e a frequência cardíaca não melhora
+
+================================================================================
+PAGE: sindrome-nefritica-simulados   (id=4084)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q5 (option-count) ---
+Parser said: Q5: Q5: expected 4 options, found 2
+Cleaned plain text (parser's view):
+-----
+Questão 5
+Uma criança de 8 anos é trazida ao serviço de urgência por edema palpebral, urina escura e diminuição do volume urinário há 48 horas. A mãe relata que, há 2 semanas, a criança apresentou impetigo extenso em membros inferiores, tratado parcialmente com pomadas. Ao exame físico, a criança encontra-se em regular estado geral, com edema periorbitário e discreto edema em membros inferiores. Ausculta cardíaca e pulmonar sem alterações.
+Sinais vitais: PA = 142 x 92 mmHg; FC = 96 bpm; FR = 20 irpm; SpO₂ = 98% em ar ambiente; T = 36,9 °C.
+Exames laboratoriais: creatinina = 1,3 mg/dL; ureia = 58 mg/dL; complemento C3 reduzido.
+EAS: proteínas 2+; hemácias 40–60/campo; cilindros hemáticos presentes.
+
+Considerando-se o quadro clínico, o achado complementar mais esperado é
+(A) C3 elevado, indicando ativação da via alternativa.
+(B) proteinúria nefrótica persistente com albumina
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...lementar mais esperado é<br />(A) C3 elevado, indicando ativ...
+  [std-paren] (B)  context: ...ação da via alternativa.<br />(B) proteinúria nefrótica pers...
+  [std-paren] (C)  context: ...g/dL como padrão típico.<br />(C) elevação de anti-DNase B, ...
+  [std-paren] (D)  context: ... conforme o foco prévio.<br />(D) eosinofilúria e leucocitúr...
+  [no-open-paren] (A)  context: ...ementar mais esperado é<br />(A) C3 elevado, indicando ativa...
+  [no-open-paren] (B)  context: ...ção da via alternativa.<br />(B) proteinúria nefrótica persi...
+  [no-open-paren] (C)  context: .../dL como padrão típico.<br />(C) elevação de anti-DNase B, e...
+  [no-open-paren] (D)  context: ...conforme o foco prévio.<br />(D) eosinofilúria e leucocitúri...
+  [letter-dot] (C)  context: ...98% em ar ambiente; T = 36,9 °C.<br />Exames laboratoriais: ...
+Raw HTML (first 400 chars):
+Questão 5</strong></span><br /><span style="color: #000000;"><strong>Uma criança de 8 anos é trazida ao serviço de urgência por edema palpebral, urina escura e diminuição do volume urinário há 48 horas. A mãe relata que, há 2 semanas, a criança apresentou impetigo extenso em membros inferiores, tratado parcialmente com pomadas. Ao exame físico, a criança encontra-se em regular estado geral, com ed
+
+================================================================================
+PAGE: taquipneia-transitoria-do-recem-nascido-simulados   (id=4546)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q2 (option-count) ---
+Parser said: Q2: Q2: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 2
+Recém-nascido do sexo feminino, com idade gestacional de 36 semanas e 5 dias, adequado para a idade gestacional, nascido de parto operatório após rotura de membranas há 6 horas, sem evolução para trabalho de parto, líquido amniótico claro, APGAR 8/9. Apresenta taquipneia desde a primeira hora de vida, com frequência respiratória de 84 irpm e retrações intercostais leves, sem gemência. Saturação periférica de O₂ de 96% em ar ambiente, frequência cardíaca 148 bpm, pressão arterial 60 × 38 mmHg, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...ico provável e conduta é<br />(A) tratar como sepse neonatal...
+  [std-paren] (B)  context: ...isolada indica infecção.<br />(B) suspeitar de cardiopatia c...
+  [std-paren] (C)  context: ...al como primeira medida.<br />(C) considerar taquipneia tran...
+  [std-paren] (D)  context: ... se houver dessaturação.<br />(D) indicar intubação e surfac...
+  [no-open-paren] (A)  context: ...co provável e conduta é<br />(A) tratar como sepse neonatal ...
+  [no-open-paren] (B)  context: ...solada indica infecção.<br />(B) suspeitar de cardiopatia co...
+  [no-open-paren] (C)  context: ...l como primeira medida.<br />(C) considerar taquipneia trans...
+  [no-open-paren] (D)  context: ...se houver dessaturação.<br />(D) indicar intubação e surfact...
+  [letter-dot] (C)  context: ...2 segundos, temperatura 36,5 °C. Ausculta pulmonar sem ruído...
+Raw HTML (first 400 chars):
+Questão 2</strong></span><br /><span style="color: #000000;"><strong>Recém-nascido do sexo feminino, com idade gestacional de 36 semanas e 5 dias, adequado para a idade gestacional, nascido de parto operatório após rotura de membranas há 6 horas, sem evolução para trabalho de parto, líquido amniótico claro, APGAR 8/9. Apresenta taquipneia desde a primeira hora de vida, com frequência respiratória 
+
+================================================================================
+PAGE: tec-simulados   (id=4275)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q9 (option-count) ---
+Parser said: Q9: Q9: expected 4 options, found 3
+Cleaned plain text (parser's view):
+-----
+Questão 9
+
+Um homem de 70 anos é trazido pela família 24 horas após queda da própria altura. Desde então, apresenta sonolência progressiva e dificuldade para caminhar. Tem história de etilismo crônico. Ao exame, encontra-se desorientado, com hemiparesia direita leve. Sinais vitais: PA = 146 × 90 mmHg; FC = 74 bpm; FR = 16 irpm; T = 36,8 °C; SatO₂ = 97% (ar ambiente). Exames laboratoriais:
+Hb 12,2 g/dL; leucócitos 7.900/mm³; plaquetas 190.000/mm³; INR 1,1.
+
+A principal hipótese diagnóstica é:
+(A) hematoma subdural, frequentemente associado a trauma aparentemente leve em idosos.
+(B) hematoma epidural, tipicamente associado a ruptura de artéria meníngea média, sempre com fratura temporal.
+(C) hemorragia subaracnoide espontânea, sem relação com trauma.
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... hipótese diagnóstica é:<br />(A) hematoma subdural, frequen...
+  [std-paren] (B)  context: ...ntemente leve em idosos.<br />(B) hematoma epidural, tipicam...
+  [std-paren] (C)  context: ...re com fratura temporal.<br />(C) hemorragia subaracnoide es...
+  [no-open-paren] (A)  context: ...hipótese diagnóstica é:<br />(A) hematoma subdural, frequent...
+  [no-open-paren] (B)  context: ...temente leve em idosos.<br />(B) hematoma epidural, tipicame...
+  [no-open-paren] (C)  context: ...e com fratura temporal.<br />(C) hemorragia subaracnoide esp...
+Raw HTML (first 400 chars):
+Questão 9</span></strong></p> <p><strong><span style="color: #000000;">Um homem de 70 anos é trazido pela família 24 horas após queda da própria altura. Desde então, apresenta sonolência progressiva e dificuldade para caminhar. Tem história de etilismo crônico. Ao exame, encontra-se desorientado, com hemiparesia direita leve. Sinais vitais: PA = 146 × 90 mmHg; FC = 74 bpm; FR = 16 irpm; T = 36,8 
+
+================================================================================
+PAGE: torchs-simulados   (id=4549)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q3 (option-count) ---
+Parser said: Q3: Q3: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 3
+Recém-nascido do sexo masculino, 37 semanas e 6 dias, adequado para a idade gestacional, nascido de parto vaginal, APGAR 9/9. Mãe de 28 anos, sem comprovação vacinal, refere exantema máculo-papular com linfonodomegalia e febre baixa no início do 1º trimestre, sem investigação laboratorial na época. No exame do recém-nascido, nota-se sopro contínuo em região infraclavicular esquerda, pulsos amplos, catarata bilateral e hipoacusia suspeita ao teste de triagem auditiva. Sinais vitais: frequência cardíaca 148 bpm, frequência respiratória 52 irpm, temperatura 36,8 °C, saturação 98% em ar ambiente, pressão arterial 68 × 44 mmHg, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...ção no período neonatal?<br />(A) rubéola; detecção de imuno...
+  [std-paren] (B)  context: ...polimerase para rubéola.<br />(B) citomegalovírus; sorologia...
+  [std-paren] (C)  context: ...eriada do recém-nascido.<br />(C) toxoplasmose; teste não tr...
+  [std-paren] (D)  context: ... e repetição em 3 meses.<br />(D) herpes simples; cultura de...
+  [no-open-paren] (A)  context: ...ão no período neonatal?<br />(A) rubéola; detecção de imunog...
+  [no-open-paren] (B)  context: ...olimerase para rubéola.<br />(B) citomegalovírus; sorologia ...
+  [no-open-paren] (C)  context: ...riada do recém-nascido.<br />(C) toxoplasmose; teste não tre...
+  [no-open-paren] (D)  context: ...e repetição em 3 meses.<br />(D) herpes simples; cultura de ...
+Raw HTML (first 400 chars):
+Questão 3 </strong></span><br /><span style="color: #000000;"><strong>Recém-nascido do sexo masculino, 37 semanas e 6 dias, adequado para a idade gestacional, nascido de parto vaginal, APGAR 9/9. Mãe de 28 anos, sem comprovação vacinal, refere exantema máculo-papular com linfonodomegalia e febre baixa no início do 1º trimestre, sem investigação laboratorial na época. No exame do recém-nascido, not
+
+--- Q10 (option-count) ---
+Parser said: Q10: Q10: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 10
+Recém-nascido do sexo feminino, 39 semanas, adequado para a idade gestacional, nascido de parto vaginal, APGAR 9/9. Pré-natal regular, sem intercorrências relevantes. No teste de triagem auditiva neonatal, há falha bilateral. O recém-nascido encontra-se assintomático, sem icterícia, sem hepatosplenomegalia, com exame físico normal. Sinais vitais: frequência cardíaca 140 bpm, frequência respiratória 44 irpm, temperatura 36,7 °C, saturação 98% em ar ambiente, pressão arterial 66 × 42 mmHg, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... inicial mais adequada é<br />(A) solicitar reação em cadeia...
+  [std-paren] (B)  context: ...eiras 3 semanas de vida.<br />(B) solicitar sorologia imunog...
+  [std-paren] (C)  context: ...fine infecção congênita.<br />(C) aguardar 6 meses para repe...
+  [std-paren] (D)  context: ...investigação etiológica.<br />(D) solicitar teste treponêmic...
+  [no-open-paren] (A)  context: ...inicial mais adequada é<br />(A) solicitar reação em cadeia ...
+  [no-open-paren] (B)  context: ...iras 3 semanas de vida.<br />(B) solicitar sorologia imunogl...
+  [no-open-paren] (C)  context: ...ine infecção congênita.<br />(C) aguardar 6 meses para repet...
+  [no-open-paren] (D)  context: ...nvestigação etiológica.<br />(D) solicitar teste treponêmico...
+Raw HTML (first 400 chars):
+Questão 10 </strong></span><br /><span style="color: #000000;"><strong>Recém-nascido do sexo feminino, 39 semanas, adequado para a idade gestacional, nascido de parto vaginal, APGAR 9/9. Pré-natal regular, sem intercorrências relevantes. No teste de triagem auditiva neonatal, há falha bilateral. O recém-nascido encontra-se assintomático, sem icterícia, sem hepatosplenomegalia, com exame físico nor
+
+================================================================================
+PAGE: transtorno-de-ansiedade-simulados   (id=4170)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q5 (missing-marker) ---
+Parser said: Q5: Q5: missing "Alternativa correta" marker
+Respostas chunk plain text (first 600 chars):
+Questão 5
+Um homem de 33 anos é atendido em pronto atendimento por sensação de falta de ar e “aperto no peito” há 40 minutos. Relata que o sintoma começou enquanto estava sozinho em casa e evoluiu com formigamento em mãos, tremores, sensação de desmaio e medo de morrer. Nega febre, tosse, hemoptise e dor pleurítica. Não tem fatores de risco conhecidos para tromboembolismo. Ao exame físico: ansioso, hiperventilando, sem estertores. Sinais vitais: temperatura axilar = 36,6 °C; frequência cardíaca = 122 bpm; frequência respiratória = 30 irpm; pressão arterial = 128 x 78 mmHg; saturação de O₂ = 99
+Marker variants seen in this chunk:
+  FOUND: /Alternativa\s+correta/i  → "edade. ✔ Alternativa correta: (E) alcalose respiratória por"
+  FOUND: /Correta\s*:/i  → "ternativa correta: (E) alcalose respiratória por hiperventil"
+  FOUND: /✔/u  → "siedade. ✔ Alternativa correta: (E) alcalose respiratória p"
+
+--- Q10 (missing-marker) ---
+Parser said: Q10: Q10: missing "Alternativa correta" marker
+Respostas chunk plain text (first 600 chars):
+Questão 10
+Um homem de 45 anos procura o pronto atendimento com tremores, sudorese, irritabilidade e sensação de ansiedade intensa há 24 horas. Relata uso diário de “calmante” prescrito há anos (diazepam), porém ficou sem o medicamento nos últimos 2 dias por falta de receita. Nega uso de álcool recente e nega drogas ilícitas. Ao exame físico: agitado, sem alucinações, sem sinais neurológicos focais. Sinais vitais: temperatura axilar = 36,8 °C; frequência cardíaca = 112 bpm; frequência respiratória = 18 irpm; pressão arterial = 146 x 90 mmHg; saturação de O₂ = 98% em ar ambiente. Exames: glicos
+Marker variants seen in this chunk:
+  FOUND: /Alternativa\s+correta/i  → "ínico. ✔ Alternativa correta: (E) síndrome de abstinência d"
+  FOUND: /Correta\s*:/i  → "ternativa correta: (E) síndrome de abstinência de benzodiaze"
+  FOUND: /✔/u  → "epínico. ✔ Alternativa correta: (E) síndrome de abstinência"
+
+================================================================================
+PAGE: transtornos-alimentares-simulados   (id=4167)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q9 (missing-marker) ---
+Parser said: Q9: Q9: missing "Alternativa correta" marker
+Respostas chunk plain text (first 600 chars):
+Questão 9
+Uma adolescente de 16 anos é avaliada em consulta por amenorreia há 6 meses e perda ponderal. Refere que “ainda está acima do peso” apesar de IMC de 16,2 kg/m². Nega vômitos e laxantes, mas faz jejum prolongado e exercícios intensos. Ao exame físico: bradicardia e extremidades frias. Sinais vitais: temperatura axilar = 36,0 °C; frequência cardíaca = 44 bpm; frequência respiratória = 14 irpm; pressão arterial = 88 x 54 mmHg; saturação de O₂ = 99% em ar ambiente. Exames: hemograma com leucopenia discreta; glicose = 70 mg/dL; sódio = 137 mEq/L; potássio = 3,7 mEq/L.
+Nesse contexto, a ex
+Marker variants seen in this chunk:
+  FOUND: /Alternativa\s+correta/i  → "ética. ✔ Alternativa correta: (E) supressão do eixo hipotál"
+  FOUND: /Correta\s*:/i  → "ternativa correta: (E) supressão do eixo hipotálamo-hipófise"
+  FOUND: /✔/u  → "rgética. ✔ Alternativa correta: (E) supressão do eixo hipot"
+
+================================================================================
+PAGE: triagem-neonatal-simulados   (id=4552)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q2 (option-count) ---
+Parser said: Q2: Q2: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 2
+Recém-nascido com 30 horas de vida, a termo, adequado para idade gestacional, em bom estado geral, em aleitamento materno exclusivo, sem desconforto respiratório. Sinais vitais: frequência cardíaca 138 bpm, frequência respiratória 40 irpm, temperatura axilar 36,5 °C, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... conduta recomendada são<br />(A) teste normal, pois a satur...
+  [std-paren] (B)  context: ...uimento em puericultura.<br />(B) teste alterado e repetição...
+  [std-paren] (C)  context: ...indicar ecocardiografia.<br />(C) teste limítrofe e repetiçã...
+  [std-paren] (D)  context: ...ar radiografia de tórax.<br />(D) teste alterado e indicação...
+  [no-open-paren] (A)  context: ...conduta recomendada são<br />(A) teste normal, pois a satura...
+  [no-open-paren] (B)  context: ...imento em puericultura.<br />(B) teste alterado e repetição ...
+  [no-open-paren] (C)  context: ...ndicar ecocardiografia.<br />(C) teste limítrofe e repetição...
+  [no-open-paren] (D)  context: ...r radiografia de tórax.<br />(D) teste alterado e indicação ...
+Raw HTML (first 400 chars):
+Questão 2 </strong></span><br /><span style="color: #000000;"><strong>Recém-nascido com 30 horas de vida, a termo, adequado para idade gestacional, em bom estado geral, em aleitamento materno exclusivo, sem desconforto respiratório. Sinais vitais: frequência cardíaca 138 bpm, frequência respiratória 40 irpm, temperatura axilar 36,5 °C, tempo de enchimento capilar < 2 segundos. No Teste do Coraçãoz
+
+--- Q5 (option-count) ---
+Parser said: Q5: Q5: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 5
+Recém-nascido a termo, com 10 dias de vida, comparece à unidade básica de saúde para avaliação. A mãe relata que o teste do pezinho foi coletado com 24 horas de vida, na maternidade, e que o bebê recebeu alta precoce. O recém-nascido encontra-se ativo, com bom padrão de sucção, sem vômitos, com ganho ponderal discreto desde a alta. Exame físico: frequência cardíaca 144 bpm, frequência respiratória 40 irpm, temperatura 36,8 °C, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... inicial mais adequada é<br />(A) considerar o teste do pezi...
+  [std-paren] (B)  context: ...zar nenhuma reavaliação.<br />(B) avaliar a adequação do mom...
+  [std-paren] (C)  context: ...hido muito precocemente.<br />(C) solicitar imediatamente el...
+  [std-paren] (D)  context: ...do resultado da triagem.<br />(D) iniciar suplementação de l...
+  [no-open-paren] (A)  context: ...inicial mais adequada é<br />(A) considerar o teste do pezin...
+  [no-open-paren] (B)  context: ...ar nenhuma reavaliação.<br />(B) avaliar a adequação do mome...
+  [no-open-paren] (C)  context: ...ido muito precocemente.<br />(C) solicitar imediatamente ele...
+  [no-open-paren] (D)  context: ...o resultado da triagem.<br />(D) iniciar suplementação de le...
+Raw HTML (first 400 chars):
+Questão 5 </strong></span><br /><span style="color: #000000;"><strong>Recém-nascido a termo, com 10 dias de vida, comparece à unidade básica de saúde para avaliação. A mãe relata que o teste do pezinho foi coletado com 24 horas de vida, na maternidade, e que o bebê recebeu alta precoce. O recém-nascido encontra-se ativo, com bom padrão de sucção, sem vômitos, com ganho ponderal discreto desde a al
+
+--- Q6 (option-count) ---
+Parser said: Q6: Q6: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 6
+Recém-nascido prematuro tardio, com 36 semanas e 4 dias, internado em unidade neonatal por icterícia e anemia hemolítica. Recebeu transfusão de concentrado de hemácias no 2º dia de vida. No 5º dia de vida, a família informa que o teste do pezinho ainda não foi coletado. O recém-nascido encontra-se estável: frequência cardíaca 150 bpm, frequência respiratória 46 irpm, temperatura 36,5 °C, saturação 98% em ar ambiente, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ... conduta mais adequada é<br />(A) coletar o teste do pezinho...
+  [std-paren] (B)  context: ...enhuma etapa da triagem.<br />(B) coletar o teste do pezinho...
+  [std-paren] (C)  context: ...nciáveis por transfusão.<br />(C) adiar a coleta do teste do...
+  [std-paren] (D)  context: ...me será sempre inválido.<br />(D) não coletar mais o teste d...
+  [no-open-paren] (A)  context: ...conduta mais adequada é<br />(A) coletar o teste do pezinho ...
+  [no-open-paren] (B)  context: ...nhuma etapa da triagem.<br />(B) coletar o teste do pezinho ...
+  [no-open-paren] (C)  context: ...ciáveis por transfusão.<br />(C) adiar a coleta do teste do ...
+  [no-open-paren] (D)  context: ...e será sempre inválido.<br />(D) não coletar mais o teste do...
+Raw HTML (first 400 chars):
+Questão 6 </strong></span><br /><span style="color: #000000;"><strong>Recém-nascido prematuro tardio, com 36 semanas e 4 dias, internado em unidade neonatal por icterícia e anemia hemolítica. Recebeu transfusão de concentrado de hemácias no 2º dia de vida. No 5º dia de vida, a família informa que o teste do pezinho ainda não foi coletado. O recém-nascido encontra-se estável: frequência cardíaca 15
+
+--- Q10 (option-count) ---
+Parser said: Q10: Q10: expected 4 options, found 0
+Cleaned plain text (parser's view):
+-----
+Questão 10
+Recém-nascido a termo, com 48 horas de vida, está em alojamento conjunto e será liberado para alta por demanda do serviço. A mãe teve pré-natal incompleto e refere dificuldade de retornar à unidade de saúde por questões de transporte. O neonato encontra-se estável: frequência cardíaca 140 bpm, frequência respiratória 42 irpm, temperatura 36,6 °C, saturação 97% em ar ambiente, tempo de enchimento capilar
+-----
+Letter markers found in raw HTML (any format):
+  [std-paren] (A)  context: ...adequada antes da alta é<br />(A) liberar alta e orientar qu...
+  [std-paren] (B)  context: ...do primeiro ano de vida.<br />(B) realizar/garantir registro...
+  [std-paren] (C)  context: ...portunidade diagnóstica.<br />(C) adiar a alta por 7 dias pa...
+  [std-paren] (D)  context: ...e internação prolongada.<br />(D) solicitar ecocardiograma p...
+  [no-open-paren] (A)  context: ...dequada antes da alta é<br />(A) liberar alta e orientar que...
+  [no-open-paren] (B)  context: ...o primeiro ano de vida.<br />(B) realizar/garantir registro ...
+  [no-open-paren] (C)  context: ...ortunidade diagnóstica.<br />(C) adiar a alta por 7 dias par...
+  [no-open-paren] (D)  context: ... internação prolongada.<br />(D) solicitar ecocardiograma pa...
+Raw HTML (first 400 chars):
+Questão 10 </strong></span><br /><span style="color: #000000;"><strong>Recém-nascido a termo, com 48 horas de vida, está em alojamento conjunto e será liberado para alta por demanda do serviço. A mãe teve pré-natal incompleto e refere dificuldade de retornar à unidade de saúde por questões de transporte. O neonato encontra-se estável: frequência cardíaca 140 bpm, frequência respiratória 42 irpm, t
+
+================================================================================
+PAGE: ventilacao-mecanica-simulados   (id=3952)
+Lessons: "Simulado 1 - Perguntas", "Simulado 1 - Respostas"
+
+--- Q1 (no-respostas) ---
+Parser said: Q1: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q2 (no-respostas) ---
+Parser said: Q2: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q3 (no-respostas) ---
+Parser said: Q3: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q4 (no-respostas) ---
+Parser said: Q4: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q5 (no-respostas) ---
+Parser said: Q5: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q6 (no-respostas) ---
+Parser said: Q6: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q7 (no-respostas) ---
+Parser said: Q7: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q8 (no-respostas) ---
+Parser said: Q8: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q9 (no-respostas) ---
+Parser said: Q9: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica
+
+--- Q10 (no-respostas) ---
+Parser said: Q10: matching Respostas chunk not found
+Respostas plain text (first 800 chars):
+SIMULADO REVALIDA INEP | MedHelpSpace
+Questões inéditas no padrão da banca
+
+*]:pointer-events-auto scroll-mt-[calc(var(--header-height)+min(200px,max(70px,20svh)))]" dir="auto" data-turn-id="request-WEB:94e97817-2361-4405-81be-625ad2443944-15" data-testid="conversation-turn-16" data-scroll-anchor="true" data-turn="assistant">
+
+Questão 1Uma mulher de 42 anos, com 1,60 m de altura e 78 kg, encontra-se internada na UTI por sepse abdominal complicada, evoluindo com síndrome do desconforto respiratório agudo (SARA) moderada. Foi submetida à intubação orotraqueal há 6 horas por piora progressiva da hipoxemia e aumento do trabalho respiratório. À radiografia de tórax, observam-se infiltrados bilaterais difusos; não há sinais de insuficiência cardíaca. A equipe decide ajustar a ventilação mecânica

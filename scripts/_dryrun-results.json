@@ -8,20 +8,16 @@
   },
   {
     "slug": "crise-hipertensiva-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q9: Q9: expected 4 options, found 2"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "dislipidemias-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q6: Q6: expected 4 options, found 3"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -138,11 +134,9 @@
   },
   {
     "slug": "doencas-hepatobiliares-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q4: Q4: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -206,7 +200,7 @@
     "status": "WARN",
     "questionCount": 9,
     "warnings": [
-      "Q9: Q9: expected 4 options, found 3"
+      "Q9: Q9: expected at least 4 options, found 3"
     ],
     "parseError": null
   },
@@ -310,40 +304,16 @@
   },
   {
     "slug": "intoxicacoes-exogenas-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=10, respostas=0",
-      "Q1: matching Respostas chunk not found",
-      "Q2: matching Respostas chunk not found",
-      "Q3: matching Respostas chunk not found",
-      "Q4: matching Respostas chunk not found",
-      "Q5: matching Respostas chunk not found",
-      "Q6: matching Respostas chunk not found",
-      "Q7: matching Respostas chunk not found",
-      "Q8: matching Respostas chunk not found",
-      "Q9: matching Respostas chunk not found",
-      "Q10: matching Respostas chunk not found"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "ventilacao-mecanica-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=10, respostas=0",
-      "Q1: matching Respostas chunk not found",
-      "Q2: matching Respostas chunk not found",
-      "Q3: matching Respostas chunk not found",
-      "Q4: matching Respostas chunk not found",
-      "Q5: matching Respostas chunk not found",
-      "Q6: matching Respostas chunk not found",
-      "Q7: matching Respostas chunk not found",
-      "Q8: matching Respostas chunk not found",
-      "Q9: matching Respostas chunk not found",
-      "Q10: matching Respostas chunk not found"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -376,11 +346,9 @@
   },
   {
     "slug": "nodulo-e-cancer-de-tireoide-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q2: Q2: expected 4 options, found 1"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -574,11 +542,9 @@
   },
   {
     "slug": "anemia-falciforme-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q2: Q2: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -590,12 +556,9 @@
   },
   {
     "slug": "anemia-hemolitica-simulados",
-    "status": "WARN",
-    "questionCount": 8,
-    "warnings": [
-      "Q1: Q1: expected 4 options, found 0",
-      "Q2: Q2: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -656,11 +619,9 @@
   },
   {
     "slug": "infeccao-do-trato-urinario-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q4: Q4: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -700,11 +661,9 @@
   },
   {
     "slug": "doenca-renal-cronica-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q8: Q8: expected 4 options, found 1"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -716,11 +675,9 @@
   },
   {
     "slug": "sindrome-nefritica-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q5: Q5: expected 4 options, found 2"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -802,22 +759,16 @@
   },
   {
     "slug": "assistencia-pre-natal-simulados",
-    "status": "WARN",
-    "questionCount": 8,
-    "warnings": [
-      "Q5: Q5: expected 4 options, found 2",
-      "Q8: Q8: expected 4 options, found 1"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "diabetes-da-gestacao-simulados",
-    "status": "WARN",
-    "questionCount": 8,
-    "warnings": [
-      "Q4: Q4: expected 4 options, found 1",
-      "Q10: Q10: expected 4 options, found 1"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -843,29 +794,16 @@
   },
   {
     "slug": "mecanismo-de-parto-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=9, respostas=10",
-      "Q2: matching Respostas chunk not found",
-      "Q3: matching Respostas chunk not found",
-      "Q4: matching Respostas chunk not found",
-      "Q5: matching Respostas chunk not found",
-      "Q6: matching Respostas chunk not found",
-      "Q7: matching Respostas chunk not found",
-      "Q8: matching Respostas chunk not found",
-      "Q9: matching Respostas chunk not found",
-      "Q10: matching Respostas chunk not found"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "prematuridade-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q2: Q2: expected 4 options, found 1"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -1036,11 +974,9 @@
   },
   {
     "slug": "reanimacao-neonatal-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q3: Q3: expected 4 options, found 2"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -1052,33 +988,23 @@
   },
   {
     "slug": "taquipneia-transitoria-do-recem-nascido-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q2: Q2: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "torchs-simulados",
-    "status": "WARN",
-    "questionCount": 8,
-    "warnings": [
-      "Q3: Q3: expected 4 options, found 0",
-      "Q10: Q10: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "triagem-neonatal-simulados",
-    "status": "WARN",
-    "questionCount": 6,
-    "warnings": [
-      "Q2: Q2: expected 4 options, found 0",
-      "Q5: Q5: expected 4 options, found 0",
-      "Q6: Q6: expected 4 options, found 0",
-      "Q10: Q10: expected 4 options, found 0"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -1139,85 +1065,65 @@
   },
   {
     "slug": "emergencias-psiquiatricas-simulados",
-    "status": "WARN",
-    "questionCount": 8,
-    "warnings": [
-      "Q4: Q4: missing \"Alternativa correta\" marker",
-      "Q9: Q9: missing \"Alternativa correta\" marker"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "transtorno-de-ansiedade-simulados",
-    "status": "WARN",
-    "questionCount": 8,
-    "warnings": [
-      "Q5: Q5: missing \"Alternativa correta\" marker",
-      "Q10: Q10: missing \"Alternativa correta\" marker"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "transtornos-alimentares-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q9: Q9: missing \"Alternativa correta\" marker"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "artrite-infecciosa-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=0, respostas=10"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "artrite-reumatoide-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=0, respostas=10"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "febre-reumatica-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=0, respostas=10"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "fibromialgia-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=0, respostas=10"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "lupus-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=0, respostas=10"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
     "slug": "vasculite-de-pequenos-vasos-simulados",
-    "status": "WARN",
-    "questionCount": 0,
-    "warnings": [
-      "question count mismatch: perguntas=0, respostas=10"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {
@@ -1257,11 +1163,9 @@
   },
   {
     "slug": "indicadores-de-saude-simulados",
-    "status": "WARN",
-    "questionCount": 9,
-    "warnings": [
-      "Q10: Q10: expected 4 options, found 2"
-    ],
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
     "parseError": null
   },
   {

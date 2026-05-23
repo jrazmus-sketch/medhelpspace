@@ -1,0 +1,137 @@
+[
+  {
+    "slug": "abdome-agudo-hemorragico-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=807ch, parsed=970ch (diff 163)",
+      "Q2 stem: db=648ch, parsed=933ch (diff 285)",
+      "Q3 stem: db=671ch, parsed=945ch (diff 274)",
+      "Q4 stem: db=740ch, parsed=938ch (diff 198)",
+      "Q5 stem: db=672ch, parsed=963ch (diff 291)",
+      "Q6 stem: db=656ch, parsed=738ch (diff 82)",
+      "Q7 stem: db=686ch, parsed=958ch (diff 272)",
+      "Q8 stem: db=746ch, parsed=921ch (diff 175)",
+      "Q9 stem: db=702ch, parsed=950ch (diff 248)",
+      "Q10 stem: db=623ch, parsed=887ch (diff 264)"
+    ]
+  },
+  {
+    "slug": "doencas-eczematosas-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q4 stem: db=815ch, parsed=822ch (diff 7)"
+    ]
+  },
+  {
+    "slug": "amenorreia-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=927ch, parsed=990ch (diff 63)",
+      "Q4 stem: db=714ch, parsed=727ch (diff 13)"
+    ]
+  },
+  {
+    "slug": "hipertensao-arterial-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q4 option D: db=\"iniciar clonidina noturna e retorno em 6 meses, pois a meta ...\" parsed=\"iniciar clonidina noturna e retorno em 6 meses, pois a meta ...\""
+    ]
+  },
+  {
+    "slug": "taquiarritmias-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=807ch, parsed=970ch (diff 163)",
+      "Q2 stem: db=648ch, parsed=933ch (diff 285)",
+      "Q3 stem: db=671ch, parsed=945ch (diff 274)",
+      "Q4 stem: db=740ch, parsed=938ch (diff 198)",
+      "Q5 stem: db=672ch, parsed=963ch (diff 291)",
+      "Q6 stem: db=656ch, parsed=738ch (diff 82)",
+      "Q7 stem: db=686ch, parsed=958ch (diff 272)",
+      "Q8 stem: db=746ch, parsed=921ch (diff 175)",
+      "Q9 stem: db=702ch, parsed=950ch (diff 248)",
+      "Q10 stem: db=623ch, parsed=887ch (diff 264)"
+    ]
+  },
+  {
+    "slug": "diabetes-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 option A: db=\"Iniciar insulina regular intravenosa imediatamente e manter ...\" parsed=\"Iniciar insulina regular intravenosa imediatamente e manter ...\"",
+      "Q4 option A: db=\"Administrar bicarbonato de sódio para correção rápida da aci...\" parsed=\"Administrar bicarbonato de sódio para correção rápida da aci...\"",
+      "Q5 stem: db=658ch, parsed=690ch (diff 32)",
+      "Q9 stem: db=616ch, parsed=651ch (diff 35)"
+    ]
+  },
+  {
+    "slug": "tireotoxicose-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=655ch, parsed=733ch (diff 78)",
+      "Q2 stem: db=724ch, parsed=802ch (diff 78)",
+      "Q3 stem: db=655ch, parsed=776ch (diff 121)",
+      "Q4 stem: db=353ch, parsed=576ch (diff 223)",
+      "Q5 stem: db=582ch, parsed=688ch (diff 106)",
+      "Q6 stem: db=551ch, parsed=629ch (diff 78)",
+      "Q7 stem: db=513ch, parsed=591ch (diff 78)",
+      "Q9 stem: db=440ch, parsed=518ch (diff 78)",
+      "Q10 stem: db=404ch, parsed=529ch (diff 125)"
+    ]
+  },
+  {
+    "slug": "arboviroses-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q4 stem: db=787ch, parsed=850ch (diff 63)"
+    ]
+  },
+  {
+    "slug": "injuria-renal-aguda-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q2 stem: db=799ch, parsed=1008ch (diff 209)"
+    ]
+  },
+  {
+    "slug": "sindrome-nefrotica-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=782ch, parsed=983ch (diff 201)",
+      "Q2 stem: db=769ch, parsed=851ch (diff 82)"
+    ]
+  },
+  {
+    "slug": "cervicite-e-vulvovaginite-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q4 option D: db=\"Cervicite por clamídia; tratar apenas se pH vaginal for...\" parsed=\"Cervicite por clamídia; tratar apenas se pH vaginal for < 4,...\""
+    ]
+  },
+  {
+    "slug": "climaterio-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=944ch, parsed=967ch (diff 23)"
+    ]
+  },
+  {
+    "slug": "relacoes-uterofetais-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q1 stem: db=601ch, parsed=721ch (diff 120)",
+      "Q3 option A: db=\"o diâmetro biparietal é o parâmetro isolado mais sensível pa...\" parsed=\"o diâmetro biparietal é o parâmetro isolado mais sensível pa...\"",
+      "Q4 stem: db=392ch, parsed=503ch (diff 111)",
+      "Q4 option A: db=\"manter expectante com Doppler semanal, pois a idade gestacio...\" parsed=\"manter expectante com Doppler semanal, pois a idade gestacio...\"",
+      "Q6 stem: db=347ch, parsed=488ch (diff 141)",
+      "Q7 stem: db=341ch, parsed=471ch (diff 130)",
+      "Q10 stem: db=392ch, parsed=530ch (diff 138)"
+    ]
+  },
+  {
+    "slug": "vitalidade-fetal-simulados",
+    "status": "CORRUPTED",
+    "detail": [
+      "Q7 stem: db=647ch, parsed=749ch (diff 102)"
+    ]
+  }
+]
