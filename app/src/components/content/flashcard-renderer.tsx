@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { getPageSiblings } from "@/lib/page-siblings";
 import { FlashcardPlayer } from "./flashcard-player";
 import type { CardGroup } from "./flashcard-player";
 
@@ -98,5 +99,17 @@ export async function FlashcardRenderer({ pageId }: { pageId: number }) {
 
   const groups = Array.from(groupMap.values()).sort((a, b) => a.position - b.position);
 
-  return <FlashcardPlayer groups={groups} dueTodayCount={dueTodayCount} totalCards={cards.length} />;
+  const siblings = await getPageSiblings(pageId);
+
+  return (
+    <FlashcardPlayer
+      groups={groups}
+      dueTodayCount={dueTodayCount}
+      totalCards={cards.length}
+      nextDeckHref={siblings.nextHref}
+      nextDeckTitle={siblings.nextTitle}
+      specialtyHref={siblings.specialtyHref}
+      specialtyName={siblings.specialtyName}
+    />
+  );
 }

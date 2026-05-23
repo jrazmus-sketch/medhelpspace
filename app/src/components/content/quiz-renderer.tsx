@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPageSiblings } from "@/lib/page-siblings";
 import { QuizPlayer } from "./quiz-player";
 
 export interface QuizQuestionData {
@@ -7,14 +8,15 @@ export interface QuizQuestionData {
   question: string;
   answers: { text: string; correct: boolean; feedback: string }[];
   media_url: string | null;
+  explanation_html: string | null;
 }
 
 export async function QuizRenderer({ pageId }: { pageId: number }) {
   const admin = createAdminClient();
-  const [{ data: questions }, { data: page }] = await Promise.all([
+  const [{ data: questions }, { data: page }, siblings] = await Promise.all([
     admin
       .from("quiz_questions")
-      .select("id, position, question, answers, media_url")
+      .select("id, position, question, answers, media_url, explanation_html")
       .eq("page_id", pageId)
       .order("position"),
     admin
@@ -22,6 +24,7 @@ export async function QuizRenderer({ pageId }: { pageId: number }) {
       .select("specialty_id")
       .eq("id", pageId)
       .single(),
+    getPageSiblings(pageId),
   ]);
 
   if (!questions || questions.length === 0) {
@@ -33,6 +36,10 @@ export async function QuizRenderer({ pageId }: { pageId: number }) {
       questions={questions as QuizQuestionData[]}
       pageId={pageId}
       specialtyId={page?.specialty_id ?? null}
+      nextQuizHref={siblings.nextHref}
+      nextQuizTitle={siblings.nextTitle}
+      specialtyHref={siblings.specialtyHref}
+      specialtyName={siblings.specialtyName}
     />
   );
 }

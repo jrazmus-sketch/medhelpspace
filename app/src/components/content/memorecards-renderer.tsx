@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPageSiblings } from "@/lib/page-siblings";
 import { MemorecardsPlayer } from "./memorecards-player";
 
 export interface SlideData {
@@ -34,5 +35,15 @@ export async function MemorecardsRenderer({ pageId }: { pageId: number }) {
     content_html: stripInlineColors(s.content_html),
   }));
 
-  return <MemorecardsPlayer slides={normalized as SlideData[]} />;
+  const siblings = await getPageSiblings(pageId);
+
+  return (
+    <MemorecardsPlayer
+      slides={normalized as SlideData[]}
+      nextDeckHref={siblings.nextHref}
+      nextDeckTitle={siblings.nextTitle}
+      specialtyHref={siblings.specialtyHref}
+      specialtyName={siblings.specialtyName}
+    />
+  );
 }

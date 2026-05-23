@@ -27,7 +27,7 @@ type StudyType = {
 };
 
 const STUDY_TYPES: StudyType[] = [
-  { id: "questoes",   label: "Estudo por Questões", desc: "Questões estilo INEP comentadas",           Icon: ClipboardList, color: "var(--c-questoes)",   href: "/app/simulados",       locked: false },
+  { id: "questoes",   label: "Estudo por Questões", desc: "Questões estilo INEP comentadas",           Icon: ClipboardList, color: "var(--c-questoes)",   href: "/app/estudo-por-questoes", locked: false },
   { id: "resumos",    label: "Resumos Narrativos",  desc: "Narrativas clínicas por especialidade",     Icon: ScrollText,    color: "var(--c-resumos)",    href: "/app/resumos",          locked: false },
   { id: "medvoice",   label: "MedVoice",            desc: "Áudios por tema — a Clínica Fala",          Icon: Mic,           color: "var(--c-medvoice)",   href: "/app/medvoice",         locked: false },
   { id: "formula",    label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",       Icon: FlaskConical,  color: "var(--c-formula)",    href: "/app/formula-medhelp",  locked: false },

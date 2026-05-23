@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/app",                  label: "Início",   Icon: Home,          exact: true },
   { href: "/app/plano",            label: "Plano",    Icon: Calendar                   },
-  { href: "/app/simulados",        label: "Questões", Icon: ClipboardList              },
+  { href: "/app/estudo-por-questoes", label: "Questões", Icon: ClipboardList           },
   { href: "/app/medvoice",         label: "MedVoice", Icon: Mic                        },
   { href: "/app/resumos",          label: "Resumos",  Icon: ScrollText                 },
   { href: "/app/formula-medhelp",  label: "Fórmula",  Icon: FlaskConical               },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { safe } from "@/lib/sanitize";
 import type { QuizQuestionData } from "./quiz-renderer";
@@ -9,9 +10,21 @@ interface Props {
   questions: QuizQuestionData[];
   pageId: number;
   specialtyId: number | null;
+  nextQuizHref: string | null;
+  nextQuizTitle: string | null;
+  specialtyHref: string;
+  specialtyName: string;
 }
 
-export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
+export function QuizPlayer({
+  questions,
+  pageId,
+  specialtyId,
+  nextQuizHref,
+  nextQuizTitle,
+  specialtyHref,
+  specialtyName,
+}: Props) {
   const [results, setResults] = useState<Record<number, boolean>>({});
   const [activeIds, setActiveIds] = useState<number[]>(() => questions.map((q) => q.id));
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -23,7 +36,14 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
   const answered = selectedIdx !== null;
   const isRetry = activeIds.length < questions.length;
   const correctAnswer = question?.answers.find((a) => a.correct);
-  const feedback = correctAnswer?.feedback ?? "";
+  const selectedAnswer = answered ? question?.answers[selectedIdx] : null;
+  // Show the selected answer's feedback first (per-distractor "why wrong"); fall
+  // back to the correct answer's feedback (legacy H5P quizzes store it there).
+  const feedback =
+    (selectedAnswer && !selectedAnswer.correct ? selectedAnswer.feedback : "") ||
+    correctAnswer?.feedback ||
+    "";
+  const explanationHtml = question?.explanation_html ?? null;
 
   function handleSelect(idx: number) {
     if (answered) return;
@@ -128,21 +148,45 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3">
-          {wrongCount > 0 && (
-            <button
-              onClick={handleRetry}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity"
+        <div className="space-y-3">
+          {/* Primary: continue forward */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {nextQuizHref && (
+              <Link
+                href={nextQuizHref}
+                className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-1.5"
+              >
+                <span className="truncate">
+                  Próxima questão{nextQuizTitle ? `: ${nextQuizTitle}` : ""}
+                </span>
+                <span aria-hidden>→</span>
+              </Link>
+            )}
+            <Link
+              href={specialtyHref}
+              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
             >
-              Refazer as erradas ({wrongCount})
+              ← Voltar para {specialtyName}
+            </Link>
+          </div>
+
+          {/* Secondary: redo this quiz */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
+            {wrongCount > 0 && (
+              <button
+                onClick={handleRetry}
+                className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+              >
+                Refazer as erradas ({wrongCount})
+              </button>
+            )}
+            <button
+              onClick={handleRestart}
+              className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+            >
+              Recomeçar do zero
             </button>
-          )}
-          <button
-            onClick={handleRestart}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors"
-          >
-            Recomeçar do zero
-          </button>
+          </div>
         </div>
       </div>
     );
@@ -182,7 +226,7 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
 
       {/* Question text */}
       <div
-        className="prose-content"
+        className="prose-content quiz-stem"
         dangerouslySetInnerHTML={{ __html: safe(question.question) }}
       />
 
@@ -212,12 +256,22 @@ export function QuizPlayer({ questions, pageId, specialtyId }: Props) {
         })}
       </div>
 
-      {/* Feedback / explanation */}
+      {/* Feedback (per-distractor "why wrong" or correct-answer feedback) */}
       {answered && feedback && (
         <div className="rounded-lg border border-brand/20 bg-brand-muted p-4">
           <div
             className="prose-content text-sm"
             dangerouslySetInnerHTML={{ __html: safe(feedback) }}
+          />
+        </div>
+      )}
+
+      {/* Rich explanation block (Comentário / PEGA / Resumo) — simulado pages only */}
+      {answered && explanationHtml && (
+        <div className="rounded-lg border border-border bg-surface-1 p-4">
+          <div
+            className="prose-content quiz-explanation text-sm"
+            dangerouslySetInnerHTML={{ __html: safe(explanationHtml) }}
           />
         </div>
       )}

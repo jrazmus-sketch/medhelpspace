@@ -46,6 +46,8 @@ export default async function ContentPage({
         </div>
       </header>
 
+      {isSimulado(page) && <SimuladoBanner />}
+
       <PageBody
         page={page as { id: number; type: string; track_id: number | null; content_module_id: number | null }}
         selectedLessonId={selectedLessonId}
@@ -58,6 +60,23 @@ const FLASHCARDS_TRACK_ID = 3;
 const MEDHELP_60D_MODULE_ID = 1;
 const MEDVOICE_TRACK_ID = 1;
 const AUDIOCARDS_TRACK_ID = 2;
+
+function isSimulado(page: { slug: string; type: string }) {
+  return page.type === "h5p-quiz" && page.slug.endsWith("-simulados");
+}
+
+function SimuladoBanner() {
+  return (
+    <div className="mb-8 border-b border-border pb-4">
+      <p className="text-base font-bold text-brand">
+        SIMULADO REVALIDA INEP | MedHelpSpace
+      </p>
+      <p className="mt-1 text-sm italic text-muted-foreground">
+        Questões inéditas no padrão da banca
+      </p>
+    </div>
+  );
+}
 
 function PageBody({
   page,

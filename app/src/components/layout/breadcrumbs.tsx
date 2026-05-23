@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 const SEGMENT_LABELS: Record<string, string> = {
   app: "Início",
   admin: "Admin",
+  "estudo-por-questoes": "Estudo por Questões",
+  "questoes-revalida": "Questões Revalida",
   simulados: "Simulados",
   "formula-medhelp": "Fórmula MedHelp",
   flashcards: "Flashcards",

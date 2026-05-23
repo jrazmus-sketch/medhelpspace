@@ -23,7 +23,7 @@ import { useAuth } from "@/providers/auth-provider";
 const NAV_LINKS: { href: string; label: string; exact?: boolean; highlight?: boolean }[] = [
   { href: "/app",                 label: "Início",     exact: true                  },
   { href: "/app/plano",           label: "Meu Plano",                  highlight: true },
-  { href: "/app/simulados",       label: "Questões"                                  },
+  { href: "/app/estudo-por-questoes", label: "Questões"                              },
   { href: "/app/resumos",         label: "Resumos"                                   },
   { href: "/app/medvoice",        label: "MedVoice"                                  },
   { href: "/app/formula-medhelp", label: "Fórmula"                                   },

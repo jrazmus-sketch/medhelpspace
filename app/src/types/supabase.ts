@@ -28,6 +28,7 @@ export type PageStatus = "publish" | "draft";
 
 export type PageView =
   | "hub"
+  | "quiz"
   | "resumos"
   | "formula"
   | "simulados"

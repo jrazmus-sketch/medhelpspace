@@ -34,15 +34,18 @@ export function LessonSidebar({
   useEffect(() => {
     const handler = (e: Event) => {
       const { lessonId } = (e as CustomEvent<{ lessonId: number }>).detail;
+      // State updater must stay pure — no side effects inside it, or invoking a
+      // server action mid-render trips React's "setState while rendering" guard.
       setCompleted((current) => {
         if (current.has(lessonId)) return current;
         const next = new Set(current);
         next.add(lessonId);
-        // Fire-and-forget server persistence (idempotent upsert)
-        recordLessonCompletion(lessonId, pageId).catch(() => {
-          // Silent — optimistic UI already reflects completion
-        });
         return next;
+      });
+      // Fire-and-forget server persistence (idempotent upsert) — done here in the
+      // event handler, outside the render phase.
+      recordLessonCompletion(lessonId, pageId).catch(() => {
+        // Silent — optimistic UI already reflects completion
       });
     };
     window.addEventListener("mhs:lesson-complete", handler);

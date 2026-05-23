@@ -1,22 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import { safe } from "@/lib/sanitize";
 import type { SlideData } from "./memorecards-renderer";
 
 interface Props {
   slides: SlideData[];
+  nextDeckHref: string | null;
+  nextDeckTitle: string | null;
+  specialtyHref: string;
+  specialtyName: string;
 }
 
 function isCdnUrl(url: string): boolean {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
-export function MemorecardsPlayer({ slides }: Props) {
+export function MemorecardsPlayer({
+  slides,
+  nextDeckHref,
+  nextDeckTitle,
+  specialtyHref,
+  specialtyName,
+}: Props) {
   const [idx, setIdx] = useState(0);
   const slide = slides[idx];
   const total = slides.length;
+  const isLast = idx === total - 1;
 
   function prev() {
     setIdx((i) => Math.max(0, i - 1));
@@ -83,13 +95,41 @@ export function MemorecardsPlayer({ slides }: Props) {
 
         <button
           onClick={next}
-          disabled={idx === total - 1}
+          disabled={isLast}
           className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors disabled:opacity-30 disabled:pointer-events-none"
         >
           Próximo
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Completion footer — appears once user reaches the last slide */}
+      {isLast && (
+        <div className="mt-2 pt-4 border-t border-border space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Você concluiu este conjunto de memorecards.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {nextDeckHref && (
+              <Link
+                href={nextDeckHref}
+                className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-1.5"
+              >
+                <span className="truncate">
+                  Próximo{nextDeckTitle ? `: ${nextDeckTitle}` : ""}
+                </span>
+                <span aria-hidden>→</span>
+              </Link>
+            )}
+            <Link
+              href={specialtyHref}
+              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
+            >
+              ← Voltar para {specialtyName}
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

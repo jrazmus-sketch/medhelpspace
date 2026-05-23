@@ -8,7 +8,7 @@ import { ViewHubRenderer } from "@/components/content/view-hub-renderer";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  ClipboardList, ScrollText, Mic, FlaskConical,
+  ClipboardList, ListChecks, ScrollText, Mic, FlaskConical,
   Headphones, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import type { PageView } from "@/types/supabase";
@@ -18,9 +18,10 @@ import type { PageView } from "@/types/supabase";
 type TypeConfig = { label: string; desc: string; Icon: LucideIcon; color: string };
 
 const VIEW_CONFIG: Partial<Record<PageView, TypeConfig>> = {
-  simulados:  { label: "Estudo por Questões", desc: "Questões estilo INEP comentadas",        Icon: ClipboardList, color: "var(--c-questoes)"   },
-  resumos:    { label: "Resumos Narrativos",  desc: "Narrativas clínicas por especialidade",  Icon: ScrollText,    color: "var(--c-resumos)"    },
-  formula:    { label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",    Icon: FlaskConical,  color: "var(--c-formula)"    },
+  quiz:       { label: "Questões Revalida",   desc: "Questões estilo INEP comentadas",          Icon: ClipboardList, color: "var(--c-questoes)"   },
+  simulados:  { label: "Simulados",           desc: "Treino de prova por casos clínicos",       Icon: ListChecks,    color: "var(--c-simulados)"  },
+  resumos:    { label: "Resumos Narrativos",  desc: "Narrativas clínicas por especialidade",    Icon: ScrollText,    color: "var(--c-resumos)"    },
+  formula:    { label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",      Icon: FlaskConical,  color: "var(--c-formula)"    },
 };
 
 const TRACK_CONFIG: Record<string, TypeConfig> = {
@@ -113,7 +114,7 @@ export default async function SpecialtyHubPage({
   type TypeOption = { key: string; cfg: TypeConfig; href: string };
   const typeOptions: TypeOption[] = [];
 
-  const VIEW_ORDER: PageView[] = ["simulados", "resumos", "formula"];
+  const VIEW_ORDER: PageView[] = ["quiz", "simulados", "resumos", "formula"];
   for (const view of VIEW_ORDER) {
     const cfg = VIEW_CONFIG[view];
     if (!cfg) continue;

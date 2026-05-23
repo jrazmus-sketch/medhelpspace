@@ -321,6 +321,54 @@
   font-weight: 600;
 }
 
+/* Quiz question stem: keep <h3> heading bold, but normalize paragraph weight
+   (existing H5P quizzes wrap stems in <p><strong>... ; simulados don't —
+   either way, this guarantees a readable normal-weight stem) */
+.quiz-stem p,
+.quiz-stem p strong,
+.quiz-stem p b {
+  font-weight: 400;
+}
+
+.quiz-stem p {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+/* Simulado quiz explanation block (Comentário / PEGA REVALIDA / Resumo-chave) */
+.quiz-explanation h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.875rem;
+  margin-bottom: 0.375rem;
+  color: var(--brand);
+}
+
+.quiz-explanation h4:first-child {
+  margin-top: 0;
+}
+
+.quiz-explanation ul.pega li::marker {
+  content: "❌  ";
+}
+
+.quiz-explanation ul.resumo li::marker {
+  content: "🟣  ";
+}
+
+.quiz-explanation ul.pega,
+.quiz-explanation ul.resumo {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.quiz-explanation ul.pega li,
+.quiz-explanation ul.resumo li {
+  padding-left: 1.5rem;
+  text-indent: -1.5rem;
+  margin-bottom: 0.375rem;
+}
+
 /* Brand inline color: WP used #b046e9; renderer replaces with this class */
 .prose-content .prose-brand-color {
   color: #b046e9;
@@ -462,6 +510,7 @@
 /* ── Track signature colors ───────────────────────────────────────────────── */
 :root {
   --c-questoes:   #7c3aed;
+  --c-simulados:  #9333ea;
   --c-resumos:    #6d28d9;
   --c-medvoice:   #4f46e5;
   --c-formula:    #2563eb;
@@ -473,6 +522,7 @@
 
 .dark {
   --c-questoes:   #b39bff;
+  --c-simulados:  #c4b5fd;
   --c-resumos:    #9789ff;
   --c-medvoice:   #7d83ff;
   --c-formula:    #6b91ff;

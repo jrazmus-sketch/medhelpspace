@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { recordFlashcardAttempt } from "@/actions/flashcard-attempts";
 import { updateFlashcardSM2 } from "@/actions/flashcard-sm2";
 import { safe } from "@/lib/sanitize";
@@ -26,9 +27,21 @@ interface Props {
   groups: CardGroup[];
   dueTodayCount?: number;
   totalCards?: number;
+  nextDeckHref: string | null;
+  nextDeckTitle: string | null;
+  specialtyHref: string;
+  specialtyName: string;
 }
 
-export function FlashcardPlayer({ groups, dueTodayCount, totalCards }: Props) {
+export function FlashcardPlayer({
+  groups,
+  dueTodayCount,
+  totalCards,
+  nextDeckHref,
+  nextDeckTitle,
+  specialtyHref,
+  specialtyName,
+}: Props) {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [groupIdx, setGroupIdx] = useState(0);
   const [cardIdx, setCardIdx] = useState(0);
@@ -200,21 +213,45 @@ export function FlashcardPlayer({ groups, dueTodayCount, totalCards }: Props) {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3">
-          {totalWrong > 0 && (
-            <button
-              onClick={handleRetryDeck}
-              className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity"
+        <div className="space-y-3">
+          {/* Primary: continue forward */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {nextDeckHref && (
+              <Link
+                href={nextDeckHref}
+                className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-1.5"
+              >
+                <span className="truncate">
+                  Próximo deck{nextDeckTitle ? `: ${nextDeckTitle}` : ""}
+                </span>
+                <span aria-hidden>→</span>
+              </Link>
+            )}
+            <Link
+              href={specialtyHref}
+              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
             >
-              Refazer as erradas ({totalWrong})
+              ← Voltar para {specialtyName}
+            </Link>
+          </div>
+
+          {/* Secondary: redo this deck */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1">
+            {totalWrong > 0 && (
+              <button
+                onClick={handleRetryDeck}
+                className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+              >
+                Refazer as erradas ({totalWrong})
+              </button>
+            )}
+            <button
+              onClick={handleRestartDeck}
+              className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+            >
+              Recomeçar do zero
             </button>
-          )}
-          <button
-            onClick={handleRestartDeck}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-brand/40 transition-colors"
-          >
-            Recomeçar do zero
-          </button>
+          </div>
         </div>
       </div>
     );

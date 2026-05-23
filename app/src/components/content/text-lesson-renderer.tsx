@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { getPageSiblings } from "@/lib/page-siblings";
 import { safe } from "@/lib/sanitize";
 import { LessonSidebar } from "./lesson-sidebar";
 import { AudioPlayer } from "./audio-player";
@@ -145,9 +146,16 @@ export async function TextLessonRenderer({
   const activeLesson = lessons[activeIdx];
   const prevLesson = activeIdx > 0 ? lessons[activeIdx - 1] : null;
   const nextLesson = activeIdx < lessons.length - 1 ? lessons[activeIdx + 1] : null;
+  const isLastSection = nextLesson === null;
+
+  // Only fetch sibling/specialty info when the user is on the last section —
+  // that's the only place LessonCompleteButton uses it.
+  const siblings = isLastSection
+    ? await getPageSiblings(pageId)
+    : { nextHref: null, nextTitle: null, specialtyHref: "/app", specialtyName: "Início" };
 
   return (
-    <div className="flex gap-8 lg:gap-10">
+    <div className="flex flex-col lg:flex-row lg:gap-10">
       <LessonSidebar
         entries={entries}
         activeId={activeLesson.id}
@@ -195,18 +203,26 @@ export async function TextLessonRenderer({
           <p className="text-muted-foreground text-sm italic">Conteúdo em preparação.</p>
         )}
 
-        {/* Complete button — text-only sections only (audio sections complete via 95% playback) */}
+        {/* Primary action — text sections: complete (+ continue) in one gesture.
+            Audio sections have no button (they complete at 95% playback); their
+            forward affordance is the "next" link in the navigation row below. */}
         {!activeLesson.audio_url && (
           <div className="mt-8 flex justify-end">
             <LessonCompleteButton
               lessonId={activeLesson.id}
               pageId={pageId}
               initialDone={completedSet.has(activeLesson.id)}
+              nextLessonId={nextLesson?.id ?? null}
+              nextPageHref={siblings.nextHref}
+              nextPageTitle={siblings.nextTitle}
+              specialtyHref={siblings.specialtyHref}
+              specialtyName={siblings.specialtyName}
             />
           </div>
         )}
 
-        {/* Prev / Next navigation */}
+        {/* Navigation row — prev link + section counter. Forward navigation is
+            handled by the complete button (text) or the next link (audio). */}
         <div className="mt-6 pt-6 border-t border-border flex items-center justify-between gap-4">
           {prevLesson ? (
             <Link
@@ -225,7 +241,7 @@ export async function TextLessonRenderer({
             {activeIdx + 1} / {lessons.length}
           </span>
 
-          {nextLesson ? (
+          {activeLesson.audio_url && nextLesson ? (
             <Link
               href={`?s=${nextLesson.id}`}
               scroll={false}
@@ -235,9 +251,38 @@ export async function TextLessonRenderer({
               <span className="text-brand shrink-0">→</span>
             </Link>
           ) : (
-            <span className="text-sm text-muted-foreground">Concluído ✓</span>
+            <div />
           )}
         </div>
+
+        {/* End-of-page footer — only when the user is on the last audio section.
+            (Text sections get this affordance via LessonCompleteButton instead.) */}
+        {isLastSection && activeLesson.audio_url && (
+          <div className="mt-4 pt-4 border-t border-border space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Você chegou ao fim deste conteúdo.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {siblings.nextHref && (
+                <Link
+                  href={siblings.nextHref}
+                  className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-1.5"
+                >
+                  <span className="truncate">
+                    Próximo tópico{siblings.nextTitle ? `: ${siblings.nextTitle}` : ""}
+                  </span>
+                  <span aria-hidden>→</span>
+                </Link>
+              )}
+              <Link
+                href={siblings.specialtyHref}
+                className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
+              >
+                ← Voltar para {siblings.specialtyName}
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

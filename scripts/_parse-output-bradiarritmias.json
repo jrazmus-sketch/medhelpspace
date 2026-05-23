@@ -1,0 +1,439 @@
+{
+  "page": {
+    "id": "3884",
+    "slug": "bradiarritmias-simulados",
+    "title": "Bradiarritmias Simulados",
+    "specialty_id": 1
+  },
+  "source_lesson_ids": {
+    "perguntas": "804",
+    "respostas": "805"
+  },
+  "counts": {
+    "perguntas": 10,
+    "respostas": 10
+  },
+  "questions": [
+    {
+      "number": 1,
+      "position": 1,
+      "stem": "Uma mulher de 71 anos é levada à Unidade de Pronto Atendimento por episódios recorrentes de síncope breve nos últimos 2 meses, geralmente ao caminhar dentro de casa. Relata sensação prévia de tontura e fraqueza súbita, sem dor torácica e sem palpitações sustentadas. História patológica pregressa: hipertensão arterial sistêmica e hipotireoidismo controlado. Em uso de losartana e levotiroxina. Nega uso de betabloqueadores, antiarrítmicos ou digoxina.\nAo exame físico, encontra-se lúcida, orientada, corada, hidratada, com perfusão periférica preservada. Sinais vitais: pressão arterial de 128 × 76 mmHg, frequência cardíaca de 44 bpm, frequência respiratória de 16 irpm, temperatura axilar de 36,5 °C, saturação de O₂ de 97% em ar ambiente. Ausculta cardíaca com ritmo irregular, sem sopros; pulmões sem ruídos acessórios.\nDurante monitorização, observa-se pausa sinusal de 6 segundos, com ausência transitória de ondas P, seguida de batimentos de escape juncional e posterior retorno do ritmo sinusal. O eletrocardiograma de 12 derivações, fora do episódio, mostra bradicardia sinusal, intervalo PR normal e QRS estreito.\nA conduta mais adequada para esse caso é:",
+      "options": {
+        "A": "dar alta com orientação, por se tratar de bradicardia sinusal fisiológica do envelhecimento.",
+        "B": "administrar atropina 1 mg intravenosa e iniciar dopamina em infusão contínua por 24 horas, independentemente da evolução clínica.",
+        "C": "monitorizar e indicar implante de marca-passo definitivo por disfunção do nó sinusal sintomática.",
+        "D": "anticoagular e encaminhar para ablação por suspeita de fibrilação atrial paroxística."
+      },
+      "correct": "C",
+      "answers": [
+        {
+          "text": "dar alta com orientação, por se tratar de bradicardia sinusal fisiológica do envelhecimento.",
+          "correct": false,
+          "feedback": "Errada. Não é bradicardia fisiológica do envelhecimento, pois há pausa prolongada documentada com síncope."
+        },
+        {
+          "text": "administrar atropina 1 mg intravenosa e iniciar dopamina em infusão contínua por 24 horas, independentemente da evolução clínica.",
+          "correct": false,
+          "feedback": "Errada. Atropina e drogas vasoativas podem servir como ponte em instabilidade, mas não substituem o tratamento definitivo na disfunção do nó sinusal sintomática."
+        },
+        {
+          "text": "monitorizar e indicar implante de marca-passo definitivo por disfunção do nó sinusal sintomática.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "anticoagular e encaminhar para ablação por suspeita de fibrilação atrial paroxística.",
+          "correct": false,
+          "feedback": "Errada. O caso não sugere fibrilação atrial paroxística; a arritmia documentada foi pausa sinusal."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Não é bradicardia fisiológica do envelhecimento, pois há pausa prolongada documentada com síncope.",
+        "B": "Errada. Atropina e drogas vasoativas podem servir como ponte em instabilidade, mas não substituem o tratamento definitivo na disfunção do nó sinusal sintomática.",
+        "C": null,
+        "D": "Errada. O caso não sugere fibrilação atrial paroxística; a arritmia documentada foi pausa sinusal."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro compatível com disfunção do nó sinusal sintomática:\n●Síncopes recorrentes associadas a bradicardia importante\n●Pausa sinusal de 6 segundos documentada na monitorização\n●Batimento de escape juncional após a pausa, confirmando falha transitória do nó sinusal\n\nPonto-chave da indicação:\n●Na disfunção do nó sinusal, a indicação de tratamento definitivo depende da correlação entre sintomas e bradiarritmia\n●Aqui não se trata de achado benigno do envelhecimento, porque há repercussão clínica clara, com síncope recorrente\n\nPEGA REVALIDA:\n❌ Em prova, síncope + pausa sinusal documentada não é achado benigno.\n❌ Na disfunção do nó sinusal, o que pesa para marca-passo é a presença de sintomas atribuíveis à bradiarritmia.\n\nResumo-chave:\n🟣Síncope + pausa sinusal documentada = pensar em disfunção do nó sinusal.\n🟣Disfunção do nó sinusal sintomática → indicação de marca-passo definitivo.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro compatível com disfunção do nó sinusal sintomática:</h4>\n<ul><li>Síncopes recorrentes associadas a bradicardia importante</li><li>Pausa sinusal de 6 segundos documentada na monitorização</li><li>Batimento de escape juncional após a pausa, confirmando falha transitória do nó sinusal</li></ul>\n<h4>Ponto-chave da indicação:</h4>\n<ul><li>Na disfunção do nó sinusal, a indicação de tratamento definitivo depende da correlação entre sintomas e bradiarritmia</li><li>Aqui não se trata de achado benigno do envelhecimento, porque há repercussão clínica clara, com síncope recorrente</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Em prova, síncope + pausa sinusal documentada não é achado benigno.</li><li>Na disfunção do nó sinusal, o que pesa para marca-passo é a presença de sintomas atribuíveis à bradiarritmia.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>Síncope + pausa sinusal documentada = pensar em disfunção do nó sinusal.</li><li>Disfunção do nó sinusal sintomática → indicação de marca-passo definitivo.</li></ul>"
+    },
+    {
+      "number": 2,
+      "position": 2,
+      "stem": "Um homem de 54 anos procura atendimento em Unidade Básica de Saúde por sensação de “coração lento” e cansaço aos esforços há 3 semanas. Nega síncope, dor torácica e dispneia em repouso. Refere início recente de colírio para glaucoma, usado duas vezes ao dia, sem outros medicamentos.\nAo exame, encontra-se em bom estado geral. Sinais vitais: pressão arterial de 118 × 72 mmHg, frequência cardíaca de 52 bpm, frequência respiratória de 18 irpm, temperatura axilar de 36,7 °C, saturação de O₂ de 98% em ar ambiente. Ausculta cardíaca com ritmo irregular, sem sopros.\nO eletrocardiograma mostra ondas P sinusais com prolongamento progressivo do intervalo PR até ocorrer uma onda P não conduzida, repetindo-se o padrão em ciclos, com QRS estreito.\nA conduta adequada consiste em:",
+      "options": {
+        "A": "suspender o colírio betabloqueador, orientar acompanhamento e solicitar avaliação ambulatorial, por tratar-se provavelmente de bloqueio atrioventricular nodal tipo Mobitz I.",
+        "B": "implantar marca-passo definitivo de urgência, por se tratar de bloqueio infranodal de alto risco.",
+        "C": "iniciar amiodarona para prevenir progressão do bloqueio e controlar sintomas.",
+        "D": "realizar cardioversão elétrica sincronizada por risco de instabilidade iminente."
+      },
+      "correct": "A",
+      "answers": [
+        {
+          "text": "suspender o colírio betabloqueador, orientar acompanhamento e solicitar avaliação ambulatorial, por tratar-se provavelmente de bloqueio atrioventricular nodal tipo Mobitz I.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "implantar marca-passo definitivo de urgência, por se tratar de bloqueio infranodal de alto risco.",
+          "correct": false,
+          "feedback": "Errada. Mobitz I com QRS estreito, provável origem nodal e causa reversível não é indicação de marca-passo definitivo de urgência."
+        },
+        {
+          "text": "iniciar amiodarona para prevenir progressão do bloqueio e controlar sintomas.",
+          "correct": false,
+          "feedback": "Errada. Amiodarona pode piorar bradicardia e distúrbios de condução."
+        },
+        {
+          "text": "realizar cardioversão elétrica sincronizada por risco de instabilidade iminente.",
+          "correct": false,
+          "feedback": "Errada. Cardioversão é usada em taquiarritmias instáveis, não em bloqueio AV com bradicardia estável."
+        }
+      ],
+      "distractor_feedback": {
+        "A": null,
+        "B": "Errada. Mobitz I com QRS estreito, provável origem nodal e causa reversível não é indicação de marca-passo definitivo de urgência.",
+        "C": "Errada. Amiodarona pode piorar bradicardia e distúrbios de condução.",
+        "D": "Errada. Cardioversão é usada em taquiarritmias instáveis, não em bloqueio AV com bradicardia estável."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro eletrocardiográfico clássico de bloqueio atrioventricular de 2º grau Mobitz I:\n●Prolongamento progressivo do intervalo PR\n●Queda de uma onda P não conduzida\n●Repetição cíclica do padrão, típico de Wenckebach\n\nPontos que reforçam o diagnóstico e a conduta:\n●QRS estreito sugere bloqueio nodal, e não infranodal\n●O enunciado traz uma causa reversível importante: colírio betabloqueador, que pode ter absorção sistêmica e causar bradicardia e distúrbio de condução\n●Sem síncope e sem instabilidade, a conduta mais adequada é retirar o fator precipitante e seguir com avaliação ambulatorial\n\nPEGA REVALIDA:\n❌ A prova gosta de esconder betabloqueador em forma de colírio como causa reversível de bradicardia.\n❌ Nem todo BAV pede marca-passo urgente: Mobitz I nodal, com QRS estreito e sem instabilidade, costuma ter curso mais benigno.\n\nResumo-chave:\n🟣PR vai aumentando e depois cai um QRS = Mobitz I.\n🟣QRS estreito sugere bloqueio nodal.\n🟣Sempre procurar e retirar causa reversível, como betabloqueador oftálmico.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro eletrocardiográfico clássico de bloqueio atrioventricular de 2º grau Mobitz I:</h4>\n<ul><li>Prolongamento progressivo do intervalo PR</li><li>Queda de uma onda P não conduzida</li><li>Repetição cíclica do padrão, típico de Wenckebach</li></ul>\n<h4>Pontos que reforçam o diagnóstico e a conduta:</h4>\n<ul><li>QRS estreito sugere bloqueio nodal, e não infranodal</li><li>O enunciado traz uma causa reversível importante: colírio betabloqueador, que pode ter absorção sistêmica e causar bradicardia e distúrbio de condução</li><li>Sem síncope e sem instabilidade, a conduta mais adequada é retirar o fator precipitante e seguir com avaliação ambulatorial</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>A prova gosta de esconder betabloqueador em forma de colírio como causa reversível de bradicardia.</li><li>Nem todo BAV pede marca-passo urgente: Mobitz I nodal, com QRS estreito e sem instabilidade, costuma ter curso mais benigno.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>PR vai aumentando e depois cai um QRS = Mobitz I.</li><li>QRS estreito sugere bloqueio nodal.</li><li>Sempre procurar e retirar causa reversível, como betabloqueador oftálmico.</li></ul>"
+    },
+    {
+      "number": 3,
+      "position": 3,
+      "stem": "Um paciente de 67 anos é atendido na emergência por episódio de pré-síncope enquanto aguardava consulta ambulatorial. Relata tontura intensa, sudorese fria e sensação de queda, com melhora ao deitar. Antecedentes: diabetes mellitus e infarto agudo do miocárdio há 2 anos. Em uso de AAS, estatina e metformina.\nAo exame físico: pálido, porém lúcido, sem déficit neurológico focal. Sinais vitais: pressão arterial de 102 × 64 mmHg, frequência cardíaca de 38 bpm, frequência respiratória de 20 irpm, temperatura axilar de 36,4 °C, saturação de O₂ de 95% em ar ambiente, enchimento capilar de 3 s. O eletrocardiograma evidencia intervalo PR constante, com ondas P regulares e falhas súbitas de condução atrioventricular, com QRS alargado nos batimentos conduzidos.\nA conduta mais adequada é:",
+      "options": {
+        "A": "administrar atropina 1 mg intravenosa e apenas observar resposta, pois a atropina é eficaz na maioria dos bloqueios atrioventriculares.",
+        "B": "monitorizar em unidade, preparar imediatamente marca-passo transcutâneo e considerar marca-passo transvenoso temporário conforme resposta clínica.",
+        "C": "iniciar verapamil para estabilizar a condução atrioventricular e reduzir sintomas vagais.",
+        "D": "conceder alta após hidratação venosa, por ser quadro compatível com hipotensão postural isolada."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "administrar atropina 1 mg intravenosa e apenas observar resposta, pois a atropina é eficaz na maioria dos bloqueios atrioventriculares.",
+          "correct": false,
+          "feedback": "Errada. Atropina pode até ser tentada em alguns cenários, mas costuma ter eficácia limitada em bloqueios infranodais e não deve ser a única medida."
+        },
+        {
+          "text": "monitorizar em unidade, preparar imediatamente marca-passo transcutâneo e considerar marca-passo transvenoso temporário conforme resposta clínica.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "iniciar verapamil para estabilizar a condução atrioventricular e reduzir sintomas vagais.",
+          "correct": false,
+          "feedback": "Errada. Verapamil piora a condução AV e pode agravar a bradicardia."
+        },
+        {
+          "text": "conceder alta após hidratação venosa, por ser quadro compatível com hipotensão postural isolada.",
+          "correct": false,
+          "feedback": "Errada. O ECG documenta distúrbio de condução de alto risco, não hipotensão postural isolada."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Atropina pode até ser tentada em alguns cenários, mas costuma ter eficácia limitada em bloqueios infranodais e não deve ser a única medida.",
+        "B": null,
+        "C": "Errada. Verapamil piora a condução AV e pode agravar a bradicardia.",
+        "D": "Errada. O ECG documenta distúrbio de condução de alto risco, não hipotensão postural isolada."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro compatível com bloqueio atrioventricular de 2º grau Mobitz II:\n●Intervalo PR constante\n●Falhas súbitas de condução AV\n●QRS alargado, sugerindo acometimento infranodal\n\nPontos de gravidade:\n●Mobitz II tem maior risco de progressão para bloqueio AV total\n●O paciente está sintomático, com pré-síncope, bradicardia importante e sinais de hipoperfusão leve\n●Na fase aguda, a prioridade é monitorização e preparo para estimulação temporária\n\nPEGA REVALIDA:\n❌ PR fixo + queda súbita do QRS não é Wenckebach benigno.\n❌ QRS largo no contexto de BAV sugere lesão infranodal e maior risco de bloqueio completo.\n\nResumo-chave:\n🟣PR fixo + queda súbita do QRS = pensar em Mobitz II.\n🟣Mobitz II sintomático → pacing temporário na fase aguda.\n🟣Bloqueio infranodal é cenário de maior gravidade.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro compatível com bloqueio atrioventricular de 2º grau Mobitz II:</h4>\n<ul><li>Intervalo PR constante</li><li>Falhas súbitas de condução AV</li><li>QRS alargado, sugerindo acometimento infranodal</li></ul>\n<h4>Pontos de gravidade:</h4>\n<ul><li>Mobitz II tem maior risco de progressão para bloqueio AV total</li><li>O paciente está sintomático, com pré-síncope, bradicardia importante e sinais de hipoperfusão leve</li><li>Na fase aguda, a prioridade é monitorização e preparo para estimulação temporária</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>PR fixo + queda súbita do QRS não é Wenckebach benigno.</li><li>QRS largo no contexto de BAV sugere lesão infranodal e maior risco de bloqueio completo.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>PR fixo + queda súbita do QRS = pensar em Mobitz II.</li><li>Mobitz II sintomático → pacing temporário na fase aguda.</li><li>Bloqueio infranodal é cenário de maior gravidade.</li></ul>"
+    },
+    {
+      "number": 4,
+      "position": 4,
+      "stem": "Homem de 59 anos procura Unidade de Pronto Atendimento com dor epigástrica em aperto há 2 horas, associada a náuseas e sudorese. Nega febre e tosse. É tabagista e hipertenso sem acompanhamento regular.\nAo exame físico, apresenta pele fria e pegajosa. Sinais vitais: pressão arterial de 88 × 56 mmHg, frequência cardíaca de 34 bpm, frequência respiratória de 22 irpm, temperatura axilar de 36,2 °C, saturação de O₂ de 94% em ar ambiente, enchimento capilar de 4 s. Ausculta cardíaca com bulhas hipofonéticas, sem sopros; pulmões sem estertores.\nO eletrocardiograma mostra supradesnivelamento do segmento ST em derivações inferiores e dissociação átrio-ventricular, com ondas P regulares e QRS estreito em ritmo de escape a 34 bpm.\nA conduta inicial mais adequada é:",
+      "options": {
+        "A": "iniciar betabloqueador venoso para reduzir demanda miocárdica e aguardar avaliação da cardiologia.",
+        "B": "administrar atropina 1 mg intravenosa, iniciar medidas imediatas de reperfusão e preparar marca-passo transcutâneo se houver refratariedade ou instabilidade persistente.",
+        "C": "administrar amiodarona para evitar arritmias ventriculares e suspender qualquer tentativa de reperfusão.",
+        "D": "indicar cardioversão elétrica imediata por se tratar de arritmia instável."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "iniciar betabloqueador venoso para reduzir demanda miocárdica e aguardar avaliação da cardiologia.",
+          "correct": false,
+          "feedback": "Errada. Betabloqueador venoso em paciente com IAM, bradicardia importante e hipotensão pode agravar o quadro."
+        },
+        {
+          "text": "administrar atropina 1 mg intravenosa, iniciar medidas imediatas de reperfusão e preparar marca-passo transcutâneo se houver refratariedade ou instabilidade persistente.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "administrar amiodarona para evitar arritmias ventriculares e suspender qualquer tentativa de reperfusão.",
+          "correct": false,
+          "feedback": "Errada. Amiodarona não resolve o problema principal, e suspender reperfusão seria erro grave."
+        },
+        {
+          "text": "indicar cardioversão elétrica imediata por se tratar de arritmia instável.",
+          "correct": false,
+          "feedback": "Errada. Cardioversão é indicada para taquiarritmias instáveis, não para BAV total com bradicardia."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Betabloqueador venoso em paciente com IAM, bradicardia importante e hipotensão pode agravar o quadro.",
+        "B": null,
+        "C": "Errada. Amiodarona não resolve o problema principal, e suspender reperfusão seria erro grave.",
+        "D": "Errada. Cardioversão é indicada para taquiarritmias instáveis, não para BAV total com bradicardia."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro clássico de IAM inferior complicado por bloqueio atrioventricular total:\n●Supradesnivelamento de ST em parede inferior\n●Bradicardia importante com dissociação AV\n●QRS estreito em ritmo de escape, sugerindo bloqueio mais alto, frequentemente nodal\n\nConduta correta:\n●Em IAM inferior, a bradicardia/BAV pode responder inicialmente à atropina\n●Mas o ponto central da questão é que o doente precisa de reperfusão imediata\n●Se a instabilidade persistir ou não houver resposta adequada, deve-se preparar pacing temporário\n\nPEGA REVALIDA:\n❌ Em síndrome coronariana aguda com bradicardia importante, nunca esquecer que a prioridade é reperfusão.\n❌ O problema não é “só a arritmia”: tratar a isquemia é parte central da conduta.\n\nResumo-chave:\n🟣IAM inferior pode cursar com bradicardia e BAV.\n🟣Atropina pode ser útil inicialmente.\n🟣Persistindo instabilidade: pacing temporário.\n🟣Reperfusão é prioridade.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro clássico de IAM inferior complicado por bloqueio atrioventricular total:</h4>\n<ul><li>Supradesnivelamento de ST em parede inferior</li><li>Bradicardia importante com dissociação AV</li><li>QRS estreito em ritmo de escape, sugerindo bloqueio mais alto, frequentemente nodal</li></ul>\n<h4>Conduta correta:</h4>\n<ul><li>Em IAM inferior, a bradicardia/BAV pode responder inicialmente à atropina</li><li>Mas o ponto central da questão é que o doente precisa de reperfusão imediata</li><li>Se a instabilidade persistir ou não houver resposta adequada, deve-se preparar pacing temporário</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Em síndrome coronariana aguda com bradicardia importante, nunca esquecer que a prioridade é reperfusão.</li><li>O problema não é “só a arritmia”: tratar a isquemia é parte central da conduta.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>IAM inferior pode cursar com bradicardia e BAV.</li><li>Atropina pode ser útil inicialmente.</li><li>Persistindo instabilidade: pacing temporário.</li><li>Reperfusão é prioridade.</li></ul>"
+    },
+    {
+      "number": 5,
+      "position": 5,
+      "stem": "Um homem de 46 anos com doença renal crônica em hemodiálise perde sessão de diálise e procura emergência por fraqueza progressiva, sensação de peso nos membros e náuseas. Nega dor torácica.\nAo exame físico, está sonolento, porém responsivo. Sinais vitais: pressão arterial de 110 × 68 mmHg, frequência cardíaca de 40 bpm, frequência respiratória de 18 irpm, temperatura axilar de 36,6 °C, saturação de O₂ de 96% em ar ambiente.\nExames laboratoriais: potássio sérico de 7,4 mEq/L, bicarbonato de 15 mEq/L, creatinina de 8,9 mg/dL. O eletrocardiograma mostra ondas T apiculadas, alargamento do QRS e desaparecimento progressivo das ondas P, com bradicardia importante.\nA conduta imediata mais apropriada é:",
+      "options": {
+        "A": "administrar atropina 1 mg intravenosa e observar, pois a bradicardia é o principal problema.",
+        "B": "administrar cálcio intravenoso, insulina com glicose e demais medidas de redução do potássio, com preparo para diálise urgente.",
+        "C": "iniciar amiodarona e betabloqueador para prevenir taquiarritmias.",
+        "D": "indicar implante de marca-passo definitivo ainda na sala de emergência."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "administrar atropina 1 mg intravenosa e observar, pois a bradicardia é o principal problema.",
+          "correct": false,
+          "feedback": "Errada. O foco inicial não é atropina; a bradicardia aqui é consequência da hipercalemia grave."
+        },
+        {
+          "text": "administrar cálcio intravenoso, insulina com glicose e demais medidas de redução do potássio, com preparo para diálise urgente.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "iniciar amiodarona e betabloqueador para prevenir taquiarritmias.",
+          "correct": false,
+          "feedback": "Errada. Amiodarona e betabloqueador não tratam a causa e podem piorar a instabilidade elétrica."
+        },
+        {
+          "text": "indicar implante de marca-passo definitivo ainda na sala de emergência.",
+          "correct": false,
+          "feedback": "Errada. Marca-passo definitivo não é a conduta inicial em bradicardia por distúrbio metabólico reversível."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. O foco inicial não é atropina; a bradicardia aqui é consequência da hipercalemia grave.",
+        "B": null,
+        "C": "Errada. Amiodarona e betabloqueador não tratam a causa e podem piorar a instabilidade elétrica.",
+        "D": "Errada. Marca-passo definitivo não é a conduta inicial em bradicardia por distúrbio metabólico reversível."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro clássico de hipercalemia grave com repercussão eletrocardiográfica:\n●Paciente dialítico que perdeu sessão\n●Potássio sérico muito elevado\n●ECG com ondas T apiculadas, alargamento do QRS, desaparecimento das ondas P e bradicardia\n\nPrioridades do tratamento:\n●Na presença de alteração eletrocardiográfica, a primeira medida é cálcio intravenoso para estabilizar a membrana miocárdica\n●Depois, devem ser feitas medidas para deslocar o potássio para o intracelular, como insulina com glicose\n●Em paciente dialítico com hipercalemia grave, a medida definitiva é diálise urgente\n\nPEGA REVALIDA:\n❌ Cálcio não reduz o potássio sérico; ele protege o miocárdio enquanto você corrige a hipercalemia.\n❌ Em prova, dialítico + perda de sessão + ECG alterado = tratar potássio imediatamente.\n\nResumo-chave:\n🟣Hipercalemia + ECG alterado = cálcio IV imediato.\n🟣Depois: insulina + glicose e medidas de remoção do potássio.\n🟣Paciente dialítico grave → diálise urgente.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro clássico de hipercalemia grave com repercussão eletrocardiográfica:</h4>\n<ul><li>Paciente dialítico que perdeu sessão</li><li>Potássio sérico muito elevado</li><li>ECG com ondas T apiculadas, alargamento do QRS, desaparecimento das ondas P e bradicardia</li></ul>\n<h4>Prioridades do tratamento:</h4>\n<ul><li>Na presença de alteração eletrocardiográfica, a primeira medida é cálcio intravenoso para estabilizar a membrana miocárdica</li><li>Depois, devem ser feitas medidas para deslocar o potássio para o intracelular, como insulina com glicose</li><li>Em paciente dialítico com hipercalemia grave, a medida definitiva é diálise urgente</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Cálcio não reduz o potássio sérico; ele protege o miocárdio enquanto você corrige a hipercalemia.</li><li>Em prova, dialítico + perda de sessão + ECG alterado = tratar potássio imediatamente.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>Hipercalemia + ECG alterado = cálcio IV imediato.</li><li>Depois: insulina + glicose e medidas de remoção do potássio.</li><li>Paciente dialítico grave → diálise urgente.</li></ul>"
+    },
+    {
+      "number": 6,
+      "position": 6,
+      "stem": "Uma mulher de 32 anos é trazida ao pronto-socorro após ingestão intencional de grande quantidade de comprimidos pertencentes ao pai, sem saber informar o nome. Chega sonolenta, com fala lenta.\nAo exame: extremidades frias, pupilas isocóricas e reativas. Sinais vitais: pressão arterial de 78 × 44 mmHg, frequência cardíaca de 36 bpm, frequência respiratória de 14 irpm, temperatura axilar de 36,1 °C, saturação de O₂ de 98% em ar ambiente, enchimento capilar de 5 s. Glicemia capilar de 58 mg/dL.\nO eletrocardiograma evidencia bradicardia sinusal e intervalo PR prolongado, sem sinais de isquemia aguda.\nA conduta inicial mais adequada é:",
+      "options": {
+        "A": "administrar atropina 1 mg intravenosa como única medida e aguardar melhora espontânea.",
+        "B": "iniciar reposição volêmica, corrigir a hipoglicemia e administrar glucagon na suspeita de intoxicação por betabloqueador, com suporte vasopressor conforme necessidade.",
+        "C": "administrar adenosina para resetar o nó atrioventricular e reverter a bradicardia.",
+        "D": "indicar cardioversão elétrica sincronizada, pois há instabilidade hemodinâmica."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "administrar atropina 1 mg intravenosa como única medida e aguardar melhora espontânea.",
+          "correct": false,
+          "feedback": "Errada. Atropina isoladamente costuma ser insuficiente em intoxicação por betabloqueador grave."
+        },
+        {
+          "text": "iniciar reposição volêmica, corrigir a hipoglicemia e administrar glucagon na suspeita de intoxicação por betabloqueador, com suporte vasopressor conforme necessidade.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "administrar adenosina para resetar o nó atrioventricular e reverter a bradicardia.",
+          "correct": false,
+          "feedback": "Errada. Adenosina não trata esse mecanismo e pode piorar a bradicardia."
+        },
+        {
+          "text": "indicar cardioversão elétrica sincronizada, pois há instabilidade hemodinâmica.",
+          "correct": false,
+          "feedback": "Errada. Cardioversão é para taquiarritmia instável, não para bradicardia por intoxicação medicamentosa."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Atropina isoladamente costuma ser insuficiente em intoxicação por betabloqueador grave.",
+        "B": null,
+        "C": "Errada. Adenosina não trata esse mecanismo e pode piorar a bradicardia.",
+        "D": "Errada. Cardioversão é para taquiarritmia instável, não para bradicardia por intoxicação medicamentosa."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro sugestivo de intoxicação por betabloqueador:\n●Bradicardia e hipotensão importantes após ingestão medicamentosa\n●Rebaixamento do nível de consciência\n●Hipoglicemia, achado clássico em intoxicação por betabloqueador, especialmente em overdose\n\nConduta inicial adequada:\n●Suporte hemodinâmico imediato, com reposição volêmica e correção da hipoglicemia\n●Glucagon deve ser lembrado como medida importante diante da suspeita de intoxicação por betabloqueador\n●Se houver hipotensão persistente, suporte vasopressor é necessário\n●Em casos graves e refratários, pode ser necessária terapia com insulina em altas doses euglicêmica, mas a melhor alternativa entre as opções continua sendo a letra B\n\nPEGA REVALIDA:\n❌ Hipoglicemia + bradicardia + hipotensão após overdose aponta fortemente para betabloqueador.\n❌ Glucagon é clássico de prova, mas não substitui suporte intensivo e vasopressor quando necessário.\n\nResumo-chave:\n🟣Suspeita de intoxicação por betabloqueador = pensar em bradicardia, hipotensão e hipoglicemia.\n🟣Conduta inicial: ABC, volume, glicose, glucagon e vasopressor se necessário.\n🟣Em casos refratários, considerar terapias avançadas como insulina em altas doses.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro sugestivo de intoxicação por betabloqueador:</h4>\n<ul><li>Bradicardia e hipotensão importantes após ingestão medicamentosa</li><li>Rebaixamento do nível de consciência</li><li>Hipoglicemia, achado clássico em intoxicação por betabloqueador, especialmente em overdose</li></ul>\n<h4>Conduta inicial adequada:</h4>\n<ul><li>Suporte hemodinâmico imediato, com reposição volêmica e correção da hipoglicemia</li><li>Glucagon deve ser lembrado como medida importante diante da suspeita de intoxicação por betabloqueador</li><li>Se houver hipotensão persistente, suporte vasopressor é necessário</li><li>Em casos graves e refratários, pode ser necessária terapia com insulina em altas doses euglicêmica, mas a melhor alternativa entre as opções continua sendo a letra B</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Hipoglicemia + bradicardia + hipotensão após overdose aponta fortemente para betabloqueador.</li><li>Glucagon é clássico de prova, mas não substitui suporte intensivo e vasopressor quando necessário.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>Suspeita de intoxicação por betabloqueador = pensar em bradicardia, hipotensão e hipoglicemia.</li><li>Conduta inicial: ABC, volume, glicose, glucagon e vasopressor se necessário.</li><li>Em casos refratários, considerar terapias avançadas como insulina em altas doses.</li></ul>"
+    },
+    {
+      "number": 7,
+      "position": 7,
+      "stem": "Homem de 57 anos, trabalhador rural, natural de região endêmica para doença de Chagas, procura atendimento por episódios de tontura e palpitações intermitentes há 6 meses, com piora nas últimas semanas. Refere cansaço aos esforços e dois episódios de quase desmaio ao levantar-se rapidamente. Nega uso de medicamentos.\nAo exame físico, apresenta-se lúcido, orientado, sem desconforto respiratório. Sinais vitais: pressão arterial de 116 × 70 mmHg, frequência cardíaca de 42 bpm, frequência respiratória de 18 irpm, temperatura axilar de 36,8 °C, saturação de O₂ de 97% em ar ambiente. Ausculta cardíaca com ritmo regular, sem sopros; sem edema.\nO eletrocardiograma evidencia bloqueio de ramo direito associado a hemibloqueio anterior esquerdo e episódios intermitentes de bloqueio atrioventricular avançado durante monitorização.\nA conduta mais adequada é:",
+      "options": {
+        "A": "tranquilizar e orientar retorno ambulatorial, pois bradicardia isolada não indica intervenção.",
+        "B": "iniciar beta-agonista inalatório em uso contínuo e reavaliar em 30 dias.",
+        "C": "indicar avaliação para implante de marca-passo definitivo, considerando bloqueio atrioventricular avançado sintomático e doença estrutural provável.",
+        "D": "prescrever diurético e restringir sal para tratamento da causa de base."
+      },
+      "correct": "C",
+      "answers": [
+        {
+          "text": "tranquilizar e orientar retorno ambulatorial, pois bradicardia isolada não indica intervenção.",
+          "correct": false,
+          "feedback": "Errada. Não é bradicardia isolada benigna; há sintomas e distúrbio avançado de condução documentado."
+        },
+        {
+          "text": "iniciar beta-agonista inalatório em uso contínuo e reavaliar em 30 dias.",
+          "correct": false,
+          "feedback": "Errada. Beta-agonista inalatório não trata bloqueio AV avançado."
+        },
+        {
+          "text": "indicar avaliação para implante de marca-passo definitivo, considerando bloqueio atrioventricular avançado sintomático e doença estrutural provável.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "prescrever diurético e restringir sal para tratamento da causa de base.",
+          "correct": false,
+          "feedback": "Errada. Diurético e restrição de sal não tratam a alteração principal do caso."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Não é bradicardia isolada benigna; há sintomas e distúrbio avançado de condução documentado.",
+        "B": "Errada. Beta-agonista inalatório não trata bloqueio AV avançado.",
+        "C": null,
+        "D": "Errada. Diurético e restrição de sal não tratam a alteração principal do caso."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro de alto risco para doença do sistema de condução:\n●Paciente sintomático, com tontura, quase síncope e bradicardia\n●ECG com bloqueio bifascicular: bloqueio de ramo direito + hemibloqueio anterior esquerdo\n●Monitorização mostrando bloqueio atrioventricular avançado intermitente\n\nPor que a conduta é marca-passo definitivo:\n●Bloqueio AV avançado sintomático tem risco de progressão para bloqueio completo\n●Na ausência de causa reversível evidente, a indicação é de tratamento definitivo com marca-passo\n●O contexto epidemiológico reforça suspeita de cardiopatia chagásica com acometimento do sistema de condução\n\nPEGA REVALIDA:\n❌ Bloqueio bifascicular + sintomas + episódios de BAV avançado não é caso para tranquilizar.\n❌ “Intermitente” não significa benigno em distúrbio de condução.\n\nResumo-chave:\n🟣Bloqueio AV avançado sintomático → marca-passo definitivo.\n🟣Bifascicular em paciente sintomático acende alerta para doença do sistema de condução.\n🟣Área endêmica de Chagas reforça suspeita etiológica.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro de alto risco para doença do sistema de condução:</h4>\n<ul><li>Paciente sintomático, com tontura, quase síncope e bradicardia</li><li>ECG com bloqueio bifascicular: bloqueio de ramo direito + hemibloqueio anterior esquerdo</li><li>Monitorização mostrando bloqueio atrioventricular avançado intermitente</li></ul>\n<h4>Por que a conduta é marca-passo definitivo:</h4>\n<ul><li>Bloqueio AV avançado sintomático tem risco de progressão para bloqueio completo</li><li>Na ausência de causa reversível evidente, a indicação é de tratamento definitivo com marca-passo</li><li>O contexto epidemiológico reforça suspeita de cardiopatia chagásica com acometimento do sistema de condução</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Bloqueio bifascicular + sintomas + episódios de BAV avançado não é caso para tranquilizar.</li><li>“Intermitente” não significa benigno em distúrbio de condução.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>Bloqueio AV avançado sintomático → marca-passo definitivo.</li><li>Bifascicular em paciente sintomático acende alerta para doença do sistema de condução.</li><li>Área endêmica de Chagas reforça suspeita etiológica.</li></ul>"
+    },
+    {
+      "number": 8,
+      "position": 8,
+      "stem": "Uma mulher de 68 anos chega à emergência por cansaço progressivo e falta de ar aos esforços há 1 semana. Refere sensação de batimentos no pescoço e leve desconforto torácico sem irradiação. História: insuficiência cardíaca com fração de ejeção preservada e uso recente de digoxina, reiniciada por conta própria após orientação antiga.\nAo exame físico, encontra-se discretamente taquipneica, com turgência jugular leve. Sinais vitais: pressão arterial de 104 × 66 mmHg, frequência cardíaca de 50 bpm, frequência respiratória de 22 irpm, temperatura axilar de 36,9 °C, saturação de O₂ de 94% em ar ambiente.\nO eletrocardiograma mostra atividade atrial regular em dente de serra, a aproximadamente 300 bpm, com condução atrioventricular variável e resposta ventricular em torno de 50 bpm.\nA conduta inicial mais adequada é:",
+      "options": {
+        "A": "diagnosticar bradicardia sinusal e administrar atropina 1 mg intravenosa.",
+        "B": "reconhecer flutter atrial com bloqueio atrioventricular e resposta ventricular lenta, suspender digoxina, monitorizar e conduzir a arritmia conforme estabilidade clínica.",
+        "C": "indicar marca-passo definitivo por frequência cardíaca baixa persistente.",
+        "D": "administrar adenosina para interromper definitivamente o flutter atrial."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "diagnosticar bradicardia sinusal e administrar atropina 1 mg intravenosa.",
+          "correct": false,
+          "feedback": "Errada. O traçado não é de bradicardia sinusal; é flutter atrial com condução AV reduzida."
+        },
+        {
+          "text": "reconhecer flutter atrial com bloqueio atrioventricular e resposta ventricular lenta, suspender digoxina, monitorizar e conduzir a arritmia conforme estabilidade clínica.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "indicar marca-passo definitivo por frequência cardíaca baixa persistente.",
+          "correct": false,
+          "feedback": "Errada. Marca-passo definitivo não é a conduta inicial diante de causa farmacológica provável e arritmia atrial identificada."
+        },
+        {
+          "text": "administrar adenosina para interromper definitivamente o flutter atrial.",
+          "correct": false,
+          "feedback": "Errada. Adenosina pode aumentar transitoriamente o bloqueio AV e ajudar no diagnóstico, mas não interrompe definitivamente o flutter atrial."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. O traçado não é de bradicardia sinusal; é flutter atrial com condução AV reduzida.",
+        "B": null,
+        "C": "Errada. Marca-passo definitivo não é a conduta inicial diante de causa farmacológica provável e arritmia atrial identificada.",
+        "D": "Errada. Adenosina pode aumentar transitoriamente o bloqueio AV e ajudar no diagnóstico, mas não interrompe definitivamente o flutter atrial."
+      },
+      "explanation_text": "🟪 Comentário:\nO ECG não mostra bradicardia sinusal:\n●Há atividade atrial regular em dente de serra, em torno de 300 bpm\n●Esse padrão é típico de flutter atrial\n●A resposta ventricular está lenta porque há redução da condução pelo nó AV\n\nRelação com a digoxina:\n●A digoxina aumenta a refratariedade nodal e pode favorecer resposta ventricular lenta e bloqueio AV nesse contexto\n●Como houve reintrodução por conta própria, deve-se pensar também em efeito excessivo da medicação\n●A conduta inicial correta é suspender a digoxina, monitorizar e conduzir a arritmia conforme a estabilidade clínica\n\nAjuste fino importante para prova e prática:\n●Além de suspender a digoxina, vale investigar possível toxicidade medicamentosa, com avaliação de função renal, eletrólitos e nível sérico quando disponível\n●Depois da estabilização inicial, o flutter ainda exigirá avaliação de risco tromboembólico e definição de estratégia de controle de ritmo ou frequência\n\nPEGA REVALIDA:\n❌ Frequência ventricular baixa nem sempre significa ritmo sinusal lento.\n❌ Digoxina pode mascarar o caso, deixando a resposta ventricular lenta em flutter/FA.\n\nResumo-chave:\n🟣Dente de serra + frequência atrial ~300 = flutter atrial.\n🟣Digoxina pode favorecer resposta ventricular lenta.\n🟣Primeiro passo: suspender o fármaco suspeito e monitorizar.\n🟣Depois, avaliar toxicidade e risco tromboembólico.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>O ECG não mostra bradicardia sinusal:</h4>\n<ul><li>Há atividade atrial regular em dente de serra, em torno de 300 bpm</li><li>Esse padrão é típico de flutter atrial</li><li>A resposta ventricular está lenta porque há redução da condução pelo nó AV</li></ul>\n<h4>Relação com a digoxina:</h4>\n<ul><li>A digoxina aumenta a refratariedade nodal e pode favorecer resposta ventricular lenta e bloqueio AV nesse contexto</li><li>Como houve reintrodução por conta própria, deve-se pensar também em efeito excessivo da medicação</li><li>A conduta inicial correta é suspender a digoxina, monitorizar e conduzir a arritmia conforme a estabilidade clínica</li></ul>\n<h4>Ajuste fino importante para prova e prática:</h4>\n<ul><li>Além de suspender a digoxina, vale investigar possível toxicidade medicamentosa, com avaliação de função renal, eletrólitos e nível sérico quando disponível</li><li>Depois da estabilização inicial, o flutter ainda exigirá avaliação de risco tromboembólico e definição de estratégia de controle de ritmo ou frequência</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Frequência ventricular baixa nem sempre significa ritmo sinusal lento.</li><li>Digoxina pode mascarar o caso, deixando a resposta ventricular lenta em flutter/FA.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>Dente de serra + frequência atrial ~300 = flutter atrial.</li><li>Digoxina pode favorecer resposta ventricular lenta.</li><li>Primeiro passo: suspender o fármaco suspeito e monitorizar.</li><li>Depois, avaliar toxicidade e risco tromboembólico.</li></ul>"
+    },
+    {
+      "number": 9,
+      "position": 9,
+      "stem": "Um homem de 63 anos encontra-se em recuperação pós-operatória imediata de colecistectomia laparoscópica. Durante mobilização no leito, apresenta náusea intensa, sudorese e queda da frequência cardíaca. A equipe percebe palidez e relata que ele quase desmaiou.\nAo exame, está sonolento, mas desperta ao chamado. Sinais vitais: pressão arterial de 92 × 58 mmHg, frequência cardíaca de 32 bpm, frequência respiratória de 18 irpm, temperatura axilar de 36,0 °C, saturação de O₂ de 96% em ar ambiente, enchimento capilar de 3 s.\nO monitor mostra bradicardia sinusal, com onda P presente e QRS estreito, sem dissociação atrioventricular evidente, e o evento ocorre logo após estímulo vagal.\nA conduta imediata mais adequada é:",
+      "options": {
+        "A": "estimular tosse e oferecer água por via oral, pois é evento benigno e autolimitado.",
+        "B": "monitorizar, garantir via aérea e acesso venoso, tratar o fator precipitante e administrar atropina 1 mg intravenosa se mantiver instabilidade.",
+        "C": "indicar cardioversão elétrica imediata por instabilidade hemodinâmica.",
+        "D": "implantar marca-passo definitivo ainda no centro cirúrgico, independentemente da evolução."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "estimular tosse e oferecer água por via oral, pois é evento benigno e autolimitado.",
+          "correct": false,
+          "feedback": "Errada. Mesmo sendo reflexo vagal, há repercussão hemodinâmica e a situação exige abordagem ativa."
+        },
+        {
+          "text": "monitorizar, garantir via aérea e acesso venoso, tratar o fator precipitante e administrar atropina 1 mg intravenosa se mantiver instabilidade.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "indicar cardioversão elétrica imediata por instabilidade hemodinâmica.",
+          "correct": false,
+          "feedback": "Errada. Cardioversão é indicada para taquiarritmia instável, não para bradicardia sinusal vagal."
+        },
+        {
+          "text": "implantar marca-passo definitivo ainda no centro cirúrgico, independentemente da evolução.",
+          "correct": false,
+          "feedback": "Errada. Marca-passo definitivo não é conduta de um episódio reflexo agudo e potencialmente reversível."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Mesmo sendo reflexo vagal, há repercussão hemodinâmica e a situação exige abordagem ativa.",
+        "B": null,
+        "C": "Errada. Cardioversão é indicada para taquiarritmia instável, não para bradicardia sinusal vagal.",
+        "D": "Errada. Marca-passo definitivo não é conduta de um episódio reflexo agudo e potencialmente reversível."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro compatível com bradicardia sinusal vagal/reflexa no pós-operatório:\n●Evento desencadeado por mobilização, com náusea, sudorese, palidez e quase síncope\n●Monitor mostrando onda P presente e QRS estreito\n●Ausência de dissociação AV, favorecendo origem sinusal\n\nConduta correta:\n●A abordagem inicial é suporte, monitorização e tratamento do fator precipitante\n●Se a instabilidade persistir, a atropina é a medicação indicada\n●Não há, nesse cenário, indicação imediata de cardioversão nem de marca-passo definitivo\n\nPEGA REVALIDA:\n❌ Evento vagal pode ser transitório, mas instabilidade hemodinâmica não deve ser minimizada.\n❌ Pós-operatório + náusea + sudorese + bradicardia é pegadinha clássica de reflexo vagal.\n\nResumo-chave:\n🟣Pós-operatório + náusea + sudorese + bradicardia sinusal = pensar em estímulo vagal.\n🟣Conduta: suporte + tratar gatilho + atropina se mantiver instabilidade.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro compatível com bradicardia sinusal vagal/reflexa no pós-operatório:</h4>\n<ul><li>Evento desencadeado por mobilização, com náusea, sudorese, palidez e quase síncope</li><li>Monitor mostrando onda P presente e QRS estreito</li><li>Ausência de dissociação AV, favorecendo origem sinusal</li></ul>\n<h4>Conduta correta:</h4>\n<ul><li>A abordagem inicial é suporte, monitorização e tratamento do fator precipitante</li><li>Se a instabilidade persistir, a atropina é a medicação indicada</li><li>Não há, nesse cenário, indicação imediata de cardioversão nem de marca-passo definitivo</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Evento vagal pode ser transitório, mas instabilidade hemodinâmica não deve ser minimizada.</li><li>Pós-operatório + náusea + sudorese + bradicardia é pegadinha clássica de reflexo vagal.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>Pós-operatório + náusea + sudorese + bradicardia sinusal = pensar em estímulo vagal.</li><li>Conduta: suporte + tratar gatilho + atropina se mantiver instabilidade.</li></ul>"
+    },
+    {
+      "number": 10,
+      "position": 10,
+      "stem": "Um homem de 70 anos chega ao pronto-socorro com história de síncope em casa há 1 hora. A família relata queda sem sinais de convulsão, com recuperação da consciência em poucos minutos, mas ele permanece muito fraco. Antecedentes: doença arterial coronariana. Em uso de carvedilol e amiodarona, ambos iniciados há 2 semanas após internação por arritmia.\nAo exame físico, encontra-se confuso e sudorético. Sinais vitais: pressão arterial de 76 × 40 mmHg, frequência cardíaca de 28 bpm, frequência respiratória de 24 irpm, temperatura axilar de 36,3 °C, saturação de O₂ de 93% em ar ambiente, enchimento capilar de 5 s.\nO eletrocardiograma evidencia bloqueio atrioventricular total, com QRS largo em ritmo de escape ventricular e sinais de hipoperfusão.\nA conduta inicial mais adequada é:",
+      "options": {
+        "A": "suspender os medicamentos e aguardar reversão espontânea, sem necessidade de suporte.",
+        "B": "iniciar suporte imediato, administrar atropina sem retardar marca-passo transcutâneo e preparar marca-passo transvenoso temporário se não houver resposta adequada.",
+        "C": "administrar adenosina para restabelecer condução atrioventricular.",
+        "D": "indicar alta após melhora da pressão com hidratação venosa, pois a causa é medicamentosa e autolimitada."
+      },
+      "correct": "B",
+      "answers": [
+        {
+          "text": "suspender os medicamentos e aguardar reversão espontânea, sem necessidade de suporte.",
+          "correct": false,
+          "feedback": "Errada. Mesmo que haja causa medicamentosa provável, o paciente está instável e precisa de suporte imediato."
+        },
+        {
+          "text": "iniciar suporte imediato, administrar atropina sem retardar marca-passo transcutâneo e preparar marca-passo transvenoso temporário se não houver resposta adequada.",
+          "correct": true,
+          "feedback": ""
+        },
+        {
+          "text": "administrar adenosina para restabelecer condução atrioventricular.",
+          "correct": false,
+          "feedback": "Errada. Adenosina não restabelece condução AV em BAV total e pode agravar o quadro."
+        },
+        {
+          "text": "indicar alta após melhora da pressão com hidratação venosa, pois a causa é medicamentosa e autolimitada.",
+          "correct": false,
+          "feedback": "Errada. Não há qualquer possibilidade de alta em um paciente com BAV total, QRS largo e choque."
+        }
+      ],
+      "distractor_feedback": {
+        "A": "Errada. Mesmo que haja causa medicamentosa provável, o paciente está instável e precisa de suporte imediato.",
+        "B": null,
+        "C": "Errada. Adenosina não restabelece condução AV em BAV total e pode agravar o quadro.",
+        "D": "Errada. Não há qualquer possibilidade de alta em um paciente com BAV total, QRS largo e choque."
+      },
+      "explanation_text": "🟪 Comentário:\nQuadro de bradicardia instável por bloqueio atrioventricular total:\n●Frequência cardíaca de 28 bpm\n●Hipotensão importante, confusão e sinais de hipoperfusão\n●QRS largo em ritmo de escape ventricular, sugerindo bloqueio mais distal e de maior gravidade\n\nConduta correta na fase aguda:\n●Suporte imediato e monitorização\n●Atropina pode ser tentada, mas sua eficácia costuma ser limitada em bloqueios AV avançados/infranodais\n●Por isso, não se deve atrasar marca-passo transcutâneo\n●Se não houver resposta adequada, deve-se preparar marca-passo transvenoso temporário\n\nPEGA REVALIDA:\n❌ Causa medicamentosa não significa quadro leve.\n❌ BAV total + QRS largo + hipoperfusão é cenário clássico de pacing urgente.\n\nResumo-chave:\n🟣BAV total + instabilidade = emergência.\n🟣Atropina pode ser feita, mas sem atrasar marca-passo transcutâneo.\n🟣Refratário ou grave → marca-passo transvenoso temporário.",
+      "explanation_html": "<h4>Comentário:</h4>\n<h4>Quadro de bradicardia instável por bloqueio atrioventricular total:</h4>\n<ul><li>Frequência cardíaca de 28 bpm</li><li>Hipotensão importante, confusão e sinais de hipoperfusão</li><li>QRS largo em ritmo de escape ventricular, sugerindo bloqueio mais distal e de maior gravidade</li></ul>\n<h4>Conduta correta na fase aguda:</h4>\n<ul><li>Suporte imediato e monitorização</li><li>Atropina pode ser tentada, mas sua eficácia costuma ser limitada em bloqueios AV avançados/infranodais</li><li>Por isso, não se deve atrasar marca-passo transcutâneo</li><li>Se não houver resposta adequada, deve-se preparar marca-passo transvenoso temporário</li></ul>\n<h4>PEGA REVALIDA:</h4>\n<ul class=\"pega\"><li>Causa medicamentosa não significa quadro leve.</li><li>BAV total + QRS largo + hipoperfusão é cenário clássico de pacing urgente.</li></ul>\n<h4>Resumo-chave:</h4>\n<ul class=\"resumo\"><li>BAV total + instabilidade = emergência.</li><li>Atropina pode ser feita, mas sem atrasar marca-passo transcutâneo.</li><li>Refratário ou grave → marca-passo transvenoso temporário.</li></ul>"
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,3106 @@
+{
+  "eligible": [
+    {
+      "id": "3887",
+      "slug": "cardiopatia-congenita-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3890",
+      "slug": "crise-hipertensiva-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3917",
+      "slug": "dislipidemias-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3896",
+      "slug": "hipertensao-arterial-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3899",
+      "slug": "sindrome-coronariana-aguda-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3902",
+      "slug": "tamponamento-cardiaco-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3905",
+      "slug": "taquiarritmias-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3908",
+      "slug": "valvopatias-simulados",
+      "type": "text-lesson",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4213",
+      "slug": "abdome-agudo-hemorragico-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4217",
+      "slug": "abdome-agudo-obstrutivo-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4220",
+      "slug": "abdome-agudo-perfurativo-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4223",
+      "slug": "abdome-agudo-vascular-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4227",
+      "slug": "apendicite-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4231",
+      "slug": "cancer-de-colorretal-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4234",
+      "slug": "cancer-de-esofago-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4237",
+      "slug": "cancer-de-estomago-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "7630",
+      "slug": "cirurgia-pediatrica-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4240",
+      "slug": "colecistite-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4244",
+      "slug": "diverticulite-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4247",
+      "slug": "doencas-hepatobiliares-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4250",
+      "slug": "doencas-orificiais-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4507",
+      "slug": "estenose-hipertrofica-do-piloro-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4259",
+      "slug": "hemorragia-digestiva-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4264",
+      "slug": "hernias-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4520",
+      "slug": "invaginacao-intestinal-em-lactente-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4267",
+      "slug": "pancreatite-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4270",
+      "slug": "perioperatorio-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4273",
+      "slug": "queimados-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4275",
+      "slug": "tec-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4280",
+      "slug": "trauma-atendimento-inicial-e-vias-areas-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4286",
+      "slug": "trauma-de-torax-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4283",
+      "slug": "trauma-osteomielite-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4277",
+      "slug": "trauma-raquimedular-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4289",
+      "slug": "tumor-de-pancreas-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4555",
+      "slug": "tumor-neuroendocrino-infantil-simulados",
+      "type": "text-lesson",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3921",
+      "slug": "doencas-eczematosas-simulados",
+      "type": "text-lesson",
+      "specialty": "dermatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3924",
+      "slug": "doencas-eritematodescamativas-simulados",
+      "type": "text-lesson",
+      "specialty": "dermatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3927",
+      "slug": "farmacodermias-simulados",
+      "type": "text-lesson",
+      "specialty": "dermatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3930",
+      "slug": "micoses-simulados",
+      "type": "text-lesson",
+      "specialty": "dermatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3933",
+      "slug": "neoplasias-em-dermatologia-simulados",
+      "type": "text-lesson",
+      "specialty": "dermatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3937",
+      "slug": "parasitoses-cutaneas-simulados",
+      "type": "text-lesson",
+      "specialty": "dermatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3942",
+      "slug": "acls-simulados",
+      "type": "text-lesson",
+      "specialty": "emergencia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3945",
+      "slug": "choque-simulados",
+      "type": "text-lesson",
+      "specialty": "emergencia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3948",
+      "slug": "intoxicacoes-exogenas-simulados",
+      "type": "text-lesson",
+      "specialty": "emergencia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3952",
+      "slug": "ventilacao-mecanica-simulados",
+      "type": "text-lesson",
+      "specialty": "emergencia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3956",
+      "slug": "diabetes-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3959",
+      "slug": "doencas-das-adrenais-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3962",
+      "slug": "doencas-das-paratireoides-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3965",
+      "slug": "hipotireoidismo-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3968",
+      "slug": "nodulo-e-cancer-de-tireoide-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3971",
+      "slug": "osteoporose-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3974",
+      "slug": "tireotoxicose-simulados",
+      "type": "text-lesson",
+      "specialty": "endocrinologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3978",
+      "slug": "cirrose-simulados",
+      "type": "text-lesson",
+      "specialty": "gastroenterologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3981",
+      "slug": "doenca-do-refluxo-gastroesofagico-simulados",
+      "type": "text-lesson",
+      "specialty": "gastroenterologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3984",
+      "slug": "doencas-inflamatorias-intestinais-simulados",
+      "type": "text-lesson",
+      "specialty": "gastroenterologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3987",
+      "slug": "hepatites-virais-simulados",
+      "type": "text-lesson",
+      "specialty": "gastroenterologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3990",
+      "slug": "sindrome-do-intestino-irritavel-simulados",
+      "type": "text-lesson",
+      "specialty": "gastroenterologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3993",
+      "slug": "ulcera-peptica-e-h-pylori-simulados",
+      "type": "text-lesson",
+      "specialty": "gastroenterologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4328",
+      "slug": "amenorreia-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4332",
+      "slug": "anticoncepcao-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4335",
+      "slug": "cancer-de-endometrio-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4338",
+      "slug": "cancer-de-mama-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4341",
+      "slug": "cancer-de-ovario-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4344",
+      "slug": "cervicite-e-vulvovaginite-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4347",
+      "slug": "climaterio-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4350",
+      "slug": "distopias-genitais-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4353",
+      "slug": "disturbio-do-desenvolvimento-sexual-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4356",
+      "slug": "doenca-inflamatoria-pelvica-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4360",
+      "slug": "doencas-benignas-da-mama-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4363",
+      "slug": "doencas-benignas-do-utero-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4366",
+      "slug": "doencas-ovarianas-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4369",
+      "slug": "endometriose-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4372",
+      "slug": "hpv-e-cancer-de-colo-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4376",
+      "slug": "patologias-da-vulva-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4379",
+      "slug": "planejamento-familiar-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4382",
+      "slug": "sangramento-uterino-anormal-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4385",
+      "slug": "sindrome-dos-ovarios-policisticos-simulados",
+      "type": "text-lesson",
+      "specialty": "ginecologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "3997",
+      "slug": "anemia-falciforme-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4000",
+      "slug": "anemia-ferropriva-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4003",
+      "slug": "anemia-hemolitica-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4006",
+      "slug": "anemia-megaloblastica-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4009",
+      "slug": "disturbio-da-hemostasia-primaria-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4012",
+      "slug": "disturbio-da-hemostasia-secundaria-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4018",
+      "slug": "linfomas-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4021",
+      "slug": "mieloma-multiplo-simulados",
+      "type": "text-lesson",
+      "specialty": "hematologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4029",
+      "slug": "arboviroses-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4036",
+      "slug": "hanseniase-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4039",
+      "slug": "hiv-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4042",
+      "slug": "infeccao-do-trato-urinario-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4050",
+      "slug": "leptospirose-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4056",
+      "slug": "mononucleose-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4059",
+      "slug": "parasitoses-intestinais-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4066",
+      "slug": "tetano-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4069",
+      "slug": "ulceras-genitais-ist-simulados",
+      "type": "text-lesson",
+      "specialty": "infectologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4078",
+      "slug": "doenca-renal-cronica-simulados",
+      "type": "text-lesson",
+      "specialty": "nefrologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4081",
+      "slug": "injuria-renal-aguda-simulados",
+      "type": "text-lesson",
+      "specialty": "nefrologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4084",
+      "slug": "sindrome-nefritica-simulados",
+      "type": "text-lesson",
+      "specialty": "nefrologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4087",
+      "slug": "sindrome-nefrotica-simulados",
+      "type": "text-lesson",
+      "specialty": "nefrologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4094",
+      "slug": "avc-hemorragico-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4097",
+      "slug": "avc-isquemico-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4101",
+      "slug": "cefaleias-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4111",
+      "slug": "doenca-de-parkinson-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4117",
+      "slug": "hipertensao-intracraniana-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4120",
+      "slug": "infeccoes-neurologicas-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4123",
+      "slug": "patologias-da-coluna-vertebral-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4126",
+      "slug": "sindrome-de-guillain-barre-simulados",
+      "type": "text-lesson",
+      "specialty": "neurologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4427",
+      "slug": "aborto-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4433",
+      "slug": "assistencia-clinica-ao-parto-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4430",
+      "slug": "assistencia-pre-natal-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4436",
+      "slug": "diabetes-da-gestacao-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4443",
+      "slug": "gestacao-ectopica-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4446",
+      "slug": "infeccao-urinaria-na-gestacao-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4449",
+      "slug": "isoimunizacao-rh-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4453",
+      "slug": "mecanismo-de-parto-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4457",
+      "slug": "prematuridade-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4460",
+      "slug": "puerperio-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4463",
+      "slug": "relacoes-uterofetais-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4466",
+      "slug": "rotura-prematura-de-membranas-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4470",
+      "slug": "sifilis-na-gestacao-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4473",
+      "slug": "sindromes-hemorragicas-da-gestacao-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4476",
+      "slug": "sindromes-hipertensivas-na-gestacao-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4479",
+      "slug": "toxoplasmose-na-gestacao-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4482",
+      "slug": "vitalidade-fetal-simulados",
+      "type": "text-lesson",
+      "specialty": "obstetricia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4486",
+      "slug": "aleitamento-materno-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4489",
+      "slug": "alimentacao-complementar-do-lactente-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4492",
+      "slug": "bronquiolite-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4495",
+      "slug": "convulsao-febril-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4498",
+      "slug": "desnutricao-e-obesidade-na-infancia-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4501",
+      "slug": "diarreia-e-desidratacao-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4504",
+      "slug": "disturbios-do-crescimento-e-desenvolvimento-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4510",
+      "slug": "faringoamigdalite-estreptococica-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4513",
+      "slug": "ictericia-neonatal-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4517",
+      "slug": "imunizacoes-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4523",
+      "slug": "laringite-viral-crupe-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4527",
+      "slug": "malformacoes-congenitas-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4531",
+      "slug": "maus-tratos-e-prevencoes-de-acidentes-na-infancia-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4534",
+      "slug": "puericultura-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4537",
+      "slug": "reanimacao-neonatal-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4540",
+      "slug": "sepse-neonatal-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4546",
+      "slug": "taquipneia-transitoria-do-recem-nascido-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4549",
+      "slug": "torchs-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4552",
+      "slug": "triagem-neonatal-simulados",
+      "type": "text-lesson",
+      "specialty": "pediatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4134",
+      "slug": "asma-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4137",
+      "slug": "atelectasia-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4140",
+      "slug": "derrame-pleural-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4146",
+      "slug": "dpoc-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4149",
+      "slug": "nodulo-e-cancer-de-pulmao-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "9570",
+      "slug": "pneumonoa-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4152",
+      "slug": "tuberculose-simulados",
+      "type": "text-lesson",
+      "specialty": "pneumologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4158",
+      "slug": "efeitos-do-alcool-e-abstinencia-simulados",
+      "type": "text-lesson",
+      "specialty": "psiquiatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4161",
+      "slug": "emergencias-psiquiatricas-simulados",
+      "type": "text-lesson",
+      "specialty": "psiquiatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4170",
+      "slug": "transtorno-de-ansiedade-simulados",
+      "type": "text-lesson",
+      "specialty": "psiquiatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4167",
+      "slug": "transtornos-alimentares-simulados",
+      "type": "text-lesson",
+      "specialty": "psiquiatria",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4178",
+      "slug": "artrite-infecciosa-simulados",
+      "type": "text-lesson",
+      "specialty": "reumatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4181",
+      "slug": "artrite-reumatoide-simulados",
+      "type": "text-lesson",
+      "specialty": "reumatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4187",
+      "slug": "febre-reumatica-simulados",
+      "type": "text-lesson",
+      "specialty": "reumatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4190",
+      "slug": "fibromialgia-simulados",
+      "type": "text-lesson",
+      "specialty": "reumatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4197",
+      "slug": "lupus-simulados",
+      "type": "text-lesson",
+      "specialty": "reumatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4203",
+      "slug": "vasculite-de-pequenos-vasos-simulados",
+      "type": "text-lesson",
+      "specialty": "reumatologia",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4390",
+      "slug": "atencao-ao-idoso-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4395",
+      "slug": "atencao-basica-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4398",
+      "slug": "bioestatistica-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4401",
+      "slug": "declaracao-de-obito-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4404",
+      "slug": "etica-medica-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4407",
+      "slug": "indicadores-de-saude-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4411",
+      "slug": "medicina-do-trabalho-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4414",
+      "slug": "processo-saude-doenca-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4417",
+      "slug": "sus-historico-principios-e-diretrizes-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    },
+    {
+      "id": "4423",
+      "slug": "vigilancia-epidemiologica-simulados",
+      "type": "text-lesson",
+      "specialty": "saude-coletiva",
+      "lesson_count": 2,
+      "quiz_count": 0
+    }
+  ],
+  "skip": [
+    {
+      "id": "4560",
+      "slug": "discursivas-simulados",
+      "type": "text-lesson",
+      "specialty": "(no-specialty)",
+      "lesson_count": 6,
+      "quiz_count": 0,
+      "reason": "non-standard lesson_count=6 (applier handles 2-lesson shape only)"
+    },
+    {
+      "id": "3836",
+      "slug": "objetivas-simulados",
+      "type": "text-lesson",
+      "specialty": "(no-specialty)",
+      "lesson_count": 6,
+      "quiz_count": 0,
+      "reason": "non-standard lesson_count=6 (applier handles 2-lesson shape only)"
+    },
+    {
+      "id": "3884",
+      "slug": "bradiarritmias-simulados",
+      "type": "h5p-quiz",
+      "specialty": "cardiologia",
+      "lesson_count": 2,
+      "quiz_count": 10,
+      "reason": "PoC, already converted"
+    },
+    {
+      "id": "3842",
+      "slug": "cardiologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "cardiologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "90001",
+      "slug": "cirurgia-geral-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4253",
+      "slug": "feridas-cirurgicas-simulados",
+      "type": "plain-content",
+      "specialty": "cirurgia-geral",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3846",
+      "slug": "dermatologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "dermatologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "3859",
+      "slug": "emergencia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "emergencia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "3849",
+      "slug": "endocrinologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "endocrinologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "3852",
+      "slug": "gastroenterologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "gastroenterologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "90004",
+      "slug": "ginecologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "ginecologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "3855",
+      "slug": "hematologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "hematologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4015",
+      "slug": "leucemias-simulados",
+      "type": "plain-content",
+      "specialty": "hematologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4025",
+      "slug": "acidentes-por-animais-peconhentos-simulados",
+      "type": "plain-content",
+      "specialty": "infectologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4033",
+      "slug": "doenca-de-chagas-simulados",
+      "type": "plain-content",
+      "specialty": "infectologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3862",
+      "slug": "infectologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "infectologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4047",
+      "slug": "leishmaniose-simulados",
+      "type": "plain-content",
+      "specialty": "infectologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4053",
+      "slug": "malaria-simulados",
+      "type": "plain-content",
+      "specialty": "infectologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4062",
+      "slug": "raiva-simulados",
+      "type": "plain-content",
+      "specialty": "infectologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4075",
+      "slug": "disturbios-hidroeletroliticos-simulados",
+      "type": "plain-content",
+      "specialty": "nefrologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3865",
+      "slug": "nefrologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "nefrologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4090",
+      "slug": "tumores-renais-simulados",
+      "type": "plain-content",
+      "specialty": "nefrologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4104",
+      "slug": "delirium-simulados",
+      "type": "plain-content",
+      "specialty": "neurologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4108",
+      "slug": "demencias-simulados",
+      "type": "plain-content",
+      "specialty": "neurologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4114",
+      "slug": "epilepsias-simulados",
+      "type": "plain-content",
+      "specialty": "neurologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3869",
+      "slug": "neurologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "neurologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "90007",
+      "slug": "obstetricia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "obstetricia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "90010",
+      "slug": "pediatria-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "pediatria",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4543",
+      "slug": "sindrome-do-desconforto-respiratorio-simulados",
+      "type": "plain-content",
+      "specialty": "pediatria",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4130",
+      "slug": "abscesso-pulmonar-simulados",
+      "type": "h5p-quiz",
+      "specialty": "pneumologia",
+      "lesson_count": 0,
+      "quiz_count": 2,
+      "reason": "already h5p-quiz"
+    },
+    {
+      "id": "4143",
+      "slug": "doencas-pulmonares-intersticiais-simulados",
+      "type": "plain-content",
+      "specialty": "pneumologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3872",
+      "slug": "pneumologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "pneumologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4164",
+      "slug": "luto-simulados",
+      "type": "plain-content",
+      "specialty": "psiquiatria",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3876",
+      "slug": "psiquiatria-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "psiquiatria",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4184",
+      "slug": "esclerose-sistemica-simulados",
+      "type": "plain-content",
+      "specialty": "reumatologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4194",
+      "slug": "gota-simulados",
+      "type": "plain-content",
+      "specialty": "reumatologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "4200",
+      "slug": "osteoartrite-simulados",
+      "type": "plain-content",
+      "specialty": "reumatologia",
+      "lesson_count": 1,
+      "quiz_count": 0,
+      "reason": "unexpected type=plain-content"
+    },
+    {
+      "id": "3879",
+      "slug": "reumatologia-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "reumatologia",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "90013",
+      "slug": "saude-coletiva-simulados",
+      "type": "blurb-nav-hub",
+      "specialty": "saude-coletiva",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=blurb-nav-hub"
+    },
+    {
+      "id": "4420",
+      "slug": "testes-diagnosticos-simulados",
+      "type": "navigation-toggle",
+      "specialty": "saude-coletiva",
+      "lesson_count": 0,
+      "quiz_count": 0,
+      "reason": "unexpected type=navigation-toggle"
+    }
+  ],
+  "bySpecialty": {
+    "cardiologia": [
+      {
+        "id": "3887",
+        "slug": "cardiopatia-congenita-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3890",
+        "slug": "crise-hipertensiva-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3917",
+        "slug": "dislipidemias-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3896",
+        "slug": "hipertensao-arterial-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3899",
+        "slug": "sindrome-coronariana-aguda-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3902",
+        "slug": "tamponamento-cardiaco-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3905",
+        "slug": "taquiarritmias-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3908",
+        "slug": "valvopatias-simulados",
+        "type": "text-lesson",
+        "specialty": "cardiologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "cirurgia-geral": [
+      {
+        "id": "4213",
+        "slug": "abdome-agudo-hemorragico-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4217",
+        "slug": "abdome-agudo-obstrutivo-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4220",
+        "slug": "abdome-agudo-perfurativo-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4223",
+        "slug": "abdome-agudo-vascular-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4227",
+        "slug": "apendicite-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4231",
+        "slug": "cancer-de-colorretal-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4234",
+        "slug": "cancer-de-esofago-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4237",
+        "slug": "cancer-de-estomago-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "7630",
+        "slug": "cirurgia-pediatrica-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4240",
+        "slug": "colecistite-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4244",
+        "slug": "diverticulite-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4247",
+        "slug": "doencas-hepatobiliares-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4250",
+        "slug": "doencas-orificiais-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4507",
+        "slug": "estenose-hipertrofica-do-piloro-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4259",
+        "slug": "hemorragia-digestiva-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4264",
+        "slug": "hernias-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4520",
+        "slug": "invaginacao-intestinal-em-lactente-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4267",
+        "slug": "pancreatite-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4270",
+        "slug": "perioperatorio-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4273",
+        "slug": "queimados-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4275",
+        "slug": "tec-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4280",
+        "slug": "trauma-atendimento-inicial-e-vias-areas-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4286",
+        "slug": "trauma-de-torax-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4283",
+        "slug": "trauma-osteomielite-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4277",
+        "slug": "trauma-raquimedular-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4289",
+        "slug": "tumor-de-pancreas-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4555",
+        "slug": "tumor-neuroendocrino-infantil-simulados",
+        "type": "text-lesson",
+        "specialty": "cirurgia-geral",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "dermatologia": [
+      {
+        "id": "3921",
+        "slug": "doencas-eczematosas-simulados",
+        "type": "text-lesson",
+        "specialty": "dermatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3924",
+        "slug": "doencas-eritematodescamativas-simulados",
+        "type": "text-lesson",
+        "specialty": "dermatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3927",
+        "slug": "farmacodermias-simulados",
+        "type": "text-lesson",
+        "specialty": "dermatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3930",
+        "slug": "micoses-simulados",
+        "type": "text-lesson",
+        "specialty": "dermatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3933",
+        "slug": "neoplasias-em-dermatologia-simulados",
+        "type": "text-lesson",
+        "specialty": "dermatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3937",
+        "slug": "parasitoses-cutaneas-simulados",
+        "type": "text-lesson",
+        "specialty": "dermatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "emergencia": [
+      {
+        "id": "3942",
+        "slug": "acls-simulados",
+        "type": "text-lesson",
+        "specialty": "emergencia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3945",
+        "slug": "choque-simulados",
+        "type": "text-lesson",
+        "specialty": "emergencia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3948",
+        "slug": "intoxicacoes-exogenas-simulados",
+        "type": "text-lesson",
+        "specialty": "emergencia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3952",
+        "slug": "ventilacao-mecanica-simulados",
+        "type": "text-lesson",
+        "specialty": "emergencia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "endocrinologia": [
+      {
+        "id": "3956",
+        "slug": "diabetes-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3959",
+        "slug": "doencas-das-adrenais-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3962",
+        "slug": "doencas-das-paratireoides-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3965",
+        "slug": "hipotireoidismo-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3968",
+        "slug": "nodulo-e-cancer-de-tireoide-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3971",
+        "slug": "osteoporose-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3974",
+        "slug": "tireotoxicose-simulados",
+        "type": "text-lesson",
+        "specialty": "endocrinologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "gastroenterologia": [
+      {
+        "id": "3978",
+        "slug": "cirrose-simulados",
+        "type": "text-lesson",
+        "specialty": "gastroenterologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3981",
+        "slug": "doenca-do-refluxo-gastroesofagico-simulados",
+        "type": "text-lesson",
+        "specialty": "gastroenterologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3984",
+        "slug": "doencas-inflamatorias-intestinais-simulados",
+        "type": "text-lesson",
+        "specialty": "gastroenterologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3987",
+        "slug": "hepatites-virais-simulados",
+        "type": "text-lesson",
+        "specialty": "gastroenterologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3990",
+        "slug": "sindrome-do-intestino-irritavel-simulados",
+        "type": "text-lesson",
+        "specialty": "gastroenterologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "3993",
+        "slug": "ulcera-peptica-e-h-pylori-simulados",
+        "type": "text-lesson",
+        "specialty": "gastroenterologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "ginecologia": [
+      {
+        "id": "4328",
+        "slug": "amenorreia-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4332",
+        "slug": "anticoncepcao-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4335",
+        "slug": "cancer-de-endometrio-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4338",
+        "slug": "cancer-de-mama-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4341",
+        "slug": "cancer-de-ovario-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4344",
+        "slug": "cervicite-e-vulvovaginite-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4347",
+        "slug": "climaterio-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4350",
+        "slug": "distopias-genitais-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4353",
+        "slug": "disturbio-do-desenvolvimento-sexual-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4356",
+        "slug": "doenca-inflamatoria-pelvica-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4360",
+        "slug": "doencas-benignas-da-mama-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4363",
+        "slug": "doencas-benignas-do-utero-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4366",
+        "slug": "doencas-ovarianas-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4369",
+        "slug": "endometriose-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4372",
+        "slug": "hpv-e-cancer-de-colo-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4376",
+        "slug": "patologias-da-vulva-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4379",
+        "slug": "planejamento-familiar-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4382",
+        "slug": "sangramento-uterino-anormal-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4385",
+        "slug": "sindrome-dos-ovarios-policisticos-simulados",
+        "type": "text-lesson",
+        "specialty": "ginecologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "hematologia": [
+      {
+        "id": "3997",
+        "slug": "anemia-falciforme-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4000",
+        "slug": "anemia-ferropriva-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4003",
+        "slug": "anemia-hemolitica-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4006",
+        "slug": "anemia-megaloblastica-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4009",
+        "slug": "disturbio-da-hemostasia-primaria-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4012",
+        "slug": "disturbio-da-hemostasia-secundaria-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4018",
+        "slug": "linfomas-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4021",
+        "slug": "mieloma-multiplo-simulados",
+        "type": "text-lesson",
+        "specialty": "hematologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "infectologia": [
+      {
+        "id": "4029",
+        "slug": "arboviroses-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4036",
+        "slug": "hanseniase-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4039",
+        "slug": "hiv-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4042",
+        "slug": "infeccao-do-trato-urinario-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4050",
+        "slug": "leptospirose-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4056",
+        "slug": "mononucleose-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4059",
+        "slug": "parasitoses-intestinais-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4066",
+        "slug": "tetano-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4069",
+        "slug": "ulceras-genitais-ist-simulados",
+        "type": "text-lesson",
+        "specialty": "infectologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "nefrologia": [
+      {
+        "id": "4078",
+        "slug": "doenca-renal-cronica-simulados",
+        "type": "text-lesson",
+        "specialty": "nefrologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4081",
+        "slug": "injuria-renal-aguda-simulados",
+        "type": "text-lesson",
+        "specialty": "nefrologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4084",
+        "slug": "sindrome-nefritica-simulados",
+        "type": "text-lesson",
+        "specialty": "nefrologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4087",
+        "slug": "sindrome-nefrotica-simulados",
+        "type": "text-lesson",
+        "specialty": "nefrologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "neurologia": [
+      {
+        "id": "4094",
+        "slug": "avc-hemorragico-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4097",
+        "slug": "avc-isquemico-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4101",
+        "slug": "cefaleias-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4111",
+        "slug": "doenca-de-parkinson-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4117",
+        "slug": "hipertensao-intracraniana-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4120",
+        "slug": "infeccoes-neurologicas-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4123",
+        "slug": "patologias-da-coluna-vertebral-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4126",
+        "slug": "sindrome-de-guillain-barre-simulados",
+        "type": "text-lesson",
+        "specialty": "neurologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "obstetricia": [
+      {
+        "id": "4427",
+        "slug": "aborto-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4433",
+        "slug": "assistencia-clinica-ao-parto-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4430",
+        "slug": "assistencia-pre-natal-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4436",
+        "slug": "diabetes-da-gestacao-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4443",
+        "slug": "gestacao-ectopica-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4446",
+        "slug": "infeccao-urinaria-na-gestacao-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4449",
+        "slug": "isoimunizacao-rh-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4453",
+        "slug": "mecanismo-de-parto-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4457",
+        "slug": "prematuridade-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4460",
+        "slug": "puerperio-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4463",
+        "slug": "relacoes-uterofetais-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4466",
+        "slug": "rotura-prematura-de-membranas-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4470",
+        "slug": "sifilis-na-gestacao-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4473",
+        "slug": "sindromes-hemorragicas-da-gestacao-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4476",
+        "slug": "sindromes-hipertensivas-na-gestacao-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4479",
+        "slug": "toxoplasmose-na-gestacao-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4482",
+        "slug": "vitalidade-fetal-simulados",
+        "type": "text-lesson",
+        "specialty": "obstetricia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "pediatria": [
+      {
+        "id": "4486",
+        "slug": "aleitamento-materno-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4489",
+        "slug": "alimentacao-complementar-do-lactente-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4492",
+        "slug": "bronquiolite-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4495",
+        "slug": "convulsao-febril-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4498",
+        "slug": "desnutricao-e-obesidade-na-infancia-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4501",
+        "slug": "diarreia-e-desidratacao-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4504",
+        "slug": "disturbios-do-crescimento-e-desenvolvimento-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4510",
+        "slug": "faringoamigdalite-estreptococica-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4513",
+        "slug": "ictericia-neonatal-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4517",
+        "slug": "imunizacoes-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4523",
+        "slug": "laringite-viral-crupe-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4527",
+        "slug": "malformacoes-congenitas-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4531",
+        "slug": "maus-tratos-e-prevencoes-de-acidentes-na-infancia-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4534",
+        "slug": "puericultura-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4537",
+        "slug": "reanimacao-neonatal-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4540",
+        "slug": "sepse-neonatal-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4546",
+        "slug": "taquipneia-transitoria-do-recem-nascido-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4549",
+        "slug": "torchs-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4552",
+        "slug": "triagem-neonatal-simulados",
+        "type": "text-lesson",
+        "specialty": "pediatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "pneumologia": [
+      {
+        "id": "4134",
+        "slug": "asma-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4137",
+        "slug": "atelectasia-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4140",
+        "slug": "derrame-pleural-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4146",
+        "slug": "dpoc-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4149",
+        "slug": "nodulo-e-cancer-de-pulmao-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "9570",
+        "slug": "pneumonoa-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4152",
+        "slug": "tuberculose-simulados",
+        "type": "text-lesson",
+        "specialty": "pneumologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "psiquiatria": [
+      {
+        "id": "4158",
+        "slug": "efeitos-do-alcool-e-abstinencia-simulados",
+        "type": "text-lesson",
+        "specialty": "psiquiatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4161",
+        "slug": "emergencias-psiquiatricas-simulados",
+        "type": "text-lesson",
+        "specialty": "psiquiatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4170",
+        "slug": "transtorno-de-ansiedade-simulados",
+        "type": "text-lesson",
+        "specialty": "psiquiatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4167",
+        "slug": "transtornos-alimentares-simulados",
+        "type": "text-lesson",
+        "specialty": "psiquiatria",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "reumatologia": [
+      {
+        "id": "4178",
+        "slug": "artrite-infecciosa-simulados",
+        "type": "text-lesson",
+        "specialty": "reumatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4181",
+        "slug": "artrite-reumatoide-simulados",
+        "type": "text-lesson",
+        "specialty": "reumatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4187",
+        "slug": "febre-reumatica-simulados",
+        "type": "text-lesson",
+        "specialty": "reumatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4190",
+        "slug": "fibromialgia-simulados",
+        "type": "text-lesson",
+        "specialty": "reumatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4197",
+        "slug": "lupus-simulados",
+        "type": "text-lesson",
+        "specialty": "reumatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4203",
+        "slug": "vasculite-de-pequenos-vasos-simulados",
+        "type": "text-lesson",
+        "specialty": "reumatologia",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ],
+    "saude-coletiva": [
+      {
+        "id": "4390",
+        "slug": "atencao-ao-idoso-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4395",
+        "slug": "atencao-basica-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4398",
+        "slug": "bioestatistica-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4401",
+        "slug": "declaracao-de-obito-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4404",
+        "slug": "etica-medica-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4407",
+        "slug": "indicadores-de-saude-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4411",
+        "slug": "medicina-do-trabalho-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4414",
+        "slug": "processo-saude-doenca-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4417",
+        "slug": "sus-historico-principios-e-diretrizes-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      },
+      {
+        "id": "4423",
+        "slug": "vigilancia-epidemiologica-simulados",
+        "type": "text-lesson",
+        "specialty": "saude-coletiva",
+        "lesson_count": 2,
+        "quiz_count": 0
+      }
+    ]
+  }
+}

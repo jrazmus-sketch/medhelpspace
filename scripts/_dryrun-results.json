@@ -1,0 +1,1295 @@
+[
+  {
+    "slug": "cardiopatia-congenita-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "crise-hipertensiva-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q9: Q9: expected 4 options, found 2"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "dislipidemias-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q6: Q6: expected 4 options, found 3"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "hipertensao-arterial-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindrome-coronariana-aguda-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tamponamento-cardiaco-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "taquiarritmias-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "valvopatias-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "abdome-agudo-hemorragico-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "abdome-agudo-obstrutivo-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "abdome-agudo-perfurativo-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "abdome-agudo-vascular-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "apendicite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cancer-de-colorretal-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cancer-de-esofago-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cancer-de-estomago-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cirurgia-pediatrica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "colecistite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "diverticulite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-hepatobiliares-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q4: Q4: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-orificiais-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "estenose-hipertrofica-do-piloro-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hemorragia-digestiva-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hernias-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "invaginacao-intestinal-em-lactente-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "pancreatite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "perioperatorio-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "queimados-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tec-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q9: Q9: expected 4 options, found 3"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "trauma-atendimento-inicial-e-vias-areas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "trauma-de-torax-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "trauma-osteomielite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "trauma-raquimedular-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tumor-de-pancreas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tumor-neuroendocrino-infantil-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-eczematosas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-eritematodescamativas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "farmacodermias-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "micoses-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "neoplasias-em-dermatologia-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "parasitoses-cutaneas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "acls-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "choque-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "intoxicacoes-exogenas-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=10, respostas=0",
+      "Q1: matching Respostas chunk not found",
+      "Q2: matching Respostas chunk not found",
+      "Q3: matching Respostas chunk not found",
+      "Q4: matching Respostas chunk not found",
+      "Q5: matching Respostas chunk not found",
+      "Q6: matching Respostas chunk not found",
+      "Q7: matching Respostas chunk not found",
+      "Q8: matching Respostas chunk not found",
+      "Q9: matching Respostas chunk not found",
+      "Q10: matching Respostas chunk not found"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "ventilacao-mecanica-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=10, respostas=0",
+      "Q1: matching Respostas chunk not found",
+      "Q2: matching Respostas chunk not found",
+      "Q3: matching Respostas chunk not found",
+      "Q4: matching Respostas chunk not found",
+      "Q5: matching Respostas chunk not found",
+      "Q6: matching Respostas chunk not found",
+      "Q7: matching Respostas chunk not found",
+      "Q8: matching Respostas chunk not found",
+      "Q9: matching Respostas chunk not found",
+      "Q10: matching Respostas chunk not found"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "diabetes-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-das-adrenais-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-das-paratireoides-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hipotireoidismo-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "nodulo-e-cancer-de-tireoide-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q2: Q2: expected 4 options, found 1"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "osteoporose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tireotoxicose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cirrose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doenca-do-refluxo-gastroesofagico-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-inflamatorias-intestinais-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hepatites-virais-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindrome-do-intestino-irritavel-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "ulcera-peptica-e-h-pylori-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "amenorreia-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "anticoncepcao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cancer-de-endometrio-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cancer-de-mama-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cancer-de-ovario-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cervicite-e-vulvovaginite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "climaterio-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "distopias-genitais-simulados",
+    "status": "COUNT",
+    "questionCount": 0,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "disturbio-do-desenvolvimento-sexual-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doenca-inflamatoria-pelvica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-benignas-da-mama-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-benignas-do-utero-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doencas-ovarianas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "endometriose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hpv-e-cancer-de-colo-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "patologias-da-vulva-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "planejamento-familiar-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sangramento-uterino-anormal-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindrome-dos-ovarios-policisticos-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "anemia-falciforme-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q2: Q2: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "anemia-ferropriva-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "anemia-hemolitica-simulados",
+    "status": "WARN",
+    "questionCount": 8,
+    "warnings": [
+      "Q1: Q1: expected 4 options, found 0",
+      "Q2: Q2: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "anemia-megaloblastica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "disturbio-da-hemostasia-primaria-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "disturbio-da-hemostasia-secundaria-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "linfomas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "mieloma-multiplo-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "arboviroses-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hanseniase-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hiv-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "infeccao-do-trato-urinario-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q4: Q4: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "leptospirose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "mononucleose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "parasitoses-intestinais-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tetano-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "ulceras-genitais-ist-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doenca-renal-cronica-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q8: Q8: expected 4 options, found 1"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "injuria-renal-aguda-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindrome-nefritica-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q5: Q5: expected 4 options, found 2"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "sindrome-nefrotica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "avc-hemorragico-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "avc-isquemico-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "cefaleias-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "doenca-de-parkinson-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "hipertensao-intracraniana-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "infeccoes-neurologicas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "patologias-da-coluna-vertebral-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindrome-de-guillain-barre-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "aborto-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "assistencia-clinica-ao-parto-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "assistencia-pre-natal-simulados",
+    "status": "WARN",
+    "questionCount": 8,
+    "warnings": [
+      "Q5: Q5: expected 4 options, found 2",
+      "Q8: Q8: expected 4 options, found 1"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "diabetes-da-gestacao-simulados",
+    "status": "WARN",
+    "questionCount": 8,
+    "warnings": [
+      "Q4: Q4: expected 4 options, found 1",
+      "Q10: Q10: expected 4 options, found 1"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "gestacao-ectopica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "infeccao-urinaria-na-gestacao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "isoimunizacao-rh-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "mecanismo-de-parto-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=9, respostas=10",
+      "Q2: matching Respostas chunk not found",
+      "Q3: matching Respostas chunk not found",
+      "Q4: matching Respostas chunk not found",
+      "Q5: matching Respostas chunk not found",
+      "Q6: matching Respostas chunk not found",
+      "Q7: matching Respostas chunk not found",
+      "Q8: matching Respostas chunk not found",
+      "Q9: matching Respostas chunk not found",
+      "Q10: matching Respostas chunk not found"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "prematuridade-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q2: Q2: expected 4 options, found 1"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "puerperio-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "relacoes-uterofetais-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "rotura-prematura-de-membranas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sifilis-na-gestacao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindromes-hemorragicas-da-gestacao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sindromes-hipertensivas-na-gestacao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "toxoplasmose-na-gestacao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "vitalidade-fetal-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "aleitamento-materno-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "alimentacao-complementar-do-lactente-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "bronquiolite-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "convulsao-febril-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "desnutricao-e-obesidade-na-infancia-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "diarreia-e-desidratacao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "disturbios-do-crescimento-e-desenvolvimento-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "faringoamigdalite-estreptococica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "ictericia-neonatal-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "imunizacoes-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=10, respostas=0",
+      "Q1: matching Respostas chunk not found",
+      "Q2: matching Respostas chunk not found",
+      "Q3: matching Respostas chunk not found",
+      "Q4: matching Respostas chunk not found",
+      "Q5: matching Respostas chunk not found",
+      "Q6: matching Respostas chunk not found",
+      "Q7: matching Respostas chunk not found",
+      "Q8: matching Respostas chunk not found",
+      "Q9: matching Respostas chunk not found",
+      "Q10: matching Respostas chunk not found"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "laringite-viral-crupe-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "malformacoes-congenitas-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "maus-tratos-e-prevencoes-de-acidentes-na-infancia-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "puericultura-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "reanimacao-neonatal-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q3: Q3: expected 4 options, found 2"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "sepse-neonatal-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "taquipneia-transitoria-do-recem-nascido-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q2: Q2: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "torchs-simulados",
+    "status": "WARN",
+    "questionCount": 8,
+    "warnings": [
+      "Q3: Q3: expected 4 options, found 0",
+      "Q10: Q10: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "triagem-neonatal-simulados",
+    "status": "WARN",
+    "questionCount": 6,
+    "warnings": [
+      "Q2: Q2: expected 4 options, found 0",
+      "Q5: Q5: expected 4 options, found 0",
+      "Q6: Q6: expected 4 options, found 0",
+      "Q10: Q10: expected 4 options, found 0"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "asma-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "atelectasia-simulados",
+    "status": "COUNT",
+    "questionCount": 0,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "derrame-pleural-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "dpoc-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "nodulo-e-cancer-de-pulmao-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "pneumonoa-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "tuberculose-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "efeitos-do-alcool-e-abstinencia-simulados",
+    "status": "ERROR",
+    "questionCount": 0,
+    "warnings": [],
+    "parseError": "ERROR: no Respostas lesson found"
+  },
+  {
+    "slug": "emergencias-psiquiatricas-simulados",
+    "status": "WARN",
+    "questionCount": 8,
+    "warnings": [
+      "Q4: Q4: missing \"Alternativa correta\" marker",
+      "Q9: Q9: missing \"Alternativa correta\" marker"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "transtorno-de-ansiedade-simulados",
+    "status": "WARN",
+    "questionCount": 8,
+    "warnings": [
+      "Q5: Q5: missing \"Alternativa correta\" marker",
+      "Q10: Q10: missing \"Alternativa correta\" marker"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "transtornos-alimentares-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q9: Q9: missing \"Alternativa correta\" marker"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "artrite-infecciosa-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=0, respostas=10"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "artrite-reumatoide-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=0, respostas=10"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "febre-reumatica-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=0, respostas=10"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "fibromialgia-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=0, respostas=10"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "lupus-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=0, respostas=10"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "vasculite-de-pequenos-vasos-simulados",
+    "status": "WARN",
+    "questionCount": 0,
+    "warnings": [
+      "question count mismatch: perguntas=0, respostas=10"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "atencao-ao-idoso-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "atencao-basica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "bioestatistica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "declaracao-de-obito-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "etica-medica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "indicadores-de-saude-simulados",
+    "status": "WARN",
+    "questionCount": 9,
+    "warnings": [
+      "Q10: Q10: expected 4 options, found 2"
+    ],
+    "parseError": null
+  },
+  {
+    "slug": "medicina-do-trabalho-simulados",
+    "status": "COUNT",
+    "questionCount": 0,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "processo-saude-doenca-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "sus-historico-principios-e-diretrizes-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  },
+  {
+    "slug": "vigilancia-epidemiologica-simulados",
+    "status": "OK",
+    "questionCount": 10,
+    "warnings": [],
+    "parseError": null
+  }
+]

@@ -11,10 +11,21 @@ export type SuperGroupData = {
   items: {
     spec: { id: number; slug: string; name: string };
     href: string;
+    progress?: number; // 0-100; rendered as a progress bar on the specialty card
   }[];
 };
 
-export function TrackHubAccordion({ groups }: { groups: SuperGroupData[] }) {
+export function TrackHubAccordion({
+  groups,
+  ctaLabel = "Ouvir",
+  accentColor,
+}: {
+  groups: SuperGroupData[];
+  ctaLabel?: string;
+  /** Optional CSS color (or var) for a left-edge stripe on each row.
+   *  Used by /app/estudo-por-questoes to echo the active tab's color. */
+  accentColor?: string;
+}) {
   const [open, setOpen] = useState<Set<string>>(new Set());
 
   function toggle(label: string) {
@@ -35,12 +46,31 @@ export function TrackHubAccordion({ groups }: { groups: SuperGroupData[] }) {
           <div
             key={group.label}
             style={{
+              position: "relative",
               borderRadius: "var(--radius)",
-              outline: "1px solid var(--surface-2)",
-              outlineOffset: "-1px",
+              // When an accent stripe is shown, use inset box-shadow for the
+              // border so the stripe paints above it. (Outline paints last and
+              // would visually clip the leftmost pixel of the stripe.)
+              outline: accentColor ? "none" : "1px solid var(--surface-2)",
+              outlineOffset: accentColor ? undefined : "-1px",
+              boxShadow: accentColor ? "inset 0 0 0 1px var(--surface-2)" : undefined,
               overflow: "hidden",
             }}
           >
+            {accentColor && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: 0, top: 0, bottom: 0,
+                  width: 4,
+                  background: accentColor,
+                  transition: "background .25s ease",
+                  pointerEvents: "none",
+                  zIndex: 2,
+                }}
+              />
+            )}
             {/* Header row */}
             <button
               onClick={() => toggle(group.label)}
@@ -104,8 +134,8 @@ export function TrackHubAccordion({ groups }: { groups: SuperGroupData[] }) {
                 }}
               >
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {group.items.map(({ spec, href }) => (
-                    <SpecialtyCard key={spec.id} spec={spec} href={href} />
+                  {group.items.map(({ spec, href, progress }) => (
+                    <SpecialtyCard key={spec.id} spec={spec} href={href} progress={progress} ctaLabel={ctaLabel} />
                   ))}
                 </div>
               </div>
@@ -120,10 +150,15 @@ export function TrackHubAccordion({ groups }: { groups: SuperGroupData[] }) {
 function SpecialtyCard({
   spec,
   href,
+  progress,
+  ctaLabel,
 }: {
   spec: { slug: string; name: string };
   href: string;
+  progress?: number;
+  ctaLabel: string;
 }) {
+  const hasProgress = typeof progress === "number" && progress > 0;
   return (
     <Link
       href={href}
@@ -154,9 +189,27 @@ function SpecialtyCard({
         >
           {spec.name}
         </div>
+        {hasProgress && (
+          <div style={{ marginTop: 8 }}>
+            <div style={{ height: 3, background: "var(--surface-2)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{
+                width: `${Math.min(100, progress)}%`,
+                height: "100%",
+                background: "var(--brand)",
+                borderRadius: 2,
+              }} />
+            </div>
+            <div style={{
+              marginTop: 4, fontSize: 10.5, color: "var(--muted-foreground)",
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              {Math.round(progress)}%
+            </div>
+          </div>
+        )}
         <div
           style={{
-            marginTop: 5,
+            marginTop: hasProgress ? 8 : 5,
             display: "flex",
             alignItems: "center",
             gap: 3,
@@ -165,7 +218,7 @@ function SpecialtyCard({
             color: "var(--brand)",
           }}
         >
-          Ouvir <ChevronRight size={9} strokeWidth={2.5} />
+          {ctaLabel} <ChevronRight size={9} strokeWidth={2.5} />
         </div>
       </div>
     </Link>
