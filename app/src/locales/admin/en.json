@@ -103,7 +103,14 @@
     "revokeSessionsTitle": "Revoke sessions",
     "revokeSessionsDesc": "Terminate all active sessions for {{email}}?",
     "revokeSessions": "Revoke sessions",
-    "sessionRevoked": "Sessions revoked"
+    "sessionRevoked": "Sessions revoked",
+    "create": "Add member",
+    "createTitle": "New member",
+    "createPassword": "Password",
+    "createGeneratePassword": "Generate",
+    "createSubmit": "Create member",
+    "createInvalidEmail": "Enter a valid email address.",
+    "createWeakPassword": "Password must be at least 8 characters."
   },
   "cohorts": {
     "title": "Cohorts",
@@ -167,7 +174,8 @@
     "actions": {
       "role_change": "Role changed",
       "password_reset": "Password reset",
-      "revoke_sessions": "Sessions revoked"
+      "revoke_sessions": "Sessions revoked",
+      "member_created": "Member created"
     }
   },
   "pageEdit": {

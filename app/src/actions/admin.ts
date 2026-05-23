@@ -196,6 +196,54 @@ export async function revokeUserSessions(targetUserId: string) {
   await writeAuditLog(user.id, "revoke_sessions", targetUserId, {});
 }
 
+export async function createMember(input: {
+  email: string;
+  password: string;
+  role: string;
+  displayName: string;
+  cohortId: number | null;
+}) {
+  const { user, role } = await requireAdmin();
+  if (role !== "super_admin") throw new Error("Only super admins can create members");
+
+  const email = input.email.trim().toLowerCase();
+  if (!email.includes("@")) throw new Error("Invalid email address");
+  if (input.password.length < 8) throw new Error("Password must be at least 8 characters");
+  if (!VALID_ROLES.includes(input.role)) throw new Error("Invalid role");
+
+  const admin = createAdminClient();
+  const displayName = input.displayName.trim() || null;
+
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email,
+    password: input.password,
+    email_confirm: true,
+    user_metadata: { display_name: displayName },
+  });
+  if (error) throw new Error(error.message);
+  const newUserId = created.user.id;
+
+  // handle_new_user() already inserted the profiles row; set role + name + email.
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ role: input.role, display_name: displayName, email })
+    .eq("id", newUserId);
+  if (profileError) throw new Error(profileError.message);
+
+  if (input.cohortId !== null) {
+    await admin
+      .from("user_cohort_memberships")
+      .insert({ user_id: newUserId, cohort_id: input.cohortId });
+  }
+
+  await writeAuditLog(user.id, "member_created", newUserId, {
+    email,
+    role: input.role,
+    cohort_id: input.cohortId,
+  });
+  revalidatePath("/admin/members");
+}
+
 // ── Page metadata ─────────────────────────────────────────────────────────────
 
 export type PageMetadataInput = {

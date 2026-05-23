@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { ConfirmModal } from "@/components/admin/confirm-modal";
+import { CreateMemberModal } from "@/components/admin/create-member-modal";
 import {
   assignMemberToCohort,
   changeUserRole,
@@ -49,6 +50,7 @@ export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
   const [isPending, startTransition] = useTransition();
   const [pendingModal, setPendingModal] = useState<PendingModal | null>(null);
   const [actionResult, setActionResult] = useState<{ userId: string; message: string } | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   // Track locally committed roles so the dropdown reverts on cancel
   const [committedRoles, setCommittedRoles] = useState<Map<string, string>>(
@@ -136,11 +138,21 @@ export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("members.title")}</h1>
-        <span className="text-sm text-muted-foreground">
-          {search ? `${filtered.length} / ` : ""}{rows.length} {rows.length === 1 ? "membro" : "membros"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {search ? `${filtered.length} / ` : ""}{rows.length} {rows.length === 1 ? "membro" : "membros"}
+          </span>
+          {isSuperAdmin && (
+            <button
+              onClick={() => setShowCreate(true)}
+              className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity"
+            >
+              {t("members.create")}
+            </button>
+          )}
+        </div>
       </div>
 
       <input
@@ -251,6 +263,13 @@ export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
         isPending={isPending}
         onConfirm={handleConfirm}
         onCancel={() => setPendingModal(null)}
+      />
+
+      <CreateMemberModal
+        open={showCreate}
+        cohorts={cohorts}
+        onClose={() => setShowCreate(false)}
+        onCreated={() => setShowCreate(false)}
       />
     </div>
   );

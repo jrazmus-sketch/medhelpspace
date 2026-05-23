@@ -103,7 +103,14 @@
     "revokeSessionsTitle": "Revogar sessões",
     "revokeSessionsDesc": "Encerrar todas as sessões ativas de {{email}}?",
     "revokeSessions": "Revogar sessões",
-    "sessionRevoked": "Sessões revogadas"
+    "sessionRevoked": "Sessões revogadas",
+    "create": "Adicionar membro",
+    "createTitle": "Novo membro",
+    "createPassword": "Senha",
+    "createGeneratePassword": "Gerar",
+    "createSubmit": "Criar membro",
+    "createInvalidEmail": "Informe um e-mail válido.",
+    "createWeakPassword": "A senha deve ter no mínimo 8 caracteres."
   },
   "cohorts": {
     "title": "Turmas",
@@ -167,7 +174,8 @@
     "actions": {
       "role_change": "Função alterada",
       "password_reset": "Senha redefinida",
-      "revoke_sessions": "Sessões revogadas"
+      "revoke_sessions": "Sessões revogadas",
+      "member_created": "Membro criado"
     }
   },
   "pageEdit": {
