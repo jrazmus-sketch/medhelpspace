@@ -42,3 +42,10 @@ images/
 
 # Local lint output dump — regenerable via `npm run lint`
 app/lint_results.txt
+
+# /mobile-check skill screenshots — regenerable, not part of the codebase
+.mobile-check-*.png
+
+# Scratch / one-off debug scripts (convention: filename prefix with `_`)
+scripts/_*.py
+scripts/_*.js

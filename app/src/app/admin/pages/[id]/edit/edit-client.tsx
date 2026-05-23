@@ -26,6 +26,10 @@ const TYPE_COLORS: Record<string, string> = {
   default:           "bg-surface-2 text-muted-foreground",
 };
 
+const TYPE_LABELS: Record<string, string> = {
+  "h5p-quiz": "quiz",
+};
+
 function slugify(text: string) {
   return text
     .normalize("NFD")
@@ -188,7 +192,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
         <span className="text-muted-foreground">/</span>
         <h1 className="text-lg font-semibold truncate">{page.title}</h1>
         <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0", typeColor)}>
-          {page.type}
+          {TYPE_LABELS[page.type] ?? page.type}
         </span>
       </div>
 

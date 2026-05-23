@@ -26,6 +26,14 @@ const TYPE_COLORS: Record<string, string> = {
   default: "bg-surface-2 text-muted-foreground",
 };
 
+const TYPE_LABELS: Record<string, string> = {
+  "h5p-quiz": "quiz",
+};
+
+function typeLabel(t: string) {
+  return TYPE_LABELS[t] ?? t;
+}
+
 export function PagesClient({ rows }: { rows: PageRow[] }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -77,7 +85,7 @@ export function PagesClient({ rows }: { rows: PageRow[] }) {
         >
           <option value="">{t("pages.filterByType")} — todos</option>
           {types.map((tp) => (
-            <option key={tp} value={tp}>{tp}</option>
+            <option key={tp} value={tp}>{typeLabel(tp)}</option>
           ))}
         </select>
       </div>
@@ -109,7 +117,7 @@ export function PagesClient({ rows }: { rows: PageRow[] }) {
                   <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground max-w-[200px] truncate">{row.slug}</td>
                   <td className="px-4 py-2.5">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[row.page_type] ?? TYPE_COLORS.default}`}>
-                      {row.page_type}
+                      {typeLabel(row.page_type)}
                     </span>
                   </td>
                   <td className="px-4 py-2.5">
