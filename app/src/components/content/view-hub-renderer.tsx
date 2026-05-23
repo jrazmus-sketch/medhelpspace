@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { STUDY_TYPE_CONFIG, type StudyTypeKey } from "@/lib/page-type";
 import { TrackHubAccordion, type SuperGroupData } from "./track-hub-accordion";
 
 // Action verb shown on the per-specialty card inside an expanded accordion row.
@@ -175,7 +176,16 @@ export async function ViewHubRenderer({
       </p>
     );
   }
-  return <TrackHubAccordion groups={groups} ctaLabel={CTA_FOR_VIEW[view] ?? "Acessar"} />;
+  // Stripe color for accordion rows — derived from the view's StudyTypeKey
+  // (quiz / simulados / resumos / formula). One color across all rows.
+  const accentColor = STUDY_TYPE_CONFIG[view as StudyTypeKey]?.color;
+  return (
+    <TrackHubAccordion
+      groups={groups}
+      ctaLabel={CTA_FOR_VIEW[view] ?? "Acessar"}
+      accentColor={accentColor}
+    />
+  );
 }
 
 export const CTA_LABEL_FOR_VIEW = CTA_FOR_VIEW;

@@ -509,27 +509,29 @@
 
 /* ── Track signature colors ───────────────────────────────────────────────── */
 :root {
-  --c-questoes:   #7c3aed;
-  --c-simulados:  #9333ea;
-  --c-resumos:    #6d28d9;
-  --c-medvoice:   #4f46e5;
-  --c-formula:    #2563eb;
-  --c-audiocards: #0284c7;
-  --c-pop:        #06b6d4;
-  --c-medhelp60:  #94a3b8;
-  --c-success:    #059669;
+  --c-questoes:    #7c3aed;
+  --c-simulados:   #9333ea;
+  --c-resumos:     #6d28d9;
+  --c-medvoice:    #4f46e5;
+  --c-formula:     #2563eb;
+  --c-audiocards:  #0284c7;
+  --c-flashcards:  #06b6d4;
+  --c-pop:         #06b6d4;
+  --c-medhelp60:   #94a3b8;
+  --c-success:     #059669;
 }
 
 .dark {
-  --c-questoes:   #b39bff;
-  --c-simulados:  #c4b5fd;
-  --c-resumos:    #9789ff;
-  --c-medvoice:   #7d83ff;
-  --c-formula:    #6b91ff;
-  --c-audiocards: #5eb3ff;
-  --c-pop:        #66e0ff;
-  --c-medhelp60:  #3a4055;
-  --c-success:    #5dd6a8;
+  --c-questoes:    #b39bff;
+  --c-simulados:   #c4b5fd;
+  --c-resumos:     #9789ff;
+  --c-medvoice:    #7d83ff;
+  --c-formula:     #6b91ff;
+  --c-audiocards:  #5eb3ff;
+  --c-flashcards:  #66e0ff;
+  --c-pop:         #66e0ff;
+  --c-medhelp60:   #3a4055;
+  --c-success:     #5dd6a8;
 }
 
 /* ── Thin brand scrollbar ──────────────────────────────────────────────────── */

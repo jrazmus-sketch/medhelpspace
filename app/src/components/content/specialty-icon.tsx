@@ -38,6 +38,12 @@ const DEFAULT_CONFIG: IconConfig = {
   stops: ["#7a1d91", "#c084e8"],
 };
 
+/** First gradient stop for a specialty — useful as an accent stripe / border color. */
+export function getSpecialtyAccent(specialtySlug: string | null | undefined): string {
+  if (!specialtySlug) return DEFAULT_CONFIG.stops[0];
+  return (SPECIALTY_ICONS[specialtySlug] ?? DEFAULT_CONFIG).stops[0];
+}
+
 export function SpecialtyIcon({
   specialtySlug,
   size = 36,

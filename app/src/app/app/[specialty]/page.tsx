@@ -7,29 +7,12 @@ import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer
 import { TrackHubRenderer } from "@/components/content/track-hub-renderer";
 import { ViewHubRenderer } from "@/components/content/view-hub-renderer";
 import { buildCrumbsForPage, type Crumb } from "@/lib/breadcrumbs";
+import { STUDY_TYPE_CONFIG, type StudyTypeConfig, type StudyTypeKey } from "@/lib/page-type";
+import { TypeChip } from "@/components/content/type-chip";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  ClipboardList, ListChecks, ScrollText, Mic, FlaskConical,
-  Headphones, ChevronRight, type LucideIcon,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { PageView } from "@/types/supabase";
-
-// ── Study type config (view / track → display) ────────────────────────────────
-
-type TypeConfig = { label: string; desc: string; Icon: LucideIcon; color: string };
-
-const VIEW_CONFIG: Partial<Record<PageView, TypeConfig>> = {
-  quiz:       { label: "Questões Revalida",   desc: "Questões estilo INEP comentadas",          Icon: ClipboardList, color: "var(--c-questoes)"   },
-  simulados:  { label: "Simulados",           desc: "Treino de prova por casos clínicos",       Icon: ListChecks,    color: "var(--c-simulados)"  },
-  resumos:    { label: "Resumos Narrativos",  desc: "Narrativas clínicas por especialidade",    Icon: ScrollText,    color: "var(--c-resumos)"    },
-  formula:    { label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",      Icon: FlaskConical,  color: "var(--c-formula)"    },
-};
-
-const TRACK_CONFIG: Record<string, TypeConfig> = {
-  medvoice:   { label: "MedVoice",  desc: "Áudios por tema — a Clínica Fala",       Icon: Mic,       color: "var(--c-medvoice)"   },
-  audiocards: { label: "AudioCards", desc: "Revisão em áudio, cartão por cartão",   Icon: Headphones, color: "var(--c-audiocards)" },
-};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -93,9 +76,12 @@ export default async function SpecialtyHubPage({
         </div>
         <Breadcrumbs className="mb-6" crumbs={crumbs} />
         <header style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1.15, margin: 0 }}>
-            {page.title}
-          </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1.15, margin: 0 }}>
+              {page.title}
+            </h1>
+            <TypeChip page={page} />
+          </div>
         </header>
         {body}
       </div>
@@ -124,24 +110,23 @@ export default async function SpecialtyHubPage({
   ]);
 
   // Build type option cards: view-based hub pages
-  type TypeOption = { key: string; cfg: TypeConfig; href: string };
+  type TypeOption = { key: StudyTypeKey; cfg: StudyTypeConfig; href: string };
   const typeOptions: TypeOption[] = [];
 
   const VIEW_ORDER: PageView[] = ["quiz", "simulados", "resumos", "formula"];
   for (const view of VIEW_ORDER) {
-    const cfg = VIEW_CONFIG[view];
+    const cfg = STUDY_TYPE_CONFIG[view as StudyTypeKey];
     if (!cfg) continue;
     const hubPage = (hubPages ?? []).find(p => p.view === view);
     if (hubPage) {
-      typeOptions.push({ key: view, cfg, href: `/app/${slug}/${hubPage.slug}` });
+      typeOptions.push({ key: view as StudyTypeKey, cfg, href: `/app/${slug}/${hubPage.slug}` });
     }
   }
 
   // Track-based pages (medvoice, audiocards)
-  const TRACK_ORDER = ["medvoice", "audiocards"];
+  const TRACK_ORDER: StudyTypeKey[] = ["medvoice", "audiocards"];
   for (const trackSlug of TRACK_ORDER) {
-    const cfg = TRACK_CONFIG[trackSlug];
-    if (!cfg) continue;
+    const cfg = STUDY_TYPE_CONFIG[trackSlug];
     const track = (allTracks ?? []).find(t => t.slug === trackSlug);
     if (!track) continue;
     const trackPage = (trackPagesRaw ?? []).find(p => p.track_id === track.id);

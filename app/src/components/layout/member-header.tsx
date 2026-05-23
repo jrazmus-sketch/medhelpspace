@@ -20,15 +20,54 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
 
-const NAV_LINKS: { href: string; label: string; exact?: boolean; highlight?: boolean }[] = [
-  { href: "/app",                 label: "Início",     exact: true                  },
-  { href: "/app/plano",           label: "Meu Plano",                  highlight: true },
-  { href: "/app/estudo-por-questoes", label: "Questões"                              },
-  { href: "/app/resumos",         label: "Resumos"                                   },
-  { href: "/app/medvoice",        label: "MedVoice"                                  },
-  { href: "/app/formula-medhelp", label: "Fórmula"                                   },
-  { href: "/app/audiocards",      label: "AudioCards"                                },
+type NavLink = { href: string; label: string; exact?: boolean; highlight?: boolean };
+
+const PERSONAL_LINKS: NavLink[] = [
+  { href: "/app",       label: "Início",    exact: true     },
+  { href: "/app/plano", label: "Meu Plano", highlight: true },
 ];
+
+// Content links grouped by study modality — practice, read, listen.
+// Groups are separated visually by a slightly wider gap; no inline labels.
+const CONTENT_GROUPS: NavLink[][] = [
+  // practice (active recall)
+  [
+    { href: "/app/estudo-por-questoes", label: "Questões"   },
+    { href: "/app/flashcards",          label: "Flashcards" },
+  ],
+  // read (narrative / visual)
+  [
+    { href: "/app/resumos",         label: "Resumos" },
+    { href: "/app/formula-medhelp", label: "Fórmula" },
+  ],
+  // listen (audio)
+  [
+    { href: "/app/medvoice",   label: "MedVoice"   },
+    { href: "/app/audiocards", label: "AudioCards" },
+  ],
+];
+
+function renderNavLink(link: NavLink, pathname: string) {
+  const { href, label, exact, highlight } = link;
+  const active = exact ? pathname === href : pathname.startsWith(href);
+  return (
+    <Link
+      key={href}
+      href={href}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
+        active
+          ? "bg-foreground text-background"
+          : highlight
+            ? "text-brand hover:bg-brand/10"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+      )}
+    >
+      {highlight && <Calendar className="h-3.5 w-3.5" />}
+      {label}
+    </Link>
+  );
+}
 
 export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) {
   const pathname = usePathname();
@@ -71,27 +110,24 @@ export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) 
         </Link>
 
         {/* Nav */}
-        <nav className="hidden items-center gap-0.5 md:flex">
-          {NAV_LINKS.map(({ href, label, exact, highlight }) => {
-            const active = exact ? pathname === href : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
-                  active
-                    ? "bg-foreground text-background"
-                    : highlight
-                      ? "text-brand hover:bg-brand/10"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                )}
-              >
-                {highlight && <Calendar className="h-3.5 w-3.5" />}
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="hidden items-center md:flex">
+          {/* Personal cluster (Início, Meu Plano) */}
+          <div className="flex items-center gap-0.5">
+            {PERSONAL_LINKS.map((link) => renderNavLink(link, pathname))}
+          </div>
+
+          {/* Divider between personal and content */}
+          <span aria-hidden="true" className="mx-3 h-5 w-px bg-border" />
+
+          {/* Content cluster — modality groups separated by wider gap */}
+          {CONTENT_GROUPS.map((group, idx) => (
+            <div
+              key={idx}
+              className={cn("flex items-center gap-0.5", idx > 0 && "ml-3")}
+            >
+              {group.map((link) => renderNavLink(link, pathname))}
+            </div>
+          ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

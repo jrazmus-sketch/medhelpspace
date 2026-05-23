@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, ClipboardList, Mic, ScrollText, FlaskConical } from "lucide-react";
+import { Home, Calendar, Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Bottom nav is a quick-action surface, not a category browser. Content types
+// live on the dashboard (Início) and in the desktop top nav. Notifications and
+// theme remain in the top header (visible on mobile too).
 const NAV_ITEMS = [
-  { href: "/app",                  label: "Início",   Icon: Home,          exact: true },
-  { href: "/app/plano",            label: "Plano",    Icon: Calendar                   },
-  { href: "/app/estudo-por-questoes", label: "Questões", Icon: ClipboardList           },
-  { href: "/app/medvoice",         label: "MedVoice", Icon: Mic                        },
-  { href: "/app/resumos",          label: "Resumos",  Icon: ScrollText                 },
-  { href: "/app/formula-medhelp",  label: "Fórmula",  Icon: FlaskConical               },
+  { href: "/app",        label: "Início", Icon: Home,     exact: true },
+  { href: "/app/plano",  label: "Plano",  Icon: Calendar              },
+  { href: "/app/buscar", label: "Buscar", Icon: Search                },
+  { href: "/app/perfil", label: "Perfil", Icon: User                  },
 ];
 
 export function MobileNav() {

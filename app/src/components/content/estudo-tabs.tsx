@@ -1,27 +1,26 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTransition, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { STUDY_TYPE_CONFIG } from "@/lib/page-type";
+import { TypeChip } from "./type-chip";
 import { TrackHubAccordion, type SuperGroupData } from "./track-hub-accordion";
 
 type TabKey = "quiz" | "simulados";
 
-const TABS: { key: TabKey; label: string; desc: string; cta: string; color: string }[] = [
-  {
-    key: "quiz",
-    label: "Questões Revalida",
-    desc: "Questões estilo INEP comentadas — banco curado",
-    cta: "Responder",
-    color: "var(--brand)",
-  },
-  {
-    key: "simulados",
-    label: "Simulados",
-    desc: "Treino de prova por casos clínicos",
-    cta: "Treinar",
-    color: "var(--c-simulados)",
-  },
-];
+const CTA_FOR: Record<TabKey, string> = {
+  quiz: "Responder",
+  simulados: "Treinar",
+};
+
+const PAGE_NOUN: Record<TabKey, (n: number) => string> = {
+  quiz:      (n) => `${n} ${n === 1 ? "página" : "páginas"} de questões`,
+  simulados: (n) => `${n} ${n === 1 ? "simulado" : "simulados"}`,
+};
+
+function countPages(groups: SuperGroupData[]): number {
+  return groups.reduce((sum, g) => sum + g.items.length, 0);
+}
 
 export function EstudoTabs({
   quizGroups,
@@ -50,82 +49,141 @@ export function EstudoTabs({
     });
   }
 
-  const activeTab = TABS.find((t) => t.key === active)!;
+  const order: TabKey[] = ["quiz", "simulados"];
+  const counts: Record<TabKey, number> = {
+    quiz: countPages(quizGroups),
+    simulados: countPages(simuladosGroups),
+  };
+
   const activeGroups = active === "quiz" ? quizGroups : simuladosGroups;
+  const activeCfg = STUDY_TYPE_CONFIG[active];
 
   return (
     <div>
-      {/* Tab bar */}
+      {/* Header — sized to match sibling type-hub pages.
+          Chip reacts to the active source; key={active} replays the entrance
+          animation so the swap is visually punctuated. */}
+      <header style={{ marginBottom: 28, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <h1 style={{
+          fontSize: "clamp(20px, 5vw, 26px)",
+          fontWeight: 600,
+          letterSpacing: "-.025em",
+          lineHeight: 1.15,
+          margin: 0,
+        }}>
+          Estudo por Questões
+        </h1>
+        <span
+          key={active}
+          style={{
+            display: "inline-flex",
+            animation: "dash-fade-up 0.32s cubic-bezier(.16,1,.3,1) both",
+          }}
+        >
+          <TypeChip typeKey={active} size="md" />
+        </span>
+      </header>
+
+      {/* Two choice cards — visually match the dashboard's "Escolha como estudar" cards
+          so the user gets a continuation of the same affordance language. */}
       <div
         role="tablist"
         aria-label="Tipo de prática"
-        style={{
-          display: "flex",
-          gap: 4,
-          padding: 4,
-          background: "var(--surface-1)",
-          borderRadius: "var(--radius)",
-          outline: "1px solid var(--surface-2)",
-          outlineOffset: "-1px",
-          marginBottom: 16,
-          width: "fit-content",
-          maxWidth: "100%",
-          overflowX: "auto",
-        }}
+        className="grid grid-cols-2 gap-2.5 sm:gap-3"
+        style={{ marginBottom: 28 }}
       >
-        {TABS.map((t) => {
-          const isActive = t.key === active;
+        {order.map((key) => {
+          const cfg = STUDY_TYPE_CONFIG[key];
+          const Icon = cfg.Icon;
+          const isActive = key === active;
+
+          // Active: full gradient (mirrors dashboard cards).
+          // Inactive: surface-1 + 1px outline, accent color reserved for the icon.
+          const background = isActive
+            ? `linear-gradient(140deg, color-mix(in srgb, ${cfg.color} 92%, #1a0030) 0%, ${cfg.color} 100%)`
+            : "var(--surface-1)";
+          const titleColor = isActive ? "#fff" : "var(--foreground)";
+          const iconColor = isActive ? "rgba(255,255,255,0.92)" : cfg.color;
+          const descColor = isActive ? "rgba(255,255,255,0.7)" : "var(--muted-foreground)";
+          const countColor = isActive ? "rgba(255,255,255,0.85)" : "var(--muted-foreground)";
+
           return (
             <button
-              key={t.key}
+              key={key}
               role="tab"
               aria-selected={isActive}
-              onClick={() => select(t.key)}
+              onClick={() => select(key)}
               style={{
-                padding: "10px 18px",
-                borderRadius: "calc(var(--radius) - 4px)",
+                borderRadius: "var(--radius)",
+                padding: "16px 14px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                background,
                 border: "none",
-                background: isActive ? t.color : "transparent",
-                color: isActive ? "#fff" : "var(--foreground)",
-                fontSize: 13.5,
-                fontWeight: 600,
-                letterSpacing: "-.01em",
-                cursor: "pointer",
-                transition: "background .25s ease, color .25s ease",
-                whiteSpace: "nowrap",
-                minHeight: 44, // mobile tap target
+                outline: isActive ? "none" : "1px solid var(--surface-2)",
+                outlineOffset: "-1px",
+                textAlign: "left",
+                cursor: isActive ? "default" : "pointer",
+                minHeight: 132,
+                transition: "background .25s ease, outline-color .25s ease",
               }}
               className={isActive ? "" : "hover:bg-surface-2"}
             >
-              {t.label}
+              <Icon size={22} strokeWidth={1.6} style={{ color: iconColor, flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{
+                  fontSize: "clamp(14px, 2.2vw, 16px)",
+                  fontWeight: 700,
+                  letterSpacing: "-.02em",
+                  lineHeight: 1.2,
+                  color: titleColor,
+                }}>
+                  {cfg.label}
+                </div>
+                <div className="hidden sm:block" style={{
+                  fontSize: 12,
+                  marginTop: 6,
+                  lineHeight: 1.4,
+                  color: descColor,
+                }}>
+                  {cfg.desc}
+                </div>
+                <div style={{
+                  fontSize: 11,
+                  marginTop: 8,
+                  fontWeight: 600,
+                  letterSpacing: ".04em",
+                  color: countColor,
+                  fontFamily: "var(--font-geist-mono)",
+                }}>
+                  {PAGE_NOUN[key](counts[key])}
+                </div>
+              </div>
             </button>
           );
         })}
       </div>
 
-      {/* Active tab description */}
-      <p
-        style={{
-          margin: "0 0 20px",
-          fontSize: 13.5,
-          color: "var(--muted-foreground)",
-          lineHeight: 1.5,
-        }}
+      {/* Accordion for the active source.
+          key={active} forces remount on toggle → the wrapper's fade-up animation
+          replays, giving a clear visual signal that the content has switched. */}
+      <div
+        key={active}
+        style={{ animation: "dash-fade-up 0.36s cubic-bezier(.16,1,.3,1) both" }}
       >
-        {activeTab.desc}
-      </p>
-
-      {/* Accordion */}
-      {activeGroups.length === 0 ? (
-        <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>Conteúdo em preparação.</p>
-      ) : (
-        <TrackHubAccordion
-          key={active}
-          groups={activeGroups}
-          ctaLabel={activeTab.cta}
-          accentColor={activeTab.color}
-        />
-      )}
+        {activeGroups.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+            Conteúdo em preparação.
+          </p>
+        ) : (
+          <TrackHubAccordion
+            groups={activeGroups}
+            ctaLabel={CTA_FOR[active]}
+            accentColor={activeCfg.color}
+          />
+        )}
+      </div>
     </div>
   );
 }

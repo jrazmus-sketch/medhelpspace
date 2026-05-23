@@ -10,6 +10,8 @@ import { MemorecardsRenderer } from "@/components/content/memorecards-renderer";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { PageTracker } from "@/components/content/page-tracker";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
+import { TypeChip } from "@/components/content/type-chip";
+import { EditableText } from "@/components/admin/editable-text";
 import { buildCrumbsForPage, findSpecialtyHub, type Crumb } from "@/lib/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -89,9 +91,18 @@ export default async function ContentPage({
       <Breadcrumbs className="mb-6" crumbs={crumbs} />
 
       <header className="mb-8">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <SpecialtyIcon specialtySlug={specialty} size={38} />
-          <h1 className="text-3xl font-bold leading-tight">{page.title}</h1>
+          <h1 className="text-3xl font-bold leading-tight">
+            <EditableText
+              variant="plain"
+              table="pages"
+              id={page.id}
+              field="title"
+              value={page.title}
+            />
+          </h1>
+          <TypeChip page={page} />
         </div>
         {specialtyForCrumbs && !isSpecialtyAllContentTarget(page, specialtyForCrumbs.slug) && (
           <div className="mt-3">
@@ -103,9 +114,12 @@ export default async function ContentPage({
             </Link>
           </div>
         )}
+        {isSimulado(page) && (
+          <p className="mt-4 text-sm italic text-muted-foreground">
+            Questões inéditas no padrão da banca
+          </p>
+        )}
       </header>
-
-      {isSimulado(page) && <SimuladoBanner />}
 
       <PageBody
         page={page as { id: number; type: string; track_id: number | null; content_module_id: number | null }}
@@ -129,19 +143,6 @@ function isSimulado(page: { slug: string; type: string }) {
 // page is served by [specialty]/page.tsx, not here. Kept for future-proofing.
 function isSpecialtyAllContentTarget(page: { slug: string }, specialtySlug: string) {
   return page.slug === specialtySlug;
-}
-
-function SimuladoBanner() {
-  return (
-    <div className="mb-8 border-b border-border pb-4">
-      <p className="text-base font-bold text-brand">
-        SIMULADO REVALIDA INEP | MedHelpSpace
-      </p>
-      <p className="mt-1 text-sm italic text-muted-foreground">
-        Questões inéditas no padrão da banca
-      </p>
-    </div>
-  );
 }
 
 function PageBody({

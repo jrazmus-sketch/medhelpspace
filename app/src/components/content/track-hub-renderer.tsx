@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TrackHubAccordion } from "@/components/content/track-hub-accordion";
 import { Card, CardContent } from "@/components/ui/card";
+import { STUDY_TYPE_CONFIG, getStudyTypeKey } from "@/lib/page-type";
 import Link from "next/link";
 
 export async function TrackHubRenderer({
@@ -30,6 +31,12 @@ export async function TrackHubRenderer({
   if (pages.length === 0) {
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
+
+  // Stripe color for each accordion row — derived from the track's StudyTypeKey
+  // (medvoice / audiocards / flashcards). Same color across all rows because the
+  // entire hub is a single type-ground.
+  const typeKey = getStudyTypeKey({ view: null, track_id: trackId, content_module_id: null });
+  const accentColor = typeKey ? STUDY_TYPE_CONFIG[typeKey].color : undefined;
 
   type Spec = { id: number; slug: string; name: string; display_order: number; group_label: string | null };
   const specMap = new Map<number, Spec>(
@@ -69,7 +76,7 @@ export async function TrackHubRenderer({
 
     const superGroups = [...superMap.values()].sort((a, b) => a.minOrder - b.minOrder);
 
-    return <TrackHubAccordion groups={superGroups} />;
+    return <TrackHubAccordion groups={superGroups} accentColor={accentColor} />;
   }
 
   // Multiple pages per some specialties → grouped sections with page cards
