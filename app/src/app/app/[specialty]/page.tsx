@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { VoltarButton } from "@/components/layout/voltar-button";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { TrackHubRenderer } from "@/components/content/track-hub-renderer";
 import { ViewHubRenderer } from "@/components/content/view-hub-renderer";
+import { buildCrumbsForPage, type Crumb } from "@/lib/breadcrumbs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -59,7 +61,7 @@ export default async function SpecialtyHubPage({
     const admin = createAdminClient();
     const { data: page } = await admin
       .from("pages")
-      .select("id, title, type, track_id, view")
+      .select("id, title, slug, type, track_id, view, specialty_id, content_module_id")
       .eq("slug", slug)
       .single();
 
@@ -76,9 +78,20 @@ export default async function SpecialtyHubPage({
 
     if (!body) notFound();
 
+    // Top-level type hub (no specialty) → buildCrumbsForPage emits
+    // [Início, <Type root terminal>]. Voltar falls back to /app.
+    const crumbs: Crumb[] = buildCrumbsForPage({
+      page,
+      specialty: null,
+      specialtyHubSlug: null,
+    });
+
     return (
       <div style={{ maxWidth: 1280, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
-        <Breadcrumbs className="mb-6" />
+        <div className="mb-2">
+          <VoltarButton fallbackHref="/app" />
+        </div>
+        <Breadcrumbs className="mb-6" crumbs={crumbs} />
         <header style={{ marginBottom: 28 }}>
           <h1 style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1.15, margin: 0 }}>
             {page.title}
@@ -139,9 +152,18 @@ export default async function SpecialtyHubPage({
 
   const emoji = (spec as { emoji?: string }).emoji;
 
+  // Specialty all-content hub: Início > <Specialty terminal>.
+  const crumbs: Crumb[] = [
+    { label: "Início", href: "/app" },
+    { label: spec.name },
+  ];
+
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
-      <Breadcrumbs className="mb-6" />
+      <div className="mb-2">
+        <VoltarButton fallbackHref="/app" />
+      </div>
+      <Breadcrumbs className="mb-6" crumbs={crumbs} />
 
       {/* ── Header ── */}
       <header style={{ marginBottom: 32 }}>

@@ -1,5 +1,6 @@
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { VoltarButton } from "@/components/layout/voltar-button";
 import { getViewHubGroups } from "@/components/content/view-hub-renderer";
 import { EstudoTabs } from "@/components/content/estudo-tabs";
 
@@ -25,6 +26,9 @@ export default async function EstudoPorQuestoesPage({
 
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
+      <div className="mb-2">
+        <VoltarButton fallbackHref="/app" />
+      </div>
       <Breadcrumbs className="mb-6" />
 
       <header style={{ marginBottom: 28 }}>
