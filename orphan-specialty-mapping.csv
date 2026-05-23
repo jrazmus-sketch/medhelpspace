@@ -1,0 +1,119 @@
+stem,title,views,page_count,specialty_id,specialty,status
+discursivas,"Discursivas Simulados",simulados,1,,,skip-hub
+formula-medhelp,"Fórmula MedHelp",formula,1,,,skip-hub
+objetivas,"Objetivas Simulados",simulados,1,,,skip-hub
+resumos,"Resumos",resumos,1,,,skip-hub
+simulados,"Simulados",simulados,1,,,skip-hub
+insuficiencia-cardiaca,"Insuficiência Cardíaca",resumos,1,1,Cardiologia,ok
+valvulopatias,"Valvulopatias",quiz,1,1,Cardiologia,ok
+delirium,"Delirium Formula",formula,1,11,Psiquiatria,AMBIGUOUS
+artrite-infecciosa,"Artrite Infecciosa Formula",formula,1,12,Reumatologia,ok
+abdome-agudo-hemorragico,"Abdome Agudo Hemorrágico Formula",formula+resumos+simulados,3,13,Cirurgia Geral,ok
+abdome-agudo-obstrutivo,"Abdome Agudo Obstrutivo",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+abdome-agudo-perfurativo,"Abdome Agudo Perfurativo",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+abdome-agudo-vascular,"Abdome Agudo Vascular",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+apendicite,"Apendicite",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+cancer-de-colorretal,"Câncer de Colorretal",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+cancer-de-esofago,"Câncer de Esôfago",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+cancer-de-estomago,"Câncer de Estômago Formula",formula+resumos+simulados,3,13,Cirurgia Geral,ok
+cirurgia-pediatrica,"Cirurgia Pediátrica",quiz+simulados,2,13,Cirurgia Geral,AMBIGUOUS
+colecistite,"Colecistite",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+diverticulite,"Diverticulite",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+doencas-hepatobiliares,"Doenças Hepatobiliares",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+doencas-orificiais,"Doenças Orificiais",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+estenose-hipertrofica-do-piloro,"Estenose Hipertrófica do Piloro",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,AMBIGUOUS
+feridas-cirurgicas,"Feridas Cirúrgicas",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+hemorragia-digestiva,"Hemorragia Digestiva",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,AMBIGUOUS
+hemorroidas,"Hemorroidas Resumos",resumos,1,13,Cirurgia Geral,ok
+hernias,"Hérnias",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+invaginacao-intestinal-em-lactente,"Invaginação Intestinal em Lactente",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,AMBIGUOUS
+pancreatite,"Pancreatite",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+perioperatorio,"Perioperatório",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+queimados,"Queimados",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+tec,"TCE",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+tecnica-cirurgica,"Técnica Cirúrgica Formula",formula,1,13,Cirurgia Geral,ok
+trauma-abdominal-e-pelvico,"Trauma Abdominal e Pélvico",quiz,1,13,Cirurgia Geral,ok
+trauma-atendimento-inicial-e-vias-aereas,"Trauma Atendimento Inicial e Vias Aéreas Resumos",resumos,1,13,Cirurgia Geral,ok
+trauma-atendimento-inicial-e-vias-areas,"Trauma - Atendimento Inicial e Vias Áreas Formula",formula+simulados,2,13,Cirurgia Geral,ok
+trauma-de-torax,"Trauma de Tórax",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+trauma-osteomielite,"Trauma - Osteomielite",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+trauma-raquimedular,"Trauma Raquimedular",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+tumor-de-pancreas,"Tumor de Pâncreas",quiz+formula+resumos+simulados,4,13,Cirurgia Geral,ok
+amenorreia,"Amenorreia",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+anticoncepcao,"Anticoncepção",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+cancer-de-endometrio,"Câncer de Endométrio",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+cancer-de-mama,"Câncer de Mama",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+cancer-de-ovario,"Câncer de Ovário",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+cervicite-e-vulvovaginite,"Cervicite e Vulvovaginite",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+climaterio,"Climatério",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+distopias-genitais,"Distopias Genitais Formula",formula+resumos+simulados,3,14,Ginecologia,ok
+disturbio-do-desenvolvimento-sexual,"Distúrbio do Desenvolvimento Sexual",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+doenca-inflamatoria-pelvica,"Doença Inflamatória Pélvica",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+doencas-benignas-da-mama,"Doenças Benignas da Mama",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+doencas-benignas-do-utero,"Doenças Benignas do Útero",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+doencas-ovarianas,"Doenças Ovarianas",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+endometriose,"Endometriose",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+fisiologia-menstrual,"Fisiologia Menstrual",quiz,1,14,Ginecologia,ok
+hpv-e-cancer-de-colo,"HPV e Câncer de Colo  Simulados",simulados,1,14,Ginecologia,ok
+hpv-e-cancer-de-colo-uterino,"HPV e Câncer de Colo Uterino",quiz+formula+resumos,3,14,Ginecologia,ok
+patologias-da-vulva,"Patologias da Vulva",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+planejamento-familiar,"Planejamento Familiar",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+sangramento-uterino-anormal,"Sangramento Uterino Anormal",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+sindrome-dos-ovarios-policisticos,"Síndrome dos Ovários Policísticos",quiz+formula+resumos+simulados,4,14,Ginecologia,ok
+aborto,"Aborto",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+assistencia-clinica-ao-parto,"Assistência Clínica ao Parto",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+assistencia-pre-natal,"Assistência Pré-Natal",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+diabetes-da-gestacao,"Diabetes da Gestação",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+gestacao-ectopica,"Gestação Ectópica",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+hiv-e-gestacao,"HIV na Gestação Resumos",resumos,1,15,Obstetrícia,ok
+infeccao-urinaria-na-gestacao,"Infecção Urinária na Gestação",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+isoimunizacao-rh,"Isoimunização RH",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+mecanismo-de-parto,"Mecanismo de Parto",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+prematuridade,"Prematuridade",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+puerperio,"Puerpério",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+relacoes-uterofetais,"Relações Uterofetais",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+rotura-prematura-de-membranas,"Rotura Prematura de Membranas",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+sifilis-na-gestacao,"Sífilis na Gestação",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+sindromes-hemorragicas-da-gestacao,"Síndromes Hemorrágicas da Gestação",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+sindromes-hipertensivas-na-gestacao,"Síndromes Hipertensivas na Gestação",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+toxoplasmose-na-gestacao,"Toxoplasmose na Gestação",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+vitalidade-fetal,"Vitalidade Fetal",quiz+formula+resumos+simulados,4,15,Obstetrícia,ok
+aleitamento-materno,"Aleitamento Materno",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+alimentacao-complementar-do-lactente,"Alimentação Complementar do Lactente",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+bronquiolite,"Bronquiolite",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+convulsao-febril,"Convulsão Febril",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+desnutricao-e-obesidade-na-infancia,"Desnutrição e Obesidade na Infância",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+diarreia-e-desidratacao,"Diarreia e Desidratação",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+disturbios-do-crescimento-e-desenvolvimento,"Distúrbios do Crescimento e Desenvolvimento",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+faringoamigdalite-estreptococica,"Faringoamigdalite Estreptocócica",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+febre-sem-sinais-de-localizacao,"Febre sem sinais de localização Resumos",resumos,1,16,Pediatria,ok
+ictericia-neonatal,"Icterícia neonatal",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+imunizacoes,"Imunizações",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+ivas-resfriado-sinusite-e-otite,"IVAS - resfriado, sinusite e otite Resumos",resumos,1,16,Pediatria,ok
+laringite-viral-crupe,"Laringite Viral (crupe)",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+malformacoes-congenitas,"Malformações Congênitas",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+manejo-inicial-do-desconforto-respiratorio-no-recem-nascido,"Manejo Inicial do Desconforto Respiratório no Recém-Nascido",formula,1,16,Pediatria,ok
+manejo-inicial-do-desconforto-respiratorio-no-recem-nascido-quiz,"Manejo Inicial do Desconforto Respiratório no Recém-Nascido",quiz,1,16,Pediatria,ok
+maus-tratos-e-prevencoes-de-acidentes-na-infancia,"Maus Tratos e Prevenções de Acidentes na Infância",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+puericultura,"Puericultura",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+reanimacao-neonatal,"Reanimação Neonatal",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+sepse-neonatal,"Sepse Neonatal",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+sindrome-do-desconforto-respiratorio,"Síndrome do Desconforto Respiratório Resumos",resumos+simulados,2,16,Pediatria,AMBIGUOUS
+taquipneia-transitoria-do-recem-nascido,"Taquipneia Transitória do Recém-Nascido",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+tohchs,"TOHCHS",quiz,1,16,Pediatria,AMBIGUOUS
+torchs,"TORCHS Formula",formula+resumos+simulados,3,16,Pediatria,AMBIGUOUS
+triagem-neonatal,"Triagem Neonatal",quiz+formula+resumos+simulados,4,16,Pediatria,ok
+tumor-neuroendocrino-infantil,"Tumor Neuroendócrino Infantil",quiz+formula+resumos+simulados,4,16,Pediatria,AMBIGUOUS
+atencao-ao-idoso,"Atenção ao Idoso",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+atencao-basica,"Atenção Básica",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+bioestatistica,"Bioestatística Formula",formula+resumos+simulados,3,17,Saúde Coletiva,ok
+declaracao-de-obito,"Declaração de Óbito",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+estudos-epidemiologicos,"Estudos Epidemiológicos",quiz+resumos,2,17,Saúde Coletiva,ok
+etica-medica,"Ética Médica / Medicina Legal",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+indicadores-de-saude,"Indicadores de Saúde Formula",formula+resumos+simulados,3,17,Saúde Coletiva,ok
+medicina-do-trabalho,"Medicina do Trabalho",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+processo-saude-doenca,"Processo Saúde – Doença",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+sus-historico-principios-e-diretrizes,"SUS: Histórico, Princípios e Diretrizes",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+testes-diagnosticos,"Testes Diagnósticos",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+vigilancia-epidemiologica,"Vigilância Epidemiológica",quiz+formula+resumos+simulados,4,17,Saúde Coletiva,ok
+leptospirose,"Leptospirose Formula",formula,1,7,Infectologia,ok
