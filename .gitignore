@@ -49,3 +49,9 @@ app/lint_results.txt
 # Scratch / one-off debug scripts (convention: filename prefix with `_`)
 scripts/_*.py
 scripts/_*.js
+
+# Scratch outputs — generated SQL, audit reports, etc. Not source.
+scratch/
+
+# Generated Bunny CDN file listing — regenerable via scripts/bunny-list-medvoice.js
+scripts/bunny-medvoice-listing.json

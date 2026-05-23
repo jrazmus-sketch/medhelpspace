@@ -91,10 +91,19 @@ export async function TextLessonRenderer({
   pageId,
   selectedLessonId,
   isTranscript = false,
+  pageTitle,
+  specialtySlug,
+  backHref,
 }: {
   pageId: number;
   selectedLessonId?: number;
   isTranscript?: boolean;
+  /** Needed for the mobile player's album area. */
+  pageTitle?: string;
+  /** Needed for the mobile player's specialty icon + ambient color. */
+  specialtySlug?: string;
+  /** Back-navigation target shown in the mobile player's top chrome. */
+  backHref?: string;
 }) {
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
@@ -165,16 +174,18 @@ export async function TextLessonRenderer({
       />
 
       <div className="flex-1 min-w-0">
-        {/* Section title */}
-        <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-brand text-foreground">
-          <EditableText
-            variant="plain"
-            table="lessons"
-            id={activeLesson.id}
-            field="title"
-            value={activeLesson.title}
-          />
-        </h2>
+        {/* Section title — hidden when audio is present (the player absorbs it as its track name) */}
+        {!activeLesson.audio_url && (
+          <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-brand text-foreground">
+            <EditableText
+              variant="plain"
+              table="lessons"
+              id={activeLesson.id}
+              field="title"
+              value={activeLesson.title}
+            />
+          </h2>
+        )}
 
         {/* Audio player */}
         {activeLesson.audio_url && (
@@ -183,16 +194,53 @@ export async function TextLessonRenderer({
             title="MedVoice · Áudio"
             lessonId={activeLesson.id}
             initialPosition={positionByLesson.get(activeLesson.id) ?? 0}
+            sectionTitle={activeLesson.title}
+            sectionTitleNode={
+              <EditableText
+                variant="plain"
+                table="lessons"
+                id={activeLesson.id}
+                field="title"
+                value={activeLesson.title}
+              />
+            }
+            nextHref={nextLesson ? `?s=${nextLesson.id}` : null}
+            nextTitle={nextLesson?.title ?? null}
+            prevHref={prevLesson ? `?s=${prevLesson.id}` : null}
+            pageTitle={pageTitle}
+            specialtySlug={specialtySlug}
+            sections={lessons.map((l) => ({
+              id: l.id,
+              title: l.title,
+              href: `?s=${l.id}`,
+              isActive: l.id === activeLesson.id,
+            }))}
+            transcriptNode={activeLesson.body_html ? (
+              <EditableText
+                variant="rich"
+                table="lessons"
+                id={activeLesson.id}
+                field="body_html"
+                className="prose-content prose-transcript"
+                html={safe(processHtml(activeLesson.body_html))}
+                editHtml={activeLesson.body_html}
+              />
+            ) : null}
+            backHref={backHref}
           />
         )}
 
         {/* Transcript.
             Edit-mode contentEditable seeds from the RAW body_html (editHtml)
-            so processHtml's Bloco-header transforms don't get written back. */}
+            so processHtml's Bloco-header transforms don't get written back.
+
+            On mobile (md:hidden) the mobile player owns the transcript via its
+            "Transcrição" tab; the standalone <details> below would duplicate it,
+            so hide it on mobile when audio is present. */}
         {activeLesson.body_html ? (
           activeLesson.audio_url ? (
-            /* Has audio: collapse transcript behind a toggle */
-            <details className="transcript-toggle">
+            /* Has audio: collapse transcript behind a toggle (desktop only) */
+            <details className="transcript-toggle hidden md:block">
               <summary>Transcrição do áudio</summary>
               <div className="transcript-body">
                 <EditableText

@@ -509,8 +509,8 @@
 
 /* ── Track signature colors ───────────────────────────────────────────────── */
 :root {
-  --c-questoes:    #7c3aed;
-  --c-simulados:   #9333ea;
+  --c-questoes:    #7a1d91;
+  --c-simulados:   #0d9488;
   --c-resumos:     #6d28d9;
   --c-medvoice:    #4f46e5;
   --c-formula:     #2563eb;
@@ -522,8 +522,8 @@
 }
 
 .dark {
-  --c-questoes:    #b39bff;
-  --c-simulados:   #c4b5fd;
+  --c-questoes:    #c084e8;
+  --c-simulados:   #5eead4;
   --c-resumos:     #9789ff;
   --c-medvoice:    #7d83ff;
   --c-formula:     #6b91ff;
@@ -592,6 +592,90 @@
   .card-accent-left {
     border-left: 3px solid var(--brand);
   }
+}
+
+/* ── App header sticky offset ────────────────────────────────────────────── */
+/* The member layout pins admin-bar + header as one sticky block at top:0.
+   Anything else sticky on the page (audio player, lesson sidebar) should
+   stick BELOW that block, not under it. Default = header alone (52px + slack);
+   admin-bar.tsx bumps this when its bar is visible. */
+:root { --app-sticky-top: 60px; }
+
+/* ── Audio player animations ──────────────────────────────────────────────── */
+
+/* Soft halo radiating from the play button while audio is playing */
+@keyframes mhs-ap-pulse-ring {
+  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--c-medvoice) 55%, transparent); }
+  70%  { box-shadow: 0 0 0 14px color-mix(in srgb, var(--c-medvoice)  0%, transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--c-medvoice)  0%, transparent); }
+}
+
+/* Subtle bar-bob on the waveform while playing — staggered via inline animation-delay */
+@keyframes mhs-ap-bar-bob {
+  0%, 100% { transform: scaleY(0.96); }
+  50%      { transform: scaleY(1.08); }
+}
+
+/* Mobile player: slow ambient drift on the hero specialty backdrop */
+@keyframes mhs-ap-ambient-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(2%, -1.5%, 0) scale(1.04); }
+  66%      { transform: translate3d(-1.5%, 2%, 0) scale(0.98); }
+}
+
+/* Mobile player: ECG trace scrolls continuously across the hero bottom while playing */
+@keyframes mhs-ap-ecg-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Mobile player: section title cross-fade on section switch (keyed by section title) */
+@keyframes mhs-ap-title-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile player: zoom-in transition when expanding to fullscreen overlay */
+@keyframes mhs-ap-fullscreen-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Mobile player: invert prose for the dark transcript tab.
+   `--mhs-accent` is set inline per-render to the specialty color so the
+   transcript's brand accents pick up the page's identity (cardiologia red,
+   dermatologia pink, etc.) instead of the global MedVoice purple. */
+.mhs-mobile-transcript .prose-content {
+  color: rgba(255, 255, 255, 0.88);
+}
+.mhs-mobile-transcript .prose-content h1,
+.mhs-mobile-transcript .prose-content h2,
+.mhs-mobile-transcript .prose-content h3,
+.mhs-mobile-transcript .prose-content h4,
+.mhs-mobile-transcript .prose-content strong {
+  color: #fff;
+}
+.mhs-mobile-transcript .prose-content a {
+  color: color-mix(in srgb, var(--mhs-accent, var(--c-medvoice)) 60%, white);
+}
+.mhs-mobile-transcript .bloco-header {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+/* Override the MedVoice-brand-purple intro title with the specialty accent. */
+.mhs-mobile-transcript .mv-intro-title,
+.dark .mhs-mobile-transcript .mv-intro-title {
+  color: var(--mhs-accent, var(--brand));
+}
+.mhs-mobile-transcript .mv-intro-block {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.mhs-mobile-transcript .mv-intro-sub {
+  color: rgba(255, 255, 255, 0.7);
+}
+/* WP inline-color brand pop in transcript bodies — also recolor to accent. */
+.mhs-mobile-transcript .prose-brand-color {
+  color: color-mix(in srgb, var(--mhs-accent, var(--c-medvoice)) 65%, white) !important;
 }
 
 /* ── Dashboard animations ──────────────────────────────────────────────────── */

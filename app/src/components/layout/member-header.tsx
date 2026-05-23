@@ -19,35 +19,50 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/auth-provider";
+import {
+  STUDY_TYPE_CONFIG,
+  getStudyTypeFromPathname,
+  type StudyTypeKey,
+} from "@/lib/page-type";
 
-type NavLink = { href: string; label: string; exact?: boolean; highlight?: boolean };
+type PersonalLink = { href: string; label: string; exact?: boolean; highlight?: boolean };
 
-const PERSONAL_LINKS: NavLink[] = [
+const PERSONAL_LINKS: PersonalLink[] = [
   { href: "/app",       label: "Início",    exact: true     },
   { href: "/app/plano", label: "Meu Plano", highlight: true },
 ];
 
+// `typeKey` drives the in-section accent color (matches TypeChip vocab).
+// `matchTypes` defaults to [typeKey]; Questões accepts both quiz + simulados
+// because simulados live under the same hub.
+type ContentLink = {
+  href: string;
+  label: string;
+  typeKey: StudyTypeKey;
+  matchTypes?: StudyTypeKey[];
+};
+
 // Content links grouped by study modality — practice, read, listen.
 // Groups are separated visually by a slightly wider gap; no inline labels.
-const CONTENT_GROUPS: NavLink[][] = [
+const CONTENT_GROUPS: ContentLink[][] = [
   // practice (active recall)
   [
-    { href: "/app/estudo-por-questoes", label: "Questões"   },
-    { href: "/app/flashcards",          label: "Flashcards" },
+    { href: "/app/estudo-por-questoes", label: "Questões",   typeKey: "quiz", matchTypes: ["quiz", "simulados"] },
+    { href: "/app/flashcards",          label: "Flashcards", typeKey: "flashcards" },
   ],
   // read (narrative / visual)
   [
-    { href: "/app/resumos",         label: "Resumos" },
-    { href: "/app/formula-medhelp", label: "Fórmula" },
+    { href: "/app/resumos",         label: "Resumos", typeKey: "resumos" },
+    { href: "/app/formula-medhelp", label: "Fórmula", typeKey: "formula" },
   ],
   // listen (audio)
   [
-    { href: "/app/medvoice",   label: "MedVoice"   },
-    { href: "/app/audiocards", label: "AudioCards" },
+    { href: "/app/medvoice",   label: "MedVoice",   typeKey: "medvoice" },
+    { href: "/app/audiocards", label: "AudioCards", typeKey: "audiocards" },
   ],
 ];
 
-function renderNavLink(link: NavLink, pathname: string) {
+function renderPersonalLink(link: PersonalLink, pathname: string) {
   const { href, label, exact, highlight } = link;
   const active = exact ? pathname === href : pathname.startsWith(href);
   return (
@@ -69,11 +84,41 @@ function renderNavLink(link: NavLink, pathname: string) {
   );
 }
 
+function renderContentLink(
+  link: ContentLink,
+  pathname: string,
+  currentType: StudyTypeKey | null,
+) {
+  const { href, label, typeKey } = link;
+  const matchTypes = link.matchTypes ?? [typeKey];
+  const isRoot = pathname === href;
+  const isInSection = !isRoot && currentType != null && matchTypes.includes(currentType);
+  return (
+    <Link
+      key={href}
+      href={href}
+      aria-current={isRoot ? "page" : isInSection ? "true" : undefined}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] transition-colors",
+        isRoot
+          ? "bg-foreground text-background font-medium"
+          : isInSection
+            ? "font-semibold hover:bg-accent"
+            : "font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
+      )}
+      style={isInSection ? { color: STUDY_TYPE_CONFIG[typeKey].color } : undefined}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isAnyAdmin } = useAuth();
   const { theme, setTheme } = useTheme();
+  const currentType = getStudyTypeFromPathname(pathname);
 
   async function handleTheme(value: "light" | "dark" | "system") {
     setTheme(value);
@@ -113,7 +158,7 @@ export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) 
         <nav className="hidden items-center md:flex">
           {/* Personal cluster (Início, Meu Plano) */}
           <div className="flex items-center gap-0.5">
-            {PERSONAL_LINKS.map((link) => renderNavLink(link, pathname))}
+            {PERSONAL_LINKS.map((link) => renderPersonalLink(link, pathname))}
           </div>
 
           {/* Divider between personal and content */}
@@ -125,7 +170,7 @@ export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) 
               key={idx}
               className={cn("flex items-center gap-0.5", idx > 0 && "ml-3")}
             >
-              {group.map((link) => renderNavLink(link, pathname))}
+              {group.map((link) => renderContentLink(link, pathname, currentType))}
             </div>
           ))}
         </nav>

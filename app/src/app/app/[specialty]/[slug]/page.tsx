@@ -81,16 +81,27 @@ export default async function ContentPage({
 
   const selectedLessonId = s ? parseInt(s, 10) : undefined;
 
+  // On mobile, audio-lesson pages on MedVoice / Audiocards tracks render the
+  // player as the entire page (no surrounding chrome). The player carries its
+  // own back button + page identity.
+  const isMobileFullScreenAudio = isAudioLessonPage(page);
+  const chromeClass = isMobileFullScreenAudio ? "hidden md:block" : "";
+  const outerPadClass = isMobileFullScreenAudio
+    ? "pt-2 pb-2 md:py-8"
+    : "py-8";
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <div className={`mx-auto max-w-4xl px-4 sm:px-6 ${outerPadClass}`}>
       <PageTracker pageId={page.id} />
 
-      <div className="mb-2 flex items-center justify-between gap-3">
+      <div className={`mb-2 flex items-center justify-between gap-3 ${chromeClass}`}>
         <VoltarButton fallbackHref={voltarFallback} />
       </div>
-      <Breadcrumbs className="mb-6" crumbs={crumbs} />
+      <div className={chromeClass}>
+        <Breadcrumbs className="mb-6" crumbs={crumbs} />
+      </div>
 
-      <header className="mb-8">
+      <header className={`mb-8 ${chromeClass}`}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <SpecialtyIcon specialtySlug={specialty} size={38} />
           <h1 className="text-3xl font-bold leading-tight">
@@ -122,11 +133,19 @@ export default async function ContentPage({
       </header>
 
       <PageBody
-        page={page as { id: number; type: string; track_id: number | null; content_module_id: number | null }}
+        page={page as { id: number; title: string; type: string; track_id: number | null; content_module_id: number | null }}
         selectedLessonId={selectedLessonId}
+        specialtySlug={specialty}
+        backHref={voltarFallback}
       />
     </div>
   );
+}
+
+function isAudioLessonPage(page: { type: string; track_id: number | null }) {
+  const isTextOrAudio = page.type === "text-lesson" || page.type === "audio-lesson";
+  const isAudioTrack = page.track_id === MEDVOICE_TRACK_ID || page.track_id === AUDIOCARDS_TRACK_ID;
+  return isTextOrAudio && isAudioTrack;
 }
 
 const FLASHCARDS_TRACK_ID = 3;
@@ -148,9 +167,13 @@ function isSpecialtyAllContentTarget(page: { slug: string }, specialtySlug: stri
 function PageBody({
   page,
   selectedLessonId,
+  specialtySlug,
+  backHref,
 }: {
-  page: { id: number; type: string; track_id: number | null; content_module_id: number | null };
+  page: { id: number; title: string; type: string; track_id: number | null; content_module_id: number | null };
   selectedLessonId?: number;
+  specialtySlug: string;
+  backHref: string;
 }) {
   switch (page.type) {
     case "plain-content":
@@ -164,6 +187,9 @@ function PageBody({
           pageId={page.id}
           selectedLessonId={selectedLessonId}
           isTranscript={isTranscript}
+          pageTitle={page.title}
+          specialtySlug={specialtySlug}
+          backHref={backHref}
         />
       );
     }

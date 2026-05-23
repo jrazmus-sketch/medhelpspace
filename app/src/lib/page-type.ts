@@ -73,3 +73,39 @@ export function getStudyTypeKey(input: {
   if (content_module_id === MEDHELP_60D_MODULE_ID) return "medhelp60";
   return null;
 }
+
+// Client-side counterpart used by the top nav to keep a section item lit while
+// the user is drilled into a sub-page of that section. Pure URL/slug parsing —
+// no DB lookup. Leaf slugs follow the WP-migrated suffix convention
+// (-audiocards, -medvoice, -flashcards, -resumos, -formula, -simulados, -quiz).
+// Bare-slug topic pages (most quiz leaves) cannot be disambiguated from URL
+// alone and return null; that's an accepted gap.
+export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null {
+  if (pathname === "/app/estudo-por-questoes") return "quiz";
+  if (pathname === "/app/resumos")             return "resumos";
+  if (pathname === "/app/formula-medhelp")     return "formula";
+  if (pathname === "/app/medvoice")            return "medvoice";
+  if (pathname === "/app/audiocards")          return "audiocards";
+  if (pathname === "/app/flashcards")          return "flashcards";
+
+  if (pathname.startsWith("/app/estudo-por-questoes/")) return "quiz";
+  if (pathname.startsWith("/app/resumos/"))             return "resumos";
+  if (pathname.startsWith("/app/formula-medhelp/"))     return "formula";
+  if (pathname.startsWith("/app/medvoice/"))            return "medvoice";
+  if (pathname.startsWith("/app/audiocards/"))          return "audiocards";
+  if (pathname.startsWith("/app/flashcards/"))          return "flashcards";
+
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 3 && segments[0] === "app") {
+    const slug = segments[2];
+    if (slug.endsWith("-audiocards")) return "audiocards";
+    if (slug.endsWith("-medvoice"))   return "medvoice";
+    if (slug.endsWith("-flashcards")) return "flashcards";
+    if (slug.endsWith("-resumos"))    return "resumos";
+    if (slug.endsWith("-formula"))    return "formula";
+    if (slug.endsWith("-simulados"))  return "simulados";
+    if (slug.endsWith("-quiz"))       return "quiz";
+  }
+
+  return null;
+}

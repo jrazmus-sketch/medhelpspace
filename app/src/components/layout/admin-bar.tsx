@@ -70,12 +70,28 @@ export function AdminBar({ viewas, cohorts }: Props) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     try {
-       
+
       setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
     } catch {
       // localStorage unavailable
     }
   }, []);
+
+  // Keep `--app-sticky-top` in sync with which admin-bar branch is rendered, so
+  // sticky elements below (audio player, etc.) clear the combined header height.
+  // Header is h-[52px]; admin bar variants add 32px (h-8) or ~18px (collapsed).
+  useEffect(() => {
+    if (!mounted) return;
+    const root = document.documentElement;
+    const isAdmin = !!profile && isAnyAdmin();
+    let h: string;
+    if (!isAdmin) h = "60px";                              // no bar visible
+    else if (viewas.type !== "admin") h = "92px";          // 52 + 32 amber bar + 8 slack
+    else if (collapsed) h = "78px";                        // 52 + ~18 collapsed + 8 slack
+    else h = "92px";                                       // 52 + 32 brand bar + 8 slack
+    root.style.setProperty("--app-sticky-top", h);
+    return () => { root.style.removeProperty("--app-sticky-top"); };
+  }, [mounted, profile, isAnyAdmin, viewas.type, collapsed]);
 
   function toggle() {
     const next = !collapsed;

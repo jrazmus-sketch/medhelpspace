@@ -47,11 +47,34 @@ export function getSpecialtyAccent(specialtySlug: string | null | undefined): st
 export function SpecialtyIcon({
   specialtySlug,
   size = 36,
+  mono,
+  strokeWidth,
 }: {
   specialtySlug: string;
   size?: number;
+  /** Render the icon in a solid color instead of the specialty gradient.
+   *  Use when the icon sits on a background that conflicts with its gradient
+   *  (e.g. inside a colored disc using the same accent color). */
+  mono?: string;
+  /** Override the default stroke width (1.75). */
+  strokeWidth?: number;
 }) {
   const { Icon, stops } = SPECIALTY_ICONS[specialtySlug] ?? DEFAULT_CONFIG;
+
+  // Mono mode — bypass the gradient entirely.
+  if (mono) {
+    return (
+      <Icon
+        size={size}
+        stroke={mono}
+        strokeWidth={strokeWidth ?? 1.75}
+        fill="none"
+        aria-hidden="true"
+        style={{ flexShrink: 0 }}
+      />
+    );
+  }
+
   // SVG gradient IDs are document-global in HTML; slug makes this unique per specialty.
   const gradId = `spec-grad-${specialtySlug}`;
 
@@ -74,7 +97,7 @@ export function SpecialtyIcon({
       <Icon
         size={size}
         stroke={`url(#${gradId})`}
-        strokeWidth={1.75}
+        strokeWidth={strokeWidth ?? 1.75}
         fill="none"
         aria-hidden="true"
         style={{ flexShrink: 0 }}
