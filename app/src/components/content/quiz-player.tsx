@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { safe } from "@/lib/sanitize";
+import { EditableText } from "@/components/admin/editable-text";
+import { useEditMode } from "@/providers/edit-mode-provider";
 import type { QuizQuestionData } from "./quiz-renderer";
 
 interface Props {
@@ -25,6 +27,7 @@ export function QuizPlayer({
   specialtyHref,
   specialtyName,
 }: Props) {
+  const { active: editActive } = useEditMode();
   const [results, setResults] = useState<Record<number, boolean>>({});
   const [activeIds, setActiveIds] = useState<number[]>(() => questions.map((q) => q.id));
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -225,9 +228,14 @@ export function QuizPlayer({
       )}
 
       {/* Question text */}
-      <div
+      <EditableText
+        variant="rich"
+        table="quiz_questions"
+        id={question.id}
+        field="question"
         className="prose-content quiz-stem"
-        dangerouslySetInnerHTML={{ __html: safe(question.question) }}
+        html={safe(question.question)}
+        editHtml={question.question}
       />
 
       {/* Answer options */}
@@ -249,29 +257,67 @@ export function QuizPlayer({
           }
 
           return (
-            <button key={idx} className={cls} onClick={() => handleSelect(idx)} disabled={answered}>
-              <div dangerouslySetInnerHTML={{ __html: safe(answer.text) }} />
+            <button
+              key={idx}
+              className={cls}
+              onClick={() => handleSelect(idx)}
+              // Stay clickable in edit mode so the EditableText inside can receive clicks;
+              // handleSelect already short-circuits when `answered` is true.
+              disabled={answered && !editActive}
+            >
+              <EditableText
+                variant="answer"
+                questionId={question.id}
+                answerIdx={idx}
+                field="text"
+                html={safe(answer.text)}
+                editHtml={answer.text}
+              />
             </button>
           );
         })}
       </div>
 
-      {/* Feedback (per-distractor "why wrong" or correct-answer feedback) */}
+      {/* Feedback (per-distractor "why wrong" or correct-answer feedback).
+          Edit mode rewrites the existing feedback; adding feedback to an
+          answer that has none goes through the full admin editor. */}
       {answered && feedback && (
         <div className="rounded-lg border border-brand/20 bg-brand-muted p-4">
-          <div
-            className="prose-content text-sm"
-            dangerouslySetInnerHTML={{ __html: safe(feedback) }}
-          />
+          {selectedAnswer && !selectedAnswer.correct ? (
+            <EditableText
+              variant="answer"
+              questionId={question.id}
+              answerIdx={selectedIdx!}
+              field="feedback"
+              className="prose-content text-sm"
+              html={safe(selectedAnswer.feedback)}
+              editHtml={selectedAnswer.feedback}
+            />
+          ) : correctAnswer ? (
+            <EditableText
+              variant="answer"
+              questionId={question.id}
+              answerIdx={question.answers.findIndex((a) => a.correct)}
+              field="feedback"
+              className="prose-content text-sm"
+              html={safe(correctAnswer.feedback)}
+              editHtml={correctAnswer.feedback}
+            />
+          ) : null}
         </div>
       )}
 
       {/* Rich explanation block (Comentário / PEGA / Resumo) — simulado pages only */}
       {answered && explanationHtml && (
         <div className="rounded-lg border border-border bg-surface-1 p-4">
-          <div
+          <EditableText
+            variant="rich"
+            table="quiz_questions"
+            id={question.id}
+            field="explanation_html"
             className="prose-content quiz-explanation text-sm"
-            dangerouslySetInnerHTML={{ __html: safe(explanationHtml) }}
+            html={safe(explanationHtml)}
+            editHtml={explanationHtml}
           />
         </div>
       )}

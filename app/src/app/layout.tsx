@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { cookies } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
+import { EditModeProvider } from "@/providers/edit-mode-provider";
+import { EDIT_MODE_COOKIE, parseEditMode } from "@/lib/edit-mode";
 import { Toaster } from "@/components/ui/sonner";
 
 const bricolage = Bricolage_Grotesque({
@@ -58,9 +61,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const editModeEnabled = parseEditMode((await cookies()).get(EDIT_MODE_COOKIE)?.value);
   return (
     <html lang="pt-BR" suppressHydrationWarning className={`${bricolage.variable} ${geistSans.variable} ${geistMono.variable}`}>
       <body
@@ -70,8 +74,10 @@ export default function RootLayout({
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
-              {children}
-              <Toaster richColors position="top-right" />
+              <EditModeProvider initialEnabled={editModeEnabled}>
+                {children}
+                <Toaster richColors position="top-right" />
+              </EditModeProvider>
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

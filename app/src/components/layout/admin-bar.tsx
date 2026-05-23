@@ -3,8 +3,9 @@
 import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Shield, ChevronDown, LayoutDashboard, Eye, Check, X, Pencil } from "lucide-react";
+import { Shield, ChevronDown, LayoutDashboard, Eye, Check, X, Pencil, MousePointerClick } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
+import { useEditMode } from "@/providers/edit-mode-provider";
 import { setViewAs } from "@/actions/admin";
 import { cn } from "@/lib/utils";
 import type { ViewAsMode } from "@/lib/viewas";
@@ -57,6 +58,7 @@ export function AdminBar({ viewas, cohorts }: Props) {
   const currentMode: ViewAsMode = viewas;
 
   const { profile, isAnyAdmin } = useAuth();
+  const { editMode, toggle: toggleEdit, pending: editPending, isMobile } = useEditMode();
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -217,13 +219,40 @@ export function AdminBar({ viewas, cohorts }: Props) {
         </div>
 
         {contentSlug && (
+          <button
+            type="button"
+            onClick={toggleEdit}
+            disabled={editPending || isMobile}
+            title={
+              isMobile
+                ? "Edição rápida disponível no desktop"
+                : editMode
+                  ? "Desativar edição rápida"
+                  : "Ativar edição rápida (clique em qualquer texto para editar)"
+            }
+            className={cn(
+              "flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50",
+              editMode && !isMobile
+                ? "bg-brand-fg text-brand hover:bg-brand-fg/90"
+                : "text-brand-fg hover:bg-brand-fg/15",
+            )}
+          >
+            <MousePointerClick className="h-3 w-3" />
+            <span className="hidden md:inline">
+              {editMode ? "Edição rápida ativa" : "Edição rápida"}
+            </span>
+            <span className="md:hidden">{editMode ? "Editando" : "Editar"}</span>
+          </button>
+        )}
+
+        {contentSlug && (
           <Link
             href={`/admin/pages/edit?slug=${encodeURIComponent(contentSlug)}`}
             className="flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold text-brand-fg transition-colors hover:bg-brand-fg/15"
           >
             <Pencil className="h-3 w-3" />
-            <span className="hidden md:inline">Editar esta página</span>
-            <span className="md:hidden">Editar</span>
+            <span className="hidden md:inline">Editor completo</span>
+            <span className="md:hidden">Completo</span>
           </Link>
         )}
 

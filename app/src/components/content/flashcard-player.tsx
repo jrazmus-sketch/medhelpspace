@@ -5,6 +5,7 @@ import Link from "next/link";
 import { recordFlashcardAttempt } from "@/actions/flashcard-attempts";
 import { updateFlashcardSM2 } from "@/actions/flashcard-sm2";
 import { safe } from "@/lib/sanitize";
+import { EditableText } from "@/components/admin/editable-text";
 
 export interface FlashCard {
   id: number;
@@ -385,9 +386,14 @@ export function FlashcardPlayer({
                 />
               </div>
             )}
-            <div
+            <EditableText
+              variant="rich"
+              table="flashcard_items"
+              id={card.id}
+              field="text"
               className="text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
-              dangerouslySetInnerHTML={{ __html: safe(card.text) }}
+              html={safe(card.text)}
+              editHtml={card.text}
             />
             <p className="text-xs text-muted-foreground mt-1">
               Clique para ver · <kbd className="font-sans">Espaço</kbd>
@@ -399,9 +405,14 @@ export function FlashcardPlayer({
             className="absolute inset-0 rounded-xl border border-brand/30 bg-surface-1 p-6 flex flex-col items-center justify-center text-center gap-3 overflow-y-auto"
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
-            <div
+            <EditableText
+              variant="rich"
+              table="flashcard_items"
+              id={card.id}
+              field="answer"
               className="text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
-              dangerouslySetInnerHTML={{ __html: safe(card.answer) }}
+              html={safe(card.answer)}
+              editHtml={card.answer}
             />
             {card.tip && (
               <p className="text-xs text-muted-foreground border-t border-border pt-2 mt-1 italic w-full text-center">

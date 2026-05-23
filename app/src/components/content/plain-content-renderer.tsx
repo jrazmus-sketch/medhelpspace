@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { safe } from "@/lib/sanitize";
 import { TocPanel } from "./toc-panel";
+import { EditableText } from "@/components/admin/editable-text";
 
 interface TocEntry {
   id: string;
@@ -59,14 +60,15 @@ export async function PlainContentRenderer({ pageId }: { pageId: number }) {
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
     .from("lessons")
-    .select("body_html")
+    .select("id, body_html")
     .eq("page_id", pageId)
     .order("position")
     .limit(1);
 
-  const body = lessons?.[0]?.body_html ?? "";
+  const lesson = lessons?.[0];
+  const body = lesson?.body_html ?? "";
 
-  if (!body) {
+  if (!lesson || !body) {
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
 
@@ -76,9 +78,15 @@ export async function PlainContentRenderer({ pageId }: { pageId: number }) {
 
   return (
     <div className={showToc ? "flex gap-10" : undefined}>
-      <article
+      <EditableText
+        as="div"
+        variant="rich"
+        table="lessons"
+        id={lesson.id}
+        field="body_html"
         className="prose-content min-w-0 flex-1"
-        dangerouslySetInnerHTML={{ __html: safe(html) }}
+        html={safe(html)}
+        editHtml={body}
       />
       {showToc && <TocPanel entries={toc} />}
     </div>

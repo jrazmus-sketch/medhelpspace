@@ -7,6 +7,7 @@ import { safe } from "@/lib/sanitize";
 import { LessonSidebar } from "./lesson-sidebar";
 import { AudioPlayer } from "./audio-player";
 import { LessonCompleteButton } from "./lesson-complete-button";
+import { EditableText } from "@/components/admin/editable-text";
 
 const INLINE_PURPLE_RE = /style="[^"]*color\s*:\s*#b046e9[^"]*"/gi;
 
@@ -166,7 +167,13 @@ export async function TextLessonRenderer({
       <div className="flex-1 min-w-0">
         {/* Section title */}
         <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-brand text-foreground">
-          {activeLesson.title}
+          <EditableText
+            variant="plain"
+            table="lessons"
+            id={activeLesson.id}
+            field="title"
+            value={activeLesson.title}
+          />
         </h2>
 
         {/* Audio player */}
@@ -179,24 +186,36 @@ export async function TextLessonRenderer({
           />
         )}
 
-        {/* Transcript */}
+        {/* Transcript.
+            Edit-mode contentEditable seeds from the RAW body_html (editHtml)
+            so processHtml's Bloco-header transforms don't get written back. */}
         {activeLesson.body_html ? (
           activeLesson.audio_url ? (
             /* Has audio: collapse transcript behind a toggle */
             <details className="transcript-toggle">
               <summary>Transcrição do áudio</summary>
               <div className="transcript-body">
-                <div
+                <EditableText
+                  variant="rich"
+                  table="lessons"
+                  id={activeLesson.id}
+                  field="body_html"
                   className="prose-content prose-transcript"
-                  dangerouslySetInnerHTML={{ __html: safe(processHtml(activeLesson.body_html)) }}
+                  html={safe(processHtml(activeLesson.body_html))}
+                  editHtml={activeLesson.body_html}
                 />
               </div>
             </details>
           ) : (
             /* No audio yet (or non-transcript page): show content directly */
-            <div
+            <EditableText
+              variant="rich"
+              table="lessons"
+              id={activeLesson.id}
+              field="body_html"
               className={`prose-content${isTranscript ? " prose-transcript" : ""}`}
-              dangerouslySetInnerHTML={{ __html: safe(processHtml(activeLesson.body_html)) }}
+              html={safe(processHtml(activeLesson.body_html))}
+              editHtml={activeLesson.body_html}
             />
           )
         ) : (
