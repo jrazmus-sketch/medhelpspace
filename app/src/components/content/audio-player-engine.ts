@@ -67,7 +67,6 @@ export function useAudioPlayerEngine(opts: AudioPlayerEngineOptions) {
 
   const router = useRouter();
   const audioRef = useRef<HTMLAudioElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
   const completedFiredRef = useRef(false);
   const seekRestoredRef = useRef(false);
@@ -381,12 +380,17 @@ export function useAudioPlayerEngine(opts: AudioPlayerEngineOptions) {
   }, []);
 
   // ── Track scrubbing ────────────────────────────────────────────────────────
-  const seekTo = useCallback((clientX: number) => {
-    const track = trackRef.current;
+  // seekToEvent reads dimensions from event.currentTarget instead of a shared
+  // ref, so it works when the responsive router renders both chromes (only
+  // one is visible via CSS) — whichever chrome the pointer event fires on,
+  // its own bounding rect is used.
+  const seekToEvent = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const track = e.currentTarget;
     const audio = audioRef.current;
     if (!track || !audio || !duration) return;
     const rect = track.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    if (rect.width <= 0) return;
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     audio.currentTime = ratio * duration;
     setCurrentTime(ratio * duration);
   }, [duration]);
@@ -394,27 +398,22 @@ export function useAudioPlayerEngine(opts: AudioPlayerEngineOptions) {
   // Pointer events unify mouse, touch, and pen. setPointerCapture keeps the
   // drag alive even when the cursor/finger leaves the track element.
   const handleTrackPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const track = trackRef.current;
-    if (!track) return;
-    try { track.setPointerCapture(e.pointerId); } catch { /* unsupported */ }
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* unsupported */ }
     draggingRef.current = true;
-    seekTo(e.clientX);
-  }, [seekTo]);
+    seekToEvent(e);
+  }, [seekToEvent]);
 
   const handleTrackPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!draggingRef.current) return;
-    seekTo(e.clientX);
-  }, [seekTo]);
+    seekToEvent(e);
+  }, [seekToEvent]);
 
   const handleTrackPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const track = trackRef.current;
-    if (track) {
-      try {
-        if (track.hasPointerCapture(e.pointerId)) {
-          track.releasePointerCapture(e.pointerId);
-        }
-      } catch { /* unsupported */ }
-    }
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch { /* unsupported */ }
     draggingRef.current = false;
   }, []);
 
@@ -448,7 +447,6 @@ export function useAudioPlayerEngine(opts: AudioPlayerEngineOptions) {
   return {
     // Refs the consumer must bind
     audioRef,
-    trackRef,
     // State
     playing,
     currentTime,

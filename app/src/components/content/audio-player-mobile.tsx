@@ -64,7 +64,6 @@ export function MobileAudioPlayerChrome({
   backHref,
 }: MobileChromeProps) {
   const {
-    trackRef,
     playing, currentTime, duration, speed, autoAdvance, countdown, loadError,
     progress, showCountdown,
     togglePlay, skipBy, setSpeedAndApply, persistAutoAdvance, cancelCountdown,
@@ -456,7 +455,6 @@ export function MobileAudioPlayerChrome({
             ) : (
               <>
                 <div
-                  ref={trackRef}
                   onPointerDown={handleTrackPointerDown}
                   onPointerMove={handleTrackPointerMove}
                   onPointerUp={handleTrackPointerUp}

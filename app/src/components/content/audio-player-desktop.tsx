@@ -32,7 +32,6 @@ export function DesktopAudioPlayerChrome({
   nextHref,
 }: DesktopChromeProps) {
   const {
-    trackRef,
     playing, currentTime, duration, speed, autoAdvance, countdown, loadError,
     progress, showCountdown,
     togglePlay, skipBy, setSpeedAndApply, persistAutoAdvance, cancelCountdown,
@@ -319,7 +318,6 @@ export function DesktopAudioPlayerChrome({
           ) : (
             <>
               <div
-                ref={trackRef}
                 onPointerDown={handleTrackPointerDown}
                 onPointerMove={handleTrackPointerMove}
                 onPointerUp={handleTrackPointerUp}
