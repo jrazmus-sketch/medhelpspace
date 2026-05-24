@@ -277,6 +277,19 @@
     "crumbPages": "Páginas",
     "viewOnSite": "Ver no site"
   },
+  "audioUpload": {
+    "button": "Enviar MP3",
+    "uploading": "Enviando…",
+    "success": "Enviado",
+    "hint": "MP3 / M4A / WAV / OGG, até 100 MB. O arquivo é enviado para o Bunny CDN e a URL é preenchida automaticamente.",
+    "errorNoFile": "Nenhum arquivo selecionado.",
+    "errorNoPageSlug": "Salve a página primeiro e tente novamente.",
+    "errorEmpty": "Arquivo vazio.",
+    "errorTooLarge": "Arquivo muito grande (máx. 100 MB).",
+    "errorBadMime": "Tipo de arquivo não suportado. Use MP3, M4A, WAV ou OGG.",
+    "errorNotConfigured": "Armazenamento de áudio não configurado. Contate o admin.",
+    "errorUploadFailed": "Falha no envio. Tente novamente."
+  },
   "hubs": {
     "title": "Hubs",
     "subtitle": "Cada acordeão na página de uma especialidade é uma página de hub. Aqui você pode encontrar qual editar.",

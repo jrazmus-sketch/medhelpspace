@@ -277,6 +277,19 @@
     "crumbPages": "Pages",
     "viewOnSite": "View on site"
   },
+  "audioUpload": {
+    "button": "Upload MP3",
+    "uploading": "Uploading…",
+    "success": "Uploaded",
+    "hint": "MP3 / M4A / WAV / OGG, up to 100 MB. File is sent to Bunny CDN and the URL field is filled in for you.",
+    "errorNoFile": "No file selected.",
+    "errorNoPageSlug": "Save the page first, then try again.",
+    "errorEmpty": "File is empty.",
+    "errorTooLarge": "File is too large (max 100 MB).",
+    "errorBadMime": "Unsupported file type. Use MP3, M4A, WAV, or OGG.",
+    "errorNotConfigured": "Audio storage is not configured. Contact the admin.",
+    "errorUploadFailed": "Upload failed. Try again."
+  },
   "hubs": {
     "title": "Hubs",
     "subtitle": "Each accordion section on a specialty page is a hub page. Find the one you want to edit here.",

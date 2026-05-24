@@ -6,6 +6,7 @@ import "@/lib/i18n";
 import { updatePageMetadata, updateLessons } from "@/actions/admin";
 import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow, QuizQuestionRow, FlashcardRow } from "./page";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { AudioUploader } from "@/components/admin/audio-uploader";
 import { QuizEditor } from "./quiz-editor";
 import { FlashcardEditor } from "./flashcard-editor";
 import { NavItemsEditor } from "./nav-items-editor";
@@ -495,8 +496,12 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                     placeholder={t("pageEdit.lessonBody")}
                     minHeight="200px"
                   />
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <label className="text-sm font-medium">{t("pageEdit.lessonAudioUrl")}</label>
+                    <AudioUploader
+                      pageSlug={page.slug}
+                      onUploaded={(url) => patchLesson(idx, { audio_url: url })}
+                    />
                     <input
                       type="text"
                       value={lesson.audio_url}
@@ -504,6 +509,14 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                       placeholder="https://medhelpspace.b-cdn.net/…"
                       className="w-full rounded-lg border border-border bg-background px-3 py-1.5 font-mono text-sm outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30"
                     />
+                    {lesson.audio_url && (
+                      <audio
+                        controls
+                        src={lesson.audio_url}
+                        className="w-full"
+                        preload="none"
+                      />
+                    )}
                   </div>
                 </div>
               )}

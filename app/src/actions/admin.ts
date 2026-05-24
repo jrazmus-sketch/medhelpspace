@@ -788,3 +788,99 @@ export async function checkSlugAvailable(slug: string): Promise<{ available: boo
 
   return { available: (count ?? 0) === 0 };
 }
+
+// ── Lesson audio upload (Bunny CDN) ──────────────────────────────────────────
+//
+// Uploads an MP3 (or other audio file) to Bunny Storage under
+// `admin-audio/{page-slug}/{timestamp}-{sanitized-name}` and returns the
+// public CDN URL the lesson row should point to. The caller (admin UI) writes
+// the returned URL into `lessons.audio_url` via `updateLessons`.
+//
+// Storage zone is read from BUNNY_STORAGE_ENDPOINT (which already includes the
+// zone, e.g. https://br.storage.bunnycdn.com/revalida). The AccessKey is
+// BUNNY_STORAGE_PASSWORD (storage-zone password — same key used by
+// scripts/bunny-list-medvoice.js).
+
+const BUNNY_CDN_BASE = "https://medhelpspace.b-cdn.net";
+const MAX_AUDIO_BYTES = 100 * 1024 * 1024; // 100 MB — matches next.config bodySizeLimit
+const ALLOWED_AUDIO_MIME = new Set([
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+  "audio/webm",
+]);
+
+function sanitizeAudioFilename(name: string): string {
+  const dot = name.lastIndexOf(".");
+  const stem = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : "mp3";
+  const cleanStem = stem
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "audio";
+  const cleanExt = ext.replace(/[^a-z0-9]/g, "").slice(0, 5) || "mp3";
+  return `${cleanStem}.${cleanExt}`;
+}
+
+export async function uploadLessonAudio(
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  await requireAdmin();
+
+  const file = formData.get("file");
+  const pageSlugRaw = formData.get("pageSlug");
+
+  if (!(file instanceof File)) return { error: "no_file" };
+  if (typeof pageSlugRaw !== "string" || !pageSlugRaw.trim()) {
+    return { error: "no_page_slug" };
+  }
+
+  const pageSlug = pageSlugRaw.trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
+  if (!pageSlug) return { error: "no_page_slug" };
+
+  if (file.size === 0) return { error: "empty_file" };
+  if (file.size > MAX_AUDIO_BYTES) return { error: "too_large" };
+
+  const mime = (file.type || "").toLowerCase();
+  if (mime && !ALLOWED_AUDIO_MIME.has(mime)) return { error: "bad_mime" };
+
+  const endpoint = process.env.BUNNY_STORAGE_ENDPOINT;
+  const accessKey =
+    process.env.BUNNY_STORAGE_PASSWORD || process.env.BUNNY_API_KEY;
+  if (!endpoint || !accessKey) {
+    console.error("[uploadLessonAudio] Bunny env vars missing");
+    return { error: "bunny_not_configured" };
+  }
+
+  const filename = sanitizeAudioFilename(file.name || "audio.mp3");
+  const remotePath = `admin-audio/${pageSlug}/${Date.now()}-${filename}`;
+  const uploadUrl = `${endpoint.replace(/\/$/, "")}/${remotePath}`;
+  const publicUrl = `${BUNNY_CDN_BASE}/${remotePath}`;
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: {
+      AccessKey: accessKey,
+      "Content-Type": mime || "application/octet-stream",
+    },
+    body: buffer,
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error(`[uploadLessonAudio] Bunny PUT ${res.status}: ${body}`);
+    return { error: "upload_failed" };
+  }
+
+  return { url: publicUrl };
+}
