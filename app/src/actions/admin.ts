@@ -553,6 +553,107 @@ export async function markAnnouncementsRead(ids: number[]) {
   );
 }
 
+// ── Nav items (hub page cards) ────────────────────────────────────────────────
+
+const NAV_ITEM_ALLOWED_ROLES = new Set(["super_admin", "content_admin"]);
+
+export type NavItemInput = {
+  id: number | null;
+  label: string;
+  target_page_id: number;
+  group_label: string | null;
+  icon: string | null;
+  layout: "cards" | "list";
+  position: number;
+};
+
+export async function updateNavItems(
+  pageId: number,
+  items: NavItemInput[],
+): Promise<{ ok: true } | { error: string }> {
+  const { user, role } = await requireAdmin();
+  if (!NAV_ITEM_ALLOWED_ROLES.has(role)) {
+    return { error: "Unauthorized" };
+  }
+
+  // Validation: every item must have a target_page_id
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (typeof it.target_page_id !== "number" || !Number.isFinite(it.target_page_id)) {
+      return { error: `Item ${i + 1} is missing a target page.` };
+    }
+  }
+
+  const admin = createAdminClient();
+
+  // Verify source page exists and is a hub
+  const { data: source } = await admin
+    .from("pages")
+    .select("id, type")
+    .eq("id", pageId)
+    .single();
+  if (!source) return { error: "Source page not found." };
+  if (source.type !== "blurb-nav-hub") {
+    return { error: "Source page is not a hub page." };
+  }
+
+  // Diff against existing rows
+  const { data: existing } = await admin
+    .from("nav_items")
+    .select("id")
+    .eq("source_page_id", pageId);
+  const existingIds = new Set((existing ?? []).map((r) => r.id as number));
+  const incomingIds = new Set(
+    items.filter((it) => it.id !== null).map((it) => it.id as number),
+  );
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  if (toDelete.length > 0) {
+    const { error: delErr } = await admin
+      .from("nav_items")
+      .delete()
+      .in("id", toDelete);
+    if (delErr) return { error: delErr.message };
+  }
+
+  // Upsert: update existing, insert new. Positions reflect array order.
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const position = i + 1;
+    const payload = {
+      label: it.label ?? "",
+      target_page_id: it.target_page_id,
+      group_label: it.group_label,
+      icon: it.icon,
+      layout: it.layout,
+      position,
+    };
+    if (it.id !== null) {
+      const { error: updErr } = await admin
+        .from("nav_items")
+        .update(payload)
+        .eq("id", it.id);
+      if (updErr) return { error: updErr.message };
+    } else {
+      const { error: insErr } = await admin
+        .from("nav_items")
+        .insert({ source_page_id: pageId, ...payload });
+      if (insErr) return { error: insErr.message };
+    }
+  }
+
+  await writeAuditLog(user.id, "nav_items_update", null, {
+    page_id: pageId,
+    count: items.length,
+    deleted: toDelete.length,
+  });
+
+  revalidatePath(`/admin/pages/${pageId}/edit`);
+  revalidatePath("/app", "layout");
+
+  return { ok: true };
+}
+
 // ── Profile ───────────────────────────────────────────────────────────────────
 
 export async function updateProfile(formData: FormData) {
@@ -565,4 +666,125 @@ export async function updateProfile(formData: FormData) {
     .eq("id", user.id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/settings");
+}
+
+// ── New-page wizard ───────────────────────────────────────────────────────────
+//
+// `createPage` and `checkSlugAvailable` back the multi-step wizard at
+// /admin/pages/new. Allowed roles: super_admin, content_admin. Pages are
+// created as drafts; admin is redirected to the existing edit screen to add
+// content (lessons / quiz / flashcards / hub items).
+//
+// pages.id is a bigint primary key with NO sequence — original WP IDs were
+// preserved at migration time. New rows compute id = max(id) + 1. The pages
+// table has a unique constraint on slug, which races against the explicit
+// pre-check; we treat the unique-violation error code (23505) as "slug taken".
+
+const PAGE_NEW_ALLOWED_ROLES = new Set(["super_admin", "content_admin"]);
+const PAGE_NEW_ALLOWED_TYPES = new Set([
+  "plain-content",
+  "text-lesson",
+  "audio-lesson",
+  "h5p-quiz",
+  "blurb-nav-hub",
+]);
+const NEW_PAGE_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export type CreatePageInput = {
+  type: string;
+  title: string;
+  slug: string;
+  specialty_id?: number;
+  view?: string;
+  track_id?: number;
+  content_module_id?: number;
+  notes?: string;
+};
+
+export type CreatePageResult = { id: number } | { error: string };
+
+export async function createPage(input: CreatePageInput): Promise<CreatePageResult> {
+  const { user, role } = await requireAdmin();
+  if (!PAGE_NEW_ALLOWED_ROLES.has(role)) {
+    return { error: "unauthorized" };
+  }
+
+  const title = input.title?.trim() ?? "";
+  const slug = input.slug?.trim() ?? "";
+
+  if (!title) return { error: "title_required" };
+  if (!slug) return { error: "slug_required" };
+  if (!NEW_PAGE_SLUG_REGEX.test(slug)) return { error: "slug_invalid" };
+  if (!PAGE_NEW_ALLOWED_TYPES.has(input.type)) return { error: "type_invalid" };
+
+  const admin = createAdminClient();
+
+  // Pre-check slug uniqueness — cheaper than catching the constraint error on
+  // every typo. The actual race-safe guard is the unique constraint below.
+  const { count: slugCollision } = await admin
+    .from("pages")
+    .select("id", { count: "exact", head: true })
+    .eq("slug", slug);
+  if ((slugCollision ?? 0) > 0) return { error: "slug_taken" };
+
+  // Compute next id from current max. New admin-created pages live above the
+  // migrated WP ID range, so collisions with future re-imports are unlikely
+  // but the unique slug constraint is still our last line of defense.
+  const { data: maxRow } = await admin
+    .from("pages")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextId = Number(maxRow?.id ?? 0) + 1;
+
+  const { data: inserted, error } = await admin
+    .from("pages")
+    .insert({
+      id: nextId,
+      slug,
+      title,
+      type: input.type,
+      status: "draft",
+      specialty_id: input.specialty_id ?? null,
+      view: input.view ?? null,
+      track_id: input.track_id ?? null,
+      content_module_id: input.content_module_id ?? null,
+      notes: input.notes ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    // Postgres unique violation — slug was taken between pre-check and insert.
+    if (error.code === "23505") return { error: "slug_taken" };
+    return { error: "insert_failed" };
+  }
+
+  const newId = Number(inserted.id);
+  await writeAuditLog(user.id, "page_created", null, {
+    page_id: newId,
+    slug,
+    type: input.type,
+    title,
+  });
+
+  revalidatePath("/admin/pages");
+  return { id: newId };
+}
+
+export async function checkSlugAvailable(slug: string): Promise<{ available: boolean }> {
+  const { role } = await requireAdmin();
+  if (!PAGE_NEW_ALLOWED_ROLES.has(role)) return { available: false };
+
+  const trimmed = slug.trim();
+  if (!trimmed || !NEW_PAGE_SLUG_REGEX.test(trimmed)) return { available: false };
+
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("pages")
+    .select("id", { count: "exact", head: true })
+    .eq("slug", trimmed);
+
+  return { available: (count ?? 0) === 0 };
 }

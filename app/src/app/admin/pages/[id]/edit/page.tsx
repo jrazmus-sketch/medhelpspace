@@ -26,33 +26,73 @@ export default async function PageEditPage({
 
   const isQuiz = page.type === "h5p-quiz" && page.track_id !== FLASHCARDS_TRACK_ID;
   const isFlashcards = page.type === "h5p-quiz" && page.track_id === FLASHCARDS_TRACK_ID;
+  const isHub = page.type === "blurb-nav-hub";
 
-  const [{ data: specialties }, { data: tracks }, { data: modules }, lessonsRes, questionsRes, cardsRes] =
-    await Promise.all([
-      admin.from("specialties").select("id, name").order("display_order"),
-      admin.from("tracks").select("id, name").order("id"),
-      admin.from("content_modules").select("id, name").order("id"),
-      admin
-        .from("lessons")
-        .select("id, position, title, body_html, audio_url")
-        .eq("page_id", pageId)
-        .order("position"),
-      isQuiz
-        ? admin
-            .from("quiz_questions")
-            .select("id, position, question, answers, media_url")
-            .eq("page_id", pageId)
-            .order("position")
-        : Promise.resolve({ data: [] }),
-      isFlashcards
-        ? admin
-            .from("flashcard_items")
-            .select("id, group_position, group_label, position, text, answer, image_url, tip")
-            .eq("page_id", pageId)
-            .order("group_position")
-            .order("position")
-        : Promise.resolve({ data: [] }),
-    ]);
+  const [
+    { data: specialties },
+    { data: tracks },
+    { data: modules },
+    lessonsRes,
+    questionsRes,
+    cardsRes,
+    navItemsRes,
+  ] = await Promise.all([
+    admin.from("specialties").select("id, name, slug").order("display_order"),
+    admin.from("tracks").select("id, name").order("id"),
+    admin.from("content_modules").select("id, name").order("id"),
+    admin
+      .from("lessons")
+      .select("id, position, title, body_html, audio_url")
+      .eq("page_id", pageId)
+      .order("position"),
+    isQuiz
+      ? admin
+          .from("quiz_questions")
+          .select("id, position, question, answers, media_url")
+          .eq("page_id", pageId)
+          .order("position")
+      : Promise.resolve({ data: [] }),
+    isFlashcards
+      ? admin
+          .from("flashcard_items")
+          .select("id, group_position, group_label, position, text, answer, image_url, tip")
+          .eq("page_id", pageId)
+          .order("group_position")
+          .order("position")
+      : Promise.resolve({ data: [] }),
+    isHub
+      ? admin
+          .from("nav_items")
+          .select(
+            "id, position, label, target_page_id, group_label, icon, layout, target_page:pages!target_page_id(title, slug, type)",
+          )
+          .eq("source_page_id", pageId)
+          .order("position")
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  // Flatten the target_page join so the client receives a plain shape.
+  const navItems: NavItemRow[] = ((navItemsRes.data ?? []) as unknown as Array<{
+    id: number;
+    position: number;
+    label: string | null;
+    target_page_id: number | null;
+    group_label: string | null;
+    icon: string | null;
+    layout: string | null;
+    target_page: { title: string; slug: string; type: string } | null;
+  }>).map((r) => ({
+    id: r.id,
+    position: r.position,
+    label: r.label,
+    target_page_id: r.target_page_id,
+    group_label: r.group_label,
+    icon: r.icon,
+    layout: r.layout,
+    target_title: r.target_page?.title ?? null,
+    target_slug: r.target_page?.slug ?? null,
+    target_type: r.target_page?.type ?? null,
+  }));
 
   return (
     <PageEditClient
@@ -63,8 +103,10 @@ export default async function PageEditPage({
       lessons={(lessonsRes.data ?? []) as LessonRow[]}
       quizQuestions={(questionsRes.data ?? []) as QuizQuestionRow[]}
       flashcards={(cardsRes.data ?? []) as FlashcardRow[]}
+      navItems={navItems}
       isQuiz={isQuiz}
       isFlashcards={isFlashcards}
+      isHub={isHub}
     />
   );
 }
@@ -84,7 +126,7 @@ export type PageRow = {
   notes: string | null;
 };
 
-export type SpecialtyOption = { id: number; name: string };
+export type SpecialtyOption = { id: number; name: string; slug: string };
 export type TrackOption = { id: number; name: string };
 export type ModuleOption = { id: number; name: string };
 
@@ -115,4 +157,18 @@ export type FlashcardRow = {
   answer: string;
   image_url: string | null;
   tip: string | null;
+};
+
+export type NavItemRow = {
+  id: number;
+  position: number;
+  label: string | null;
+  target_page_id: number | null;
+  group_label: string | null;
+  icon: string | null;
+  layout: string | null;
+  // Joined preview fields from pages table (null when target_page_id is null)
+  target_title: string | null;
+  target_slug: string | null;
+  target_type: string | null;
 };

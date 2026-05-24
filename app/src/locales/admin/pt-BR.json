@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Painel",
     "pages": "Páginas",
+    "hubs": "Hubs",
     "notifications": "Notificações",
     "lessons": "Aulas",
     "quizzes": "Questões",
@@ -66,7 +67,8 @@
     "slug": "Slug",
     "view": "Visualização",
     "track": "Trilha",
-    "module": "Módulo"
+    "module": "Módulo",
+    "new": "Nova página"
   },
   "lessons": {
     "title": "Aulas",
@@ -178,6 +180,66 @@
       "member_created": "Membro criado"
     }
   },
+  "pageNew": {
+    "title": "Nova página",
+    "stepOf": "Etapa {{current}} de {{total}}",
+    "step1Title": "Escolha o tipo de página",
+    "step1Help": "O tipo de página define como o conteúdo será editado e renderizado. Não pode ser alterado depois.",
+    "step2Title": "Detalhes da página",
+    "step2Help": "Preencha as informações básicas. Você poderá adicionar o conteúdo na próxima tela.",
+    "back": "← Voltar",
+    "cancel": "Cancelar",
+    "submit": "Criar e continuar",
+    "creating": "Criando…",
+    "fieldTitle": "Título",
+    "fieldTitlePlaceholder": "Digite o título da página…",
+    "fieldSlug": "Slug",
+    "fieldSlugAuto": "auto-gerado",
+    "fieldSlugChecking": "verificando disponibilidade…",
+    "fieldSlugAvailable": "Slug disponível",
+    "fieldSlugTaken": "Este slug já está em uso.",
+    "fieldSlugInvalid": "Use apenas letras minúsculas, números e hífens.",
+    "fieldSpecialty": "Especialidade",
+    "fieldSpecialtyRequired": "Selecione a especialidade desta página.",
+    "fieldView": "Visualização",
+    "fieldTrack": "Trilha",
+    "fieldTrackLocked": "Flashcards é uma trilha — automaticamente definida.",
+    "fieldModule": "Módulo",
+    "fieldNotes": "Observações",
+    "fieldNotesPlaceholder": "Notas internas para a equipe de conteúdo…",
+    "noSpecialty": "— selecione —",
+    "noView": "— sem visualização —",
+    "noTrack": "— sem trilha —",
+    "noModule": "— sem módulo —",
+    "errorCreate": "Não foi possível criar a página.",
+    "errorSlugTaken": "Este slug já está em uso por outra página.",
+    "types": {
+      "plain-content": {
+        "label": "Conteúdo simples",
+        "description": "Página genérica com texto, possivelmente com títulos."
+      },
+      "text-lesson": {
+        "label": "Aula em texto",
+        "description": "Aula em seções com cabeçalhos do tipo accordion."
+      },
+      "audio-lesson": {
+        "label": "Aula em áudio",
+        "description": "Aula em seções com áudio por seção."
+      },
+      "quiz": {
+        "label": "Quiz",
+        "description": "Questões de múltipla escolha com explicações."
+      },
+      "flashcards": {
+        "label": "Flashcards",
+        "description": "Baralho de cartões para estudo ativo."
+      },
+      "hub": {
+        "label": "Hub",
+        "description": "Hub com cards que linkam para outras páginas."
+      }
+    }
+  },
   "pageEdit": {
     "backToList": "← Páginas",
     "sectionIdentity": "Identificação",
@@ -210,7 +272,56 @@
     "lessonsSaved": "Aulas salvas",
     "deleteLesson": "Excluir aula",
     "moveUp": "Mover para cima",
-    "moveDown": "Mover para baixo"
+    "moveDown": "Mover para baixo",
+    "crumbHubs": "Hubs",
+    "crumbPages": "Páginas",
+    "viewOnSite": "Ver no site"
+  },
+  "hubs": {
+    "title": "Hubs",
+    "subtitle": "Cada acordeão na página de uma especialidade é uma página de hub. Aqui você pode encontrar qual editar.",
+    "orphansTitle": "Páginas não vinculadas",
+    "orphansHint": "Páginas publicadas que nenhum hub aponta. Algumas ainda são alcançáveis pela navegação por especialidade — esta lista é informativa.",
+    "orphansEmpty": "Todas as páginas estão vinculadas.",
+    "orphansShowMore": "Ver todas no /admin/pages →",
+    "noHubsForSpecialty": "Sem hubs nesta especialidade.",
+    "cardCount": "{{count}} cards",
+    "viewOnSite": "Ver no site",
+    "edit": "Editar",
+    "viewMain": "principal",
+    "noSpecialty": "Sem especialidade",
+    "breadcrumbHubs": "Hubs",
+    "breadcrumbPages": "Páginas"
+  },
+  "navItems": {
+    "sectionTitle": "Cards do hub",
+    "empty": "Nenhum card ainda.",
+    "addCard": "Adicionar card",
+    "save": "Salvar cards",
+    "saved": "Cards salvos",
+    "labelField": "Rótulo",
+    "labelPlaceholder": "Rótulo do card (usa o título da página de destino se vazio)",
+    "targetPage": "Página de destino",
+    "remove": "Remover card",
+    "dragHandle": "Arraste para reordenar",
+    "errorMissingTarget": "O card #{{position}} não tem página de destino. Escolha uma antes de salvar."
+  },
+  "pagePicker": {
+    "title": "Escolher página",
+    "choosePage": "Escolher página…",
+    "searchPlaceholder": "Buscar por título ou slug…",
+    "filterByType": "Filtrar por tipo",
+    "filterBySpecialty": "Filtrar por especialidade",
+    "allTypes": "Todos os tipos",
+    "allSpecialties": "Todas as especialidades",
+    "sortBy": "Ordenar por",
+    "sortRecent": "Mais recentes",
+    "sortAlpha": "Alfabética",
+    "includeDrafts": "Incluir rascunhos",
+    "noResults": "Nenhuma página corresponde aos filtros.",
+    "cappedResults": "Mostrando os primeiros 50 resultados — refine os filtros.",
+    "clearSelection": "Limpar seleção",
+    "current": "atual"
   },
   "notifications": {
     "title": "Notificações",

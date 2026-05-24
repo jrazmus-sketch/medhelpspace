@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { updatePageMetadata, updateLessons } from "@/actions/admin";
@@ -9,7 +8,9 @@ import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow, Qu
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { QuizEditor } from "./quiz-editor";
 import { FlashcardEditor } from "./flashcard-editor";
-import { Check, AlertCircle, ArrowLeft, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
+import { NavItemsEditor } from "./nav-items-editor";
+import Link from "next/link";
+import { Check, AlertCircle, ChevronDown, ChevronUp, ChevronRight, ArrowUp, ArrowDown, Trash2, Plus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PAGE_VIEWS = [
@@ -58,13 +59,14 @@ type Props = {
   lessons: LessonRow[];
   quizQuestions: QuizQuestionRow[];
   flashcards: FlashcardRow[];
+  navItems: import("./page").NavItemRow[];
   isQuiz: boolean;
   isFlashcards: boolean;
+  isHub: boolean;
 };
 
-export function PageEditClient({ page, specialties, tracks, modules, lessons, quizQuestions, flashcards, isQuiz, isFlashcards }: Props) {
+export function PageEditClient({ page, specialties, tracks, modules, lessons, quizQuestions, flashcards, navItems, isQuiz, isFlashcards, isHub }: Props) {
   const { t } = useTranslation();
-  const router = useRouter();
 
   const [title, setTitle] = useState(page.title);
   const [slugOverride, setSlugOverride] = useState(page.slug);
@@ -177,23 +179,60 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
 
   const typeColor = TYPE_COLORS[page.type] ?? TYPE_COLORS.default;
 
+  // Breadcrumb wayfinding: hubs get "Hubs › Specialty › Title"; others "Pages › Title".
+  // "Ver no site" link uses /app/{specialty.slug}/{page.slug} when specialty is set.
+  const specialtyForCrumb = specialties.find((s) => s.id === page.specialty_id) ?? null;
+  const liveUrl = specialtyForCrumb
+    ? `/app/${specialtyForCrumb.slug}/${page.slug}`
+    : `/app/${page.slug}`;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
 
-      {/* Header row */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => router.push("/admin/pages")}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      {/* Wayfinding header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground"
         >
-          <ArrowLeft className="h-4 w-4" />
-          {t("pageEdit.backToList")}
-        </button>
-        <span className="text-muted-foreground">/</span>
-        <h1 className="text-lg font-semibold truncate">{page.title}</h1>
-        <span className={cn("ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0", typeColor)}>
-          {TYPE_LABELS[page.type] ?? page.type}
-        </span>
+          {isHub ? (
+            <>
+              <Link href="/admin/hubs" className="hover:text-foreground">
+                {t("pageEdit.crumbHubs")}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span>{specialtyForCrumb?.name ?? t("pageEdit.noSpecialty")}</span>
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span className="truncate font-medium text-foreground" aria-current="page">
+                {page.title}
+              </span>
+            </>
+          ) : (
+            <>
+              <Link href="/admin/pages" className="hover:text-foreground">
+                {t("pageEdit.crumbPages")}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+              <span className="truncate font-medium text-foreground" aria-current="page">
+                {page.title}
+              </span>
+            </>
+          )}
+        </nav>
+        <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
+          <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", typeColor)}>
+            {TYPE_LABELS[page.type] ?? page.type}
+          </span>
+          <a
+            href={liveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-surface-1 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            {t("pageEdit.viewOnSite")}
+          </a>
+        </div>
       </div>
 
       {/* Card */}
@@ -513,6 +552,15 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
 
       {/* Flashcards editor */}
       {isFlashcards && <FlashcardEditor pageId={page.id} initial={flashcards} />}
+
+      {/* Nav items editor (hub pages only) */}
+      {isHub && (
+        <NavItemsEditor
+          pageId={page.id}
+          initial={navItems}
+          specialties={specialties}
+        />
+      )}
     </div>
   );
 }

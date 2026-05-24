@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 type PageRow = {
   id: number;
@@ -56,9 +57,18 @@ export function PagesClient({ rows }: { rows: PageRow[] }) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("pages.title")}</h1>
-        <span className="text-sm text-muted-foreground">{filtered.length} / {rows.length}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">{filtered.length} / {rows.length}</span>
+          <Link
+            href="/admin/pages/new"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity"
+          >
+            <Plus className="h-4 w-4" />
+            {t("pages.new")}
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

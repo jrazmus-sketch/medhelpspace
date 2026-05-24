@@ -50,6 +50,7 @@ export function AdminHeader() {
   const navItems = [
     { href: "/admin", label: t("nav.dashboard"), exact: true },
     { href: "/admin/pages", label: t("nav.pages") },
+    { href: "/admin/hubs", label: t("nav.hubs") },
     { href: "/admin/notifications", label: t("nav.notifications") },
     { href: "/admin/members", label: t("nav.members") },
     { href: "/admin/cohorts", label: t("nav.cohorts") },

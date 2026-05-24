@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "pages": "Pages",
+    "hubs": "Hubs",
     "notifications": "Notifications",
     "lessons": "Lessons",
     "quizzes": "Quizzes",
@@ -66,7 +67,8 @@
     "slug": "Slug",
     "view": "View",
     "track": "Track",
-    "module": "Module"
+    "module": "Module",
+    "new": "New page"
   },
   "lessons": {
     "title": "Lessons",
@@ -178,6 +180,66 @@
       "member_created": "Member created"
     }
   },
+  "pageNew": {
+    "title": "New page",
+    "stepOf": "Step {{current}} of {{total}}",
+    "step1Title": "Pick a page type",
+    "step1Help": "The page type determines how the content is edited and rendered. It cannot be changed later.",
+    "step2Title": "Page details",
+    "step2Help": "Fill in the basics. You'll add content on the next screen.",
+    "back": "← Back",
+    "cancel": "Cancel",
+    "submit": "Create and continue",
+    "creating": "Creating…",
+    "fieldTitle": "Title",
+    "fieldTitlePlaceholder": "Enter the page title…",
+    "fieldSlug": "Slug",
+    "fieldSlugAuto": "auto-generated",
+    "fieldSlugChecking": "checking availability…",
+    "fieldSlugAvailable": "Slug available",
+    "fieldSlugTaken": "This slug is already in use.",
+    "fieldSlugInvalid": "Use only lowercase letters, numbers, and hyphens.",
+    "fieldSpecialty": "Specialty",
+    "fieldSpecialtyRequired": "Select the specialty for this page.",
+    "fieldView": "View",
+    "fieldTrack": "Track",
+    "fieldTrackLocked": "Flashcards is a track — automatically set.",
+    "fieldModule": "Module",
+    "fieldNotes": "Notes",
+    "fieldNotesPlaceholder": "Internal notes for the content team…",
+    "noSpecialty": "— select —",
+    "noView": "— no view —",
+    "noTrack": "— no track —",
+    "noModule": "— no module —",
+    "errorCreate": "Could not create the page.",
+    "errorSlugTaken": "This slug is already used by another page.",
+    "types": {
+      "plain-content": {
+        "label": "Plain content",
+        "description": "Generic page with prose, optionally with headings."
+      },
+      "text-lesson": {
+        "label": "Text lesson",
+        "description": "Sectioned lesson with toggle (accordion) headers."
+      },
+      "audio-lesson": {
+        "label": "Audio lesson",
+        "description": "Sectioned lesson with audio per section."
+      },
+      "quiz": {
+        "label": "Quiz",
+        "description": "Multiple-choice questions with explanations."
+      },
+      "flashcards": {
+        "label": "Flashcards",
+        "description": "Flip-card study deck for active recall."
+      },
+      "hub": {
+        "label": "Hub",
+        "description": "Hub with cards linking to other pages."
+      }
+    }
+  },
   "pageEdit": {
     "backToList": "← Pages",
     "sectionIdentity": "Identity",
@@ -210,7 +272,56 @@
     "lessonsSaved": "Lessons saved",
     "deleteLesson": "Delete lesson",
     "moveUp": "Move up",
-    "moveDown": "Move down"
+    "moveDown": "Move down",
+    "crumbHubs": "Hubs",
+    "crumbPages": "Pages",
+    "viewOnSite": "View on site"
+  },
+  "hubs": {
+    "title": "Hubs",
+    "subtitle": "Each accordion section on a specialty page is a hub page. Find the one you want to edit here.",
+    "orphansTitle": "Unlinked pages",
+    "orphansHint": "Published pages that no hub points to. Some may still be reachable via specialty navigation — this list is informational.",
+    "orphansEmpty": "All pages are linked.",
+    "orphansShowMore": "See all in /admin/pages →",
+    "noHubsForSpecialty": "No hubs in this specialty.",
+    "cardCount": "{{count}} cards",
+    "viewOnSite": "View on site",
+    "edit": "Edit",
+    "viewMain": "main",
+    "noSpecialty": "No specialty",
+    "breadcrumbHubs": "Hubs",
+    "breadcrumbPages": "Pages"
+  },
+  "navItems": {
+    "sectionTitle": "Hub cards",
+    "empty": "No cards yet.",
+    "addCard": "Add card",
+    "save": "Save cards",
+    "saved": "Cards saved",
+    "labelField": "Label",
+    "labelPlaceholder": "Card label (falls back to target page title)",
+    "targetPage": "Target page",
+    "remove": "Remove card",
+    "dragHandle": "Drag to reorder",
+    "errorMissingTarget": "Card #{{position}} has no target page. Pick one before saving."
+  },
+  "pagePicker": {
+    "title": "Choose a page",
+    "choosePage": "Choose page…",
+    "searchPlaceholder": "Search by title or slug…",
+    "filterByType": "Filter by type",
+    "filterBySpecialty": "Filter by specialty",
+    "allTypes": "All types",
+    "allSpecialties": "All specialties",
+    "sortBy": "Sort by",
+    "sortRecent": "Most recent",
+    "sortAlpha": "Alphabetical",
+    "includeDrafts": "Include drafts",
+    "noResults": "No pages match these filters.",
+    "cappedResults": "Showing first 50 results — refine filters to narrow.",
+    "clearSelection": "Clear selection",
+    "current": "current"
   },
   "notifications": {
     "title": "Notifications",
