@@ -5,8 +5,16 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STUDY_TYPE_CONFIG } from "@/lib/page-type";
 import { TypeChip } from "./type-chip";
 import { TrackHubAccordion, type SuperGroupData } from "./track-hub-accordion";
+import { EditableText } from "@/components/admin/editable-text";
 
 type TabKey = "quiz" | "simulados";
+
+// Server-fetched overrides from the `study_types` table.
+export type StudyTypeOverrideRow = {
+  id: number;
+  label: string;
+  description: string;
+};
 
 const CTA_FOR: Record<TabKey, string> = {
   quiz: "Responder",
@@ -26,10 +34,12 @@ export function EstudoTabs({
   quizGroups,
   simuladosGroups,
   defaultTab,
+  overrides,
 }: {
   quizGroups: SuperGroupData[];
   simuladosGroups: SuperGroupData[];
   defaultTab: TabKey;
+  overrides: Record<TabKey, StudyTypeOverrideRow>;
 }) {
   const [active, setActive] = useState<TabKey>(defaultTab);
   const [, startTransition] = useTransition();
@@ -139,7 +149,14 @@ export function EstudoTabs({
                   lineHeight: 1.2,
                   color: titleColor,
                 }}>
-                  {cfg.label}
+                  <EditableText
+                    variant="plain"
+                    table="study_types"
+                    id={overrides[key].id}
+                    field="label"
+                    value={overrides[key].label}
+                    as="span"
+                  />
                 </div>
                 <div className="hidden sm:block" style={{
                   fontSize: 12,
@@ -147,7 +164,14 @@ export function EstudoTabs({
                   lineHeight: 1.4,
                   color: descColor,
                 }}>
-                  {cfg.desc}
+                  <EditableText
+                    variant="plain"
+                    table="study_types"
+                    id={overrides[key].id}
+                    field="description"
+                    value={overrides[key].description}
+                    as="span"
+                  />
                 </div>
                 <div style={{
                   fontSize: 11,

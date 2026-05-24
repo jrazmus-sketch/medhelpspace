@@ -234,32 +234,30 @@ export function AdminBar({ viewas, cohorts }: Props) {
           )}
         </div>
 
-        {contentSlug && (
-          <button
-            type="button"
-            onClick={toggleEdit}
-            disabled={editPending || isMobile}
-            title={
-              isMobile
-                ? "Edição rápida disponível no desktop"
-                : editMode
-                  ? "Desativar edição rápida"
-                  : "Ativar edição rápida (clique em qualquer texto para editar)"
-            }
-            className={cn(
-              "flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50",
-              editMode && !isMobile
-                ? "bg-brand-fg text-brand hover:bg-brand-fg/90"
-                : "text-brand-fg hover:bg-brand-fg/15",
-            )}
-          >
-            <MousePointerClick className="h-3 w-3" />
-            <span className="hidden md:inline">
-              {editMode ? "Edição rápida ativa" : "Edição rápida"}
-            </span>
-            <span className="md:hidden">{editMode ? "Editando" : "Editar"}</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={toggleEdit}
+          disabled={editPending || isMobile}
+          title={
+            isMobile
+              ? "Edição rápida disponível no desktop"
+              : editMode
+                ? "Desativar edição rápida"
+                : "Ativar edição rápida (clique em qualquer texto para editar)"
+          }
+          className={cn(
+            "flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold transition-colors disabled:opacity-50",
+            editMode && !isMobile
+              ? "bg-brand-fg text-brand hover:bg-brand-fg/90"
+              : "text-brand-fg hover:bg-brand-fg/15",
+          )}
+        >
+          <MousePointerClick className="h-3 w-3" />
+          <span className="hidden md:inline">
+            {editMode ? "Edição rápida ativa" : "Edição rápida"}
+          </span>
+          <span className="md:hidden">{editMode ? "Editando" : "Editar"}</span>
+        </button>
 
         {contentSlug && (
           <Link

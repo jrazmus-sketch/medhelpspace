@@ -20,7 +20,9 @@ type ScalarTable =
   | "lessons"
   | "quiz_questions"
   | "flashcard_items"
-  | "nav_items";
+  | "nav_items"
+  | "specialties"
+  | "study_types";
 
 type Common = {
   className?: string;

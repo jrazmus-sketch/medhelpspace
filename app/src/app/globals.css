@@ -677,6 +677,16 @@
 .mhs-mobile-transcript .prose-brand-color {
   color: color-mix(in srgb, var(--mhs-accent, var(--c-medvoice)) 65%, white) !important;
 }
+/* Player surface is dark in both themes, so WP inline `color: #000` styles
+   from legacy content must be overridden even in light mode (the .dark
+   override above only fires when the page theme is dark). */
+.mhs-mobile-transcript .prose-content [style*="color"] {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+.mhs-mobile-transcript .prose-content strong[style*="color"],
+.mhs-mobile-transcript .prose-content [style*="color"] strong {
+  color: #fff !important;
+}
 
 /* ── Dashboard animations ──────────────────────────────────────────────────── */
 

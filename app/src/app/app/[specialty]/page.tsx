@@ -8,7 +8,9 @@ import { TrackHubRenderer } from "@/components/content/track-hub-renderer";
 import { ViewHubRenderer } from "@/components/content/view-hub-renderer";
 import { buildCrumbsForPage, type Crumb } from "@/lib/breadcrumbs";
 import { STUDY_TYPE_CONFIG, type StudyTypeConfig, type StudyTypeKey } from "@/lib/page-type";
+import { getStudyTypeOverrides } from "@/lib/queries/study-types";
 import { TypeChip } from "@/components/content/type-chip";
+import { EditableText } from "@/components/admin/editable-text";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
@@ -93,7 +95,7 @@ export default async function SpecialtyHubPage({
   const admin = createAdminClient();
 
   // Fetch hub pages (blurb-nav-hub) and track pages for this specialty
-  const [{ data: hubPages }, { data: trackPagesRaw }, { data: allTracks }] = await Promise.all([
+  const [{ data: hubPages }, { data: trackPagesRaw }, { data: allTracks }, studyTypeOverrides] = await Promise.all([
     admin
       .from("pages")
       .select("id, slug, view, title")
@@ -107,6 +109,7 @@ export default async function SpecialtyHubPage({
       .eq("status", "publish")
       .not("track_id", "is", null),
     admin.from("tracks").select("id, slug, name"),
+    getStudyTypeOverrides(),
   ]);
 
   // Build type option cards: view-based hub pages
@@ -171,6 +174,9 @@ export default async function SpecialtyHubPage({
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {typeOptions.map((opt, i) => {
               const { cfg, href } = opt;
+              const override = studyTypeOverrides.get(opt.key);
+              const label = override?.label ?? cfg.label;
+              const description = override?.description ?? cfg.desc;
               return (
                 <Link
                   key={opt.key}
@@ -194,10 +200,32 @@ export default async function SpecialtyHubPage({
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-.02em", color: "#fff", lineHeight: 1.2 }}>
-                      {cfg.label}
+                      {override && override.id > 0 ? (
+                        <EditableText
+                          variant="plain"
+                          table="study_types"
+                          id={override.id}
+                          field="label"
+                          value={label}
+                          as="span"
+                        />
+                      ) : (
+                        label
+                      )}
                     </div>
                     <div style={{ fontSize: 12, marginTop: 5, lineHeight: 1.4, color: "rgba(255,255,255,0.62)" }}>
-                      {cfg.desc}
+                      {override && override.id > 0 ? (
+                        <EditableText
+                          variant="plain"
+                          table="study_types"
+                          id={override.id}
+                          field="description"
+                          value={description}
+                          as="span"
+                        />
+                      ) : (
+                        description
+                      )}
                     </div>
                     <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)" }}>
                       Acessar <ChevronRight size={11} strokeWidth={2.5} />

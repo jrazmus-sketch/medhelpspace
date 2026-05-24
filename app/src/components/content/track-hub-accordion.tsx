@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { EditableText } from "@/components/admin/editable-text";
 
 export type SuperGroupData = {
   label: string;
@@ -153,7 +154,7 @@ function SpecialtyCard({
   progress,
   ctaLabel,
 }: {
-  spec: { slug: string; name: string };
+  spec: { id: number; slug: string; name: string };
   href: string;
   progress?: number;
   ctaLabel: string;
@@ -178,17 +179,15 @@ function SpecialtyCard({
     >
       <SpecialtyIcon specialtySlug={spec.slug} size={26} />
       <div>
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 600,
-            letterSpacing: "-.01em",
-            color: "var(--foreground)",
-            lineHeight: 1.25,
-          }}
-        >
-          {spec.name}
-        </div>
+        <EditableText
+          variant="plain"
+          table="specialties"
+          id={spec.id}
+          field="name"
+          value={spec.name}
+          as="div"
+          className="text-[13px] font-semibold leading-tight tracking-[-0.01em] text-foreground"
+        />
         {hasProgress && (
           <div style={{ marginTop: 8 }}>
             <div style={{ height: 3, background: "var(--surface-2)", borderRadius: 2, overflow: "hidden" }}>

@@ -17,6 +17,9 @@ const SCALAR_ALLOWED = new Set<string>([
   "flashcard_items.text",
   "flashcard_items.answer",
   "nav_items.label",
+  "specialties.name",
+  "study_types.label",
+  "study_types.description",
 ]);
 
 // Plain-text fields trim + reject empty; everything else is HTML and goes through safe().
@@ -24,6 +27,9 @@ const PLAIN_FIELDS = new Set<string>([
   "pages.title",
   "lessons.title",
   "nav_items.label",
+  "specialties.name",
+  "study_types.label",
+  "study_types.description",
 ]);
 
 async function requireAdmin() {

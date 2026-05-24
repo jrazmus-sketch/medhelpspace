@@ -3,10 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const origin =
-    process.env.NODE_ENV === "production"
-      ? (process.env.NEXT_PUBLIC_SITE_URL ?? "https://medhelpspace.com.br")
-      : `http://${request.headers.get("host") ?? "localhost:3000"}`;
+  const origin = new URL(request.url).origin;
 
   // Accept both JSON (legacy client-side) and form-data (native HTML form)
   let email = "";

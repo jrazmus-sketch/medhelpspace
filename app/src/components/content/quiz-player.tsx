@@ -40,12 +40,14 @@ export function QuizPlayer({
   const isRetry = activeIds.length < questions.length;
   const correctAnswer = question?.answers.find((a) => a.correct);
   const selectedAnswer = answered ? question?.answers[selectedIdx] : null;
-  // Show the selected answer's feedback first (per-distractor "why wrong"); fall
-  // back to the correct answer's feedback (legacy H5P quizzes store it there).
-  const feedback =
-    (selectedAnswer && !selectedAnswer.correct ? selectedAnswer.feedback : "") ||
-    correctAnswer?.feedback ||
-    "";
+  // Per-distractor feedback ("why this wrong answer is wrong") is often empty in
+  // legacy simulados; the canonical explanation lives on the correct answer.
+  const showSelectedFeedback = Boolean(
+    selectedAnswer && !selectedAnswer.correct && selectedAnswer.feedback,
+  );
+  const feedback = showSelectedFeedback
+    ? selectedAnswer!.feedback
+    : correctAnswer?.feedback || "";
   const explanationHtml = question?.explanation_html ?? null;
 
   function handleSelect(idx: number) {
@@ -283,15 +285,15 @@ export function QuizPlayer({
           answer that has none goes through the full admin editor. */}
       {answered && feedback && (
         <div className="rounded-lg border border-brand/20 bg-brand-muted p-4">
-          {selectedAnswer && !selectedAnswer.correct ? (
+          {showSelectedFeedback ? (
             <EditableText
               variant="answer"
               questionId={question.id}
               answerIdx={selectedIdx!}
               field="feedback"
               className="prose-content text-sm"
-              html={safe(selectedAnswer.feedback)}
-              editHtml={selectedAnswer.feedback}
+              html={safe(selectedAnswer!.feedback)}
+              editHtml={selectedAnswer!.feedback}
             />
           ) : correctAnswer ? (
             <EditableText
