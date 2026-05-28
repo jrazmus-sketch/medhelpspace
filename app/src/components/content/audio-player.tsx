@@ -71,24 +71,26 @@ export function AudioPlayer({
         style={{ display: "none" }}
       />
 
-      {/* Desktop chrome — visible at md and up */}
-      <div className="hidden md:block">
-        <DesktopAudioPlayerChrome
-          engine={engine}
-          title={title}
-          sectionTitle={sectionTitle}
-          sectionTitleNode={sectionTitleNode}
-          nextTitle={nextTitle}
-          specialtySlug={specialtySlug}
-          prevHref={prevHref}
-          nextHref={nextHref}
-        />
-      </div>
+      {/* Desktop chrome — visible at md and up. Visibility is applied to the
+          chrome's root (not an outer wrapper) so position:sticky's containing
+          block remains the parent renderer container; an extra wrapper here
+          would collapse to the player's height and kill the stick range. */}
+      <DesktopAudioPlayerChrome
+        engine={engine}
+        title={title}
+        sectionTitle={sectionTitle}
+        sectionTitleNode={sectionTitleNode}
+        nextTitle={nextTitle}
+        specialtySlug={specialtySlug}
+        prevHref={prevHref}
+        nextHref={nextHref}
+        rootClassName="hidden md:block"
+      />
 
       {/* Mobile chrome — visible below md. Falls back to desktop chrome if the
           caller didn't supply the mobile-required props (e.g. legacy call sites). */}
-      <div className="block md:hidden">
-        {pageTitle && specialtySlug && sections ? (
+      {pageTitle && specialtySlug && sections ? (
+        <div className="block md:hidden">
           <MobileAudioPlayerChrome
             engine={engine}
             title={title}
@@ -103,19 +105,20 @@ export function AudioPlayer({
             nextHref={nextHref}
             backHref={backHref}
           />
-        ) : (
-          <DesktopAudioPlayerChrome
-            engine={engine}
-            title={title}
-            sectionTitle={sectionTitle}
-            sectionTitleNode={sectionTitleNode}
-            nextTitle={nextTitle}
-            specialtySlug={specialtySlug}
-            prevHref={prevHref}
-            nextHref={nextHref}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        <DesktopAudioPlayerChrome
+          engine={engine}
+          title={title}
+          sectionTitle={sectionTitle}
+          sectionTitleNode={sectionTitleNode}
+          nextTitle={nextTitle}
+          specialtySlug={specialtySlug}
+          prevHref={prevHref}
+          nextHref={nextHref}
+          rootClassName="block md:hidden"
+        />
+      )}
     </>
   );
 }

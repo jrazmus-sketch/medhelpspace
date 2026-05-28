@@ -658,14 +658,16 @@
 .mhs-mobile-transcript .prose-content a {
   color: color-mix(in srgb, var(--mhs-accent, var(--c-medvoice)) 60%, white);
 }
+/* Keep bloco headers in MedVoice brand purple inside the mobile player so the
+   transcript reads the same as on desktop, regardless of specialty accent. */
 .mhs-mobile-transcript .bloco-header {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.15);
+  color: #c084e8;
+  border-left-color: #c084e8;
 }
-/* Override the MedVoice-brand-purple intro title with the specialty accent. */
+/* Intro title also stays brand purple on mobile (matches desktop). */
 .mhs-mobile-transcript .mv-intro-title,
 .dark .mhs-mobile-transcript .mv-intro-title {
-  color: var(--mhs-accent, var(--brand));
+  color: #c084e8;
 }
 .mhs-mobile-transcript .mv-intro-block {
   border-color: rgba(255, 255, 255, 0.1);

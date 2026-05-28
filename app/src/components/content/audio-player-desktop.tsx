@@ -19,6 +19,9 @@ export type DesktopChromeProps = {
   /** Hrefs for prev/next section transport buttons. Disabled when null. */
   prevHref?: string | null;
   nextHref?: string | null;
+  /** Merged onto the sticky card root so sticky's containing block stays the
+   *  outer renderer container (must be a sibling of the transcript). */
+  rootClassName?: string;
 };
 
 export function DesktopAudioPlayerChrome({
@@ -30,6 +33,7 @@ export function DesktopAudioPlayerChrome({
   specialtySlug,
   prevHref,
   nextHref,
+  rootClassName,
 }: DesktopChromeProps) {
   const {
     playing, currentTime, duration, speed, autoAdvance, countdown, loadError,
@@ -48,7 +52,7 @@ export function DesktopAudioPlayerChrome({
 
   return (
     <div
-      className="audio-player-card"
+      className={rootClassName ? `audio-player-card ${rootClassName}` : "audio-player-card"}
       style={{
         ...(accent ? { ["--mhs-player-accent" as string]: accent } : {}),
         position: "sticky",
