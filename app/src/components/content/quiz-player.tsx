@@ -8,6 +8,46 @@ import { EditableText } from "@/components/admin/editable-text";
 import { useEditMode } from "@/providers/edit-mode-provider";
 import type { QuizQuestionData } from "./quiz-renderer";
 
+// Builds the "Análise das alternativas incorretas:" block from each wrong
+// answer's `feedback` field. Restores the WP behaviour where students saw
+// why every wrong option was wrong, not just the one they clicked. Renders
+// nothing if no wrong answer has feedback.
+function buildDistractorAnalysisHtml(
+  answers: QuizQuestionData["answers"],
+): string {
+  const wrongs = answers
+    .map((a, i) => ({ ...a, letter: "ABCDE"[i] }))
+    .filter((a) => !a.correct && a.feedback && a.feedback.trim().length > 0);
+  if (wrongs.length === 0) return "";
+  const escape = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const items = wrongs
+    .map((a) => `<p><strong>(${a.letter})</strong> ${escape(a.feedback)}</p>`)
+    .join("\n");
+  return `<h4>Análise das alternativas incorretas:</h4>\n${items}`;
+}
+
+// Splices the distractor-analysis block into explanation_html immediately
+// before <h4>PEGA REVALIDA:</h4> or <h4>Resumo-chave:</h4> when present,
+// otherwise appends. Matches the original WP ordering (Comentário →
+// Análise → PEGA → Resumo).
+function augmentExplanationForDisplay(
+  explanationHtml: string | null,
+  answers: QuizQuestionData["answers"],
+): string | null {
+  const analysis = buildDistractorAnalysisHtml(answers);
+  if (!explanationHtml) return analysis || null;
+  if (!analysis) return explanationHtml;
+  const splitIdx = explanationHtml.search(/<h4>(?:PEGA REVALIDA|Resumo-chave)/);
+  if (splitIdx === -1) return explanationHtml + "\n" + analysis;
+  return (
+    explanationHtml.slice(0, splitIdx) +
+    analysis +
+    "\n" +
+    explanationHtml.slice(splitIdx)
+  );
+}
+
 interface Props {
   questions: QuizQuestionData[];
   pageId: number;
@@ -49,6 +89,12 @@ export function QuizPlayer({
     ? selectedAnswer!.feedback
     : correctAnswer?.feedback || "";
   const explanationHtml = question?.explanation_html ?? null;
+  // Display version includes the per-distractor "Análise das alternativas
+  // incorretas:" block reconstructed from each wrong answer's feedback.
+  // Admin edits remain on the raw explanation_html field (editHtml below).
+  const explanationDisplayHtml = question
+    ? augmentExplanationForDisplay(explanationHtml, question.answers)
+    : null;
 
   function handleSelect(idx: number) {
     if (answered) return;
@@ -309,8 +355,11 @@ export function QuizPlayer({
         </div>
       )}
 
-      {/* Rich explanation block (Comentário / PEGA / Resumo) — simulado pages only */}
-      {answered && explanationHtml && (
+      {/* Rich explanation block (Comentário / Análise / PEGA / Resumo).
+          Display HTML may include a reconstructed "Análise das alternativas
+          incorretas:" section assembled from per-answer feedback; edit HTML
+          is the raw explanation_html so admin edits stay scoped to one field. */}
+      {answered && explanationDisplayHtml && (
         <div className="rounded-lg border border-border bg-surface-1 p-4">
           <EditableText
             variant="rich"
@@ -318,8 +367,8 @@ export function QuizPlayer({
             id={question.id}
             field="explanation_html"
             className="prose-content quiz-explanation text-sm"
-            html={safe(explanationHtml)}
-            editHtml={explanationHtml}
+            html={safe(explanationDisplayHtml)}
+            editHtml={explanationHtml ?? ""}
           />
         </div>
       )}
