@@ -1,8 +1,13 @@
-# Content authoring spec — Resumos pages
+# Content authoring spec — Resumos & Fórmula pages
 
-This document tells **Karina (or ChatGPT working for her)** how to format new "Resumos" content so it can be bulk-imported into the MedHelpSpace site automatically — no manual cleanup on Justin's side.
+This document tells **Karina (and ChatGPT working for her)** how to format new content for two page types on MedHelpSpace:
 
-Follow this spec exactly. The import script is strict on purpose: any deviation means a page is rejected and has to be edited by hand.
+- **Resumos** — narrative-style summary pages ("Quando o Ritmo Desacelera…")
+- **Fórmula** — decision-rule / pattern-recognition pages ("BRADIARRITMIAS (BAVT)") with pitfalls and memory hooks
+
+Both share the same Markdown format. They differ only in their `view:` metadata field, their filename suffix, and which folder they live in.
+
+Files written to this spec can be **bulk-imported** automatically — no manual cleanup. The import script is strict: deviations are rejected.
 
 ---
 
@@ -10,10 +15,10 @@ Follow this spec exactly. The import script is strict on purpose: any deviation 
 
 - One **Markdown file per page** (`.md`).
 - The file has two parts:
-  1. **Frontmatter** at the top — a small YAML block with the page metadata (title, slug, specialty, etc.).
+  1. **Frontmatter** at the top — a small YAML block with the page metadata.
   2. **Body** below the frontmatter — the actual content in Markdown.
 
-That's it. No Word docs, no Google Doc exports, no `.docx`. Markdown only.
+That's it. No Word docs, no `.docx`, no Google Doc HTML exports. Markdown only.
 
 ---
 
@@ -23,20 +28,19 @@ That's it. No Word docs, no Google Doc exports, no `.docx`. Markdown only.
 {page-slug}.md
 ```
 
-The filename **must equal the slug** (URL path) of the page, with `.md` at the end.
+The filename **must equal the slug** (URL path) of the page, with `.md` at the end. The suffix tells the script which page type it is:
 
-| Page title | Slug | Filename |
+| Page type | Slug ends in | Filename example |
 |---|---|---|
-| Bradiarritmias Resumos | `bradiarritmias-resumos` | `bradiarritmias-resumos.md` |
-| Taquiarritmias Resumos | `taquiarritmias-resumos` | `taquiarritmias-resumos.md` |
-| Síndrome Coronariana Aguda Resumos | `sindrome-coronariana-aguda-resumos` | `sindrome-coronariana-aguda-resumos.md` |
+| Resumos | `-resumos` | `bradiarritmias-resumos.md` |
+| Fórmula | `-formula` | `bradiarritmias-formula.md` |
 
 **Slug rules** (this is the URL — must be safe):
 - Lowercase only.
-- ASCII only — strip all accents: `ã → a`, `ç → c`, `é → e`, `ó → o`, etc.
+- ASCII only — strip all accents: `ã → a`, `ç → c`, `é → e`, `ó → o`.
 - Spaces become hyphens.
 - No special characters except hyphens.
-- **Always end with `-resumos`** for resumo pages.
+- Always end with `-resumos` or `-formula`.
 
 ---
 
@@ -46,19 +50,23 @@ Save the files in this exact folder layout:
 
 ```
 MedHelpSpace Content/
-└── Resumos/
+├── Resumos/
+│   ├── cardiologia/
+│   │   ├── bradiarritmias-resumos.md
+│   │   └── taquiarritmias-resumos.md
+│   ├── pneumologia/
+│   │   └── asma-resumos.md
+│   └── ...
+└── Formula/
     ├── cardiologia/
-    │   ├── bradiarritmias-resumos.md
-    │   ├── taquiarritmias-resumos.md
-    │   └── sindrome-coronariana-aguda-resumos.md
+    │   ├── bradiarritmias-formula.md
+    │   └── sindrome-coronariana-aguda-formula.md
     ├── pneumologia/
-    │   └── asma-resumos.md
-    ├── reumatologia/
     │   └── ...
     └── ...
 ```
 
-One subfolder per specialty. Specialty folder names use the same slug format as URLs:
+One subfolder per specialty. Folder names use the same slug format as URLs:
 
 | Specialty | Folder name |
 |---|---|
@@ -77,12 +85,14 @@ One subfolder per specialty. Specialty folder names use the same slug format as 
 | Obstetrícia | `obstetricia` |
 | Pediatria | `pediatria` |
 | Cirurgia Geral | `cirurgia-geral` |
-| Medicina de Emergência | `medicina-de-emergencia` |
+| Medicina de Emergência | `emergencia` |
 | Saúde Coletiva | `saude-coletiva` |
 
 ---
 
 ## 4. Frontmatter (required at top of every file)
+
+**For Resumos:**
 
 ```yaml
 ---
@@ -94,13 +104,25 @@ type: plain-content
 ---
 ```
 
+**For Fórmula:**
+
+```yaml
+---
+title: Bradiarritmias Formula
+slug: bradiarritmias-formula
+specialty: cardiologia
+view: formula
+type: plain-content
+---
+```
+
 | Field | What it is | Example |
 |---|---|---|
-| `title` | What appears at the top of the page (with accents/capitalization intact) | `Bradiarritmias Resumos` |
-| `slug` | URL path piece — must match filename (without `.md`) | `bradiarritmias-resumos` |
+| `title` | Page title (accents/capitalization intact) | `Bradiarritmias Formula` |
+| `slug` | URL path piece — must match filename (without `.md`) | `bradiarritmias-formula` |
 | `specialty` | Specialty folder slug (from table above) | `cardiologia` |
-| `view` | Always `resumos` for resumo pages | `resumos` |
-| `type` | Always `plain-content` for resumo pages | `plain-content` |
+| `view` | `resumos` OR `formula` | `formula` |
+| `type` | Always `plain-content` | `plain-content` |
 
 All five fields are **required**. The import script rejects any file missing one.
 
@@ -108,14 +130,14 @@ All five fields are **required**. The import script rejects any file missing one
 
 ## 5. Body — Markdown conventions
 
-Below the closing `---` of the frontmatter, write the content in standard Markdown. Use these specific conventions:
+Below the closing `---` of the frontmatter, write the content in standard Markdown.
 
 ### Headings
 
-- `## Heading 2` → **black, bold, large** — used for the main topic/section title (e.g. `Bradiarritmias`).
-- `### Heading 3` → **brand purple, bold, medium** — used for narrative titles AND scene/episode headings (e.g. `"Quando o Ritmo Desacelera"` or `Cena 1 – O monitor não grita, mas o corpo avisa`).
+- `## Heading 2` → **black, bold, large** — main topic/section title (e.g. `Bradiarritmias`).
+- `### Heading 3` → **brand purple, bold, medium** — narrative titles, scene/episode headings, pegadinha/regrinha headings (e.g. `"Quando o Ritmo Desacelera"`, `Cena 1`, `Pegadinha Clássica`, `Regrinha da Memorização`).
 - `#### Heading 4` → smaller subheading. Use sparingly.
-- **Never use `# Heading 1`** — the page title comes from the frontmatter `title:` field, not from the body.
+- **Never use `# Heading 1`** — page title comes from the frontmatter `title:` field.
 
 ### Emphasis
 
@@ -126,85 +148,105 @@ Below the closing `---` of the frontmatter, write the content in standard Markdo
 ### Paragraphs
 
 - Just write prose. Separate paragraphs with a blank line.
-- For lines that should sit close together (like a multi-line stanza in the narrative), use **single line breaks** between them — the import script preserves these with `<br>`. Example:
+- For tight multi-line stanzas (narrative), use **single line breaks** between them.
 
 ```markdown
 Ele não chega em corrida elétrica.
 Ele chega em câmera lenta.
 ```
 
-renders as two lines in one paragraph.
-
 ### Dialogue
-
-- Use an em-dash (`—`) followed by the quote in straight quotes. Don't use `<blockquote>` or `>` for dialogue. Example:
 
 ```markdown
 — "Doutor, parece que meu coração está falhando… fico escurecendo."
 ```
 
-### Lists
+Em-dash + straight quotes. **Don't** use `>` blockquote for dialogue.
 
-- Bullet lists: hyphen + space:
-  ```markdown
-  - First item
-  - Second item
-  - Third item
-  ```
-- Numbered lists: digit + period + space:
-  ```markdown
-  1. First step
-  2. Second step
-  ```
-- **Don't use emoji as bullets** (`●`, `🟪`, `📌`, `🟣`, `❌`, etc.). The import script strips them.
+### Lists — three semantic types
+
+The author writes natural emoji-bulleted lists. The import script converts them into typed `<ul>` elements that get rendered with the appropriate marker via CSS. **Don't** write the HTML by hand — just use these emoji prefixes:
+
+| Bullet prefix | Meaning | Renders as |
+|---|---|---|
+| `-` or `*` | Standard bullet | `•` (filled disc) |
+| `❌` | "Pegadinha" / pitfall | `❌` (X mark) |
+| `🟣` | "Resumo-chave" / key takeaway | `🟣` (purple circle) |
+| `💬` | "Regrinha" / memorization hint | `💬` (speech bubble) |
+
+```markdown
+### Pegadinha Clássica
+❌ Viu ondas "a" em canhão e pensou em sopro? Erro – isso aponta para dissociação AV.
+❌ Marcou atropina isolada como solução do BAVT? Pegadinha – pode até ser tentada, mas costuma falhar.
+❌ Indicou cardioversão elétrica para bradicardia? Nunca – cardioversão é conduta de taquiarritmia.
+
+### Regrinha da Memorização
+💬 "Canhão no pescoço, bloqueio no circuito."
+💬 "Bradicardia sintomática + bloqueio AV alto grau = marca-passo definitivo."
+
+### Resumo-chave
+🟣 BAVT sintomático = marca-passo definitivo.
+🟣 ECG é a chave para localizar o nível do bloqueio.
+```
+
+For regular bullet lists, hyphen + space:
+
+```markdown
+- Frequência abaixo de 50 bpm com sintomas
+- Ondas P sem QRS correspondente
+- Pausa sinusal > 3 segundos
+```
+
+Numbered lists work the same way: `1.` `2.` `3.`
 
 ### Inline punctuation
 
-- Use **straight quotes** (`"like this"`), not curly quotes (`"like this"`). The renderer handles typography.
-- Em-dash `—` (the long one) for dialogue and asides. Hyphen `-` for compound words. En-dash `–` is fine for ranges.
+- Use **straight quotes** (`"like this"`), not curly quotes.
+- Em-dash `—` for dialogue and asides. Hyphen `-` for compound words. En-dash `–` is fine for ranges.
 
 ### Links
 
-- Internal links to other pages on the site:
-  ```markdown
-  [bradiarritmia AV avançada](bradiarritmias)
-  ```
-  The text in `()` is the **slug** of the target page (the part after `/app/cardiologia/`). The import script resolves it to the page ID.
-- External links: full URL.
-  ```markdown
-  [SBC 2023 diretriz](https://example.com/diretriz.pdf)
-  ```
+Internal links use the target page's slug:
+
+```markdown
+[bradiarritmia AV avançada](bradiarritmias)
+```
+
+External links: full URL.
+
+```markdown
+[SBC 2023 diretriz](https://example.com/diretriz.pdf)
+```
 
 ### Images
 
-- Host the image first on Bunny CDN (`medhelpspace.b-cdn.net`), then reference it:
-  ```markdown
-  ![Eletrocardiograma de BAV total](https://medhelpspace.b-cdn.net/Images/cardiologia/bav-total.png)
-  ```
-- Alt text in the brackets is required (helps screen readers and search).
-- Don't paste base64 images. Don't upload images to Google Drive expecting the import to grab them.
+Host on Bunny CDN first, then reference:
+
+```markdown
+![Eletrocardiograma de BAV total](https://medhelpspace.b-cdn.net/Images/cardiologia/bav-total.png)
+```
+
+Alt text required. Don't paste base64; don't expect Google Drive image links to work.
 
 ---
 
 ## 6. Things to NEVER include
 
-The import script will strip these or reject the file:
-
 | Don't include | Why |
 |---|---|
-| `<div>`, `<span>`, `<p style="...">`, any raw HTML | We want clean Markdown. The script generates the HTML. |
-| Inline colors (`<span style="color:#b046e9">`) | Brand purple is applied by the renderer based on heading level, not per-element. |
-| Decorative emoji as bullets (`●`, `🟪`, `📌`, `🟣`, `❌`, `⚠️`, `🧠`) | These were a WordPress workaround. Use real Markdown lists instead. |
-| `<br>` tags written manually | Use Markdown single-line breaks (a single newline inside a paragraph). |
+| `<div>`, `<span>`, `<p style="...">`, any raw HTML | Markdown only — the script generates the HTML. |
+| Inline colors (`<span style="color:#b046e9">`) | Brand purple is applied automatically based on heading level. |
+| Manual `<ul class="pega">` HTML | Use `❌` bullet prefix; script handles the class. |
+| `<br>` tags written by hand | Use Markdown single-line breaks instead. |
 | `&nbsp;` | Just type a regular space. |
-| WordPress shortcodes (`[et_pb_text]`, `[h5p id=...]`, `[zoomsounds_player]`) | These were a Divi/WP thing. Not used in the new system. |
-| Decorative emoji in the heading text itself (e.g. `### 🟪 Comentário:`) | Brand styling is automatic; emoji in headings clash with it. |
+| WordPress shortcodes (`[et_pb_text]`, `[h5p id=...]`, `[zoomsounds_player]`) | Not used in the new system. |
+| Decorative emoji **in the heading text** (e.g. `### 🟪 Comentário:`) | Brand styling is automatic; emoji clash with it. |
 
 ---
 
-## 7. Complete example — `bradiarritmias-resumos.md`
+## 7. Complete examples
 
-This is what a finished file looks like, top to bottom:
+### `bradiarritmias-resumos.md` (Resumos page)
 
 ```markdown
 ---
@@ -227,52 +269,66 @@ Você entra na sala e o traçado parece "calmo demais".
 Homem de 72 anos. Tontura. Fraqueza. Quase síncope ao levantar.
 No monitor: frequência de 38 bpm.
 
-Ele não chega em corrida elétrica.
-Ele chega em câmera lenta.
-
 — "Doutor, parece que meu coração está falhando… fico escurecendo."
 
-E aí começa o raciocínio que a prova ama:
-bradiarritmia não é apenas "pulso baixo".
-É um ritmo lento que pode ou não comprometer débito cardíaco, perfusão e condução elétrica.
-
-**Primeiro clique:** nem toda bradicardia é doença. Atleta, sono, alto tônus vagal e algumas situações fisiológicas podem cursar com frequência baixa sem significado patológico. Já a bradicardia **sintomática**, ou acompanhada de **distúrbio de condução**, muda totalmente o peso do caso.
-
-### Cena 2 – O ECG fala antes do paciente
-
-Os achados que devem chamar atenção no traçado:
-
-- Frequência abaixo de 50 bpm com sintomas
-- Ondas P sem QRS correspondente (bloqueio AV de alto grau)
-- Pausa sinusal > 3 segundos
-- Ondas "a em canhão" no pulso venoso jugular
-
-Cada um desses achados aponta para uma fisiopatologia diferente — e cada um muda a conduta.
+**Primeiro clique:** nem toda bradicardia é doença. Atleta, sono, alto tônus vagal e algumas situações fisiológicas podem cursar com frequência baixa sem significado patológico.
 
 ### Resumo-chave
+🟣 Bradiarritmia sintomática + distúrbio de condução = avaliar marca-passo
+🟣 ECG é a chave: localize o nível do bloqueio
+🟣 Não confunda bradicardia fisiológica com patológica
+```
 
-- Bradiarritmia sintomática + distúrbio de condução = avaliar marca-passo
-- ECG é a chave: localize o nível do bloqueio
-- Não confunda bradicardia fisiológica com patológica
+### `bradiarritmias-formula.md` (Fórmula page)
+
+```markdown
+---
+title: Bradiarritmias Formula
+slug: bradiarritmias-formula
+specialty: cardiologia
+view: formula
+type: plain-content
+---
+
+## Bradiarritmias
+
+### BRADIARRITMIAS (BAVT)
+
+*Fórmula MedHelp – Decisão Treinada | MedHelpSpace Revalida*
+
+### Pegadinha Clássica
+❌ Viu ondas "a" em canhão e pensou em sopro? Erro – isso aponta para dissociação AV.
+❌ Paciente com ritmo de escape e PA preservada virou "tranquilo"? Cuidado – precisa monitorização e pode deteriorar.
+❌ Marcou atropina isolada como solução do BAVT? Pegadinha – pode até ser tentada, mas costuma falhar.
+❌ Esqueceu do marca-passo transcutâneo como ponte? Vacilo de prova – ele entra na estabilização.
+❌ Indicou cardioversão elétrica para bradicardia? Nunca – cardioversão é conduta de taquiarritmia.
+❌ Achou que marca-passo definitivo só vale se houver sintoma? Erro – no BAVT persistente, ele é a conduta definitiva.
+
+### Regrinha da Memorização
+💬 "Canhão no pescoço, bloqueio no circuito."
+💬 "BAVT sintomático = marca-passo definitivo, sempre."
+💬 "Atropina tenta, transcutâneo segura, definitivo resolve."
 ```
 
 ---
 
-## 8. Pre-import checklist (for the author before saving the file to Drive)
+## 8. Pre-import checklist
 
 Run through this list for every file:
 
 - [ ] Filename ends in `.md` and matches the `slug` in frontmatter
-- [ ] Filename ends in `-resumos`
-- [ ] File is in the correct specialty subfolder under `MedHelpSpace Content/Resumos/`
+- [ ] Filename ends in `-resumos` OR `-formula`
+- [ ] File is in the correct folder: `MedHelpSpace Content/Resumos/{specialty}/` or `…/Formula/{specialty}/`
 - [ ] Frontmatter is at the top, between two `---` lines
 - [ ] All five frontmatter fields are filled in
-- [ ] No `# Heading 1` in body (page title comes from frontmatter)
-- [ ] At least one `## Heading 2` (the section header)
-- [ ] No raw HTML, no `<span style="...">`, no decorative bullet emoji
+- [ ] `view:` matches the folder + filename suffix
+- [ ] No `# Heading 1` in body
+- [ ] At least one `## Heading 2`
+- [ ] No raw HTML, no `<span style="...">`, no manual `<ul class="…">`
+- [ ] Pitfall lists use `❌` prefix; memory hooks use `💬`; key takeaways use `🟣`
 - [ ] Internal links use slugs, not full URLs
 - [ ] Straight quotes, not curly quotes
-- [ ] If there are images, they're already uploaded to Bunny CDN with the full URL pasted in
+- [ ] If there are images, they're already on Bunny CDN with the full URL pasted in
 
 ---
 
@@ -280,16 +336,16 @@ Run through this list for every file:
 
 When Justin runs the bulk import script:
 
-1. The script walks `MedHelpSpace Content/Resumos/{specialty}/*.md`.
+1. The script walks `MedHelpSpace Content/Resumos/**/*.md` and `MedHelpSpace Content/Formula/**/*.md` (synced locally via Google Drive for Desktop).
 2. For each file:
    - Parses the frontmatter.
-   - Looks up the specialty's parent hub by convention (`{specialty}-resumos`, e.g. `cardiologia-resumos`).
-   - Converts the Markdown body to clean HTML.
-   - Inserts (or updates, if the slug already exists) a row in `pages` and the corresponding `lessons` row.
-   - Logs success or error.
-3. Files with errors stay in Drive untouched — the author fixes them and the next import picks them up.
+   - Looks up the specialty + view hub by convention (`{specialty}-{view}`, e.g. `cardiologia-formula`).
+   - Converts the Markdown body to clean HTML, applying the semantic-bullet rules (❌ → `<ul class="pega">`, 🟣 → `<ul class="resumo">`, 💬 → `<ul class="dica">`).
+   - **Backs up the existing `lessons.body_html`** to a backup table before overwriting (full rollback always available).
+   - Upserts the `pages` row + the `lessons` row by slug.
+3. Files with errors stay in Drive untouched — fix and the next import picks them up.
 
-Re-importing the same file is safe (idempotent): existing pages get **updated**, not duplicated.
+Re-importing the same file is safe (idempotent): existing pages get **updated**; nothing is duplicated.
 
 ---
 
@@ -299,16 +355,15 @@ If you're priming ChatGPT to write these files, paste this short version as a sy
 
 > You are writing content for MedHelpSpace, a Brazilian medical exam-prep site. Output a single Markdown file in this exact shape:
 >
-> 1. YAML frontmatter at the top with `title`, `slug`, `specialty`, `view: resumos`, `type: plain-content`.
-> 2. Body in Markdown only — no HTML, no inline styles, no decorative emoji bullets.
-> 3. Use `##` for the main section heading (black). Use `###` for narrative titles and scene/episode headings (these render in brand purple automatically).
-> 4. Use `*italic*` for narrator voice, `**bold**` for emphasis, hyphen-space `- ` for bullet lists.
-> 5. Dialogue uses an em-dash `—` followed by straight quotes. Single newlines inside a paragraph for tight multi-line stanzas; blank line between paragraphs.
-> 6. Slug = lowercase, ASCII (strip accents), hyphens for spaces, ends in `-resumos`.
-> 7. Filename = `{slug}.md`. Save to `MedHelpSpace Content/Resumos/{specialty}/`.
+> 1. YAML frontmatter at the top with `title`, `slug`, `specialty`, `view` (`resumos` or `formula`), `type: plain-content`.
+> 2. Body in Markdown only — no HTML, no inline styles.
+> 3. `##` for the main section heading (renders black). `###` for narrative titles, scene/episode headings, and Pegadinha / Regrinha / Resumo headings (these render in brand purple automatically).
+> 4. Semantic bullets by prefix: `-` standard; `❌` pitfall ("Pegadinha"); `🟣` key takeaway ("Resumo-chave"); `💬` memorization hint ("Regrinha").
+> 5. Dialogue: em-dash `—` followed by straight quotes. Single newlines inside a paragraph for tight multi-line stanzas; blank line between paragraphs.
+> 6. Slug = lowercase, ASCII (strip accents), hyphens for spaces, ends in `-resumos` or `-formula`. Filename = `{slug}.md`. Save to `MedHelpSpace Content/{Resumos|Formula}/{specialty}/`.
 >
-> Match the tone of an experienced clinical professor narrating a case. Use Brazilian Portuguese throughout. Never include WordPress shortcodes (`[h5p ...]`, `[et_pb_text]`, `[zoomsounds_player]`).
+> Match the tone of an experienced clinical professor narrating a case (Resumos) or distilling decision rules + pitfalls + memory hooks (Fórmula). Use Brazilian Portuguese. Never include WordPress shortcodes.
 
 ---
 
-*Last updated 2026-05-30. Questions: ping Justin.*
+*Last updated 2026-05-30.*

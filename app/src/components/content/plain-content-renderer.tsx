@@ -56,7 +56,23 @@ function processHtml(html: string): string {
   return out;
 }
 
-export async function PlainContentRenderer({ pageId }: { pageId: number }) {
+export async function PlainContentRenderer({
+  pageId,
+  view,
+}: {
+  pageId: number;
+  view?: string | null;
+}) {
+  // view-specific wrapper: lets CSS color h3 brand-purple on the narrative
+  // (resumos) and decision-rule (formula) page types without touching the
+  // body HTML. New Markdown-authored content emits plain <h3>; legacy WP
+  // content uses inline-color spans that processHtml already remaps.
+  const wrapperClass =
+    view === "resumos"
+      ? "prose-content prose-resumo min-w-0 flex-1"
+      : view === "formula"
+        ? "prose-content prose-formula min-w-0 flex-1"
+        : "prose-content min-w-0 flex-1";
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
     .from("lessons")
@@ -84,7 +100,7 @@ export async function PlainContentRenderer({ pageId }: { pageId: number }) {
         table="lessons"
         id={lesson.id}
         field="body_html"
-        className="prose-content min-w-0 flex-1"
+        className={wrapperClass}
         html={safe(html)}
         editHtml={body}
       />

@@ -380,6 +380,42 @@
   margin-bottom: 0.375rem;
 }
 
+/* ── Resumos / Fórmula page wrappers ─────────────────────────────────────────
+   For Markdown-authored content, h3 carries the narrative/scene title role
+   (brand purple). Legacy WP content uses inline-color spans inside h3, which
+   still work — these rules just give plain <h3> the same treatment.
+
+   Semantic bullet classes (pega / resumo / dica) mirror the quiz-explanation
+   convention so the import script can convert ❌ / 🟣 / 💬 prefix bullets into
+   typed lists with custom markers. */
+.prose-content.prose-resumo h3,
+.prose-content.prose-formula h3 {
+  color: var(--brand);
+}
+
+.prose-content ul.pega li::marker {
+  content: "❌  ";
+}
+.prose-content ul.resumo li::marker {
+  content: "🟣  ";
+}
+.prose-content ul.dica li::marker {
+  content: "💬  ";
+}
+
+.prose-content ul.pega,
+.prose-content ul.resumo,
+.prose-content ul.dica {
+  list-style: none;
+  padding-left: 1.5rem;
+}
+
+.prose-content ul.pega li,
+.prose-content ul.resumo li,
+.prose-content ul.dica li {
+  margin-bottom: 0.375rem;
+}
+
 /* Brand inline color: WP used #b046e9; renderer replaces with this class */
 .prose-content .prose-brand-color {
   color: #b046e9;

@@ -133,7 +133,7 @@ export default async function ContentPage({
       </header>
 
       <PageBody
-        page={page as { id: number; title: string; type: string; track_id: number | null; content_module_id: number | null }}
+        page={page as { id: number; title: string; type: string; view: string | null; track_id: number | null; content_module_id: number | null }}
         selectedLessonId={selectedLessonId}
         specialtySlug={specialty}
         backHref={voltarFallback}
@@ -170,14 +170,14 @@ function PageBody({
   specialtySlug,
   backHref,
 }: {
-  page: { id: number; title: string; type: string; track_id: number | null; content_module_id: number | null };
+  page: { id: number; title: string; type: string; view: string | null; track_id: number | null; content_module_id: number | null };
   selectedLessonId?: number;
   specialtySlug: string;
   backHref: string;
 }) {
   switch (page.type) {
     case "plain-content":
-      return <PlainContentRenderer pageId={page.id} />;
+      return <PlainContentRenderer pageId={page.id} view={page.view} />;
     case "text-lesson":
     case "audio-lesson": {
       const isTranscript =
