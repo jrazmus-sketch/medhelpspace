@@ -2,7 +2,7 @@ import {
   Heart, Brain, Wind, Bone, Zap, Droplets, Droplet,
   FlaskConical, Shield, Sparkles, Baby, Globe,
   Stethoscope, Scissors, Lightbulb, Activity,
-  Venus, Sprout,
+  Venus, Sprout, Shapes, LayoutGrid, Tags,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -31,6 +31,9 @@ const SPECIALTY_ICONS: Record<string, IconConfig> = {
   "saude-coletiva":         { Icon: Globe,        stops: ["#059669", "#34d399"] },
   "medicina-de-emergencia": { Icon: Zap,          stops: ["#ef4444", "#f97316"] },
   emergencia:               { Icon: Zap,          stops: ["#ef4444", "#f97316"] },
+  outros:                   { Icon: Shapes,       stops: ["#94a3b8", "#cbd5e1"] },
+  geral:                    { Icon: LayoutGrid,   stops: ["#0d9488", "#2dd4bf"] },
+  "por-temas":              { Icon: Tags,         stops: ["#0891b2", "#22d3ee"] },
 };
 
 const DEFAULT_CONFIG: IconConfig = {

@@ -76,6 +76,11 @@ export async function TrackHubRenderer({
 
     const superGroups = [...superMap.values()].sort((a, b) => a.minOrder - b.minOrder);
 
+    // Track hubs get an extra "Outros" section, empty for now — content TBD.
+    if (typeKey === "flashcards" || typeKey === "medvoice" || typeKey === "audiocards") {
+      superGroups.push({ label: "Outros", iconSlug: "outros", minOrder: 999, items: [] });
+    }
+
     return <TrackHubAccordion groups={superGroups} accentColor={accentColor} />;
   }
 

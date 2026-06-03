@@ -35,11 +35,16 @@ export function EstudoTabs({
   simuladosGroups,
   defaultTab,
   overrides,
+  countOverrides,
 }: {
   quizGroups: SuperGroupData[];
   simuladosGroups: SuperGroupData[];
   defaultTab: TabKey;
   overrides: Record<TabKey, StudyTypeOverrideRow>;
+  /** Explicit card counts that override the item-derived count. Used when the
+   *  accordion shows placeholder sections (e.g. simulados' Geral / Por Temas)
+   *  but the selector card should still reflect the real content total. */
+  countOverrides?: Partial<Record<TabKey, number>>;
 }) {
   const [active, setActive] = useState<TabKey>(defaultTab);
   const [, startTransition] = useTransition();
@@ -61,8 +66,8 @@ export function EstudoTabs({
 
   const order: TabKey[] = ["quiz", "simulados"];
   const counts: Record<TabKey, number> = {
-    quiz: countPages(quizGroups),
-    simulados: countPages(simuladosGroups),
+    quiz: countOverrides?.quiz ?? countPages(quizGroups),
+    simulados: countOverrides?.simulados ?? countPages(simuladosGroups),
   };
 
   const activeGroups = active === "quiz" ? quizGroups : simuladosGroups;

@@ -110,7 +110,9 @@ export function TrackHubAccordion({
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  {count} {count === 1 ? "especialidade" : "especialidades"}
+                  {count === 0
+                    ? "Em breve"
+                    : `${count} ${count === 1 ? "especialidade" : "especialidades"}`}
                 </span>
                 <ChevronRight
                   size={14}
@@ -134,11 +136,17 @@ export function TrackHubAccordion({
                   borderTop: "1px solid var(--surface-2)",
                 }}
               >
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {group.items.map(({ spec, href, progress }) => (
-                    <SpecialtyCard key={spec.id} spec={spec} href={href} progress={progress} ctaLabel={ctaLabel} />
-                  ))}
-                </div>
+                {count === 0 ? (
+                  <p style={{ fontSize: 13, color: "var(--muted-foreground)", margin: 0 }}>
+                    Conteúdo em breve.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {group.items.map(({ spec, href, progress }) => (
+                      <SpecialtyCard key={spec.id} spec={spec} href={href} progress={progress} ctaLabel={ctaLabel} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

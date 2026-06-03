@@ -176,6 +176,12 @@ export async function ViewHubRenderer({
       </p>
     );
   }
+  // Resumos / Fórmula hubs get an extra "Outros" section, empty for now — content
+  // TBD. Scoped to these views so the quiz/simulados tabs (which share
+  // getViewHubGroups) are unaffected.
+  if (view === "resumos" || view === "formula") {
+    groups.push({ label: "Outros", iconSlug: "outros", items: [] });
+  }
   // Stripe color for accordion rows — derived from the view's StudyTypeKey
   // (quiz / simulados / resumos / formula). One color across all rows.
   const accentColor = STUDY_TYPE_CONFIG[view as StudyTypeKey]?.color;
