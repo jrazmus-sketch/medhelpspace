@@ -71,12 +71,17 @@ export async function PlainContentRenderer({
   // (resumos) and decision-rule (formula) page types without touching the
   // body HTML. New Markdown-authored content emits plain <h3>; legacy WP
   // content uses inline-color spans that processHtml already remaps.
+  // "revalida-up" carries the CaiuNaProva exam-pattern style (✔ checklists,
+  // PADRÃO DE PROVA callouts) — see .prose-caiunaprova in globals.css.
+  const isCaiuNaProva = view === "revalida-up";
   const wrapperClass =
     view === "resumos"
       ? "prose-content prose-resumo min-w-0 flex-1"
       : view === "formula"
         ? "prose-content prose-formula min-w-0 flex-1"
-        : "prose-content min-w-0 flex-1";
+        : isCaiuNaProva
+          ? "prose-content prose-caiunaprova min-w-0 flex-1"
+          : "prose-content min-w-0 flex-1";
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
     .from("lessons")
@@ -94,7 +99,9 @@ export async function PlainContentRenderer({
 
   const toc = extractToc(body);
   const html = processHtml(body);
-  const showToc = toc.length >= 3;
+  // CaiuNaProva pages have many short numbered headings — a TOC sidebar would
+  // clutter the deliberately linear exam-pattern layout, so suppress it there.
+  const showToc = toc.length >= 3 && !isCaiuNaProva;
 
   // Completion footer — one read per page, so we mark the page's single lesson
   // row done. Reuses lesson_completions (feeds dashboard count + study-plan

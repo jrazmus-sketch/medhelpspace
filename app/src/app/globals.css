@@ -416,6 +416,74 @@
   margin-bottom: 0.375rem;
 }
 
+/* ── CaiuNaProva style (Revalida UP / exam-pattern pages) ───────────────────
+   Authoring stays plain Markdown — CSS supplies the look Karina designed:
+   "➤ CaiuNaProva" header, purple numbered headings, ✔ checklists, and a
+   purple-square "PADRÃO DE PROVA" callout (the > blockquote). Mobile-first;
+   all colors come from theme tokens so light + dark both work. */
+
+/* Header: "➤ CaiuNaProva – <tema>" — drop the full-width rule, underline text */
+.prose-content.prose-caiunaprova h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.prose-content.prose-caiunaprova h2::before {
+  content: "➤ ";
+  text-decoration: none;
+}
+
+/* Numbered topic headings — brand purple (the ① ② … live in the heading text) */
+.prose-content.prose-caiunaprova h3 {
+  color: var(--brand);
+  font-weight: 700;
+  margin-top: 1.75rem;
+}
+
+/* Checklist: standard "-" bullets render with a ✔ marker */
+.prose-content.prose-caiunaprova ul {
+  list-style: none;
+  padding-left: 1.6rem;
+}
+.prose-content.prose-caiunaprova ul li {
+  position: relative;
+  margin-bottom: 0.3rem;
+}
+.prose-content.prose-caiunaprova ul li::marker {
+  content: "✔  ";
+}
+
+/* "PADRÃO DE PROVA" callout — authored as a > blockquote; purple square + label */
+.prose-content.prose-caiunaprova blockquote {
+  position: relative;
+  margin: 0.5rem 0 0.25rem;
+  padding-left: 1.4rem;
+  border: none;
+  font-style: normal;
+}
+.prose-content.prose-caiunaprova blockquote::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4em;
+  width: 0.72em;
+  height: 0.72em;
+  background: var(--brand);
+  border-radius: 2px;
+}
+.prose-content.prose-caiunaprova blockquote p {
+  margin: 0;
+}
+
+/* Section dividers between numbered blocks */
+.prose-content.prose-caiunaprova hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+
 /* Brand inline color: WP used #b046e9; renderer replaces with this class */
 .prose-content .prose-brand-color {
   color: #b046e9;
