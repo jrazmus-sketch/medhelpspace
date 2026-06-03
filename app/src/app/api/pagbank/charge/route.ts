@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createCharge, getWebhookBaseUrl, getInstallmentOptions } from "@/lib/pagbank/api";
 import type { PagBankChargeRequest } from "@/lib/pagbank/types";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
-import { COHORT_PRODUCTS } from "@/lib/pricing";
+import { getCohortProduct } from "@/lib/queries/cohort-products";
 
 export async function POST(request: NextRequest) {
   let body: {
@@ -103,30 +103,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const product = COHORT_PRODUCTS[cohortSlug];
+  // Authoritative product (price + saleability) from the DB catalog. null means
+  // the slug doesn't exist or isn't currently for sale — reject either way. The
+  // amount charged below is derived from product.priceCents, never from the client.
+  const product = await getCohortProduct(cohortSlug);
   if (!product) {
     return NextResponse.json({ error: "Turma inválida" }, { status: 400 });
   }
 
   const admin = createAdminClient();
 
-  // Look up cohort
-  const { data: cohort } = await admin
-    .from("cohorts")
-    .select("id, name")
-    .eq("slug", cohortSlug)
-    .single();
-
-  if (!cohort) {
-    return NextResponse.json({ error: "Turma não encontrada" }, { status: 404 });
-  }
-
   // Check for existing active membership — prevent double-buy
   const { data: existingMembership } = await admin
     .from("user_cohort_memberships")
     .select("user_id")
     .eq("user_id", user.id)
-    .eq("cohort_id", cohort.id)
+    .eq("cohort_id", product.id)
     .maybeSingle();
 
   if (existingMembership) {
@@ -148,7 +140,7 @@ export async function POST(request: NextRequest) {
       .from("orders")
       .select("id")
       .eq("user_id", user.id)
-      .eq("cohort_id", cohort.id)
+      .eq("cohort_id", product.id)
       .eq("payment_method", "pix")
       .eq("status", "pending")
       .lt("pix_expires_at", nowIso);
@@ -163,7 +155,7 @@ export async function POST(request: NextRequest) {
     // generating the QR, the existing QR is at the wrong amount — supersede it
     // (cancel + release its redemption) and fall through to mint a fresh,
     // correctly-priced order below.
-    const reusable = await findReusablePixOrder(admin, user.id, cohort.id, nowIso);
+    const reusable = await findReusablePixOrder(admin, user.id, product.id, nowIso);
     if (reusable) {
       if ((reusable.couponCode ?? null) === reqCouponCode) {
         return NextResponse.json(reusable);
@@ -179,7 +171,7 @@ export async function POST(request: NextRequest) {
   // BEFORE order insert so that the redemption row is the gating constraint;
   // if anything below fails, the cleanup branch deletes the redemption + decrements
   // the counter so the user can try again with the same coupon.
-  const baseAmountCents = product.amountCents;
+  const baseAmountCents = product.priceCents;
   let couponId: number | null = null;
   let couponRedemptionId: number | null = null;
   let discountCents = 0;
@@ -259,7 +251,7 @@ export async function POST(request: NextRequest) {
     .from("orders")
     .insert({
       user_id: user.id,
-      cohort_id: cohort.id,
+      cohort_id: product.id,
       amount_cents: chargeAmountCents,
       base_amount_cents: baseAmountCents,
       discount_cents: discountCents,
@@ -275,7 +267,7 @@ export async function POST(request: NextRequest) {
   if (orderError || !order) {
     // 23505 = unique_violation. Concurrent Pix request won the race — return that one.
     if (paymentMethod === "pix" && orderError?.code === "23505" && !couponCode) {
-      const reusable = await findReusablePixOrder(admin, user.id, cohort.id, new Date().toISOString());
+      const reusable = await findReusablePixOrder(admin, user.id, product.id, new Date().toISOString());
       if (reusable) return NextResponse.json(reusable);
     }
     console.error("Failed to create order:", orderError);
@@ -296,7 +288,7 @@ export async function POST(request: NextRequest) {
     await finalizePaidOrder(admin, {
       orderId: order.id as string,
       userId: user.id,
-      cohortId: cohort.id as number,
+      cohortId: product.id as number,
       // No real charge; pass a minimal stub so finalizePaidOrder can record it.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       charge: { id: `COUPON_${couponId}_${order.id}`, status: "PAID", amount: { value: 0, currency: "BRL" } } as any,
@@ -382,7 +374,7 @@ export async function POST(request: NextRequest) {
     await finalizePaidOrder(admin, {
       orderId: order.id,
       userId: user.id,
-      cohortId: cohort.id,
+      cohortId: product.id,
       charge,
     });
   }

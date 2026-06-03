@@ -6,6 +6,7 @@
 import type {
   Cohort,
   CohortModuleAccess,
+  CohortProduct,
   ContentModule,
   DashboardData,
   Lesson,
@@ -41,6 +42,28 @@ export const MOCK_COHORTS: Cohort[] = [
     test_date: "2027-01-15",
     membership_starts_at: "2026-02-01T00:00:00Z",
     membership_ends_at: "2027-02-28T23:59:59Z",
+  },
+];
+
+// Saleable cohorts for the storefront — mirrors the backfilled catalog columns.
+export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
+  {
+    id: 1,
+    slug: "revalida-2026-2",
+    name: "Revalida 2026.2",
+    priceCents: 399000,
+    priceLabel: "R$ 3.990",
+    saleLabel: null,
+    displayOrder: 1,
+  },
+  {
+    id: 2,
+    slug: "revalida-2027-1",
+    name: "Revalida 2027.1",
+    priceCents: 499000,
+    priceLabel: "R$ 4.990",
+    saleLabel: "Mais tempo de preparação",
+    displayOrder: 2,
   },
 ];
 

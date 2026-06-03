@@ -4,19 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
-
-const COHORTS = [
-  {
-    label: "Revalida 2026.2",
-    price: "R$ 3.990",
-    checkout: "/checkout?cohort=revalida-2026-2",
-  },
-  {
-    label: "Revalida 2027.1",
-    price: "R$ 4.990",
-    checkout: "/checkout?cohort=revalida-2027-1",
-  },
-];
+import type { CohortProduct } from "@/types/supabase";
 
 const INCLUDED = [
   "Estudo por Questões",
@@ -29,10 +17,10 @@ const INCLUDED = [
   "Atualizações contínuas",
 ];
 
-export function PricingCTA() {
+export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
   const ref = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState(0);
-  const cohort = COHORTS[selected];
+  const cohort = cohorts[selected] ?? cohorts[0];
 
   useEffect(() => {
     const el = ref.current;
@@ -49,6 +37,35 @@ export function PricingCTA() {
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  // No cohorts on sale → "coming soon" instead of an empty card.
+  if (cohorts.length === 0) {
+    return (
+      <section
+        id="precos"
+        className="relative overflow-hidden px-5 py-24 md:px-8 md:py-32"
+        style={{ background: "var(--lp-base)", borderTop: "1px solid var(--lp-border)" }}
+      >
+        <div className="relative mx-auto max-w-xl text-center">
+          <div
+            className="mb-8 text-[10px] uppercase tracking-[0.25em]"
+            style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
+          >
+            Inscrições
+          </div>
+          <h2
+            className="text-[clamp(2.2rem,5vw,3.5rem)] font-black leading-[1.05] tracking-[-0.03em]"
+            style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
+          >
+            Inscrições abertas em breve
+          </h2>
+          <p className="mt-4 text-base" style={{ color: "var(--lp-fg-40)" }}>
+            Estamos preparando a próxima turma. Volte em breve para garantir sua vaga.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -90,39 +107,41 @@ export function PricingCTA() {
           className="rounded-2xl p-6 md:p-8"
           style={{ border: "1px solid var(--lp-border)", background: "var(--lp-fg-05)" }}
         >
-          {/* Cohort selector */}
-          <div className="mb-6">
-            <div
-              className="mb-3 text-[10px] uppercase tracking-[0.2em]"
-              style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
-            >
-              Qual é a sua prova?
+          {/* Cohort selector — only when there's a choice to make */}
+          {cohorts.length > 1 && (
+            <div className="mb-6">
+              <div
+                className="mb-3 text-[10px] uppercase tracking-[0.2em]"
+                style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
+              >
+                Qual é a sua prova?
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {cohorts.map((c, i) => (
+                  <button
+                    key={c.slug}
+                    onClick={() => setSelected(i)}
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-all"
+                    style={
+                      selected === i
+                        ? {
+                            background: "var(--brand)",
+                            color: "#ffffff",
+                            boxShadow: "0 0 20px var(--lp-glow)",
+                          }
+                        : {
+                            background: "var(--lp-fg-05)",
+                            border: "1px solid var(--lp-border)",
+                            color: "var(--lp-fg-40)",
+                          }
+                    }
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2">
-              {COHORTS.map((c, i) => (
-                <button
-                  key={c.label}
-                  onClick={() => setSelected(i)}
-                  className="rounded-lg px-4 py-2 text-sm font-semibold transition-all"
-                  style={
-                    selected === i
-                      ? {
-                          background: "var(--brand)",
-                          color: "#ffffff",
-                          boxShadow: "0 0 20px var(--lp-glow)",
-                        }
-                      : {
-                          background: "var(--lp-fg-05)",
-                          border: "1px solid var(--lp-border)",
-                          color: "var(--lp-fg-40)",
-                        }
-                  }
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Price — animates on cohort switch */}
           <div className="mb-1 overflow-hidden">
@@ -136,7 +155,7 @@ export function PricingCTA() {
                 className="text-[clamp(2.8rem,6vw,4rem)] font-bold leading-none tracking-[-0.03em]"
                 style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
               >
-                {cohort.price}
+                {cohort.priceLabel}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -156,7 +175,7 @@ export function PricingCTA() {
 
           {/* CTA */}
           <Link
-            href={cohort.checkout}
+            href={`/checkout?cohort=${cohort.slug}`}
             className="block w-full rounded-xl py-4 text-center text-base font-bold text-white transition-all hover:opacity-85 active:scale-95"
             style={{
               background: "var(--brand)",

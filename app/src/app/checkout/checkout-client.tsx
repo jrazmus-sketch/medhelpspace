@@ -584,7 +584,7 @@ export function CheckoutClient({
                     <button
                       type="button"
                       onClick={() => { setMethod("pix"); setError(null); }}
-                      className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                      className={`flex-1 rounded-lg py-3 min-h-[44px] text-sm font-semibold transition-colors ${
                         method === "pix"
                           ? "bg-brand text-white shadow-sm"
                           : "text-foreground/60 hover:text-foreground"
@@ -595,7 +595,7 @@ export function CheckoutClient({
                     <button
                       type="button"
                       onClick={() => { setMethod("credit_card"); setError(null); }}
-                      className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                      className={`flex-1 rounded-lg py-3 min-h-[44px] text-sm font-semibold transition-colors ${
                         method === "credit_card"
                           ? "bg-brand text-white shadow-sm"
                           : "text-foreground/60 hover:text-foreground"

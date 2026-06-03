@@ -3,13 +3,31 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { Search, X, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import { Search, X, ChevronDown, Loader2, AlertCircle, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   searchPages,
   getPageSummary,
   type PageSearchResult,
 } from "@/actions/page-search";
+import { createPageQuick } from "@/actions/admin";
+import {
+  PAGE_TEMPLATES,
+  templateByKey,
+  type TileKey,
+} from "@/lib/page-templates";
+
+/**
+ * Context that enables the inline "Create new" branch of the picker. When
+ * provided, the modal offers a second tab that creates a draft page (inheriting
+ * this specialty + a suggested template) and links it in one step — no trip to
+ * `/admin/pages/new`. Omit it to keep the picker search-only.
+ */
+export type CreateContext = {
+  specialtyId: number | null;
+  specialtyName?: string | null;
+  defaultTemplate: TileKey;
+};
 
 const PAGE_TYPES = [
   "plain-content",
@@ -45,6 +63,10 @@ interface PagePickerProps {
   disabled?: boolean;
   /** Optional className applied to the trigger button. */
   className?: string;
+  /** When set, enables the inline "Create new" tab. */
+  createContext?: CreateContext | null;
+  /** Trigger label shown when nothing is selected. Defaults to "Choose page…". */
+  placeholder?: string;
 }
 
 export function PagePicker({
@@ -54,6 +76,8 @@ export function PagePicker({
   specialties = [],
   disabled = false,
   className,
+  createContext = null,
+  placeholder,
 }: PagePickerProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -131,7 +155,7 @@ export function PagePicker({
           </>
         ) : (
           <span className="flex-1 text-muted-foreground">
-            {t("pagePicker.choosePage")}
+            {placeholder ?? t("pagePicker.choosePage")}
           </span>
         )}
         <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -141,6 +165,7 @@ export function PagePicker({
         <PagePickerModal
           initialValue={value}
           specialties={specialties}
+          createContext={createContext}
           onPick={handlePick}
           onClear={handleClear}
           onClose={() => setOpen(false)}
@@ -155,6 +180,7 @@ export function PagePicker({
 interface PagePickerModalProps {
   initialValue: number | null;
   specialties: SpecialtyOption[];
+  createContext: CreateContext | null;
   onPick: (pageId: number, row: PageSearchResult) => void;
   onClear: () => void;
   onClose: () => void;
@@ -163,11 +189,13 @@ interface PagePickerModalProps {
 function PagePickerModal({
   initialValue,
   specialties,
+  createContext,
   onPick,
   onClear,
   onClose,
 }: PagePickerModalProps) {
   const { t } = useTranslation();
+  const [mode, setMode] = useState<"search" | "create">("search");
   const [query, setQuery] = useState("");
   const [type, setType] = useState<string>("all");
   const [specialtyId, setSpecialtyId] = useState<string>("");
@@ -177,6 +205,50 @@ function PagePickerModal({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // ── Create-tab state ──
+  const [tplKey, setTplKey] = useState<TileKey>(
+    createContext?.defaultTemplate ?? "plain-content",
+  );
+  const [newTitle, setNewTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  async function handleCreate() {
+    if (!createContext) return;
+    const title = newTitle.trim();
+    if (!title || creating) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const tpl = templateByKey(tplKey);
+      const res = await createPageQuick({
+        type: tpl.dbType,
+        title,
+        specialtyId: createContext.specialtyId,
+        view: tpl.defaultView || null,
+        trackId: tpl.forceTrackId,
+      });
+      if ("error" in res) {
+        setCreateError(t("pagePicker.createError"));
+        setCreating(false);
+        return;
+      }
+      // Link it immediately — onPick closes the modal via the parent handler.
+      onPick(res.id, {
+        id: res.id,
+        title: res.title,
+        slug: res.slug,
+        type: res.type,
+        specialty_id: createContext.specialtyId,
+        specialty_name: createContext.specialtyName ?? null,
+        updated_at: null,
+      });
+    } catch {
+      setCreateError(t("pagePicker.createError"));
+      setCreating(false);
+    }
+  }
 
   // Focus search input on mount
   useEffect(() => {
@@ -248,6 +320,38 @@ function PagePickerModal({
           </button>
         </div>
 
+        {/* Tabs — only when inline creation is available */}
+        {createContext && (
+          <div className="flex gap-1 border-b border-border px-4 pt-2">
+            <button
+              type="button"
+              onClick={() => setMode("search")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors",
+                mode === "search"
+                  ? "border-b-2 border-brand text-foreground"
+                  : "border-b-2 border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t("pagePicker.tabSearch")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("create")}
+              className={cn(
+                "px-3 py-2 text-sm font-medium transition-colors",
+                mode === "create"
+                  ? "border-b-2 border-brand text-foreground"
+                  : "border-b-2 border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t("pagePicker.tabCreate")}
+            </button>
+          </div>
+        )}
+
+        {mode === "search" ? (
+          <>
         {/* Search input */}
         <div className="border-b border-border px-4 py-3">
           <div className="relative">
@@ -389,6 +493,99 @@ function PagePickerModal({
             </div>
           )}
         </div>
+          </>
+        ) : (
+          /* Create-new panel */
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <div className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                {createContext?.specialtyName
+                  ? t("pagePicker.createSpecialtyNote", {
+                      specialty: createContext.specialtyName,
+                    })
+                  : t("pagePicker.createNoSpecialtyNote")}
+              </p>
+
+              {/* Template chooser */}
+              <div className="space-y-1.5">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t("pagePicker.createTemplateLabel")}
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  {PAGE_TEMPLATES.map((tpl) => {
+                    const Icon = tpl.icon;
+                    const active = tpl.key === tplKey;
+                    return (
+                      <button
+                        key={tpl.key}
+                        type="button"
+                        onClick={() => setTplKey(tpl.key)}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                          active
+                            ? "border-brand bg-brand/10 text-foreground"
+                            : "border-border bg-surface-1 text-muted-foreground hover:border-brand/40",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">
+                          {t(`pageNew.types.${tpl.key}.label`)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Title */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="pp-new-title"
+                  className="text-xs font-medium text-muted-foreground"
+                >
+                  {t("pagePicker.createTitleLabel")}
+                </label>
+                <input
+                  id="pp-new-title"
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleCreate();
+                  }}
+                  placeholder={t("pagePicker.createTitlePlaceholder")}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30"
+                />
+              </div>
+
+              {createError && (
+                <div className="flex items-center gap-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  {createError}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={!newTitle.trim() || creating}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity",
+                  !newTitle.trim() || creating
+                    ? "cursor-not-allowed opacity-50"
+                    : "hover:opacity-90",
+                )}
+              >
+                {creating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {creating ? t("pagePicker.creating") : t("pagePicker.createButton")}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="flex items-center gap-2 border-t border-border px-4 py-3">

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getInstallmentOptions } from "@/lib/pagbank/api";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
-import { COHORT_PRODUCTS } from "@/lib/pricing";
+import { getCohortProduct } from "@/lib/queries/cohort-products";
 
 // Live installment ladder for the checkout card form. Returns the per-installment
 // values with buyer-paid interest, exactly as PagBank will charge them. Pass the
@@ -25,20 +25,20 @@ export async function GET(request: NextRequest) {
   const bin = request.nextUrl.searchParams.get("bin") ?? undefined;
   const couponCode = request.nextUrl.searchParams.get("couponCode")?.trim().toUpperCase() ?? "";
 
-  const product = COHORT_PRODUCTS[cohortSlug];
+  const product = await getCohortProduct(cohortSlug);
   if (!product) {
     return NextResponse.json({ error: "Turma inválida" }, { status: 400 });
   }
 
   // Apply coupon (read-only preview) to the base before simulating installments
   // so the ladder reflects the post-discount amount the buyer will actually pay.
-  let baseAmountCents = product.amountCents;
+  let baseAmountCents = product.priceCents;
   if (couponCode) {
     const admin = createAdminClient();
     const { data, error } = await admin.rpc("preview_coupon", {
       p_code: couponCode,
       p_cohort_slug: cohortSlug,
-      p_base_amount_cents: product.amountCents,
+      p_base_amount_cents: product.priceCents,
     });
     if (!error) {
       const row = Array.isArray(data) ? data[0] : data;

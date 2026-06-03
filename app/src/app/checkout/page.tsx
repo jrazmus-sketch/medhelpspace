@@ -4,7 +4,7 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { CheckoutClient } from "./checkout-client";
-import { COHORT_PRODUCTS } from "@/lib/pricing";
+import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getInstallmentOptions } from "@/lib/pagbank/api";
 
 export const metadata = { title: "Finalizar compra — MedHelpSpace" };
@@ -16,8 +16,8 @@ export default async function CheckoutPage({
 }) {
   const { cohort: cohortSlug } = await searchParams;
 
-  // Unknown cohort → back to store
-  const config = cohortSlug ? COHORT_PRODUCTS[cohortSlug] : null;
+  // Unknown or not-for-sale cohort → back to store
+  const config = cohortSlug ? await getCohortProduct(cohortSlug) : null;
   if (!config) {
     redirect("/loja");
   }
@@ -66,7 +66,7 @@ export default async function CheckoutPage({
   // Default installment ladder (mainstream brands) for first paint — refined
   // client-side once the card BIN is known. Tolerate a PagBank outage: the card
   // form falls back to fetching/à-vista if this is empty.
-  const initialInstallments = await getInstallmentOptions(config.amountCents).catch(() => []);
+  const initialInstallments = await getInstallmentOptions(config.priceCents).catch(() => []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,7 +79,7 @@ export default async function CheckoutPage({
             cohortSlug={cohortSlug!}
             cohortName={config.name}
             priceLabel={config.priceLabel}
-            amountCents={config.amountCents}
+            amountCents={config.priceCents}
             isLoggedIn={!!user}
             userEmail={userEmail}
             userName={userName}

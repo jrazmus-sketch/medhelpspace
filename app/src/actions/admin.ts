@@ -34,6 +34,59 @@ async function writeAuditLog(
   });
 }
 
+const BILLING_ROLES = ["super_admin", "billing_admin"];
+
+// Price + storefront visibility are money-facing — restrict to the billing tier.
+async function requireBillingRole() {
+  const ctx = await requireAdmin();
+  if (!BILLING_ROLES.includes(ctx.role)) throw new Error("Unauthorized");
+  return ctx;
+}
+
+// Cohort commerce/catalog fields (price + storefront), shared by create/update.
+type CohortCommerce = {
+  price_cents: number | null;
+  is_for_sale: boolean;
+  sale_label: string | null;
+  display_order: number;
+  sale_ends_at: string | null;
+};
+
+function validateCommerce(c: CohortCommerce): string | null {
+  if (c.is_for_sale && c.price_cents == null) return "PRICE_REQUIRED_FOR_SALE";
+  if (c.price_cents != null && (!Number.isInteger(c.price_cents) || c.price_cents < 0))
+    return "INVALID_PRICE";
+  return null;
+}
+
+function commerceFromFormData(f: FormData): CohortCommerce {
+  const priceRaw = f.get("price");
+  const saleLabelRaw = f.get("sale_label");
+  const saleEndsRaw = f.get("sale_ends_at");
+  return {
+    price_cents:
+      priceRaw != null && String(priceRaw).trim() !== ""
+        ? Math.round(Number(priceRaw) * 100)
+        : null,
+    is_for_sale: f.get("is_for_sale") === "on" || f.get("is_for_sale") === "true",
+    sale_label:
+      saleLabelRaw && String(saleLabelRaw).trim() ? String(saleLabelRaw).trim() : null,
+    display_order: Number(f.get("display_order")) || 0,
+    // Stored as end-of-day so "ends on 1 Jul" sells through all of 1 Jul.
+    sale_ends_at:
+      saleEndsRaw && String(saleEndsRaw).trim()
+        ? `${String(saleEndsRaw).trim()}T23:59:59`
+        : null,
+  };
+}
+
+// Storefront pages (/, /loja) read cohorts; revalidate them on any catalog change
+// so price / for-sale edits show up without waiting for the hourly ISR window.
+function revalidateStorefront() {
+  revalidatePath("/");
+  revalidatePath("/loja");
+}
+
 // ── Cohort actions ────────────────────────────────────────────────────────────
 
 export async function assignMemberToCohort(userId: string, cohortId: number | null) {
@@ -47,14 +100,20 @@ export async function assignMemberToCohort(userId: string, cohortId: number | nu
 }
 
 export async function createCohort(formData: FormData) {
-  await requireAdmin();
+  await requireBillingRole();
   const admin = createAdminClient();
+
+  const commerce = commerceFromFormData(formData);
+  const cErr = validateCommerce(commerce);
+  if (cErr) throw new Error(cErr);
+
   const { error } = await admin.from("cohorts").insert({
     slug: String(formData.get("slug")),
     name: String(formData.get("name")),
     test_date: String(formData.get("test_date")),
     membership_starts_at: String(formData.get("membership_starts_at")),
     membership_ends_at: String(formData.get("membership_ends_at")),
+    ...commerce,
   });
   if (error) throw new Error(error.message);
   // Seed cohort_module_access rows for every content module
@@ -74,18 +133,49 @@ export async function createCohort(formData: FormData) {
     );
   }
   revalidatePath("/admin/cohorts");
+  revalidateStorefront();
 }
 
 export async function updateCohort(
   cohortId: number,
-  data: { name: string; test_date: string; membership_starts_at: string; membership_ends_at: string },
+  data: {
+    name: string;
+    test_date: string;
+    membership_starts_at: string;
+    membership_ends_at: string;
+  } & CohortCommerce,
 ) {
-  await requireAdmin();
+  await requireBillingRole();
+  const cErr = validateCommerce(data);
+  if (cErr) throw new Error(cErr);
   const admin = createAdminClient();
   const { error } = await admin.from("cohorts").update(data).eq("id", cohortId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/cohorts");
   revalidatePath(`/admin/cohorts/${cohortId}/modules`);
+  revalidateStorefront();
+}
+
+// Quick storefront on/off toggle. Turning a cohort on requires a price (the DB
+// CHECK enforces this too — we pre-check for a friendly error).
+export async function setCohortForSale(cohortId: number, isForSale: boolean) {
+  await requireBillingRole();
+  const admin = createAdminClient();
+  if (isForSale) {
+    const { data: c } = await admin
+      .from("cohorts")
+      .select("price_cents")
+      .eq("id", cohortId)
+      .single();
+    if (!c || c.price_cents == null) throw new Error("PRICE_REQUIRED_FOR_SALE");
+  }
+  const { error } = await admin
+    .from("cohorts")
+    .update({ is_for_sale: isForSale })
+    .eq("id", cohortId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/cohorts");
+  revalidateStorefront();
 }
 
 export async function softDeleteCohort(cohortId: number) {
@@ -95,6 +185,7 @@ export async function softDeleteCohort(cohortId: number) {
   const { error } = await admin.from("cohorts").update({ active: false }).eq("id", cohortId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/cohorts");
+  revalidateStorefront();
 }
 
 export async function reactivateCohort(cohortId: number) {
@@ -104,6 +195,7 @@ export async function reactivateCohort(cohortId: number) {
   const { error } = await admin.from("cohorts").update({ active: true }).eq("id", cohortId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/cohorts");
+  revalidateStorefront();
 }
 
 // ── Module access override ────────────────────────────────────────────────────
@@ -654,6 +746,141 @@ export async function updateNavItems(
   return { ok: true };
 }
 
+// ── Hub builder (structural edits from the /admin/hubs tree) ───────────────────
+//
+// Single-card operations used by the interactive hubs tree. Card *reordering*
+// and label editing still live in the per-page nav-items editor — these only
+// cover the structural moves the tree adds (add / remove / move between hubs).
+
+async function nextNavItemPosition(
+  admin: ReturnType<typeof createAdminClient>,
+  hubId: number,
+): Promise<number> {
+  const { data } = await admin
+    .from("nav_items")
+    .select("position")
+    .eq("source_page_id", hubId)
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return Number(data?.position ?? 0) + 1;
+}
+
+export async function addCardToHub(
+  hubId: number,
+  targetPageId: number,
+): Promise<{ ok: true } | { error: string }> {
+  const { user, role } = await requireAdmin();
+  if (!NAV_ITEM_ALLOWED_ROLES.has(role)) return { error: "unauthorized" };
+  const admin = createAdminClient();
+
+  const { data: hub } = await admin
+    .from("pages")
+    .select("id, type")
+    .eq("id", hubId)
+    .single();
+  if (!hub) return { error: "hub_not_found" };
+  if (hub.type !== "blurb-nav-hub") return { error: "not_a_hub" };
+
+  const { data: target } = await admin
+    .from("pages")
+    .select("id")
+    .eq("id", targetPageId)
+    .single();
+  if (!target) return { error: "target_not_found" };
+
+  const position = await nextNavItemPosition(admin, hubId);
+  const { error } = await admin.from("nav_items").insert({
+    source_page_id: hubId,
+    target_page_id: targetPageId,
+    label: "",
+    group_label: null,
+    icon: null,
+    layout: "cards",
+    position,
+  });
+  if (error) return { error: "insert_failed" };
+
+  await writeAuditLog(user.id, "nav_item_add", null, {
+    hub_id: hubId,
+    target_page_id: targetPageId,
+  });
+  revalidatePath("/admin/hubs");
+  revalidatePath(`/admin/pages/${hubId}/edit`);
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+export async function removeNavItem(
+  navItemId: number,
+): Promise<{ ok: true } | { error: string }> {
+  const { user, role } = await requireAdmin();
+  if (!NAV_ITEM_ALLOWED_ROLES.has(role)) return { error: "unauthorized" };
+  const admin = createAdminClient();
+
+  const { data: row } = await admin
+    .from("nav_items")
+    .select("id, source_page_id")
+    .eq("id", navItemId)
+    .single();
+  if (!row) return { error: "not_found" };
+
+  const { error } = await admin.from("nav_items").delete().eq("id", navItemId);
+  if (error) return { error: "delete_failed" };
+
+  await writeAuditLog(user.id, "nav_item_remove", null, {
+    nav_item_id: navItemId,
+    hub_id: row.source_page_id,
+  });
+  revalidatePath("/admin/hubs");
+  revalidatePath(`/admin/pages/${row.source_page_id}/edit`);
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
+export async function moveNavItemToHub(
+  navItemId: number,
+  newHubId: number,
+): Promise<{ ok: true } | { error: string }> {
+  const { user, role } = await requireAdmin();
+  if (!NAV_ITEM_ALLOWED_ROLES.has(role)) return { error: "unauthorized" };
+  const admin = createAdminClient();
+
+  const { data: row } = await admin
+    .from("nav_items")
+    .select("id, source_page_id")
+    .eq("id", navItemId)
+    .single();
+  if (!row) return { error: "not_found" };
+  if (row.source_page_id === newHubId) return { ok: true };
+
+  const { data: hub } = await admin
+    .from("pages")
+    .select("id, type")
+    .eq("id", newHubId)
+    .single();
+  if (!hub) return { error: "hub_not_found" };
+  if (hub.type !== "blurb-nav-hub") return { error: "not_a_hub" };
+
+  const position = await nextNavItemPosition(admin, newHubId);
+  const { error } = await admin
+    .from("nav_items")
+    .update({ source_page_id: newHubId, position })
+    .eq("id", navItemId);
+  if (error) return { error: "update_failed" };
+
+  await writeAuditLog(user.id, "nav_item_move", null, {
+    nav_item_id: navItemId,
+    from_hub: row.source_page_id,
+    to_hub: newHubId,
+  });
+  revalidatePath("/admin/hubs");
+  revalidatePath(`/admin/pages/${row.source_page_id}/edit`);
+  revalidatePath(`/admin/pages/${newHubId}/edit`);
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
 // ── Profile ───────────────────────────────────────────────────────────────────
 
 export async function updateProfile(formData: FormData) {
@@ -689,6 +916,8 @@ const PAGE_NEW_ALLOWED_TYPES = new Set([
   "blurb-nav-hub",
 ]);
 const NEW_PAGE_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// Flashcards reuse the h5p-quiz type but always carry this track_id.
+const FLASHCARDS_TRACK_ID = 3;
 
 export type CreatePageInput = {
   type: string;
@@ -787,6 +1016,214 @@ export async function checkSlugAvailable(slug: string): Promise<{ available: boo
     .eq("slug", trimmed);
 
   return { available: (count ?? 0) === 0 };
+}
+
+// ── Quick create (inline page creation from the hub card flow) ─────────────────
+//
+// Mirrors `createPage` but is built for the "Create new" branch of the
+// PagePicker: the caller supplies only a title + template; the slug is derived
+// server-side and auto-disambiguated, and specialty/view/track come from the
+// parent hub's context. The page is always created as a draft.
+
+function slugifyServer(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export type QuickCreateInput = {
+  type: string;
+  title: string;
+  specialtyId?: number | null;
+  view?: string | null;
+  trackId?: number | null;
+};
+
+export type QuickCreateResult =
+  | { id: number; slug: string; title: string; type: string }
+  | { error: string };
+
+export async function createPageQuick(
+  input: QuickCreateInput,
+): Promise<QuickCreateResult> {
+  const { user, role } = await requireAdmin();
+  if (!PAGE_NEW_ALLOWED_ROLES.has(role)) return { error: "unauthorized" };
+
+  const title = input.title?.trim() ?? "";
+  if (!title) return { error: "title_required" };
+  if (!PAGE_NEW_ALLOWED_TYPES.has(input.type)) return { error: "type_invalid" };
+
+  const base = slugifyServer(title);
+  if (!base) return { error: "title_required" };
+
+  const admin = createAdminClient();
+
+  // Derive a free slug from the title: base, then base-2, base-3… The unique
+  // constraint on pages.slug is still the race-safe backstop on insert.
+  let slug = base;
+  for (let n = 2; n <= 50; n++) {
+    const { count } = await admin
+      .from("pages")
+      .select("id", { count: "exact", head: true })
+      .eq("slug", slug);
+    if ((count ?? 0) === 0) break;
+    slug = `${base}-${n}`;
+    if (n === 50) return { error: "slug_taken" };
+  }
+
+  const { data: maxRow } = await admin
+    .from("pages")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextId = Number(maxRow?.id ?? 0) + 1;
+
+  const { data: inserted, error } = await admin
+    .from("pages")
+    .insert({
+      id: nextId,
+      slug,
+      title,
+      type: input.type,
+      status: "draft",
+      specialty_id: input.specialtyId ?? null,
+      view: input.view ?? null,
+      track_id: input.trackId ?? null,
+      content_module_id: null,
+      notes: null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") return { error: "slug_taken" };
+    return { error: "insert_failed" };
+  }
+
+  const newId = Number(inserted.id);
+  await writeAuditLog(user.id, "page_created", null, {
+    page_id: newId,
+    slug,
+    type: input.type,
+    title,
+    via: "quick_create",
+  });
+
+  revalidatePath("/admin/pages");
+  return { id: newId, slug, title, type: input.type };
+}
+
+// ── Duplicate page ────────────────────────────────────────────────────────────
+//
+// Clones a page (metadata + its child content) into a new draft with a fresh
+// slug. Lets editors start from a similar page instead of a blank one.
+
+export type DuplicatePageResult = { id: number } | { error: string };
+
+export async function duplicatePage(pageId: number): Promise<DuplicatePageResult> {
+  const { user, role } = await requireAdmin();
+  if (!PAGE_NEW_ALLOWED_ROLES.has(role)) return { error: "unauthorized" };
+  const admin = createAdminClient();
+
+  const { data: src } = await admin
+    .from("pages")
+    .select("slug, title, type, view, specialty_id, track_id, content_module_id, notes")
+    .eq("id", pageId)
+    .single();
+  if (!src) return { error: "not_found" };
+
+  // Fresh slug derived from the source: <slug>-copy, then -copy-2, -copy-3…
+  const base = `${src.slug}-copy`;
+  let slug = base;
+  for (let n = 2; n <= 50; n++) {
+    const { count } = await admin
+      .from("pages")
+      .select("id", { count: "exact", head: true })
+      .eq("slug", slug);
+    if ((count ?? 0) === 0) break;
+    slug = `${base}-${n}`;
+    if (n === 50) return { error: "slug_taken" };
+  }
+
+  const { data: maxRow } = await admin
+    .from("pages")
+    .select("id")
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const newId = Number(maxRow?.id ?? 0) + 1;
+
+  const { error: insErr } = await admin.from("pages").insert({
+    id: newId,
+    slug,
+    title: `${src.title} (cópia)`,
+    type: src.type,
+    status: "draft",
+    specialty_id: src.specialty_id,
+    view: src.view,
+    track_id: src.track_id,
+    content_module_id: src.content_module_id,
+    notes: src.notes,
+  });
+  if (insErr) {
+    if (insErr.code === "23505") return { error: "slug_taken" };
+    return { error: "insert_failed" };
+  }
+
+  // Copy child content according to the page type.
+  if (src.type === "text-lesson" || src.type === "audio-lesson") {
+    const { data: rows } = await admin
+      .from("lessons")
+      .select("position, title, body_html, audio_url")
+      .eq("page_id", pageId)
+      .order("position");
+    if (rows?.length) {
+      await admin.from("lessons").insert(rows.map((r) => ({ page_id: newId, ...r })));
+    }
+  } else if (src.type === "h5p-quiz") {
+    if (src.track_id === FLASHCARDS_TRACK_ID) {
+      const { data: rows } = await admin
+        .from("flashcard_items")
+        .select("group_position, group_label, position, text, answer, image_url, tip")
+        .eq("page_id", pageId);
+      if (rows?.length) {
+        await admin.from("flashcard_items").insert(rows.map((r) => ({ page_id: newId, ...r })));
+      }
+    } else {
+      const { data: rows } = await admin
+        .from("quiz_questions")
+        .select("position, question, answers, media_url")
+        .eq("page_id", pageId)
+        .order("position");
+      if (rows?.length) {
+        await admin.from("quiz_questions").insert(rows.map((r) => ({ page_id: newId, ...r })));
+      }
+    }
+  } else if (src.type === "blurb-nav-hub") {
+    const { data: rows } = await admin
+      .from("nav_items")
+      .select("position, label, target_page_id, group_label, icon, layout")
+      .eq("source_page_id", pageId)
+      .order("position");
+    if (rows?.length) {
+      await admin.from("nav_items").insert(rows.map((r) => ({ source_page_id: newId, ...r })));
+    }
+  }
+
+  await writeAuditLog(user.id, "page_duplicated", null, {
+    source_page_id: pageId,
+    new_page_id: newId,
+    slug,
+  });
+  revalidatePath("/admin/pages");
+  return { id: newId };
 }
 
 // ── Lesson audio upload (Bunny CDN) ──────────────────────────────────────────

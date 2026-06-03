@@ -1,11 +1,26 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { COHORT_PRODUCTS } from "@/lib/pricing";
+import { getAllCohortsBasic } from "@/lib/queries/cohort-products";
 import { CouponsClient } from "./coupons-client";
 
 export const metadata = { title: "Cupons" };
 
 export default async function CouponsPage() {
+  // Money-facing — restrict to the billing tier (super_admin + billing_admin).
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const admin = createAdminClient();
+  const { data: actingProfile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!actingProfile || !["super_admin", "billing_admin"].includes(actingProfile.role as string)) {
+    redirect("/admin");
+  }
 
   const [{ data: coupons }, { data: redemptions }] = await Promise.all([
     admin.from("coupons").select("*").order("created_at", { ascending: false }),
@@ -47,7 +62,7 @@ export default async function CouponsPage() {
     redeemedAt: r.redeemed_at as string,
   }));
 
-  const cohortOptions = Object.values(COHORT_PRODUCTS).map((p) => ({ slug: p.slug, name: p.name }));
+  const cohortOptions = (await getAllCohortsBasic()).map((c) => ({ slug: c.slug, name: c.name }));
 
   return (
     <CouponsClient coupons={couponRows} redemptions={redemptionRows} cohortOptions={cohortOptions} />

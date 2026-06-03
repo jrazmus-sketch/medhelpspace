@@ -3,9 +3,8 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { Check, Lock } from "lucide-react";
-
-const CHECKOUT_2026 = "/checkout?cohort=revalida-2026-2";
-const CHECKOUT_2027 = "/checkout?cohort=revalida-2027-1";
+import { getCohortsForSale } from "@/lib/queries/cohort-products";
+import type { CohortProduct } from "@/types/supabase";
 
 const INCLUDED = [
   "Estudo por Questões — questões oficiais + simulados comentados",
@@ -28,10 +27,16 @@ const INCLUDED_60D = [
 export const metadata = {
   title: "Comprar — MedHelpSpace Revalida",
   description:
-    "Escolha sua turma e comece agora. Revalida 2026.2 (R$ 3.990) ou 2027.1 (R$ 4.990). Acesso imediato, garantia de 7 dias.",
+    "Escolha sua turma e comece agora. Acesso imediato, garantia de 7 dias.",
 };
 
-export default function LojaPage() {
+// Hourly ISR; admin price/sale edits also revalidatePath("/loja") for instant
+// refresh (step 5).
+export const revalidate = 3600;
+
+export default async function LojaPage() {
+  const cohorts = await getCohortsForSale();
+
   return (
     <div className="min-h-screen bg-background">
       <AnnouncementBar />
@@ -55,128 +60,148 @@ export default function LojaPage() {
               Comece sua preparação.
             </h1>
             <p className="mt-4 text-base text-foreground/55 sm:text-lg">
-              Escolha a turma da sua prova. Acesso imediato ao sistema completo.
+              {cohorts.length === 0
+                ? "As inscrições para a próxima turma abrem em breve."
+                : "Escolha a turma da sua prova. Acesso imediato ao sistema completo."}
             </p>
           </div>
 
-          {/* Cohort cards */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
-
-            {/* 2026.2 */}
-            <div className="flex flex-col rounded-2xl border border-border bg-background shadow-sm transition-shadow hover:shadow-md">
-              <div className="border-b border-border px-6 py-5">
-                <div className="mb-1 text-xs font-bold uppercase tracking-widest text-foreground/40">
-                  Turma
-                </div>
-                <h2
-                  className="text-2xl font-extrabold text-foreground"
-                  style={{ fontFamily: "var(--font-bricolage)" }}
-                >
-                  Revalida 2026.2
-                </h2>
-              </div>
-
-              <div className="flex flex-1 flex-col gap-6 p-6">
-                <div>
-                  <div className="text-4xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: "var(--font-bricolage)" }}>
-                    R$ 3.990
-                  </div>
-                  <p className="mt-1 text-sm text-foreground/45">
-                    ou parcele em até 12x no cartão
-                  </p>
-                </div>
-
-                <IncludedList />
-
-                <Link
-                  href={CHECKOUT_2026}
-                  className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
-                >
-                  Comprar 2026.2
-                </Link>
-              </div>
-            </div>
-
-            {/* 2027.1 */}
-            <div className="flex flex-col rounded-2xl border border-border bg-background shadow-sm transition-shadow hover:shadow-md">
-              <div className="border-b border-border px-6 py-5">
-                <div className="mb-1 text-xs font-bold uppercase tracking-widest text-foreground/40">
-                  Turma
-                </div>
-                <h2
-                  className="text-2xl font-extrabold text-foreground"
-                  style={{ fontFamily: "var(--font-bricolage)" }}
-                >
-                  Revalida 2027.1
-                </h2>
-              </div>
-
-              <div className="flex flex-1 flex-col gap-6 p-6">
-                <div>
-                  <div className="text-4xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: "var(--font-bricolage)" }}>
-                    R$ 4.990
-                  </div>
-                  <p className="mt-1 text-sm text-foreground/45">
-                    ou parcele em até 12x no cartão
-                  </p>
-                </div>
-
-                <IncludedList />
-
-                <Link
-                  href={CHECKOUT_2027}
-                  className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
-                >
-                  Comprar 2027.1
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust signals */}
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-8">
-            <div className="flex items-center gap-2 text-sm text-foreground/50">
-              <Check className="h-4 w-4 text-brand" />
-              Acesso imediato após confirmação
-            </div>
-            <div className="flex items-center gap-2 text-sm text-foreground/50">
-              <Check className="h-4 w-4 text-brand" />
-              Garantia incondicional de 7 dias
-            </div>
-            <div className="flex items-center gap-2 text-sm text-foreground/50">
-              <Lock className="h-4 w-4 text-brand" />
-              Pagamento 100% seguro · PagBank
-            </div>
-          </div>
-
-          {/* 60D note */}
-          <div className="mt-12 rounded-2xl border border-brand/20 bg-brand/5 p-6 md:p-8">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-xl">🔓</span>
-              <h3
-                className="text-lg font-bold text-foreground"
+          {cohorts.length === 0 ? (
+            /* Empty state — no turma currently for sale */
+            <div className="mx-auto max-w-md rounded-2xl border border-border bg-background p-8 text-center shadow-sm">
+              <div className="mb-3 text-3xl">🔔</div>
+              <h2
+                className="text-xl font-bold text-foreground"
                 style={{ fontFamily: "var(--font-bricolage)" }}
               >
-                MedHelp 60D — já incluso em ambas as turmas
-              </h3>
+                Inscrições abertas em breve
+              </h2>
+              <p className="mt-2 text-sm text-foreground/55">
+                Estamos preparando a próxima turma. Volte em breve para garantir sua vaga.
+              </p>
             </div>
-            <p className="mb-4 text-sm text-foreground/60 sm:text-base">
-              A fase final do sistema é liberada automaticamente 60 dias antes da sua prova. Você não precisa fazer nada — o acesso abre na hora certa.
-            </p>
-            <ul className="flex flex-col gap-2">
-              {INCLUDED_60D.map((item) => (
-                <li key={item} className="flex items-start gap-2 text-sm text-foreground/65">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+          ) : (
+            <>
+              {/* Cohort cards */}
+              <div
+                className={
+                  cohorts.length === 1
+                    ? "mx-auto max-w-md"
+                    : "grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8"
+                }
+              >
+                {cohorts.map((cohort) => (
+                  <CohortCard key={cohort.slug} cohort={cohort} />
+                ))}
+              </div>
+
+              {/* Trust signals */}
+              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-8">
+                <div className="flex items-center gap-2 text-sm text-foreground/50">
+                  <Check className="h-4 w-4 text-brand" />
+                  Acesso imediato após confirmação
+                </div>
+                <div className="flex items-center gap-2 text-sm text-foreground/50">
+                  <Check className="h-4 w-4 text-brand" />
+                  Garantia incondicional de 7 dias
+                </div>
+                <div className="flex items-center gap-2 text-sm text-foreground/50">
+                  <Lock className="h-4 w-4 text-brand" />
+                  Pagamento 100% seguro · PagBank
+                </div>
+              </div>
+
+              {/* 60D note */}
+              <div className="mt-12 rounded-2xl border border-brand/20 bg-brand/5 p-6 md:p-8">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-xl">🔓</span>
+                  <h3
+                    className="text-lg font-bold text-foreground"
+                    style={{ fontFamily: "var(--font-bricolage)" }}
+                  >
+                    MedHelp 60D — já incluso em todas as turmas
+                  </h3>
+                </div>
+                <p className="mb-4 text-sm text-foreground/60 sm:text-base">
+                  A fase final do sistema é liberada automaticamente 60 dias antes da sua prova. Você não precisa fazer nada — o acesso abre na hora certa.
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {INCLUDED_60D.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-foreground/65">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
 
         </div>
       </main>
 
       <LandingFooter />
+    </div>
+  );
+}
+
+function CohortCard({ cohort }: { cohort: CohortProduct }) {
+  const featured = !!cohort.saleLabel;
+
+  return (
+    <div
+      className={[
+        "relative flex flex-col rounded-2xl bg-background transition-shadow",
+        featured
+          ? "border-2 border-brand shadow-lg"
+          : "border border-border shadow-sm hover:shadow-md",
+      ].join(" ")}
+    >
+      {featured && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+          <span className="rounded-full bg-brand px-4 py-1 text-xs font-bold text-white shadow">
+            {cohort.saleLabel}
+          </span>
+        </div>
+      )}
+
+      <div className={["px-6 py-5", featured ? "border-b border-brand/20" : "border-b border-border"].join(" ")}>
+        <div
+          className={[
+            "mb-1 text-xs font-bold uppercase tracking-widest",
+            featured ? "text-brand/60" : "text-foreground/40",
+          ].join(" ")}
+        >
+          Turma
+        </div>
+        <h2
+          className="text-2xl font-extrabold text-foreground"
+          style={{ fontFamily: "var(--font-bricolage)" }}
+        >
+          {cohort.name}
+        </h2>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-6 p-6">
+        <div>
+          <div className="text-4xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: "var(--font-bricolage)" }}>
+            {cohort.priceLabel}
+          </div>
+          <p className="mt-1 text-sm text-foreground/45">
+            ou parcele em até 12x no cartão
+          </p>
+        </div>
+
+        <IncludedList />
+
+        <Link
+          href={`/checkout?cohort=${cohort.slug}`}
+          aria-label={`Comprar ${cohort.name}`}
+          className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
+        >
+          Comprar agora
+        </Link>
+      </div>
     </div>
   );
 }

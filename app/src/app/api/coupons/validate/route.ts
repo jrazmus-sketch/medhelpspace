@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
-import { COHORT_PRODUCTS } from "@/lib/pricing";
+import { getCohortProduct } from "@/lib/queries/cohort-products";
 
 // Read-only preview of a coupon. Anonymous-callable so guests can validate a
 // code before signing up. The per-user uniqueness check is deferred to redeem
@@ -36,14 +36,14 @@ export async function POST(request: NextRequest) {
   if (!code) return NextResponse.json({ error: "Informe o código do cupom." }, { status: 400 });
   if (!cohortSlug) return NextResponse.json({ error: "Turma inválida." }, { status: 400 });
 
-  const product = COHORT_PRODUCTS[cohortSlug];
+  const product = await getCohortProduct(cohortSlug);
   if (!product) return NextResponse.json({ error: "Turma inválida." }, { status: 400 });
 
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("preview_coupon", {
     p_code: code,
     p_cohort_slug: cohortSlug,
-    p_base_amount_cents: product.amountCents,
+    p_base_amount_cents: product.priceCents,
   });
 
   if (error) {

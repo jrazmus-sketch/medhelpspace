@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { updatePageMetadata, updateLessons } from "@/actions/admin";
 import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow, QuizQuestionRow, FlashcardRow } from "./page";
+import type { SectionEditorHandle } from "./section-editor-handle";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
 import { AudioUploader } from "@/components/admin/audio-uploader";
 import { QuizEditor } from "./quiz-editor";
@@ -81,10 +82,16 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   const [view, setView] = useState<string>(page.view ?? "");
   const [moduleId, setModuleId] = useState<number | "">(page.content_module_id ?? "");
   const [notes, setNotes] = useState(page.notes ?? "");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The active content section (quiz / flashcards / nav items) registers an
+  // imperative save() here so the single page-level Save commits it alongside
+  // the metadata and lessons — one button instead of one per section.
+  const contentRef = useRef<SectionEditorHandle>(null);
 
   const [lessonDrafts, setLessonDrafts] = useState<LessonDraft[]>(() =>
     lessons.map((l) => ({
@@ -96,31 +103,64 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
       open: false,
     }))
   );
-  const [lessonsSaving, setLessonsSaving] = useState(false);
-  const [lessonsSaved, setLessonsSaved] = useState(false);
-  const [lessonsError, setLessonsError] = useState<string | null>(null);
 
-
-  async function handleSave() {
+  // Saves everything on the page in one shot: metadata, then lessons (if this
+  // is a lesson page), then the active content section. Stops at the first
+  // failure so the error points at the right place.
+  async function handleSaveAll() {
     setError(null);
     setSaved(false);
     setSaving(true);
     try {
-      await updatePageMetadata(page.id, {
-        title,
-        slug,
-        status,
-        specialty_id: specialtyId === "" ? null : Number(specialtyId),
-        track_id: trackId === "" ? null : Number(trackId),
-        view: view === "" ? null : view,
-        content_module_id: moduleId === "" ? null : Number(moduleId),
-        notes: notes || null,
-      });
+      // 1) Page metadata
+      try {
+        await updatePageMetadata(page.id, {
+          title,
+          slug,
+          status,
+          specialty_id: specialtyId === "" ? null : Number(specialtyId),
+          track_id: trackId === "" ? null : Number(trackId),
+          view: view === "" ? null : view,
+          content_module_id: moduleId === "" ? null : Number(moduleId),
+          notes: notes || null,
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "";
+        setError(msg === "SLUG_TAKEN" ? t("pageEdit.slugTaken") : t("errors.generic"));
+        return;
+      }
+
+      // 2) Lessons (text-lesson / audio-lesson pages)
+      if (showLessons) {
+        try {
+          await updateLessons(
+            page.id,
+            lessonDrafts.map((l, i) => ({
+              id: l.id,
+              title: l.title,
+              body_html: l.body_html,
+              audio_url: l.audio_url || null,
+              position: i + 1,
+            })),
+          );
+        } catch (err: unknown) {
+          setError(err instanceof Error ? err.message : t("errors.generic"));
+          return;
+        }
+      }
+
+      // 3) Active content section (quiz / flashcards / nav items). It surfaces
+      // its own inline error next to the offending row on failure.
+      if (contentRef.current) {
+        const ok = await contentRef.current.save();
+        if (!ok) {
+          setError(t("pageEdit.sectionSaveError"));
+          return;
+        }
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro desconhecido";
-      setError(msg === "SLUG_TAKEN" ? t("pageEdit.slugTaken") : t("errors.generic"));
     } finally {
       setSaving(false);
     }
@@ -150,30 +190,6 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
 
   function patchLesson(idx: number, patch: Partial<LessonDraft>) {
     setLessonDrafts((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
-  }
-
-  async function handleSaveLessons() {
-    setLessonsError(null);
-    setLessonsSaved(false);
-    setLessonsSaving(true);
-    try {
-      await updateLessons(
-        page.id,
-        lessonDrafts.map((l, i) => ({
-          id: l.id,
-          title: l.title,
-          body_html: l.body_html,
-          audio_url: l.audio_url || null,
-          position: i + 1,
-        })),
-      );
-      setLessonsSaved(true);
-      setTimeout(() => setLessonsSaved(false), 3000);
-    } catch (err: unknown) {
-      setLessonsError(err instanceof Error ? err.message : t("errors.generic"));
-    } finally {
-      setLessonsSaving(false);
-    }
   }
 
   const showLessons = page.type === "text-lesson" || page.type === "audio-lesson";
@@ -323,20 +339,6 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t("pageEdit.trackLabel")}</label>
-              <select
-                value={trackId}
-                onChange={(e) => setTrackId(e.target.value === "" ? "" : Number(e.target.value))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
-              >
-                <option value="">{t("pageEdit.noTrack")}</option>
-                {tracks.map((tr) => (
-                  <option key={tr.id} value={tr.id}>{tr.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("pageEdit.viewLabel")}</label>
               <select
                 value={view}
@@ -349,20 +351,55 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                 ))}
               </select>
             </div>
+          </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">{t("pageEdit.moduleLabel")}</label>
-              <select
-                value={moduleId}
-                onChange={(e) => setModuleId(e.target.value === "" ? "" : Number(e.target.value))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
-              >
-                <option value="">{t("pageEdit.noModule")}</option>
-                {modules.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
+          {/* Advanced: Track + Module */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              aria-expanded={advancedOpen}
+            >
+              {advancedOpen ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+              {t("pageEdit.advanced")}
+            </button>
+
+            {advancedOpen && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t("pageEdit.trackLabel")}</label>
+                  <select
+                    value={trackId}
+                    onChange={(e) => setTrackId(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
+                  >
+                    <option value="">{t("pageEdit.noTrack")}</option>
+                    {tracks.map((tr) => (
+                      <option key={tr.id} value={tr.id}>{tr.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t("pageEdit.moduleLabel")}</label>
+                  <select
+                    value={moduleId}
+                    onChange={(e) => setModuleId(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
+                  >
+                    <option value="">{t("pageEdit.noModule")}</option>
+                    {modules.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -379,29 +416,6 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
             className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30"
           />
         </section>
-      </div>
-
-      {/* Footer: feedback + save */}
-      <div className="flex items-center gap-3">
-        {error && (
-          <span className="flex items-center gap-1.5 text-sm text-destructive">
-            <AlertCircle className="h-4 w-4" />
-            {error}
-          </span>
-        )}
-        {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-            <Check className="h-4 w-4" />
-            {t("common.success")}
-          </span>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg transition-opacity disabled:opacity-60 hover:opacity-90"
-        >
-          {saving ? t("common.loading") : t("common.save")}
-        </button>
       </div>
 
       {/* ── Lessons section ──────────────────────────────────────────────── */}
@@ -535,45 +549,49 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
             </button>
           </div>
 
-          {/* Save footer */}
-          <div className="flex items-center gap-3 px-5 py-4">
-            {lessonsError && (
-              <span className="flex items-center gap-1.5 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                {lessonsError}
-              </span>
-            )}
-            {lessonsSaved && (
-              <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-                <Check className="h-4 w-4" />
-                {t("pageEdit.lessonsSaved")}
-              </span>
-            )}
-            <button
-              onClick={handleSaveLessons}
-              disabled={lessonsSaving}
-              className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg transition-opacity disabled:opacity-60 hover:opacity-90"
-            >
-              {lessonsSaving ? t("common.loading") : t("pageEdit.saveLessons")}
-            </button>
-          </div>
         </div>
       )}
 
       {/* Quiz questions editor */}
-      {isQuiz && <QuizEditor pageId={page.id} initial={quizQuestions} />}
+      {isQuiz && <QuizEditor ref={contentRef} pageId={page.id} initial={quizQuestions} />}
 
       {/* Flashcards editor */}
-      {isFlashcards && <FlashcardEditor pageId={page.id} initial={flashcards} />}
+      {isFlashcards && <FlashcardEditor ref={contentRef} pageId={page.id} initial={flashcards} />}
 
       {/* Nav items editor (hub pages only) */}
       {isHub && (
         <NavItemsEditor
+          ref={contentRef}
           pageId={page.id}
           initial={navItems}
           specialties={specialties}
+          hubSpecialtyId={page.specialty_id}
+          hubView={page.view}
         />
       )}
+
+      {/* ── Single page-level Save (sticky) ───────────────────────────────── */}
+      <div className="sticky bottom-4 z-10 flex items-center gap-3 rounded-xl border border-border bg-surface-1/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-surface-1/80">
+        {error && (
+          <span className="flex items-center gap-1.5 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </span>
+        )}
+        {saved && (
+          <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
+            <Check className="h-4 w-4" />
+            {t("common.success")}
+          </span>
+        )}
+        <button
+          onClick={handleSaveAll}
+          disabled={saving}
+          className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg transition-opacity disabled:opacity-60 hover:opacity-90"
+        >
+          {saving ? t("common.loading") : t("pageEdit.saveAll")}
+        </button>
+      </div>
     </div>
   );
 }

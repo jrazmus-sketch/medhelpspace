@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { useTranslation } from "react-i18next";
+import "@/lib/i18n";
 import { updateFlashcards } from "@/actions/admin";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
-import { Check, AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FlashcardRow } from "./page";
+import type { SectionEditorHandle } from "./section-editor-handle";
 
 type CardDraft = {
   id: number | null;
@@ -23,7 +26,11 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 }
 
-export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: FlashcardRow[] }) {
+export const FlashcardEditor = forwardRef<
+  SectionEditorHandle,
+  { pageId: number; initial: FlashcardRow[] }
+>(function FlashcardEditor({ pageId, initial }, ref) {
+  const { t } = useTranslation();
   const [drafts, setDrafts] = useState<CardDraft[]>(() =>
     initial.map((c) => ({
       id: c.id,
@@ -37,8 +44,6 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
       open: false,
     })),
   );
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function addCard() {
@@ -104,10 +109,8 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
     );
   }
 
-  async function handleSave() {
+  async function save(): Promise<boolean> {
     setError(null);
-    setSaved(false);
-    setSaving(true);
     try {
       // Renumber positions within each group based on their order in the list
       const byGroup = new Map<number, CardDraft[]>();
@@ -134,14 +137,14 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
           tip: c.tip || null,
         })),
       );
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao salvar");
-    } finally {
-      setSaving(false);
+      setError(e instanceof Error ? e.message : t("flashcardEditor.saveError"));
+      return false;
     }
   }
+
+  useImperativeHandle(ref, () => ({ save }));
 
   // Group cards for display
   const groupedDrafts = new Map<number, { label: string; cards: { card: CardDraft; idx: number }[] }>();
@@ -157,16 +160,16 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
     <div className="rounded-xl border border-border bg-surface-1">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Flashcards
+          {t("flashcardEditor.title")}
         </h2>
         <span className="text-xs text-muted-foreground">
-          {drafts.length} card{drafts.length !== 1 ? "s" : ""} · {groupedList.length} grupo{groupedList.length !== 1 ? "s" : ""}
+          {t("flashcardEditor.countSummary", { cards: drafts.length, groups: groupedList.length })}
         </span>
       </div>
 
       {drafts.length === 0 && (
         <div className="px-5 py-6 text-center text-sm text-muted-foreground">
-          Nenhum flashcard cadastrado.
+          {t("flashcardEditor.empty")}
         </div>
       )}
 
@@ -174,13 +177,13 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
         <div key={groupPos} className="border-b border-border">
           <div className="px-5 py-3 bg-surface-2/40 flex items-center gap-3">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Grupo {groupPos}
+              {t("flashcardEditor.group", { n: groupPos })}
             </span>
             <input
               type="text"
               value={label}
               onChange={(e) => patchGroupLabel(groupPos, e.target.value)}
-              placeholder="Título do grupo (opcional)"
+              placeholder={t("flashcardEditor.groupLabelPlaceholder")}
               className="flex-1 rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-brand/60"
             />
           </div>
@@ -192,18 +195,18 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
                   {card.position}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm">
-                  {card.text ? stripHtml(card.text).slice(0, 60) : <span className="text-muted-foreground italic">Sem pergunta</span>}
+                  {card.text ? stripHtml(card.text).slice(0, 60) : <span className="text-muted-foreground italic">{t("flashcardEditor.noQuestion")}</span>}
                 </span>
-                <button onClick={() => patch(idx, { open: !card.open })} className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" title={card.open ? "Recolher" : "Expandir"}>
+                <button onClick={() => patch(idx, { open: !card.open })} className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" title={card.open ? t("flashcardEditor.collapse") : t("flashcardEditor.expand")}>
                   {card.open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                 </button>
-                <button onClick={() => moveCard(idx, "up")} disabled={idx === 0} className={cn("rounded p-1.5 transition-colors", idx === 0 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title="Mover para cima">
+                <button onClick={() => moveCard(idx, "up")} disabled={idx === 0} className={cn("rounded p-1.5 transition-colors", idx === 0 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title={t("flashcardEditor.moveUp")}>
                   <ArrowUp className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => moveCard(idx, "down")} disabled={idx === drafts.length - 1} className={cn("rounded p-1.5 transition-colors", idx === drafts.length - 1 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title="Mover para baixo">
+                <button onClick={() => moveCard(idx, "down")} disabled={idx === drafts.length - 1} className={cn("rounded p-1.5 transition-colors", idx === drafts.length - 1 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title={t("flashcardEditor.moveDown")}>
                   <ArrowDown className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => removeCard(idx)} className="rounded p-1.5 text-destructive hover:bg-destructive/10" title="Excluir">
+                <button onClick={() => removeCard(idx)} className="rounded p-1.5 text-destructive hover:bg-destructive/10" title={t("flashcardEditor.delete")}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -211,26 +214,26 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
               {card.open && (
                 <div className="space-y-3 pl-7">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Frente (pergunta)</label>
+                    <label className="text-sm font-medium">{t("flashcardEditor.front")}</label>
                     <RichTextEditor
                       content={card.text}
                       onChange={(html) => patch(idx, { text: html })}
-                      placeholder="Pergunta ou prompt"
+                      placeholder={t("flashcardEditor.frontPlaceholder")}
                       minHeight="80px"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Verso (resposta)</label>
+                    <label className="text-sm font-medium">{t("flashcardEditor.back")}</label>
                     <RichTextEditor
                       content={card.answer}
                       onChange={(html) => patch(idx, { answer: html })}
-                      placeholder="Resposta"
+                      placeholder={t("flashcardEditor.backPlaceholder")}
                       minHeight="80px"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">URL da imagem (opcional)</label>
+                      <label className="text-sm font-medium">{t("flashcardEditor.imageUrl")}</label>
                       <input
                         type="text"
                         value={card.image_url}
@@ -240,12 +243,12 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Dica (opcional)</label>
+                      <label className="text-sm font-medium">{t("flashcardEditor.tip")}</label>
                       <input
                         type="text"
                         value={card.tip}
                         onChange={(e) => patch(idx, { tip: e.target.value })}
-                        placeholder="Texto da dica"
+                        placeholder={t("flashcardEditor.tipPlaceholder")}
                         className="w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-brand/60"
                       />
                     </div>
@@ -260,35 +263,22 @@ export function FlashcardEditor({ pageId, initial }: { pageId: number; initial: 
       <div className="px-5 py-4 flex gap-2">
         <button onClick={addCard} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-foreground hover:border-brand/50 hover:text-foreground">
           <Plus className="h-3.5 w-3.5" />
-          Adicionar card
+          {t("flashcardEditor.addCard")}
         </button>
         <button onClick={addGroup} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-foreground hover:border-brand/50 hover:text-foreground">
           <Plus className="h-3.5 w-3.5" />
-          Novo grupo
+          {t("flashcardEditor.newGroup")}
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-5 py-4 border-t border-border">
-        {error && (
+      {error && (
+        <div className="flex items-center gap-3 px-5 py-4 border-t border-border">
           <span className="flex items-center gap-1.5 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" />
             {error}
           </span>
-        )}
-        {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-            <Check className="h-4 w-4" />
-            Salvo
-          </span>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg disabled:opacity-60 hover:opacity-90"
-        >
-          {saving ? "Salvando…" : "Salvar flashcards"}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
-}
+});

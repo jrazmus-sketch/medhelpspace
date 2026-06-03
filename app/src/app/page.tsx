@@ -8,6 +8,7 @@ import { PricingCTA } from "@/components/landing/pricing-cta";
 import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
+import { getCohortsForSale } from "@/lib/queries/cohort-products";
 
 export const metadata = {
   title: "MedHelpSpace Revalida — Sistema de Aprovação",
@@ -15,7 +16,14 @@ export const metadata = {
     "Prepare-se para o Revalida com método: questões comentadas, resumos narrativos, flashcards, MedVoice e muito mais. Revalida 2026.2 e 2027.1.",
 };
 
-export default function LandingPage() {
+// Hourly ISR: storefront pricing is re-read at most once an hour (so a sale that
+// auto-closes drops within the hour). Admin price/sale edits also call
+// revalidatePath("/") for instant refresh (step 5).
+export const revalidate = 3600;
+
+export default async function LandingPage() {
+  const cohorts = await getCohortsForSale();
+
   return (
     <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
       <div className="lp-grain" aria-hidden="true" />
@@ -26,7 +34,7 @@ export default function LandingPage() {
         <StatsNumbers />
         <CinematicFeatures />
         <SixtyDSection />
-        <PricingCTA />
+        <PricingCTA cohorts={cohorts} />
         <FaqSection />
       </main>
       <LandingFooter />

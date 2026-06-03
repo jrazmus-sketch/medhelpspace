@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { useTranslation } from "react-i18next";
+import "@/lib/i18n";
 import { updateQuizQuestions } from "@/actions/admin";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
-import { Check, AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { QuizQuestionRow } from "./page";
+import type { SectionEditorHandle } from "./section-editor-handle";
 
 type QuestionDraft = {
   id: number | null;
@@ -25,7 +28,11 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 }
 
-export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQuestionRow[] }) {
+export const QuizEditor = forwardRef<
+  SectionEditorHandle,
+  { pageId: number; initial: QuizQuestionRow[] }
+>(function QuizEditor({ pageId, initial }, ref) {
+  const { t } = useTranslation();
   const [drafts, setDrafts] = useState<QuestionDraft[]>(() =>
     initial.map((q) => ({
       id: q.id,
@@ -36,8 +43,6 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
       open: false,
     })),
   );
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function addQuestion() {
@@ -98,10 +103,8 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
     );
   }
 
-  async function handleSave() {
+  async function save(): Promise<boolean> {
     setError(null);
-    setSaved(false);
-    setSaving(true);
     try {
       await updateQuizQuestions(
         pageId,
@@ -113,27 +116,27 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
           position: i + 1,
         })),
       );
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao salvar");
-    } finally {
-      setSaving(false);
+      setError(e instanceof Error ? e.message : t("quizEditor.saveError"));
+      return false;
     }
   }
+
+  useImperativeHandle(ref, () => ({ save }));
 
   return (
     <div className="divide-y divide-border rounded-xl border border-border bg-surface-1">
       <div className="flex items-center justify-between px-5 py-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Questões
+          {t("quizEditor.title")}
         </h2>
         <span className="text-xs text-muted-foreground">{drafts.length}</span>
       </div>
 
       {drafts.length === 0 && (
         <div className="px-5 py-6 text-center text-sm text-muted-foreground">
-          Nenhuma questão cadastrada.
+          {t("quizEditor.empty")}
         </div>
       )}
 
@@ -144,18 +147,18 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
               {idx + 1}
             </span>
             <span className="min-w-0 flex-1 truncate text-sm">
-              {q.question ? stripHtml(q.question).slice(0, 80) : <span className="text-muted-foreground italic">Sem enunciado</span>}
+              {q.question ? stripHtml(q.question).slice(0, 80) : <span className="text-muted-foreground italic">{t("quizEditor.noPrompt")}</span>}
             </span>
-            <button onClick={() => patch(idx, { open: !q.open })} className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" title={q.open ? "Recolher" : "Expandir"}>
+            <button onClick={() => patch(idx, { open: !q.open })} className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground" title={q.open ? t("quizEditor.collapse") : t("quizEditor.expand")}>
               {q.open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
-            <button onClick={() => moveQuestion(idx, "up")} disabled={idx === 0} className={cn("rounded p-1.5 transition-colors", idx === 0 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title="Mover para cima">
+            <button onClick={() => moveQuestion(idx, "up")} disabled={idx === 0} className={cn("rounded p-1.5 transition-colors", idx === 0 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title={t("quizEditor.moveUp")}>
               <ArrowUp className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => moveQuestion(idx, "down")} disabled={idx === drafts.length - 1} className={cn("rounded p-1.5 transition-colors", idx === drafts.length - 1 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title="Mover para baixo">
+            <button onClick={() => moveQuestion(idx, "down")} disabled={idx === drafts.length - 1} className={cn("rounded p-1.5 transition-colors", idx === drafts.length - 1 ? "pointer-events-none opacity-25" : "text-muted-foreground hover:bg-accent hover:text-foreground")} title={t("quizEditor.moveDown")}>
               <ArrowDown className="h-3.5 w-3.5" />
             </button>
-            <button onClick={() => removeQuestion(idx)} className="rounded p-1.5 text-destructive hover:bg-destructive/10" title="Excluir">
+            <button onClick={() => removeQuestion(idx)} className="rounded p-1.5 text-destructive hover:bg-destructive/10" title={t("quizEditor.delete")}>
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -163,17 +166,17 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
           {q.open && (
             <div className="space-y-4 pl-7">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Enunciado</label>
+                <label className="text-sm font-medium">{t("quizEditor.prompt")}</label>
                 <RichTextEditor
                   content={q.question}
                   onChange={(html) => patch(idx, { question: html })}
-                  placeholder="Texto da questão"
+                  placeholder={t("quizEditor.promptPlaceholder")}
                   minHeight="120px"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">URL da imagem (opcional)</label>
+                <label className="text-sm font-medium">{t("quizEditor.imageUrl")}</label>
                 <input
                   type="text"
                   value={q.media_url}
@@ -185,8 +188,8 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Alternativas</label>
-                  <button onClick={() => addAnswer(idx)} className="text-xs text-brand hover:underline">+ adicionar</button>
+                  <label className="text-sm font-medium">{t("quizEditor.answers")}</label>
+                  <button onClick={() => addAnswer(idx)} className="text-xs text-brand hover:underline">{t("quizEditor.addAnswer")}</button>
                 </div>
                 {q.answers.map((a, aIdx) => (
                   <div key={aIdx} className="rounded-lg border border-border bg-background p-3 space-y-2">
@@ -198,7 +201,7 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
                           onChange={(e) => patchAnswer(idx, aIdx, { correct: e.target.checked })}
                           className="accent-brand"
                         />
-                        Correta
+                        {t("quizEditor.correct")}
                       </label>
                       <span className="ml-auto text-xs text-muted-foreground font-mono">
                         {String.fromCharCode(65 + aIdx)}
@@ -207,7 +210,7 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
                         onClick={() => removeAnswer(idx, aIdx)}
                         disabled={q.answers.length <= 2}
                         className={cn("rounded p-1 transition-colors", q.answers.length <= 2 ? "pointer-events-none opacity-25" : "text-destructive hover:bg-destructive/10")}
-                        title="Excluir alternativa"
+                        title={t("quizEditor.deleteAnswer")}
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -216,14 +219,14 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
                       type="text"
                       value={a.text}
                       onChange={(e) => patchAnswer(idx, aIdx, { text: e.target.value })}
-                      placeholder="Texto da alternativa"
+                      placeholder={t("quizEditor.answerPlaceholder")}
                       className="w-full rounded border border-border bg-surface-1 px-2.5 py-1.5 text-sm outline-none focus:border-brand/60"
                     />
                     <input
                       type="text"
                       value={a.feedback}
                       onChange={(e) => patchAnswer(idx, aIdx, { feedback: e.target.value })}
-                      placeholder="Comentário/feedback (opcional)"
+                      placeholder={t("quizEditor.feedbackPlaceholder")}
                       className="w-full rounded border border-border bg-surface-1 px-2.5 py-1.5 text-xs text-muted-foreground outline-none focus:border-brand/60"
                     />
                   </div>
@@ -237,31 +240,18 @@ export function QuizEditor({ pageId, initial }: { pageId: number; initial: QuizQ
       <div className="px-5 py-4">
         <button onClick={addQuestion} className="flex items-center gap-1.5 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-foreground hover:border-brand/50 hover:text-foreground">
           <Plus className="h-3.5 w-3.5" />
-          Adicionar questão
+          {t("quizEditor.addQuestion")}
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-5 py-4">
-        {error && (
+      {error && (
+        <div className="flex items-center gap-3 px-5 py-4">
           <span className="flex items-center gap-1.5 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" />
             {error}
           </span>
-        )}
-        {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-            <Check className="h-4 w-4" />
-            Salvo
-          </span>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg disabled:opacity-60 hover:opacity-90"
-        >
-          {saving ? "Salvando…" : "Salvar questões"}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
-}
+});

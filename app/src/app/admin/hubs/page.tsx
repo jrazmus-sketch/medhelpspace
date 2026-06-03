@@ -24,6 +24,15 @@ function viewSortKey(view: string | null): [number, string] {
   return [99, view]; // unknown views: alphabetical at the end.
 }
 
+export type HubCardRow = {
+  id: number; // nav_item id
+  label: string | null;
+  target_page_id: number | null;
+  target_title: string | null;
+  target_slug: string | null;
+  target_type: string | null;
+};
+
 export type HubRow = {
   id: number;
   slug: string;
@@ -31,7 +40,9 @@ export type HubRow = {
   view: string | null;
   status: string;
   card_count: number;
+  specialty_id: number | null;
   specialty_slug: string | null;
+  cards: HubCardRow[];
 };
 
 export type SpecialtyGroup = {
@@ -66,7 +77,10 @@ export default async function AdminHubsPage() {
         .eq("type", "blurb-nav-hub"),
       admin
         .from("nav_items")
-        .select("source_page_id, target_page_id"),
+        .select(
+          "id, source_page_id, position, label, target_page_id, target_page:pages!target_page_id(title, slug, type)",
+        )
+        .order("position"),
       admin
         .from("pages")
         .select("id, slug, title, type, status, specialty_id, specialties(slug, name)")
@@ -81,7 +95,15 @@ export default async function AdminHubsPage() {
     status: string; specialty_id: number | null;
   }>;
   const navItems = (navItemsRaw ?? []) as Array<{
-    source_page_id: number; target_page_id: number | null;
+    id: number;
+    source_page_id: number;
+    position: number;
+    label: string | null;
+    target_page_id: number | null;
+    target_page:
+      | { title: string; slug: string; type: string }
+      | { title: string; slug: string; type: string }[]
+      | null;
   }>;
   type PageWithSpecialty = {
     id: number; slug: string; title: string; type: string; status: string;
@@ -90,13 +112,21 @@ export default async function AdminHubsPage() {
   };
   const allPages = (pagesRaw ?? []) as PageWithSpecialty[];
 
-  // Card counts per hub (source_page_id).
-  const cardCountBySource = new Map<number, number>();
+  // Cards per hub (source_page_id), already ordered by position from the query.
+  const cardsBySource = new Map<number, HubCardRow[]>();
   for (const ni of navItems) {
-    cardCountBySource.set(
-      ni.source_page_id,
-      (cardCountBySource.get(ni.source_page_id) ?? 0) + 1,
-    );
+    const tp = Array.isArray(ni.target_page) ? ni.target_page[0] ?? null : ni.target_page;
+    const card: HubCardRow = {
+      id: ni.id,
+      label: ni.label,
+      target_page_id: ni.target_page_id,
+      target_title: tp?.title ?? null,
+      target_slug: tp?.slug ?? null,
+      target_type: tp?.type ?? null,
+    };
+    const arr = cardsBySource.get(ni.source_page_id) ?? [];
+    arr.push(card);
+    cardsBySource.set(ni.source_page_id, arr);
   }
 
   // Specialty slug lookup for live-URL construction.
@@ -108,14 +138,17 @@ export default async function AdminHubsPage() {
   const hubsBySpecialty = new Map<number, HubRow[]>();
   for (const h of hubs) {
     if (h.specialty_id == null) continue;
+    const cards = cardsBySource.get(h.id) ?? [];
     const row: HubRow = {
       id: h.id,
       slug: h.slug,
       title: h.title,
       view: h.view,
       status: h.status,
-      card_count: cardCountBySource.get(h.id) ?? 0,
+      card_count: cards.length,
+      specialty_id: h.specialty_id,
       specialty_slug: specialtySlugById.get(h.specialty_id) ?? null,
+      cards,
     };
     const arr = hubsBySpecialty.get(h.specialty_id) ?? [];
     arr.push(row);

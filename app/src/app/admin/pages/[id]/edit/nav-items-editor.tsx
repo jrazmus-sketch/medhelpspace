@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import {
@@ -21,11 +22,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AlertCircle, Check, GripVertical, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateNavItems } from "@/actions/admin";
-import { PagePicker } from "@/components/admin/page-picker";
+import { PagePicker, type CreateContext } from "@/components/admin/page-picker";
+import { defaultTemplateForHubView } from "@/lib/page-templates";
 import type { NavItemRow, SpecialtyOption } from "./page";
+import type { SectionEditorHandle } from "./section-editor-handle";
 
 type NavItemDraft = {
   // A stable key for React (also used as @dnd-kit sortable id). For new rows
@@ -47,6 +50,10 @@ interface Props {
   pageId: number;
   initial: NavItemRow[];
   specialties: SpecialtyOption[];
+  /** The hub's own specialty — inherited by pages created inline. */
+  hubSpecialtyId: number | null;
+  /** The hub's own view — used to pre-select a template for new pages. */
+  hubView: string | null;
 }
 
 let draftCounter = 0;
@@ -55,8 +62,21 @@ function nextDraftKey(): string {
   return `new-${draftCounter}-${Date.now()}`;
 }
 
-export function NavItemsEditor({ pageId, initial, specialties }: Props) {
+export const NavItemsEditor = forwardRef<SectionEditorHandle, Props>(
+  function NavItemsEditor(
+    { pageId, initial, specialties, hubSpecialtyId, hubView },
+    ref,
+  ) {
   const { t } = useTranslation();
+  const router = useRouter();
+
+  // Context for the PagePicker's inline "Create new" tab: new pages inherit the
+  // hub's specialty and get a template suggested from the hub's view.
+  const createContext: CreateContext = {
+    specialtyId: hubSpecialtyId,
+    specialtyName: specialties.find((s) => s.id === hubSpecialtyId)?.name ?? null,
+    defaultTemplate: defaultTemplateForHubView(hubView),
+  };
 
   const [drafts, setDrafts] = useState<NavItemDraft[]>(() =>
     initial.map((n) => ({
@@ -72,8 +92,6 @@ export function NavItemsEditor({ pageId, initial, specialties }: Props) {
       layout: (n.layout as "cards" | "list") ?? "cards",
     })),
   );
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -125,9 +143,10 @@ export function NavItemsEditor({ pageId, initial, specialties }: Props) {
     );
   }
 
-  async function handleSave() {
+  // Saves all cards. Returns true on success so callers can chain a navigation
+  // (e.g. "Edit content") without losing unsaved card edits.
+  async function persist(): Promise<boolean> {
     setError(null);
-    setSaved(false);
 
     // Validate: every item must have a target_page_id
     const missingTarget = drafts.findIndex((d) => d.target_page_id === null);
@@ -135,10 +154,9 @@ export function NavItemsEditor({ pageId, initial, specialties }: Props) {
       setError(
         t("navItems.errorMissingTarget", { position: missingTarget + 1 }),
       );
-      return;
+      return false;
     }
 
-    setSaving(true);
     try {
       const payload = drafts.map((d, i) => ({
         id: d.id,
@@ -152,15 +170,23 @@ export function NavItemsEditor({ pageId, initial, specialties }: Props) {
       const res = await updateNavItems(pageId, payload);
       if ("error" in res) {
         setError(res.error);
-      } else {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        return false;
       }
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : t("errors.generic"));
-    } finally {
-      setSaving(false);
+      return false;
     }
+  }
+
+  // Exposed to the page editor so the single page-level Save commits cards too.
+  useImperativeHandle(ref, () => ({ save: persist }));
+
+  // Save the cards first (so nothing is lost), then open the target page's
+  // editor to fill in its content.
+  async function saveThenEdit(targetPageId: number) {
+    const ok = await persist();
+    if (ok) router.push(`/admin/pages/${targetPageId}/edit`);
   }
 
   return (
@@ -195,8 +221,10 @@ export function NavItemsEditor({ pageId, initial, specialties }: Props) {
                   draft={draft}
                   position={idx + 1}
                   specialties={specialties}
+                  createContext={createContext}
                   onPatch={(p) => patchItem(draft.key, p)}
                   onRemove={() => removeItem(draft.key)}
+                  onEditTarget={saveThenEdit}
                 />
               ))}
             </ul>
@@ -216,31 +244,18 @@ export function NavItemsEditor({ pageId, initial, specialties }: Props) {
         </button>
       </div>
 
-      {/* Save footer */}
-      <div className="flex items-center gap-3 px-5 py-4">
-        {error && (
+      {/* Validation error (saved via the page-level Save) */}
+      {error && (
+        <div className="flex items-center gap-3 px-5 py-4">
           <span className="flex items-center gap-1.5 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" />
             {error}
           </span>
-        )}
-        {saved && (
-          <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
-            <Check className="h-4 w-4" />
-            {t("navItems.saved")}
-          </span>
-        )}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {saving ? t("common.loading") : t("navItems.save")}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
-}
+});
 
 // ── Sortable row ──────────────────────────────────────────────────────────────
 
@@ -248,16 +263,20 @@ interface SortableRowProps {
   draft: NavItemDraft;
   position: number;
   specialties: SpecialtyOption[];
+  createContext: CreateContext;
   onPatch: (patch: Partial<NavItemDraft>) => void;
   onRemove: () => void;
+  onEditTarget: (targetPageId: number) => void;
 }
 
 function SortableRow({
   draft,
   position,
   specialties,
+  createContext,
   onPatch,
   onRemove,
+  onEditTarget,
 }: SortableRowProps) {
   const { t } = useTranslation();
   const {
@@ -334,6 +353,7 @@ function SortableRow({
               value={draft.target_page_id}
               preview={targetPreview}
               specialties={specialties}
+              createContext={createContext}
               onChange={(newId) => {
                 // PagePicker also resolves preview via getPageSummary; we just
                 // track the id here and rely on the picker's internal cache.
@@ -346,6 +366,16 @@ function SortableRow({
                 });
               }}
             />
+            {draft.target_page_id !== null && (
+              <button
+                type="button"
+                onClick={() => onEditTarget(draft.target_page_id as number)}
+                className="inline-flex items-center gap-1 text-xs text-brand transition-opacity hover:opacity-80"
+              >
+                <Pencil className="h-3 w-3" />
+                {t("navItems.editContent")}
+              </button>
+            )}
           </div>
         </div>
 

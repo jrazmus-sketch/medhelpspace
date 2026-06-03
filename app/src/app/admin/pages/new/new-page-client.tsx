@@ -5,63 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import {
-  FileText,
-  BookOpen,
-  Volume2,
-  HelpCircle,
-  Layers,
-  LayoutGrid,
-  AlertCircle,
-  Check,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, Check, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createPage, checkSlugAvailable } from "@/actions/admin";
+import { PAGE_TEMPLATES, type PageTemplate } from "@/lib/page-templates";
 import type { SpecialtyOption, TrackOption, ModuleOption } from "./page";
-
-// The Flashcards tile reuses the h5p-quiz page type but sets track_id
-// automatically. Keep this in sync with `FLASHCARDS_TRACK_ID` in
-// `app/admin/pages/[id]/edit/page.tsx`.
-const FLASHCARDS_TRACK_ID = 3;
-
-// Six tiles → five page types. "quiz" and "flashcards" both map to "h5p-quiz".
-const PAGE_TYPES = [
-  "plain-content",
-  "text-lesson",
-  "audio-lesson",
-  "h5p-quiz",
-  "blurb-nav-hub",
-] as const;
-
-type DbPageType = (typeof PAGE_TYPES)[number];
-// Tile keys are decoupled from DB types: "quiz" and "flashcards" both map to
-// the same DB type "h5p-quiz" (differing only by track_id), and "hub" is the
-// friendly name for "blurb-nav-hub" used in the i18n catalog.
-type TileKey =
-  | "plain-content"
-  | "text-lesson"
-  | "audio-lesson"
-  | "quiz"
-  | "flashcards"
-  | "hub";
-
-type TileConfig = {
-  key: TileKey;
-  dbType: DbPageType;
-  icon: typeof FileText;
-  defaultView: string;
-  forceTrackId: number | null;
-};
-
-const TILES: TileConfig[] = [
-  { key: "plain-content", dbType: "plain-content",  icon: FileText,    defaultView: "",            forceTrackId: null },
-  { key: "text-lesson",   dbType: "text-lesson",    icon: BookOpen,    defaultView: "",            forceTrackId: null },
-  { key: "audio-lesson",  dbType: "audio-lesson",   icon: Volume2,     defaultView: "medvoice",    forceTrackId: null },
-  { key: "quiz",          dbType: "h5p-quiz",       icon: HelpCircle,  defaultView: "",            forceTrackId: null },
-  { key: "flashcards",    dbType: "h5p-quiz",       icon: Layers,      defaultView: "flashcards",  forceTrackId: FLASHCARDS_TRACK_ID },
-  { key: "hub",           dbType: "blurb-nav-hub",  icon: LayoutGrid,  defaultView: "hub",         forceTrackId: null },
-];
 
 const PAGE_VIEWS = [
   "hub",
@@ -106,7 +54,7 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [tile, setTile] = useState<TileConfig | null>(null);
+  const [tile, setTile] = useState<PageTemplate | null>(null);
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -121,6 +69,7 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // When the title changes and the user hasn't manually edited the slug, derive it.
   useEffect(() => {
@@ -155,7 +104,7 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
     };
   }, [slug]);
 
-  function selectTile(t: TileConfig) {
+  function selectTile(t: PageTemplate) {
     setTile(t);
     // Apply tile-driven defaults that user can still override.
     if (t.defaultView) setView(t.defaultView);
@@ -239,7 +188,7 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {TILES.map((tileCfg) => {
+            {PAGE_TEMPLATES.map((tileCfg) => {
               const Icon = tileCfg.icon;
               return (
                 <button
@@ -381,78 +330,96 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
               </select>
             </div>
 
-            {/* View + Track in a 2-col grid on >=sm */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label htmlFor="np-view" className="text-sm font-medium">
-                  {t("pageNew.fieldView")}
-                </label>
-                <select
-                  id="np-view"
-                  value={view}
-                  onChange={(e) => setView(e.target.value)}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
-                >
-                  <option value="">{t("pageNew.noView")}</option>
-                  {PAGE_VIEWS.map((v) => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label htmlFor="np-track" className="text-sm font-medium">
-                  {t("pageNew.fieldTrack")}
-                </label>
-                <select
-                  id="np-track"
-                  value={trackId}
-                  onChange={(e) =>
-                    setTrackId(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  disabled={tile.forceTrackId !== null}
-                  className={cn(
-                    "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60",
-                    tile.forceTrackId !== null && "opacity-70",
-                  )}
-                >
-                  <option value="">{t("pageNew.noTrack")}</option>
-                  {tracks.map((tr) => (
-                    <option key={tr.id} value={tr.id}>
-                      {tr.name}
-                    </option>
-                  ))}
-                </select>
-                {tile.forceTrackId !== null && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("pageNew.fieldTrackLocked")}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Module */}
+            {/* View */}
             <div className="space-y-1.5">
-              <label htmlFor="np-module" className="text-sm font-medium">
-                {t("pageNew.fieldModule")}
+              <label htmlFor="np-view" className="text-sm font-medium">
+                {t("pageNew.fieldView")}
               </label>
               <select
-                id="np-module"
-                value={moduleId}
-                onChange={(e) =>
-                  setModuleId(e.target.value === "" ? "" : Number(e.target.value))
-                }
+                id="np-view"
+                value={view}
+                onChange={(e) => setView(e.target.value)}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
               >
-                <option value="">{t("pageNew.noModule")}</option>
-                {modules.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
+                <option value="">{t("pageNew.noView")}</option>
+                {PAGE_VIEWS.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Advanced: Track + Module (hidden by default; tile already sets sane defaults) */}
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                aria-expanded={advancedOpen}
+              >
+                {advancedOpen ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+                {t("pageNew.advanced")}
+              </button>
+
+              {advancedOpen && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="np-track" className="text-sm font-medium">
+                      {t("pageNew.fieldTrack")}
+                    </label>
+                    <select
+                      id="np-track"
+                      value={trackId}
+                      onChange={(e) =>
+                        setTrackId(e.target.value === "" ? "" : Number(e.target.value))
+                      }
+                      disabled={tile.forceTrackId !== null}
+                      className={cn(
+                        "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60",
+                        tile.forceTrackId !== null && "opacity-70",
+                      )}
+                    >
+                      <option value="">{t("pageNew.noTrack")}</option>
+                      {tracks.map((tr) => (
+                        <option key={tr.id} value={tr.id}>
+                          {tr.name}
+                        </option>
+                      ))}
+                    </select>
+                    {tile.forceTrackId !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("pageNew.fieldTrackLocked")}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="np-module" className="text-sm font-medium">
+                      {t("pageNew.fieldModule")}
+                    </label>
+                    <select
+                      id="np-module"
+                      value={moduleId}
+                      onChange={(e) =>
+                        setModuleId(e.target.value === "" ? "" : Number(e.target.value))
+                      }
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-brand/60"
+                    >
+                      <option value="">{t("pageNew.noModule")}</option>
+                      {modules.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Notes */}

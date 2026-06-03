@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { COHORT_PRODUCTS } from "@/lib/pricing";
 
 // Admin CRUD for coupons. Gated to super_admin + billing_admin (same tier as
 // /admin/billing). Validation here is defense-in-depth — the DB also enforces
 // CHECK constraints, the case-insensitive unique index, and the percent range.
 
-const VALID_COHORT_SLUGS = new Set(Object.keys(COHORT_PRODUCTS));
+// Valid cohort slugs come from the DB (the cohort catalog), not a hardcoded list,
+// so coupons can be scoped to any existing turma.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchCohortSlugs(admin: any): Promise<Set<string>> {
+  const { data } = await admin.from("cohorts").select("slug");
+  return new Set<string>((data ?? []).map((r: { slug: string }) => r.slug));
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function requireBillingAdmin(): Promise<{ admin: any } | { error: NextResponse }> {
@@ -37,7 +42,7 @@ type CouponInput = {
 };
 
 // Validate + normalize the mutable fields. Returns a clean row patch or an error key.
-function buildPatch(b: CouponInput, requireAll: boolean): { patch: Record<string, unknown> } | { errorKey: string } {
+function buildPatch(b: CouponInput, requireAll: boolean, validSlugs: Set<string>): { patch: Record<string, unknown> } | { errorKey: string } {
   const patch: Record<string, unknown> = {};
 
   if (requireAll || b.code !== undefined) {
@@ -86,7 +91,7 @@ function buildPatch(b: CouponInput, requireAll: boolean): { patch: Record<string
   if (b.cohortSlugs !== undefined) {
     if (b.cohortSlugs === null || (Array.isArray(b.cohortSlugs) && b.cohortSlugs.length === 0)) {
       patch.applies_to_cohort_slugs = null; // all cohorts
-    } else if (Array.isArray(b.cohortSlugs) && b.cohortSlugs.every((s2) => VALID_COHORT_SLUGS.has(s2))) {
+    } else if (Array.isArray(b.cohortSlugs) && b.cohortSlugs.every((s2) => validSlugs.has(s2))) {
       patch.applies_to_cohort_slugs = b.cohortSlugs;
     } else {
       return { errorKey: "errValueRequired" };
@@ -111,7 +116,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Requisição inválida" }, { status: 400 });
   }
 
-  const built = buildPatch(body, /* requireAll */ true);
+  const validSlugs = await fetchCohortSlugs(admin);
+  const built = buildPatch(body, /* requireAll */ true, validSlugs);
   if ("errorKey" in built) return NextResponse.json({ errorKey: built.errorKey }, { status: ERROR_STATUS_OK });
 
   const { data, error } = await admin.from("coupons").insert(built.patch).select("*").single();
@@ -134,7 +140,8 @@ export async function PATCH(request: NextRequest) {
   }
   if (!body.id) return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
 
-  const built = buildPatch(body, /* requireAll */ false);
+  const validSlugs = await fetchCohortSlugs(admin);
+  const built = buildPatch(body, /* requireAll */ false, validSlugs);
   if ("errorKey" in built) return NextResponse.json({ errorKey: built.errorKey }, { status: ERROR_STATUS_OK });
   if (Object.keys(built.patch).length === 0) {
     return NextResponse.json({ error: "Nada para atualizar" }, { status: 400 });
