@@ -27,6 +27,7 @@ interface Props {
   pagbankPublicKey: string;
   loading: boolean;
   initialInstallments: InstallmentOption[];
+  couponCode: string | null;
   onSubmit: (params: {
     encryptedCard: string;
     cardHolder: string;
@@ -59,6 +60,7 @@ export function CardForm({
   pagbankPublicKey,
   loading,
   initialInstallments,
+  couponCode,
   onSubmit,
 }: Props) {
   const [sdkReady, setSdkReady] = useState(false);
@@ -84,14 +86,20 @@ export function CardForm({
     if (window.PagSeguro) setSdkReady(true);
   }, []);
 
-  // Refine the installment ladder once the card BIN is known so rates and the
-  // available installment count are brand-accurate (e.g. some cards cap below 12x).
+  // Refine the installment ladder once the card BIN or coupon changes so rates
+  // and the available installment count stay brand- and discount-accurate.
+  // Refetches when:
+  //   - BIN reaches 6 digits (brand-specific ladder)
+  //   - couponCode changes (post-discount base; installment values shift)
   useEffect(() => {
-    if (bin.length < 6) return;
+    if (bin.length < 6 && !couponCode) return;
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingInstallments(true);
-    fetch(`/api/pagbank/installments?cohortSlug=${encodeURIComponent(cohortSlug)}&bin=${bin}`)
+    const qs = new URLSearchParams({ cohortSlug });
+    if (bin.length === 6) qs.set("bin", bin);
+    if (couponCode) qs.set("couponCode", couponCode);
+    fetch(`/api/pagbank/installments?${qs.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         if (cancelled || !Array.isArray(data.options) || data.options.length === 0) return;
@@ -104,7 +112,7 @@ export function CardForm({
     return () => {
       cancelled = true;
     };
-  }, [bin, cohortSlug]);
+  }, [bin, cohortSlug, couponCode]);
 
   // Derive the effective selection: if the refined ladder no longer offers the
   // chosen count (e.g. a card that caps below 12x), fall back to the first option.

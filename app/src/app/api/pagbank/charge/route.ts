@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     // login signs in an existing account before charging.
     signup?: { email: string; password: string; displayName?: string | null };
     login?: { email: string; password: string };
+    couponCode?: string;
   };
 
   try {
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     cardBin,
     signup,
     login,
+    couponCode,
   } = body;
 
   const supabase = await createClient();
@@ -152,34 +154,88 @@ export async function POST(request: NextRequest) {
     if (reusable) return NextResponse.json(reusable);
   }
 
+  // Coupon redemption — atomic via redeem_coupon RPC (locks the coupon row,
+  // inserts the redemption, bumps the counter). UNIQUE(coupon_id, user_id) on
+  // coupon_redemptions enforces one-use-per-person at the DB level. We redeem
+  // BEFORE order insert so that the redemption row is the gating constraint;
+  // if anything below fails, the cleanup branch deletes the redemption + decrements
+  // the counter so the user can try again with the same coupon.
+  const baseAmountCents = product.amountCents;
+  let couponId: number | null = null;
+  let couponRedemptionId: number | null = null;
+  let discountCents = 0;
+  let baseAfterDiscount = baseAmountCents;
+  let isFullDiscount = false;
+
+  if (couponCode && couponCode.trim()) {
+    const { data: rpcData, error: rpcErr } = await admin.rpc("redeem_coupon", {
+      p_code: couponCode.trim().toUpperCase(),
+      p_user_id: user.id,
+      p_cohort_slug: cohortSlug,
+      p_base_amount_cents: baseAmountCents,
+    });
+    if (rpcErr) {
+      const code = (rpcErr.message ?? "").match(/COUPON_[A-Z_]+/)?.[0];
+      const map: Record<string, string> = {
+        COUPON_NOT_FOUND: "Cupom não encontrado.",
+        COUPON_INACTIVE: "Cupom indisponível.",
+        COUPON_NOT_YET_VALID: "Este cupom ainda não está válido.",
+        COUPON_EXPIRED: "Cupom expirado.",
+        COUPON_FULLY_REDEEMED: "Cupom esgotado.",
+        COUPON_NOT_VALID_FOR_COHORT: "Cupom não é válido para esta turma.",
+      };
+      // unique_violation on (coupon_id, user_id) → user already used this code
+      if (rpcErr.code === "23505") {
+        return NextResponse.json({ error: "Você já usou este cupom." }, { status: 400 });
+      }
+      if (code && map[code]) {
+        return NextResponse.json({ error: map[code] }, { status: 400 });
+      }
+      console.error("redeem_coupon failed:", rpcErr);
+      return NextResponse.json({ error: "Erro ao aplicar cupom." }, { status: 500 });
+    }
+    const row = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (!row) {
+      return NextResponse.json({ error: "Cupom não encontrado." }, { status: 400 });
+    }
+    couponId = row.coupon_id as number;
+    couponRedemptionId = row.redemption_id as number;
+    discountCents = row.discount_cents as number;
+    baseAfterDiscount = row.final_amount_cents as number;
+    isFullDiscount = row.is_full_discount as boolean;
+  }
+
   // Determine the authoritative amount to charge. For credit-card installments > 1,
   // the buyer pays PagBank's financing interest, so we re-simulate server-side and
-  // charge the interest-inclusive total. The client never dictates the amount —
-  // it's recomputed here from the trusted base price + chosen installment count.
-  const baseAmountCents = product.amountCents;
-  let chargeAmountCents = baseAmountCents;
+  // charge the interest-inclusive total against the post-discount base. The client
+  // never dictates the amount — it's recomputed here from the trusted base price.
+  let chargeAmountCents = baseAfterDiscount;
   let interestCents = 0;
 
-  if (paymentMethod === "credit_card" && installments > 1) {
+  if (!isFullDiscount && paymentMethod === "credit_card" && installments > 1) {
     let options;
     try {
-      options = await getInstallmentOptions(baseAmountCents, { bin: cardBin });
+      options = await getInstallmentOptions(baseAfterDiscount, { bin: cardBin });
     } catch (err) {
       console.error("Installment simulation failed:", err);
+      await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
       return NextResponse.json({ error: "Erro ao calcular o parcelamento" }, { status: 502 });
     }
     const plan = options.find((o) => o.installments === installments);
     if (!plan) {
+      await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
       return NextResponse.json(
         { error: "Parcelamento indisponível para este cartão" },
         { status: 400 },
       );
     }
     chargeAmountCents = plan.totalValue;
-    interestCents = plan.totalValue - baseAmountCents;
+    interestCents = plan.totalValue - baseAfterDiscount;
   }
 
-  // Create pending order in DB first so we have a reference_id for PagBank
+  // Create pending order. For 100%-off, we insert it as 'paid' immediately
+  // (no PagBank round-trip below) and short-circuit to finalizePaidOrder.
+  const initialStatus = isFullDiscount ? "pending" : "pending"; // both start pending; full-discount transitions below
   const { data: order, error: orderError } = await admin
     .from("orders")
     .insert({
@@ -187,22 +243,54 @@ export async function POST(request: NextRequest) {
       cohort_id: cohort.id,
       amount_cents: chargeAmountCents,
       base_amount_cents: baseAmountCents,
+      discount_cents: discountCents,
+      coupon_id: couponId,
       interest_cents: interestCents,
       currency: "BRL",
       payment_method: paymentMethod,
-      status: "pending",
+      status: initialStatus,
     })
     .select("id")
     .single();
 
   if (orderError || !order) {
     // 23505 = unique_violation. Concurrent Pix request won the race — return that one.
-    if (paymentMethod === "pix" && orderError?.code === "23505") {
+    if (paymentMethod === "pix" && orderError?.code === "23505" && !couponCode) {
       const reusable = await findReusablePixOrder(admin, user.id, cohort.id, new Date().toISOString());
       if (reusable) return NextResponse.json(reusable);
     }
     console.error("Failed to create order:", orderError);
+    await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
     return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 });
+  }
+
+  // Link the redemption row to the order so admins can trace it.
+  if (couponRedemptionId) {
+    await admin
+      .from("coupon_redemptions")
+      .update({ order_id: order.id })
+      .eq("id", couponRedemptionId);
+  }
+
+  // 100%-off short-circuit: skip PagBank entirely, finalize as paid right here.
+  if (isFullDiscount) {
+    await finalizePaidOrder(admin, {
+      orderId: order.id as string,
+      userId: user.id,
+      cohortId: cohort.id as number,
+      // No real charge; pass a minimal stub so finalizePaidOrder can record it.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      charge: { id: `COUPON_${couponId}_${order.id}`, status: "PAID", amount: { value: 0, currency: "BRL" } } as any,
+    });
+    return NextResponse.json({
+      orderId: order.id,
+      chargeId: null,
+      status: "PAID",
+      pixQrText: null,
+      pixQrImageUrl: null,
+      pixExpiresAt: null,
+      ccBrand: null,
+    });
   }
 
   const webhookUrl = `${getWebhookBaseUrl()}/api/pagbank/webhook`;
@@ -235,6 +323,9 @@ export async function POST(request: NextRequest) {
     console.error("PagBank createCharge failed:", err);
     // Mark order as cancelled so it doesn't linger as pending
     await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+    // Release the coupon redemption so the buyer can retry — the order never
+    // got off the ground, so this code shouldn't count as used.
+    await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
     return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 502 });
   }
 
@@ -247,6 +338,7 @@ export async function POST(request: NextRequest) {
   if (paymentMethod === "pix" && qrCode && !qrCode.links?.find((l) => l.rel === "QRCODE.PNG")?.href) {
     console.error("PagBank PIX charge missing QRCODE.PNG link. charge.id:", charge.id, "qrCode:", qrCode);
     await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+    await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
     return NextResponse.json({ error: "Erro ao processar pagamento (QR indisponível)" }, { status: 502 });
   }
 
@@ -303,6 +395,33 @@ function mapChargeStatus(s: string): string {
       return "refunded";
     default:
       return "pending";
+  }
+}
+
+// Undo a coupon redemption when the payment flow fails downstream — delete the
+// redemption row and decrement the counter so the buyer can retry the same code.
+// Best-effort: errors are logged but not surfaced (the user's primary error is
+// the payment failure, not the cleanup).
+async function rollbackCouponRedemption(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  couponId: number | null,
+  redemptionId: number | null,
+) {
+  if (!redemptionId || !couponId) return;
+  const { error: delErr } = await admin
+    .from("coupon_redemptions")
+    .delete()
+    .eq("id", redemptionId);
+  if (delErr) {
+    console.error("rollbackCouponRedemption: delete failed", redemptionId, delErr);
+    return;
+  }
+  const { error: decErr } = await admin.rpc("decrement_coupon_counter", {
+    p_coupon_id: couponId,
+  });
+  if (decErr) {
+    console.error("rollbackCouponRedemption: decrement failed", couponId, decErr);
   }
 }
 

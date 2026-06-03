@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Lock, ShieldCheck } from "lucide-react";
+import { Check, Lock, ShieldCheck, Tag, X } from "lucide-react";
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
 import type { InstallmentOption } from "@/lib/pagbank/types";
+
+function fmtBRL(cents: number): string {
+  return `R$ ${(cents / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 type PaymentMethod = "pix" | "credit_card";
 
@@ -63,6 +70,58 @@ export function CheckoutClient({
     isLoggedIn ? "payment" : "account",
   );
 
+  // Coupon state: validated server-side via /api/coupons/validate; actually
+  // redeemed only when the buyer submits the charge (atomic RPC in the route).
+  const [couponInput, setCouponInput] = useState("");
+  const [couponExpanded, setCouponExpanded] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountCents: number;
+    finalAmountCents: number;
+    isFullDiscount: boolean;
+  } | null>(null);
+
+  const effectiveAmountCents = appliedCoupon?.finalAmountCents ?? amountCents;
+  const isFullDiscount = appliedCoupon?.isFullDiscount ?? false;
+
+  async function applyCoupon() {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput.trim(), cohortSlug }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponError(data.error ?? "Cupom inválido");
+        return;
+      }
+      setAppliedCoupon({
+        code: data.code,
+        discountCents: data.discountCents,
+        finalAmountCents: data.finalAmountCents,
+        isFullDiscount: data.isFullDiscount,
+      });
+      setCouponInput("");
+      setCouponExpanded(false);
+    } catch {
+      setCouponError("Erro ao validar cupom.");
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError(null);
+  }
+
   function advanceToPayment() {
     const err = validateGuestFields();
     if (err) {
@@ -99,6 +158,13 @@ export function CheckoutClient({
             password: guestPassword,
           },
         };
+  }
+
+  function buildBasePayload() {
+    return {
+      ...buildAuthPayload(),
+      ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+    };
   }
 
   if (alreadyMember) {
@@ -178,7 +244,7 @@ export function CheckoutClient({
         body: JSON.stringify({
           cohortSlug,
           paymentMethod: "pix",
-          ...buildAuthPayload(),
+          ...buildBasePayload(),
         }),
       });
       const data = await res.json();
@@ -217,7 +283,7 @@ export function CheckoutClient({
           installments: params.installments,
           cpf: params.cpf,
           cardBin: params.cardBin,
-          ...buildAuthPayload(),
+          ...buildBasePayload(),
         }),
       });
       const data = await res.json();
@@ -256,14 +322,96 @@ export function CheckoutClient({
 
           <div className="my-5 border-t border-border" />
 
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-foreground/55">Total</span>
-            <span
-              className="text-3xl font-extrabold text-foreground"
-              style={{ fontFamily: "var(--font-bricolage)" }}
-            >
-              {priceLabel}
-            </span>
+          {appliedCoupon ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-foreground/55">Subtotal</span>
+                <span className="text-foreground/70">{priceLabel}</span>
+              </div>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-brand">Cupom {appliedCoupon.code}</span>
+                <span className="text-brand">−{fmtBRL(appliedCoupon.discountCents)}</span>
+              </div>
+              <div className="mt-1 flex items-baseline justify-between border-t border-border pt-3">
+                <span className="text-sm text-foreground/55">Total</span>
+                <span
+                  className="text-3xl font-extrabold text-foreground"
+                  style={{ fontFamily: "var(--font-bricolage)" }}
+                >
+                  {fmtBRL(effectiveAmountCents)}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-foreground/55">Total</span>
+              <span
+                className="text-3xl font-extrabold text-foreground"
+                style={{ fontFamily: "var(--font-bricolage)" }}
+              >
+                {priceLabel}
+              </span>
+            </div>
+          )}
+
+          {/* Coupon input / applied-state */}
+          <div className="mt-4">
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/5 px-3 py-2 text-sm">
+                <span className="flex items-center gap-1.5 font-semibold text-brand">
+                  <Tag className="h-3.5 w-3.5" />
+                  {appliedCoupon.code}
+                </span>
+                <button
+                  type="button"
+                  onClick={removeCoupon}
+                  className="flex items-center gap-1 text-xs text-foreground/55 hover:text-foreground"
+                  aria-label="Remover cupom"
+                >
+                  <X className="h-3 w-3" />
+                  Remover
+                </button>
+              </div>
+            ) : couponExpanded ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => {
+                      setCouponInput(e.target.value.toUpperCase());
+                      setCouponError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); applyCoupon(); }
+                    }}
+                    placeholder="REVALIDA20"
+                    autoFocus
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm uppercase text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={couponLoading || !couponInput.trim()}
+                    className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand/85 disabled:opacity-50"
+                  >
+                    {couponLoading ? "…" : "Aplicar"}
+                  </button>
+                </div>
+                {couponError && (
+                  <p className="text-xs text-destructive">{couponError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCouponExpanded(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline"
+              >
+                <Tag className="h-3 w-3" />
+                Tem um cupom de desconto?
+              </button>
+            )}
           </div>
 
           <div className="mt-5 space-y-2">
@@ -415,68 +563,87 @@ export function CheckoutClient({
                 </div>
               )}
 
-              {/* Method tabs */}
-              <div className="mb-6 flex rounded-xl border border-border p-1">
-                <button
-                  type="button"
-                  onClick={() => { setMethod("pix"); setError(null); }}
-                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                    method === "pix"
-                      ? "bg-brand text-white shadow-sm"
-                      : "text-foreground/60 hover:text-foreground"
-                  }`}
-                >
-                  Pix
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setMethod("credit_card"); setError(null); }}
-                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                    method === "credit_card"
-                      ? "bg-brand text-white shadow-sm"
-                      : "text-foreground/60 hover:text-foreground"
-                  }`}
-                >
-                  Cartão de crédito
-                </button>
-              </div>
-
-              {method === "pix" && (
+              {isFullDiscount ? (
                 <div className="flex flex-col gap-5">
-                  <p className="text-sm text-foreground/60">
-                    Gere o QR code e pague pelo app do seu banco. O acesso é
-                    liberado automaticamente assim que o pagamento for confirmado.
-                  </p>
-                  <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-brand/80">
-                    O código Pix expira em <strong>30 minutos</strong>.
+                  <div className="rounded-xl border border-brand/30 bg-brand/5 px-4 py-4 text-sm text-foreground/70">
+                    Seu cupom cobre 100% do valor. Nenhum pagamento será cobrado.
                   </div>
                   <button
                     type="button"
-                    onClick={submitPix}
+                    onClick={submitPix /* paymentMethod is irrelevant; charge route short-circuits */}
                     disabled={loading}
                     className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
                   >
-                    {loading ? "Gerando QR code…" : "Gerar QR code Pix"}
+                    {loading ? "Confirmando…" : "Confirmar matrícula gratuita"}
                   </button>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Method tabs */}
+                  <div className="mb-6 flex rounded-xl border border-border p-1">
+                    <button
+                      type="button"
+                      onClick={() => { setMethod("pix"); setError(null); }}
+                      className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                        method === "pix"
+                          ? "bg-brand text-white shadow-sm"
+                          : "text-foreground/60 hover:text-foreground"
+                      }`}
+                    >
+                      Pix
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setMethod("credit_card"); setError(null); }}
+                      className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                        method === "credit_card"
+                          ? "bg-brand text-white shadow-sm"
+                          : "text-foreground/60 hover:text-foreground"
+                      }`}
+                    >
+                      Cartão de crédito
+                    </button>
+                  </div>
 
-              {method === "credit_card" && (
-                <CardForm
-                  amountCents={amountCents}
-                  cohortSlug={cohortSlug}
-                  cardHolderDefault={isLoggedIn ? userName : guestName}
-                  pagbankPublicKey={pagbankPublicKey}
-                  loading={loading}
-                  initialInstallments={initialInstallments}
-                  onSubmit={submitCard}
-                />
-              )}
+                  {method === "pix" && (
+                    <div className="flex flex-col gap-5">
+                      <p className="text-sm text-foreground/60">
+                        Gere o QR code e pague pelo app do seu banco. O acesso é
+                        liberado automaticamente assim que o pagamento for confirmado.
+                      </p>
+                      <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-brand/80">
+                        O código Pix expira em <strong>30 minutos</strong>.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={submitPix}
+                        disabled={loading}
+                        className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+                      >
+                        {loading ? "Gerando QR code…" : "Gerar QR code Pix"}
+                      </button>
+                    </div>
+                  )}
 
-              <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-foreground/35">
-                <Lock className="h-3 w-3" />
-                Pagamento seguro via PagBank
-              </div>
+                  {method === "credit_card" && (
+                    <CardForm
+                      amountCents={effectiveAmountCents}
+                      cohortSlug={cohortSlug}
+                      cardHolderDefault={isLoggedIn ? userName : guestName}
+                      pagbankPublicKey={pagbankPublicKey}
+                      loading={loading}
+                      initialInstallments={appliedCoupon ? [] : initialInstallments}
+                      couponCode={appliedCoupon?.code ?? null}
+                      onSubmit={submitCard}
+                    />
+                  )}
+
+                  <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-foreground/35">
+                    <Lock className="h-3 w-3" />
+                    Pagamento seguro via PagBank
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
