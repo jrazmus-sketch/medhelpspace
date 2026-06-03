@@ -25,6 +25,7 @@ function iconFor(notification: UserNotification): React.ComponentType<{ classNam
     case "plan-ready":
     case "plan-regenerated":
     case "weekly-summary":
+    case "flashcards-due":
       return Calendar;
     case "60d-unlock":
       return Lock;

@@ -16,6 +16,9 @@ const FROM = "MedHelpSpace <pagamentos@medhelpspace.com.br>";
 const APP_URL = "https://medhelpspace.com.br";
 const MEDHELP_60D_MODULE_ID = 1;
 const CONTEUDO_CATEGORY_SLUG = "conteudo";
+// Minimum number of SM-2-due flashcards before we nudge the bell, so a stray
+// card or two doesn't nag. Deduped to one notification per user per day.
+const FLASHCARD_DUE_THRESHOLD = 10;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -167,8 +170,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // ── [1/7] 60D unlock ─────────────────────────────────────────────────────
-  push(`\n[1/7] Checking 60D module unlocks…`);
+  // ── [1/8] 60D unlock ─────────────────────────────────────────────────────
+  push(`\n[1/8] Checking 60D module unlocks…`);
   {
     const { data: access } = await supabase
       .from("cohort_module_access")
@@ -227,8 +230,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── [2/7] 7-day expiry warning ───────────────────────────────────────────
-  push(`\n[2/7] Checking memberships ending in 7 days…`);
+  // ── [2/8] 7-day expiry warning ───────────────────────────────────────────
+  push(`\n[2/8] Checking memberships ending in 7 days…`);
   {
     const targetEnd = offsetDateKey(7);
     const { data: cohorts } = await supabase
@@ -264,8 +267,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── [3/7] Expiry notice (today) ──────────────────────────────────────────
-  push(`\n[3/7] Checking memberships ending today…`);
+  // ── [3/8] Expiry notice (today) ──────────────────────────────────────────
+  push(`\n[3/8] Checking memberships ending today…`);
   {
     const today = todayKey();
     const { data: cohorts } = await supabase
@@ -301,8 +304,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── [4/7] Weekly summary (Mondays only) ──────────────────────────────────
-  push(`\n[4/7] Weekly summary…`);
+  // ── [4/8] Weekly summary (Mondays only) ──────────────────────────────────
+  push(`\n[4/8] Weekly summary…`);
   if (new Date().getDay() !== 1) push("  Skipped (not Monday).");
   else {
     const students = await getActiveStudents();
@@ -352,8 +355,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── [5/7] Daily plan email (opt-in) ──────────────────────────────────────
-  push(`\n[5/7] Daily plan email (opt-in)…`);
+  // ── [5/8] Daily plan email (opt-in) ──────────────────────────────────────
+  push(`\n[5/8] Daily plan email (opt-in)…`);
   {
     const students = await getActiveStudents();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -381,8 +384,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── [6/7] Missed-3-days nudge ────────────────────────────────────────────
-  push(`\n[6/7] Missed-3-days nudge…`);
+  // ── [6/8] Missed-3-days nudge ────────────────────────────────────────────
+  push(`\n[6/8] Missed-3-days nudge…`);
   {
     const students = await getActiveStudents();
     const threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
@@ -423,8 +426,8 @@ export async function GET(request: NextRequest) {
     push(`  Nudged ${nudged} students.`);
   }
 
-  // ── [7/7] Milestones ─────────────────────────────────────────────────────
-  push(`\n[7/7] Milestone checks…`);
+  // ── [7/8] Milestones ─────────────────────────────────────────────────────
+  push(`\n[7/8] Milestone checks…`);
   {
     const students = await getActiveStudents();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -469,6 +472,37 @@ export async function GET(request: NextRequest) {
         });
       }
     }
+  }
+
+  // ── [8/8] Flashcards due for review ──────────────────────────────────────
+  push(`\n[8/8] Flashcards due for review…`);
+  {
+    const today = todayKey();
+    const students = await getActiveStudents();
+    // Skip paused plans, mirroring the missed-3-days nudge.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const eligible = (students as any[]).filter(
+      (s) => !(s.plan?.paused_until && s.plan.paused_until >= today),
+    );
+    let notified = 0;
+    for (const s of eligible) {
+      // Count cards whose SM-2 due_date has arrived (mirrors lib/study-plan derive).
+      const { count: dueCount } = await supabase
+        .from("flashcard_progress")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", s.user_id)
+        .lte("due_date", today);
+      if ((dueCount ?? 0) < FLASHCARD_DUE_THRESHOLD) continue;
+      // contextId = today → at most one flashcards-due bell per user per day.
+      await insertNotification({
+        userId: s.user_id, kind: "flashcards-due",
+        title: "Flashcards para revisar",
+        body: `Você tem ${dueCount} flashcards prontos para revisão hoje pelo SM-2.`,
+        href: "/app/flashcards", icon: "calendar", contextId: today,
+      });
+      notified++;
+    }
+    push(`  Notified ${notified} students (threshold ${FLASHCARD_DUE_THRESHOLD}).`);
   }
 
   push(`\nDone.`);
