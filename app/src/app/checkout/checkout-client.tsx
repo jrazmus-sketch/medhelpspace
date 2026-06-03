@@ -58,6 +58,21 @@ export function CheckoutClient({
   const [guestPassword, setGuestPassword] = useState("");
   const [guestName, setGuestName] = useState("");
 
+  // Two-step flow: account → payment. Logged-in users skip step 1.
+  const [step, setStep] = useState<"account" | "payment">(
+    isLoggedIn ? "payment" : "account",
+  );
+
+  function advanceToPayment() {
+    const err = validateGuestFields();
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setStep("payment");
+  }
+
   function validateGuestFields(): string | null {
     if (isLoggedIn) return null;
     if (!guestEmail.trim()) return "Informe seu e-mail.";
@@ -275,11 +290,36 @@ export function CheckoutClient({
       <div className="md:col-span-3">
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
 
-          {/* Guest checkout: account section (signup OR login) */}
+          {/* Step indicator (guest only) */}
           {!isLoggedIn && (
-            <div className="mb-6 rounded-xl border border-border bg-muted/20 p-5">
-              <div className="mb-4 flex items-baseline justify-between">
-                <h2 className="text-base font-bold text-foreground">
+            <div className="mb-6 flex items-center gap-3 text-xs font-semibold">
+              <div className={`flex items-center gap-2 ${step === "account" ? "text-brand" : "text-foreground/40"}`}>
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
+                  step === "account" ? "bg-brand text-white" : "bg-muted text-foreground/40"
+                }`}>1</span>
+                Conta
+              </div>
+              <div className="h-px flex-1 bg-border" />
+              <div className={`flex items-center gap-2 ${step === "payment" ? "text-brand" : "text-foreground/40"}`}>
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
+                  step === "payment" ? "bg-brand text-white" : "bg-muted text-foreground/40"
+                }`}>2</span>
+                Pagamento
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
+          {/* Step 1: account (guest only) */}
+          {step === "account" && !isLoggedIn && (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-lg font-bold text-foreground">
                   {accountMode === "signup" ? "Criar sua conta" : "Entrar"}
                 </h2>
                 <button
@@ -344,77 +384,101 @@ export function CheckoutClient({
                   />
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Method tabs */}
-          <div className="mb-6 flex rounded-xl border border-border p-1">
-            <button
-              type="button"
-              onClick={() => { setMethod("pix"); setError(null); }}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                method === "pix"
-                  ? "bg-brand text-white shadow-sm"
-                  : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              Pix
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMethod("credit_card"); setError(null); }}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                method === "credit_card"
-                  ? "bg-brand text-white shadow-sm"
-                  : "text-foreground/60 hover:text-foreground"
-              }`}
-            >
-              Cartão de crédito
-            </button>
-          </div>
-
-          {error && (
-            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {method === "pix" && (
-            <div className="flex flex-col gap-5">
-              <p className="text-sm text-foreground/60">
-                Gere o QR code e pague pelo app do seu banco. O acesso é
-                liberado automaticamente assim que o pagamento for confirmado.
-              </p>
-              <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-brand/80">
-                O código Pix expira em <strong>30 minutos</strong>.
-              </div>
               <button
                 type="button"
-                onClick={submitPix}
-                disabled={loading}
-                className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+                onClick={advanceToPayment}
+                className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
               >
-                {loading ? "Gerando QR code…" : "Gerar QR code Pix"}
+                Continuar para pagamento →
               </button>
             </div>
           )}
 
-          {method === "credit_card" && (
-            <CardForm
-              amountCents={amountCents}
-              cohortSlug={cohortSlug}
-              cardHolderDefault={isLoggedIn ? userName : guestName}
-              pagbankPublicKey={pagbankPublicKey}
-              loading={loading}
-              initialInstallments={initialInstallments}
-              onSubmit={submitCard}
-            />
-          )}
+          {/* Step 2: payment */}
+          {step === "payment" && (
+            <>
+              {/* Account summary + edit (guest only) */}
+              {!isLoggedIn && (
+                <div className="mb-5 flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Check className="h-4 w-4 shrink-0 text-brand" />
+                    <span className="truncate font-medium text-foreground/70">{guestEmail}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setStep("account"); setError(null); }}
+                    className="shrink-0 text-xs font-semibold text-brand hover:underline"
+                  >
+                    Editar
+                  </button>
+                </div>
+              )}
 
-          <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-foreground/35">
-            <Lock className="h-3 w-3" />
-            Pagamento seguro via PagBank
-          </div>
+              {/* Method tabs */}
+              <div className="mb-6 flex rounded-xl border border-border p-1">
+                <button
+                  type="button"
+                  onClick={() => { setMethod("pix"); setError(null); }}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                    method === "pix"
+                      ? "bg-brand text-white shadow-sm"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  Pix
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMethod("credit_card"); setError(null); }}
+                  className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
+                    method === "credit_card"
+                      ? "bg-brand text-white shadow-sm"
+                      : "text-foreground/60 hover:text-foreground"
+                  }`}
+                >
+                  Cartão de crédito
+                </button>
+              </div>
+
+              {method === "pix" && (
+                <div className="flex flex-col gap-5">
+                  <p className="text-sm text-foreground/60">
+                    Gere o QR code e pague pelo app do seu banco. O acesso é
+                    liberado automaticamente assim que o pagamento for confirmado.
+                  </p>
+                  <div className="rounded-xl border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-brand/80">
+                    O código Pix expira em <strong>30 minutos</strong>.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={submitPix}
+                    disabled={loading}
+                    className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
+                  >
+                    {loading ? "Gerando QR code…" : "Gerar QR code Pix"}
+                  </button>
+                </div>
+              )}
+
+              {method === "credit_card" && (
+                <CardForm
+                  amountCents={amountCents}
+                  cohortSlug={cohortSlug}
+                  cardHolderDefault={isLoggedIn ? userName : guestName}
+                  pagbankPublicKey={pagbankPublicKey}
+                  loading={loading}
+                  initialInstallments={initialInstallments}
+                  onSubmit={submitCard}
+                />
+              )}
+
+              <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-foreground/35">
+                <Lock className="h-3 w-3" />
+                Pagamento seguro via PagBank
+              </div>
+            </>
+          )}
         </div>
 
         {isLoggedIn ? (
