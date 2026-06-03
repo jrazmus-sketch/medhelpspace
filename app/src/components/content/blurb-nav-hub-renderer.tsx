@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getSpecialtyAccent } from "@/components/content/specialty-icon";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Check } from "lucide-react";
 import Link from "next/link";
 import { EditableText } from "@/components/admin/editable-text";
 
@@ -26,6 +26,11 @@ type QuizStats = {
   correctLatest: number;  // of those, how many were correct on the *most recent* attempt
 };
 
+// Card target types that record progress via lesson_completions (one "Concluir
+// leitura" / per-section completion each). h5p-quiz is excluded — those cards
+// surface accuracy via QuizMeta instead.
+const LESSON_TYPES = new Set(["plain-content", "text-lesson", "audio-lesson"]);
+
 export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
   const admin = createAdminClient();
 
@@ -48,7 +53,15 @@ export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
     .filter((p): p is TargetPage => p !== null && p.type === "h5p-quiz")
     .map((p) => p.id);
 
-  const quizStatsByPage = await loadQuizStats(quizPageIds);
+  const lessonPageIds = rows
+    .map((r) => r.target_page)
+    .filter((p): p is TargetPage => p !== null && LESSON_TYPES.has(p.type))
+    .map((p) => p.id);
+
+  const [quizStatsByPage, completedPageIds] = await Promise.all([
+    loadQuizStats(quizPageIds),
+    loadCompletedLessonPages(lessonPageIds),
+  ]);
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 sm:gap-4">
@@ -61,6 +74,7 @@ export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
           : null;
         const accent = getSpecialtyAccent(page?.specialty?.slug);
         const stats = page && quizPageIds.includes(page.id) ? quizStatsByPage.get(page.id) : undefined;
+        const completed = page ? completedPageIds.has(page.id) : false;
 
         return (
           <TopicCard
@@ -70,6 +84,7 @@ export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
             href={href}
             accent={accent}
             stats={stats}
+            completed={completed}
           />
         );
       })}
@@ -85,12 +100,14 @@ function TopicCard({
   href,
   accent,
   stats,
+  completed,
 }: {
   navItemId: number;
   label: string;
   href: string | null;
   accent: string;
   stats: QuizStats | undefined;
+  completed?: boolean;
 }) {
   const inner = (
     <>
@@ -118,6 +135,12 @@ function TopicCard({
           )}
         </div>
         {stats && <QuizMeta stats={stats} />}
+        {completed && !stats && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand">
+            <Check size={12} strokeWidth={3} aria-hidden="true" />
+            Concluído
+          </span>
+        )}
       </div>
     </>
   );
@@ -174,6 +197,49 @@ function QuizMeta({ stats }: { stats: QuizStats }) {
       )}
     </div>
   );
+}
+
+// ── Data: fully-completed lesson pages ───────────────────────────────────────
+// A lesson-bearing target page counts as "Concluído" only when every one of its
+// lessons is in lesson_completions (plain-content = 1 lesson, so a single
+// "Concluir leitura" finishes it; text/audio lessons need all sections).
+async function loadCompletedLessonPages(pageIds: number[]): Promise<Set<number>> {
+  const done = new Set<number>();
+  if (pageIds.length === 0 || USE_MOCK_DATA) return done;
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return done;
+
+    const admin = createAdminClient();
+    const [{ data: lessons }, { data: completions }] = await Promise.all([
+      admin.from("lessons").select("page_id").in("page_id", pageIds),
+      admin
+        .from("lesson_completions")
+        .select("page_id")
+        .eq("user_id", user.id)
+        .in("page_id", pageIds),
+    ]);
+
+    const totalByPage = new Map<number, number>();
+    for (const l of lessons ?? []) {
+      const pid = l.page_id as number;
+      totalByPage.set(pid, (totalByPage.get(pid) ?? 0) + 1);
+    }
+    const doneByPage = new Map<number, number>();
+    for (const c of completions ?? []) {
+      const pid = c.page_id as number;
+      doneByPage.set(pid, (doneByPage.get(pid) ?? 0) + 1);
+    }
+    for (const [pid, total] of totalByPage) {
+      if (total > 0 && (doneByPage.get(pid) ?? 0) >= total) done.add(pid);
+    }
+  } catch {
+    // Non-fatal — cards just render without the completed badge.
+  }
+
+  return done;
 }
 
 // ── Data: quiz stats per page ────────────────────────────────────────────────

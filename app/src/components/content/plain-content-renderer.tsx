@@ -1,6 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { getPageSiblings } from "@/lib/page-siblings";
 import { safe } from "@/lib/sanitize";
 import { TocPanel } from "./toc-panel";
+import { PageCompleteFooter } from "./page-complete-footer";
 import { EditableText } from "@/components/admin/editable-text";
 
 interface TocEntry {
@@ -92,19 +96,51 @@ export async function PlainContentRenderer({
   const html = processHtml(body);
   const showToc = toc.length >= 3;
 
+  // Completion footer — one read per page, so we mark the page's single lesson
+  // row done. Reuses lesson_completions (feeds dashboard count + study-plan
+  // progress, identical to text-lesson sections).
+  let done = false;
+  if (!USE_MOCK_DATA) {
+    try {
+      const userClient = await createClient();
+      const { data: { user } } = await userClient.auth.getUser();
+      if (user) {
+        const { data: completion } = await userClient
+          .from("lesson_completions")
+          .select("lesson_id")
+          .eq("user_id", user.id)
+          .eq("lesson_id", lesson.id)
+          .maybeSingle();
+        done = !!completion;
+      }
+    } catch {
+      // Non-critical — footer starts un-completed; the write still records.
+    }
+  }
+  const siblings = await getPageSiblings(pageId);
+
   return (
-    <div className={showToc ? "flex gap-10" : undefined}>
-      <EditableText
-        as="div"
-        variant="rich"
-        table="lessons"
-        id={lesson.id}
-        field="body_html"
-        className={wrapperClass}
-        html={safe(html)}
-        editHtml={body}
+    <>
+      <div className={showToc ? "flex gap-10" : undefined}>
+        <EditableText
+          as="div"
+          variant="rich"
+          table="lessons"
+          id={lesson.id}
+          field="body_html"
+          className={wrapperClass}
+          html={safe(html)}
+          editHtml={body}
+        />
+        {showToc && <TocPanel entries={toc} />}
+      </div>
+      <PageCompleteFooter
+        lessonId={lesson.id}
+        pageId={pageId}
+        initialDone={done}
+        specialtyHref={siblings.specialtyHref}
+        specialtyName={siblings.specialtyName}
       />
-      {showToc && <TocPanel entries={toc} />}
-    </div>
+    </>
   );
 }
