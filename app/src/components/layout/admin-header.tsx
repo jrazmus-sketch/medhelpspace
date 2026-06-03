@@ -70,7 +70,7 @@ export function AdminHeader() {
           </Badge>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {navItems.map(({ href, label, exact }) => {
             const active = exact ? pathname === href : pathname.startsWith(href);
             return (

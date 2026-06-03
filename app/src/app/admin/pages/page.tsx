@@ -13,7 +13,7 @@ export default async function PagesPage({
 
   const query = admin
     .from("pages")
-    .select("id, slug, title, page_type, status, view, notes, specialties(name)")
+    .select("id, slug, title, page_type:type, status, view, notes, specialties(name)")
     .order("id");
 
   if (status === "draft" || status === "published") {
