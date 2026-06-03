@@ -1,4 +1,4 @@
-const MSG = "TESTE GRÁTIS DE 7 DIAS SEM RISCOS · GARANTIA DE DEVOLUÇÃO DO DINHEIRO · ACESSO IMEDIATO · ";
+const MSG = "ACESSO IMEDIATO · GARANTIA INCONDICIONAL DE 7 DIAS · ";
 
 export function AnnouncementBar() {
   return (
