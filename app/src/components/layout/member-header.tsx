@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar } from "lucide-react";
+import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar, Hourglass, ChevronDown } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -24,42 +24,13 @@ import {
   getStudyTypeFromPathname,
   type StudyTypeKey,
 } from "@/lib/page-type";
+import { ESTUDAR_GROUPS, isTypeActive } from "@/lib/estudar-nav";
 
 type PersonalLink = { href: string; label: string; exact?: boolean; highlight?: boolean };
 
 const PERSONAL_LINKS: PersonalLink[] = [
   { href: "/app",       label: "Início",    exact: true     },
   { href: "/app/plano", label: "Meu Plano", highlight: true },
-];
-
-// `typeKey` drives the in-section accent color (matches TypeChip vocab).
-// `matchTypes` defaults to [typeKey]; Questões accepts both quiz + simulados
-// because simulados live under the same hub.
-type ContentLink = {
-  href: string;
-  label: string;
-  typeKey: StudyTypeKey;
-  matchTypes?: StudyTypeKey[];
-};
-
-// Content links grouped by study modality — practice, read, listen.
-// Groups are separated visually by a slightly wider gap; no inline labels.
-const CONTENT_GROUPS: ContentLink[][] = [
-  // practice (active recall)
-  [
-    { href: "/app/estudo-por-questoes", label: "Questões",   typeKey: "quiz", matchTypes: ["quiz", "simulados"] },
-    { href: "/app/flashcards",          label: "Flashcards", typeKey: "flashcards" },
-  ],
-  // read (narrative / visual)
-  [
-    { href: "/app/resumos",         label: "Resumos", typeKey: "resumos" },
-    { href: "/app/formula-medhelp", label: "Fórmula", typeKey: "formula" },
-  ],
-  // listen (audio)
-  [
-    { href: "/app/medvoice",   label: "MedVoice",   typeKey: "medvoice" },
-    { href: "/app/audiocards", label: "AudioCards", typeKey: "audiocards" },
-  ],
 ];
 
 function renderPersonalLink(link: PersonalLink, pathname: string) {
@@ -84,36 +55,88 @@ function renderPersonalLink(link: PersonalLink, pathname: string) {
   );
 }
 
-function renderContentLink(
-  link: ContentLink,
-  pathname: string,
-  currentType: StudyTypeKey | null,
-) {
-  const { href, label, typeKey } = link;
-  const matchTypes = link.matchTypes ?? [typeKey];
-  const isRoot = pathname === href;
-  const isInSection = !isRoot && currentType != null && matchTypes.includes(currentType);
+function EstudarMenu({
+  pathname,
+  currentType,
+}: {
+  pathname: string;
+  currentType: StudyTypeKey | null;
+}) {
+  const router = useRouter();
+  // "In a content section" — the trigger reflects that section's accent color.
+  const active = currentType != null;
+  const activeColor = currentType ? STUDY_TYPE_CONFIG[currentType].color : undefined;
+
   return (
-    <Link
-      key={href}
-      href={href}
-      aria-current={isRoot ? "page" : isInSection ? "true" : undefined}
-      className={cn(
-        "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] transition-colors",
-        isRoot
-          ? "bg-foreground text-background font-medium"
-          : isInSection
-            ? "font-semibold hover:bg-accent"
-            : "font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
-      )}
-      style={isInSection ? { color: STUDY_TYPE_CONFIG[typeKey].color } : undefined}
-    >
-      {label}
-    </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-current={active ? "true" : undefined}
+        className={cn(
+          "flex items-center gap-1 rounded-md px-3 py-1.5 text-[13.5px] font-medium outline-none transition-colors",
+          active
+            ? "bg-accent font-semibold"
+            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        )}
+        style={active ? { color: activeColor } : undefined}
+      >
+        Estudar
+        <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="start" sideOffset={6} className="w-72 p-1.5">
+        {ESTUDAR_GROUPS.map((group, gi) => (
+          <DropdownMenuGroup key={group.label}>
+            {gi > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="px-2 pb-1 pt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              {group.label}
+            </DropdownMenuLabel>
+            {group.keys.map((key) => {
+              const cfg = STUDY_TYPE_CONFIG[key];
+              const itemActive = isTypeActive(key, currentType);
+              return (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => router.push(cfg.hubHref!)}
+                  className="cursor-pointer items-start gap-2.5 px-2 py-2"
+                >
+                  <span
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+                    style={{
+                      background: `color-mix(in srgb, ${cfg.color} 14%, transparent)`,
+                      color: cfg.color,
+                    }}
+                  >
+                    <cfg.Icon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 text-[13.5px] font-semibold leading-tight text-foreground">
+                      {cfg.label}
+                      {itemActive && (
+                        <span
+                          aria-hidden="true"
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ background: cfg.color }}
+                        />
+                      )}
+                    </span>
+                    <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
+                      {cfg.desc}
+                    </span>
+                  </span>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuGroup>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
-export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) {
+export function MemberHeader({
+  bellSlot,
+  show60d = false,
+}: { bellSlot?: React.ReactNode; show60d?: boolean } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isAnyAdmin } = useAuth();
@@ -156,23 +179,31 @@ export function MemberHeader({ bellSlot }: { bellSlot?: React.ReactNode } = {}) 
 
         {/* Nav */}
         <nav className="hidden items-center md:flex">
-          {/* Personal cluster (Início, Meu Plano) */}
+          {/* Personal cluster (Início, Meu Plano, + MedHelp 60D once unlocked) */}
           <div className="flex items-center gap-0.5">
             {PERSONAL_LINKS.map((link) => renderPersonalLink(link, pathname))}
+            {show60d && (
+              <Link
+                href="/app/medhelp-60d"
+                aria-current={pathname.startsWith("/app/medhelp-60d") ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] font-semibold transition-colors",
+                  pathname.startsWith("/app/medhelp-60d")
+                    ? "bg-foreground text-background"
+                    : "bg-brand/10 text-brand hover:bg-brand/15",
+                )}
+              >
+                <Hourglass className="h-3.5 w-3.5" />
+                MedHelp 60D
+              </Link>
+            )}
           </div>
 
           {/* Divider between personal and content */}
           <span aria-hidden="true" className="mx-3 h-5 w-px bg-border" />
 
-          {/* Content cluster — modality groups separated by wider gap */}
-          {CONTENT_GROUPS.map((group, idx) => (
-            <div
-              key={idx}
-              className={cn("flex items-center gap-0.5", idx > 0 && "ml-3")}
-            >
-              {group.map((link) => renderContentLink(link, pathname, currentType))}
-            </div>
-          ))}
+          {/* Content cluster — six study types collapsed into one menu */}
+          <EstudarMenu pathname={pathname} currentType={currentType} />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

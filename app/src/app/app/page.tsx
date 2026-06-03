@@ -10,11 +10,8 @@ import {
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import { WaveformProgress } from "@/components/dashboard/waveform-progress";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
-import type { Cohort, CohortModuleAccess } from "@/types/supabase";
-
-// ── Config ────────────────────────────────────────────────────────────────────
-
-const MEDHELP_60D_MODULE_ID = 1;
+import { get60dAccess } from "@/lib/medhelp-60d";
+import type { Cohort } from "@/types/supabase";
 
 type StudyType = {
   id: string;
@@ -34,7 +31,7 @@ const STUDY_TYPES: StudyType[] = [
   { id: "formula",    label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",       Icon: FlaskConical,  color: "var(--c-formula)",    href: "/app/formula-medhelp",  locked: false },
   { id: "medvoice",   label: "MedVoice",            desc: "Áudios por tema — a Clínica Fala",          Icon: Mic,           color: "var(--c-medvoice)",   href: "/app/medvoice",         locked: false },
   { id: "audiocards", label: "AudioCards",          desc: "Revisão em áudio, cartão por cartão",       Icon: Headphones,    color: "var(--c-audiocards)", href: "/app/audiocards",       locked: false },
-  { id: "medhelp60",  label: "MedHelp 60D",         desc: "Revisão intensiva — últimos 60 dias",       Icon: Lock,          color: "#7c3aed",             href: null,                    locked: true  },
+  { id: "medhelp60",  label: "MedHelp 60D",         desc: "Revisão intensiva — últimos 60 dias",       Icon: Lock,          color: "#7c3aed",             href: "/app/medhelp-60d",      locked: true  },
 ];
 
 const DAY_NAMES   = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -350,10 +347,11 @@ export default async function MemberDashboardPage() {
   // View-as mode
   const viewas = parseViewAs((await cookies()).get(VIEWAS_COOKIE)?.value);
 
-  // Cohort + module access — varies by view-as mode
+  // Cohort context — varies by view-as mode. Drives the exam countdown, study
+  // days, and cohort badge. The 60D unlock itself comes from get60dAccess()
+  // below (single source of truth, shared with the nav + 60D page).
   let activeCohort: Cohort | null = null;
   let studyDays = 0;
-  let daysUntilUnlock: number | null = null;
 
   const nowMs = Date.now();
   const today = new Date(nowMs).toISOString();
@@ -379,22 +377,8 @@ export default async function MemberDashboardPage() {
     studyDays = membership
       ? Math.max(0, Math.floor((nowMs - new Date(membership.joined_at).getTime()) / 86_400_000))
       : 0;
-
-    if (activeCohort) {
-      const { data: moduleAccess } = await admin
-        .from("cohort_module_access")
-        .select("*")
-        .eq("cohort_id", activeCohort.id);
-      const access60d = (moduleAccess as CohortModuleAccess[] ?? []).find(
-        (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
-      );
-      daysUntilUnlock = access60d
-        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - nowMs) / 86_400_000))
-        : null;
-    }
   } else if (viewas.type === "unlocked") {
     // Show everything as if unlocked — no cohort context needed
-    daysUntilUnlock = 0;
   } else {
     // Simulate a specific cohort's access
     const { data: simCohort } = await admin
@@ -402,20 +386,10 @@ export default async function MemberDashboardPage() {
       .select("*")
       .eq("slug", viewas.slug)
       .single();
-    if (simCohort) {
-      activeCohort = simCohort as Cohort;
-      const { data: moduleAccess } = await admin
-        .from("cohort_module_access")
-        .select("*")
-        .eq("cohort_id", simCohort.id);
-      const access60d = (moduleAccess as CohortModuleAccess[] ?? []).find(
-        (a) => a.content_module_id === MEDHELP_60D_MODULE_ID,
-      );
-      daysUntilUnlock = access60d
-        ? Math.max(0, Math.ceil((new Date(access60d.unlock_date).getTime() - nowMs) / 86_400_000))
-        : null;
-    }
+    if (simCohort) activeCohort = simCohort as Cohort;
   }
+
+  const { daysUntilUnlock } = await get60dAccess();
 
   const examDays = activeCohort?.test_date
     ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - nowMs) / 86_400_000))

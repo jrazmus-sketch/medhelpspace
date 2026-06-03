@@ -16,6 +16,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   flashcards: "Flashcards",
   audiocards: "Audiocards",
   medvoice: "MedVoice",
+  "medhelp-60d": "MedHelp 60D",
   perfil: "Meu Perfil",
   configuracoes: "Configurações",
 };

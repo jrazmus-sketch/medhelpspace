@@ -2,21 +2,38 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Search, User } from "lucide-react";
+import { Home, Calendar, Hourglass, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getStudyTypeFromPathname } from "@/lib/page-type";
+import { MobileEstudarSheet } from "@/components/layout/mobile-estudar-sheet";
 
-// Bottom nav is a quick-action surface, not a category browser. Content types
-// live on the dashboard (Início) and in the desktop top nav. Notifications and
-// theme remain in the top header (visible on mobile too).
-const NAV_ITEMS = [
-  { href: "/app",        label: "Início", Icon: Home,     exact: true },
-  { href: "/app/plano",  label: "Plano",  Icon: Calendar              },
-  { href: "/app/buscar", label: "Buscar", Icon: Search                },
-  { href: "/app/perfil", label: "Perfil", Icon: User                  },
-];
+// Bottom nav is a quick-action surface. Início + Plano are core destinations;
+// "Estudar" opens a bottom sheet of the six content types (the mobile twin of
+// the desktop dropdown); MedHelp 60D takes the far-right slot once unlocked.
+// Search, notifications, theme, and profile/settings all live in the top
+// header (visible on mobile too), so none of them are duplicated here.
+function NavCell({
+  href, label, Icon, active,
+}: { href: string; label: string; Icon: LucideIcon; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex flex-1 flex-col items-center justify-center gap-[3px] transition-colors",
+        active ? "text-brand" : "text-muted-foreground",
+      )}
+    >
+      <Icon size={19} strokeWidth={active ? 2 : 1.6} />
+      <span style={{ fontSize: 9.5, fontWeight: active ? 600 : 400, letterSpacing: ".03em" }}>
+        {label}
+      </span>
+    </Link>
+  );
+}
 
-export function MobileNav() {
+export function MobileNav({ show60d = false }: { show60d?: boolean } = {}) {
   const pathname = usePathname();
+  const currentType = getStudyTypeFromPathname(pathname);
 
   return (
     <nav
@@ -29,24 +46,17 @@ export function MobileNav() {
       }}
     >
       <div className="flex h-14 items-stretch">
-        {NAV_ITEMS.map(({ href, label, Icon, exact }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-[3px] transition-colors",
-                active ? "text-brand" : "text-muted-foreground",
-              )}
-            >
-              <Icon size={19} strokeWidth={active ? 2 : 1.6} />
-              <span style={{ fontSize: 9.5, fontWeight: active ? 600 : 400, letterSpacing: ".03em" }}>
-                {label}
-              </span>
-            </Link>
-          );
-        })}
+        <NavCell href="/app" label="Início" Icon={Home} active={pathname === "/app"} />
+        <NavCell href="/app/plano" label="Plano" Icon={Calendar} active={pathname.startsWith("/app/plano")} />
+        <MobileEstudarSheet currentType={currentType} />
+        {show60d && (
+          <NavCell
+            href="/app/medhelp-60d"
+            label="60D"
+            Icon={Hourglass}
+            active={pathname.startsWith("/app/medhelp-60d")}
+          />
+        )}
       </div>
     </nav>
   );
