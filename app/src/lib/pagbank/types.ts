@@ -82,3 +82,30 @@ export interface PagBankWebhookPayload {
   amount: PagBankAmount;
   paid_at?: string;
 }
+
+// --- Installment fee simulation (/charges/fees/calculate) ---
+// Raw shape returned by PagBank: payment_methods.credit_card.<brand>.installment_plans[]
+export interface PagBankInstallmentPlan {
+  installments: number;
+  installment_value: number; // centavos per installment
+  interest_free: boolean;
+  amount: {
+    value: number; // centavos, interest-inclusive total
+    currency?: string;
+    fees?: { buyer?: { interest?: { total: number; installments: number } } };
+  };
+}
+
+export interface PagBankFeesResponse {
+  payment_methods: {
+    credit_card: Record<string, { installment_plans: PagBankInstallmentPlan[] }>;
+  };
+}
+
+// Normalized option consumed by the app (UI + charge route).
+export interface InstallmentOption {
+  installments: number;
+  installmentValue: number; // centavos per installment
+  totalValue: number;       // centavos, interest-inclusive total (what we charge)
+  interestFree: boolean;
+}

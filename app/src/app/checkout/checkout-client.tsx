@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Check, Lock, ShieldCheck } from "lucide-react";
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
+import type { InstallmentOption } from "@/lib/pagbank/types";
 
 type PaymentMethod = "pix" | "credit_card";
 
@@ -23,27 +24,67 @@ interface Props {
   cohortName: string;
   priceLabel: string;
   amountCents: number;
+  isLoggedIn: boolean;
   userEmail: string;
   userName: string;
   alreadyMember: boolean;
   pagbankPublicKey: string;
+  initialInstallments: InstallmentOption[];
 }
+
+type AccountMode = "signup" | "login";
 
 export function CheckoutClient({
   cohortSlug,
   cohortName,
   priceLabel,
   amountCents,
+  isLoggedIn,
   userEmail,
   userName,
   alreadyMember,
   pagbankPublicKey,
+  initialInstallments,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ChargeResult | null>(null);
   const [paid, setPaid] = useState(false);
+
+  // Guest-checkout state (only relevant when !isLoggedIn)
+  const [accountMode, setAccountMode] = useState<AccountMode>("signup");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPassword, setGuestPassword] = useState("");
+  const [guestName, setGuestName] = useState("");
+
+  function validateGuestFields(): string | null {
+    if (isLoggedIn) return null;
+    if (!guestEmail.trim()) return "Informe seu e-mail.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) return "E-mail inválido.";
+    if (!guestPassword) return "Informe uma senha.";
+    if (accountMode === "signup" && guestPassword.length < 8)
+      return "A senha deve ter no mínimo 8 caracteres.";
+    return null;
+  }
+
+  function buildAuthPayload() {
+    if (isLoggedIn) return {};
+    return accountMode === "signup"
+      ? {
+          signup: {
+            email: guestEmail.trim(),
+            password: guestPassword,
+            displayName: guestName.trim() || null,
+          },
+        }
+      : {
+          login: {
+            email: guestEmail.trim(),
+            password: guestPassword,
+          },
+        };
+  }
 
   if (alreadyMember) {
     return (
@@ -108,13 +149,22 @@ export function CheckoutClient({
   }
 
   async function submitPix() {
+    const guestErr = validateGuestFields();
+    if (guestErr) {
+      setError(guestErr);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/pagbank/charge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cohortSlug, paymentMethod: "pix" }),
+        body: JSON.stringify({
+          cohortSlug,
+          paymentMethod: "pix",
+          ...buildAuthPayload(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao processar pagamento");
@@ -131,7 +181,13 @@ export function CheckoutClient({
     cardHolder: string;
     installments: number;
     cpf: string;
+    cardBin: string;
   }) {
+    const guestErr = validateGuestFields();
+    if (guestErr) {
+      setError(guestErr);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -145,6 +201,8 @@ export function CheckoutClient({
           cardHolder: params.cardHolder,
           installments: params.installments,
           cpf: params.cpf,
+          cardBin: params.cardBin,
+          ...buildAuthPayload(),
         }),
       });
       const data = await res.json();
@@ -217,6 +275,78 @@ export function CheckoutClient({
       <div className="md:col-span-3">
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
 
+          {/* Guest checkout: account section (signup OR login) */}
+          {!isLoggedIn && (
+            <div className="mb-6 rounded-xl border border-border bg-muted/20 p-5">
+              <div className="mb-4 flex items-baseline justify-between">
+                <h2 className="text-base font-bold text-foreground">
+                  {accountMode === "signup" ? "Criar sua conta" : "Entrar"}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAccountMode((m) => (m === "signup" ? "login" : "signup"));
+                    setError(null);
+                  }}
+                  className="text-xs font-semibold text-brand hover:underline"
+                >
+                  {accountMode === "signup" ? "Já tem conta? Entrar" : "Criar conta"}
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {accountMode === "signup" && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-foreground/70">
+                      Nome completo
+                    </label>
+                    <input
+                      type="text"
+                      autoComplete="name"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="Dra. Maria Silva"
+                      className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-foreground/70">E-mail</label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    required
+                    className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-foreground/70">
+                    Senha
+                    {accountMode === "signup" && (
+                      <span className="ml-1.5 font-normal text-foreground/40">
+                        (mínimo 8 caracteres)
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="password"
+                    autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
+                    value={guestPassword}
+                    onChange={(e) => setGuestPassword(e.target.value)}
+                    required
+                    className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Method tabs */}
           <div className="mb-6 flex rounded-xl border border-border p-1">
             <button
@@ -272,9 +402,11 @@ export function CheckoutClient({
           {method === "credit_card" && (
             <CardForm
               amountCents={amountCents}
-              cardHolderDefault={userName}
+              cohortSlug={cohortSlug}
+              cardHolderDefault={isLoggedIn ? userName : guestName}
               pagbankPublicKey={pagbankPublicKey}
               loading={loading}
+              initialInstallments={initialInstallments}
               onSubmit={submitCard}
             />
           )}
@@ -285,12 +417,26 @@ export function CheckoutClient({
           </div>
         </div>
 
-        <p className="mt-4 text-center text-xs text-foreground/35">
-          Logado como <span className="font-medium">{userEmail}</span>.{" "}
-          <Link href="/auth/signout" className="underline underline-offset-2 hover:text-foreground/60">
-            Sair
-          </Link>
-        </p>
+        {isLoggedIn ? (
+          <p className="mt-4 text-center text-xs text-foreground/35">
+            Logado como <span className="font-medium">{userEmail}</span>.{" "}
+            <Link href="/auth/signout" className="underline underline-offset-2 hover:text-foreground/60">
+              Sair
+            </Link>
+          </p>
+        ) : (
+          <p className="mt-4 text-center text-xs text-foreground/35">
+            Ao continuar, você aceita os{" "}
+            <Link href="/termos" className="underline underline-offset-2 hover:text-foreground/60">
+              Termos de uso
+            </Link>{" "}
+            e a{" "}
+            <Link href="/privacidade" className="underline underline-offset-2 hover:text-foreground/60">
+              Política de privacidade
+            </Link>
+            .
+          </p>
+        )}
       </div>
     </div>
   );

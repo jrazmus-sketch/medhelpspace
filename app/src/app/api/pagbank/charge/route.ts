@@ -2,18 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createCharge, getWebhookBaseUrl } from "@/lib/pagbank/api";
+import { createCharge, getWebhookBaseUrl, getInstallmentOptions } from "@/lib/pagbank/api";
 import type { PagBankChargeRequest } from "@/lib/pagbank/types";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 import { COHORT_PRODUCTS } from "@/lib/pricing";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-  }
-
   let body: {
     cohortSlug: string;
     paymentMethod: "pix" | "credit_card";
@@ -21,6 +15,12 @@ export async function POST(request: NextRequest) {
     encryptedCard?: string;
     cardHolder?: string;
     cpf?: string; // CPF digits only, required for credit_card
+    cardBin?: string; // first 6 card digits, for brand-accurate installment rates
+    // Guest checkout: client sends one of these when the visitor isn't logged in.
+    // signup creates the account (auto-confirmed — payment proves the buyer is real);
+    // login signs in an existing account before charging.
+    signup?: { email: string; password: string; displayName?: string | null };
+    login?: { email: string; password: string };
   };
 
   try {
@@ -29,7 +29,77 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Requisição inválida" }, { status: 400 });
   }
 
-  const { cohortSlug, paymentMethod, installments = 1, encryptedCard, cardHolder, cpf } = body;
+  const {
+    cohortSlug,
+    paymentMethod,
+    installments = 1,
+    encryptedCard,
+    cardHolder,
+    cpf,
+    cardBin,
+    signup,
+    login,
+  } = body;
+
+  const supabase = await createClient();
+  let { data: { user } } = await supabase.auth.getUser();
+
+  // Guest path: caller is not logged in but supplied signup or login credentials.
+  // We create-and-sign-in (or just sign-in) here so the rest of the charge flow
+  // — order insert, RLS checks, membership lookups — runs as an authenticated user.
+  if (!user && signup) {
+    if (!signup.email || !signup.password) {
+      return NextResponse.json({ error: "E-mail e senha são obrigatórios." }, { status: 400 });
+    }
+    if (signup.password.length < 8) {
+      return NextResponse.json({ error: "A senha deve ter no mínimo 8 caracteres." }, { status: 400 });
+    }
+
+    const adminAuth = createAdminClient();
+    const { error: createErr } = await adminAuth.auth.admin.createUser({
+      email: signup.email,
+      password: signup.password,
+      email_confirm: true, // payment is the real verification
+      user_metadata: { display_name: signup.displayName ?? null },
+    });
+    if (createErr) {
+      const msg = createErr.message.toLowerCase();
+      if (msg.includes("already") || msg.includes("registered")) {
+        return NextResponse.json(
+          { error: "Este e-mail já tem conta. Use a opção 'Já tem conta? Entrar'." },
+          { status: 400 },
+        );
+      }
+      console.error("Guest signup failed:", createErr);
+      return NextResponse.json({ error: "Erro ao criar conta. Tente novamente." }, { status: 400 });
+    }
+
+    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+      email: signup.email,
+      password: signup.password,
+    });
+    if (signInErr || !signInData.user) {
+      console.error("Post-signup sign-in failed:", signInErr);
+      return NextResponse.json({ error: "Conta criada, mas falha ao iniciar sessão." }, { status: 500 });
+    }
+    user = signInData.user;
+  } else if (!user && login) {
+    if (!login.email || !login.password) {
+      return NextResponse.json({ error: "E-mail e senha são obrigatórios." }, { status: 400 });
+    }
+    const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+      email: login.email,
+      password: login.password,
+    });
+    if (signInErr || !signInData.user) {
+      return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 400 });
+    }
+    user = signInData.user;
+  }
+
+  if (!user) {
+    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  }
 
   const product = COHORT_PRODUCTS[cohortSlug];
   if (!product) {
@@ -82,13 +152,42 @@ export async function POST(request: NextRequest) {
     if (reusable) return NextResponse.json(reusable);
   }
 
+  // Determine the authoritative amount to charge. For credit-card installments > 1,
+  // the buyer pays PagBank's financing interest, so we re-simulate server-side and
+  // charge the interest-inclusive total. The client never dictates the amount —
+  // it's recomputed here from the trusted base price + chosen installment count.
+  const baseAmountCents = product.amountCents;
+  let chargeAmountCents = baseAmountCents;
+  let interestCents = 0;
+
+  if (paymentMethod === "credit_card" && installments > 1) {
+    let options;
+    try {
+      options = await getInstallmentOptions(baseAmountCents, { bin: cardBin });
+    } catch (err) {
+      console.error("Installment simulation failed:", err);
+      return NextResponse.json({ error: "Erro ao calcular o parcelamento" }, { status: 502 });
+    }
+    const plan = options.find((o) => o.installments === installments);
+    if (!plan) {
+      return NextResponse.json(
+        { error: "Parcelamento indisponível para este cartão" },
+        { status: 400 },
+      );
+    }
+    chargeAmountCents = plan.totalValue;
+    interestCents = plan.totalValue - baseAmountCents;
+  }
+
   // Create pending order in DB first so we have a reference_id for PagBank
   const { data: order, error: orderError } = await admin
     .from("orders")
     .insert({
       user_id: user.id,
       cohort_id: cohort.id,
-      amount_cents: product.amountCents,
+      amount_cents: chargeAmountCents,
+      base_amount_cents: baseAmountCents,
+      interest_cents: interestCents,
       currency: "BRL",
       payment_method: paymentMethod,
       status: "pending",
@@ -111,7 +210,7 @@ export async function POST(request: NextRequest) {
   const chargeReq: PagBankChargeRequest = {
     reference_id: order.id,
     description: product.name,
-    amount: { value: product.amountCents, currency: "BRL" },
+    amount: { value: chargeAmountCents, currency: "BRL" },
     notification_urls: [webhookUrl],
     ...(cpf ? { customer: { tax_id: cpf } } : {}),
     payment_method:

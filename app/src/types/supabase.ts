@@ -255,7 +255,9 @@ export interface Order {
   user_id: string;
   cohort_id: number;
   pagbank_charge_id: string | null;
-  amount_cents: number;
+  amount_cents: number;       // actually charged (interest-inclusive for installments)
+  base_amount_cents: number;  // cohort product price before interest
+  interest_cents: number;     // buyer-paid installment interest (0 for PIX / 1x)
   currency: string;
   payment_method: OrderPaymentMethod;
   status: OrderStatus;

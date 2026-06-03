@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Script from "next/script";
+import type { InstallmentOption } from "@/lib/pagbank/types";
 
 // PagBank JS SDK global (loaded via <Script>)
 declare global {
@@ -21,31 +22,43 @@ declare global {
 
 interface Props {
   amountCents: number;
+  cohortSlug: string;
   cardHolderDefault: string;
   pagbankPublicKey: string;
   loading: boolean;
+  initialInstallments: InstallmentOption[];
   onSubmit: (params: {
     encryptedCard: string;
     cardHolder: string;
     installments: number;
     cpf: string;
+    cardBin: string;
   }) => void;
 }
 
-// Brazilian credit card installment display
-function formatInstallmentLabel(amountCents: number, n: number): string {
-  const total = amountCents / 100;
-  if (n === 1) {
-    return `1x de R$ ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} (à vista)`;
+const brl = (cents: number) =>
+  (cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+
+// Brazilian credit card installment display, driven by PagBank's live ladder.
+// 1x is always à vista; 2x+ show the per-installment value with the interest-
+// inclusive total so the buyer sees exactly what they'll pay.
+function formatInstallmentLabel(opt: InstallmentOption): string {
+  if (opt.installments === 1) {
+    return `1x de R$ ${brl(opt.installmentValue)} (à vista)`;
   }
-  return `${n}x com juros do cartão`;
+  if (opt.interestFree) {
+    return `${opt.installments}x de R$ ${brl(opt.installmentValue)} sem juros`;
+  }
+  return `${opt.installments}x de R$ ${brl(opt.installmentValue)} — total R$ ${brl(opt.totalValue)}`;
 }
 
 export function CardForm({
   amountCents,
+  cohortSlug,
   cardHolderDefault,
   pagbankPublicKey,
   loading,
+  initialInstallments,
   onSubmit,
 }: Props) {
   const [sdkReady, setSdkReady] = useState(false);
@@ -56,12 +69,48 @@ export function CardForm({
   const [cpf, setCpf] = useState("");
   const [installments, setInstallments] = useState(1);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [options, setOptions] = useState<InstallmentOption[]>(
+    initialInstallments.length
+      ? initialInstallments
+      : [{ installments: 1, installmentValue: amountCents, totalValue: amountCents, interestFree: true }],
+  );
+  const [loadingInstallments, setLoadingInstallments] = useState(false);
+
+  const bin = cardNumber.replace(/\D/g, "").slice(0, 6);
 
   // PagBank SDK may already be present if page navigated back
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (window.PagSeguro) setSdkReady(true);
   }, []);
+
+  // Refine the installment ladder once the card BIN is known so rates and the
+  // available installment count are brand-accurate (e.g. some cards cap below 12x).
+  useEffect(() => {
+    if (bin.length < 6) return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoadingInstallments(true);
+    fetch(`/api/pagbank/installments?cohortSlug=${encodeURIComponent(cohortSlug)}&bin=${bin}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !Array.isArray(data.options) || data.options.length === 0) return;
+        setOptions(data.options as InstallmentOption[]);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoadingInstallments(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bin, cohortSlug]);
+
+  // Derive the effective selection: if the refined ladder no longer offers the
+  // chosen count (e.g. a card that caps below 12x), fall back to the first option.
+  const selectedInstallments = options.some((o) => o.installments === installments)
+    ? installments
+    : options[0]?.installments ?? 1;
 
   function formatCardNumber(raw: string): string {
     return raw
@@ -150,7 +199,13 @@ export function CardForm({
       return;
     }
 
-    onSubmit({ encryptedCard, cardHolder: cardHolder.trim().toUpperCase(), installments, cpf: rawCpf });
+    onSubmit({
+      encryptedCard,
+      cardHolder: cardHolder.trim().toUpperCase(),
+      installments: selectedInstallments,
+      cpf: rawCpf,
+      cardBin: rawNumber.slice(0, 6),
+    });
   }
 
   return (
@@ -239,18 +294,26 @@ export function CardForm({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-foreground/70">Parcelamento</label>
+          <label className="text-sm font-medium text-foreground/70">
+            Parcelamento
+            {loadingInstallments && (
+              <span className="ml-2 text-xs font-normal text-foreground/40">calculando…</span>
+            )}
+          </label>
           <select
-            value={installments}
+            value={selectedInstallments}
             onChange={(e) => setInstallments(Number(e.target.value))}
             className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           >
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-              <option key={n} value={n}>
-                {formatInstallmentLabel(amountCents, n)}
+            {options.map((opt) => (
+              <option key={opt.installments} value={opt.installments}>
+                {formatInstallmentLabel(opt)}
               </option>
             ))}
           </select>
+          <p className="text-xs text-foreground/40">
+            Parcelas com juros calculados pelo PagBank.
+          </p>
         </div>
 
         <button
