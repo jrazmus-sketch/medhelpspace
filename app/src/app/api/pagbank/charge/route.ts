@@ -140,18 +140,37 @@ export async function POST(request: NextRequest) {
   // doesn't block a fresh charge.
   if (paymentMethod === "pix") {
     const nowIso = new Date().toISOString();
+    const reqCouponCode = couponCode?.trim() ? couponCode.trim().toUpperCase() : null;
 
-    await admin
+    // Cancel stale (expired) pending Pix orders, releasing any coupon they hold so
+    // an abandoned QR doesn't permanently burn the buyer's one-use code or a cap slot.
+    const { data: expired } = await admin
       .from("orders")
-      .update({ status: "cancelled" })
+      .select("id")
       .eq("user_id", user.id)
       .eq("cohort_id", cohort.id)
       .eq("payment_method", "pix")
       .eq("status", "pending")
       .lt("pix_expires_at", nowIso);
+    const expiredIds = (expired ?? []).map((o: { id: string }) => o.id);
+    if (expiredIds.length) {
+      await admin.from("orders").update({ status: "cancelled" }).in("id", expiredIds);
+      await releaseRedemptionsForOrders(admin, expiredIds);
+    }
 
+    // Reuse a still-valid pending Pix order ONLY when its coupon state matches the
+    // current request. If the buyer added, changed, or removed a coupon since
+    // generating the QR, the existing QR is at the wrong amount — supersede it
+    // (cancel + release its redemption) and fall through to mint a fresh,
+    // correctly-priced order below.
     const reusable = await findReusablePixOrder(admin, user.id, cohort.id, nowIso);
-    if (reusable) return NextResponse.json(reusable);
+    if (reusable) {
+      if ((reusable.couponCode ?? null) === reqCouponCode) {
+        return NextResponse.json(reusable);
+      }
+      await admin.from("orders").update({ status: "cancelled" }).eq("id", reusable.orderId);
+      await releaseRedemptionsForOrders(admin, [reusable.orderId]);
+    }
   }
 
   // Coupon redemption — atomic via redeem_coupon RPC (locks the coupon row,
@@ -425,6 +444,36 @@ async function rollbackCouponRedemption(
   }
 }
 
+// Release coupon redemptions tied to a set of orders being cancelled (expired or
+// superseded pending Pix orders), so an abandoned order doesn't permanently consume
+// the buyer's one-use coupon or a global cap slot. Mirrors rollbackCouponRedemption
+// but keyed by order id, for the bulk Pix-cleanup paths. Best-effort.
+async function releaseRedemptionsForOrders(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  orderIds: string[],
+) {
+  if (!orderIds.length) return;
+  const { data: reds, error } = await admin
+    .from("coupon_redemptions")
+    .select("id, coupon_id")
+    .in("order_id", orderIds);
+  if (error || !reds?.length) return;
+
+  const { error: delErr } = await admin
+    .from("coupon_redemptions")
+    .delete()
+    .in("id", reds.map((r: { id: number }) => r.id));
+  if (delErr) {
+    console.error("releaseRedemptionsForOrders: delete failed", orderIds, delErr);
+    return;
+  }
+  for (const r of reds as Array<{ coupon_id: number }>) {
+    const { error: decErr } = await admin.rpc("decrement_coupon_counter", { p_coupon_id: r.coupon_id });
+    if (decErr) console.error("releaseRedemptionsForOrders: decrement failed", r.coupon_id, decErr);
+  }
+}
+
 async function findReusablePixOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,
@@ -434,7 +483,7 @@ async function findReusablePixOrder(
 ) {
   const { data } = await admin
     .from("orders")
-    .select("id, pagbank_charge_id, pix_qr_text, pix_qr_image_url, pix_expires_at")
+    .select("id, pagbank_charge_id, pix_qr_text, pix_qr_image_url, pix_expires_at, coupon:coupons(code)")
     .eq("user_id", userId)
     .eq("cohort_id", cohortId)
     .eq("payment_method", "pix")
@@ -446,6 +495,11 @@ async function findReusablePixOrder(
 
   if (!data?.pix_qr_text) return null;
 
+  // Normalized code of the coupon applied to this pending order (null if none) —
+  // the caller compares it against the requested code to decide reuse vs supersede.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const couponCode = ((data as any).coupon?.code as string | undefined)?.toUpperCase() ?? null;
+
   return {
     orderId: data.id,
     chargeId: data.pagbank_charge_id,
@@ -453,6 +507,7 @@ async function findReusablePixOrder(
     pixQrText: data.pix_qr_text,
     pixQrImageUrl: data.pix_qr_image_url,
     pixExpiresAt: data.pix_expires_at,
+    couponCode,
     ccBrand: null,
   };
 }

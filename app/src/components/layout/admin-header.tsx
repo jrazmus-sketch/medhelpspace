@@ -55,6 +55,7 @@ export function AdminHeader() {
     { href: "/admin/members", label: t("nav.members") },
     { href: "/admin/cohorts", label: t("nav.cohorts") },
     ...(isSuperAdmin() || isBillingAdmin() ? [{ href: "/admin/billing", label: t("nav.billing") }] : []),
+    ...(isSuperAdmin() || isBillingAdmin() ? [{ href: "/admin/coupons", label: t("nav.coupons") }] : []),
     ...(isSuperAdmin() ? [{ href: "/admin/audit-log", label: t("nav.auditLog") }] : []),
     { href: "/admin/settings", label: t("nav.settings") },
   ];
