@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
 
@@ -8,12 +9,12 @@ const COHORTS = [
   {
     label: "Revalida 2026.2",
     price: "R$ 3.990",
-    checkout: "https://medhelpspace.com.br/?add-to-cart=8041",
+    checkout: "/checkout?cohort=revalida-2026-2",
   },
   {
     label: "Revalida 2027.1",
     price: "R$ 4.990",
-    checkout: "https://medhelpspace.com.br/?add-to-cart=8043",
+    checkout: "/checkout?cohort=revalida-2027-1",
   },
 ];
 
@@ -154,7 +155,7 @@ export function PricingCTA() {
           </ul>
 
           {/* CTA */}
-          <a
+          <Link
             href={cohort.checkout}
             className="block w-full rounded-xl py-4 text-center text-base font-bold text-white transition-all hover:opacity-85 active:scale-95"
             style={{
@@ -163,7 +164,7 @@ export function PricingCTA() {
             }}
           >
             Comprar Agora →
-          </a>
+          </Link>
         </div>
 
         {/* Trust signals */}

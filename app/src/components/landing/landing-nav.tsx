@@ -4,30 +4,40 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/components/theme/theme-provider";
 
-export function LandingNav() {
+export function LandingNav({ embedded = false }: { embedded?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
+    if (embedded) return;
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [embedded]);
+
+  // `solid` = readable foreground palette + opaque background.
+  // Embedded nav sits in normal flow (e.g. below the announcement bar on
+  // /loja and /checkout) over the page background, so it's always solid.
+  const solid = embedded || scrolled;
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 transition-all duration-300"
+      className={
+        embedded
+          ? "relative z-40"
+          : "fixed inset-x-0 top-0 z-50 transition-all duration-300"
+      }
       style={{
-        background: scrolled ? "color-mix(in srgb, var(--lp-base) 90%, transparent)" : "transparent",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? "1px solid var(--lp-border)" : "none",
+        background: solid ? "color-mix(in srgb, var(--lp-base) 90%, transparent)" : "transparent",
+        backdropFilter: solid ? "blur(20px)" : "none",
+        borderBottom: solid ? "1px solid var(--lp-border)" : "none",
       }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
         <Link
           href="/"
           className="text-lg font-extrabold tracking-tight"
-          style={{ fontFamily: "var(--font-bricolage)", color: scrolled ? "var(--lp-fg)" : "#ffffff" }}
+          style={{ fontFamily: "var(--font-bricolage)", color: solid ? "var(--lp-fg)" : "#ffffff" }}
         >
           MedHelp<span style={{ color: "var(--brand)" }}>Space</span>
         </Link>
@@ -37,7 +47,7 @@ export function LandingNav() {
             aria-label="Alternar tema"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
-            style={{ color: scrolled ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
+            style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
           >
             {resolvedTheme === "dark" ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -53,7 +63,7 @@ export function LandingNav() {
           <Link
             href="/login"
             className="hidden text-sm font-medium transition-colors sm:block"
-            style={{ color: scrolled ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
+            style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
           >
             Entrar
           </Link>

@@ -35,7 +35,7 @@ export default function LojaPage() {
   return (
     <div className="min-h-screen bg-background">
       <AnnouncementBar />
-      <LandingNav />
+      <LandingNav embedded />
 
       <main className="px-5 py-16 md:px-8 md:py-24">
         <div className="mx-auto max-w-5xl">
@@ -98,15 +98,9 @@ export default function LojaPage() {
             </div>
 
             {/* 2027.1 */}
-            <div className="flex flex-col rounded-2xl border-2 border-brand bg-background shadow-lg relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="rounded-full bg-brand px-4 py-1 text-xs font-bold text-white shadow">
-                  Mais tempo de preparação
-                </span>
-              </div>
-
-              <div className="border-b border-brand/20 px-6 py-5">
-                <div className="mb-1 text-xs font-bold uppercase tracking-widest text-brand/60">
+            <div className="flex flex-col rounded-2xl border border-border bg-background shadow-sm transition-shadow hover:shadow-md">
+              <div className="border-b border-border px-6 py-5">
+                <div className="mb-1 text-xs font-bold uppercase tracking-widest text-foreground/40">
                   Turma
                 </div>
                 <h2
