@@ -53,5 +53,8 @@ scripts/_*.js
 # Scratch outputs — generated SQL, audit reports, etc. Not source.
 scratch/
 
+# Review inbox — drop docs/test files here for Claude Code to read. Not source.
+.review/
+
 # Generated Bunny CDN file listing — regenerable via scripts/bunny-list-medvoice.js
 scripts/bunny-medvoice-listing.json
