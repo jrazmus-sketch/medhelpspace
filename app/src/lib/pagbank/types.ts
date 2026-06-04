@@ -30,17 +30,56 @@ export interface PagBankPaymentMethod {
   card?: PagBankCard;
 }
 
+// Customer billing address — sent to PagBank for richer nota-fiscal data.
+export interface PagBankAddress {
+  street?: string;
+  number?: string;
+  complement?: string;
+  locality?: string;   // bairro / neighborhood
+  city?: string;
+  region_code?: string; // UF, e.g. "BA"
+  country?: string;     // "BRA"
+  postal_code?: string; // CEP, digits only
+}
+
+export interface PagBankCustomer {
+  name?: string;
+  email?: string;
+  tax_id?: string;            // CPF
+  phones?: Array<{ country: string; area: string; number: string; type?: string }>;
+  address?: PagBankAddress;
+}
+
 export interface PagBankChargeRequest {
   reference_id: string;        // our order UUID
   description: string;
   amount: PagBankAmount;
   payment_method: PagBankPaymentMethod;
   notification_urls: string[];
-  customer?: {
-    name?: string;
-    email?: string;
-    tax_id?: string;            // CPF (required for Pix in some situations)
-  };
+  customer?: PagBankCustomer;
+}
+
+// --- Orders API (Pix) ---
+// PagBank does NOT accept PIX via /charges; it returns
+//   400 invalid_parameter payment_method.pix.
+// PIX QR codes are minted through POST /orders with a qr_codes[] array. The
+// Orders API requires a customer with name + email + tax_id (CPF).
+export interface PagBankOrderRequest {
+  reference_id: string;        // our order UUID
+  customer: PagBankCustomer;   // required for Pix orders
+  items: Array<{ name: string; quantity: number; unit_amount: number }>;
+  qr_codes: Array<{ amount: PagBankAmount; expiration_date?: string }>;
+  notification_urls: string[];
+}
+
+export interface PagBankOrder {
+  id: string;                  // ORDE_xxx
+  reference_id: string;
+  created_at?: string;
+  customer?: PagBankCustomer;
+  qr_codes?: PagBankQrCode[];
+  charges?: PagBankCharge[];   // populated once the buyer pays the QR
+  links?: PagBankChargeLink[];
 }
 
 export interface PagBankChargeLink {

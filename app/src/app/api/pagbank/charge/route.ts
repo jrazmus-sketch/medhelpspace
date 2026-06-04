@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createCharge, getWebhookBaseUrl, getInstallmentOptions } from "@/lib/pagbank/api";
-import type { PagBankChargeRequest } from "@/lib/pagbank/types";
+import { createCharge, createPixOrder, getWebhookBaseUrl, getInstallmentOptions } from "@/lib/pagbank/api";
+import type { PagBankChargeRequest, PagBankCustomer, PagBankOrderRequest } from "@/lib/pagbank/types";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
+import { validateBilling, onlyDigits, type BillingDetails } from "@/lib/br";
 
 export async function POST(request: NextRequest) {
   let body: {
@@ -22,6 +23,8 @@ export async function POST(request: NextRequest) {
     signup?: { email: string; password: string; displayName?: string | null };
     login?: { email: string; password: string };
     couponCode?: string;
+    // Brazilian tax/billing identity (nota fiscal). Required for every sale.
+    billing?: Partial<BillingDetails>;
   };
 
   try {
@@ -36,12 +39,33 @@ export async function POST(request: NextRequest) {
     installments = 1,
     encryptedCard,
     cardHolder,
-    cpf,
     cardBin,
     signup,
     login,
     couponCode,
+    billing: rawBilling,
   } = body;
+
+  // Validate + normalize billing up front (before creating an account or
+  // redeeming a coupon) so a bad form never leaves side effects behind.
+  const billingErr = validateBilling(rawBilling);
+  if (billingErr) {
+    return NextResponse.json({ error: billingErr }, { status: 400 });
+  }
+  const billing: BillingDetails = {
+    firstName: rawBilling!.firstName!.trim(),
+    lastName: rawBilling!.lastName!.trim(),
+    cpf: onlyDigits(rawBilling!.cpf!),
+    cep: onlyDigits(rawBilling!.cep!),
+    address: rawBilling!.address!.trim(),
+    number: rawBilling!.number!.trim(),
+    neighborhood: rawBilling!.neighborhood?.trim() ?? "",
+    city: rawBilling!.city!.trim(),
+    state: rawBilling!.state!.trim().toUpperCase(),
+    phone: onlyDigits(rawBilling!.phone ?? ""),
+  };
+  // CPF on the card is the billing CPF — single source of truth.
+  const cpf = billing.cpf;
 
   const supabase = await createClient();
   let { data: { user } } = await supabase.auth.getUser();
@@ -260,6 +284,17 @@ export async function POST(request: NextRequest) {
       currency: "BRL",
       payment_method: paymentMethod,
       status: initialStatus,
+      // Immutable billing snapshot for nota fiscal / audit.
+      billing_first_name: billing.firstName,
+      billing_last_name: billing.lastName,
+      billing_cpf: billing.cpf,
+      billing_cep: billing.cep,
+      billing_address: billing.address,
+      billing_number: billing.number,
+      billing_neighborhood: billing.neighborhood || null,
+      billing_city: billing.city,
+      billing_state: billing.state,
+      billing_phone: billing.phone || null,
     })
     .select("id")
     .single();
@@ -274,6 +309,24 @@ export async function POST(request: NextRequest) {
     await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
     return NextResponse.json({ error: "Erro ao criar pedido" }, { status: 500 });
   }
+
+  // Cache billing on the profile so returning buyers get the form prefilled.
+  // Best-effort: a failure here must not block the purchase.
+  await admin
+    .from("profiles")
+    .update({
+      billing_first_name: billing.firstName,
+      billing_last_name: billing.lastName,
+      billing_cpf: billing.cpf,
+      billing_cep: billing.cep,
+      billing_address: billing.address,
+      billing_number: billing.number,
+      billing_neighborhood: billing.neighborhood || null,
+      billing_city: billing.city,
+      billing_state: billing.state,
+      billing_phone: billing.phone || null,
+    })
+    .eq("id", user.id);
 
   // Link the redemption row to the order so admins can trace it.
   if (couponRedemptionId) {
@@ -305,26 +358,77 @@ export async function POST(request: NextRequest) {
   }
 
   const webhookUrl = `${getWebhookBaseUrl()}/api/pagbank/webhook`;
+  const customer = buildCustomer(billing, user.email);
 
+  // --- Pix: PagBank Orders API (POST /orders with qr_codes[]). PIX is NOT a
+  // /charges payment method — that returns 400 invalid_parameter payment_method.pix.
+  if (paymentMethod === "pix") {
+    // 30-minute window to match the checkout copy ("expira em 30 minutos").
+    const expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const orderReq: PagBankOrderRequest = {
+      reference_id: order.id,
+      customer,
+      items: [{ name: product.name, quantity: 1, unit_amount: chargeAmountCents }],
+      qr_codes: [{ amount: { value: chargeAmountCents, currency: "BRL" }, expiration_date: expiration }],
+      notification_urls: [webhookUrl],
+    };
+
+    let pbOrder;
+    try {
+      pbOrder = await createPixOrder(orderReq);
+    } catch (err) {
+      console.error("PagBank createPixOrder failed:", err);
+      await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+      await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
+      return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 502 });
+    }
+
+    const qr = pbOrder.qr_codes?.[0];
+    const pngHref = qr?.links?.find((l) => l.rel === "QRCODE.PNG")?.href ?? null;
+    if (!qr?.text || !pngHref) {
+      console.error("PagBank PIX order missing QR text/PNG. order.id:", pbOrder.id, "qr:", qr);
+      await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
+      await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
+      return NextResponse.json({ error: "Erro ao processar pagamento (QR indisponível)" }, { status: 502 });
+    }
+
+    await admin.from("orders").update({
+      pagbank_order_id: pbOrder.id,
+      status: "pending",
+      pix_qr_text: qr.text,
+      pix_qr_image_url: pngHref,
+      pix_expires_at: qr.expiration_date ?? expiration,
+      pagbank_response: pbOrder as unknown as Record<string, unknown>,
+    }).eq("id", order.id);
+
+    return NextResponse.json({
+      orderId: order.id,
+      chargeId: pbOrder.id, // ORDE_ id — the status poll + webhook resolve it as an order
+      status: "WAITING",
+      pixQrText: qr.text,
+      pixQrImageUrl: pngHref,
+      pixExpiresAt: qr.expiration_date ?? expiration,
+      ccBrand: null,
+    });
+  }
+
+  // --- Credit card: PagBank Charges API (unchanged flow, now with customer data).
   const chargeReq: PagBankChargeRequest = {
     reference_id: order.id,
     description: product.name,
     amount: { value: chargeAmountCents, currency: "BRL" },
     notification_urls: [webhookUrl],
-    ...(cpf ? { customer: { tax_id: cpf } } : {}),
-    payment_method:
-      paymentMethod === "pix"
-        ? { type: "PIX", installments: 1 }
-        : {
-            type: "CREDIT_CARD",
-            installments,
-            capture: true,
-            card: {
-              encrypted: encryptedCard!,
-              holder: { name: cardHolder!, tax_id: cpf },
-              store: false,
-            },
-          },
+    customer,
+    payment_method: {
+      type: "CREDIT_CARD",
+      installments,
+      capture: true,
+      card: {
+        encrypted: encryptedCard!,
+        holder: { name: cardHolder!, tax_id: cpf },
+        store: false,
+      },
+    },
   };
 
   let charge;
@@ -340,18 +444,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Erro ao processar pagamento" }, { status: 502 });
   }
 
-  // Update order with PagBank charge data
-  const qrCode = charge.qr_codes?.[0];
   const ccBrand = charge.payment_method?.card?.brand ?? null;
-
-  // Guard: PIX charge must include the documented QRCODE.PNG link.
-  // A missing link means PagBank returned a malformed response — treat as API failure.
-  if (paymentMethod === "pix" && qrCode && !qrCode.links?.find((l) => l.rel === "QRCODE.PNG")?.href) {
-    console.error("PagBank PIX charge missing QRCODE.PNG link. charge.id:", charge.id, "qrCode:", qrCode);
-    await admin.from("orders").update({ status: "cancelled" }).eq("id", order.id);
-    await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
-    return NextResponse.json({ error: "Erro ao processar pagamento (QR indisponível)" }, { status: 502 });
-  }
 
   // Leave status as 'pending' when PAID; finalizePaidOrder atomically transitions
   // it under WHERE status != 'paid' so a concurrent webhook can't trigger the
@@ -361,11 +454,7 @@ export async function POST(request: NextRequest) {
   await admin.from("orders").update({
     pagbank_charge_id: charge.id,
     status: willFinalize ? "pending" : mapChargeStatus(charge.status),
-    pix_qr_text: qrCode?.text ?? null,
-    // QR code PNG: sandbox has different domain from the stored URL pattern
-    pix_qr_image_url: qrCode?.links?.find((l) => l.rel === "QRCODE.PNG")?.href ?? null,
-    pix_expires_at: qrCode?.expiration_date ?? null,
-    cc_installments: paymentMethod === "credit_card" ? installments : null,
+    cc_installments: installments,
     cc_brand: ccBrand,
     pagbank_response: charge as unknown as Record<string, unknown>,
   }).eq("id", order.id);
@@ -383,13 +472,47 @@ export async function POST(request: NextRequest) {
     orderId: order.id,
     chargeId: charge.id,
     status: charge.status,
-    // Pix
-    pixQrText: qrCode?.text ?? null,
-    pixQrImageUrl: qrCode?.links?.find((l) => l.rel === "QRCODE.PNG")?.href ?? null,
-    pixExpiresAt: qrCode?.expiration_date ?? null,
-    // CC
+    pixQrText: null,
+    pixQrImageUrl: null,
+    pixExpiresAt: null,
     ccBrand,
   });
+}
+
+// Build the PagBank customer object from billing details. Always carries
+// name + email + tax_id (required by the Orders/Pix API). The address block is
+// attached only when every PagBank-required subfield is present — a partial
+// address makes PagBank 400, and bairro (locality) is optional in our form.
+function buildCustomer(billing: BillingDetails, email: string | undefined): PagBankCustomer {
+  const customer: PagBankCustomer = {
+    name: `${billing.firstName} ${billing.lastName}`.trim(),
+    email: email || undefined,
+    tax_id: billing.cpf,
+  };
+  if (
+    billing.address && billing.number && billing.neighborhood &&
+    billing.city && billing.state && billing.cep
+  ) {
+    customer.address = {
+      street: billing.address,
+      number: billing.number,
+      locality: billing.neighborhood,
+      city: billing.city,
+      region_code: billing.state,
+      country: "BRA",
+      postal_code: billing.cep,
+    };
+  }
+  // Brazilian phones are 10 (landline) or 11 (mobile) digits incl. area code.
+  if (billing.phone.length === 10 || billing.phone.length === 11) {
+    customer.phones = [{
+      country: "55",
+      area: billing.phone.slice(0, 2),
+      number: billing.phone.slice(2),
+      type: billing.phone.length === 11 ? "MOBILE" : "HOME",
+    }];
+  }
+  return customer;
 }
 
 function mapChargeStatus(s: string): string {
@@ -475,7 +598,7 @@ async function findReusablePixOrder(
 ) {
   const { data } = await admin
     .from("orders")
-    .select("id, pagbank_charge_id, pix_qr_text, pix_qr_image_url, pix_expires_at, coupon:coupons(code)")
+    .select("id, pagbank_order_id, pix_qr_text, pix_qr_image_url, pix_expires_at, coupon:coupons(code)")
     .eq("user_id", userId)
     .eq("cohort_id", cohortId)
     .eq("payment_method", "pix")
@@ -494,7 +617,7 @@ async function findReusablePixOrder(
 
   return {
     orderId: data.id,
-    chargeId: data.pagbank_charge_id,
+    chargeId: data.pagbank_order_id, // ORDE_ id — resolved by the status poll
     status: "PENDING",
     pixQrText: data.pix_qr_text,
     pixQrImageUrl: data.pix_qr_image_url,

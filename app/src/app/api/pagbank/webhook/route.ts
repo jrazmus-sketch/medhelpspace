@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCharge } from "@/lib/pagbank/api";
+import { getCharge, getOrder } from "@/lib/pagbank/api";
+import type { PagBankCharge } from "@/lib/pagbank/types";
 import { verifyPagBankSignature } from "@/lib/pagbank/webhook-auth";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
@@ -48,31 +49,55 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const chargeId = payload?.id;
-  if (!chargeId || !chargeId.startsWith("CHAR_")) {
-    return NextResponse.json({ ok: true });
-  }
-
-  let charge;
-  try {
-    charge = await getCharge(chargeId);
-  } catch (err) {
-    console.error("Webhook: failed to fetch charge", chargeId, err);
-    // Generic 200 even on PagBank fetch failure — they will retry. A 502 here
-    // would reveal whether the chargeId exists on PagBank's side.
+  // PagBank notifies us with either a charge id (CHAR_… — credit card) or an
+  // order id (ORDE_… — Pix, via the Orders API). Resolve both to the PagBank
+  // charge and the matching local order.
+  const notifId = payload?.id;
+  if (!notifId) {
     return NextResponse.json({ ok: true });
   }
 
   const admin = createAdminClient();
+  let charge: PagBankCharge;
+  let order: { id: string; user_id: string; cohort_id: number; status: string } | null = null;
 
-  const { data: order } = await admin
-    .from("orders")
-    .select("id, user_id, cohort_id, status")
-    .eq("pagbank_charge_id", chargeId)
-    .maybeSingle();
+  try {
+    if (notifId.startsWith("CHAR_")) {
+      charge = await getCharge(notifId);
+      const { data } = await admin
+        .from("orders")
+        .select("id, user_id, cohort_id, status")
+        .eq("pagbank_charge_id", notifId)
+        .maybeSingle();
+      order = data;
+    } else if (notifId.startsWith("ORDE_")) {
+      const pbOrder = await getOrder(notifId);
+      // The order's charges[] is empty until paid; pick the settled one.
+      const paid = pbOrder.charges?.find((c) => c.status === "PAID");
+      const resolved = paid ?? pbOrder.charges?.[0];
+      if (!resolved) {
+        // QR not paid yet — nothing to do.
+        return NextResponse.json({ ok: true });
+      }
+      charge = resolved;
+      const { data } = await admin
+        .from("orders")
+        .select("id, user_id, cohort_id, status")
+        .eq("pagbank_order_id", notifId)
+        .maybeSingle();
+      order = data;
+    } else {
+      return NextResponse.json({ ok: true });
+    }
+  } catch (err) {
+    console.error("Webhook: failed to fetch charge/order", notifId, err);
+    // Generic 200 even on PagBank fetch failure — they will retry. A 502 here
+    // would reveal whether the id exists on PagBank's side.
+    return NextResponse.json({ ok: true });
+  }
 
   if (!order) {
-    // Uniform response — do not reveal whether the chargeId is one of ours.
+    // Uniform response — do not reveal whether the id is one of ours.
     return NextResponse.json({ ok: true });
   }
 
