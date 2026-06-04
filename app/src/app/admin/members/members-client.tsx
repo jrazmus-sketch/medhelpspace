@@ -10,6 +10,7 @@ import {
   changeUserRole,
   sendPasswordReset,
   revokeUserSessions,
+  deleteMember,
 } from "@/actions/admin";
 
 type MemberRow = {
@@ -27,6 +28,7 @@ interface Props {
   rows: MemberRow[];
   cohorts: Cohort[];
   currentUserRole: string;
+  currentUserId: string;
 }
 
 const ROLES = ["member", "support_admin", "content_admin", "billing_admin", "super_admin"] as const;
@@ -42,9 +44,10 @@ const roleColor: Record<string, string> = {
 type PendingModal =
   | { type: "role"; userId: string; email: string; newRole: string }
   | { type: "reset-password"; email: string }
-  | { type: "revoke-sessions"; userId: string; email: string };
+  | { type: "revoke-sessions"; userId: string; email: string }
+  | { type: "delete"; userId: string; email: string };
 
-export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
+export function MembersClient({ rows, cohorts, currentUserRole, currentUserId }: Props) {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -108,32 +111,71 @@ export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
         }
         setPendingModal(null);
       });
+    } else if (pendingModal.type === "delete") {
+      const { userId } = pendingModal;
+      startTransition(async () => {
+        try {
+          await deleteMember(userId);
+          // revalidatePath refreshes the server component with the row gone;
+          // close the modal and let the table re-render without it.
+          setPendingModal(null);
+        } catch (e) {
+          setActionResult({ userId, message: e instanceof Error ? e.message : t("errors.generic") });
+          setPendingModal(null);
+        }
+      });
     }
   }
 
-  function getModalContent(): { title: string; description: React.ReactNode } {
-    if (!pendingModal) return { title: "", description: "" };
+  function getModalContent(): {
+    title: string;
+    description: React.ReactNode;
+    destructive: boolean;
+    confirmLabel?: string;
+  } {
+    if (!pendingModal) return { title: "", description: "", destructive: false };
     if (pendingModal.type === "role") {
       return {
         title: t("members.changeRoleTitle"),
         description: (
           <p>{t("members.changeRoleDesc", { role: pendingModal.newRole, email: pendingModal.email })}</p>
         ),
+        destructive: false,
       };
     }
     if (pendingModal.type === "reset-password") {
       return {
         title: t("members.resetPasswordTitle"),
         description: <p>{t("members.resetPasswordDesc", { email: pendingModal.email })}</p>,
+        destructive: false,
+      };
+    }
+    if (pendingModal.type === "delete") {
+      return {
+        title: t("members.deleteTitle"),
+        description: (
+          <>
+            <p>{t("members.deleteDesc", { email: pendingModal.email })}</p>
+            <p className="text-xs">{t("members.deleteNote")}</p>
+          </>
+        ),
+        destructive: true,
+        confirmLabel: t("members.deleteConfirm"),
       };
     }
     return {
       title: t("members.revokeSessionsTitle"),
       description: <p>{t("members.revokeSessionsDesc", { email: pendingModal.email })}</p>,
+      destructive: false,
     };
   }
 
-  const { title: modalTitle, description: modalDescription } = getModalContent();
+  const {
+    title: modalTitle,
+    description: modalDescription,
+    destructive: modalDestructive,
+    confirmLabel: modalConfirmLabel,
+  } = getModalContent();
   const isSuperAdmin = currentUserRole === "super_admin";
 
   return (
@@ -247,6 +289,15 @@ export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
                       >
                         ⊘
                       </button>
+                      {isSuperAdmin && row.id !== currentUserId && (
+                        <button
+                          onClick={() => setPendingModal({ type: "delete", userId: row.id, email: row.email })}
+                          title={t("members.delete")}
+                          className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -260,6 +311,8 @@ export function MembersClient({ rows, cohorts, currentUserRole }: Props) {
         open={pendingModal !== null}
         title={modalTitle}
         description={modalDescription}
+        destructive={modalDestructive}
+        confirmLabel={modalConfirmLabel}
         isPending={isPending}
         onConfirm={handleConfirm}
         onCancel={() => setPendingModal(null)}

@@ -39,6 +39,7 @@ export default async function MembersPage() {
       rows={rows}
       cohorts={(cohorts ?? []).map((c) => ({ id: c.id as number, name: c.name as string }))}
       currentUserRole={(currentProfile?.role as string) ?? "member"}
+      currentUserId={user?.id ?? ""}
     />
   );
 }

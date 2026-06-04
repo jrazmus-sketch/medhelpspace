@@ -47,7 +47,6 @@ async function requireBillingRole() {
 type CohortCommerce = {
   price_cents: number | null;
   is_for_sale: boolean;
-  sale_label: string | null;
   display_order: number;
   sale_ends_at: string | null;
 };
@@ -61,7 +60,6 @@ function validateCommerce(c: CohortCommerce): string | null {
 
 function commerceFromFormData(f: FormData): CohortCommerce {
   const priceRaw = f.get("price");
-  const saleLabelRaw = f.get("sale_label");
   const saleEndsRaw = f.get("sale_ends_at");
   return {
     price_cents:
@@ -69,8 +67,6 @@ function commerceFromFormData(f: FormData): CohortCommerce {
         ? Math.round(Number(priceRaw) * 100)
         : null,
     is_for_sale: f.get("is_for_sale") === "on" || f.get("is_for_sale") === "true",
-    sale_label:
-      saleLabelRaw && String(saleLabelRaw).trim() ? String(saleLabelRaw).trim() : null,
     display_order: Number(f.get("display_order")) || 0,
     // Stored as end-of-day so "ends on 1 Jul" sells through all of 1 Jul.
     sale_ends_at:
@@ -283,9 +279,57 @@ export async function sendPasswordReset(email: string) {
 export async function revokeUserSessions(targetUserId: string) {
   const { user } = await requireAdmin();
   const admin = createAdminClient();
-  const { error } = await admin.auth.admin.signOut(targetUserId, "global");
+  // auth.admin.signOut() only accepts a JWT, not a user id, so it can't revoke
+  // another user's sessions. Delete the target's sessions directly via a
+  // SECURITY DEFINER helper (see schema-patch-delete-member.sql).
+  const { error } = await admin.rpc("admin_revoke_user_sessions", {
+    target_user: targetUserId,
+  });
   if (error) throw new Error(error.message);
   await writeAuditLog(user.id, "revoke_sessions", targetUserId, {});
+}
+
+// Hard-delete a member. Records are preserved, not destroyed: orders, audit-log
+// entries, and created coupons keep their rows with the user reference nulled
+// (ON DELETE SET NULL — see schema-patch-delete-member.sql). The auth.users row
+// is deleted, which CASCADE-clears the profile, memberships, progress, and all
+// active sessions. super_admin only; you cannot delete yourself.
+export async function deleteMember(targetUserId: string) {
+  const { user, role } = await requireAdmin();
+  if (role !== "super_admin") throw new Error("Only super admins can delete members");
+  if (targetUserId === user.id) throw new Error("You cannot delete your own account");
+
+  const admin = createAdminClient();
+
+  const { data: target } = await admin
+    .from("profiles")
+    .select("email, role, display_name")
+    .eq("id", targetUserId)
+    .single();
+  if (!target) throw new Error("Member not found");
+
+  // Snapshot the email onto any of the user's orders before the FK SET NULL
+  // fires, so anonymized order rows still show who they belonged to.
+  if (target.email) {
+    await admin
+      .from("orders")
+      .update({ customer_email: target.email })
+      .eq("user_id", targetUserId)
+      .is("customer_email", null);
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(targetUserId);
+  if (error) throw new Error(error.message);
+
+  // target_user_id is intentionally null — the row no longer exists; the deleted
+  // identity is captured in details instead.
+  await writeAuditLog(user.id, "member_deleted", null, {
+    deleted_user_id: targetUserId,
+    deleted_email: target.email,
+    deleted_role: target.role,
+    deleted_display_name: target.display_name,
+  });
+  revalidatePath("/admin/members");
 }
 
 export async function createMember(input: {
