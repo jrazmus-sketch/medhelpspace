@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireActiveMembership } from "@/lib/membership-gate";
+import { requireActiveMembership, isViewerAdmin } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { PlainContentRenderer } from "@/components/content/plain-content-renderer";
@@ -29,11 +29,16 @@ export default async function ContentPage({
 
   const { data: page } = await admin
     .from("pages")
-    .select("id, title, type, slug, view, track_id, specialty_id, content_module_id")
+    .select("id, title, type, slug, view, track_id, specialty_id, content_module_id, status")
     .eq("slug", slug)
     .single();
 
   if (!page) notFound();
+
+  // Drafts are admin-only. The query above uses the service-role client (RLS
+  // bypassed), so members would otherwise see a draft via its direct URL even
+  // though it never appears in any navigation. Treat it as not-found for them.
+  if (page.status !== "publish" && !(await isViewerAdmin())) notFound();
 
   await requireActiveMembership(page.content_module_id);
 
