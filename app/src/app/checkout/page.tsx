@@ -31,6 +31,7 @@ export default async function CheckoutPage({
   let userEmail = "";
   let userName = "";
   let alreadyMember = false;
+  let initialBilling: Record<string, string> | null = null;
 
   if (user) {
     // Block only if user has an ACTIVE membership in this specific cohort.
@@ -55,12 +56,30 @@ export default async function CheckoutPage({
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name")
+      .select(
+        "display_name, billing_first_name, billing_last_name, billing_cpf, billing_cep, billing_address, billing_number, billing_neighborhood, billing_city, billing_state, billing_phone",
+      )
       .eq("id", user.id)
       .single();
 
     userEmail = user.email ?? "";
     userName = profile?.display_name ?? "";
+
+    // Prefill the billing form for returning buyers (only when we have data).
+    if (profile?.billing_cpf) {
+      initialBilling = {
+        firstName: profile.billing_first_name ?? "",
+        lastName: profile.billing_last_name ?? "",
+        cpf: profile.billing_cpf ?? "",
+        cep: profile.billing_cep ?? "",
+        address: profile.billing_address ?? "",
+        number: profile.billing_number ?? "",
+        neighborhood: profile.billing_neighborhood ?? "",
+        city: profile.billing_city ?? "",
+        state: profile.billing_state ?? "",
+        phone: profile.billing_phone ?? "",
+      };
+    }
   }
 
   // Default installment ladder (mainstream brands) for first paint — refined
@@ -86,6 +105,7 @@ export default async function CheckoutPage({
             alreadyMember={alreadyMember}
             pagbankPublicKey={process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY ?? ""}
             initialInstallments={initialInstallments}
+            initialBilling={initialBilling}
           />
         </div>
       </main>

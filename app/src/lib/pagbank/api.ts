@@ -3,6 +3,8 @@ import type {
   PagBankChargeRequest,
   PagBankEnvironment,
   PagBankFeesResponse,
+  PagBankOrder,
+  PagBankOrderRequest,
   InstallmentOption,
 } from "./types";
 
@@ -61,6 +63,20 @@ export async function createCharge(req: PagBankChargeRequest): Promise<PagBankCh
 
 export async function getCharge(chargeId: string): Promise<PagBankCharge> {
   return pagbankFetch<PagBankCharge>(`/charges/${chargeId}`);
+}
+
+// Pix: create an order with a QR code. Returns the order (ORDE_…) carrying
+// qr_codes[0].text + the QRCODE.PNG link. Once paid, the order's charges[] holds
+// a PAID charge (surfaced via getOrder in the webhook / status poll).
+export async function createPixOrder(req: PagBankOrderRequest): Promise<PagBankOrder> {
+  return pagbankFetch<PagBankOrder>("/orders", {
+    method: "POST",
+    body: JSON.stringify(req),
+  });
+}
+
+export async function getOrder(orderId: string): Promise<PagBankOrder> {
+  return pagbankFetch<PagBankOrder>(`/orders/${orderId}`);
 }
 
 // Mainstream brands all share an identical interest ladder; when no BIN is known

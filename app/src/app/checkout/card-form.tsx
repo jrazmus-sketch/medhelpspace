@@ -32,7 +32,6 @@ interface Props {
     encryptedCard: string;
     cardHolder: string;
     installments: number;
-    cpf: string;
     cardBin: string;
   }) => void;
 }
@@ -68,7 +67,6 @@ export function CardForm({
   const [cardHolder, setCardHolder] = useState(cardHolderDefault);
   const [expiry, setExpiry] = useState(""); // MM/YY
   const [cvv, setCvv] = useState("");
-  const [cpf, setCpf] = useState("");
   const [installments, setInstallments] = useState(1);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [options, setOptions] = useState<InstallmentOption[]>(
@@ -134,29 +132,6 @@ export function CardForm({
     return digits;
   }
 
-  function formatCpf(raw: string): string {
-    const digits = raw.replace(/\D/g, "").slice(0, 11);
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-  }
-
-  function isValidCpf(raw: string): boolean {
-    const d = raw.replace(/\D/g, "");
-    if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
-    let sum = 0;
-    for (let i = 0; i < 9; i++) sum += parseInt(d[i]) * (10 - i);
-    let r = (sum * 10) % 11;
-    if (r === 10 || r === 11) r = 0;
-    if (r !== parseInt(d[9])) return false;
-    sum = 0;
-    for (let i = 0; i < 10; i++) sum += parseInt(d[i]) * (11 - i);
-    r = (sum * 10) % 11;
-    if (r === 10 || r === 11) r = 0;
-    return r === parseInt(d[10]);
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFieldError(null);
@@ -187,12 +162,6 @@ export function CardForm({
       return;
     }
 
-    const rawCpf = cpf.replace(/\D/g, "");
-    if (!isValidCpf(rawCpf)) {
-      setFieldError("CPF inválido.");
-      return;
-    }
-
     const { encryptedCard, hasErrors, errors } = window.PagSeguro.encryptCard({
       publicKey: pagbankPublicKey,
       holder: cardHolder.trim().toUpperCase(),
@@ -211,7 +180,6 @@ export function CardForm({
       encryptedCard,
       cardHolder: cardHolder.trim().toUpperCase(),
       installments: selectedInstallments,
-      cpf: rawCpf,
       cardBin: rawNumber.slice(0, 6),
     });
   }
@@ -252,20 +220,6 @@ export function CardForm({
             value={cardHolder}
             onChange={(e) => setCardHolder(e.target.value.toUpperCase())}
             placeholder="NOME COMO NO CARTÃO"
-            required
-            className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-foreground/70">CPF do titular</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={cpf}
-            onChange={(e) => setCpf(formatCpf(e.target.value))}
-            placeholder="000.000.000-00"
-            maxLength={14}
             required
             className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           />

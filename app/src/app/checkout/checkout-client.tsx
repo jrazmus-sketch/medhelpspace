@@ -5,7 +5,22 @@ import Link from "next/link";
 import { Check, Lock, ShieldCheck, Tag, X } from "lucide-react";
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
+import { BillingForm } from "./billing-form";
+import { validateBilling, formatCpf, formatCep, type BillingDetails } from "@/lib/br";
 import type { InstallmentOption } from "@/lib/pagbank/types";
+
+const EMPTY_BILLING: BillingDetails = {
+  firstName: "",
+  lastName: "",
+  cpf: "",
+  cep: "",
+  address: "",
+  number: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+  phone: "",
+};
 
 function fmtBRL(cents: number): string {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", {
@@ -37,9 +52,11 @@ interface Props {
   alreadyMember: boolean;
   pagbankPublicKey: string;
   initialInstallments: InstallmentOption[];
+  initialBilling: Partial<BillingDetails> | null;
 }
 
 type AccountMode = "signup" | "login";
+type Step = "account" | "billing" | "payment";
 
 export function CheckoutClient({
   cohortSlug,
@@ -52,6 +69,7 @@ export function CheckoutClient({
   alreadyMember,
   pagbankPublicKey,
   initialInstallments,
+  initialBilling,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [loading, setLoading] = useState(false);
@@ -65,10 +83,30 @@ export function CheckoutClient({
   const [guestPassword, setGuestPassword] = useState("");
   const [guestName, setGuestName] = useState("");
 
-  // Two-step flow: account → payment. Logged-in users skip step 1.
-  const [step, setStep] = useState<"account" | "payment">(
-    isLoggedIn ? "payment" : "account",
-  );
+  // Billing details (tax / nota fiscal). Prefilled from the buyer's profile when
+  // available so returning customers don't retype. Required for every sale.
+  const [billing, setBilling] = useState<BillingDetails>(() => {
+    const merged = { ...EMPTY_BILLING, ...(initialBilling ?? {}) };
+    // Profile stores CPF/CEP as digits only — mask them for display.
+    return { ...merged, cpf: formatCpf(merged.cpf), cep: formatCep(merged.cep) };
+  });
+  function patchBilling(patch: Partial<BillingDetails>) {
+    setBilling((b) => ({ ...b, ...patch }));
+  }
+
+  // Flow: account → billing → payment. Logged-in users skip the account step.
+  const [step, setStep] = useState<Step>(isLoggedIn ? "billing" : "account");
+
+  const steps: Array<{ key: Step; label: string }> = isLoggedIn
+    ? [
+        { key: "billing", label: "Cobrança" },
+        { key: "payment", label: "Pagamento" },
+      ]
+    : [
+        { key: "account", label: "Conta" },
+        { key: "billing", label: "Cobrança" },
+        { key: "payment", label: "Pagamento" },
+      ];
 
   // Coupon state: validated server-side via /api/coupons/validate; actually
   // redeemed only when the buyer submits the charge (atomic RPC in the route).
@@ -122,8 +160,18 @@ export function CheckoutClient({
     setCouponError(null);
   }
 
-  function advanceToPayment() {
+  function advanceFromAccount() {
     const err = validateGuestFields();
+    if (err) {
+      setError(err);
+      return;
+    }
+    setError(null);
+    setStep("billing");
+  }
+
+  function advanceFromBilling() {
+    const err = validateBilling(billing);
     if (err) {
       setError(err);
       return;
@@ -164,6 +212,7 @@ export function CheckoutClient({
     return {
       ...buildAuthPayload(),
       ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+      billing,
     };
   }
 
@@ -230,7 +279,7 @@ export function CheckoutClient({
   }
 
   async function submitPix() {
-    const guestErr = validateGuestFields();
+    const guestErr = validateGuestFields() ?? validateBilling(billing);
     if (guestErr) {
       setError(guestErr);
       return;
@@ -261,10 +310,9 @@ export function CheckoutClient({
     encryptedCard: string;
     cardHolder: string;
     installments: number;
-    cpf: string;
     cardBin: string;
   }) {
-    const guestErr = validateGuestFields();
+    const guestErr = validateGuestFields() ?? validateBilling(billing);
     if (guestErr) {
       setError(guestErr);
       return;
@@ -281,7 +329,6 @@ export function CheckoutClient({
           encryptedCard: params.encryptedCard,
           cardHolder: params.cardHolder,
           installments: params.installments,
-          cpf: params.cpf,
           cardBin: params.cardBin,
           ...buildBasePayload(),
         }),
@@ -438,24 +485,20 @@ export function CheckoutClient({
       <div className="md:col-span-3">
         <div className="rounded-2xl border border-border bg-background p-6 shadow-sm">
 
-          {/* Step indicator (guest only) */}
-          {!isLoggedIn && (
-            <div className="mb-6 flex items-center gap-3 text-xs font-semibold">
-              <div className={`flex items-center gap-2 ${step === "account" ? "text-brand" : "text-foreground/40"}`}>
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
-                  step === "account" ? "bg-brand text-white" : "bg-muted text-foreground/40"
-                }`}>1</span>
-                Conta
+          {/* Step indicator */}
+          <div className="mb-6 flex items-center gap-3 text-xs font-semibold">
+            {steps.map((s, i) => (
+              <div key={s.key} className="flex flex-1 items-center gap-3 last:flex-none">
+                <div className={`flex items-center gap-2 ${step === s.key ? "text-brand" : "text-foreground/40"}`}>
+                  <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
+                    step === s.key ? "bg-brand text-white" : "bg-muted text-foreground/40"
+                  }`}>{i + 1}</span>
+                  {s.label}
+                </div>
+                {i < steps.length - 1 && <div className="h-px flex-1 bg-border" />}
               </div>
-              <div className="h-px flex-1 bg-border" />
-              <div className={`flex items-center gap-2 ${step === "payment" ? "text-brand" : "text-foreground/40"}`}>
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] ${
-                  step === "payment" ? "bg-brand text-white" : "bg-muted text-foreground/40"
-                }`}>2</span>
-                Pagamento
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
 
           {error && (
             <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -535,7 +578,21 @@ export function CheckoutClient({
 
               <button
                 type="button"
-                onClick={advanceToPayment}
+                onClick={advanceFromAccount}
+                className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
+              >
+                Continuar →
+              </button>
+            </div>
+          )}
+
+          {/* Step: billing details (tax / nota fiscal) */}
+          {step === "billing" && (
+            <div className="flex flex-col gap-6">
+              <BillingForm value={billing} onChange={patchBilling} />
+              <button
+                type="button"
+                onClick={advanceFromBilling}
                 className="w-full rounded-xl bg-brand py-3.5 text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
               >
                 Continuar para pagamento →
@@ -543,25 +600,42 @@ export function CheckoutClient({
             </div>
           )}
 
-          {/* Step 2: payment */}
+          {/* Step: payment */}
           {step === "payment" && (
             <>
-              {/* Account summary + edit (guest only) */}
-              {!isLoggedIn && (
-                <div className="mb-5 flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm">
+              {/* Account + billing summary with edit links */}
+              <div className="mb-5 flex flex-col gap-2">
+                {!isLoggedIn && (
+                  <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Check className="h-4 w-4 shrink-0 text-brand" />
+                      <span className="truncate font-medium text-foreground/70">{guestEmail}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setStep("account"); setError(null); }}
+                      className="shrink-0 text-xs font-semibold text-brand hover:underline"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm">
                   <div className="flex min-w-0 items-center gap-2">
                     <Check className="h-4 w-4 shrink-0 text-brand" />
-                    <span className="truncate font-medium text-foreground/70">{guestEmail}</span>
+                    <span className="truncate font-medium text-foreground/70">
+                      {billing.firstName} {billing.lastName} · CPF {billing.cpf}
+                    </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => { setStep("account"); setError(null); }}
+                    onClick={() => { setStep("billing"); setError(null); }}
                     className="shrink-0 text-xs font-semibold text-brand hover:underline"
                   >
                     Editar
                   </button>
                 </div>
-              )}
+              </div>
 
               {isFullDiscount ? (
                 <div className="flex flex-col gap-5">
