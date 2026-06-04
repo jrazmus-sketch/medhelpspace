@@ -146,32 +146,12 @@ export default async function LojaPage() {
 }
 
 function CohortCard({ cohort }: { cohort: CohortProduct }) {
-  const featured = !!cohort.saleLabel;
-
+  // Cohorts are never promoted over each other — both cards render identically.
+  // The choice is dictated by the user's exam date, not by a sales pitch.
   return (
-    <div
-      className={[
-        "relative flex flex-col rounded-2xl bg-background transition-shadow",
-        featured
-          ? "border-2 border-brand shadow-lg"
-          : "border border-border shadow-sm hover:shadow-md",
-      ].join(" ")}
-    >
-      {featured && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className="rounded-full bg-brand px-4 py-1 text-xs font-bold text-white shadow">
-            {cohort.saleLabel}
-          </span>
-        </div>
-      )}
-
-      <div className={["px-6 py-5", featured ? "border-b border-brand/20" : "border-b border-border"].join(" ")}>
-        <div
-          className={[
-            "mb-1 text-xs font-bold uppercase tracking-widest",
-            featured ? "text-brand/60" : "text-foreground/40",
-          ].join(" ")}
-        >
+    <div className="relative flex flex-col rounded-2xl bg-background border-2 border-brand shadow-lg transition-shadow">
+      <div className="px-6 py-5 border-b border-brand/20">
+        <div className="mb-1 text-xs font-bold uppercase tracking-widest text-brand/60">
           Turma
         </div>
         <h2

@@ -53,7 +53,6 @@ export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
     name: "Revalida 2026.2",
     priceCents: 399000,
     priceLabel: "R$ 3.990",
-    saleLabel: null,
     displayOrder: 1,
   },
   {
@@ -62,7 +61,6 @@ export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
     name: "Revalida 2027.1",
     priceCents: 499000,
     priceLabel: "R$ 4.990",
-    saleLabel: "Mais tempo de preparação",
     displayOrder: 2,
   },
 ];

@@ -50,15 +50,14 @@ export interface Cohort {
 }
 
 // A saleable cohort, shaped for the storefront/checkout. Built from the cohorts
-// catalog columns (price_cents, is_for_sale, sale_label, display_order,
-// sale_ends_at) by lib/queries/cohort-products.ts.
+// catalog columns (price_cents, is_for_sale, display_order, sale_ends_at) by
+// lib/queries/cohort-products.ts.
 export interface CohortProduct {
   id: number;
   slug: string;
   name: string;
   priceCents: number;
   priceLabel: string;       // formatted for display, e.g. "R$ 3.990"
-  saleLabel: string | null; // optional store badge, e.g. "Mais tempo de preparação"
   displayOrder: number;
 }
 

@@ -140,8 +140,6 @@
     "forSaleOff": "Tirar de venda",
     "notForSale": "Fora de venda",
     "saleBadge": "À VENDA",
-    "saleLabelField": "Selo de destaque (opcional)",
-    "saleLabelPlaceholder": "Mais tempo de preparação",
     "displayOrder": "Ordem de exibição",
     "saleEndsAt": "Encerrar vendas em (opcional)",
     "priceRequiredForSale": "Defina um preço antes de colocar à venda.",

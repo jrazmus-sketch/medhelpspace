@@ -5,7 +5,7 @@ import { USE_MOCK_DATA, MOCK_COHORT_PRODUCTS } from "@/lib/mock-data";
 import type { CohortProduct } from "@/types/supabase";
 
 // The cohort product catalog. Reads the commerce columns added to the `cohorts`
-// table (price_cents, is_for_sale, sale_label, display_order, sale_ends_at) and
+// table (price_cents, is_for_sale, display_order, sale_ends_at) and
 // is the single source of truth for what's on sale and at what price — replacing
 // the old hardcoded COHORT_PRODUCTS in lib/pricing.ts and the cohort arrays in
 // the landing/loja pages.
@@ -23,14 +23,13 @@ export function formatBRL(cents: number): string {
   })}`;
 }
 
-const PRODUCT_COLUMNS = "id, slug, name, price_cents, sale_label, display_order";
+const PRODUCT_COLUMNS = "id, slug, name, price_cents, display_order";
 
 type CohortRow = {
   id: number;
   slug: string;
   name: string;
   price_cents: number | null;
-  sale_label: string | null;
   display_order: number | null;
 };
 
@@ -44,7 +43,6 @@ function toCohortProduct(row: CohortRow): CohortProduct {
     name: row.name,
     priceCents,
     priceLabel: formatBRL(priceCents),
-    saleLabel: row.sale_label,
     displayOrder: row.display_order ?? 0,
   };
 }

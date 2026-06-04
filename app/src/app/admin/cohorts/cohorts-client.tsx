@@ -25,7 +25,6 @@ type CohortRow = {
   active: boolean;
   price_cents: number | null;
   is_for_sale: boolean;
-  sale_label: string | null;
   display_order: number;
   sale_ends_at: string | null;
 };
@@ -86,7 +85,6 @@ interface EditState {
   membership_ends_at: string;
   price: string;          // reais, converted to cents on save
   is_for_sale: boolean;
-  sale_label: string;
   display_order: string;  // parsed to number on save
   sale_ends_at: string;   // YYYY-MM-DD or ""
 }
@@ -125,7 +123,6 @@ export function CohortsClient({ rows, modules, access }: Props) {
       membership_ends_at: row.membership_ends_at.slice(0, 10),
       price: row.price_cents != null ? String(row.price_cents / 100) : "",
       is_for_sale: row.is_for_sale,
-      sale_label: row.sale_label ?? "",
       display_order: String(row.display_order ?? 0),
       sale_ends_at: row.sale_ends_at ? row.sale_ends_at.slice(0, 10) : "",
     });
@@ -166,7 +163,6 @@ export function CohortsClient({ rows, modules, access }: Props) {
           membership_ends_at: d.membership_ends_at,
           price_cents: d.price.trim() ? Math.round(Number(d.price) * 100) : null,
           is_for_sale: d.is_for_sale,
-          sale_label: d.sale_label.trim() || null,
           display_order: Number(d.display_order) || 0,
           sale_ends_at: d.sale_ends_at ? `${d.sale_ends_at}T23:59:59` : null,
         });
@@ -312,10 +308,6 @@ export function CohortsClient({ rows, modules, access }: Props) {
                 <input name="display_order" type="number" min="0" step="1" defaultValue="0" className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
               </label>
               <label className="space-y-1">
-                <span className="text-xs text-muted-foreground">{t("cohorts.saleLabelField")}</span>
-                <input name="sale_label" type="text" placeholder={t("cohorts.saleLabelPlaceholder")} className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
-              </label>
-              <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">{t("cohorts.saleEndsAt")}</span>
                 <input name="sale_ends_at" type="date" className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
               </label>
@@ -438,16 +430,6 @@ export function CohortsClient({ rows, modules, access }: Props) {
                           step="1"
                           value={editState.display_order}
                           onChange={(e) => setEditState({ ...editState, display_order: e.target.value })}
-                          className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
-                        />
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-xs text-muted-foreground">{t("cohorts.saleLabelField")}</span>
-                        <input
-                          type="text"
-                          value={editState.sale_label}
-                          onChange={(e) => setEditState({ ...editState, sale_label: e.target.value })}
-                          placeholder={t("cohorts.saleLabelPlaceholder")}
                           className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
                         />
                       </label>

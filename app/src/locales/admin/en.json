@@ -140,8 +140,6 @@
     "forSaleOff": "Remove from sale",
     "notForSale": "Not for sale",
     "saleBadge": "ON SALE",
-    "saleLabelField": "Highlight badge (optional)",
-    "saleLabelPlaceholder": "Mais tempo de preparação",
     "displayOrder": "Display order",
     "saleEndsAt": "Sale ends on (optional)",
     "priceRequiredForSale": "Set a price before putting on sale.",
