@@ -187,9 +187,14 @@ export function CardForm({
   return (
     <>
       <Script
-        src="https://assets.pagseguro.com.br/checkout-sdk/js/direct-checkout.js"
-        strategy="lazyOnload"
+        src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js"
+        strategy="afterInteractive"
         onLoad={() => setSdkReady(true)}
+        onError={() =>
+          setFieldError(
+            "Não foi possível carregar o sistema de pagamento. Recarregue a página e tente novamente.",
+          )
+        }
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
