@@ -20,6 +20,7 @@ const SCALAR_ALLOWED = new Set<string>([
   "specialties.name",
   "study_types.label",
   "study_types.description",
+  "simulado_sections.label",
 ]);
 
 // Plain-text fields trim + reject empty; everything else is HTML and goes through safe().
@@ -30,6 +31,7 @@ const PLAIN_FIELDS = new Set<string>([
   "specialties.name",
   "study_types.label",
   "study_types.description",
+  "simulado_sections.label",
 ]);
 
 async function requireAdmin() {
