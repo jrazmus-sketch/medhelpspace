@@ -53,6 +53,14 @@ interface Props {
   pagbankPublicKey: string;
   initialInstallments: InstallmentOption[];
   initialBilling: Partial<BillingDetails> | null;
+  // A still-valid pending Pix order to resume (buyer generated a QR, then returned).
+  initialPixResult: {
+    orderId: string;
+    chargeId: string;
+    pixQrText: string;
+    pixQrImageUrl: string | null;
+    pixExpiresAt: string | null;
+  } | null;
 }
 
 type AccountMode = "signup" | "login";
@@ -70,11 +78,25 @@ export function CheckoutClient({
   pagbankPublicKey,
   initialInstallments,
   initialBilling,
+  initialPixResult,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ChargeResult | null>(null);
+  // Seed from a resumed pending Pix order so the QR shows immediately on load.
+  const [result, setResult] = useState<ChargeResult | null>(
+    initialPixResult
+      ? {
+          orderId: initialPixResult.orderId,
+          chargeId: initialPixResult.chargeId,
+          status: "WAITING",
+          pixQrText: initialPixResult.pixQrText,
+          pixQrImageUrl: initialPixResult.pixQrImageUrl,
+          pixExpiresAt: initialPixResult.pixExpiresAt,
+          ccBrand: null,
+        }
+      : null,
+  );
   const [paid, setPaid] = useState(false);
 
   // Guest-checkout state (only relevant when !isLoggedIn)

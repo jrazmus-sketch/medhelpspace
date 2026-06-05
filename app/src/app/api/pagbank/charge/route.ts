@@ -90,14 +90,17 @@ export async function POST(request: NextRequest) {
     });
     if (createErr) {
       const msg = createErr.message.toLowerCase();
-      if (msg.includes("already") || msg.includes("registered")) {
-        return NextResponse.json(
-          { error: "Este e-mail já tem conta. Use a opção 'Já tem conta? Entrar'." },
-          { status: 400 },
-        );
+      const alreadyExists = msg.includes("already") || msg.includes("registered");
+      if (!alreadyExists) {
+        console.error("Guest signup failed:", createErr);
+        return NextResponse.json({ error: "Erro ao criar conta. Tente novamente." }, { status: 400 });
       }
-      console.error("Guest signup failed:", createErr);
-      return NextResponse.json({ error: "Erro ao criar conta. Tente novamente." }, { status: 400 });
+      // Account already exists. This is the common "backed out of the Pix QR, came
+      // back to finish paying" case: the buyer's own account was created moments ago
+      // (we create it before payment because Pix confirms asynchronously). Fall
+      // through to sign-in — if the password matches, it's them and we continue the
+      // purchase instead of dead-ending; if it doesn't, the guard below sends them to
+      // the login option.
     }
 
     const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
@@ -105,6 +108,14 @@ export async function POST(request: NextRequest) {
       password: signup.password,
     });
     if (signInErr || !signInData.user) {
+      if (createErr) {
+        // Pre-existing account + wrong password → genuinely someone else's email
+        // (or a typo). Guide them to the login flow.
+        return NextResponse.json(
+          { error: "Este e-mail já tem conta. Use a opção 'Já tem conta? Entrar'." },
+          { status: 400 },
+        );
+      }
       console.error("Post-signup sign-in failed:", signInErr);
       return NextResponse.json({ error: "Conta criada, mas falha ao iniciar sessão." }, { status: 500 });
     }

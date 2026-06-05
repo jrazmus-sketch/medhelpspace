@@ -32,7 +32,9 @@ export async function isViewerAdmin(): Promise<boolean> {
 /**
  * Call this at the top of any content server component that should require
  * an active cohort membership. Admins bypass the gate entirely.
- * Redirects to /acesso-encerrado if membership is missing or expired.
+ * No active membership → /loja (the store) so the visitor can buy access.
+ * An unlocked-but-not-yet-available module → /app/acesso-encerrado (the user
+ * IS a member; the 60D module just hasn't opened yet).
  * Pass contentModuleId to also enforce module-level access (e.g. MedHelp 60D).
  */
 export async function requireActiveMembership(contentModuleId?: number | null) {
@@ -54,12 +56,13 @@ export async function requireActiveMembership(contentModuleId?: number | null) {
   if (ADMIN_ROLES.includes(profile?.role ?? "")) return;
 
   const { data: hasMembership } = await supabase.rpc("user_has_active_membership");
-  if (!hasMembership) redirect("/acesso-encerrado");
+  if (!hasMembership) redirect("/loja");
 
   if (contentModuleId) {
     const { data: hasModuleAccess } = await supabase.rpc("user_has_module_access", {
       mod_id: contentModuleId,
     });
-    if (!hasModuleAccess) redirect("/acesso-encerrado?motivo=modulo-bloqueado");
+    // The buyer is a member, so this lives inside the /app layout (no redirect loop).
+    if (!hasModuleAccess) redirect("/app/acesso-encerrado?motivo=modulo-bloqueado");
   }
 }

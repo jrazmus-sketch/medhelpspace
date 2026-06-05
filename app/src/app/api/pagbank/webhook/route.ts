@@ -30,16 +30,13 @@ export async function POST(request: NextRequest) {
     rawBody,
     request.headers.get("x-authenticity-token"),
   );
-  if (authResult === "invalid" || authResult === "missing-header") {
-    // Return generic 200 — don't leak whether the signature was wrong vs.
-    // some other reason. Log internally for monitoring.
-    console.warn("Webhook signature rejected:", authResult, "ip=", ip);
-    return NextResponse.json({ ok: true });
-  }
-  if (authResult === "unconfigured") {
-    console.warn(
-      "PAGBANK_WEBHOOK_TOKEN not set — accepting webhook without signature check. Set it before launch.",
-    );
+  // Signature is defense-in-depth — the charge/order re-fetch below is the real
+  // gate (a forged webhook can't fake a PAID status). We LOG the signature result
+  // but do NOT drop the event, so a token/format mismatch can never silently
+  // swallow a real payment confirmation. Tighten to reject once a real webhook is
+  // confirmed signing "valid" in production.
+  if (authResult !== "valid") {
+    console.warn("PagBank webhook signature not 'valid':", authResult, "ip=", ip);
   }
 
   let payload: { id?: string };

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -8,6 +9,11 @@ import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getInstallmentOptions } from "@/lib/pagbank/api";
 
 export const metadata = { title: "Finalizar compra — MedHelpSpace" };
+
+// Always render against live auth + order state. A buyer who generated a Pix QR is
+// silently logged in; serving a stale (logged-out) checkout would re-show the signup
+// step and collide with their own just-created account.
+export const dynamic = "force-dynamic";
 
 export default async function CheckoutPage({
   searchParams,
@@ -32,6 +38,13 @@ export default async function CheckoutPage({
   let userName = "";
   let alreadyMember = false;
   let initialBilling: Record<string, string> | null = null;
+  let initialPixResult: {
+    orderId: string;
+    chargeId: string;
+    pixQrText: string;
+    pixQrImageUrl: string | null;
+    pixExpiresAt: string | null;
+  } | null = null;
 
   if (user) {
     // Block only if user has an ACTIVE membership in this specific cohort.
@@ -80,6 +93,35 @@ export default async function CheckoutPage({
         phone: profile.billing_phone ?? "",
       };
     }
+
+    // Resume a still-valid pending Pix order. If the buyer generated a QR and then
+    // navigated away (or hit the browser back button), bring them straight back to
+    // the same QR instead of a fresh form — the charge route would reuse this order
+    // anyway, and this avoids the signup-step collision entirely.
+    if (!alreadyMember) {
+      const admin = createAdminClient();
+      const nowIso = new Date().toISOString();
+      const { data: pending } = await admin
+        .from("orders")
+        .select("id, pagbank_order_id, pix_qr_text, pix_qr_image_url, pix_expires_at")
+        .eq("user_id", user.id)
+        .eq("cohort_id", config.id)
+        .eq("payment_method", "pix")
+        .eq("status", "pending")
+        .gt("pix_expires_at", nowIso)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (pending?.pix_qr_text && pending?.pagbank_order_id) {
+        initialPixResult = {
+          orderId: pending.id as string,
+          chargeId: pending.pagbank_order_id as string,
+          pixQrText: pending.pix_qr_text as string,
+          pixQrImageUrl: (pending.pix_qr_image_url as string | null) ?? null,
+          pixExpiresAt: (pending.pix_expires_at as string | null) ?? null,
+        };
+      }
+    }
   }
 
   // Default installment ladder (mainstream brands) for first paint — refined
@@ -106,6 +148,7 @@ export default async function CheckoutPage({
             pagbankPublicKey={process.env.NEXT_PUBLIC_PAGBANK_PUBLIC_KEY ?? ""}
             initialInstallments={initialInstallments}
             initialBilling={initialBilling}
+            initialPixResult={initialPixResult}
           />
         </div>
       </main>

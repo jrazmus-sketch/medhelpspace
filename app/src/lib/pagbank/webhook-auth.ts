@@ -1,15 +1,19 @@
 import crypto from "node:crypto";
+import { getAccessToken, getPagBankEnv } from "./api";
 
-// PagBank Connect notification authenticity check.
+// PagBank webhook authenticity check.
 // Header: x-authenticity-token
-// Value: SHA-256 hex of `${notification_token}-${raw_body}`
-// The notification_token is configured in the PagBank dashboard
-// (Configurações → Notificações → Token) and copied here as
-// PAGBANK_WEBHOOK_TOKEN.
+// Value: SHA-256 hex of `${token}-${raw_body}`, where `token` is your PagBank
+// ACCOUNT token — the SAME credential used for API auth, NOT a separate
+// "notification token". The new PagBank API has no dedicated webhook-token field
+// to generate; the old "Configurações → Notificações → Token" menu is classic
+// PagSeguro only. So we reuse the active environment's access token, and let
+// PAGBANK_WEBHOOK_TOKEN override it only if your signing token ever differs.
+// Ref: https://developer.pagbank.com.br/reference/confirmar-autenticidade-da-notificacao
 //
-// NOTE: PagBank's docs across the classic PagSeguro / Connect APIs describe
-// slightly different separators ("-" vs concat). If verification fails in
-// production once the token is configured, try TOKEN_BODY_FORMAT = "concat".
+// NOTE: the raw body must be hashed unmodified (any reformatting changes the
+// hash). PagBank's docs vary on the separator ("-" vs concat); if a real signed
+// webhook logs "invalid" with a known-good token, flip FORMAT.
 
 export type WebhookAuthResult =
   | "valid"
@@ -23,7 +27,7 @@ export function verifyPagBankSignature(
   rawBody: string,
   headerValue: string | null,
 ): WebhookAuthResult {
-  const token = process.env.PAGBANK_WEBHOOK_TOKEN;
+  const token = process.env.PAGBANK_WEBHOOK_TOKEN || getAccessToken(getPagBankEnv());
   if (!token) return "unconfigured";
   if (!headerValue) return "missing-header";
 
