@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Flashcards / AudioCards — Prompt &amp; Temas (MedHelpSpace)</title>
+<style>
+  :root { --purple:#7a1d91; --ink:#1a1a1a; --muted:#555; --line:#e5e0ea; --bg:#faf8fc; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         color:var(--ink); background:var(--bg); }
+  .wrap { max-width:860px; margin:0 auto; padding:28px 20px 80px; }
+  h1 { color:var(--purple); font-size:1.6rem; margin:.2em 0 .1em; }
+  h2 { color:var(--purple); font-size:1.2rem; margin:2em 0 .4em; border-bottom:2px solid var(--line); padding-bottom:.3em; }
+  h3 { font-size:1rem; margin:1.4em 0 .25em; }
+  .lead { color:var(--muted); margin:.3em 0 1.4em; }
+  code { background:#efe9f4; padding:1px 6px; border-radius:4px; font-size:.9em; color:var(--purple); }
+  pre { background:#1e1430; color:#f3eefa; padding:18px; border-radius:10px; overflow:auto;
+        font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:pre-wrap; word-wrap:break-word; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin:.8em 0; }
+  .subjects p { margin:.3em 0; }
+  .slug { display:inline-block; background:#efe9f4; color:var(--purple); border-radius:4px; padding:1px 7px;
+          font:600 .85rem ui-monospace,monospace; }
+  .warn { background:#fff4e5; border:1px solid #f0c98a; border-radius:8px; padding:12px 14px; }
+  .copy { float:right; background:var(--purple); color:#fff; border:0; border-radius:6px; padding:6px 12px;
+          font-size:.8rem; cursor:pointer; }
+  .copy:active { transform:translateY(1px); }
+  footer { margin-top:3em; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:1em; }
+  ol { padding-left:1.3em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Flashcards &amp; AudioCards — Geração de Questões</h1>
+  <p class="lead">Referência para gerar as questões no ChatGPT. Cada <strong>tema</strong> vira um
+  arquivo que abastece <strong>as duas seções</strong> (Flashcards e AudioCards — mesmo conteúdo,
+  o AudioCards só acrescenta o player de áudio).</p>
+
+  <h2>Como usar</h2>
+  <p>Para cada lote, informe ao ChatGPT:</p>
+  <ol>
+    <li><strong>Especialidade</strong> — o slug em <span class="slug">verde</span> (ex.: <code>cardiologia</code>)</li>
+    <li><strong>Tema</strong> — o nome exato da lista abaixo (ex.: <code>Crise Hipertensiva</code>)</li>
+    <li><strong>Quantas questões</strong> gerar</li>
+    <li><strong>Um exemplo</strong> de pergunta/resposta no estilo desejado</li>
+    <li><strong>O conteúdo de origem</strong> (cole o material)</li>
+  </ol>
+
+  <h2>Prompt para o ChatGPT</h2>
+  <p class="lead">Cole tudo abaixo no ChatGPT e preencha os campos no fim.</p>
+  <button class="copy" onclick="copyPrompt()">Copiar prompt</button>
+  <pre id="prompt">You are helping build medical study flashcards in Brazilian Portuguese for Revalida exam prep. I will give you (1) a subject, (2) how many cards to create, (3) one example of a good question/answer for style, and (4) source content. You will generate new flashcards FROM the source content, and output them in a strict machine-parseable format that a script will import literally.
+
+WHAT TO GENERATE
+- Create flashcards in Brazilian Portuguese only.
+- Each card has exactly two parts: a question (Pergunta) and an answer (Resposta).
+- STRICT SOURCE FIDELITY: use ONLY facts stated in the source content I paste. Do NOT add outside medical knowledge, do NOT infer facts that aren't there, do NOT include guidance the source doesn't mention. If something isn't in the content, it doesn't become a card.
+- Aim for the number of cards I request. If the content genuinely doesn't support that many distinct, accurate cards, make FEWER rather than invent or pad - quality and accuracy over hitting the number.
+- Match the STYLE, length, and tone of the example I give you (typically short, direct answers). The example is a style reference only - do NOT include it as a card unless that fact is also in the source content.
+- Cover the testable facts in the content. Don't write near-duplicate cards.
+- Answers will also be read aloud as audio, so write them as clean, speakable sentences (no abbreviations like "PA" - write "pressao arterial"; spell out numbers naturally where it reads better).
+
+OUTPUT FORMAT (follow EXACTLY - a script parses this literally)
+Before the document, on its own line, write the filename:
+===FILE: &lt;specialty&gt;__&lt;subject-slug&gt;.md===
+where &lt;specialty&gt; is the slug I give you (e.g. cardiologia) and &lt;subject-slug&gt; is the subject lowercased, accents removed, spaces to hyphens (e.g. "Crise Hipertensiva" to crise-hipertensiva).
+
+Then the document, exactly like this:
+
+---
+specialty: &lt;specialty-slug&gt;
+subject: &lt;Subject Name exactly as I gave it, with normal capitalization and accents&gt;
+---
+
+## Card 1
+**Pergunta:**
+&lt;question text&gt;
+
+**Resposta:**
+&lt;answer text&gt;
+
+## Card 2
+**Pergunta:**
+&lt;question text&gt;
+
+**Resposta:**
+&lt;answer text&gt;
+
+(continue, numbered sequentially from 1)
+
+HARD RULES (do not break)
+1. Frontmatter at top, delimited by lines of only three dashes (---). Only two keys: specialty, subject.
+2. Every card starts with "## Card N" (sequential).
+3. Each card has exactly one "**Pergunta:**" line then one "**Resposta:**" line, each on its own line, text on the following line(s).
+4. Never use the strings "## Card", "**Pergunta:**", "**Resposta:**", "===FILE:", or a line of only "---" inside the actual question/answer text.
+5. No tables, no code fences, no bullet-list-only cards, no commentary before or after, no summary. Output ONLY the ===FILE:=== line and the document.
+6. One blank line between cards and between the Pergunta/Resposta blocks.
+
+Here is this batch:
+SPECIALTY SLUG: &lt;e.g. cardiologia&gt;
+SUBJECT: &lt;e.g. Crise Hipertensiva&gt;
+NUMBER OF CARDS: &lt;e.g. 20&gt;
+STYLE EXAMPLE (match this style, don't copy it as a card):
+Pergunta: &lt;paste example question&gt;
+Resposta: &lt;paste example answer&gt;
+
+SOURCE CONTENT:
+&lt;paste the content here&gt;</pre>
+
+  <h2>Especialidades e temas</h2>
+  <p class="lead">Use os nomes <strong>exatamente</strong> como abaixo — é a chave que liga as
+  questões à seção certa. Pode renomear / juntar / dividir / criar temas; só avise o Justin.</p>
+
+  <div class="subjects">
+    <h3><span class="slug">cardiologia</span></h3>
+    <p>Bradiarritmias · Cardiopatia Congênita · Crise Hipertensiva · Dislipidemia · Endocardite Infecciosa · Hipertensão Arterial · Insuficiência Cardíaca · Síndrome Coronariana Aguda · Síndrome Coronariana Crônica · Tamponamento Cardíaco · Taquiarritmias · Valvopatias</p>
+
+    <h3><span class="slug">cirurgia-geral</span></h3>
+    <p>Abdome Agudo Hemorrágico · Abdome Agudo Obstrutivo · Abdome Agudo Perfurativo · Abdome Agudo Vascular · Apendicite Aguda · Câncer Colorretal · Câncer de Esôfago · Câncer de Estômago · Colecistite Aguda · Diverticulite · Doenças Hepatobiliares · Doenças Orificiais · Hemorragia Digestiva · Hemorroidas · Hérnia · Pancreatite Aguda · Queimados · TEC · Trauma – Atendimento Inicial e Vias Aéreas · Trauma de Tórax · Trauma Osteomielite · Trauma Raquimedular</p>
+
+    <h3><span class="slug">dermatologia</span></h3>
+    <p>Doenças Bolhosas · Doenças Eczematosas · Doenças Eritematodescamativas · Farmacodermias · Micoses · Neoplasias em Dermatologia · Parasitoses Cutâneas</p>
+
+    <h3><span class="slug">emergencia</span> <small style="color:#777">(página: emergencia-flashcards)</small></h3>
+    <p>ACLS · Choque · Intoxicações Exógenas · Ventilação Mecânica</p>
+
+    <h3><span class="slug">endocrinologia</span></h3>
+    <p>Diabetes · Doença das Adrenais · Doenças das Paratireoides · Hipotiroidismo · Nódulo e Câncer de Tireoide · Osteoporose · Tireotoxicose</p>
+
+    <h3><span class="slug">gastroenterologia</span></h3>
+    <p>Cirrose · Doença Celíaca · Doença do Refluxo Gastroesofágico · Doenças Inflamatórias Intestinais · Hepatites Virais · Síndrome do Intestino Irritável · Úlcera Péptica</p>
+
+    <h3><span class="slug">hematologia</span></h3>
+    <p>Anemia de Doença Crônica · Anemia Falciforme · Anemia Ferropriva · Anemia Hemolítica · Anemia Megaloblástica · Distúrbio da Hemostasia Primária · Distúrbio da Hemostasia Secundária · Leucemias · Linfomas · Mieloma Múltiplo</p>
+
+    <h3><span class="slug">infectologia</span></h3>
+    <p>Dengue, Chikungunya, Zika, Febre Amarela · Doença de Chagas · Hanseníase · HIV · Infecção do Trato Urinário · Leishmaniose · Leptospirose · Meningites · Mononucleose · Parasitoses Intestinais · Úlceras Genitais – IST</p>
+
+    <h3><span class="slug">nefrologia</span></h3>
+    <p>Distúrbios Hidroeletrolíticos Nefrológicos · Doença Renal Crônica · Injúria Renal Aguda · Síndrome Nefrítica · Síndrome Nefrótica · Tumores Renais</p>
+
+    <h3><span class="slug">neurologia</span></h3>
+    <p>Ataque Isquêmico Transitório · AVC Hemorrágico · AVC Isquêmico · Cefaleias · Demências · Doença de Parkinson · Epilepsias · Hipertensão Intracraniana · Infecções Neurológicas · Meningites · Neoplasias do Sistema Nervoso · Patologias da Coluna Vertebral</p>
+
+    <h3><span class="slug">pediatria</span></h3>
+    <p>Aleitamento Materno · Alimentação Complementar · Bronquiolite · Convulsão Febril · Desnutrição e Obesidade · Diarreia e Desidratação · Distúrbio do Crescimento e Desenvolvimento · Estenose Hipertrófica do Piloro · Faringoamigdalite Estreptocócica · Febre Sem Sinais de Localização (FSSL) · Icterícia Neonatal · Imunizações · Invaginação Intestinal em Lactente · IVAS – Resfriado, Sinusite e Otite · Laringite Viral (Crupe) · Malformações Congênitas · Maus Tratos e Prevenção de Acidentes na Infância · Puericultura · Reanimação Neonatal · Sepse Neonatal · Síndrome do Desconforto Respiratório · Taquipneia Transitória do Recém-Nascido · TORCHS · Triagem Neonatal · Tumor Neuroendócrino Infantil</p>
+
+    <h3><span class="slug">pneumologia</span></h3>
+    <p>Abscesso Pulmonar · Asma · Atelectasia · Derrame Pleural · Doenças Pulmonares Intersticiais · DPOC · Nódulo e Câncer de Pulmão · Pneumonia Adquirida na Comunidade · Tromboembolismo Pulmonar · Tuberculose</p>
+
+    <h3><span class="slug">psiquiatria</span></h3>
+    <div class="warn">⚠️ A lista atual no banco está <strong>errada</strong> (contém os temas de Pneumologia por um erro de migração). Defina aqui a lista <strong>real</strong> de Psiquiatria — ela substitui o que está no banco na importação.</div>
+
+    <h3><span class="slug">reumatologia</span></h3>
+    <p>Artrite Infecciosa · Artrite Reumatóide · Esclerose Sistêmica · Febre Reumática · Fibromialgia · Gota · Lupus · Osteoartrite · Vasculite de Pequenos Vasos</p>
+
+    <h3><span class="slug">saude-coletiva</span></h3>
+    <p>Atenção ao Idoso · Atenção Básica · Bioestatística · Declaração de Óbito · Estudos Epidemiológicos · Ética Médica · Indicadores de Saúde · Medicina do Trabalho · Processo Saúde-Doença · SUS – Histórico, Princípios e Diretrizes · Vigilância Epidemiológica</p>
+  </div>
+
+  <h2>Especialidades sem deck hoje</h2>
+  <p>Não existem flashcards de <strong>Ginecologia</strong>, <strong>Obstetrícia</strong> nem
+  <strong>Clínica Médica</strong> ainda. Para criar, basta nomear a especialidade
+  (<code>ginecologia</code>, <code>obstetricia</code>, <code>clinica-medica</code>).</p>
+
+  <footer>
+    MedHelpSpace · Referência interna de geração de conteúdo · 163 temas / 15 especialidades.
+  </footer>
+</div>
+
+<script>
+  function copyPrompt() {
+    var el = document.getElementById('prompt');
+    var txt = el.innerText;
+    navigator.clipboard.writeText(txt).then(function(){
+      var b = document.querySelector('.copy');
+      b.textContent = 'Copiado!';
+      setTimeout(function(){ b.textContent = 'Copiar prompt'; }, 1800);
+    });
+  }
+</script>
+</body>
+</html>
