@@ -74,9 +74,8 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   const [slugOverride, setSlugOverride] = useState(page.slug);
   const [slugManual, setSlugManual] = useState(false);
   const slug = slugManual ? slugOverride : slugify(title);
-  const [status, setStatus] = useState<"publish" | "draft">(
-    page.status === "publish" ? "publish" : "draft",
-  );
+  const originalStatus: "publish" | "draft" = page.status === "publish" ? "publish" : "draft";
+  const [status, setStatus] = useState<"publish" | "draft">(originalStatus);
   const [specialtyId, setSpecialtyId] = useState<number | "">(page.specialty_id ?? "");
   const [trackId, setTrackId] = useState<number | "">(page.track_id ?? "");
   const [view, setView] = useState<string>(page.view ?? "");
@@ -87,6 +86,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // The active content section (quiz / flashcards / nav items) registers an
   // imperative save() here so the single page-level Save commits it alongside
@@ -164,6 +164,21 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
     } finally {
       setSaving(false);
     }
+  }
+
+  // A status change (publish ↔ draft) flips member visibility, so confirm it
+  // before saving. Any other edit saves straight away.
+  function handleSaveClick() {
+    if (status !== originalStatus) {
+      setConfirmOpen(true);
+      return;
+    }
+    handleSaveAll();
+  }
+
+  function confirmAndSave() {
+    setConfirmOpen(false);
+    handleSaveAll();
   }
 
   function addLesson() {
@@ -585,13 +600,58 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
           </span>
         )}
         <button
-          onClick={handleSaveAll}
+          onClick={handleSaveClick}
           disabled={saving}
           className="ml-auto rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-brand-fg transition-opacity disabled:opacity-60 hover:opacity-90"
         >
           {saving ? t("common.loading") : t("pageEdit.saveAll")}
         </button>
       </div>
+
+      {/* Publish / unpublish confirmation — status changes flip member visibility */}
+      {confirmOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setConfirmOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-xl border border-border bg-surface-1 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold">
+              {status === "publish"
+                ? t("pageEdit.confirmPublishTitle")
+                : t("pageEdit.confirmUnpublishTitle")}
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {status === "publish"
+                ? t("pageEdit.confirmPublishBody")
+                : t("pageEdit.confirmUnpublishBody")}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                onClick={confirmAndSave}
+                className={cn(
+                  "inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-white transition-opacity hover:opacity-90",
+                  status === "publish" ? "bg-green-600" : "bg-amber-600",
+                )}
+              >
+                {status === "publish"
+                  ? t("pageEdit.confirmPublishAction")
+                  : t("pageEdit.confirmUnpublishAction")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

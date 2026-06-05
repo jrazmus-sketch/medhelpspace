@@ -299,7 +299,13 @@
     "viewOnSite": "Ver no site",
     "advanced": "Avançado",
     "saveAll": "Salvar página",
-    "sectionSaveError": "Parte do conteúdo não pôde ser salva — verifique a seção destacada abaixo."
+    "sectionSaveError": "Parte do conteúdo não pôde ser salva — verifique a seção destacada abaixo.",
+    "confirmPublishTitle": "Publicar página?",
+    "confirmPublishBody": "Esta página ficará visível para todos os membros assim que você salvar.",
+    "confirmPublishAction": "Publicar e salvar",
+    "confirmUnpublishTitle": "Voltar para rascunho?",
+    "confirmUnpublishBody": "Esta página deixará de ser visível para os membros — somente a equipe administrativa poderá vê-la.",
+    "confirmUnpublishAction": "Salvar como rascunho"
   },
   "quizEditor": {
     "title": "Questões",

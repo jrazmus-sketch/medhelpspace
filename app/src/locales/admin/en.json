@@ -299,7 +299,13 @@
     "viewOnSite": "View on site",
     "advanced": "Advanced",
     "saveAll": "Save page",
-    "sectionSaveError": "Some content couldn't be saved — check the highlighted section below."
+    "sectionSaveError": "Some content couldn't be saved — check the highlighted section below.",
+    "confirmPublishTitle": "Publish page?",
+    "confirmPublishBody": "This page will become visible to all members as soon as you save.",
+    "confirmPublishAction": "Publish and save",
+    "confirmUnpublishTitle": "Move back to draft?",
+    "confirmUnpublishBody": "This page will no longer be visible to members — only the admin team will be able to see it.",
+    "confirmUnpublishAction": "Save as draft"
   },
   "quizEditor": {
     "title": "Questions",
