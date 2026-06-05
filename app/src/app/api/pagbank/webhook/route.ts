@@ -30,13 +30,24 @@ export async function POST(request: NextRequest) {
     rawBody,
     request.headers.get("x-authenticity-token"),
   );
-  // Signature is defense-in-depth — the charge/order re-fetch below is the real
-  // gate (a forged webhook can't fake a PAID status). We LOG the signature result
-  // but do NOT drop the event, so a token/format mismatch can never silently
-  // swallow a real payment confirmation. Tighten to reject once a real webhook is
-  // confirmed signing "valid" in production.
+  // The charge/order re-fetch below is the real gate (a forged payload can't fake
+  // a PAID status — that comes from PagBank's authenticated API, not the body), so
+  // an unsigned event can never grant access. The signature is defense-in-depth
+  // against the residual amplification surface (forcing outbound API calls).
+  //
+  // We can't yet drop "invalid" events: PagBank's new API has no dedicated
+  // webhook-signing token, we reuse the account token, and the signing format is
+  // still unverified — dropping now risks silently swallowing a REAL payment if our
+  // hash format is wrong. So we accept-and-log by default. Once a genuine webhook is
+  // confirmed signing "valid" in prod, set PAGBANK_WEBHOOK_ENFORCE=true to fail
+  // closed (one env flip, no code change).
   if (authResult !== "valid") {
     console.warn("PagBank webhook signature not 'valid':", authResult, "ip=", ip);
+    if (process.env.PAGBANK_WEBHOOK_ENFORCE === "true") {
+      // Generic 200 — never reveal whether the signature was wrong vs. some other
+      // reason (no enumeration signal to probers).
+      return NextResponse.json({ ok: true });
+    }
   }
 
   let payload: { id?: string };
