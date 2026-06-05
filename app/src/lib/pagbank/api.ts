@@ -14,7 +14,7 @@ function getBaseUrl(env: PagBankEnvironment): string {
     : "https://sandbox.api.pagseguro.com";
 }
 
-function getAccessToken(env: PagBankEnvironment): string {
+export function getAccessToken(env: PagBankEnvironment): string {
   if (env === "sandbox") {
     return process.env.PAGBANK_ACCESS_TOKEN_SANDBOX ?? "";
   }
