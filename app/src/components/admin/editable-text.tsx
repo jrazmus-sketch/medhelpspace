@@ -22,7 +22,8 @@ type ScalarTable =
   | "flashcard_items"
   | "nav_items"
   | "specialties"
-  | "study_types";
+  | "study_types"
+  | "simulado_sections";
 
 type Common = {
   className?: string;

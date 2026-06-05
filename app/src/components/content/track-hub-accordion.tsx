@@ -14,6 +14,10 @@ export type SuperGroupData = {
     href: string;
     progress?: number; // 0-100; rendered as a progress bar on the specialty card
   }[];
+  /** When set, the group header label becomes inline-editable in admin edit
+   *  mode (writes to `table`.`field` for row `id`). Omit for derived/static
+   *  labels (e.g. specialty groups, "Outros"). */
+  editable?: { table: "simulado_sections"; id: number; field: string };
 };
 
 export function TrackHubAccordion({
@@ -99,7 +103,18 @@ export function TrackHubAccordion({
                     color: "var(--foreground)",
                   }}
                 >
-                  {group.label}
+                  {group.editable ? (
+                    <EditableText
+                      variant="plain"
+                      table={group.editable.table}
+                      id={group.editable.id}
+                      field={group.editable.field}
+                      value={group.label}
+                      as="span"
+                    />
+                  ) : (
+                    group.label
+                  )}
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>

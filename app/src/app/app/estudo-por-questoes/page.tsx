@@ -4,6 +4,7 @@ import { VoltarButton } from "@/components/layout/voltar-button";
 import { getViewHubGroups } from "@/components/content/view-hub-renderer";
 import { EstudoTabs } from "@/components/content/estudo-tabs";
 import { getStudyTypeOverrides } from "@/lib/queries/study-types";
+import { getSimuladoSectionOverrides } from "@/lib/queries/simulado-sections";
 
 export default async function EstudoPorQuestoesPage({
   searchParams,
@@ -15,10 +16,11 @@ export default async function EstudoPorQuestoesPage({
   const defaultTab = tab === "simulados" ? "simulados" : "quiz";
 
   // Fetch both data sets in parallel so tab switches are instant.
-  const [quizGroups, simuladosGroups, overridesMap] = await Promise.all([
+  const [quizGroups, simuladosGroups, overridesMap, simSections] = await Promise.all([
     getViewHubGroups("quiz", null),
     getViewHubGroups("simulados", null),
     getStudyTypeOverrides(),
+    getSimuladoSectionOverrides(),
   ]);
 
   const quiz = overridesMap.get("quiz")!;
@@ -35,10 +37,18 @@ export default async function EstudoPorQuestoesPage({
   // simulado pages are kept (their total feeds the card count below) and will be
   // re-homed into these sections later.
   const simuladosCount = simuladosGroups.reduce((sum, g) => sum + g.items.length, 0);
-  const simuladosSections = [
-    { label: "Geral", iconSlug: "geral", items: [] },
-    { label: "Por Temas", iconSlug: "por-temas", items: [] },
-  ];
+  // Labels are DB-backed (simulado_sections) so admins can rename them inline.
+  // id > 0 means a real row exists → header becomes inline-editable; id === -1
+  // (table missing / fetch failed) falls back to a plain, non-editable label.
+  const simuladosSections = simSections.map((s) => ({
+    label: s.label,
+    iconSlug: s.iconSlug,
+    items: [],
+    editable:
+      s.id > 0
+        ? { table: "simulado_sections" as const, id: s.id, field: "label" }
+        : undefined,
+  }));
 
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
