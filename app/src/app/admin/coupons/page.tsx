@@ -45,6 +45,7 @@ export default async function CouponsPage() {
     discountType: c.discount_type as "percent" | "fixed_cents",
     discountValue: c.discount_value as number,
     maxRedemptions: c.max_redemptions as number | null,
+    maxUsesPerUser: c.max_uses_per_user as number | null,
     redemptionsUsed: c.redemptions_used as number,
     startsAt: c.starts_at as string | null,
     expiresAt: c.expires_at as string | null,

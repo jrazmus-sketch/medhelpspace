@@ -5,8 +5,8 @@ import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 
 // Read-only preview of a coupon. Anonymous-callable so guests can validate a
-// code before signing up. The per-user uniqueness check is deferred to redeem
-// time (UNIQUE(coupon_id, user_id) on coupon_redemptions); this endpoint only
+// code before signing up. The per-user limit check (coupons.max_uses_per_user)
+// is deferred to redeem time inside redeem_coupon(); this endpoint only
 // confirms the code itself is currently usable.
 
 const ERROR_MESSAGES: Record<string, string> = {

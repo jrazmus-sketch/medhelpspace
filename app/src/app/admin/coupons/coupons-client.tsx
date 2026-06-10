@@ -12,6 +12,7 @@ interface Coupon {
   discountType: "percent" | "fixed_cents";
   discountValue: number;
   maxRedemptions: number | null;
+  maxUsesPerUser: number | null;
   redemptionsUsed: number;
   startsAt: string | null;
   expiresAt: string | null;
@@ -59,6 +60,7 @@ type FormState = {
   discountType: "percent" | "fixed_cents";
   value: string; // percent integer OR reais (for fixed)
   maxRedemptions: string;
+  maxUsesPerUser: string; // empty = unlimited
   startsAt: string;
   expiresAt: string;
   cohortSlugs: string[];
@@ -73,6 +75,7 @@ function emptyForm(): FormState {
     discountType: "percent",
     value: "",
     maxRedemptions: "",
+    maxUsesPerUser: "1",
     startsAt: "",
     expiresAt: "",
     cohortSlugs: [],
@@ -88,6 +91,7 @@ function couponToForm(c: Coupon): FormState {
     discountType: c.discountType,
     value: c.discountType === "fixed_cents" ? (c.discountValue / 100).toFixed(2) : String(c.discountValue),
     maxRedemptions: c.maxRedemptions == null ? "" : String(c.maxRedemptions),
+    maxUsesPerUser: c.maxUsesPerUser == null ? "" : String(c.maxUsesPerUser),
     startsAt: toLocalInput(c.startsAt),
     expiresAt: toLocalInput(c.expiresAt),
     cohortSlugs: c.cohortSlugs ?? [],
@@ -152,6 +156,10 @@ export function CouponsClient({
       const n = Number(raw);
       if (!Number.isFinite(n) || n <= 0) return t("coupons.errFixedPositive");
     }
+    if (f.maxUsesPerUser.trim()) {
+      const n = Number(f.maxUsesPerUser);
+      if (!Number.isInteger(n) || n <= 0) return t("coupons.errValueRequired");
+    }
     if (f.startsAt && f.expiresAt && new Date(f.startsAt) >= new Date(f.expiresAt)) {
       return t("coupons.errWindow");
     }
@@ -174,6 +182,7 @@ export function CouponsClient({
       discountType: form.discountType,
       discountValue,
       maxRedemptions: form.maxRedemptions.trim() ? Number(form.maxRedemptions) : null,
+      maxUsesPerUser: form.maxUsesPerUser.trim() ? Number(form.maxUsesPerUser) : null,
       startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : null,
       expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
       cohortSlugs: form.cohortSlugs.length ? form.cohortSlugs : null,
@@ -400,18 +409,32 @@ export function CouponsClient({
                 </div>
               </div>
 
-              {/* Max uses */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("coupons.formMaxUses")}</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={form.maxRedemptions}
-                  onChange={(e) => setForm({ ...form, maxRedemptions: e.target.value })}
-                  placeholder={t("coupons.unlimited")}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-brand"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">{t("coupons.formMaxUsesHint")}</p>
+              {/* Max uses (global) + per-person limit */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("coupons.formMaxUses")}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.maxRedemptions}
+                    onChange={(e) => setForm({ ...form, maxRedemptions: e.target.value })}
+                    placeholder={t("coupons.unlimited")}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">{t("coupons.formMaxUsesHint")}</p>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("coupons.formMaxUsesPerUser")}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.maxUsesPerUser}
+                    onChange={(e) => setForm({ ...form, maxUsesPerUser: e.target.value })}
+                    placeholder={t("coupons.unlimited")}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">{t("coupons.formMaxUsesPerUserHint")}</p>
+                </div>
               </div>
 
               {/* Window */}
@@ -489,10 +512,6 @@ export function CouponsClient({
                 />
                 {t("coupons.formActive")}
               </label>
-
-              <p className="rounded-lg bg-surface-1 px-3 py-2 text-xs text-muted-foreground">
-                {t("coupons.perUserNote")}
-              </p>
 
               {formError && (
                 <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">

@@ -201,8 +201,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Coupon redemption — atomic via redeem_coupon RPC (locks the coupon row,
-  // inserts the redemption, bumps the counter). UNIQUE(coupon_id, user_id) on
-  // coupon_redemptions enforces one-use-per-person at the DB level. We redeem
+  // inserts the redemption, bumps the counter). The RPC enforces the per-user
+  // limit (coupons.max_uses_per_user; NULL = unlimited) at the DB level. We redeem
   // BEFORE order insert so that the redemption row is the gating constraint;
   // if anything below fails, the cleanup branch deletes the redemption + decrements
   // the counter so the user can try again with the same coupon.
@@ -229,8 +229,9 @@ export async function POST(request: NextRequest) {
         COUPON_EXPIRED: "Cupom expirado.",
         COUPON_FULLY_REDEEMED: "Cupom esgotado.",
         COUPON_NOT_VALID_FOR_COHORT: "Cupom não é válido para esta turma.",
+        COUPON_ALREADY_USED: "Você já usou este cupom.",
       };
-      // unique_violation on (coupon_id, user_id) → user already used this code
+      // Backstop for the pre-max_uses_per_user unique index on (coupon_id, user_id)
       if (rpcErr.code === "23505") {
         return NextResponse.json({ error: "Você já usou este cupom." }, { status: 400 });
       }

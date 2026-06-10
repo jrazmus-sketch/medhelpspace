@@ -34,6 +34,7 @@ type CouponInput = {
   discountType?: "percent" | "fixed_cents";
   discountValue?: number;
   maxRedemptions?: number | null;
+  maxUsesPerUser?: number | null;
   startsAt?: string | null;
   expiresAt?: string | null;
   cohortSlugs?: string[] | null;
@@ -77,6 +78,14 @@ function buildPatch(b: CouponInput, requireAll: boolean, validSlugs: Set<string>
     const m = b.maxRedemptions;
     if (m === null) patch.max_redemptions = null;
     else if (typeof m === "number" && Number.isInteger(m) && m > 0) patch.max_redemptions = m;
+    else return { errorKey: "errValueRequired" };
+  }
+
+  // NULL = unlimited uses per person (testing coupons); DB default is 1.
+  if (b.maxUsesPerUser !== undefined) {
+    const m = b.maxUsesPerUser;
+    if (m === null) patch.max_uses_per_user = null;
+    else if (typeof m === "number" && Number.isInteger(m) && m > 0) patch.max_uses_per_user = m;
     else return { errorKey: "errValueRequired" };
   }
 
