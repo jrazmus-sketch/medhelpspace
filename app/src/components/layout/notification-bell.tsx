@@ -1,15 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Bell, BellRing, Calendar, Trophy, Lock, Mail, AlertTriangle,
-  TrendingUp, Check, X as XIcon,
+  TrendingUp, X as XIcon,
 } from "lucide-react";
-import { markNotificationsRead, markAllNotificationsRead, dismissNotification } from "@/actions/notifications";
+import {
+  markNotificationsRead, markAllNotificationsRead, dismissNotification,
+} from "@/actions/notifications";
 import { markAnnouncementsRead } from "@/actions/admin";
-import type { UserNotification } from "./notification-bell-server";
+import type { UserNotification, BellFeed } from "@/lib/notifications-feed";
+
+// How often to poll for new notifications while the tab is visible.
+const POLL_INTERVAL_MS = 30_000;
 
 // IDs collide across the two source tables, so identity is (source, id).
 const keyOf = (n: UserNotification) => `${n.source}-${n.id}`;
@@ -76,7 +80,6 @@ export function NotificationBell({
   const [localUnread, setLocalUnread] = useState(unreadCount);
   const [localList, setLocalList] = useState(notifications);
   const popoverRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   // Sync with server props on prop change
   useEffect(() => {
@@ -84,6 +87,38 @@ export function NotificationBell({
     setLocalUnread(unreadCount);
     setLocalList(notifications);
   }, [unreadCount, notifications]);
+
+  // Pull the latest feed from our own API route (a plain fetch — NOT the browser
+  // Supabase client, which is banned in this app). Same merge as the SSR render.
+  const refreshFeed = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications", { cache: "no-store" });
+      if (!res.ok) return;
+      const feed: BellFeed = await res.json();
+      setLocalList(feed.notifications);
+      setLocalUnread(feed.unreadCount);
+    } catch {
+      /* transient — next tick retries */
+    }
+  }, []);
+
+  // Near-real-time updates: poll on an interval while visible, and refetch
+  // immediately when the tab regains focus. Pause while the popover is open so a
+  // poll never clobbers the optimistic mark-as-read / dismiss happening in it.
+  useEffect(() => {
+    if (open) return;
+    const tick = () => {
+      if (document.visibilityState === "visible") refreshFeed();
+    };
+    const interval = setInterval(tick, POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", tick);
+      window.removeEventListener("focus", tick);
+    };
+  }, [open, refreshFeed]);
 
   // Click outside to close
   useEffect(() => {
