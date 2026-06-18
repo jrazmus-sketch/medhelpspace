@@ -27,7 +27,7 @@ const EMPTY_FORM: AnnouncementInput = {
   priority: "normal",
   status: "published",
   pinned: false,
-  publish_at: new Date().toISOString().slice(0, 16),
+  publish_at: "",
   cohort_id: null,
 };
 
@@ -72,7 +72,7 @@ export function NotificationsClient({
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<AnnouncementInput & { publish_at_local: string }>({
     ...EMPTY_FORM,
-    publish_at_local: new Date().toISOString().slice(0, 16),
+    publish_at_local: "",
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [formSaved, setFormSaved] = useState(false);
@@ -94,7 +94,7 @@ export function NotificationsClient({
     setForm({
       ...EMPTY_FORM,
       category_id: defaultCategoryId,
-      publish_at_local: new Date().toISOString().slice(0, 16),
+      publish_at_local: "",
     });
     setFormError(null);
     setFormSaved(false);
@@ -108,7 +108,9 @@ export function NotificationsClient({
       body_html: a.body_html,
       category_id: a.category_id,
       priority: a.priority,
-      status: a.status,
+      // "scheduled" is derived from the date on save, so collapse it to the
+      // "published" choice in the dropdown.
+      status: a.status === "scheduled" ? "published" : a.status,
       pinned: a.pinned,
       publish_at: a.publish_at,
       publish_at_local: a.publish_at.slice(0, 16),
@@ -139,14 +141,29 @@ export function NotificationsClient({
     }
     setFormError(null);
 
+    // Blank publish date → publish immediately (now).
+    const publishAt = form.publish_at_local
+      ? new Date(form.publish_at_local).toISOString()
+      : new Date().toISOString();
+
+    // Derive status from the date: drafts stay hidden by choice; otherwise a
+    // future date schedules it, blank/past publishes it now. The member strip
+    // surfaces scheduled items automatically once publish_at arrives.
+    const status: AnnouncementInput["status"] =
+      form.status === "draft"
+        ? "draft"
+        : new Date(publishAt).getTime() > Date.now()
+          ? "scheduled"
+          : "published";
+
     const payload: AnnouncementInput = {
       title: form.title.trim(),
       body_html: form.body_html || null,
       category_id: form.category_id,
       priority: form.priority,
-      status: form.status,
+      status,
       pinned: form.pinned,
-      publish_at: new Date(form.publish_at_local).toISOString(),
+      publish_at: publishAt,
       cohort_id: form.cohort_id,
     };
 
@@ -400,12 +417,11 @@ export function NotificationsClient({
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("notifications.status")}</label>
                 <select
                   value={form.status}
-                  onChange={(e) => patch({ status: e.target.value as "draft" | "published" | "scheduled" })}
+                  onChange={(e) => patch({ status: e.target.value as "draft" | "published" })}
                   className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none"
                 >
                   <option value="published">{t("notifications.statusPublished")}</option>
                   <option value="draft">{t("notifications.statusDraft")}</option>
-                  <option value="scheduled">{t("notifications.statusScheduled")}</option>
                 </select>
               </div>
               <div className="flex flex-col justify-end">
@@ -424,13 +440,14 @@ export function NotificationsClient({
             {/* Row: publish_at, cohort targeting */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("notifications.publishAt")}</label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("notifications.publishAtOptional")}</label>
                 <input
                   type="datetime-local"
                   value={form.publish_at_local}
                   onChange={(e) => patch({ publish_at_local: e.target.value })}
                   className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none"
                 />
+                <p className="mt-1 text-[11px] text-muted-foreground">{t("notifications.publishAtHint")}</p>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">{t("notifications.targetCohort")}</label>

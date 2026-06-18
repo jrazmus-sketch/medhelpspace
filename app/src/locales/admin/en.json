@@ -462,6 +462,8 @@
     "statusScheduled": "Scheduled",
     "pinned": "Pinned",
     "publishAt": "Publish date",
+    "publishAtOptional": "Publish date (optional)",
+    "publishAtHint": "Leave blank to publish now. A future date schedules it automatically.",
     "targetCohort": "Target cohort",
     "targetAll": "All members",
     "confirmDelete": "Confirm delete"

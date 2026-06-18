@@ -8,7 +8,11 @@ import {
   TrendingUp, Check, X as XIcon,
 } from "lucide-react";
 import { markNotificationsRead, markAllNotificationsRead, dismissNotification } from "@/actions/notifications";
+import { markAnnouncementsRead } from "@/actions/admin";
 import type { UserNotification } from "./notification-bell-server";
+
+// IDs collide across the two source tables, so identity is (source, id).
+const keyOf = (n: UserNotification) => `${n.source}-${n.id}`;
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
   calendar: Calendar,
@@ -97,13 +101,18 @@ export function NotificationBell({
     const willOpen = !open;
     setOpen(willOpen);
     if (willOpen) {
-      // Optimistic mark-all-read when opening (server call fires async)
-      const unreadIds = localList.filter((n) => !n.read_at).map((n) => n.id);
-      if (unreadIds.length > 0) {
+      // Optimistic mark-all-read when opening (server calls fire async)
+      const unread = localList.filter((n) => !n.read_at);
+      if (unread.length > 0) {
         const nowIso = new Date().toISOString();
+        const unreadKeys = new Set(unread.map(keyOf));
         setLocalUnread(0);
-        setLocalList((prev) => prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read_at: nowIso } : n)));
-        markNotificationsRead(unreadIds).catch(() => { /* silent */ });
+        setLocalList((prev) => prev.map((n) => (unreadKeys.has(keyOf(n)) ? { ...n, read_at: nowIso } : n)));
+
+        const userIds = unread.filter((n) => n.source === "user").map((n) => n.id);
+        const announcementIds = unread.filter((n) => n.source === "announcement").map((n) => n.id);
+        if (userIds.length > 0) markNotificationsRead(userIds).catch(() => { /* silent */ });
+        if (announcementIds.length > 0) markAnnouncementsRead(announcementIds).catch(() => { /* silent */ });
       }
     }
   }
@@ -116,19 +125,28 @@ export function NotificationBell({
     setOpen(false);
   }
 
-  async function handleDismiss(id: number, e: React.MouseEvent) {
+  async function handleDismiss(n: UserNotification, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    setLocalList((prev) => prev.filter((n) => n.id !== id));
-    await dismissNotification(id);
+    // Announcements are shared/feed items — they can be read but not dismissed
+    // per-user (no dismiss button is rendered for them).
+    if (n.source !== "user") return;
+    setLocalList((prev) => prev.filter((x) => keyOf(x) !== keyOf(n)));
+    await dismissNotification(n.id);
   }
 
   async function handleMarkAllRead(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    const unreadAnnouncementIds = localList
+      .filter((n) => n.source === "announcement" && !n.read_at)
+      .map((n) => n.id);
     setLocalUnread(0);
     setLocalList((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
     await markAllNotificationsRead();
+    if (unreadAnnouncementIds.length > 0) {
+      await markAnnouncementsRead(unreadAnnouncementIds).catch(() => { /* silent */ });
+    }
   }
 
   const BellIcon = localUnread > 0 ? BellRing : Bell;
@@ -211,17 +229,19 @@ export function NotificationBell({
                           {relTime(n.created_at)}
                         </p>
                       </div>
-                      <button
-                        onClick={(e) => handleDismiss(n.id, e)}
-                        aria-label="Dispensar"
-                        className="shrink-0 rounded p-1 text-muted-foreground/50 transition-colors hover:bg-surface-2 hover:text-foreground"
-                      >
-                        <XIcon className="h-3 w-3" />
-                      </button>
+                      {n.source === "user" && (
+                        <button
+                          onClick={(e) => handleDismiss(n, e)}
+                          aria-label="Dispensar"
+                          className="shrink-0 rounded p-1 text-muted-foreground/50 transition-colors hover:bg-surface-2 hover:text-foreground"
+                        >
+                          <XIcon className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   );
                   return (
-                    <li key={n.id}>
+                    <li key={keyOf(n)}>
                       {n.href ? (
                         <Link
                           href={n.href}

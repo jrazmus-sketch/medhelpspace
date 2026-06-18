@@ -462,6 +462,8 @@
     "statusScheduled": "Agendado",
     "pinned": "Fixar no topo",
     "publishAt": "Data de publicação",
+    "publishAtOptional": "Data de publicação (opcional)",
+    "publishAtHint": "Deixe em branco para publicar agora. Uma data futura agenda automaticamente.",
     "targetCohort": "Turma alvo",
     "targetAll": "Todos os membros",
     "confirmDelete": "Confirmar exclusão"
