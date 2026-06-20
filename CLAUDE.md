@@ -50,10 +50,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
 ## Site information architecture
 
 - 12 medical specialties (Cardiologia, Pneumologia, Reumatologia, etc.)
-- Each specialty has 4 view types: main hub, `-formula`, `-resumos`, `-simulados`
+- Each specialty has these per-specialty view types: main hub, `-resumos`, `-simulados`,
+  `-formula`, and **Revalida Up** (`view='revalida-up'`, added 2026-06).
 - Per-topic H5P quiz pages for each specialty
 - MedVoice, Audiocards, and Flashcards are cross-cutting content tracks (each covers most specialties)
-- MedHelp 60D is a date-gated content module (37 pages: Revalida Up + Memorecards sub-sections)
+- MedHelp 60D is a date-gated content module. **As of 2026-06-20** it gates
+  **Fórmula MedHelp** (`view='formula'`), MemoreCards, and Simulados 100Q.
+  (Revalida Up was originally in 60D but was moved to day-1 main nav — see the swap
+  note under *Decisions locked in*.)
 
 ## Decisions locked in
 
@@ -68,10 +72,18 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
 - **Membership model**: cohort-based (not PMPro level-based). Two cohorts seeded:
   `revalida-2026-2` and `revalida-2027-1`. Both grant identical base content access;
   they differ only in time windows and when the MedHelp 60D module unlocks.
-- **MedHelp 60D module**: 37 pages (WP id 3018 + all `parent_id` descendants) are
-  gated behind this module. Unlock date = `cohorts.test_date - 60 days`, maintained
-  automatically by trigger. Identify descendants by recursive walk from id 3018
+- **MedHelp 60D module** (original migration): 37 pages (WP id 3018 + all `parent_id`
+  descendants) were gated behind this module. Unlock date = `cohorts.test_date - 60 days`,
+  maintained automatically by trigger. Identify descendants by recursive walk from id 3018
   (`slug = medhelp-60d`); tag every page in the subtree with `content_module_id = 1`.
+- **Revalida Up ⇄ Fórmula MedHelp swap (2026-06-20)**: gating is driven entirely by
+  `pages.content_module_id` (checked in the `[slug]` route via `requireActiveMembership`),
+  NOT by the WP subtree. The swap flipped it: **Revalida Up → `content_module_id = NULL`
+  (day-1, ungated)**, surfaced in the dashboard grid, the Estudar dropdown, and per-specialty
+  cards, at `/app/revalida-up`; **Fórmula MedHelp → `content_module_id = 1` (gated in 60D)**,
+  reached from the 60D accordion at `/app/formula-medhelp`. So the set of pages with
+  `content_module_id = 1` is now Fórmula + the legacy MemoreCards/Simulados subtree, NOT
+  Revalida Up. Patch: `schema-patch-swap-revalida-formula-gating.sql` (reversible).
 
 ## Schema (see schema.sql for full DDL)
 
