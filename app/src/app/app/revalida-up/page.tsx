@@ -74,7 +74,7 @@ export default async function RevalidaUpHubPage() {
           {cards.map((c) => (
             <Link
               key={c.slug}
-              href={`/app/medhelp-60d/revalida-up/${c.slug}`}
+              href={`/app/revalida-up/${c.slug}`}
               className="group flex items-center gap-4 rounded-[var(--radius)] p-4 transition-colors"
               style={{ background: "var(--surface-1)", boxShadow: "inset 0 0 0 1px var(--surface-2)" }}
             >
