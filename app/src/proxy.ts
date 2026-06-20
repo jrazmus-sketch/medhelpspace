@@ -5,8 +5,12 @@ import type { NextRequest } from "next/server";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Skip auth checks entirely when running in mock-data mode (no Supabase URL).
-const MOCK_MODE = !SUPABASE_URL;
+// Skip auth checks entirely when running in mock-data mode. Mirrors USE_MOCK_DATA
+// in lib/mock-data.ts: no Supabase URL, OR the explicit dev override flag
+// (CLAUDE.md documents NEXT_PUBLIC_USE_MOCK_DATA=true as a way to force mock mode
+// even when a Supabase URL is configured).
+const MOCK_MODE =
+  !SUPABASE_URL || process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
