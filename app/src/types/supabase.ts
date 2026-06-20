@@ -34,7 +34,8 @@ export type PageView =
   | "simulados"
   | "flashcards"
   | "audiocards"
-  | "memorecards";
+  | "memorecards"
+  | "revalida-up";
 
 export type NavLayout = "cards" | "list";
 

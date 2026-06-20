@@ -23,7 +23,7 @@ function typeRootFor(input: {
   if (track_id === MEDVOICE_TRACK_ID)   return { label: "MedVoice",   href: "/app/medvoice" };
   if (track_id === AUDIOCARDS_TRACK_ID) return { label: "AudioCards", href: "/app/audiocards" };
   if (track_id === FLASHCARDS_TRACK_ID) return { label: "Flashcards", href: "/app/flashcards" };
-  if (content_module_id === MEDHELP_60D_MODULE_ID) return { label: "MedHelp 60D" };
+  if (content_module_id === MEDHELP_60D_MODULE_ID) return { label: "MedHelp 60D", href: "/app/medhelp-60d" };
   return null;
 }
 
