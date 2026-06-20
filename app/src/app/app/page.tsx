@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import Link from "next/link";
 import {
-  ClipboardList, Layers, ScrollText, FlaskConical, Mic, Headphones,
+  ClipboardList, Layers, ScrollText, Target, Mic, Headphones,
   Lock, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
@@ -28,7 +28,7 @@ const STUDY_TYPES: StudyType[] = [
   { id: "questoes",   label: "Estudo por Questões", desc: "Questões estilo INEP comentadas",           Icon: ClipboardList, color: "var(--c-questoes)",   href: "/app/estudo-por-questoes", locked: false },
   { id: "flashcards", label: "Flashcards",          desc: "Revisão ativa com cartões",                 Icon: Layers,        color: "var(--c-flashcards)", href: "/app/flashcards",       locked: false },
   { id: "resumos",    label: "Resumos Narrativos",  desc: "Narrativas clínicas por especialidade",     Icon: ScrollText,    color: "var(--c-resumos)",    href: "/app/resumos",          locked: false },
-  { id: "formula",    label: "Fórmula MedHelp",     desc: "Condutas clínicas em formato visual",       Icon: FlaskConical,  color: "var(--c-formula)",    href: "/app/formula-medhelp",  locked: false },
+  { id: "revalida-up", label: "Revalida Up",        desc: "Padrões de prova — decisão estratégica",    Icon: Target,        color: "var(--c-revalida)",   href: "/app/revalida-up",      locked: false },
   { id: "medvoice",   label: "MedVoice",            desc: "Áudios por tema — a Clínica Fala",          Icon: Mic,           color: "var(--c-medvoice)",   href: "/app/medvoice",         locked: false },
   { id: "audiocards", label: "AudioCards",          desc: "Revisão em áudio, cartão por cartão",       Icon: Headphones,    color: "var(--c-audiocards)", href: "/app/audiocards",       locked: false },
   { id: "medhelp60",  label: "MedHelp 60D",         desc: "Revisão intensiva — últimos 60 dias",       Icon: Lock,          color: "#7c3aed",             href: "/app/medhelp-60d",      locked: true  },

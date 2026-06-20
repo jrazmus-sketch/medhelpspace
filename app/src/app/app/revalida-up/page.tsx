@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Target, ChevronRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
-import { MEDHELP_60D_MODULE_ID } from "@/lib/medhelp-60d";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
@@ -11,9 +10,8 @@ import type { Crumb } from "@/lib/breadcrumbs";
 export const metadata = { title: "Revalida Up" };
 
 export default async function RevalidaUpHubPage() {
-  // Gates membership AND the MedHelp 60D unlock window (redirects if locked) —
-  // same gate the leaf topic pages use.
-  await requireActiveMembership(MEDHELP_60D_MODULE_ID);
+  // Day-1 content: members only (no module gate — Revalida Up is no longer in 60D).
+  await requireActiveMembership();
 
   const admin = createAdminClient();
   const [{ data: specialties }, { data: topicRows }] = await Promise.all([
@@ -37,14 +35,13 @@ export default async function RevalidaUpHubPage() {
 
   const crumbs: Crumb[] = [
     { label: "Início", href: "/app" },
-    { label: "MedHelp 60D", href: "/app/medhelp-60d" },
     { label: "Revalida Up" },
   ];
 
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
       <div className="mb-2">
-        <VoltarButton fallbackHref="/app/medhelp-60d" />
+        <VoltarButton fallbackHref="/app" />
       </div>
       <Breadcrumbs className="mb-6" crumbs={crumbs} />
 

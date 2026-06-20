@@ -68,7 +68,7 @@ export async function RevalidaUpRenderer({
     .single();
 
   // "Voltar" → the Revalida Up topic list (keeps the student inside the section).
-  const specialtyHref = `/app/medhelp-60d/revalida-up/${specialtySlug}`;
+  const specialtyHref = `/app/revalida-up/${specialtySlug}`;
   let specialtyName = "";
   let nextHref: string | null = null;
   let nextTitle: string | null = null;

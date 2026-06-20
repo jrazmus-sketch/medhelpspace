@@ -52,6 +52,10 @@ export default async function SpecialtyHubPage({
 
     if (!page) notFound();
 
+    // Gate hubs that belong to a content module (e.g. formula-medhelp, now in
+    // MedHelp 60D). NULL module = day-1, so this is a no-op for ungated hubs.
+    await requireActiveMembership(page.content_module_id);
+
     const body =
       page.track_id != null ? (
         <TrackHubRenderer trackId={page.track_id} excludePageId={page.id} />
@@ -95,7 +99,7 @@ export default async function SpecialtyHubPage({
   const admin = createAdminClient();
 
   // Fetch hub pages (blurb-nav-hub) and track pages for this specialty
-  const [{ data: hubPages }, { data: trackPagesRaw }, { data: allTracks }, studyTypeOverrides] = await Promise.all([
+  const [{ data: hubPages }, { data: trackPagesRaw }, { data: allTracks }, studyTypeOverrides, { count: revalidaUpCount }] = await Promise.all([
     admin
       .from("pages")
       .select("id, slug, view, title")
@@ -110,13 +114,21 @@ export default async function SpecialtyHubPage({
       .not("track_id", "is", null),
     admin.from("tracks").select("id, slug, name"),
     getStudyTypeOverrides(),
+    // Revalida Up is query-based (no blurb-nav-hub) — just check it has topics here.
+    admin
+      .from("pages")
+      .select("id", { count: "exact", head: true })
+      .eq("specialty_id", spec.id)
+      .eq("status", "publish")
+      .eq("view", "revalida-up"),
   ]);
 
   // Build type option cards: view-based hub pages
   type TypeOption = { key: StudyTypeKey; cfg: StudyTypeConfig; href: string };
   const typeOptions: TypeOption[] = [];
 
-  const VIEW_ORDER: PageView[] = ["quiz", "simulados", "resumos", "formula"];
+  // Fórmula moved into MedHelp 60D, so it no longer appears as a day-1 card here.
+  const VIEW_ORDER: PageView[] = ["quiz", "simulados", "resumos"];
   for (const view of VIEW_ORDER) {
     const cfg = STUDY_TYPE_CONFIG[view as StudyTypeKey];
     if (!cfg) continue;
@@ -124,6 +136,16 @@ export default async function SpecialtyHubPage({
     if (hubPage) {
       typeOptions.push({ key: view as StudyTypeKey, cfg, href: `/app/${slug}/${hubPage.slug}` });
     }
+  }
+
+  // Revalida Up — day-1 active-recall deck. No blurb-nav-hub; its per-specialty
+  // topic list lives at /app/revalida-up/[specialty].
+  if ((revalidaUpCount ?? 0) > 0) {
+    typeOptions.push({
+      key: "revalida-up",
+      cfg: STUDY_TYPE_CONFIG["revalida-up"],
+      href: `/app/revalida-up/${slug}`,
+    });
   }
 
   // Track-based pages (medvoice, audiocards)

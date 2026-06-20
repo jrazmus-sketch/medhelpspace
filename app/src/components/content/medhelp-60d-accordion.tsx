@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Target, Brain, ClipboardCheck, type LucideIcon } from "lucide-react";
+import { ChevronRight, FlaskConical, Brain, ClipboardCheck, type LucideIcon } from "lucide-react";
 
 type Medhelp60Section = {
   /** Stable key used for open/close state. */
@@ -21,7 +21,7 @@ type Medhelp60Section = {
 // boundary. Sections with an href navigate to their own page; the rest expand
 // to an "em breve" placeholder until their content ships.
 const SECTIONS: Medhelp60Section[] = [
-  { id: "revalida-up",    title: "Revalida Up",    subtitle: "Decisão Estratégica", Icon: Target, href: "/app/medhelp-60d/revalida-up" },
+  { id: "formula",        title: "Fórmula MedHelp", subtitle: "Condutas Clínicas",  Icon: FlaskConical, href: "/app/formula-medhelp" },
   { id: "memorecards",    title: "MemoreCards",    subtitle: "Alta Fixação",        Icon: Brain },
   { id: "simulados-100q", title: "Simulados 100Q", subtitle: "Performance INEP",    Icon: ClipboardCheck },
 ];

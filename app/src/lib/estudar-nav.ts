@@ -4,8 +4,8 @@ import type { StudyTypeKey } from "@/lib/page-type";
 // "Estudar" dropdown (member-header) and the mobile "Estudar" bottom sheet so
 // the two never drift. Labels/icons/colors/hrefs come from STUDY_TYPE_CONFIG.
 export const ESTUDAR_GROUPS: { label: string; keys: StudyTypeKey[] }[] = [
-  { label: "Praticar", keys: ["quiz", "flashcards"] },
-  { label: "Ler",      keys: ["resumos", "formula"] },
+  { label: "Praticar", keys: ["quiz", "flashcards", "revalida-up"] },
+  { label: "Ler",      keys: ["resumos"] },
   { label: "Ouvir",    keys: ["medvoice", "audiocards"] },
 ];
 

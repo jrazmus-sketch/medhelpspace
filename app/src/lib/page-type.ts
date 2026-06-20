@@ -1,6 +1,6 @@
 import {
   ClipboardList, ListChecks, ScrollText, Mic, FlaskConical,
-  Headphones, Layers, CalendarClock, type LucideIcon,
+  Headphones, Layers, CalendarClock, Target, type LucideIcon,
 } from "lucide-react";
 import type { PageView } from "@/types/supabase";
 
@@ -11,6 +11,7 @@ export type StudyTypeKey =
   | "simulados"
   | "resumos"
   | "formula"
+  | "revalida-up"
   | "medvoice"
   | "audiocards"
   | "flashcards"
@@ -30,6 +31,7 @@ export const STUDY_TYPE_CONFIG: Record<StudyTypeKey, StudyTypeConfig> = {
   simulados:  { key: "simulados",  label: "Simulados",          desc: "Treino de prova por casos clínicos",    Icon: ListChecks,    color: "var(--c-simulados)",  hubHref: "/app/estudo-por-questoes?tab=simulados" },
   resumos:    { key: "resumos",    label: "Resumos Narrativos", desc: "Narrativas clínicas por especialidade", Icon: ScrollText,    color: "var(--c-resumos)",    hubHref: "/app/resumos" },
   formula:    { key: "formula",    label: "Fórmula MedHelp",    desc: "Condutas clínicas em formato visual",   Icon: FlaskConical,  color: "var(--c-formula)",    hubHref: "/app/formula-medhelp" },
+  "revalida-up": { key: "revalida-up", label: "Revalida Up",     desc: "Padrões de prova — decisão estratégica", Icon: Target,       color: "var(--c-revalida)",   hubHref: "/app/revalida-up" },
   medvoice:   { key: "medvoice",   label: "MedVoice",           desc: "Áudios por tema — a Clínica Fala",      Icon: Mic,           color: "var(--c-medvoice)",   hubHref: "/app/medvoice" },
   audiocards: { key: "audiocards", label: "AudioCards",         desc: "Revisão em áudio, cartão por cartão",   Icon: Headphones,    color: "var(--c-audiocards)", hubHref: "/app/audiocards" },
   flashcards: { key: "flashcards", label: "Flashcards",         desc: "Revisão ativa com cartões",             Icon: Layers,        color: "var(--c-flashcards)", hubHref: "/app/flashcards" },
@@ -43,6 +45,7 @@ export const STUDY_TYPE_CHIP_LABEL: Record<StudyTypeKey, string> = {
   simulados:  "Simulado",
   resumos:    "Resumo",
   formula:    "Fórmula",
+  "revalida-up": "Revalida Up",
   medvoice:   "MedVoice",
   audiocards: "AudioCard",
   flashcards: "Flashcard",
@@ -67,6 +70,7 @@ export function getStudyTypeKey(input: {
   if (view === "simulados") return "simulados";
   if (view === "resumos")   return "resumos";
   if (view === "formula")   return "formula";
+  if (view === "revalida-up") return "revalida-up";
   if (track_id === MEDVOICE_TRACK_ID)   return "medvoice";
   if (track_id === AUDIOCARDS_TRACK_ID) return "audiocards";
   if (track_id === FLASHCARDS_TRACK_ID) return "flashcards";
@@ -84,6 +88,7 @@ export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null 
   if (pathname === "/app/estudo-por-questoes") return "quiz";
   if (pathname === "/app/resumos")             return "resumos";
   if (pathname === "/app/formula-medhelp")     return "formula";
+  if (pathname === "/app/revalida-up")         return "revalida-up";
   if (pathname === "/app/medvoice")            return "medvoice";
   if (pathname === "/app/audiocards")          return "audiocards";
   if (pathname === "/app/flashcards")          return "flashcards";
@@ -91,6 +96,7 @@ export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null 
   if (pathname.startsWith("/app/estudo-por-questoes/")) return "quiz";
   if (pathname.startsWith("/app/resumos/"))             return "resumos";
   if (pathname.startsWith("/app/formula-medhelp/"))     return "formula";
+  if (pathname.startsWith("/app/revalida-up/"))         return "revalida-up";
   if (pathname.startsWith("/app/medvoice/"))            return "medvoice";
   if (pathname.startsWith("/app/audiocards/"))          return "audiocards";
   if (pathname.startsWith("/app/flashcards/"))          return "flashcards";
@@ -102,6 +108,7 @@ export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null 
     if (slug.endsWith("-medvoice"))   return "medvoice";
     if (slug.endsWith("-flashcards")) return "flashcards";
     if (slug.endsWith("-resumos"))    return "resumos";
+    if (slug.endsWith("-revalida-up")) return "revalida-up";
     if (slug.endsWith("-formula"))    return "formula";
     if (slug.endsWith("-simulados"))  return "simulados";
     if (slug.endsWith("-quiz"))       return "quiz";

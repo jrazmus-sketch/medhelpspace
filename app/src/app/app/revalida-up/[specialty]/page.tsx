@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
-import { MEDHELP_60D_MODULE_ID } from "@/lib/medhelp-60d";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
@@ -15,7 +14,7 @@ export default async function RevalidaUpSpecialtyPage({
   params: Promise<{ specialty: string }>;
 }) {
   const { specialty } = await params;
-  await requireActiveMembership(MEDHELP_60D_MODULE_ID);
+  await requireActiveMembership();
 
   const admin = createAdminClient();
   const { data: spec } = await admin
@@ -37,15 +36,14 @@ export default async function RevalidaUpSpecialtyPage({
 
   const crumbs: Crumb[] = [
     { label: "Início", href: "/app" },
-    { label: "MedHelp 60D", href: "/app/medhelp-60d" },
-    { label: "Revalida Up", href: "/app/medhelp-60d/revalida-up" },
+    { label: "Revalida Up", href: "/app/revalida-up" },
     { label: spec.name },
   ];
 
   return (
     <div style={{ maxWidth: 880, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
       <div className="mb-2">
-        <VoltarButton fallbackHref="/app/medhelp-60d/revalida-up" />
+        <VoltarButton fallbackHref="/app/revalida-up" />
       </div>
       <Breadcrumbs className="mb-6" crumbs={crumbs} />
 

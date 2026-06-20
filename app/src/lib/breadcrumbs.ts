@@ -20,6 +20,7 @@ function typeRootFor(input: {
   if (view === "simulados") return { label: "Simulados", href: "/app/estudo-por-questoes?tab=simulados" };
   if (view === "resumos")   return { label: "Resumos",   href: "/app/resumos" };
   if (view === "formula")   return { label: "Fórmula",   href: "/app/formula-medhelp" };
+  if (view === "revalida-up") return { label: "Revalida Up", href: "/app/revalida-up" };
   if (track_id === MEDVOICE_TRACK_ID)   return { label: "MedVoice",   href: "/app/medvoice" };
   if (track_id === AUDIOCARDS_TRACK_ID) return { label: "AudioCards", href: "/app/audiocards" };
   if (track_id === FLASHCARDS_TRACK_ID) return { label: "Flashcards", href: "/app/flashcards" };
