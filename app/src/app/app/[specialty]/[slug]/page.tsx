@@ -3,6 +3,7 @@ import { requireActiveMembership, isViewerAdmin } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { PlainContentRenderer } from "@/components/content/plain-content-renderer";
+import { RevalidaUpRenderer } from "@/components/content/revalida-up-renderer";
 import { TextLessonRenderer } from "@/components/content/text-lesson-renderer";
 import { QuizRenderer } from "@/components/content/quiz-renderer";
 import { FlashcardRenderer } from "@/components/content/flashcard-renderer";
@@ -182,6 +183,10 @@ function PageBody({
 }) {
   switch (page.type) {
     case "plain-content":
+      // Revalida UP / CaiuNaProva pages render as an active-recall slide deck
+      // (one insight per slide, tap-to-reveal PADRÃO) with a "Ver tudo" fallback.
+      if (page.view === "revalida-up")
+        return <RevalidaUpRenderer pageId={page.id} specialtySlug={specialtySlug} />;
       return <PlainContentRenderer pageId={page.id} view={page.view} />;
     case "text-lesson":
     case "audio-lesson": {
