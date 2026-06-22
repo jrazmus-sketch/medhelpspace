@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
+import { SiteText } from "./site-text";
 
 function ecgSample(phase: number): number {
   // Flat isoelectric baseline
@@ -401,7 +402,7 @@ export function HeroSection() {
           className="mb-8 text-xs uppercase tracking-[0.22em]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.32)" }}
         >
-          Prepare-se para o Revalida
+          <SiteText as="span" k="hero.eyebrow" fallback="Prepare-se para o Revalida" />
         </motion.div>
 
         <motion.h1
@@ -411,7 +412,7 @@ export function HeroSection() {
           className="max-w-4xl text-[clamp(3rem,7.5vw,6.5rem)] font-black leading-[1.01] tracking-[-0.03em]"
           style={{ fontFamily: "var(--font-bricolage)", color: "#ffffff" }}
         >
-          É um sistema<br className="hidden sm:block" /> de aprovação.
+          <SiteText as="span" k="hero.headline" fallback="É um sistema de aprovação." />
         </motion.h1>
 
         <motion.p
@@ -421,7 +422,7 @@ export function HeroSection() {
           className="mt-7 max-w-md text-base leading-relaxed sm:text-lg"
           style={{ color: "rgba(255,255,255,0.52)" }}
         >
-          Não é curso. Não é videoaula. É o método que treina o raciocínio que o Revalida cobra.
+          <SiteText as="span" multiline k="hero.subhead" fallback="Não é curso. Não é videoaula. É o método que treina o raciocínio que o Revalida cobra." />
         </motion.p>
 
         <motion.div
@@ -438,14 +439,14 @@ export function HeroSection() {
               boxShadow: "0 0 40px rgba(122,29,145,0.45)",
             }}
           >
-            Comprar Agora →
+            <SiteText as="span" k="hero.cta" fallback="Comprar Agora →" />
           </Link>
           <a
             href="#features"
             className="text-sm font-medium transition-colors"
             style={{ color: "rgba(255,255,255,0.32)" }}
           >
-            Ver o sistema ↓
+            <SiteText as="span" k="hero.secondary" fallback="Ver o sistema ↓" />
           </a>
         </motion.div>
 
@@ -456,11 +457,11 @@ export function HeroSection() {
           className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs"
           style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.25)" }}
         >
-          <span>Acesso imediato</span>
+          <SiteText as="span" k="hero.trust1" fallback="Acesso imediato" />
           <span className="hidden sm:block">·</span>
-          <span>Garantia de 7 dias</span>
+          <SiteText as="span" k="hero.trust2" fallback="Garantia de 7 dias" />
           <span className="hidden sm:block">·</span>
-          <span>Pagamento via PagBank</span>
+          <SiteText as="span" k="hero.trust3" fallback="Pagamento via PagBank" />
         </motion.div>
 
         {/* Preview cards — stacked on mobile, staggered side-by-side on sm+ */}

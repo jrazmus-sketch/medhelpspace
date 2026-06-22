@@ -21,6 +21,7 @@ const SCALAR_ALLOWED = new Set<string>([
   "study_types.label",
   "study_types.description",
   "simulado_sections.label",
+  "site_content.value",
 ]);
 
 // Plain-text fields trim + reject empty; everything else is HTML and goes through safe().
@@ -32,6 +33,7 @@ const PLAIN_FIELDS = new Set<string>([
   "study_types.label",
   "study_types.description",
   "simulado_sections.label",
+  "site_content.value",
 ]);
 
 async function requireAdmin() {
@@ -104,6 +106,8 @@ export async function updateScalarField(
   });
 
   revalidatePath("/app", "layout");
+  // Landing copy lives at "/" (hourly ISR) — bust it so edits show immediately.
+  if (table === "site_content") revalidatePath("/");
 }
 
 interface QuizAnswer {

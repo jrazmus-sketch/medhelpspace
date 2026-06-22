@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SiteText } from "./site-text";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Cinematic features — one portrait tablet that follows you down sections
@@ -541,7 +542,7 @@ function FeatureText({
           className="text-[10px] uppercase tracking-[0.2em]"
           style={{ fontFamily: "var(--font-geist-mono)", color: f.color }}
         >
-          {f.name}
+          <SiteText as="span" k={`features.${f.id}.name`} fallback={f.name} />
         </span>
       </div>
 
@@ -549,16 +550,16 @@ function FeatureText({
         className="text-[clamp(1.75rem,3.8vw,3rem)] font-black leading-[1.08] tracking-[-0.02em]"
         style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
       >
-        {f.tagline}
+        <SiteText as="span" multiline k={`features.${f.id}.tagline`} fallback={f.tagline} />
       </h3>
 
       <p className="mt-5 text-base leading-relaxed sm:text-[1.05rem]" style={{ color: "var(--lp-fg-40)" }}>
-        {f.body}
+        <SiteText as="span" multiline k={`features.${f.id}.body`} fallback={f.body} />
       </p>
 
       <div className="mt-6 flex items-start gap-2 text-sm font-semibold" style={{ color: f.color }}>
         <span className="mt-0.5 flex-shrink-0">✦</span>
-        <span>{f.result}</span>
+        <SiteText as="span" multiline k={`features.${f.id}.result`} fallback={f.result} />
       </div>
 
       {/* Mobile-only static face (no follow, no flip). */}
@@ -590,14 +591,14 @@ export function CinematicFeatures() {
           className="text-[10px] uppercase tracking-[0.25em]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
         >
-          O que está incluído
+          <SiteText as="span" k="features.eyebrow" fallback="O que está incluído" />
         </div>
         <h2
           className="mt-4 text-[clamp(1.6rem,3.5vw,2.6rem)] font-black leading-tight tracking-[-0.02em]"
           style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
         >
-          Um sistema completo.
-          <span style={{ color: "var(--lp-fg-15)" }}> Cinco ferramentas.</span>
+          <SiteText as="span" k="features.title1" fallback="Um sistema completo." />
+          <span style={{ color: "var(--lp-fg-15)" }}> <SiteText as="span" k="features.title2" fallback="Cinco ferramentas." /></span>
         </h2>
       </div>
 

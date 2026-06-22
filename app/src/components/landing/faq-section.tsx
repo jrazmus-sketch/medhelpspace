@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useEditMode } from "@/providers/edit-mode-provider";
+import { SiteText } from "./site-text";
 
 const FAQS = [
   {
@@ -55,6 +57,9 @@ const FAQS = [
 
 export function FaqSection() {
   const [open, setOpen] = useState<number | null>(null);
+  // While an admin is in inline-edit mode, force every item open so both the
+  // question and the (normally collapsed) answer are reachable for editing.
+  const { active: editing } = useEditMode();
 
   return (
     <section
@@ -68,19 +73,21 @@ export function FaqSection() {
             className="mb-8 text-[10px] uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
-            Dúvidas frequentes
+            <SiteText as="span" k="faq.eyebrow" fallback="Dúvidas frequentes" />
           </div>
           <h2
             className="text-[clamp(2rem,4vw,3.2rem)] font-black leading-tight tracking-[-0.025em]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            Perguntas Frequentes
+            <SiteText as="span" k="faq.title" fallback="Perguntas Frequentes" />
           </h2>
         </div>
 
         {/* Items */}
         <div className="flex flex-col">
-          {FAQS.map((faq, i) => (
+          {FAQS.map((faq, i) => {
+            const isOpen = editing || open === i;
+            return (
             <div
               key={faq.q}
               style={{ borderTop: "1px solid var(--lp-border)" }}
@@ -88,20 +95,20 @@ export function FaqSection() {
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 className="flex w-full items-center justify-between gap-4 py-5 text-left"
-                aria-expanded={open === i}
+                aria-expanded={isOpen}
               >
                 <span
                   className="text-sm font-semibold transition-colors sm:text-base"
-                  style={{ color: open === i ? "var(--lp-fg)" : "var(--lp-fg-55)" }}
+                  style={{ color: isOpen ? "var(--lp-fg)" : "var(--lp-fg-55)" }}
                 >
-                  {faq.q}
+                  <SiteText as="span" multiline k={`faq.${i}.q`} fallback={faq.q} />
                 </span>
                 <span
                   className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border text-xs transition-all duration-200"
                   style={{
-                    borderColor: open === i ? "var(--brand)" : "var(--lp-border)",
-                    color: open === i ? "var(--brand)" : "var(--lp-fg-25)",
-                    transform: open === i ? "rotate(45deg)" : "none",
+                    borderColor: isOpen ? "var(--brand)" : "var(--lp-border)",
+                    color: isOpen ? "var(--brand)" : "var(--lp-fg-25)",
+                    transform: isOpen ? "rotate(45deg)" : "none",
                   }}
                 >
                   +
@@ -109,17 +116,18 @@ export function FaqSection() {
               </button>
               <div
                 className="overflow-hidden transition-all duration-300 ease-in-out"
-                style={{ maxHeight: open === i ? "300px" : "0px" }}
+                style={{ maxHeight: isOpen ? "500px" : "0px" }}
               >
                 <p
                   className="pb-5 text-sm leading-relaxed sm:text-[0.95rem]"
                   style={{ color: "var(--lp-fg-40)" }}
                 >
-                  {faq.a}
+                  <SiteText as="span" multiline k={`faq.${i}.a`} fallback={faq.a} />
                 </p>
               </div>
             </div>
-          ))}
+            );
+          })}
           <div style={{ borderTop: "1px solid var(--lp-border)" }} />
         </div>
       </div>

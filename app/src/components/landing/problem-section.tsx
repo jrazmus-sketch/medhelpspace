@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { SiteText } from "./site-text";
 
 export function ProblemSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -92,15 +93,14 @@ export function ProblemSection() {
             className="mb-10 text-[10px] uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
-            O problema
+            <SiteText as="span" k="problem.eyebrow" fallback="O problema" />
           </div>
 
           <h2
             className="text-[clamp(2.2rem,5.5vw,5rem)] font-black leading-[1.05] tracking-[-0.025em]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            O Revalida não derruba
-            <br className="hidden sm:block" /> por falta de esforço.
+            <SiteText as="span" k="problem.headline1" fallback="O Revalida não derruba por falta de esforço." />
           </h2>
 
           <h2
@@ -110,17 +110,14 @@ export function ProblemSection() {
               color: "var(--lp-fg-40)",
             }}
           >
-            Ele derruba quando o esforço
-            <br className="hidden sm:block" /> vira volume.
+            <SiteText as="span" k="problem.headline2" fallback="Ele derruba quando o esforço vira volume." />
           </h2>
 
           <p
             className="mx-auto mt-10 max-w-lg text-base leading-relaxed sm:text-lg"
             style={{ color: "var(--lp-fg-40)" }}
           >
-            Muito conteúdo, pouca decisão, pouca fixação.
-            A virada é simples: você não precisa de mais horas.
-            Você precisa de método.
+            <SiteText as="span" multiline k="problem.body" fallback="Muito conteúdo, pouca decisão, pouca fixação. A virada é simples: você não precisa de mais horas. Você precisa de método." />
           </p>
         </div>
       </div>

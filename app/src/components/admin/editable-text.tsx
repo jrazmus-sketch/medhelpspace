@@ -23,7 +23,8 @@ type ScalarTable =
   | "nav_items"
   | "specialties"
   | "study_types"
-  | "simulado_sections";
+  | "simulado_sections"
+  | "site_content";
 
 type Common = {
   className?: string;

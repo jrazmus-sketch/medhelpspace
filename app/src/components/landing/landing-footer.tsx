@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiteText } from "./site-text";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -40,7 +41,7 @@ export function LandingFooter() {
               MedHelp<span style={{ color: "var(--brand)" }}>Space</span>
             </div>
             <p className="mb-4 max-w-[200px] text-xs leading-relaxed" style={{ color: "var(--lp-fg-25)" }}>
-              Sistema de aprovação para o Revalida — treino direto ao ponto, do jeito que a prova cobra.
+              <SiteText as="span" multiline k="footer.tagline" fallback="Sistema de aprovação para o Revalida — treino direto ao ponto, do jeito que a prova cobra." />
             </p>
             <div className="flex items-center gap-3">
               {[
@@ -122,7 +123,7 @@ export function LandingFooter() {
         className="px-5 py-4 text-center text-xs md:px-8"
         style={{ borderTop: "1px solid var(--lp-border)", color: "var(--lp-fg-15)" }}
       >
-        © 2026 MedHelpSpace. Todos os direitos reservados.
+        <SiteText as="span" k="footer.copyright" fallback="© 2026 MedHelpSpace. Todos os direitos reservados." />
       </div>
     </footer>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { SiteText } from "./site-text";
 
 export function SixtyDSection() {
   const ref = useRef<HTMLElement>(null);
@@ -43,7 +44,7 @@ export function SixtyDSection() {
               className="text-[10px] uppercase tracking-[0.2em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-pop)" }}
             >
-              MedHelp 60D
+              <SiteText as="span" k="sixtyd.eyebrow" fallback="MedHelp 60D" />
             </span>
           </div>
 
@@ -52,8 +53,8 @@ export function SixtyDSection() {
             className="max-w-3xl text-[clamp(1.9rem,4.5vw,3.8rem)] font-black leading-[1.08] tracking-[-0.02em]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            Fase final do sistema.
-            <span style={{ color: "var(--lp-fg-15)" }}> Liberada 60 dias antes da prova.</span>
+            <SiteText as="span" k="sixtyd.headline1" fallback="Fase final do sistema." />
+            <span style={{ color: "var(--lp-fg-15)" }}> <SiteText as="span" k="sixtyd.headline2" fallback="Liberada 60 dias antes da prova." /></span>
           </h3>
 
           {/* Body */}
@@ -61,8 +62,7 @@ export function SixtyDSection() {
             className="mt-6 max-w-2xl text-base leading-relaxed sm:text-[1.05rem]"
             style={{ color: "var(--lp-fg-40)" }}
           >
-            Aqui você revisa padrões recorrentes do INEP e as variações que a prova pode trazer,
-            sem se perder em excesso. Já incluso na compra — libera automaticamente.
+            <SiteText as="span" multiline k="sixtyd.body" fallback="Aqui você revisa padrões recorrentes do INEP e as variações que a prova pode trazer, sem se perder em excesso. Já incluso na compra — libera automaticamente." />
           </p>
 
           {/* What's inside */}
@@ -83,9 +83,11 @@ export function SixtyDSection() {
                   className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.2em]"
                   style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-pop)" }}
                 >
-                  {item.name}
+                  <SiteText as="span" k={`sixtyd.item${i + 1}.name`} fallback={item.name} />
                 </div>
-                <div className="text-sm" style={{ color: "var(--lp-fg-40)" }}>{item.desc}</div>
+                <div className="text-sm" style={{ color: "var(--lp-fg-40)" }}>
+                  <SiteText as="span" k={`sixtyd.item${i + 1}.desc`} fallback={item.desc} />
+                </div>
               </div>
             ))}
           </div>

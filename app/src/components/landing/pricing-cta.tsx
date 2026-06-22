@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
 import type { CohortProduct } from "@/types/supabase";
+import { SiteText } from "./site-text";
 
 const INCLUDED = [
   "Estudo por Questões",
@@ -51,16 +52,16 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
             className="mb-8 text-[10px] uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
-            Inscrições
+            <SiteText as="span" k="pricing.soon.eyebrow" fallback="Inscrições" />
           </div>
           <h2
             className="text-[clamp(2.2rem,5vw,3.5rem)] font-black leading-[1.05] tracking-[-0.03em]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            Inscrições abertas em breve
+            <SiteText as="span" k="pricing.soon.headline" fallback="Inscrições abertas em breve" />
           </h2>
           <p className="mt-4 text-base" style={{ color: "var(--lp-fg-40)" }}>
-            Estamos preparando a próxima turma. Volte em breve para garantir sua vaga.
+            <SiteText as="span" multiline k="pricing.soon.body" fallback="Estamos preparando a próxima turma. Volte em breve para garantir sua vaga." />
           </p>
         </div>
       </section>
@@ -89,16 +90,16 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
             className="mb-8 text-[10px] uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
-            Comece sua preparação
+            <SiteText as="span" k="pricing.eyebrow" fallback="Comece sua preparação" />
           </div>
           <h2
             className="text-[clamp(2.8rem,6vw,5rem)] font-black leading-[1.0] tracking-[-0.03em]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            Escolha sua turma.
+            <SiteText as="span" k="pricing.headline" fallback="Escolha sua turma." />
           </h2>
           <p className="mt-4 text-base" style={{ color: "var(--lp-fg-40)" }}>
-            O sistema é o mesmo — a turma define o seu calendário de preparação.
+            <SiteText as="span" multiline k="pricing.subhead" fallback="O sistema é o mesmo — a turma define o seu calendário de preparação." />
           </p>
         </div>
 
@@ -114,7 +115,7 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
                 className="mb-3 text-[10px] uppercase tracking-[0.2em]"
                 style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
               >
-                Qual é a sua prova?
+                <SiteText as="span" k="pricing.cohortPrompt" fallback="Qual é a sua prova?" />
               </div>
               <div className="flex flex-wrap gap-2">
                 {cohorts.map((c, i) => (
@@ -160,15 +161,15 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
             </AnimatePresence>
           </div>
           <div className="mb-8 text-xs" style={{ color: "var(--lp-fg-25)" }}>
-            ou parcele em até 12x no cartão
+            <SiteText as="span" k="pricing.installments" fallback="ou parcele em até 12x no cartão" />
           </div>
 
           {/* Feature list */}
           <ul className="mb-8 flex flex-col gap-2.5">
-            {INCLUDED.map((item) => (
+            {INCLUDED.map((item, i) => (
               <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--lp-fg-55)" }}>
                 <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--brand)" }} />
-                {item}
+                <SiteText as="span" k={`pricing.included.${i}`} fallback={item} />
               </li>
             ))}
           </ul>
@@ -182,7 +183,7 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
               boxShadow: "0 0 32px var(--lp-glow)",
             }}
           >
-            Comprar Agora →
+            <SiteText as="span" k="pricing.cta" fallback="Comprar Agora →" />
           </Link>
         </div>
 
@@ -191,9 +192,9 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
           className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[11px]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
         >
-          <span>✓ Acesso imediato</span>
-          <span>✓ Garantia incondicional de 7 dias</span>
-          <span>✓ Pagamento 100% seguro · PagBank</span>
+          <SiteText as="span" k="pricing.trust1" fallback="✓ Acesso imediato" />
+          <SiteText as="span" k="pricing.trust2" fallback="✓ Garantia incondicional de 7 dias" />
+          <SiteText as="span" k="pricing.trust3" fallback="✓ Pagamento 100% seguro · PagBank" />
         </div>
       </div>
     </section>
