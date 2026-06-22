@@ -5,7 +5,7 @@ import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import Link from "next/link";
 import {
   ClipboardList, Layers, ScrollText, Target, Mic, Headphones,
-  Lock, ChevronRight, type LucideIcon,
+  Lock, LockOpen, ChevronRight, type LucideIcon,
 } from "lucide-react";
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import { WaveformProgress } from "@/components/dashboard/waveform-progress";
@@ -530,7 +530,7 @@ export default async function MemberDashboardPage() {
   const is60dUnlocked = daysUntilUnlock === 0;
   const studyTypes = STUDY_TYPES.map((t) =>
     t.id === "medhelp60"
-      ? { ...t, locked: !is60dUnlocked, color: is60dUnlocked ? "#7c3aed" : "#6b7280" }
+      ? { ...t, locked: !is60dUnlocked, Icon: is60dUnlocked ? LockOpen : Lock, color: is60dUnlocked ? "#7c3aed" : "#6b7280" }
       : t,
   );
 
