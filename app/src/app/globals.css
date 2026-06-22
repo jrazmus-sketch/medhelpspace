@@ -229,6 +229,41 @@
   }
 }
 
+/* ── Content protection: deter copy-paste in the member area ──────────────────
+   Applied via the `.no-copy` class on the member layout wrapper. Disables text
+   selection and the iOS long-press callout so lesson content can't be casually
+   dragged-and-copied. Paired with <CopyGuard /> (copy/cut/contextmenu/keyboard
+   blocking). NOT a security boundary — it raises the bar against the easy
+   vectors only. Form fields stay fully selectable so search, checkout, and
+   notes keep working. */
+.no-copy {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.no-copy input,
+.no-copy textarea,
+.no-copy select,
+.no-copy [contenteditable=""],
+.no-copy [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Images: block native drag-to-save (the JS dragstart handler covers Firefox,
+   which doesn't support user-drag). */
+.no-copy img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
 /* ── Plain-content prose renderer ─────────────────────────────────────────── */
 .prose-content {
   color: var(--foreground);
@@ -625,11 +660,11 @@
 /* ── Track signature colors ───────────────────────────────────────────────── */
 :root {
   --c-questoes:    #7a1d91;
-  --c-simulados:   #0d9488;
+  --c-simulados:   #0284c7;   /* azure — distinct from the dark-purple Questões box */
   --c-resumos:     #6d28d9;
   --c-medvoice:    #4f46e5;
   --c-formula:     #2563eb;
-  --c-revalida:    #be185d;
+  --c-revalida:    #1d4ed8;
   --c-audiocards:  #0284c7;
   --c-flashcards:  #06b6d4;
   --c-pop:         #06b6d4;
@@ -639,11 +674,11 @@
 
 .dark {
   --c-questoes:    #c084e8;
-  --c-simulados:   #5eead4;
+  --c-simulados:   #38bdf8;   /* sky — distinct from the lavender Questões accent */
   --c-resumos:     #9789ff;
   --c-medvoice:    #7d83ff;
   --c-formula:     #6b91ff;
-  --c-revalida:    #f0609f;
+  --c-revalida:    #5b8cff;
   --c-audiocards:  #5eb3ff;
   --c-flashcards:  #66e0ff;
   --c-pop:         #66e0ff;

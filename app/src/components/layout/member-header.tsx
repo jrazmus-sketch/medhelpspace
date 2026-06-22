@@ -24,7 +24,7 @@ import {
   getStudyTypeFromPathname,
   type StudyTypeKey,
 } from "@/lib/page-type";
-import { ESTUDAR_GROUPS, isTypeActive } from "@/lib/estudar-nav";
+import { ESTUDAR_GROUPS, ESTUDAR_NAV_OVERRIDES, isTypeActive } from "@/lib/estudar-nav";
 
 type PersonalLink = { href: string; label: string; exact?: boolean; highlight?: boolean };
 
@@ -92,6 +92,7 @@ function EstudarMenu({
             </DropdownMenuLabel>
             {group.keys.map((key) => {
               const cfg = STUDY_TYPE_CONFIG[key];
+              const ov = ESTUDAR_NAV_OVERRIDES[key];
               const itemActive = isTypeActive(key, currentType);
               return (
                 <DropdownMenuItem
@@ -110,7 +111,7 @@ function EstudarMenu({
                   </span>
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 text-[13.5px] font-semibold leading-tight text-foreground">
-                      {cfg.label}
+                      {ov?.label ?? cfg.label}
                       {itemActive && (
                         <span
                           aria-hidden="true"
@@ -120,7 +121,7 @@ function EstudarMenu({
                       )}
                     </span>
                     <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
-                      {cfg.desc}
+                      {ov?.desc ?? cfg.desc}
                     </span>
                   </span>
                 </DropdownMenuItem>

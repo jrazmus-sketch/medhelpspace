@@ -6,7 +6,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { GraduationCap, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STUDY_TYPE_CONFIG, type StudyTypeKey } from "@/lib/page-type";
-import { ESTUDAR_GROUPS, isTypeActive } from "@/lib/estudar-nav";
+import { ESTUDAR_GROUPS, ESTUDAR_NAV_OVERRIDES, isTypeActive } from "@/lib/estudar-nav";
 
 /**
  * Mobile bottom-nav "Estudar" entry: a cell that opens a bottom sheet listing
@@ -70,6 +70,7 @@ export function MobileEstudarSheet({ currentType }: { currentType: StudyTypeKey 
               <div className="flex flex-col">
                 {group.keys.map((key) => {
                   const cfg = STUDY_TYPE_CONFIG[key];
+                  const ov = ESTUDAR_NAV_OVERRIDES[key];
                   const itemActive = isTypeActive(key, currentType);
                   return (
                     <button
@@ -88,7 +89,7 @@ export function MobileEstudarSheet({ currentType }: { currentType: StudyTypeKey 
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5 text-[14px] font-semibold leading-tight text-foreground">
-                          {cfg.label}
+                          {ov?.label ?? cfg.label}
                           {itemActive && (
                             <span
                               aria-hidden="true"
@@ -98,7 +99,7 @@ export function MobileEstudarSheet({ currentType }: { currentType: StudyTypeKey 
                           )}
                         </span>
                         <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
-                          {cfg.desc}
+                          {ov?.desc ?? cfg.desc}
                         </span>
                       </span>
                       <ChevronRight size={16} className="shrink-0 text-muted-foreground" />

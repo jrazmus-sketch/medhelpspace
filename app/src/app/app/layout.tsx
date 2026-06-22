@@ -3,6 +3,7 @@ import { MemberFooter } from "@/components/layout/footer";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { AdminBarServer } from "@/components/layout/admin-bar-server";
 import { NotificationBellServer } from "@/components/layout/notification-bell-server";
+import { CopyGuard } from "@/components/layout/copy-guard";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import { requireActiveMembership } from "@/lib/membership-gate";
 
@@ -20,7 +21,8 @@ export default async function MemberLayout({ children }: { children: React.React
   const { unlocked: show60d } = await get60dAccess();
 
   return (
-    <div className="flex min-h-screen flex-col bg-background [overflow-x:clip]">
+    <div className="no-copy flex min-h-screen flex-col bg-background [overflow-x:clip]">
+      <CopyGuard />
       <div className="sticky top-0 z-50">
         <AdminBarServer />
         <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} />
