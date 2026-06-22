@@ -79,7 +79,7 @@ export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
         return (
           <TopicCard
             key={item.id}
-            navItemId={item.id}
+            editable={{ table: "nav_items", id: item.id, field: "label" }}
             label={item.label}
             href={href}
             accent={accent}
@@ -94,19 +94,22 @@ export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 
-function TopicCard({
-  navItemId,
+export function TopicCard({
+  editable,
   label,
   href,
   accent,
   stats,
   completed,
 }: {
-  navItemId: number;
+  /** When set, the label is inline-editable in admin edit mode. Omit for a
+   *  plain (non-editable) label — e.g. Revalida Up topics, which derive their
+   *  card label from pages.title rather than a nav_items row. */
+  editable?: { table: "nav_items" | "pages"; id: number; field: string };
   label: string;
   href: string | null;
   accent: string;
-  stats: QuizStats | undefined;
+  stats?: QuizStats | undefined;
   completed?: boolean;
 }) {
   const inner = (
@@ -118,14 +121,20 @@ function TopicCard({
       />
       <div className="flex h-full flex-col justify-between gap-3 pl-4 pr-3 py-3.5 sm:py-4">
         <div className="flex items-start justify-between gap-2">
-          <EditableText
-            variant="plain"
-            table="nav_items"
-            id={navItemId}
-            field="label"
-            value={label}
-            className="font-medium leading-snug text-foreground group-hover:text-brand transition-colors"
-          />
+          {editable ? (
+            <EditableText
+              variant="plain"
+              table={editable.table}
+              id={editable.id}
+              field={editable.field}
+              value={label}
+              className="font-medium leading-snug text-foreground group-hover:text-brand transition-colors"
+            />
+          ) : (
+            <span className="font-medium leading-snug text-foreground group-hover:text-brand transition-colors">
+              {label}
+            </span>
+          )}
           {href && (
             <ChevronRight
               size={16}
