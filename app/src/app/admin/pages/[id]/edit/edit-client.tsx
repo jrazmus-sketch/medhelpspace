@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { updatePageMetadata, updateLessons } from "@/actions/admin";
+import { updatePageMetadata, updateLessons, savePageBody } from "@/actions/admin";
 import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow, QuizQuestionRow, FlashcardRow } from "./page";
 import type { SectionEditorHandle } from "./section-editor-handle";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
@@ -104,6 +104,11 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
     }))
   );
 
+  // Plain-content pages have one body, stored in the page's first lessons row
+  // (what PlainContentRenderer reads). We edit it through a single rich-text
+  // field rather than the multi-section lesson UI.
+  const [bodyHtml, setBodyHtml] = useState<string>(lessons[0]?.body_html ?? "");
+
   // Saves everything on the page in one shot: metadata, then lessons (if this
   // is a lesson page), then the active content section. Stops at the first
   // failure so the error points at the right place.
@@ -143,6 +148,16 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
               position: i + 1,
             })),
           );
+        } catch (err: unknown) {
+          setError(err instanceof Error ? err.message : t("errors.generic"));
+          return;
+        }
+      }
+
+      // 2b) Plain-content body (single lessons row, mirrors the public renderer)
+      if (showBody) {
+        try {
+          await savePageBody(page.id, bodyHtml, title.trim() || page.title);
         } catch (err: unknown) {
           setError(err instanceof Error ? err.message : t("errors.generic"));
           return;
@@ -208,6 +223,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   }
 
   const showLessons = page.type === "text-lesson" || page.type === "audio-lesson";
+  const showBody = page.type === "plain-content";
 
   const typeColor = TYPE_COLORS[page.type] ?? TYPE_COLORS.default;
 
@@ -432,6 +448,25 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
           />
         </section>
       </div>
+
+      {/* ── Plain-content body ───────────────────────────────────────────── */}
+      {showBody && (
+        <div className="rounded-xl border border-border bg-surface-1">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("pageEdit.sectionContent")}
+            </h2>
+          </div>
+          <div className="p-5">
+            <RichTextEditor
+              content={bodyHtml}
+              onChange={setBodyHtml}
+              placeholder={t("pageEdit.contentBody")}
+              minHeight="320px"
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Lessons section ──────────────────────────────────────────────── */}
       {showLessons && (

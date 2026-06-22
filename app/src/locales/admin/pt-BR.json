@@ -288,6 +288,8 @@
     "addLesson": "Adicionar aula",
     "lessonTitle": "Título da aula",
     "lessonBody": "Conteúdo da aula",
+    "sectionContent": "Conteúdo",
+    "contentBody": "Escreva o conteúdo da página aqui…",
     "lessonAudioUrl": "URL do áudio",
     "saveLessons": "Salvar aulas",
     "lessonsSaved": "Aulas salvas",

@@ -482,6 +482,45 @@ export async function updateLessons(pageId: number, lessons: LessonInput[]) {
   revalidatePath(`/admin/pages/${pageId}/edit`);
 }
 
+// ── Plain-content body ──────────────────────────────────────────────────────────
+//
+// Plain-content pages keep their single body in one `lessons` row (position 1) —
+// the same row PlainContentRenderer reads. Unlike `updateLessons`, this is keyed
+// on the page's existing first row discovered server-side (not a client-held id),
+// so repeat saves edit that row in place rather than churning it (which would
+// orphan any `lesson_completions` pointing at the old lesson). It never touches
+// sibling rows, so an anomalous multi-row page is left otherwise intact.
+
+export async function savePageBody(pageId: number, bodyHtml: string, title: string) {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const { data: existing } = await admin
+    .from("lessons")
+    .select("id")
+    .eq("page_id", pageId)
+    .order("position")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    await admin
+      .from("lessons")
+      .update({ title, body_html: bodyHtml || null })
+      .eq("id", existing.id);
+  } else {
+    await admin.from("lessons").insert({
+      page_id: pageId,
+      title,
+      body_html: bodyHtml || null,
+      audio_url: null,
+      position: 1,
+    });
+  }
+
+  revalidatePath(`/admin/pages/${pageId}/edit`);
+}
+
 // ── Quiz questions ────────────────────────────────────────────────────────────
 
 export type QuizAnswerInput = {
