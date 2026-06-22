@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { Target, ChevronRight } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
-import { SpecialtyIcon } from "@/components/content/specialty-icon";
+import { TrackHubAccordion, type SuperGroupData } from "@/components/content/track-hub-accordion";
+import { TypeChip } from "@/components/content/type-chip";
+import { STUDY_TYPE_CONFIG } from "@/lib/page-type";
 import type { Crumb } from "@/lib/breadcrumbs";
 
 export const metadata = { title: "Revalida Up" };
@@ -15,7 +15,10 @@ export default async function RevalidaUpHubPage() {
 
   const admin = createAdminClient();
   const [{ data: specialties }, { data: topicRows }] = await Promise.all([
-    admin.from("specialties").select("id, slug, name, display_order").order("display_order"),
+    admin
+      .from("specialties")
+      .select("id, slug, name, display_order, group_label")
+      .order("display_order"),
     admin
       .from("pages")
       .select("specialty_id")
@@ -29,9 +32,35 @@ export default async function RevalidaUpHubPage() {
     if (r.specialty_id != null) counts.set(r.specialty_id, (counts.get(r.specialty_id) ?? 0) + 1);
   }
 
-  const cards = (specialties ?? [])
-    .filter((s) => counts.has(s.id))
-    .map((s) => ({ slug: s.slug as string, name: s.name as string, count: counts.get(s.id)! }));
+  // Build super-groups the same way every other study hub does
+  // (view-hub-renderer / track-hub-renderer): bundle specialties by group_label
+  // so the 12 Clínica Médica specialties nest under one row and the rest are
+  // standalone. group_label=null → standalone row using the specialty's own icon.
+  type Spec = { id: number; slug: string; name: string; display_order: number; group_label: string | null };
+  type SuperGroup = SuperGroupData & { minOrder: number };
+  const superMap = new Map<string, SuperGroup>();
+  for (const s of (specialties ?? []) as Spec[]) {
+    if (!counts.has(s.id)) continue;
+    const label = s.group_label ?? s.name;
+    if (!superMap.has(label)) {
+      const iconSlug = s.group_label ? "clinica-medica" : s.slug;
+      superMap.set(label, { label, iconSlug, minOrder: s.display_order, items: [] });
+    }
+    const count = counts.get(s.id)!;
+    superMap.get(label)!.items.push({
+      spec: { id: s.id, slug: s.slug, name: s.name },
+      href: `/app/revalida-up/${s.slug}`,
+      note: `${count} ${count === 1 ? "tema" : "temas"}`,
+    });
+  }
+  const groups: SuperGroupData[] = [...superMap.values()]
+    .sort((a, b) => a.minOrder - b.minOrder)
+    .map(({ minOrder: _drop, ...rest }) => rest);
+
+  // Trailing "Outros" (Em breve) row to match the other study hubs.
+  if (groups.length > 0) {
+    groups.push({ label: "Outros", iconSlug: "outros", items: [] });
+  }
 
   const crumbs: Crumb[] = [
     { label: "Início", href: "/app" },
@@ -39,66 +68,37 @@ export default async function RevalidaUpHubPage() {
   ];
 
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
+    <div style={{ maxWidth: 1280, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
       <div className="mb-2">
         <VoltarButton fallbackHref="/app" />
       </div>
       <Breadcrumbs className="mb-6" crumbs={crumbs} />
 
-      {/* ── Hero ── */}
-      <header className="mb-8">
+      {/* ── Header (matches the other type hubs: title + type chip) ── */}
+      <header style={{ marginBottom: 28 }}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span
-            aria-hidden="true"
-            className="flex items-center justify-center rounded-[var(--radius)]"
+          <h1
             style={{
-              width: 44,
-              height: 44,
-              background: "color-mix(in srgb, var(--brand) 12%, transparent)",
-              color: "var(--brand)",
+              fontSize: "clamp(20px, 5vw, 26px)",
+              fontWeight: 600,
+              letterSpacing: "-.025em",
+              lineHeight: 1.15,
+              margin: 0,
             }}
           >
-            <Target size={24} strokeWidth={1.8} />
-          </span>
-          <h1 className="text-3xl font-bold leading-tight">Revalida Up</h1>
+            Revalida Up
+          </h1>
+          <TypeChip typeKey="revalida-up" />
         </div>
-        <p className="mt-3 max-w-prose text-sm text-muted-foreground">
-          Decisão estratégica por especialidade — os padrões que mais caem na prova,
-          tema por tema. Escolha a especialidade para começar.
-        </p>
       </header>
 
-      {/* ── Specialty grid ── */}
-      {cards.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {cards.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/app/revalida-up/${c.slug}`}
-              className="group flex items-center gap-4 rounded-[var(--radius)] p-4 transition-colors"
-              style={{ background: "var(--surface-1)", boxShadow: "inset 0 0 0 1px var(--surface-2)" }}
-            >
-              <span
-                aria-hidden="true"
-                className="flex shrink-0 items-center justify-center rounded-[var(--radius)]"
-                style={{ width: 44, height: 44, background: "var(--surface-2)" }}
-              >
-                <SpecialtyIcon specialtySlug={c.slug} size={26} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-semibold text-foreground">{c.name}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {c.count} {c.count === 1 ? "tema" : "temas"}
-                </span>
-              </span>
-              <ChevronRight
-                size={18}
-                strokeWidth={2}
-                className="shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-              />
-            </Link>
-          ))}
-        </div>
+      {/* ── Specialty groups (same accordion every other study hub uses) ── */}
+      {groups.length > 0 ? (
+        <TrackHubAccordion
+          groups={groups}
+          ctaLabel="Estudar"
+          accentColor={STUDY_TYPE_CONFIG["revalida-up"].color}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">Conteúdo em preparação.</p>
       )}

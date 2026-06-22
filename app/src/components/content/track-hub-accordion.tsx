@@ -13,6 +13,7 @@ export type SuperGroupData = {
     spec: { id: number; slug: string; name: string };
     href: string;
     progress?: number; // 0-100; rendered as a progress bar on the specialty card
+    note?: string; // optional muted subtitle on the card (e.g. "11 temas"); used by Revalida Up
   }[];
   /** When set, the group header label becomes inline-editable in admin edit
    *  mode (writes to `table`.`field` for row `id`). Omit for derived/static
@@ -157,8 +158,8 @@ export function TrackHubAccordion({
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                    {group.items.map(({ spec, href, progress }) => (
-                      <SpecialtyCard key={spec.id} spec={spec} href={href} progress={progress} ctaLabel={ctaLabel} />
+                    {group.items.map(({ spec, href, progress, note }) => (
+                      <SpecialtyCard key={spec.id} spec={spec} href={href} progress={progress} note={note} ctaLabel={ctaLabel} />
                     ))}
                   </div>
                 )}
@@ -175,11 +176,13 @@ function SpecialtyCard({
   spec,
   href,
   progress,
+  note,
   ctaLabel,
 }: {
   spec: { id: number; slug: string; name: string };
   href: string;
   progress?: number;
+  note?: string;
   ctaLabel: string;
 }) {
   const hasProgress = typeof progress === "number" && progress > 0;
@@ -211,6 +214,11 @@ function SpecialtyCard({
           as="div"
           className="text-[13px] font-semibold leading-tight tracking-[-0.01em] text-foreground"
         />
+        {note && (
+          <div style={{ marginTop: 4, fontSize: 11, color: "var(--muted-foreground)" }}>
+            {note}
+          </div>
+        )}
         {hasProgress && (
           <div style={{ marginTop: 8 }}>
             <div style={{ height: 3, background: "var(--surface-2)", borderRadius: 2, overflow: "hidden" }}>
