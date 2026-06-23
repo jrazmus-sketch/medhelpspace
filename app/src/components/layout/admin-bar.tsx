@@ -3,9 +3,10 @@
 import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Shield, ChevronDown, LayoutDashboard, Eye, Check, X, Pencil, MousePointerClick } from "lucide-react";
+import { Shield, ChevronDown, LayoutDashboard, Eye, Check, X, Pencil, MousePointerClick, Compass } from "lucide-react";
 import { useAuth } from "@/providers/auth-provider";
 import { useEditMode } from "@/providers/edit-mode-provider";
+import { useOnboarding } from "@/providers/onboarding-provider";
 import { setViewAs } from "@/actions/admin";
 import { cn } from "@/lib/utils";
 import type { ViewAsMode } from "@/lib/viewas";
@@ -57,8 +58,9 @@ export function AdminBar({ viewas, cohorts }: Props) {
   // Capture before TypeScript narrows the type via early-return guards below
   const currentMode: ViewAsMode = viewas;
 
-  const { profile, isAnyAdmin } = useAuth();
+  const { profile, isAnyAdmin, isSuperAdmin } = useAuth();
   const { editMode, toggle: toggleEdit, pending: editPending, isMobile } = useEditMode();
+  const { previewMode, setPreviewMode } = useOnboarding();
   const router = useRouter();
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -258,6 +260,34 @@ export function AdminBar({ viewas, cohorts }: Props) {
           </span>
           <span className="md:hidden">{editMode ? "Editando" : "Editar"}</span>
         </button>
+
+        {/* Onboarding preview — super-admin only. Forces every coachmark +
+            welcome card to show (ignoring dismissals) for this browser, so the
+            new-member walkthrough can be tested on demand. Local + reversible. */}
+        {isSuperAdmin() && (
+          <button
+            type="button"
+            onClick={() => setPreviewMode(!previewMode)}
+            title={
+              previewMode
+                ? "Onboarding em pré-visualização — mostrando todas as dicas. Clique para desligar."
+                : "Pré-visualizar o onboarding (mostra todas as dicas, ignorando o que foi fechado)"
+            }
+            aria-pressed={previewMode}
+            className={cn(
+              "flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold transition-colors",
+              previewMode
+                ? "bg-brand-fg text-brand hover:bg-brand-fg/90"
+                : "text-brand-fg hover:bg-brand-fg/15",
+            )}
+          >
+            <Compass className="h-3 w-3" />
+            <span className="hidden md:inline">
+              {previewMode ? "Onboarding ativo" : "Onboarding"}
+            </span>
+            <span className="md:hidden">{previewMode ? "Onb. ativo" : "Onb."}</span>
+          </button>
+        )}
 
         {contentSlug && (
           <Link

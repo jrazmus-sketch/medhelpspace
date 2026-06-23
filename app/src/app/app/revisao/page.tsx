@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { ArrowRight, Layers, CalendarCheck, RotateCcw, ClipboardList, Target, Brain } from "lucide-react";
 import { getReviewCounts, getWeakAreaForReview, getMemorecardRereadDue } from "@/lib/review/queries";
+import { Coachmark } from "@/components/onboarding/coachmark";
 
 export const metadata = { title: "Revisão" };
 
@@ -46,6 +47,8 @@ export default async function RevisaoHubPage() {
           Quanto mais você acerta, mais espaçado ele fica.
         </p>
       </header>
+
+      <Coachmark coachKey="revisao" />
 
       {due > 0 ? (
         <Link

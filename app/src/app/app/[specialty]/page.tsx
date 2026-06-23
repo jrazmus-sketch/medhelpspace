@@ -11,6 +11,7 @@ import { STUDY_TYPE_CONFIG, type StudyTypeConfig, type StudyTypeKey } from "@/li
 import { getStudyTypeOverrides } from "@/lib/queries/study-types";
 import { TypeChip } from "@/components/content/type-chip";
 import { EditableText } from "@/components/admin/editable-text";
+import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
@@ -89,6 +90,7 @@ export default async function SpecialtyHubPage({
             <TypeChip page={page} withHelp />
           </div>
         </header>
+        <Coachmark coachKey="type-hub" />
         {body}
       </div>
     );
@@ -188,6 +190,8 @@ export default async function SpecialtyHubPage({
           Escolha como quer estudar esta especialidade.
         </p>
       </header>
+
+      <Coachmark coachKey="specialty-hub" />
 
       {/* ── Study type cards ── */}
       {typeOptions.length > 0 ? (

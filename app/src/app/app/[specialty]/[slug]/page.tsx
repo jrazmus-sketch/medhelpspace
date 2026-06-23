@@ -10,6 +10,8 @@ import { FlashcardRenderer } from "@/components/content/flashcard-renderer";
 import { MemorecardsRenderer } from "@/components/content/memorecards-renderer";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { PageTracker } from "@/components/content/page-tracker";
+import { Coachmark } from "@/components/onboarding/coachmark";
+import type { CoachKey } from "@/lib/onboarding/tips";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { TypeChip } from "@/components/content/type-chip";
 import { EditableText } from "@/components/admin/editable-text";
@@ -138,6 +140,15 @@ export default async function ContentPage({
         )}
       </header>
 
+      {(() => {
+        const coachKey = coachmarkKeyForPage(page);
+        return coachKey ? (
+          <div className={chromeClass}>
+            <Coachmark coachKey={coachKey} />
+          </div>
+        ) : null;
+      })()}
+
       <PageBody
         page={page as { id: number; title: string; type: string; view: string | null; track_id: number | null; content_module_id: number | null }}
         selectedLessonId={selectedLessonId}
@@ -168,6 +179,33 @@ function isSimulado(page: { slug: string; type: string }) {
 // page is served by [specialty]/page.tsx, not here. Kept for future-proofing.
 function isSpecialtyAllContentTarget(page: { slug: string }, specialtySlug: string) {
   return page.slug === specialtySlug;
+}
+
+// Pick the onboarding tip for a content leaf, mirroring PageBody's renderer
+// dispatch so the hint matches what's actually on screen. Returns null for hub
+// pages (whose copy doesn't fit a single content modality).
+function coachmarkKeyForPage(page: {
+  type: string;
+  view: string | null;
+  track_id: number | null;
+  content_module_id: number | null;
+}): CoachKey | null {
+  if (page.view === "revalida-up") return "revalida-up";
+  switch (page.type) {
+    case "text-lesson":
+    case "audio-lesson":
+      return page.track_id === MEDVOICE_TRACK_ID || page.track_id === AUDIOCARDS_TRACK_ID
+        ? "audio"
+        : "lesson";
+    case "h5p-quiz":
+      if (page.track_id === FLASHCARDS_TRACK_ID) return "flashcards";
+      if (page.content_module_id === MEDHELP_60D_MODULE_ID) return "memorecards";
+      return "quiz";
+    case "plain-content":
+      return "lesson";
+    default:
+      return null;
+  }
 }
 
 function PageBody({

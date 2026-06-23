@@ -4,6 +4,7 @@ import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getDerivedPlanForUser, getStudyPlanPrefs, getStudyPlanPauses } from "@/lib/study-plan/fetch";
 import { PlanoClient } from "./plano-client";
+import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
@@ -68,6 +69,8 @@ export default async function PlanoPage() {
           {plan.daysToExam} dias para a prova · Fase: {phaseLabel(plan.phase)}
         </p>
       )}
+
+      <Coachmark coachKey="plano" className="mt-0" />
 
       <PlanoClient
         plan={plan}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog } from "@base-ui/react/dialog";
-import { GraduationCap, ChevronRight, X } from "lucide-react";
+import { GraduationCap, ChevronRight, X, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STUDY_TYPE_CONFIG, type StudyTypeKey } from "@/lib/page-type";
 import { ESTUDAR_GROUPS, ESTUDAR_NAV_OVERRIDES, isTypeActive } from "@/lib/estudar-nav";
@@ -109,6 +109,25 @@ export function MobileEstudarSheet({ currentType }: { currentType: StudyTypeKey 
               </div>
             </div>
           ))}
+
+          {/* Replayable walkthrough — always one tap away */}
+          <button
+            onClick={() => go("/app/comecar")}
+            className="mt-4 flex w-full items-center gap-3 rounded-lg border border-border px-2 py-2.5 text-left transition-colors active:bg-accent"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+              <Compass size={18} strokeWidth={1.8} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-semibold leading-tight text-foreground">
+                Comece por aqui
+              </span>
+              <span className="mt-0.5 block text-[12px] leading-snug text-muted-foreground">
+                Como usar a plataforma
+              </span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
+          </button>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

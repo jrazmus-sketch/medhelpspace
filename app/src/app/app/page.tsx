@@ -10,6 +10,8 @@ import {
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import { WaveformProgress } from "@/components/dashboard/waveform-progress";
 import { HelpTip } from "@/components/ui/help-tip";
+import { WelcomeCard } from "@/components/onboarding/welcome-card";
+import { Coachmark } from "@/components/onboarding/coachmark";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import type { Cohort } from "@/types/supabase";
@@ -650,6 +652,9 @@ export default async function MemberDashboardPage() {
         </div>
       </section>
 
+      {/* ── WELCOME (first-run, dismissable) ── */}
+      <WelcomeCard />
+
       {/* ── NOTIFICATIONS ── */}
       <NotificationStrip />
 
@@ -836,6 +841,8 @@ export default async function MemberDashboardPage() {
           </p>
         </div>
 
+        <Coachmark coachKey="dash-study-types" />
+
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {studyTypes.map((type, i) => {
             const cardStyle: React.CSSProperties = {
@@ -916,6 +923,8 @@ export default async function MemberDashboardPage() {
             Acesse todo o conteúdo de uma especialidade — questões, resumos, áudios e mais — em um só lugar.
           </p>
         </div>
+
+        <Coachmark coachKey="dash-specialties" />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {(specialtiesAll ?? []).map((spec, i) => (

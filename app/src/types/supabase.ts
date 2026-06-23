@@ -194,6 +194,10 @@ export interface User {
   admin_locale: AdminLocale;
   created_at: string;
   updated_at: string;
+  // Onboarding walkthrough state (schema-patch-onboarding.sql). Optional so
+  // existing User literals (e.g. mock data) stay valid; absent === brand new.
+  onboarding_dismissed?: string[] | null;
+  onboarding_seen_at?: string | null;
 }
 
 /** Alias: User and Profile refer to the same profiles table row. */

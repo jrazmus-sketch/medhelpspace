@@ -4,6 +4,8 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { AdminBarServer } from "@/components/layout/admin-bar-server";
 import { NotificationBellServer } from "@/components/layout/notification-bell-server";
 import { CopyGuard } from "@/components/layout/copy-guard";
+import { OnboardingProvider } from "@/providers/onboarding-provider";
+import { getOnboardingContent } from "@/lib/queries/onboarding-content";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { createClient } from "@/lib/supabase/server";
@@ -27,17 +29,23 @@ export default async function MemberLayout({ children }: { children: React.React
   const { data: { user } } = await supabase.auth.getUser();
   const reviewDueCount = user ? await getDueReviewCount(user.id) : 0;
 
+  // Editable onboarding strings (site_content) — seeds the OnboardingProvider so
+  // coachmarks + the guide render DB-backed, inline-editable copy.
+  const onboardingContent = await getOnboardingContent();
+
   return (
-    <div className="no-copy flex min-h-screen flex-col bg-background [overflow-x:clip]">
-      <CopyGuard />
-      <div className="sticky top-0 z-50">
-        <AdminBarServer />
-        <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} />
+    <OnboardingProvider content={onboardingContent}>
+      <div className="no-copy flex min-h-screen flex-col bg-background [overflow-x:clip]">
+        <CopyGuard />
+        <div className="sticky top-0 z-50">
+          <AdminBarServer />
+          <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} />
+        </div>
+        {/* pb-16 reserves space above the fixed mobile bottom nav */}
+        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <MemberFooter className="hidden md:block" />
+        <MobileNav show60d={show60d} reviewDueCount={reviewDueCount} />
       </div>
-      {/* pb-16 reserves space above the fixed mobile bottom nav */}
-      <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      <MemberFooter className="hidden md:block" />
-      <MobileNav show60d={show60d} reviewDueCount={reviewDueCount} />
-    </div>
+    </OnboardingProvider>
   );
 }

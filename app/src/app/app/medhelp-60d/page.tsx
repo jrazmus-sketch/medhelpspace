@@ -4,6 +4,7 @@ import { get60dAccess } from "@/lib/medhelp-60d";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { Medhelp60Accordion } from "@/components/content/medhelp-60d-accordion";
+import { Coachmark } from "@/components/onboarding/coachmark";
 
 export const metadata = { title: "MedHelp 60D" };
 
@@ -39,6 +40,8 @@ export default async function Medhelp60dPage() {
           Revisão intensiva para os últimos 60 dias antes da prova.
         </p>
       </header>
+
+      <Coachmark coachKey="medhelp-60d" className="mb-6 mt-0" />
 
       {unlocked ? (
         <Medhelp60Accordion />
