@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Hourglass, type LucideIcon } from "lucide-react";
+import { Home, Calendar, Hourglass, RotateCcw, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getStudyTypeFromPathname } from "@/lib/page-type";
 import { MobileEstudarSheet } from "@/components/layout/mobile-estudar-sheet";
@@ -48,6 +48,7 @@ export function MobileNav({ show60d = false }: { show60d?: boolean } = {}) {
       <div className="flex h-14 items-stretch">
         <NavCell href="/app" label="Início" Icon={Home} active={pathname === "/app"} />
         <NavCell href="/app/plano" label="Plano" Icon={Calendar} active={pathname.startsWith("/app/plano")} />
+        <NavCell href="/app/revisao" label="Revisão" Icon={RotateCcw} active={pathname.startsWith("/app/revisao")} />
         <MobileEstudarSheet currentType={currentType} />
         {show60d && (
           <NavCell

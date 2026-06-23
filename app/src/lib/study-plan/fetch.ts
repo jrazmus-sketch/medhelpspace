@@ -106,11 +106,14 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     ? { test_date: membership.cohort.test_date as string | null }
     : null;
 
-  // Flashcards due today
+  // Flashcards due today — now sourced from the unified review_schedule
+  // (flashcard_progress was backfilled into it; new answers write there).
   const { count: flashcardsDueToday } = await admin
-    .from("flashcard_progress")
+    .from("review_schedule")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
+    .eq("item_type", "flashcard")
+    .eq("suspended", false)
     .lte("due_date", todayKey);
 
   // Lessons per page (for "fully completed" detection)

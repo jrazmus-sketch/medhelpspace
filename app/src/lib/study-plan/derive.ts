@@ -466,7 +466,7 @@ export function derivePlan(args: {
       subtitle: cap < signals.flashcardsDueToday
         ? `${signals.flashcardsDueToday} devidas · limite diário: ${cap}`
         : "Spaced repetition · SM-2",
-      href: "/app/flashcards",
+      href: "/app/revisao",
       estimatedMinutes: Math.min(20, Math.ceil(cardsToShow * 0.5)),
       iconHint: "flashcards",
       reason: "Cartas devidas hoje pelo algoritmo SM-2",

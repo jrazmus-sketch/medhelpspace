@@ -103,6 +103,7 @@ Tables and their purpose:
 | `flashcard_items` | H5P CoursePresentation+Dialogcards → one row per card; `text` / `answer`; `group_position` = slide index |
 | `presentation_slides` | H5P CoursePresentation+AdvancedText/Image → one row per slide; for memorecards pages |
 | `nav_items` | Blurb cards and link lists from hub pages; `target_page_id` null = incomplete |
+| `review_schedule` | Unified SM-2 spaced-repetition state for the Revisão feature; one row per `(user, item_type, item_id)`, `item_type` ∈ flashcard/quiz_question/memorecard. Backfilled from `flashcard_progress`. Patch: `schema-patch-review-schedule.sql` |
 
 **Access control** (RLS): pages with `content_module_id IS NULL` require active cohort
 membership. Pages with a module set also require `cohort_module_access.unlock_date <= today`

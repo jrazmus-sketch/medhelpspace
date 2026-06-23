@@ -29,8 +29,9 @@ import { ESTUDAR_GROUPS, ESTUDAR_NAV_OVERRIDES, isTypeActive } from "@/lib/estud
 type PersonalLink = { href: string; label: string; exact?: boolean; highlight?: boolean };
 
 const PERSONAL_LINKS: PersonalLink[] = [
-  { href: "/app",       label: "Início",    exact: true     },
-  { href: "/app/plano", label: "Meu Plano", highlight: true },
+  { href: "/app",         label: "Início",    exact: true     },
+  { href: "/app/plano",   label: "Meu Plano", highlight: true },
+  { href: "/app/revisao", label: "Revisão"                    },
 ];
 
 function renderPersonalLink(link: PersonalLink, pathname: string) {
