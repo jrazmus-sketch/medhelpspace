@@ -86,7 +86,7 @@ export default async function SpecialtyHubPage({
             <h1 style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 600, letterSpacing: "-.025em", lineHeight: 1.15, margin: 0 }}>
               {page.title}
             </h1>
-            <TypeChip page={page} />
+            <TypeChip page={page} withHelp />
           </div>
         </header>
         {body}

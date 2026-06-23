@@ -38,6 +38,22 @@ export const STUDY_TYPE_CONFIG: Record<StudyTypeKey, StudyTypeConfig> = {
   medhelp60:  { key: "medhelp60",  label: "MedHelp 60D",        desc: "Conteúdo dos 60 dias finais",           Icon: CalendarClock, color: "var(--c-medhelp60)" },
 };
 
+// One-line explanations surfaced by the TypeChip's optional HelpTip ("?").
+// Richer than `desc` (which is a card sub-line): says what the type IS *and*
+// how to use it, for newcomers meeting the branded names for the first time.
+// Member-facing → hardcoded Portuguese.
+export const STUDY_TYPE_HELP: Record<StudyTypeKey, string> = {
+  quiz:       "Questões no estilo da prova do INEP, com comentário explicando cada alternativa. Para treinar raciocínio e revisar os erros.",
+  simulados:  "Provas completas para treinar no formato e no ritmo da prova real, com casos clínicos encadeados.",
+  resumos:    "Narrativas clínicas objetivas por especialidade — para revisar o essencial de cada tema com rapidez.",
+  formula:    "Condutas clínicas em formato visual e direto: o passo a passo de cada manejo, fácil de fixar.",
+  "revalida-up": "Os padrões que mais caem na prova, organizados como decisão estratégica de estudo.",
+  medvoice:   "Áudios curtos por tema — a clínica explicada em voz, para estudar ouvindo (no trânsito, na academia).",
+  audiocards: "Revisão ativa em áudio, cartão por cartão: você ouve a pergunta e, em seguida, a resposta.",
+  flashcards: "Cartões de revisão ativa: tente responder, vire o cartão e confira. Ótimo para memorização de longo prazo.",
+  medhelp60:  "Revisão intensiva liberada nos últimos 60 dias antes da prova. Abre automaticamente quando a data se aproxima.",
+};
+
 // Short forms used in the inline TypeChip (full labels read awkward inside a
 // pill that sits next to a long page title).
 export const STUDY_TYPE_CHIP_LABEL: Record<StudyTypeKey, string> = {

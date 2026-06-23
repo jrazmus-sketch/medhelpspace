@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { NotificationStrip } from "@/components/dashboard/notification-strip";
 import { WaveformProgress } from "@/components/dashboard/waveform-progress";
+import { HelpTip } from "@/components/ui/help-tip";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import type { Cohort } from "@/types/supabase";
@@ -559,6 +560,12 @@ export default async function MemberDashboardPage() {
                 {cohortBadge}
               </span>
             )}
+            {cohortBadge && viewas.type !== "unlocked" && (
+              <HelpTip label="O que é a sua turma?" side="bottom">
+                A sua turma é o ciclo do Revalida em que você está inscrito. Ela define a
+                contagem regressiva até a prova e a data em que o MedHelp 60D é liberado para você.
+              </HelpTip>
+            )}
           </div>
 
           <h1 className="font-bold text-foreground" style={{
@@ -875,7 +882,20 @@ export default async function MemberDashboardPage() {
             );
 
             if (type.locked || !type.href) {
-              return <div key={type.id} style={cardStyle}>{inner}</div>;
+              return (
+                <div key={type.id} style={cardStyle}>
+                  {inner}
+                  {type.id === "medhelp60" && (
+                    <div style={{ position: "absolute", top: 10, right: 10, zIndex: 1 }}>
+                      <HelpTip label="Sobre o MedHelp 60D">
+                        Revisão intensiva dos últimos 60 dias antes da prova. Abre
+                        automaticamente quando a sua data de prova se aproxima — não é
+                        preciso fazer nada, o cadeado se solta sozinho.
+                      </HelpTip>
+                    </div>
+                  )}
+                </div>
+              );
             }
 
             return (

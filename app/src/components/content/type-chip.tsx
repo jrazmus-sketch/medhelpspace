@@ -4,8 +4,10 @@ import {
   getStudyTypeKey,
   STUDY_TYPE_CONFIG,
   STUDY_TYPE_CHIP_LABEL,
+  STUDY_TYPE_HELP,
   type StudyTypeKey,
 } from "@/lib/page-type";
+import { HelpTip } from "@/components/ui/help-tip";
 
 type Size = "sm" | "md";
 
@@ -23,12 +25,16 @@ type Props = {
   // When true, the chip links to its type's top-level hub. Default: false on
   // [slug] content pages (the breadcrumb already provides that link).
   asLink?: boolean;
+  // When true, append a "?" HelpTip explaining what this content type is.
+  // Opt-in (off by default) so it appears only where users first meet the
+  // branded name — e.g. hub-page headers — not on every leaf-page chip.
+  withHelp?: boolean;
 };
 
 // Inline pill: small tinted background + colored dot + colored label.
 // Reads the type's signature color via CSS var so it stays in sync with
 // the rest of the design system (dashboard cards, specialty hub tiles).
-export function TypeChip({ page, typeKey, size = "sm", className, asLink = false }: Props) {
+export function TypeChip({ page, typeKey, size = "sm", className, asLink = false, withHelp = false }: Props) {
   const key = typeKey ?? (page ? getStudyTypeKey(page) : null);
   if (!key) return null;
 
@@ -61,6 +67,25 @@ export function TypeChip({ page, typeKey, size = "sm", className, asLink = false
       {label}
     </span>
   );
+
+  if (withHelp) {
+    const chip =
+      asLink && cfg.hubHref ? (
+        <Link href={cfg.hubHref} className="inline-flex hover:opacity-90 transition-opacity">
+          {body}
+        </Link>
+      ) : (
+        body
+      );
+    return (
+      <span className={["inline-flex items-center gap-1", className].filter(Boolean).join(" ")}>
+        {chip}
+        <HelpTip label={`O que é ${cfg.label}?`} side="bottom">
+          {STUDY_TYPE_HELP[key]}
+        </HelpTip>
+      </span>
+    );
+  }
 
   if (asLink && cfg.hubHref) {
     return (

@@ -95,7 +95,7 @@ export function EstudoTabs({
             animation: "dash-fade-up 0.32s cubic-bezier(.16,1,.3,1) both",
           }}
         >
-          <TypeChip typeKey={active} size="md" />
+          <TypeChip typeKey={active} size="md" withHelp />
         </span>
       </header>
 
