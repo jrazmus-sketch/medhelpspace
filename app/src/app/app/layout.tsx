@@ -6,6 +6,8 @@ import { NotificationBellServer } from "@/components/layout/notification-bell-se
 import { CopyGuard } from "@/components/layout/copy-guard";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import { requireActiveMembership } from "@/lib/membership-gate";
+import { createClient } from "@/lib/supabase/server";
+import { getDueReviewCount } from "@/lib/review/queries";
 
 export const metadata = { title: { template: "%s | MedHelpSpace", default: "Dashboard" } };
 
@@ -20,17 +22,22 @@ export default async function MemberLayout({ children }: { children: React.React
 
   const { unlocked: show60d } = await get60dAccess();
 
+  // Review due-count for the nav badge (re-evaluated per navigation).
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const reviewDueCount = user ? await getDueReviewCount(user.id) : 0;
+
   return (
     <div className="no-copy flex min-h-screen flex-col bg-background [overflow-x:clip]">
       <CopyGuard />
       <div className="sticky top-0 z-50">
         <AdminBarServer />
-        <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} />
+        <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} />
       </div>
       {/* pb-16 reserves space above the fixed mobile bottom nav */}
       <main className="flex-1 pb-16 md:pb-0">{children}</main>
       <MemberFooter className="hidden md:block" />
-      <MobileNav show60d={show60d} />
+      <MobileNav show60d={show60d} reviewDueCount={reviewDueCount} />
     </div>
   );
 }

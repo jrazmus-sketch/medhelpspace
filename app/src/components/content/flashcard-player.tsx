@@ -26,6 +26,7 @@ type Phase = "play" | "group-done" | "deck-done";
 
 interface Props {
   groups: CardGroup[];
+  pageId: number;
   dueTodayCount?: number;
   totalCards?: number;
   nextDeckHref: string | null;
@@ -36,6 +37,7 @@ interface Props {
 
 export function FlashcardPlayer({
   groups,
+  pageId,
   dueTodayCount,
   totalCards,
   nextDeckHref,
@@ -252,6 +254,12 @@ export function FlashcardPlayer({
             >
               Recomeçar do zero
             </button>
+            <Link
+              href={`/app/revisao/sessao?page=${pageId}`}
+              className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+            >
+              Revisar com repetição espaçada
+            </Link>
           </div>
         </div>
       </div>

@@ -237,6 +237,12 @@ export function QuizPlayer({
             >
               Recomeçar do zero
             </button>
+            <Link
+              href={`/app/revisao/sessao?page=${pageId}`}
+              className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+            >
+              Revisar com repetição espaçada
+            </Link>
           </div>
         </div>
       </div>

@@ -56,6 +56,18 @@ export async function getReviewCounts(userId: string): Promise<ReviewCounts> {
   };
 }
 
+/** Single lightweight count for the nav badge: items due on/before today. */
+export async function getDueReviewCount(userId: string): Promise<number> {
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("review_schedule")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("suspended", false)
+    .lte("due_date", todayKey());
+  return count ?? 0;
+}
+
 // ── Items ──────────────────────────────────────────────────────────────────────
 
 export type ReviewItem =
@@ -188,6 +200,80 @@ export async function getReviewItems(
         });
       }
     }
+  }
+
+  return interleaveByKind(items);
+}
+
+/**
+ * All reviewable items for a single page (quiz questions + flashcards), regardless
+ * of due date or enrollment — powers the per-page "Revisar de novo" on-demand
+ * session. Grading still updates each item's SM-2 schedule.
+ *
+ * SECURITY: reads via the service-role client (RLS bypassed) and does NOT itself
+ * authorize access to `pageId`. Callers MUST gate first — verify the page is
+ * published and the viewer has membership + any module access (e.g. MedHelp 60D),
+ * exactly as the [specialty]/[slug] content route does. The /app/revisao/sessao
+ * route performs this check before calling.
+ */
+export async function getPageReviewItems(pageId: number, limit = 60): Promise<ReviewItem[]> {
+  const admin = createAdminClient();
+
+  const { data: page } = await admin
+    .from("pages")
+    .select("id, slug, specialty_id")
+    .eq("id", pageId)
+    .single();
+  if (!page) return [];
+
+  const specialtyId = (page.specialty_id as number | null) ?? null;
+  let href = `/app/${page.slug}`;
+  if (specialtyId) {
+    const { data: spec } = await admin.from("specialties").select("slug").eq("id", specialtyId).single();
+    if (spec?.slug) href = `/app/${spec.slug}/${page.slug}`;
+  }
+
+  const [quizRes, flashRes] = await Promise.all([
+    admin
+      .from("quiz_questions")
+      .select("id, question, answers, explanation_html, media_url")
+      .eq("page_id", pageId)
+      .order("position")
+      .limit(limit),
+    admin
+      .from("flashcard_items")
+      .select("id, text, answer, image_url, tip")
+      .eq("page_id", pageId)
+      .order("group_position")
+      .order("position")
+      .limit(limit),
+  ]);
+
+  const items: ReviewItem[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const qq of (quizRes.data ?? []) as any[]) {
+    items.push({
+      kind: "quiz",
+      id: qq.id as number,
+      specialtyId,
+      question: qq.question ?? "",
+      answers: Array.isArray(qq.answers) ? qq.answers : [],
+      explanation_html: qq.explanation_html ?? null,
+      media_url: qq.media_url ?? null,
+      remediationHref: href,
+    });
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const f of (flashRes.data ?? []) as any[]) {
+    items.push({
+      kind: "flashcard",
+      id: f.id as number,
+      specialtyId,
+      text: f.text ?? "",
+      answer: f.answer ?? "",
+      image_url: f.image_url ?? null,
+      tip: f.tip ?? null,
+    });
   }
 
   return interleaveByKind(items);

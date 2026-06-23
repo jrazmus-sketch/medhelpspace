@@ -474,8 +474,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── [8/8] Flashcards due for review ──────────────────────────────────────
-  push(`\n[8/8] Flashcards due for review…`);
+  // ── [8/8] Review items due ───────────────────────────────────────────────
+  push(`\n[8/8] Review items due…`);
   {
     const today = todayKey();
     const students = await getActiveStudents();
@@ -486,19 +486,21 @@ export async function GET(request: NextRequest) {
     );
     let notified = 0;
     for (const s of eligible) {
-      // Count cards whose SM-2 due_date has arrived (mirrors lib/study-plan derive).
+      // Count all SM-2-due review items (flashcards + quiz + memorecards) from the
+      // unified review_schedule (flashcard_progress is frozen).
       const { count: dueCount } = await supabase
-        .from("flashcard_progress")
+        .from("review_schedule")
         .select("*", { count: "exact", head: true })
         .eq("user_id", s.user_id)
+        .eq("suspended", false)
         .lte("due_date", today);
       if ((dueCount ?? 0) < FLASHCARD_DUE_THRESHOLD) continue;
-      // contextId = today → at most one flashcards-due bell per user per day.
+      // contextId = today → at most one review-due bell per user per day.
       await insertNotification({
         userId: s.user_id, kind: "flashcards-due",
-        title: "Flashcards para revisar",
-        body: `Você tem ${dueCount} flashcards prontos para revisão hoje pelo SM-2.`,
-        href: "/app/flashcards", icon: "calendar", contextId: today,
+        title: "Itens para revisar",
+        body: `Você tem ${dueCount} itens prontos para revisão hoje.`,
+        href: "/app/revisao", icon: "calendar", contextId: today,
       });
       notified++;
     }

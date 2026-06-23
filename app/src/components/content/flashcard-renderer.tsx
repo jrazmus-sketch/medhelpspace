@@ -33,13 +33,16 @@ export async function FlashcardRenderer({ pageId }: { pageId: number }) {
       const { data: { user } } = await userClient.auth.getUser();
       if (user) {
         const cardIds = cards.map((c) => c.id);
+        // SM-2 state now lives in the unified review_schedule (flashcard_progress
+        // is frozen); read it back so due cards still resurface first.
         const { data: progress } = await userClient
-          .from("flashcard_progress")
-          .select("flashcard_item_id, due_date, repetitions")
+          .from("review_schedule")
+          .select("item_id, due_date, repetitions")
           .eq("user_id", user.id)
-          .in("flashcard_item_id", cardIds);
+          .eq("item_type", "flashcard")
+          .in("item_id", cardIds);
         for (const p of progress ?? []) {
-          progressByCard.set(p.flashcard_item_id as number, {
+          progressByCard.set(p.item_id as number, {
             due_date: p.due_date as string,
             repetitions: p.repetitions as number,
           });
@@ -104,6 +107,7 @@ export async function FlashcardRenderer({ pageId }: { pageId: number }) {
   return (
     <FlashcardPlayer
       groups={groups}
+      pageId={pageId}
       dueTodayCount={dueTodayCount}
       totalCards={cards.length}
       nextDeckHref={siblings.nextHref}

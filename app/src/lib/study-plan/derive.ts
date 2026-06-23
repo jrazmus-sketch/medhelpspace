@@ -114,7 +114,7 @@ export type CohortInfo = {
 export type Signals = {
   quizAttempts: { specialty_id: number | null; is_correct: boolean; created_at: string; page_id: number }[];
   lessonCompletions: { lesson_id: number; page_id: number; completed_at: string }[];
-  flashcardsDueToday: number;
+  reviewDueToday: number;
   lessonsByPageId: Map<number, number>;
   pauses: { pause_from: string; pause_until: string; reason: string | null }[];
 };
@@ -456,21 +456,28 @@ export function derivePlan(args: {
     }
   }
 
-  // Flashcards (gated by pref + cap)
-  if (allowedTypes.has("flashcards") && signals.flashcardsDueToday > 0) {
-    const cap = prefs.flashcard_daily_cap ?? signals.flashcardsDueToday;
-    const cardsToShow = Math.min(signals.flashcardsDueToday, cap);
-    items.push({
+  // Spaced-repetition review queue (all due items, any type). Shown whenever
+  // something is due — review keeps already-studied content fresh, so it's not
+  // gated by the new-content type prefs. In TAPER it leads the plan (review
+  // outranks new content in the final stretch).
+  if (signals.reviewDueToday > 0) {
+    const cap = prefs.flashcard_daily_cap ?? signals.reviewDueToday;
+    const toShow = Math.min(signals.reviewDueToday, cap);
+    const reviewItem: PlanItem = {
       kind: "flashcards",
-      title: `${cardsToShow} flashcards para revisar`,
-      subtitle: cap < signals.flashcardsDueToday
-        ? `${signals.flashcardsDueToday} devidas · limite diário: ${cap}`
-        : "Spaced repetition · SM-2",
+      title: `${toShow} ${toShow === 1 ? "item" : "itens"} para revisar`,
+      subtitle: cap < signals.reviewDueToday
+        ? `${signals.reviewDueToday} devidos · limite diário: ${cap}`
+        : "Repetição espaçada · SM-2",
       href: "/app/revisao",
-      estimatedMinutes: Math.min(20, Math.ceil(cardsToShow * 0.5)),
+      estimatedMinutes: Math.min(25, Math.ceil(toShow * 0.5)),
       iconHint: "flashcards",
-      reason: "Cartas devidas hoje pelo algoritmo SM-2",
-    });
+      reason: phase === "taper"
+        ? "Reta final — revisão é prioridade"
+        : "Itens devidos hoje pelo algoritmo SM-2",
+    };
+    if (phase === "taper") items.unshift(reviewItem);
+    else items.push(reviewItem);
   }
 
   // Memorecards (intensification phase + opt-in via content type + include_60d toggle)

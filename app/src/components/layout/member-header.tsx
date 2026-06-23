@@ -34,7 +34,7 @@ const PERSONAL_LINKS: PersonalLink[] = [
   { href: "/app/revisao", label: "Revisão"                    },
 ];
 
-function renderPersonalLink(link: PersonalLink, pathname: string) {
+function renderPersonalLink(link: PersonalLink, pathname: string, badgeCount = 0) {
   const { href, label, exact, highlight } = link;
   const active = exact ? pathname === href : pathname.startsWith(href);
   return (
@@ -52,6 +52,11 @@ function renderPersonalLink(link: PersonalLink, pathname: string) {
     >
       {highlight && <Calendar className="h-3.5 w-3.5" />}
       {label}
+      {badgeCount > 0 && (
+        <span className="ml-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold tabular-nums text-brand-fg">
+          {badgeCount > 99 ? "99+" : badgeCount}
+        </span>
+      )}
     </Link>
   );
 }
@@ -138,7 +143,8 @@ function EstudarMenu({
 export function MemberHeader({
   bellSlot,
   show60d = false,
-}: { bellSlot?: React.ReactNode; show60d?: boolean } = {}) {
+  reviewDueCount = 0,
+}: { bellSlot?: React.ReactNode; show60d?: boolean; reviewDueCount?: number } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isAnyAdmin } = useAuth();
@@ -183,7 +189,9 @@ export function MemberHeader({
         <nav className="hidden items-center md:flex">
           {/* Personal cluster (Início, Meu Plano, + MedHelp 60D once unlocked) */}
           <div className="flex items-center gap-0.5">
-            {PERSONAL_LINKS.map((link) => renderPersonalLink(link, pathname))}
+            {PERSONAL_LINKS.map((link) =>
+              renderPersonalLink(link, pathname, link.href === "/app/revisao" ? reviewDueCount : 0),
+            )}
             {show60d && (
               <Link
                 href="/app/medhelp-60d"

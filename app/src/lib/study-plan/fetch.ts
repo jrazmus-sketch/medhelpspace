@@ -106,13 +106,12 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     ? { test_date: membership.cohort.test_date as string | null }
     : null;
 
-  // Flashcards due today — now sourced from the unified review_schedule
-  // (flashcard_progress was backfilled into it; new answers write there).
-  const { count: flashcardsDueToday } = await admin
+  // Review items due today — ALL types from the unified review_schedule
+  // (flashcards + quiz questions + memorecards). Drives the plan's review item.
+  const { count: reviewDueToday } = await admin
     .from("review_schedule")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
-    .eq("item_type", "flashcard")
     .eq("suspended", false)
     .lte("due_date", todayKey);
 
@@ -133,7 +132,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
   const signals: Signals = {
     quizAttempts: (quizAttemptsRes.data ?? []) as Signals["quizAttempts"],
     lessonCompletions: (completionsRes.data ?? []) as Signals["lessonCompletions"],
-    flashcardsDueToday: flashcardsDueToday ?? 0,
+    reviewDueToday: reviewDueToday ?? 0,
     lessonsByPageId,
     pauses: (pausesRes.data ?? []) as Signals["pauses"],
   };

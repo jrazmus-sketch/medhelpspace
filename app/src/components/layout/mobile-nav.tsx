@@ -13,17 +13,24 @@ import { MobileEstudarSheet } from "@/components/layout/mobile-estudar-sheet";
 // Search, notifications, theme, and profile/settings all live in the top
 // header (visible on mobile too), so none of them are duplicated here.
 function NavCell({
-  href, label, Icon, active,
-}: { href: string; label: string; Icon: LucideIcon; active: boolean }) {
+  href, label, Icon, active, badge = 0,
+}: { href: string; label: string; Icon: LucideIcon; active: boolean; badge?: number }) {
   return (
     <Link
       href={href}
       className={cn(
-        "flex flex-1 flex-col items-center justify-center gap-[3px] transition-colors",
+        "relative flex flex-1 flex-col items-center justify-center gap-[3px] transition-colors",
         active ? "text-brand" : "text-muted-foreground",
       )}
     >
-      <Icon size={19} strokeWidth={active ? 2 : 1.6} />
+      <span className="relative">
+        <Icon size={19} strokeWidth={active ? 2 : 1.6} />
+        {badge > 0 && (
+          <span className="absolute -right-2 -top-1.5 inline-flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-brand px-1 text-[9px] font-semibold tabular-nums text-brand-fg">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
+      </span>
       <span style={{ fontSize: 9.5, fontWeight: active ? 600 : 400, letterSpacing: ".03em" }}>
         {label}
       </span>
@@ -31,7 +38,7 @@ function NavCell({
   );
 }
 
-export function MobileNav({ show60d = false }: { show60d?: boolean } = {}) {
+export function MobileNav({ show60d = false, reviewDueCount = 0 }: { show60d?: boolean; reviewDueCount?: number } = {}) {
   const pathname = usePathname();
   const currentType = getStudyTypeFromPathname(pathname);
 
@@ -48,7 +55,7 @@ export function MobileNav({ show60d = false }: { show60d?: boolean } = {}) {
       <div className="flex h-14 items-stretch">
         <NavCell href="/app" label="Início" Icon={Home} active={pathname === "/app"} />
         <NavCell href="/app/plano" label="Plano" Icon={Calendar} active={pathname.startsWith("/app/plano")} />
-        <NavCell href="/app/revisao" label="Revisão" Icon={RotateCcw} active={pathname.startsWith("/app/revisao")} />
+        <NavCell href="/app/revisao" label="Revisão" Icon={RotateCcw} active={pathname.startsWith("/app/revisao")} badge={reviewDueCount} />
         <MobileEstudarSheet currentType={currentType} />
         {show60d && (
           <NavCell
