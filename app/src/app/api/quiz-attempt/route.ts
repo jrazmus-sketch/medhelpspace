@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { gradeReviewItem } from "@/actions/review";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -22,5 +23,10 @@ export async function POST(request: Request) {
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Enroll/schedule the question for spaced-repetition review. Answering it (in
+  // the normal player) is what makes it "completed" and thus reviewable later.
+  await gradeReviewItem("quiz_question", questionId, isCorrect ? "correct" : "incorrect", specialtyId ?? null);
+
   return NextResponse.json({ ok: true });
 }

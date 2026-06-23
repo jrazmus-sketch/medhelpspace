@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { ArrowRight, Layers, CalendarCheck } from "lucide-react";
+import { ArrowRight, Layers, CalendarCheck, RotateCcw, ClipboardList } from "lucide-react";
 import { getReviewCounts } from "@/lib/review/queries";
 
 export const metadata = { title: "Revisão" };
@@ -11,9 +11,18 @@ export default async function RevisaoHubPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const counts = user ? await getReviewCounts(user.id) : { dueTotal: 0, dueFlashcards: 0 };
-  const due = counts.dueFlashcards;
-  const estMin = Math.max(1, Math.min(20, Math.ceil(due * 0.5)));
+  const counts = user
+    ? await getReviewCounts(user.id)
+    : { dueTotal: 0, dueFlashcards: 0, dueQuiz: 0, wrongTotal: 0 };
+  const due = counts.dueTotal;
+  const estMin = Math.max(1, Math.min(30, Math.ceil(due * 0.5)));
+
+  const breakdown = [
+    counts.dueQuiz > 0 ? `${counts.dueQuiz} ${counts.dueQuiz === 1 ? "questão" : "questões"}` : null,
+    counts.dueFlashcards > 0 ? `${counts.dueFlashcards} flashcards` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="mx-auto max-w-3xl px-[10px] sm:px-6 pt-7 pb-16">
@@ -25,8 +34,8 @@ export default async function RevisaoHubPage() {
           Mantenha o que já estudou fresco
         </h1>
         <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
-          A revisão usa repetição espaçada: cada carta volta no momento certo para fixar na
-          memória. Quanto mais você acerta, mais espaçada ela fica.
+          A revisão usa repetição espaçada: cada item volta no momento certo para fixar na memória.
+          Quanto mais você acerta, mais espaçado ele fica.
         </p>
       </header>
 
@@ -42,9 +51,11 @@ export default async function RevisaoHubPage() {
                 Revisar hoje
               </div>
               <div className="mt-2 text-3xl font-black tabular-nums">
-                {due} <span className="text-lg font-medium opacity-80">cartas</span>
+                {due} <span className="text-lg font-medium opacity-80">{due === 1 ? "item" : "itens"}</span>
               </div>
-              <div className="mt-1 text-sm opacity-80">~{estMin} min · repetição espaçada</div>
+              <div className="mt-1 text-sm opacity-80">
+                {breakdown ? `${breakdown} · ` : ""}~{estMin} min
+              </div>
             </div>
             <ArrowRight className="h-6 w-6 shrink-0 transition-transform group-hover:translate-x-1" />
           </div>
@@ -56,16 +67,38 @@ export default async function RevisaoHubPage() {
           </div>
           <p className="mt-3 font-semibold text-foreground">Nada para revisar hoje</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Você está em dia. Estude flashcards novos e eles voltam aqui para revisão na hora certa.
+            Você está em dia. Resolva questões e flashcards — eles voltam aqui para revisão na hora
+            certa.
           </p>
           <Link
-            href="/app/flashcards"
+            href="/app/estudo-por-questoes"
             className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-brand/40 hover:text-brand"
           >
-            <Layers className="h-4 w-4" />
-            Ir para os flashcards
+            <ClipboardList className="h-4 w-4" />
+            Estudar questões
           </Link>
         </div>
+      )}
+
+      {/* Other modes */}
+      {counts.wrongTotal > 0 && (
+        <Link
+          href="/app/revisao/sessao?mode=wrong"
+          className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-1 p-4 transition-colors hover:border-brand/40"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-brand">
+              <RotateCcw className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Só as que errei</p>
+              <p className="text-xs text-muted-foreground">
+                {counts.wrongTotal} {counts.wrongTotal === 1 ? "item" : "itens"} para recuperar
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
       )}
 
       {/* How it works */}
@@ -75,16 +108,23 @@ export default async function RevisaoHubPage() {
         </p>
         <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
           <li className="flex gap-2">
-            <span className="text-brand">•</span> Acertou → a carta demora mais para voltar.
+            <span className="text-brand">•</span> Acertou → o item demora mais para voltar.
           </li>
           <li className="flex gap-2">
-            <span className="text-brand">•</span> Errou → ela volta já no dia seguinte.
+            <span className="text-brand">•</span> Errou → ele volta já no dia seguinte (e entra em
+            “só as que errei”).
           </li>
           <li className="flex gap-2">
-            <span className="text-brand">•</span> Só aparecem aqui conteúdos que você já estudou.
+            <span className="text-brand">•</span> Só aparecem aqui questões e flashcards que você já
+            estudou.
           </li>
         </ul>
       </div>
+
+      <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Layers className="h-3.5 w-3.5" />
+        Questões e flashcards são intercalados na sessão para fixar melhor.
+      </p>
     </div>
   );
 }
