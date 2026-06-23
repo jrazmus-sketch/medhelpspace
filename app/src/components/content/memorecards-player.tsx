@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
 import { safe } from "@/lib/sanitize";
+import { enrollMemorecardReread } from "@/actions/review";
 import type { SlideData } from "./memorecards-renderer";
 
 interface Props {
   slides: SlideData[];
+  pageId: number;
+  specialtyId: number | null;
   nextDeckHref: string | null;
   nextDeckTitle: string | null;
   specialtyHref: string;
@@ -20,15 +23,27 @@ function isCdnUrl(url: string): boolean {
 
 export function MemorecardsPlayer({
   slides,
+  pageId,
+  specialtyId,
   nextDeckHref,
   nextDeckTitle,
   specialtyHref,
   specialtyName,
 }: Props) {
   const [idx, setIdx] = useState(0);
+  const enrolledRef = useRef(false);
   const slide = slides[idx];
   const total = slides.length;
   const isLast = idx === total - 1;
+
+  // Finishing a deck schedules it for a re-read (passive spaced repetition).
+  // Ref guard (not state) so it fires once without an extra render.
+  useEffect(() => {
+    if (isLast && !enrolledRef.current) {
+      enrolledRef.current = true;
+      void enrollMemorecardReread(pageId, specialtyId);
+    }
+  }, [isLast, pageId, specialtyId]);
 
   function prev() {
     setIdx((i) => Math.max(0, i - 1));

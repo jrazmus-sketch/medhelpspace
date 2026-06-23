@@ -18,7 +18,7 @@ export default async function RevisaoSessaoPage({
   if (!user) redirect("/app/revisao");
 
   const { mode } = await searchParams;
-  const reviewMode: ReviewMode = mode === "wrong" ? "wrong" : "due";
+  const reviewMode: ReviewMode = mode === "wrong" ? "wrong" : mode === "weak" ? "weak" : "due";
 
   const items = await getReviewItems(user.id, reviewMode);
   if (items.length === 0) redirect("/app/revisao");
@@ -27,7 +27,11 @@ export default async function RevisaoSessaoPage({
     <div className="mx-auto max-w-2xl px-[10px] sm:px-6 pt-7 pb-16">
       <div className="mb-5 flex items-center justify-between gap-3">
         <h1 className="text-lg font-bold tracking-tight text-foreground">
-          {reviewMode === "wrong" ? "Só as que errei" : "Revisão de hoje"}
+          {reviewMode === "wrong"
+            ? "Só as que errei"
+            : reviewMode === "weak"
+              ? "Pontos fracos"
+              : "Revisão de hoje"}
         </h1>
         <Link
           href="/app/revisao"

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { ArrowRight, Layers, CalendarCheck, RotateCcw, ClipboardList } from "lucide-react";
-import { getReviewCounts } from "@/lib/review/queries";
+import { ArrowRight, Layers, CalendarCheck, RotateCcw, ClipboardList, Target, Brain } from "lucide-react";
+import { getReviewCounts, getWeakAreaForReview, getMemorecardRereadDue } from "@/lib/review/queries";
 
 export const metadata = { title: "Revisão" };
 
@@ -11,9 +11,17 @@ export default async function RevisaoHubPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const counts = user
-    ? await getReviewCounts(user.id)
-    : { dueTotal: 0, dueFlashcards: 0, dueQuiz: 0, wrongTotal: 0 };
+  const [counts, weakArea, rereadDecks] = user
+    ? await Promise.all([
+        getReviewCounts(user.id),
+        getWeakAreaForReview(user.id),
+        getMemorecardRereadDue(user.id),
+      ])
+    : [
+        { dueTotal: 0, dueFlashcards: 0, dueQuiz: 0, wrongTotal: 0 },
+        { count: 0, names: [], specialtyIds: [] },
+        [],
+      ];
   const due = counts.dueTotal;
   const estMin = Math.max(1, Math.min(30, Math.ceil(due * 0.5)));
 
@@ -99,6 +107,54 @@ export default async function RevisaoHubPage() {
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Link>
+      )}
+
+      {weakArea.count > 0 && (
+        <Link
+          href="/app/revisao/sessao?mode=weak"
+          className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-1 p-4 transition-colors hover:border-brand/40"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-brand">
+              <Target className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">Pontos fracos</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {weakArea.names.length > 0 ? weakArea.names.join(" · ") : "Suas especialidades mais fracas"}
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      )}
+
+      {rereadDecks.length > 0 && (
+        <div className="mt-3 rounded-xl border border-border bg-surface-1 p-4">
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2 text-brand">
+              <Brain className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Reler memorecards</p>
+              <p className="text-xs text-muted-foreground">
+                {rereadDecks.length} {rereadDecks.length === 1 ? "conjunto" : "conjuntos"} para revisitar
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex flex-col divide-y divide-border">
+            {rereadDecks.slice(0, 5).map((d) => (
+              <Link
+                key={d.pageId}
+                href={d.href}
+                className="flex items-center justify-between gap-3 py-2 text-sm text-foreground transition-colors hover:text-brand"
+              >
+                <span className="truncate">{d.title}</span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* How it works */}

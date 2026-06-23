@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type HTMLAttributes } from "react";
 import Link from "next/link";
 import { RotateCcw, ImageOff, Check, X, ArrowRight, BookOpen } from "lucide-react";
-import { gradeReviewItem } from "@/actions/review";
+import { gradeReviewItem, suspendReviewItem } from "@/actions/review";
 import { safe } from "@/lib/sanitize";
 import type { ReviewItem, ReviewMode } from "@/lib/review/queries";
 
@@ -37,6 +37,15 @@ export function ReviewSession({ items, mode = "due" }: { items: ReviewItem[]; mo
         result,
         item.specialtyId,
       );
+      if (isLast) setDone(true);
+      else setIdx((i) => i + 1);
+    },
+    [isLast],
+  );
+
+  const suspend = useCallback(
+    (item: ReviewItem) => {
+      void suspendReviewItem(item.kind === "flashcard" ? "flashcard" : "quiz_question", item.id);
       if (isLast) setDone(true);
       else setIdx((i) => i + 1);
     },
@@ -114,7 +123,13 @@ export function ReviewSession({ items, mode = "due" }: { items: ReviewItem[]; mo
       {/* Progress */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>
-          {retryKeys ? "Refazendo erradas · " : mode === "wrong" ? "Só as que errei · " : ""}
+          {retryKeys
+            ? "Refazendo erradas · "
+            : mode === "wrong"
+              ? "Só as que errei · "
+              : mode === "weak"
+                ? "Pontos fracos · "
+                : ""}
           Item {idx + 1} de {deck.length}
         </span>
         <span className="hidden sm:block opacity-50 capitalize">
@@ -133,6 +148,15 @@ export function ReviewSession({ items, mode = "due" }: { items: ReviewItem[]; mo
       ) : (
         <QuizCard key={itemKey(current)} item={current} onGraded={(r) => grade(current, r)} />
       )}
+
+      <div className="flex justify-center pt-1">
+        <button
+          onClick={() => suspend(current)}
+          className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+        >
+          Já domino isto — não revisar mais
+        </button>
+      </div>
     </div>
   );
 }

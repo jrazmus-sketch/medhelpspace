@@ -20,11 +20,14 @@ function stripInlineColors(html: string | null): string | null {
 
 export async function MemorecardsRenderer({ pageId }: { pageId: number }) {
   const supabase = createAdminClient();
-  const { data: slides } = await supabase
-    .from("presentation_slides")
-    .select("id, position, layout, content_html, image_url, caption")
-    .eq("page_id", pageId)
-    .order("position");
+  const [{ data: slides }, { data: page }] = await Promise.all([
+    supabase
+      .from("presentation_slides")
+      .select("id, position, layout, content_html, image_url, caption")
+      .eq("page_id", pageId)
+      .order("position"),
+    supabase.from("pages").select("specialty_id").eq("id", pageId).single(),
+  ]);
 
   if (!slides || slides.length === 0) {
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
@@ -40,6 +43,8 @@ export async function MemorecardsRenderer({ pageId }: { pageId: number }) {
   return (
     <MemorecardsPlayer
       slides={normalized as SlideData[]}
+      pageId={pageId}
+      specialtyId={page?.specialty_id ?? null}
       nextDeckHref={siblings.nextHref}
       nextDeckTitle={siblings.nextTitle}
       specialtyHref={siblings.specialtyHref}

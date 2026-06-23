@@ -2,8 +2,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { getReviewStats, type ReviewStats } from "@/lib/review/queries";
 import Link from "next/link";
-import { ChevronLeft, Target, Flame, BookOpen, Calendar } from "lucide-react";
+import { ChevronLeft, Target, Flame, BookOpen, Calendar, RotateCcw } from "lucide-react";
 
 export const metadata = { title: "Relatório de Desempenho — MedHelpSpace" };
 
@@ -62,7 +63,7 @@ export default async function RelatorioPage() {
   if (!user) return null;
 
   // Fetch all attempts + specialties in parallel
-  const [attemptsRes, specialtiesRes, membershipRes] = await Promise.all([
+  const [attemptsRes, specialtiesRes, membershipRes, reviewStats] = await Promise.all([
     admin
       .from("quiz_attempts")
       .select("is_correct, created_at, question_id, specialty_id")
@@ -73,6 +74,7 @@ export default async function RelatorioPage() {
       .from("user_cohort_memberships")
       .select("joined_at, cohort:cohorts(name, test_date)")
       .eq("user_id", user.id),
+    getReviewStats(user.id),
   ]);
 
   const attempts = (attemptsRes.data ?? []) as {
@@ -151,6 +153,7 @@ export default async function RelatorioPage() {
       maxDay={maxDay}
       cohortName={cohort?.name ?? null}
       daysToExam={daysToExam}
+      reviewStats={reviewStats}
     />
   );
 }
@@ -168,6 +171,7 @@ function RelatorioShell({
   maxDay = 1,
   cohortName = null,
   daysToExam = null,
+  reviewStats = { scheduled: 0, dueToday: 0, overdue: 0, wrong: 0, mastered: 0 },
 }: {
   mockMode?: boolean;
   total?: number;
@@ -179,6 +183,7 @@ function RelatorioShell({
   maxDay?: number;
   cohortName?: string | null;
   daysToExam?: number | null;
+  reviewStats?: ReviewStats;
 }) {
   const accuracy = pct(correct, total);
   const MONTH_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
@@ -296,6 +301,42 @@ function RelatorioShell({
           </div>
         </div>
       </section>
+
+      {/* ── Revisão (spaced repetition) ── */}
+      {reviewStats.scheduled > 0 && (
+        <section style={{ marginBottom: 40 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 16 }}>
+            Revisão
+          </div>
+          <div style={{ background: "var(--surface-1)", border: "1px solid var(--surface-2)", borderRadius: "var(--radius)", padding: "20px" }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Em revisão", value: reviewStats.scheduled, color: "var(--foreground)" },
+                { label: "A revisar hoje", value: reviewStats.dueToday, color: "var(--brand)" },
+                { label: "Dominados", value: reviewStats.mastered, color: "#22c55e" },
+                { label: "Para recuperar", value: reviewStats.wrong, color: "#ef4444" },
+              ].map(({ label, value, color }) => (
+                <div key={label}>
+                  <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.03em", lineHeight: 1, color }}>
+                    {value.toLocaleString("pt-BR")}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 4, lineHeight: 1.3 }}>
+                    {label}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Link
+              href="/app/revisao"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 16, fontSize: 13, fontWeight: 600, color: "var(--brand)", textDecoration: "none" }}
+            >
+              <RotateCcw size={14} />
+              Abrir Revisão
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ── Per-specialty breakdown ── */}
       {specialtyStats.length > 0 ? (

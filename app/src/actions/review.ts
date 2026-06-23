@@ -77,6 +77,53 @@ export async function gradeReviewItem(
   );
 }
 
+// Re-read cadence for MemoreCards. They're passive presentation slides (no
+// front/back), so there's no correct/incorrect to grade — instead a deck just
+// resurfaces on an expanding "see it again" schedule. Indexed by repetitions.
+const MEMORECARD_REREAD_INTERVALS = [7, 21, 60, 120];
+
+/**
+ * Schedule (or reschedule) a MemoreCards deck for re-reading. Called when a
+ * student finishes a deck. `itemId` is the deck's PAGE id — memorecards are
+ * reviewed deck-at-a-time, not slide-by-slide.
+ */
+export async function enrollMemorecardReread(
+  pageId: number,
+  specialtyId: number | null = null,
+): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: current } = await supabase
+    .from("review_schedule")
+    .select("repetitions")
+    .eq("user_id", user.id)
+    .eq("item_type", "memorecard")
+    .eq("item_id", pageId)
+    .maybeSingle();
+
+  const reps = current?.repetitions ?? 0;
+  const interval =
+    MEMORECARD_REREAD_INTERVALS[Math.min(reps, MEMORECARD_REREAD_INTERVALS.length - 1)];
+
+  await supabase.from("review_schedule").upsert(
+    {
+      user_id: user.id,
+      item_type: "memorecard",
+      item_id: pageId,
+      ...(specialtyId != null ? { specialty_id: specialtyId } : {}),
+      repetitions: reps + 1,
+      interval_days: interval,
+      due_date: dueDateAfter(interval),
+      last_reviewed_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,item_type,item_id" },
+  );
+}
+
 /** Remove an item from the review queue ("já domino isto"). */
 export async function suspendReviewItem(itemType: ReviewItemType, itemId: number): Promise<void> {
   const supabase = await createClient();
