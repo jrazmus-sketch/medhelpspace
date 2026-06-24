@@ -588,6 +588,9 @@ export default async function MemberDashboardPage() {
       {/* ── WELCOME (first-run, dismissable) ── */}
       <WelcomeCard />
 
+      {/* Points at the header "Sua jornada" completion meter. */}
+      <Coachmark coachKey="progresso" />
+
       {/* ── NOTIFICATIONS ── */}
       <NotificationStrip />
 

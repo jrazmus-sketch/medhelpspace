@@ -12,7 +12,7 @@ import { ESTUDAR_GROUPS, ESTUDAR_NAV_OVERRIDES, isTypeActive } from "@/lib/estud
  * Mobile bottom-nav "Estudar" entry: a cell that opens a bottom sheet listing
  * the six content types (grouped Praticar / Ler / Ouvir). Mirrors the desktop
  * "Estudar" dropdown using the same shared ESTUDAR_GROUPS data. Mobile-only —
- * it lives inside MobileNav, which is `md:hidden`.
+ * it lives inside MobileNav, which is shown below `lg`.
  */
 export function MobileEstudarSheet({ currentType }: { currentType: StudyTypeKey | null }) {
   const router = useRouter();

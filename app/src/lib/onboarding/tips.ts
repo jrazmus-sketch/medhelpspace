@@ -31,6 +31,7 @@ export type CoachKey =
   | "revisao"
   | "plano"
   | "medhelp-60d"
+  | "progresso"
   | "nav";
 
 export interface Tip {
@@ -176,6 +177,13 @@ export const TIPS: Record<CoachKey, Tip> = {
       "Módulo de revisão intensiva que **abre sozinho** nos últimos ~60 dias antes da sua prova. Reúne a Fórmula MedHelp, os MemoreCards e os Simulados 100Q. Não é preciso fazer nada — o cadeado se solta na data certa.",
     href: "/app/medhelp-60d",
     hrefLabel: "Abrir MedHelp 60D",
+  },
+
+  progresso: {
+    key: "progresso",
+    title: "Acompanhe sua jornada",
+    body:
+      "No alto da tela, a barra **Sua jornada** mostra num relance quanto você já concluiu de todo o conteúdo liberado. Toque nela para ver o detalhe por tipo — **aulas, questões e flashcards**.",
   },
 
   nav: {

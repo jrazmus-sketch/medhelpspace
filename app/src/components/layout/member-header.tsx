@@ -18,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { SiteProgressPill, SiteProgressLine } from "@/components/layout/site-progress";
+import type { SiteCompletion } from "@/lib/progress/site-completion";
 import { useAuth } from "@/providers/auth-provider";
 import {
   STUDY_TYPE_CONFIG,
@@ -144,7 +146,13 @@ export function MemberHeader({
   bellSlot,
   show60d = false,
   reviewDueCount = 0,
-}: { bellSlot?: React.ReactNode; show60d?: boolean; reviewDueCount?: number } = {}) {
+  completion = null,
+}: {
+  bellSlot?: React.ReactNode;
+  show60d?: boolean;
+  reviewDueCount?: number;
+  completion?: SiteCompletion | null;
+} = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, isAnyAdmin } = useAuth();
@@ -171,8 +179,11 @@ export function MemberHeader({
     router.push("/auth/signout");
   }
 
+  // Narrow inline at each use site so TS keeps `completion` non-null for the props.
+  const showProgress = !!completion && completion.total > 0;
+
   return (
-    <header className="border-b border-border/40 bg-background/90 backdrop-blur-md">
+    <header className="relative border-b border-border/40 bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-[52px] max-w-[1400px] items-center gap-3 px-[10px] md:px-8">
 
         {/* Logo */}
@@ -185,8 +196,9 @@ export function MemberHeader({
           </span>
         </Link>
 
-        {/* Nav */}
-        <nav className="hidden items-center md:flex">
+        {/* Nav — desktop only. Tablet-portrait + phones use the bottom MobileNav;
+            the horizontal nav needs ~lg width to fit logo + items + icons + pill. */}
+        <nav className="hidden items-center lg:flex">
           {/* Personal cluster (Início, Meu Plano, + MedHelp 60D once unlocked) */}
           <div className="flex items-center gap-0.5">
             {PERSONAL_LINKS.map((link) =>
@@ -216,7 +228,9 @@ export function MemberHeader({
           <EstudarMenu pathname={pathname} currentType={currentType} />
         </nav>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          {showProgress && completion && <SiteProgressPill data={completion} />}
+
           <Link
             href="/app/buscar"
             aria-label="Buscar"
@@ -307,6 +321,9 @@ export function MemberHeader({
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Site-wide completion meter — draws across the full header edge on load. */}
+      {showProgress && completion && <SiteProgressLine pct={completion.overallPct} />}
     </header>
   );
 }

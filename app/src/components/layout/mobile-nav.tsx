@@ -44,7 +44,7 @@ export function MobileNav({ show60d = false, reviewDueCount = 0 }: { show60d?: b
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
       style={{
         background: "var(--background)",
         borderTop: "1px solid rgba(255,255,255,0.06)",

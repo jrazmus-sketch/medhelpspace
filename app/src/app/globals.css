@@ -861,6 +861,26 @@
   45%       { transform: scale(1.05); box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 20%, transparent); }
 }
 
+/* ── Header "Sua jornada" site-completion meter ───────────────────────────────── */
+
+/* Leading-edge glow on the full-width progress line — gentle ambient breathing. */
+@keyframes mhs-progress-glow {
+  0%, 100% { opacity: 0.55; transform: translate(50%, -50%) scale(0.9); }
+  50%       { opacity: 1;    transform: translate(50%, -50%) scale(1.15); }
+}
+.mhs-progress-glow { animation: mhs-progress-glow 2.4s ease-in-out infinite; }
+
+/* Popover entrance + staggered pillar-bar grow. */
+@keyframes site-pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes site-bar-grow { from { width: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mhs-progress-glow { animation: none; }
+}
+
 /* ── Per-specialty identity colors ─────────────────────────────────────────── */
 :root {
   --c-spec-1:  #e84343;   /* cardiologia    */

@@ -10,6 +10,7 @@ import { get60dAccess } from "@/lib/medhelp-60d";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { createClient } from "@/lib/supabase/server";
 import { getDueReviewCount } from "@/lib/review/queries";
+import { getSiteCompletion } from "@/lib/progress/site-completion";
 
 export const metadata = { title: { template: "%s | MedHelpSpace", default: "Dashboard" } };
 
@@ -27,7 +28,12 @@ export default async function MemberLayout({ children }: { children: React.React
   // Review due-count for the nav badge (re-evaluated per navigation).
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const reviewDueCount = user ? await getDueReviewCount(user.id) : 0;
+  const [reviewDueCount, completion] = await Promise.all([
+    user ? getDueReviewCount(user.id) : Promise.resolve(0),
+    // In mock mode the id is ignored (returns sample data); in real mode a member
+    // is always present here because requireActiveMembership() ran first.
+    getSiteCompletion(user?.id ?? "mock"),
+  ]);
 
   // Editable onboarding strings (site_content) — seeds the OnboardingProvider so
   // coachmarks + the guide render DB-backed, inline-editable copy.
@@ -39,11 +45,11 @@ export default async function MemberLayout({ children }: { children: React.React
         <CopyGuard />
         <div className="sticky top-0 z-50">
           <AdminBarServer />
-          <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} />
+          <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} completion={completion} />
         </div>
-        {/* pb-16 reserves space above the fixed mobile bottom nav */}
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
-        <MemberFooter className="hidden md:block" />
+        {/* pb-16 reserves space above the fixed bottom nav (shown below lg) */}
+        <main className="flex-1 pb-16 lg:pb-0">{children}</main>
+        <MemberFooter className="hidden lg:block" />
         <MobileNav show60d={show60d} reviewDueCount={reviewDueCount} />
       </div>
     </OnboardingProvider>
