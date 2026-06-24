@@ -19,9 +19,14 @@ import type {
 } from "@/types/supabase";
 
 // ── Feature flag ──────────────────────────────────────────────────────────────
+// Mock mode is a DEV-ONLY convenience. Gating the whole expression on
+// NODE_ENV !== "production" guarantees a stray NEXT_PUBLIC_USE_MOCK_DATA=true in a
+// prod/preview environment can never flip the app into mock mode — which would
+// disable the membership paywall and treat every viewer as an admin (drafts exposed).
+// `next build`/`next start` set NODE_ENV=production, so this is false in any prod build.
 export const USE_MOCK_DATA =
-  process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true" ||
-  (process.env.NODE_ENV === "development" &&
+  process.env.NODE_ENV !== "production" &&
+  (process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true" ||
     !process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 // ── Seed data ──────────────────────────────────────────────────────────────────

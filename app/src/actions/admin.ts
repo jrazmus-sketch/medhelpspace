@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { VIEWAS_COOKIE } from "@/lib/viewas";
+import { safe } from "@/lib/sanitize";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -40,6 +41,16 @@ const BILLING_ROLES = ["super_admin", "billing_admin"];
 async function requireBillingRole() {
   const ctx = await requireAdmin();
   if (!BILLING_ROLES.includes(ctx.role)) throw new Error("Unauthorized");
+  return ctx;
+}
+
+// Granting/stripping cohort membership is member-access management — content_admin
+// is excluded per the role matrix (support/billing handle member access, not content).
+const MEMBER_ACCESS_ROLES = ["super_admin", "support_admin", "billing_admin"];
+
+async function requireMemberAccessRole() {
+  const ctx = await requireAdmin();
+  if (!MEMBER_ACCESS_ROLES.includes(ctx.role)) throw new Error("Unauthorized");
   return ctx;
 }
 
@@ -86,7 +97,7 @@ function revalidateStorefront() {
 // ── Cohort actions ────────────────────────────────────────────────────────────
 
 export async function assignMemberToCohort(userId: string, cohortId: number | null) {
-  await requireAdmin();
+  await requireMemberAccessRole();
   const admin = createAdminClient();
   await admin.from("user_cohort_memberships").delete().eq("user_id", userId);
   if (cohortId !== null) {
@@ -201,7 +212,7 @@ export async function overrideModuleUnlockDate(
   moduleId: number,
   unlockDate: string,
 ) {
-  await requireAdmin();
+  const { user } = await requireBillingRole();
   const admin = createAdminClient();
   const { error } = await admin
     .from("cohort_module_access")
@@ -209,11 +220,16 @@ export async function overrideModuleUnlockDate(
     .eq("cohort_id", cohortId)
     .eq("content_module_id", moduleId);
   if (error) throw new Error(error.message);
+  await writeAuditLog(user.id, "module_unlock_override", null, {
+    cohort_id: cohortId,
+    module_id: moduleId,
+    unlock_date: unlockDate,
+  });
   revalidatePath(`/admin/cohorts/${cohortId}/modules`);
 }
 
 export async function resetModuleUnlockDate(cohortId: number, moduleId: number) {
-  await requireAdmin();
+  const { user } = await requireBillingRole();
   const admin = createAdminClient();
   const [{ data: cohort }, { data: mod }] = await Promise.all([
     admin.from("cohorts").select("test_date").eq("id", cohortId).single(),
@@ -231,6 +247,11 @@ export async function resetModuleUnlockDate(cohortId: number, moduleId: number) 
     .eq("cohort_id", cohortId)
     .eq("content_module_id", moduleId);
   if (error) throw new Error(error.message);
+  await writeAuditLog(user.id, "module_unlock_reset", null, {
+    cohort_id: cohortId,
+    module_id: moduleId,
+    unlock_date: autoDate,
+  });
   revalidatePath(`/admin/cohorts/${cohortId}/modules`);
 }
 
@@ -654,6 +675,7 @@ export async function createAnnouncement(data: AnnouncementInput) {
   const admin = createAdminClient();
   const { error } = await admin.from("announcements").insert({
     ...data,
+    body_html: data.body_html != null ? safe(data.body_html) : null,
     created_by: user.id,
   });
   if (error) throw new Error(error.message);
@@ -665,7 +687,11 @@ export async function updateAnnouncement(id: number, data: AnnouncementInput) {
   const admin = createAdminClient();
   const { error } = await admin
     .from("announcements")
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update({
+      ...data,
+      body_html: data.body_html != null ? safe(data.body_html) : null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/notifications");

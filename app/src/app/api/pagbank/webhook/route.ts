@@ -11,9 +11,10 @@ import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 //
 // Defense layers:
 //   1. Per-IP rate limit (best-effort, per-instance Map).
-//   2. x-authenticity-token signature check when PAGBANK_WEBHOOK_TOKEN is set.
-//      Until the token is configured, we accept unsigned requests but log a
-//      warning — the re-fetch below still prevents *state* spoofing.
+//   2. x-authenticity-token signature check — FAILS CLOSED by default: any
+//      event that doesn't verify "valid" is rejected. The only opt-out is the
+//      escape hatch PAGBANK_WEBHOOK_ENFORCE=false (temporary pre-launch window).
+//      The re-fetch below additionally prevents *state* spoofing.
 //   3. Always re-fetch the charge from PagBank rather than trusting payload.
 //   4. Uniform { ok: true } for unknown chargeIds → prevents enumeration of
 //      live charge IDs via response timing/shape.
@@ -35,17 +36,29 @@ export async function POST(request: NextRequest) {
   // an unsigned event can never grant access. The signature is defense-in-depth
   // against the residual amplification surface (forcing outbound API calls).
   //
-  // We can't yet drop "invalid" events: PagBank's new API has no dedicated
-  // webhook-signing token, we reuse the account token, and the signing format is
-  // still unverified — dropping now risks silently swallowing a REAL payment if our
-  // hash format is wrong. So we accept-and-log by default. Once a genuine webhook is
-  // confirmed signing "valid" in prod, set PAGBANK_WEBHOOK_ENFORCE=true to fail
-  // closed (one env flip, no code change).
+  // FAIL CLOSED by default: any event that isn't "valid" is rejected here. This
+  // never blocks revenue — legit paid memberships also finalize via the Pix
+  // status-poll path (/api/pagbank/status/[chargeId]) and the immediate-charge
+  // path (/api/pagbank/charge), neither of which depends on the webhook.
+  //
+  // The ONLY opt-out is PAGBANK_WEBHOOK_ENFORCE=false, intended as a temporary
+  // pre-launch verification window while we confirm a genuine PagBank webhook
+  // signs "valid" in prod (the signing format is still unverified — see
+  // webhook-auth.ts). Anything other than the literal string "false" keeps
+  // enforcement ON, so a missing/typo'd env var stays secure.
   if (authResult !== "valid") {
-    console.warn("PagBank webhook signature not 'valid':", authResult, "ip=", ip);
-    if (process.env.PAGBANK_WEBHOOK_ENFORCE === "true") {
+    const enforce = process.env.PAGBANK_WEBHOOK_ENFORCE !== "false";
+    console.warn(
+      "PagBank webhook signature not 'valid':",
+      authResult,
+      "ip=",
+      ip,
+      "enforce=",
+      enforce,
+    );
+    if (enforce) {
       // Generic 200 — never reveal whether the signature was wrong vs. some other
-      // reason (no enumeration signal to probers).
+      // reason (no enumeration signal to probers); also avoids PagBank retries.
       return NextResponse.json({ ok: true });
     }
   }

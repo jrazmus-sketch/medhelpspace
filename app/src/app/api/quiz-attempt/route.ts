@@ -1,17 +1,35 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { gradeReviewItem } from "@/actions/review";
+
+// IDs arrive as numbers from the quiz player (JSON.stringify of numeric props);
+// specialtyId is optional (the route stores `specialtyId ?? null`).
+const bodySchema = z.object({
+  questionId: z.number().int().positive(),
+  pageId: z.number().int().positive(),
+  specialtyId: z.number().int().positive().nullish(),
+  isCorrect: z.boolean(),
+});
 
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { questionId, pageId, specialtyId, isCorrect } = await request.json();
-  if (!questionId || !pageId || typeof isCorrect !== "boolean") {
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
+
+  const parsed = bodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+  const { questionId, pageId, specialtyId, isCorrect } = parsed.data;
 
   const admin = createAdminClient();
   const { error } = await admin.from("quiz_attempts").insert({

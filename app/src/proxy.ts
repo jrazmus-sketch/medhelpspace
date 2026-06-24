@@ -9,8 +9,15 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // in lib/mock-data.ts: no Supabase URL, OR the explicit dev override flag
 // (CLAUDE.md documents NEXT_PUBLIC_USE_MOCK_DATA=true as a way to force mock mode
 // even when a Supabase URL is configured).
+//
+// HARD PRODUCTION GUARD: mock mode is a dev-only convenience. The whole expression
+// is gated on NODE_ENV !== "production" so that neither a missing Supabase URL nor a
+// stray NEXT_PUBLIC_USE_MOCK_DATA=true in the prod/preview env can disable auth + the
+// membership paywall in a production build. `next build`/`next start` set
+// NODE_ENV=production, so this branch is dead-code-eliminated from the prod bundle.
 const MOCK_MODE =
-  !SUPABASE_URL || process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+  process.env.NODE_ENV !== "production" &&
+  (!SUPABASE_URL || process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true");
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

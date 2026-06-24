@@ -6,7 +6,9 @@ import type { PagBankCharge } from "./types";
 // from the webhook, the Pix status poll, and the charge-create immediate-paid
 // branch — only the first caller wins each side effect.
 //
-// The two safety mechanisms:
+// The safety mechanisms:
+//   0. Amount reconciliation: the settled charge value must equal the order's
+//      stored amount_cents, else we bail BEFORE any state-flip/grant (fail safe).
 //   1. UPDATE ... WHERE status != 'paid' returns 0 rows for losers, so only
 //      the winner runs provisioning + email.
 //   2. INSERT into email_log (UNIQUE on user_id+kind+context_id) makes a
@@ -22,6 +24,38 @@ export async function finalizePaidOrder(
   },
 ): Promise<{ wonRace: boolean }> {
   const { orderId, userId, cohortId, charge } = args;
+
+  // Amount reconciliation (fail safe): never grant membership unless the amount
+  // PagBank actually settled equals the amount we recorded on the order. Both
+  // sides are integer cents (centavos) — order.amount_cents is stored in cents
+  // (see charge route) and PagBankCharge.amount.value is documented as centavos
+  // in types.ts. A mismatch means a tampered/underpaid charge; we bail before
+  // flipping state so the order stays un-granted for manual review.
+  const { data: orderRow, error: loadErr } = await admin
+    .from("orders")
+    .select("amount_cents")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (loadErr || !orderRow) {
+    console.error("finalizePaidOrder: order load failed", orderId, loadErr);
+    return { wonRace: false };
+  }
+
+  const expectedCents = orderRow.amount_cents as number;
+  const paidCents = charge.amount?.value;
+  if (paidCents !== expectedCents) {
+    console.error(
+      "finalizePaidOrder: amount mismatch — refusing to grant",
+      "orderId=",
+      orderId,
+      "expected_amount_cents=",
+      expectedCents,
+      "charged_value=",
+      paidCents,
+    );
+    return { wonRace: false };
+  }
 
   const { data: winners, error: updErr } = await admin
     .from("orders")
