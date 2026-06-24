@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { VIEWAS_COOKIE } from "@/lib/viewas";
 import { safe } from "@/lib/sanitize";
+import { sendPurchaseConfirmation } from "@/lib/email";
+import type { MemberDetail } from "@/lib/admin/member-detail";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -310,6 +312,91 @@ export async function revokeUserSessions(targetUserId: string) {
   await writeAuditLog(user.id, "revoke_sessions", targetUserId, {});
 }
 
+// Re-send the "Acesso liberado / Bem-vindo" purchase-confirmation email a buyer
+// should have received on payment — support tooling for when the original never
+// arrived (e.g. the Resend domain wasn't verified yet, a transient failure, or the
+// buyer simply lost it). Unlike the automated finalize path, this does NOT gate on
+// the original `purchase` email_log row (the admin is explicitly asking to send
+// again); it records a distinct `welcome-resend` entry — ISO-timestamp context_id
+// so repeats don't collide on the UNIQUE(user_id,kind,context_id) guard — so the
+// resend shows in the member's Comms history and the audit log. Crucially it
+// surfaces a real send failure (e.g. unverified domain) instead of swallowing it.
+export async function resendWelcomeEmail(
+  targetUserId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireMemberAccessRole();
+  const admin = createAdminClient();
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("email, display_name")
+    .eq("id", targetUserId)
+    .single();
+  if (!profile?.email) return { error: "no_email" };
+
+  // Cohort name for the email body: prefer the most recent paid order, then fall
+  // back to the user's current membership so a manually-granted member is welcomed
+  // too. A blank name still sends — the template tolerates it.
+  let cohortId =
+    (
+      await admin
+        .from("orders")
+        .select("cohort_id")
+        .eq("user_id", targetUserId)
+        .eq("status", "paid")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    ).data?.cohort_id as number | null ?? null;
+  if (cohortId == null) {
+    cohortId =
+      (
+        await admin
+          .from("user_cohort_memberships")
+          .select("cohort_id")
+          .eq("user_id", targetUserId)
+          .limit(1)
+          .maybeSingle()
+      ).data?.cohort_id as number | null ?? null;
+  }
+
+  let cohortName = "";
+  if (cohortId != null) {
+    const { data: cohort } = await admin
+      .from("cohorts")
+      .select("name")
+      .eq("id", cohortId)
+      .single();
+    cohortName = (cohort?.name as string | null) ?? "";
+  }
+
+  const result = await sendPurchaseConfirmation({
+    to: profile.email as string,
+    name: (profile.display_name as string | null) ?? "",
+    cohortName,
+  });
+  if (!result.ok) {
+    console.error("resendWelcomeEmail: send failed", targetUserId, result.reason);
+    return {
+      error: result.reason === "no_api_key" ? "email_not_configured" : "send_failed",
+    };
+  }
+
+  await admin.from("email_log").insert({
+    user_id: targetUserId,
+    kind: "welcome-resend",
+    context_id: new Date().toISOString(),
+  });
+
+  await writeAuditLog(user.id, "welcome_email_resend", targetUserId, {
+    email: profile.email,
+    cohort: cohortName,
+  });
+
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
 // Hard-delete a member. Records are preserved, not destroyed: orders, audit-log
 // entries, and created coupons keep their rows with the user reference nulled
 // (ON DELETE SET NULL — see schema-patch-delete-member.sql). The auth.users row
@@ -399,6 +486,117 @@ export async function createMember(input: {
     cohort_id: input.cohortId,
   });
   revalidatePath("/admin/members");
+}
+
+// Lazy-loaded detail for the members drawer. The list page already carries the
+// cheap, batched columns (status, last active, lifetime paid); this fetches the
+// heavier per-member data only when a row is opened. Billing-sensitive sections
+// (orders, lifetime paid, fiscal identity) are gated to billing/super roles — a
+// support_admin opening the drawer sees engagement + comms but no money/PII.
+export async function getMemberDetail(userId: string): Promise<MemberDetail> {
+  const { role } = await requireAdmin();
+  const canSeeBilling = BILLING_ROLES.includes(role);
+  const canManageAccess = MEMBER_ACCESS_ROLES.includes(role);
+  const admin = createAdminClient();
+
+  const [profileRes, completionRes, reviewRes, emailRes, cohortRes] = await Promise.all([
+    admin
+      .from("profiles")
+      .select(
+        "billing_first_name, billing_last_name, billing_cpf, billing_phone, billing_city, billing_state",
+      )
+      .eq("id", userId)
+      .single(),
+    admin.rpc("get_site_completion", { p_user: userId }),
+    admin.from("review_schedule").select("due_date, suspended").eq("user_id", userId),
+    admin
+      .from("email_log")
+      .select("id, kind, sent_at")
+      .eq("user_id", userId)
+      .order("sent_at", { ascending: false })
+      .limit(25),
+    admin.from("cohorts").select("id, name"),
+  ]);
+
+  // get_site_completion is a table-returning function → array with one row.
+  const cRow = Array.isArray(completionRes.data) ? completionRes.data[0] : completionRes.data;
+  const completion = cRow
+    ? {
+        lessonsTotal: Number(cRow.lessons_total),
+        lessonsDone: Number(cRow.lessons_done),
+        quizTotal: Number(cRow.quiz_total),
+        quizDone: Number(cRow.quiz_done),
+        flashTotal: Number(cRow.flash_total),
+        flashDone: Number(cRow.flash_done),
+      }
+    : null;
+
+  const reviewRows = reviewRes.data ?? [];
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const activeReviews = reviewRows.filter((r) => !r.suspended);
+  const reviews = {
+    total: activeReviews.length,
+    due: activeReviews.filter((r) => (r.due_date as string) <= todayStr).length,
+  };
+
+  const emails = (emailRes.data ?? []).map((e) => ({
+    id: e.id as number,
+    kind: e.kind as string,
+    sentAt: e.sent_at as string,
+  }));
+
+  let orders: MemberDetail["orders"] = [];
+  let lifetimePaidCents = 0;
+  let fiscal: MemberDetail["fiscal"] = null;
+  if (canSeeBilling) {
+    const cohortMap = new Map(
+      (cohortRes.data ?? []).map((c) => [c.id as number, c.name as string]),
+    );
+    const { data: orderRows } = await admin
+      .from("orders")
+      .select(
+        "id, amount_cents, status, payment_method, cc_brand, cc_installments, created_at, cohort_id",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    orders = (orderRows ?? []).map((o) => ({
+      id: o.id as string,
+      amountCents: o.amount_cents as number,
+      status: o.status as string,
+      paymentMethod: o.payment_method as string,
+      ccBrand: o.cc_brand as string | null,
+      ccInstallments: o.cc_installments as number | null,
+      createdAt: o.created_at as string,
+      cohortName: cohortMap.get(o.cohort_id as number) ?? "",
+    }));
+    lifetimePaidCents = orders
+      .filter((o) => o.status === "paid")
+      .reduce((s, o) => s + o.amountCents, 0);
+
+    const p = profileRes.data;
+    if (p && (p.billing_cpf || p.billing_first_name || p.billing_phone || p.billing_city)) {
+      fiscal = {
+        firstName: (p.billing_first_name as string) ?? null,
+        lastName: (p.billing_last_name as string) ?? null,
+        cpf: (p.billing_cpf as string) ?? null,
+        phone: (p.billing_phone as string) ?? null,
+        city: (p.billing_city as string) ?? null,
+        state: (p.billing_state as string) ?? null,
+      };
+    }
+  }
+
+  return {
+    userId,
+    canSeeBilling,
+    canManageAccess,
+    completion,
+    reviews,
+    lifetimePaidCents,
+    orders,
+    emails,
+    fiscal,
+  };
 }
 
 // ── Page metadata ─────────────────────────────────────────────────────────────

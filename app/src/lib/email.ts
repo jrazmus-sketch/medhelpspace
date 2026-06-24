@@ -16,17 +16,27 @@ export async function sendPurchaseConfirmation({
   to: string;
   name: string;
   cohortName: string;
-}) {
+}): Promise<{ ok: boolean; reason?: string }> {
   const resend = getResend();
-  if (!resend) return;
+  if (!resend) return { ok: false, reason: "no_api_key" };
   const displayName = name || to.split("@")[0];
 
-  await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Acesso liberado — MedHelpSpace Revalida ${cohortName}`,
-    html: purchaseConfirmationHtml({ displayName, cohortName }),
-  });
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      subject: `Acesso liberado — MedHelpSpace Revalida ${cohortName}`,
+      html: purchaseConfirmationHtml({ displayName, cohortName }),
+    });
+    // The Resend SDK reports API errors (e.g. an unverified sending domain) on the
+    // returned `error` field rather than throwing — so a silently-rejected send
+    // looks like success unless we inspect it. Callers that need to know (the admin
+    // resend tool) rely on this; the fire-and-forget finalize path ignores it.
+    if (error) return { ok: false, reason: error.message ?? "send_error" };
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: e instanceof Error ? e.message : "send_throw" };
+  }
 }
 
 // ── 60D unlock notification ───────────────────────────────────────────────────
