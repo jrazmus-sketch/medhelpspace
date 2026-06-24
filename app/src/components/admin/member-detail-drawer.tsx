@@ -39,7 +39,10 @@ function fmtMoney(cents: number) {
 }
 
 function pct(done: number, total: number) {
-  return total === 0 ? 0 : Math.round((done / total) * 100);
+  if (!total || total <= 0) return 0;
+  const r = Math.round((done / total) * 100);
+  // Clamp to 0–100 so a bad count can never paint a >100% (or NaN → full) bar.
+  return Number.isFinite(r) ? Math.max(0, Math.min(100, r)) : 0;
 }
 
 interface Props {

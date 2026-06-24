@@ -518,16 +518,29 @@ export async function getMemberDetail(userId: string): Promise<MemberDetail> {
     admin.from("cohorts").select("id, name"),
   ]);
 
-  // get_site_completion is a table-returning function → array with one row.
+  // get_site_completion is a table-returning function → array with one row. It now
+  // reports per-SECTION counts (questoes/resumos/medvoice/audiocards/revalida/
+  // flashcards/formula — see schema-patch-site-completion-sections.sql). The drawer
+  // shows three coarse buckets, so fold every lesson-based section into "Lessons";
+  // Questões → Quiz, Flashcards → Flashcards. n() coerces bigint-as-string / null /
+  // missing column → a finite number (never NaN, which Flight would carry to the UI).
   const cRow = Array.isArray(completionRes.data) ? completionRes.data[0] : completionRes.data;
+  const n = (v: unknown) => {
+    const x = Number(v ?? 0);
+    return Number.isFinite(x) ? x : 0;
+  };
   const completion = cRow
     ? {
-        lessonsTotal: Number(cRow.lessons_total),
-        lessonsDone: Number(cRow.lessons_done),
-        quizTotal: Number(cRow.quiz_total),
-        quizDone: Number(cRow.quiz_done),
-        flashTotal: Number(cRow.flash_total),
-        flashDone: Number(cRow.flash_done),
+        lessonsTotal:
+          n(cRow.resumos_total) + n(cRow.medvoice_total) + n(cRow.audiocards_total) +
+          n(cRow.revalida_total) + n(cRow.formula_total),
+        lessonsDone:
+          n(cRow.resumos_done) + n(cRow.medvoice_done) + n(cRow.audiocards_done) +
+          n(cRow.revalida_done) + n(cRow.formula_done),
+        quizTotal: n(cRow.questoes_total),
+        quizDone: n(cRow.questoes_done),
+        flashTotal: n(cRow.flashcards_total),
+        flashDone: n(cRow.flashcards_done),
       }
     : null;
 
