@@ -183,7 +183,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "progresso",
     title: "Acompanhe sua jornada",
     body:
-      "No alto da tela, a barra **Sua jornada** mostra num relance quanto você já concluiu de todo o conteúdo liberado. Toque nela para ver o detalhe por tipo — **aulas, questões e flashcards**.",
+      "No alto da tela, a barra **Sua jornada** mostra num relance quanto você já concluiu de todo o conteúdo liberado. Toque nela para ver o detalhe por seção — **Questões, Resumos, MedVoice, Flashcards** e mais.",
   },
 
   nav: {

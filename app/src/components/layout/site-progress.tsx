@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { SiteCompletion } from "@/lib/progress/site-completion";
 
@@ -219,7 +220,7 @@ export function SiteProgressPill({ data }: { data: SiteCompletion }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={`Sua jornada: ${data.overallPct}% do conteúdo concluído`}
-        className="flex h-8 items-center gap-1.5 rounded-[5px] pl-1.5 pr-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-brand/40 data-[open=true]:bg-accent"
+        className="flex h-8 items-center gap-1 rounded-[5px] pl-1.5 pr-1.5 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-brand/40 data-[open=true]:bg-accent"
         data-open={open}
       >
         <Ring value={displayRing} />
@@ -229,6 +230,13 @@ export function SiteProgressPill({ data }: { data: SiteCompletion }) {
         >
           {displayCount}%
         </span>
+        {/* Disclosure caret — signals the pill opens a panel; also gives a visible
+            affordance on phones <440px where the % label is hidden. */}
+        <ChevronDown
+          aria-hidden="true"
+          className="h-3 w-3 shrink-0 text-muted-foreground/70 transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "none" }}
+        />
       </button>
 
       {open && pos && (
