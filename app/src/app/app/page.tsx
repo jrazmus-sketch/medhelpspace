@@ -40,49 +40,12 @@ const STUDY_TYPES: StudyType[] = [
 const DAY_NAMES   = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const MONTH_NAMES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 
-// ── Greeting rotation ─────────────────────────────────────────────────────────
+// ── Greeting ──────────────────────────────────────────────────────────────────
 
-const GREETINGS: { lines: [string, string]; from: number; to: number; maxDays?: number }[] = [
-  // Urgência — últimos 7 dias
-  { lines: ["7 dias.",        "Foco total."],        from: 0,  to: 24, maxDays: 7  },
-  { lines: ["Última semana.", "É agora."],           from: 0,  to: 24, maxDays: 7  },
-  // Urgência — últimos 30 dias
-  { lines: ["Reta final,",    "doutor."],            from: 0,  to: 24, maxDays: 30 },
-  { lines: ["30 dias.",       "Bora revisar."],      from: 0,  to: 24, maxDays: 30 },
-  { lines: ["Reta final.",    "Vai fundo."],         from: 0,  to: 24, maxDays: 30 },
-  // Madrugada (0–5)
-  { lines: ["Ainda acordado?", "Respeito."],         from: 0,  to: 6  },
-  { lines: ["Dedicação",       "total."],            from: 0,  to: 6  },
-  // Manhã (6–11)
-  { lines: ["Bom dia,",        "doutor."],           from: 6,  to: 12 },
-  { lines: ["Manhã de",        "revisão."],          from: 6,  to: 12 },
-  { lines: ["Bom dia!",        "Bora estudar."],     from: 6,  to: 12 },
-  // Tarde (12–17)
-  { lines: ["Boa tarde,",      "doutor."],           from: 12, to: 18 },
-  { lines: ["Tarde boa",       "para revisar."],     from: 12, to: 18 },
-  { lines: ["Em frente,",      "esta tarde."],       from: 12, to: 18 },
-  // Noite (18–23)
-  { lines: ["Boa noite,",      "doutor."],           from: 18, to: 24 },
-  { lines: ["Noite de",        "estudo."],           from: 18, to: 24 },
-  { lines: ["Bora revisar",    "esta noite."],       from: 18, to: 24 },
-  // Anytime
-  { lines: ["Bom te ver",      "de volta."],         from: 0,  to: 24 },
-  { lines: ["Que bom",         "te ver aqui."],      from: 0,  to: 24 },
-  { lines: ["De volta",        "aos estudos."],      from: 0,  to: 24 },
-  { lines: ["Vamos nessa,",    "doutor."],           from: 0,  to: 24 },
-];
-
-function pickGreeting(now: Date, examDays: number | null): [string, string] {
-  const hour = now.getHours();
-  const dayIndex = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
-  const urgency = examDays !== null ? (examDays <= 7 ? 7 : examDays <= 30 ? 30 : 0) : 0;
-  const pool = GREETINGS.filter((g) => {
-    if (hour < g.from || hour >= g.to) return false;
-    if (g.maxDays !== undefined) return g.maxDays === urgency;
-    return urgency === 0;
-  });
-  const safe = pool.length > 0 ? pool : GREETINGS.filter(g => g.from === 0 && g.to === 24 && !g.maxDays);
-  return safe[dayIndex % safe.length].lines;
+function greetingFor(hour: number): string {
+  if (hour >= 5  && hour < 12) return "Bom dia";
+  if (hour >= 12 && hour < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
 // ── Continue card visualizations ──────────────────────────────────────────────
@@ -522,7 +485,7 @@ export default async function MemberDashboardPage() {
 
   const now = new Date();
   const dayLabel = `${DAY_NAMES[now.getDay()].toLowerCase()}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
-  const [greetLine1, greetLine2] = pickGreeting(now, examDays);
+  const greeting = greetingFor(now.getHours());
 
   const cohortBadge =
     viewas.type === "unlocked"
@@ -542,108 +505,78 @@ export default async function MemberDashboardPage() {
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto" }} className="px-[10px] sm:px-6 lg:px-8 pt-5 sm:pt-8 pb-16 sm:pb-20">
 
-      {/* ── HERO ── */}
-      <section className="grid lg:grid-cols-[1fr_auto] gap-6 lg:gap-16 items-end mb-5 sm:mb-8">
+      {/* ── HERO — compact context bar ──
+           Greeting is demoted into the eyebrow line; the big-type weight moves
+           off the (decorative) greeting and onto the countdown, the one number
+           that actually motivates. This frees ~190px so the Plano + Continuar
+           cards below become the page's real hero (the "resume action"). */}
+      <section className="mb-5 sm:mb-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-12">
 
-        {/* Left: editorial copy */}
-        <div>
-          <div style={{ ...LABEL_STYLE, display: "flex", alignItems: "center", gap: 8, marginBottom: 16, letterSpacing: ".22em", fontSize: 10.5 }} className="sm:mb-7">
-            <span style={{ width: 20, height: 1, background: "var(--muted-foreground)", display: "inline-block" }} />
-            Olá, {firstName} · {dayLabel}
-            {cohortBadge && (
-              <span style={{
-                display: "inline-flex", alignItems: "center",
-                height: 18, padding: "0 8px", marginLeft: 4,
-                background: "color-mix(in srgb, var(--brand) 12%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--brand) 28%, transparent)",
-                borderRadius: 999, fontSize: 10, fontWeight: 600, letterSpacing: ".06em",
-                color: "var(--brand)",
-              }}>
-                {cohortBadge}
-              </span>
-            )}
-            {cohortBadge && viewas.type !== "unlocked" && (
-              <HelpTip label="O que é a sua turma?" side="bottom">
-                A sua turma é o ciclo do Revalida em que você está inscrito. Ela define a
-                contagem regressiva até a prova e a data em que o MedHelp 60D é liberado para você.
-              </HelpTip>
-            )}
-          </div>
-
-          <h1 className="font-bold text-foreground" style={{
-            fontSize: "clamp(38px, 8.5vw, 112px)",
-            lineHeight: 0.94,
-            letterSpacing: "-0.047em",
-            margin: "0 0 18px",
-          }}>
-            {greetLine1}<br />{greetLine2}
-          </h1>
-
-          <p className="text-muted-foreground" style={{
-            fontSize: "clamp(14px, 2vw, 20px)",
-            fontWeight: 400,
-            letterSpacing: "-0.01em",
-            maxWidth: "32ch",
-            lineHeight: 1.4,
-            margin: "0 0 22px",
-          }}>
-            {lastPage
-              ? <Link
-                  href={lastPageSpec ? `/app/${lastPageSpec.slug}/${lastPage.slug}` : `/app/${lastPage.slug}`}
-                  style={{ color: "inherit", textDecoration: "none" }}
-                  className="hover:text-foreground transition-colors"
-                >
-                  Continuar em <strong className="text-foreground font-medium">{lastPage.title}</strong> →
-                </Link>
-              : <>Comece a explorar o conteúdo.</>
-            }
-          </p>
-
-          {/* Inline stat chips — mobile only */}
-          <div className="flex flex-wrap gap-2 lg:hidden mb-2">
-            {examDays !== null && (
-              <span className="tabular-nums" style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 26, padding: "0 10px", background: "color-mix(in srgb, var(--brand) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--brand) 22%, transparent)", borderRadius: 999, fontSize: 12, fontWeight: 600, color: "var(--brand)", letterSpacing: "-.01em" }}>
-                {fmtBr(examDays)} dias até a prova
-              </span>
-            )}
-            {streak > 0 && (
-              <span className="tabular-nums" style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 26, padding: "0 10px", background: "color-mix(in srgb, var(--c-pop) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--c-pop) 22%, transparent)", borderRadius: 999, fontSize: 12, fontWeight: 600, color: "var(--c-pop)", letterSpacing: "-.01em" }}>
-                {streak} dias seguidos
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Right: big stat numbers — desktop only */}
-        <div className="hidden lg:grid grid-cols-1 gap-8 items-end text-right">
-          <div>
-            <div style={LABEL_STYLE}>Até a prova</div>
-            <div className="tabular-nums" style={{
-              fontSize: "clamp(44px, 7.5vw, 108px)",
-              fontWeight: 600, letterSpacing: "-0.05em", lineHeight: 0.9,
-              color: "var(--brand)", marginTop: 5,
+          {/* Greeting + context — one compact line */}
+          <div className="min-w-0">
+            <div style={{
+              ...LABEL_STYLE,
+              display: "flex", alignItems: "center", gap: 9,
+              letterSpacing: ".16em", fontSize: 11, flexWrap: "wrap",
             }}>
-              {examDays != null ? fmtBr(examDays) : "—"}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 6, letterSpacing: ".04em" }}>
-              {examDateLabel ?? activeCohort?.name ?? "dias"}
+              <span aria-hidden="true" style={{ width: 22, height: 1, background: "var(--muted-foreground)", display: "inline-block", flexShrink: 0 }} />
+              <span style={{ color: "var(--foreground)", fontWeight: 700 }}>{greeting}, {firstName}</span>
+              <span aria-hidden="true" style={{ opacity: .4 }}>·</span>
+              <span>{dayLabel}</span>
+              {cohortBadge && (
+                <span style={{
+                  display: "inline-flex", alignItems: "center",
+                  height: 18, padding: "0 8px", marginLeft: 2,
+                  background: "color-mix(in srgb, var(--brand) 12%, transparent)",
+                  border: "1px solid color-mix(in srgb, var(--brand) 28%, transparent)",
+                  borderRadius: 999, fontSize: 10, fontWeight: 600, letterSpacing: ".06em",
+                  color: "var(--brand)",
+                }}>
+                  {cohortBadge}
+                </span>
+              )}
+              {cohortBadge && viewas.type !== "unlocked" && (
+                <HelpTip label="O que é a sua turma?" side="bottom">
+                  A sua turma é o ciclo do Revalida em que você está inscrito. Ela define a
+                  contagem regressiva até a prova e a data em que o MedHelp 60D é liberado para você.
+                </HelpTip>
+              )}
             </div>
           </div>
-          <div className="flex gap-10 justify-end">
+
+          {/* Stats readout — countdown leads, study + streak follow */}
+          <div className="flex items-end gap-7 sm:gap-9 justify-start lg:justify-end" style={{ flexShrink: 0 }}>
+            {/* Countdown — the one motivating number */}
+            <div className="text-left lg:text-right">
+              <div style={LABEL_STYLE}>Até a prova</div>
+              <div className="tabular-nums" style={{
+                fontSize: "clamp(32px, 4.4vw, 52px)",
+                fontWeight: 600, letterSpacing: "-.045em", lineHeight: 0.9,
+                color: "var(--brand)", marginTop: 4,
+              }}>
+                {examDays != null ? fmtBr(examDays) : "—"}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 5, letterSpacing: ".03em" }}>
+                {examDateLabel ?? activeCohort?.name ?? "dias"}
+              </div>
+            </div>
+
+            {/* Study days + streak — supporting */}
             {[
-              { label: "De estudo", value: fmtBr(studyDays), sub: "dias",     color: "var(--foreground)" },
-              { label: "Sequência", value: String(streak),   sub: "seguidos", color: "var(--c-pop)"       },
+              { label: "De estudo", value: fmtBr(studyDays), sub: studyDays === 1 ? "dia"      : "dias",     color: "var(--foreground)" },
+              { label: "Sequência", value: fmtBr(streak),    sub: streak === 1    ? "dia"      : "seguidos", color: "var(--c-pop)"       },
             ].map(({ label, value, sub, color }) => (
-              <div key={label} className="text-right">
+              <div key={label} className="text-left lg:text-right">
                 <div style={LABEL_STYLE}>{label}</div>
                 <div className="tabular-nums" style={{
-                  fontSize: "clamp(24px, 4vw, 58px)",
-                  fontWeight: 500, letterSpacing: "-0.045em", lineHeight: 1,
-                  color, marginTop: 4,
+                  fontSize: "clamp(22px, 2.6vw, 32px)",
+                  fontWeight: 500, letterSpacing: "-.04em", lineHeight: 0.95,
+                  color, marginTop: 5,
                 }}>
                   {value}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 5, letterSpacing: ".04em" }}>
+                <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 6, letterSpacing: ".03em" }}>
                   {sub}
                 </div>
               </div>
