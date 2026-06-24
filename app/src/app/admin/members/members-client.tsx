@@ -434,7 +434,13 @@ export function MembersClient({
         onCreated={() => setShowCreate(false)}
       />
 
-      <MemberDetailDrawer row={detailRow} onClose={() => setDetailRow(null)} />
+      {/* key remounts the drawer per member so each open starts with fresh state
+          (loading/detail) without resetting via setState inside an effect. */}
+      <MemberDetailDrawer
+        key={detailRow?.id ?? "closed"}
+        row={detailRow}
+        onClose={() => setDetailRow(null)}
+      />
     </div>
   );
 }

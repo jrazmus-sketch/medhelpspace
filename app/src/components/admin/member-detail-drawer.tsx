@@ -53,10 +53,15 @@ interface Props {
 export function MemberDetailDrawer({ row, onClose }: Props) {
   const { t, i18n } = useTranslation();
   const [detail, setDetail] = useState<MemberDetail | null>(null);
-  const [loading, setLoading] = useState(false);
+  // The parent remounts this per member (key={row.id}), so an open instance always
+  // starts in the loading state and fetches once — no synchronous reset in the effect.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Snapshot "now" once (lazy init) so the days-left math below stays pure — render
+  // must not call the impure Date.now(). Day granularity makes a mount-time stamp fine.
+  const [now] = useState(() => Date.now());
 
   const dateLocale = i18n.language === "en" ? "en-US" : "pt-BR";
 
@@ -69,17 +74,13 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
     });
   }
 
-  // Lazy-load the heavy per-member detail only when the drawer opens.
+  // Lazy-load the heavy per-member detail when the drawer opens. State only changes
+  // from the async result (setState in the then/catch callbacks) — the fresh-mount
+  // initial state (loading=true, detail=null) covers the reset, so the effect body
+  // stays free of synchronous setState.
   useEffect(() => {
-    if (!row) {
-      setDetail(null);
-      return;
-    }
+    if (!row) return;
     let cancelled = false;
-    setLoading(true);
-    setError(false);
-    setDetail(null);
-    setResendMsg(null);
     getMemberDetail(row.id)
       .then((d) => {
         if (!cancelled) {
@@ -141,7 +142,7 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
     row.membershipEndsAt && (row.status === "active" || row.status === "expiring")
       ? Math.max(
           0,
-          Math.ceil((new Date(row.membershipEndsAt).getTime() - Date.now()) / 86_400_000),
+          Math.ceil((new Date(row.membershipEndsAt).getTime() - now) / 86_400_000),
         )
       : null;
 
