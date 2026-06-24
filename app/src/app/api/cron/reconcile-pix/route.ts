@@ -19,7 +19,11 @@ import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 // 'paid', and the email_log UNIQUE guard mean a row already settled by the webhook or
 // the status poll is a no-op here (wonRace=false, no double-grant, no double-email).
 //
-// Schedule: app/vercel.json. Auth: "Authorization: Bearer <CRON_SECRET>" (Vercel sends it).
+// Schedule: app/vercel.json (daily — Vercel Hobby caps crons at once/day; a more
+// frequent schedule fails the deploy). For minute-level recovery, either upgrade to
+// Vercel Pro and tighten the schedule, or have an external scheduler (GitHub Actions /
+// cron-job.org) GET this URL with the CRON_SECRET bearer on a shorter interval.
+// Auth: "Authorization: Bearer <CRON_SECRET>" (Vercel sends it).
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

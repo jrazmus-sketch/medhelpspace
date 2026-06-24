@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/reconcile-pix",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
