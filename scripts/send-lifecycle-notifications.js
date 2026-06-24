@@ -2,6 +2,21 @@
 'use strict';
 
 /**
+ * ⚠️  DEPRECATED — DO NOT USE.
+ *
+ * The production lifecycle-email path is the Vercel Cron route:
+ *   app/src/app/api/cron/lifecycle-notifications/route.ts
+ *
+ * Email content (subject + body + CTA) now lives in the DB tables
+ * `email_templates` / `email_settings` and is admin-editable in the panel; it is
+ * rendered by the shared pure module app/src/lib/email-render.ts. This script
+ * still carries the OLD hardcoded copy, so running it would send STALE content
+ * that diverges from whatever the admin has edited. Left here only for reference.
+ * Do not port the render logic into this file — that would re-introduce the very
+ * duplication the DB-template refactor removed.
+ */
+
+/**
  * Daily lifecycle notification script.
  *
  * Runs three checks:

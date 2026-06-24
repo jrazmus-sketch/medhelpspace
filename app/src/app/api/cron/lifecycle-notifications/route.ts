@@ -3,7 +3,8 @@ import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Resend } from "resend";
 import crypto from "node:crypto";
-import { lifecycleEmailHtml } from "@/lib/email";
+import { getEmailSettings, getEmailTemplate } from "@/lib/email";
+import { renderEmail, type EmailTemplateRow } from "@/lib/email-render";
 
 // Mirror of scripts/send-lifecycle-notifications.js, ported for Vercel Cron.
 // Schedule: configured in app/vercel.json (daily 11:00 UTC = 08:00 BRT).
@@ -12,8 +13,6 @@ import { lifecycleEmailHtml } from "@/lib/email";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Vercel — increase if cohort grows large
 
-const FROM = "MedHelpSpace <pagamentos@medhelpspace.com.br>";
-const APP_URL = "https://medhelpspace.com.br";
 const MEDHELP_60D_MODULE_ID = 1;
 const CONTEUDO_CATEGORY_SLUG = "conteudo";
 // Minimum number of SM-2-due flashcards before we nudge the bell, so a stray
@@ -57,6 +56,24 @@ export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
   const resendKey = process.env.RESEND_API_KEY;
   const resend = resendKey ? new Resend(resendKey) : null;
+
+  // Email content now lives in the DB (email_templates / email_settings, editable in
+  // the admin panel). Fetch settings + every template this cron sends ONCE per run —
+  // not per recipient — so a large cohort doesn't re-fetch the same rows N times.
+  const settings = await getEmailSettings();
+  const FROM = settings.from_address;
+  const EMAIL_KINDS = [
+    "60d-unlock",
+    "expiry-warning-7d",
+    "expiry-notice",
+    "weekly-summary",
+    "daily-plan",
+  ] as const;
+  const templateList = await Promise.all(EMAIL_KINDS.map((k) => getEmailTemplate(k)));
+  const templates: Record<string, EmailTemplateRow> = {};
+  EMAIL_KINDS.forEach((k, i) => {
+    templates[k] = templateList[i];
+  });
 
   push(`Lifecycle notifications — APPLY (Vercel Cron)`);
   push(`Today: ${todayKey()}`);
@@ -138,7 +155,6 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     const { data: memberships } = await supabase
       .from("user_cohort_memberships")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .select("user_id, cohort:cohorts(id, name, membership_starts_at, membership_ends_at, test_date)");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const active = (memberships ?? []).filter((m: any) => {
@@ -175,7 +191,6 @@ export async function GET(request: NextRequest) {
   {
     const { data: access } = await supabase
       .from("cohort_module_access")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .select("cohort_id, unlock_date, cohort:cohorts(id, name, slug, test_date)")
       .eq("content_module_id", MEDHELP_60D_MODULE_ID)
       .eq("unlock_date", todayKey());
@@ -193,16 +208,14 @@ export async function GET(request: NextRequest) {
         push(`    ${members.length} members`);
         for (const m of members) {
           const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+          const { subject, html } = renderEmail(templates["60d-unlock"], settings, {
+            displayName,
+            testDate: fmtPtBr(cohort.test_date),
+          });
           await sendOne({
             to: m.email,
-            subject: "MedHelp 60D liberado — sua reta final começa agora",
-            html: lifecycleEmailHtml({
-              displayName,
-              headline: "MedHelp 60D está liberado",
-              body: `Faltam 60 dias para sua prova (${fmtPtBr(cohort.test_date)}). O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Revalida Up, Memorecards e todos os recursos de reta final.`,
-              ctaLabel: "Acessar MedHelp 60D →",
-              ctaHref: `${APP_URL}/app`,
-            }),
+            subject,
+            html,
             userId: m.user_id, kind: "60d-unlock", contextId: String(cohort.id),
           });
           await insertNotification({
@@ -245,16 +258,15 @@ export async function GET(request: NextRequest) {
       const members = await getCohortMembers(cohort.id);
       for (const m of members) {
         const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+        const { subject, html } = renderEmail(templates["expiry-warning-7d"], settings, {
+          displayName,
+          cohortName: cohort.name,
+          endsAt: fmtPtBr(cohort.membership_ends_at.split("T")[0]),
+        });
         await sendOne({
           to: m.email,
-          subject: "Seu acesso encerra em 7 dias",
-          html: lifecycleEmailHtml({
-            displayName,
-            headline: "Seu acesso encerra em 7 dias",
-            body: `Seu acesso à turma <strong>${cohort.name}</strong> termina em ${fmtPtBr(cohort.membership_ends_at.split("T")[0])}. Aproveite os últimos dias para revisar o que ficou pendente. Se quiser continuar estudando, você pode renovar agora.`,
-            ctaLabel: "Renovar acesso →",
-            ctaHref: `${APP_URL}/app/acesso-encerrado`,
-          }),
+          subject,
+          html,
           userId: m.user_id, kind: "expiry-warning-7d", contextId: String(cohort.id),
         });
         await insertNotification({
@@ -282,16 +294,14 @@ export async function GET(request: NextRequest) {
       const members = await getCohortMembers(cohort.id);
       for (const m of members) {
         const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+        const { subject, html } = renderEmail(templates["expiry-notice"], settings, {
+          displayName,
+          cohortName: cohort.name,
+        });
         await sendOne({
           to: m.email,
-          subject: "Seu acesso ao MedHelpSpace foi encerrado",
-          html: lifecycleEmailHtml({
-            displayName,
-            headline: "Acesso encerrado",
-            body: `Seu acesso à turma <strong>${cohort.name}</strong> foi encerrado. Esperamos que você tenha tido uma ótima preparação. Para continuar estudando na próxima turma, é só renovar.`,
-            ctaLabel: "Ver próximas turmas →",
-            ctaHref: `${APP_URL}/app/acesso-encerrado`,
-          }),
+          subject,
+          html,
           userId: m.user_id, kind: "expiry-notice", contextId: String(cohort.id),
         });
         await insertNotification({
@@ -338,12 +348,11 @@ export async function GET(request: NextRequest) {
       const body = totalQ === 0 && lessonsDone === 0
         ? `Esta semana foi corrida — sem registros de estudo. Sem culpa. Comece com uma sessão curta hoje, mesmo que sejam 15 minutos.`
         : `Esta semana: <strong>${totalQ} questões</strong> respondidas${accuracy != null ? ` com <strong>${accuracy}% de acerto</strong>` : ""}, <strong>${lessonsDone} aulas</strong> concluídas, em <strong>${daysActive} dia${daysActive !== 1 ? "s" : ""}</strong> ativos.${daysToExam != null ? ` Faltam ${daysToExam} dias para a prova.` : ""}`;
+      const { subject, html } = renderEmail(templates["weekly-summary"], settings, {
+        displayName, summaryBody: body,
+      });
       await sendOne({
-        to: s.email, subject: "Resumo semanal do seu plano de estudos",
-        html: lifecycleEmailHtml({
-          displayName, headline: "Seu resumo da semana", body,
-          ctaLabel: "Ver plano e ajustar →", ctaHref: `${APP_URL}/app/plano`,
-        }),
+        to: s.email, subject, html,
         userId: s.user_id, kind: "weekly-summary", contextId: weekKey,
       });
       await insertNotification({
@@ -372,13 +381,15 @@ export async function GET(request: NextRequest) {
       const daysToExam = s.cohort?.test_date
         ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
         : null;
+      const { subject, html } = renderEmail(templates["daily-plan"], settings, {
+        displayName,
+        daysToExamLine:
+          daysToExam != null
+            ? ` <br/><br/>Faltam <strong>${daysToExam} dias</strong> para sua prova.`
+            : "",
+      });
       await sendOne({
-        to: s.email, subject: "Seu plano de estudos para hoje",
-        html: lifecycleEmailHtml({
-          displayName, headline: "Plano de hoje",
-          body: `Seu plano personalizado está pronto na plataforma. Abra para ver as tarefas específicas baseadas no seu desempenho atual.${daysToExam != null ? ` <br/><br/>Faltam <strong>${daysToExam} dias</strong> para sua prova.` : ""}`,
-          ctaLabel: "Abrir plano de hoje →", ctaHref: `${APP_URL}/app/plano`,
-        }),
+        to: s.email, subject, html,
         userId: s.user_id, kind: "daily-plan", contextId: todayKey(),
       });
     }

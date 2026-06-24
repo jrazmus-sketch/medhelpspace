@@ -1,33 +1,117 @@
 import { Resend } from "resend";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  renderEmail,
+  EMAIL_TEMPLATE_DEFAULTS,
+  DEFAULT_EMAIL_SETTINGS,
+  sampleVarsFor,
+  type EmailTemplateRow,
+  type EmailSettingsRow,
+  type EmailVariable,
+} from "@/lib/email-render";
 
-const FROM = "MedHelpSpace <pagamentos@medhelpspace.com.br>";
-const APP_URL = "https://medhelpspace.com.br";
+// Transactional-email SEND path. The actual content lives in the DB
+// (email_templates / email_settings, admin-editable) and is rendered by the pure
+// renderEmail() in lib/email-render.ts. This module only fetches those rows and
+// hands them to Resend. When the tables are missing/inactive we fall back to the
+// code defaults (EMAIL_TEMPLATE_DEFAULTS / DEFAULT_EMAIL_SETTINGS), so a send never
+// hard-fails just because the DB seed didn't run.
+//
+// Both tables are read via createAdminClient() (service_role, BYPASSRLS) — they are
+// not member-facing and have deny-all RLS.
+
+// ── Resend client ──────────────────────────────────────────────────────────────
 
 function getResend(): Resend | null {
   if (!process.env.RESEND_API_KEY) return null;
   return new Resend(process.env.RESEND_API_KEY);
 }
 
-export async function sendPurchaseConfirmation({
+// ── DB fetch: settings + templates ───────────────────────────────────────────────
+
+// Global email config (singleton row id=1). On any error / missing row we return
+// the code default so the header/footer chrome still renders.
+export async function getEmailSettings(): Promise<EmailSettingsRow> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("email_settings")
+      .select(
+        "from_address, app_url, company_name, cnpj, contact_email, address, footer_note",
+      )
+      .eq("id", 1)
+      .single();
+    if (error || !data) return DEFAULT_EMAIL_SETTINGS;
+    return {
+      from_address: (data.from_address as string) ?? DEFAULT_EMAIL_SETTINGS.from_address,
+      app_url: (data.app_url as string) ?? DEFAULT_EMAIL_SETTINGS.app_url,
+      company_name: (data.company_name as string) ?? DEFAULT_EMAIL_SETTINGS.company_name,
+      cnpj: (data.cnpj as string) ?? "",
+      contact_email: (data.contact_email as string) ?? "",
+      address: (data.address as string) ?? "",
+      footer_note: (data.footer_note as string) ?? "",
+    };
+  } catch {
+    return DEFAULT_EMAIL_SETTINGS;
+  }
+}
+
+// Template for a kind. Missing row / active=false / any error → the code default.
+// `variables` jsonb may arrive already-parsed (postgres-js / PostgREST decode it);
+// guard with Array.isArray so a malformed column can't crash render.
+export async function getEmailTemplate(kind: string): Promise<EmailTemplateRow> {
+  const fallback = EMAIL_TEMPLATE_DEFAULTS[kind];
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select(
+        "kind, name, description, subject, kicker, headline, body_html, cta_label, cta_href, variables, active, sort_order",
+      )
+      .eq("kind", kind)
+      .single();
+    if (error || !data || data.active === false) return fallback;
+    const variables: EmailVariable[] = Array.isArray(data.variables)
+      ? (data.variables as EmailVariable[])
+      : fallback?.variables ?? [];
+    return {
+      kind: data.kind as string,
+      name: (data.name as string) ?? "",
+      description: (data.description as string) ?? "",
+      subject: (data.subject as string) ?? "",
+      kicker: (data.kicker as string) ?? "",
+      headline: (data.headline as string) ?? "",
+      body_html: (data.body_html as string) ?? "",
+      cta_label: (data.cta_label as string) ?? "",
+      cta_href: (data.cta_href as string) ?? "",
+      variables,
+      active: data.active !== false,
+      sort_order: (data.sort_order as number) ?? 0,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+// ── Send ─────────────────────────────────────────────────────────────────────
+
+// Low-level send. Returns a { ok, reason } so callers that care (admin resend
+// tool) can surface the failure; the fire-and-forget finalize path ignores it.
+export async function sendEmailRaw({
   to,
-  name,
-  cohortName,
+  subject,
+  html,
+  from,
 }: {
   to: string;
-  name: string;
-  cohortName: string;
+  subject: string;
+  html: string;
+  from: string;
 }): Promise<{ ok: boolean; reason?: string }> {
   const resend = getResend();
   if (!resend) return { ok: false, reason: "no_api_key" };
-  const displayName = name || to.split("@")[0];
-
   try {
-    const { error } = await resend.emails.send({
-      from: FROM,
-      to,
-      subject: `Acesso liberado — MedHelpSpace Revalida ${cohortName}`,
-      html: purchaseConfirmationHtml({ displayName, cohortName }),
-    });
+    const { error } = await resend.emails.send({ from, to, subject, html });
     // The Resend SDK reports API errors (e.g. an unverified sending domain) on the
     // returned `error` field rather than throwing — so a silently-rejected send
     // looks like success unless we inspect it. Callers that need to know (the admin
@@ -37,6 +121,43 @@ export async function sendPurchaseConfirmation({
   } catch (e) {
     return { ok: false, reason: e instanceof Error ? e.message : "send_throw" };
   }
+}
+
+// Fetch settings + template for `kind`, render against `vars`, and send.
+export async function sendTemplateEmail({
+  kind,
+  to,
+  vars,
+}: {
+  kind: string;
+  to: string;
+  vars: Record<string, string>;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const settings = await getEmailSettings();
+  const tpl = await getEmailTemplate(kind);
+  const { subject, html } = renderEmail(tpl, settings, vars);
+  return sendEmailRaw({ to, subject, html, from: settings.from_address });
+}
+
+// ── Public, named send helpers (signatures preserved for existing callers) ───────
+
+// Purchase confirmation. Caller (finalize.ts) is fire-and-forget; the admin resend
+// tool (actions/admin.ts) inspects { ok, reason } — including reason === "no_api_key".
+export async function sendPurchaseConfirmation({
+  to,
+  name,
+  cohortName,
+}: {
+  to: string;
+  name: string;
+  cohortName: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const displayName = name || to.split("@")[0];
+  return sendTemplateEmail({
+    kind: "purchase",
+    to,
+    vars: { displayName, cohortName },
+  });
 }
 
 // ── 60D unlock notification ───────────────────────────────────────────────────
@@ -49,29 +170,16 @@ export async function send60DUnlockEmail({
   to: string;
   name: string;
   testDate: string; // YYYY-MM-DD
-}) {
-  const resend = getResend();
-  if (!resend) return;
+}): Promise<{ ok: boolean; reason?: string }> {
   const displayName = name || to.split("@")[0];
+  // Keep the pt-BR long-date formatting the old code used (noon to dodge TZ drift).
   const formattedDate = new Date(testDate + "T12:00:00").toLocaleDateString("pt-BR", {
     day: "numeric", month: "long", year: "numeric",
   });
-
-  await resend.emails.send({
-    from: FROM,
+  return sendTemplateEmail({
+    kind: "60d-unlock",
     to,
-    subject: "MedHelp 60D liberado — sua reta final começa agora",
-    html: lifecycleEmailHtml({
-      displayName,
-      headline: "MedHelp 60D está liberado",
-      body: `
-        Faltam 60 dias para sua prova (${formattedDate}). O módulo intensivo
-        <strong>MedHelp 60D</strong> agora está disponível — Revalida Up,
-        Memorecards e todos os recursos de reta final.
-      `,
-      ctaLabel: "Acessar MedHelp 60D →",
-      ctaHref: `${APP_URL}/app`,
-    }),
+    vars: { displayName, testDate: formattedDate },
   });
 }
 
@@ -87,29 +195,15 @@ export async function sendExpiryWarningEmail({
   name: string;
   cohortName: string;
   endsAt: string;
-}) {
-  const resend = getResend();
-  if (!resend) return;
+}): Promise<{ ok: boolean; reason?: string }> {
   const displayName = name || to.split("@")[0];
   const formattedDate = new Date(endsAt).toLocaleDateString("pt-BR", {
     day: "numeric", month: "long", year: "numeric",
   });
-
-  await resend.emails.send({
-    from: FROM,
+  return sendTemplateEmail({
+    kind: "expiry-warning-7d",
     to,
-    subject: "Seu acesso encerra em 7 dias",
-    html: lifecycleEmailHtml({
-      displayName,
-      headline: "Seu acesso encerra em 7 dias",
-      body: `
-        Seu acesso à turma <strong>${cohortName}</strong> termina em
-        ${formattedDate}. Aproveite os últimos dias para revisar o que ficou
-        pendente. Se quiser continuar estudando, você pode renovar agora.
-      `,
-      ctaLabel: "Renovar acesso →",
-      ctaHref: `${APP_URL}/app/acesso-encerrado`,
-    }),
+    vars: { displayName, cohortName, endsAt: formattedDate },
   });
 }
 
@@ -123,212 +217,25 @@ export async function sendExpiryNoticeEmail({
   to: string;
   name: string;
   cohortName: string;
-}) {
-  const resend = getResend();
-  if (!resend) return;
+}): Promise<{ ok: boolean; reason?: string }> {
   const displayName = name || to.split("@")[0];
-
-  await resend.emails.send({
-    from: FROM,
+  return sendTemplateEmail({
+    kind: "expiry-notice",
     to,
-    subject: "Seu acesso ao MedHelpSpace foi encerrado",
-    html: lifecycleEmailHtml({
-      displayName,
-      headline: "Acesso encerrado",
-      body: `
-        Seu acesso à turma <strong>${cohortName}</strong> foi encerrado.
-        Esperamos que você tenha tido uma ótima preparação.
-        Para continuar estudando na próxima turma, é só renovar.
-      `,
-      ctaLabel: "Ver próximas turmas →",
-      ctaHref: `${APP_URL}/app/acesso-encerrado`,
-    }),
+    vars: { displayName, cohortName },
   });
 }
 
-// ── Shared lifecycle template ─────────────────────────────────────────────────
+// ── Admin "send test" ──────────────────────────────────────────────────────────
 
-export function lifecycleEmailHtml({
-  displayName, headline, body, ctaLabel, ctaHref,
-}: {
-  displayName: string;
-  headline: string;
-  body: string;
-  ctaLabel: string;
-  ctaHref: string;
-}): string {
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${headline}</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
-          <tr>
-            <td style="background:#7a1d91;padding:28px 40px;">
-              <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-.3px;">
-                MedHelpSpace Revalida
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:40px;">
-              <p style="margin:0 0 6px;font-size:13px;color:#9ca3af;text-transform:uppercase;letter-spacing:.1em;font-weight:600;">
-                Olá, ${displayName}
-              </p>
-              <p style="margin:0 0 16px;font-size:24px;font-weight:700;color:#111827;letter-spacing:-.4px;line-height:1.2;">
-                ${headline}
-              </p>
-              <p style="margin:0 0 28px;font-size:15px;color:#4b5563;line-height:1.65;">
-                ${body.trim()}
-              </p>
-              <table cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
-                <tr>
-                  <td style="background:#7a1d91;border-radius:10px;">
-                    <a href="${ctaHref}"
-                       style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-.2px;">
-                      ${ctaLabel}
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
-              <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
-                MedHelpSpace Revalida &nbsp;·&nbsp;
-                <a href="${APP_URL}" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a>
-              </p>
-              <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.5;">
-                CNPJ CNPJ_TO_FILL_IN &nbsp;·&nbsp; Contato:
-                <a href="mailto:privacidade@medhelpspace.com.br" style="color:#9ca3af;text-decoration:underline;">privacidade@medhelpspace.com.br</a>
-              </p>
-              <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
-                Para gerenciar suas notificações por email, acesse suas
-                <a href="${APP_URL}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-}
-
-function purchaseConfirmationHtml({
-  displayName,
-  cohortName,
-}: {
-  displayName: string;
-  cohortName: string;
-}): string {
-  return `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Acesso liberado</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
-
-          <!-- Header bar -->
-          <tr>
-            <td style="background:#7a1d91;padding:28px 40px;">
-              <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-.3px;">
-                MedHelpSpace Revalida
-              </p>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding:40px;">
-              <p style="margin:0 0 12px;font-size:24px;font-weight:700;color:#111827;letter-spacing:-.4px;">
-                Bem-vindo, ${displayName}!
-              </p>
-              <p style="margin:0 0 24px;font-size:15px;color:#6b7280;line-height:1.6;">
-                Sua matrícula na turma <strong style="color:#111827;">${cohortName}</strong> foi confirmada.
-                Você já tem acesso completo ao sistema.
-              </p>
-
-              <!-- CTA -->
-              <table cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-                <tr>
-                  <td style="background:#7a1d91;border-radius:10px;">
-                    <a href="${APP_URL}/app"
-                       style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-.2px;">
-                      Entrar no sistema →
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- What's included -->
-              <table width="100%" cellpadding="0" cellspacing="0"
-                     style="background:#f9f5ff;border-radius:8px;padding:20px;margin-bottom:28px;">
-                <tr>
-                  <td>
-                    <p style="margin:0 0 12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#7a1d91;">
-                      O que está incluso
-                    </p>
-                    ${[
-                      "Questões comentadas e simulados",
-                      "Resumos narrativos por especialidade",
-                      "MedVoice — treinamento em áudio",
-                      "Audiocards e Flashcards",
-                      "Fórmula MedHelp",
-                      "MedHelp 60D — liberado 60 dias antes da prova",
-                    ]
-                      .map(
-                        (item) =>
-                          `<p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;${item}</p>`,
-                      )
-                      .join("")}
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
-                Dúvidas? Responda este e-mail ou entre em contato pelo WhatsApp.<br/>
-                Garantia incondicional de 7 dias — sem burocracia.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
-              <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
-                MedHelpSpace Revalida &nbsp;·&nbsp;
-                <a href="${APP_URL}" style="color:#7a1d91;text-decoration:none;">medhelpspace.com.br</a>
-              </p>
-              <p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.5;">
-                CNPJ CNPJ_TO_FILL_IN &nbsp;·&nbsp; Contato:
-                <a href="mailto:privacidade@medhelpspace.com.br" style="color:#9ca3af;text-decoration:underline;">privacidade@medhelpspace.com.br</a>
-              </p>
-              <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
-                Para gerenciar suas notificações por email, acesse suas
-                <a href="${APP_URL}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+// Render a template with its sample vars and send it to an arbitrary address.
+// Backs the admin email editor's "send test" button.
+export async function sendTestEmail(
+  kind: string,
+  to: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  const settings = await getEmailSettings();
+  const tpl = await getEmailTemplate(kind);
+  const { subject, html } = renderEmail(tpl, settings, sampleVarsFor(tpl));
+  return sendEmailRaw({ to, subject, html, from: settings.from_address });
 }
