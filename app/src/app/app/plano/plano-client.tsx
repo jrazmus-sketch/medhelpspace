@@ -12,9 +12,11 @@ import {
   setWeeklyHours, addPause, removePause, skipToday,
   setFocusSpecialties, setExcludedSpecialties,
   setContentTypes, setEmailPrefs, setAdvancedPrefs,
-  type Intensity, type ContentType, type WeaknessSensitivity,
 } from "@/actions/study-plan";
-import type { DerivedPlan, PlanItem, StudyPlanPrefs } from "@/lib/study-plan/derive";
+import type {
+  DerivedPlan, PlanItem, StudyPlanPrefs,
+  Intensity, ContentType, WeaknessSensitivity,
+} from "@/lib/study-plan/derive";
 import { CalibrateWizard } from "./calibrate-wizard";
 
 const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {

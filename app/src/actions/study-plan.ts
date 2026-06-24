@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { Intensity, ContentType, WeaknessSensitivity } from "@/lib/study-plan/derive";
 
-// ── Type re-exports for client imports ───────────────────────────────────────
-export type { Intensity, ContentType, WeaknessSensitivity };
+// NOTE: A "use server" module may only export async functions. Do NOT re-export
+// types from here — the server-actions compiler turns `export type { … }` into a
+// runtime value re-export, which crashes with "Intensity is not defined".
+// Client code imports these types directly from "@/lib/study-plan/derive".
 
 // ── Generic study_plans upsert helper ────────────────────────────────────────
 
