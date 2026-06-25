@@ -53,5 +53,15 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // A failed RECOVERY link (expired, already used once — OTP tokens are
+  // single-use — or pre-opened by an email scanner) must NOT land on /verify.
+  // That page only knows how to resend *signup* confirmations, and resending a
+  // signup confirmation to an already-confirmed account is a silent no-op:
+  // Supabase returns success but sends nothing. Send the user back to request a
+  // fresh reset link, which correctly calls resetPasswordForEmail.
+  if (type === "recovery") {
+    return NextResponse.redirect(`${origin}/recuperar-senha?error=expired`);
+  }
+
   return NextResponse.redirect(`${origin}/verify?error=invalid_token`);
 }
