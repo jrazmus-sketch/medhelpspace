@@ -254,7 +254,8 @@
       "role_change": "Role changed",
       "password_reset": "Password reset",
       "revoke_sessions": "Sessions revoked",
-      "member_created": "Member created"
+      "member_created": "Member created",
+      "order_refunded": "Order refunded"
     }
   },
   "pageNew": {
@@ -550,6 +551,8 @@
     "refund": "Refund",
     "refundTitle": "Confirm refund",
     "refundDesc": "Issue a full refund to {{email}}? Their cohort membership will be revoked.",
+    "refundReasonLabel": "Reason (optional)",
+    "refundReasonPlaceholder": "e.g. student request, duplicate charge…",
     "confirmRefund": "Confirm refund"
   },
   "coupons": {

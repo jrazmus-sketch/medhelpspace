@@ -254,7 +254,8 @@
       "role_change": "Função alterada",
       "password_reset": "Senha redefinida",
       "revoke_sessions": "Sessões revogadas",
-      "member_created": "Membro criado"
+      "member_created": "Membro criado",
+      "order_refunded": "Pedido estornado"
     }
   },
   "pageNew": {
@@ -550,6 +551,8 @@
     "refund": "Estornar",
     "refundTitle": "Confirmar estorno",
     "refundDesc": "Estornar o valor total para {{email}}? A matrícula na turma será cancelada.",
+    "refundReasonLabel": "Motivo (opcional)",
+    "refundReasonPlaceholder": "Ex.: solicitação do aluno, cobrança duplicada…",
     "confirmRefund": "Confirmar estorno"
   },
   "coupons": {

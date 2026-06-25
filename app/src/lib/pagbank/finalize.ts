@@ -61,6 +61,10 @@ export async function finalizePaidOrder(
     .from("orders")
     .update({
       status: "paid",
+      // Persist the settled charge id (CHAR_…) so refunds work later. The card
+      // path also sets this at charge-create time, but the Pix/Orders-API path
+      // only learns the charge id here, once a PAID charge appears on the order.
+      pagbank_charge_id: charge.id,
       pagbank_response: charge as unknown as Record<string, unknown>,
     })
     .eq("id", orderId)

@@ -50,6 +50,7 @@ export function BillingClient({
   const [statusFilter, setStatusFilter] = useState("all");
   const [refundTarget, setRefundTarget] = useState<OrderRow | null>(null);
   const [refundError, setRefundError] = useState<string | null>(null);
+  const [refundReason, setRefundReason] = useState("");
   const [refundDone, setRefundDone] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
 
@@ -92,6 +93,7 @@ export function BillingClient({
   function handleRefund(row: OrderRow) {
     setRefundTarget(row);
     setRefundError(null);
+    setRefundReason("");
   }
 
   function confirmRefund() {
@@ -103,7 +105,7 @@ export function BillingClient({
         const res = await fetch("/api/admin/billing/refund", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: id }),
+          body: JSON.stringify({ orderId: id, reason: refundReason.trim() }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Erro ao estornar");
@@ -263,6 +265,19 @@ export function BillingClient({
             <p className="text-sm font-semibold text-foreground mb-4">
               {fmt(refundTarget.amountCents)} · {refundTarget.cohortName}
             </p>
+            <label className="block mb-4">
+              <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                {t("billing.refundReasonLabel")}
+              </span>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                rows={2}
+                maxLength={500}
+                placeholder={t("billing.refundReasonPlaceholder")}
+                className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+              />
+            </label>
             {refundError && (
               <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
                 {refundError}
