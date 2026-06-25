@@ -81,7 +81,19 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and static assets; run on everything else.
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Skip Next.js internals, static assets, AND route handlers (/api/*).
+    //
+    // /api is excluded on purpose: the proxy's only jobs are to refresh the
+    // session cookie for *page* navigations and to gate /app + /admin. It never
+    // protected /api (those routes do their own getUser() + role checks). Worse,
+    // running getUser() here for every /api call means a public, session-free
+    // endpoint like /api/pagbank/installments — which the checkout card form
+    // polls as the buyer types — triggers a refresh-token rotation. Two such
+    // requests racing on the single-use refresh token (or the poll racing the
+    // charge POST) makes supabase-ssr invalidate the session, so the very next
+    // request (the credit-card charge) arrives with no user and dies on the
+    // "Não autenticado" guard. Pix never mounts the card form, so it never hit
+    // this. API routes refresh their own session inside the route handler.
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
