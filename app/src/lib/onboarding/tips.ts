@@ -26,6 +26,7 @@ export type CoachKey =
   | "flashcards"
   | "lesson"
   | "audio"
+  | "audiocards"
   | "memorecards"
   | "revalida-up"
   | "revisao"
@@ -122,13 +123,24 @@ export const TIPS: Record<CoachKey, Tip> = {
 
   audio: {
     key: "audio",
-    title: "Como usar os áudios",
+    title: "Como usar o MedVoice",
     body:
-      "Ouça por seção, com controles de avançar e voltar 15s. O áudio acompanha o texto, então você pode **ler enquanto escuta**.",
+      "Treinamento em **áudio** por tema: ouça por seção, com controles de avançar e voltar 15s. Onde houver, toque em **Transcrição** para ler enquanto escuta.",
     reviewNote:
-      "Os AudioCards alimentam a Revisão como os flashcards, assim que os áudios estiverem disponíveis.",
+      "O MedVoice é para escuta — fixe o conteúdo praticando as **questões e flashcards** do mesmo tema.",
     href: "/app/medvoice",
     hrefLabel: "Ouvir MedVoice",
+  },
+
+  audiocards: {
+    key: "audiocards",
+    title: "Como funcionam os AudioCards",
+    body:
+      "São os mesmos cartões dos **Flashcards**, agora em áudio: ouça a pergunta e a resposta de cada tema sem precisar olhar a tela. Toque em **Transcrição do áudio** para ler junto; avance e volte 15s pelos controles.",
+    reviewNote:
+      "Os AudioCards são só para escuta — quem agenda a **Revisão** espaçada é o mesmo tema nos **Flashcards**.",
+    href: "/app/audiocards",
+    hrefLabel: "Abrir AudioCards",
   },
 
   memorecards: {
@@ -210,7 +222,7 @@ export const GUIDE_GROUPS: { title: string; keys: CoachKey[] }[] = [
   { title: "Visão geral", keys: ["welcome", "nav"] },
   {
     title: "Como estudar",
-    keys: ["dash-study-types", "dash-specialties", "quiz", "flashcards", "lesson", "audio", "revalida-up"],
+    keys: ["dash-study-types", "dash-specialties", "quiz", "flashcards", "lesson", "audio", "audiocards", "revalida-up"],
   },
   { title: "A Revisão espaçada", keys: ["revisao", "memorecards"] },
   { title: "Planejamento", keys: ["plano"] },

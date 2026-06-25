@@ -196,9 +196,9 @@ function coachmarkKeyForPage(page: {
   switch (page.type) {
     case "text-lesson":
     case "audio-lesson":
-      return page.track_id === MEDVOICE_TRACK_ID || page.track_id === AUDIOCARDS_TRACK_ID
-        ? "audio"
-        : "lesson";
+      if (page.track_id === MEDVOICE_TRACK_ID) return "audio";
+      if (page.track_id === AUDIOCARDS_TRACK_ID) return "audiocards";
+      return "lesson";
     case "h5p-quiz":
       if (page.track_id === FLASHCARDS_TRACK_ID) return "flashcards";
       if (page.content_module_id === MEDHELP_60D_MODULE_ID) return "memorecards";
