@@ -4,12 +4,44 @@ import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getPageSiblings } from "@/lib/page-siblings";
 import { FlashcardPlayer } from "./flashcard-player";
 import type { CardGroup } from "./flashcard-player";
+import { FlashcardHub } from "./flashcard-hub";
+import type { CategoryCardData } from "./flashcard-hub";
 
 function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 }
 
-export async function FlashcardRenderer({ pageId }: { pageId: number }) {
+// Stable, shareable per-group identifier for the ?grupo= deep link. Derived from
+// the group label (accent-stripped) with a position fallback; collisions are
+// disambiguated by appending the group position so two groups never share a slug.
+function slugifyLabel(label: string | null, position: number): string {
+  if (!label) return `grupo-${position}`;
+  const base = label
+    .normalize("NFD")
+    // Drop combining diacritical marks (U+0300–U+036F) so "Congênita" → "congenita".
+    .split("")
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code < 0x0300 || code > 0x036f;
+    })
+    .join("")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return base || `grupo-${position}`;
+}
+
+export async function FlashcardRenderer({
+  pageId,
+  specialtySlug,
+  pageSlug,
+  grupo,
+}: {
+  pageId: number;
+  specialtySlug: string;
+  pageSlug: string;
+  grupo?: string;
+}) {
   const supabase = createAdminClient();
   const { data: cards } = await supabase
     .from("flashcard_items")
@@ -22,8 +54,10 @@ export async function FlashcardRenderer({ pageId }: { pageId: number }) {
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
 
-  // Fetch SM-2 progress for these cards so we can resurface due cards first
+  // Fetch SM-2 progress + attempt history for these cards so we can (a) resurface
+  // due cards first inside the player and (b) show per-category stats on the grid.
   const progressByCard = new Map<number, { due_date: string; repetitions: number }>();
+  const latestResultByCard = new Map<number, "correct" | "incorrect">();
   let dueTodayCount = 0;
   const todayKey = new Date().toISOString().split("T")[0];
 
@@ -35,17 +69,32 @@ export async function FlashcardRenderer({ pageId }: { pageId: number }) {
         const cardIds = cards.map((c) => c.id);
         // SM-2 state now lives in the unified review_schedule (flashcard_progress
         // is frozen); read it back so due cards still resurface first.
-        const { data: progress } = await userClient
-          .from("review_schedule")
-          .select("item_id, due_date, repetitions")
-          .eq("user_id", user.id)
-          .eq("item_type", "flashcard")
-          .in("item_id", cardIds);
+        const [{ data: progress }, { data: attempts }] = await Promise.all([
+          userClient
+            .from("review_schedule")
+            .select("item_id, due_date, repetitions")
+            .eq("user_id", user.id)
+            .eq("item_type", "flashcard")
+            .in("item_id", cardIds),
+          userClient
+            .from("flashcard_attempts")
+            .select("flashcard_item_id, result, created_at")
+            .eq("user_id", user.id)
+            .in("flashcard_item_id", cardIds)
+            .order("created_at", { ascending: false }),
+        ]);
         for (const p of progress ?? []) {
           progressByCard.set(p.item_id as number, {
             due_date: p.due_date as string,
             repetitions: p.repetitions as number,
           });
+        }
+        // DESC order means the first row seen per card is the latest attempt.
+        for (const a of attempts ?? []) {
+          const cid = a.flashcard_item_id as number;
+          if (!latestResultByCard.has(cid)) {
+            latestResultByCard.set(cid, a.result as "correct" | "incorrect");
+          }
         }
         // Count: due-today = either no progress yet (new) OR due_date <= today
         for (const c of cards) {
@@ -102,14 +151,88 @@ export async function FlashcardRenderer({ pageId }: { pageId: number }) {
 
   const groups = Array.from(groupMap.values()).sort((a, b) => a.position - b.position);
 
+  // Assign a unique slug to every group (for the ?grupo= deep link).
+  const slugByPosition = new Map<number, string>();
+  const groupBySlug = new Map<string, CardGroup>();
+  for (const g of groups) {
+    let slug = slugifyLabel(g.label, g.position);
+    if (groupBySlug.has(slug)) slug = `${slug}-${g.position}`;
+    slugByPosition.set(g.position, slug);
+    groupBySlug.set(slug, g);
+  }
+
+  const basePath = `/app/${specialtySlug}/${pageSlug}`;
   const siblings = await getPageSiblings(pageId);
+
+  // Per-group due-today + accuracy (used both on the grid and the in-player header).
+  function groupDue(g: CardGroup): number {
+    if (USE_MOCK_DATA) return g.cards.length;
+    let n = 0;
+    for (const c of g.cards) {
+      const prog = progressByCard.get(c.id);
+      if (!prog || prog.due_date <= todayKey) n++;
+    }
+    return n;
+  }
+  function groupAccuracy(g: CardGroup): { answered: number; correctLatest: number } {
+    let answered = 0;
+    let correctLatest = 0;
+    for (const c of g.cards) {
+      const r = latestResultByCard.get(c.id);
+      if (r) {
+        answered++;
+        if (r === "correct") correctLatest++;
+      }
+    }
+    return { answered, correctLatest };
+  }
+
+  // Resolve the active group: single-group decks skip the grid; otherwise a valid
+  // ?grupo= slug selects its category. Anything else falls through to the grid.
+  const selectedGroup =
+    groups.length === 1 ? groups[0] : grupo ? groupBySlug.get(grupo) ?? null : null;
+
+  // ── Grid view (multi-category deck, no/invalid ?grupo=) ─────────────────────────
+  if (!selectedGroup) {
+    const categories: CategoryCardData[] = groups.map((g) => {
+      const acc = groupAccuracy(g);
+      return {
+        slug: slugByPosition.get(g.position)!,
+        label: g.label ?? `Grupo ${g.position}`,
+        total: g.cards.length,
+        due: groupDue(g),
+        answered: acc.answered,
+        correctLatest: acc.correctLatest,
+      };
+    });
+
+    return (
+      <FlashcardHub
+        basePath={basePath}
+        specialtySlug={specialtySlug}
+        categories={categories}
+        dueTodayCount={dueTodayCount}
+        totalCards={cards.length}
+      />
+    );
+  }
+
+  // ── Player view (single category) ───────────────────────────────────────────────
+  const idx = groups.indexOf(selectedGroup);
+  const nextGroup = groups.length > 1 && idx < groups.length - 1 ? groups[idx + 1] : null;
+  const hasGrid = groups.length > 1;
 
   return (
     <FlashcardPlayer
-      groups={groups}
+      groups={[selectedGroup]}
       pageId={pageId}
-      dueTodayCount={dueTodayCount}
-      totalCards={cards.length}
+      dueTodayCount={groupDue(selectedGroup)}
+      totalCards={selectedGroup.cards.length}
+      gridHref={hasGrid ? basePath : null}
+      nextCategoryHref={
+        nextGroup ? `${basePath}?grupo=${encodeURIComponent(slugByPosition.get(nextGroup.position)!)}` : null
+      }
+      nextCategoryName={nextGroup?.label ?? null}
       nextDeckHref={siblings.nextHref}
       nextDeckTitle={siblings.nextTitle}
       specialtyHref={siblings.specialtyHref}

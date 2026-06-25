@@ -24,10 +24,10 @@ export default async function ContentPage({
   searchParams,
 }: {
   params: Promise<{ specialty: string; slug: string }>;
-  searchParams: Promise<{ s?: string }>;
+  searchParams: Promise<{ s?: string; grupo?: string }>;
 }) {
   const { slug, specialty } = await params;
-  const { s } = await searchParams;
+  const { s, grupo } = await searchParams;
   const admin = createAdminClient();
 
   const { data: page } = await admin
@@ -153,6 +153,8 @@ export default async function ContentPage({
         page={page as { id: number; title: string; type: string; view: string | null; track_id: number | null; content_module_id: number | null }}
         selectedLessonId={selectedLessonId}
         specialtySlug={specialty}
+        pageSlug={slug}
+        grupo={grupo}
         backHref={voltarFallback}
       />
     </div>
@@ -212,11 +214,15 @@ function PageBody({
   page,
   selectedLessonId,
   specialtySlug,
+  pageSlug,
+  grupo,
   backHref,
 }: {
   page: { id: number; title: string; type: string; view: string | null; track_id: number | null; content_module_id: number | null };
   selectedLessonId?: number;
   specialtySlug: string;
+  pageSlug: string;
+  grupo?: string;
   backHref: string;
 }) {
   switch (page.type) {
@@ -242,7 +248,15 @@ function PageBody({
       );
     }
     case "h5p-quiz":
-      if (page.track_id === FLASHCARDS_TRACK_ID) return <FlashcardRenderer pageId={page.id} />;
+      if (page.track_id === FLASHCARDS_TRACK_ID)
+        return (
+          <FlashcardRenderer
+            pageId={page.id}
+            specialtySlug={specialtySlug}
+            pageSlug={pageSlug}
+            grupo={grupo}
+          />
+        );
       if (page.content_module_id === MEDHELP_60D_MODULE_ID) return <MemorecardsRenderer pageId={page.id} />;
       return <QuizRenderer pageId={page.id} />;
     case "blurb-nav-hub":

@@ -29,6 +29,11 @@ interface Props {
   pageId: number;
   dueTodayCount?: number;
   totalCards?: number;
+  /** Back-to-category-grid link. Null for single-category decks (no grid). */
+  gridHref?: string | null;
+  /** Next category within the same deck (null on the last/only category). */
+  nextCategoryHref?: string | null;
+  nextCategoryName?: string | null;
   nextDeckHref: string | null;
   nextDeckTitle: string | null;
   specialtyHref: string;
@@ -40,6 +45,9 @@ export function FlashcardPlayer({
   pageId,
   dueTodayCount,
   totalCards,
+  gridHref = null,
+  nextCategoryHref = null,
+  nextCategoryName = null,
   nextDeckHref,
   nextDeckTitle,
   specialtyHref,
@@ -217,9 +225,21 @@ export function FlashcardPlayer({
         )}
 
         <div className="space-y-3">
-          {/* Primary: continue forward */}
+          {/* Primary: continue forward. In a multi-category deck the forward
+              action is the next category (falling back to the next deck on the
+              last one); the secondary action returns to the category grid. */}
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            {nextDeckHref && (
+            {nextCategoryHref ? (
+              <Link
+                href={nextCategoryHref}
+                className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-1.5"
+              >
+                <span className="truncate">
+                  Próximo tema{nextCategoryName ? `: ${nextCategoryName}` : ""}
+                </span>
+                <span aria-hidden>→</span>
+              </Link>
+            ) : nextDeckHref ? (
               <Link
                 href={nextDeckHref}
                 className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-1.5"
@@ -229,13 +249,22 @@ export function FlashcardPlayer({
                 </span>
                 <span aria-hidden>→</span>
               </Link>
+            ) : null}
+            {gridHref ? (
+              <Link
+                href={gridHref}
+                className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
+              >
+                ← Voltar aos temas
+              </Link>
+            ) : (
+              <Link
+                href={specialtyHref}
+                className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
+              >
+                ← Voltar para {specialtyName}
+              </Link>
             )}
-            <Link
-              href={specialtyHref}
-              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:border-brand/40 hover:text-brand transition-colors inline-flex items-center justify-center"
-            >
-              ← Voltar para {specialtyName}
-            </Link>
           </div>
 
           {/* Secondary: redo this deck */}
@@ -326,6 +355,16 @@ export function FlashcardPlayer({
 
   return (
     <div className="space-y-5 max-w-xl">
+      {/* Back to the category grid (multi-category decks only) */}
+      {gridHref && (
+        <Link
+          href={gridHref}
+          className="-my-1 inline-flex items-center gap-1 py-1.5 text-xs text-muted-foreground hover:text-brand transition-colors"
+        >
+          ← Voltar aos temas
+        </Link>
+      )}
+
       {/* SM-2 due-today header */}
       {dueTodayCount != null && totalCards != null && totalCards > 0 && !retryIds && (
         <div className="flex items-center justify-between text-xs px-3 py-2 rounded-md bg-surface-1 border border-border">
