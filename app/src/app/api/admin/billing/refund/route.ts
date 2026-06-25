@@ -72,20 +72,38 @@ export async function POST(request: NextRequest) {
     ? "https://sandbox.api.pagseguro.com"
     : "https://api.pagseguro.com";
 
+  // PagBank requires amount.value on /cancel even for a FULL refund — an empty
+  // body is rejected with HTTP 400 ("amount.value required"). We refund the full
+  // settled amount (amount_cents was reconciled to equal the charge in
+  // finalize.ts), in centavos.
   const pbRes = await fetch(`${baseUrl}/charges/${chargeId}/cancel`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({}), // full refund
+    body: JSON.stringify({ amount: { value: order.amount_cents } }),
   });
 
   if (!pbRes.ok) {
     const errBody = await pbRes.text();
     console.error("PagBank refund failed:", pbRes.status, errBody);
+    // Surface PagBank's own validation message (error_messages[].description)
+    // so an operator sees *why*, not just the status code.
+    let detail = "";
+    try {
+      const parsed = JSON.parse(errBody) as {
+        error_messages?: { description?: string; parameter_name?: string }[];
+      };
+      detail = (parsed.error_messages ?? [])
+        .map((m) => [m.parameter_name, m.description].filter(Boolean).join(": "))
+        .filter(Boolean)
+        .join("; ");
+    } catch {
+      /* non-JSON body — fall back to the status code alone */
+    }
     return NextResponse.json(
-      { error: `PagBank recusou o estorno: ${pbRes.status}` },
+      { error: `PagBank recusou o estorno: ${pbRes.status}${detail ? ` — ${detail}` : ""}` },
       { status: 502 },
     );
   }

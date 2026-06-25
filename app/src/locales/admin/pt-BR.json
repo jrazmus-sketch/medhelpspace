@@ -553,7 +553,9 @@
     "refundDesc": "Estornar o valor total para {{email}}? A matrícula na turma será cancelada.",
     "refundReasonLabel": "Motivo (opcional)",
     "refundReasonPlaceholder": "Ex.: solicitação do aluno, cobrança duplicada…",
-    "confirmRefund": "Confirmar estorno"
+    "confirmRefund": "Confirmar estorno",
+    "refundSending": "Estornando…",
+    "refundError": "Erro ao estornar"
   },
   "coupons": {
     "title": "Cupons",

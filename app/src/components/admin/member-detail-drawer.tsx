@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { X, Mail } from "lucide-react";
+import { X, Mail, RefreshCw } from "lucide-react";
 import { getMemberDetail, resendWelcomeEmail } from "@/actions/admin";
 import { StatusPill } from "./member-status-pill";
 import type {
@@ -52,6 +53,7 @@ interface Props {
 
 export function MemberDetailDrawer({ row, onClose }: Props) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const [detail, setDetail] = useState<MemberDetail | null>(null);
   // The parent remounts this per member (key={row.id}), so an open instance always
   // starts in the loading state and fetches once — no synchronous reset in the effect.
@@ -59,6 +61,11 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
   const [error, setError] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendMsg, setResendMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Refund control — only one order's confirm panel is open at a time.
+  const [refundOpenId, setRefundOpenId] = useState<string | null>(null);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundBusy, setRefundBusy] = useState(false);
+  const [refundError, setRefundError] = useState<string | null>(null);
   // Snapshot "now" once (lazy init) so the days-left math below stays pure — render
   // must not call the impure Date.now(). Day granularity makes a mount-time stamp fine.
   const [now] = useState(() => Date.now());
@@ -132,6 +139,32 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
       setResendMsg({ ok: false, text: t("members.resendWelcomeError") });
     } finally {
       setResending(false);
+    }
+  }
+
+  async function handleRefund(orderId: string) {
+    if (!row) return;
+    setRefundBusy(true);
+    setRefundError(null);
+    try {
+      const res = await fetch("/api/admin/billing/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, reason: refundReason.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? t("billing.refundError"));
+      // Refresh the drawer (order → refunded, lifetime paid recalculated) and the
+      // members list behind it (refund revoked the membership → status changes).
+      const fresh = await getMemberDetail(row.id);
+      setDetail(fresh);
+      setRefundOpenId(null);
+      setRefundReason("");
+      router.refresh();
+    } catch (e) {
+      setRefundError(e instanceof Error ? e.message : t("billing.refundError"));
+    } finally {
+      setRefundBusy(false);
     }
   }
 
@@ -253,25 +286,82 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
                       {detail.orders.map((o) => (
                         <li
                           key={o.id}
-                          className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2 text-sm"
+                          className="rounded-lg border border-border/60 px-3 py-2 text-sm"
                         >
-                          <div className="min-w-0">
-                            <p className="font-medium">{fmtMoney(o.amountCents)}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {fmtDate(o.createdAt)} ·{" "}
-                              {o.paymentMethod === "pix"
-                                ? "Pix"
-                                : `${t("members.card")}${o.ccInstallments && o.ccInstallments > 1 ? ` · ${o.ccInstallments}x` : ""}`}
-                              {o.cohortName ? ` · ${o.cohortName}` : ""}
-                            </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium">{fmtMoney(o.amountCents)}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {fmtDate(o.createdAt)} ·{" "}
+                                {o.paymentMethod === "pix"
+                                  ? "Pix"
+                                  : `${t("members.card")}${o.ccInstallments && o.ccInstallments > 1 ? ` · ${o.ccInstallments}x` : ""}`}
+                                {o.cohortName ? ` · ${o.cohortName}` : ""}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_STYLE[o.status] ?? ORDER_STATUS_STYLE.pending}`}
+                            >
+                              {t(`billing.status${o.status.charAt(0).toUpperCase()}${o.status.slice(1)}`, {
+                                defaultValue: o.status,
+                              })}
+                            </span>
                           </div>
-                          <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_STYLE[o.status] ?? ORDER_STATUS_STYLE.pending}`}
-                          >
-                            {t(`billing.status${o.status.charAt(0).toUpperCase()}${o.status.slice(1)}`, {
-                              defaultValue: o.status,
-                            })}
-                          </span>
+
+                          {o.status === "paid" && refundOpenId !== o.id && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRefundOpenId(o.id);
+                                setRefundReason("");
+                                setRefundError(null);
+                              }}
+                              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-destructive/40 px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                            >
+                              <RefreshCw className="h-4 w-4 shrink-0" />
+                              {t("billing.refund")}
+                            </button>
+                          )}
+
+                          {refundOpenId === o.id && (
+                            <div className="mt-2 border-t border-border/60 pt-2">
+                              <p className="mb-2 text-xs text-muted-foreground">
+                                {t("billing.refundDesc", { email: row.email })}
+                              </p>
+                              <textarea
+                                value={refundReason}
+                                onChange={(e) => setRefundReason(e.target.value)}
+                                rows={2}
+                                maxLength={500}
+                                placeholder={t("billing.refundReasonPlaceholder")}
+                                className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+                              />
+                              {refundError && (
+                                <p className="mt-2 text-xs text-destructive">{refundError}</p>
+                              )}
+                              <div className="mt-2 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRefundOpenId(null);
+                                    setRefundError(null);
+                                  }}
+                                  disabled={refundBusy}
+                                  className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-1 disabled:opacity-60"
+                                >
+                                  {t("common.cancel")}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRefund(o.id)}
+                                  disabled={refundBusy}
+                                  className="flex-1 rounded-lg bg-destructive py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                                >
+                                  {refundBusy ? t("billing.refundSending") : t("billing.confirmRefund")}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </li>
                       ))}
                     </ul>
