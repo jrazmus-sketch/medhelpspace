@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteText } from "./site-text";
+import { FooterAccessLinks } from "./footer-access-links";
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -87,10 +88,7 @@ export function LandingFooter() {
             >
               Acesso
             </h4>
-            <ul className="space-y-2.5 text-sm">
-              <li><Link href="/login" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Entrar na plataforma</Link></li>
-              <li><Link href="/signup" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Criar conta</Link></li>
-            </ul>
+            <FooterAccessLinks />
           </div>
 
           {/* Legal */}

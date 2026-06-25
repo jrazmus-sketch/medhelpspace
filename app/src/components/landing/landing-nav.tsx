@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTheme } from "@/components/theme/theme-provider";
+import { useAuth } from "@/providers/auth-provider";
 
 export function LandingNav({ embedded = false }: { embedded?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
+  // Auth state is read client-side (getSession reads the cookie locally) so these
+  // ISR-cached public pages stay static. A logged-in visitor must never be shown a
+  // plain "Entrar" link: /login redirects authenticated users to /app, and a
+  // non-member is then bounced to /loja — i.e. clicking "Entrar" silently dead-ends.
+  // Show "Sair" + "Meu painel" instead so they can always reach their account or log out.
+  const { user, loading } = useAuth();
+  const loggedIn = !loading && !!user;
 
   useEffect(() => {
     if (embedded) return;
@@ -60,21 +68,46 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
             )}
           </button>
 
-          <Link
-            href="/login"
-            className="hidden text-sm font-medium transition-colors sm:block"
-            style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
-          >
-            Entrar
-          </Link>
+          {loggedIn ? (
+            <>
+              {/* Full navigation (not Next <Link>) — /auth/signout is a route handler
+                  that clears the session and 307s to /login. Visible on every
+                  breakpoint so the logout escape hatch also works on mobile. */}
+              <a
+                href="/auth/signout"
+                className="text-sm font-medium transition-colors"
+                style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
+              >
+                Sair
+              </a>
 
-          <Link
-            href="/loja"
-            className="rounded-lg px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95"
-            style={{ background: "var(--brand)" }}
-          >
-            Comprar Agora
-          </Link>
+              <Link
+                href="/app"
+                className="rounded-lg px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95"
+                style={{ background: "var(--brand)" }}
+              >
+                Meu painel
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="hidden text-sm font-medium transition-colors sm:block"
+                style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
+              >
+                Entrar
+              </Link>
+
+              <Link
+                href="/loja"
+                className="rounded-lg px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95"
+                style={{ background: "var(--brand)" }}
+              >
+                Comprar Agora
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
