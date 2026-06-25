@@ -363,6 +363,123 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     active: true,
     sort_order: 6,
   },
+
+  // ── Admin-facing operational alerts (recipients are admins, not members) ──────
+  "admin-new-purchase": {
+    kind: "admin-new-purchase",
+    name: "[Admin] Nova compra",
+    description: "Enviado aos administradores quando um pagamento é confirmado.",
+    subject: "💳 Nova compra — {{cohortName}} ({{amount}})",
+    kicker: "Nova compra confirmada",
+    headline: "{{buyerName}} entrou na turma {{cohortName}}",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Um novo pagamento foi confirmado e o acesso já foi liberado automaticamente.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Comprador:</strong> {{buyerName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">E-mail:</strong> {{buyerEmail}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Turma:</strong> {{cohortName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Valor:</strong> {{amount}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Método:</strong> {{paymentMethod}}</td></tr>
+  <tr><td style="font-size:12px;color:#9ca3af;padding:3px 0;">Pedido {{orderId}}</td></tr>
+</table>`,
+    cta_label: "Ver no painel →",
+    cta_href: "/admin/members",
+    variables: [
+      { tag: "buyerName", description: "Nome do comprador" },
+      { tag: "buyerEmail", description: "E-mail do comprador" },
+      { tag: "cohortName", description: "Turma comprada" },
+      { tag: "amount", description: "Valor pago formatado (ex.: R$ 497,00)" },
+      { tag: "paymentMethod", description: "Método de pagamento (Pix / Cartão)" },
+      { tag: "orderId", description: "ID do pedido" },
+    ],
+    active: true,
+    sort_order: 7,
+  },
+  "admin-payment-problem": {
+    kind: "admin-payment-problem",
+    name: "[Admin] Problema de pagamento",
+    description:
+      "Enviado aos administradores quando um pagamento liquida com valor divergente e é retido para revisão manual.",
+    subject: "⚠️ Pagamento retido para revisão — {{cohortName}}",
+    kicker: "Pagamento retido para revisão",
+    headline: "Valor divergente em um pagamento",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Um pagamento foi liquidado com um <strong>valor diferente</strong> do pedido. O acesso <strong>não</strong> foi liberado — o pedido está retido para revisão manual.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">E-mail:</strong> {{buyerEmail}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Turma:</strong> {{cohortName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Valor esperado:</strong> {{expectedAmount}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#b91c1c;">Valor pago:</strong> {{paidAmount}}</td></tr>
+  <tr><td style="font-size:12px;color:#9ca3af;padding:3px 0;">Pedido {{orderId}}</td></tr>
+</table>`,
+    cta_label: "Revisar no painel →",
+    cta_href: "/admin/billing",
+    variables: [
+      { tag: "buyerEmail", description: "E-mail do comprador" },
+      { tag: "cohortName", description: "Turma do pedido" },
+      { tag: "expectedAmount", description: "Valor esperado do pedido (formatado)" },
+      { tag: "paidAmount", description: "Valor efetivamente liquidado (formatado)" },
+      { tag: "orderId", description: "ID do pedido" },
+    ],
+    active: true,
+    sort_order: 8,
+  },
+  "admin-refund": {
+    kind: "admin-refund",
+    name: "[Admin] Estorno realizado",
+    description: "Enviado aos administradores quando um estorno é processado.",
+    subject: "↩️ Estorno realizado — {{cohortName}} ({{amount}})",
+    kicker: "Estorno processado",
+    headline: "Estorno de {{amount}} — {{cohortName}}",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Um estorno foi processado e o acesso foi revogado.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Comprador:</strong> {{buyerName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">E-mail:</strong> {{buyerEmail}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Turma:</strong> {{cohortName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Valor:</strong> {{amount}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Processado por:</strong> {{actorName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Motivo:</strong> {{reason}}</td></tr>
+  <tr><td style="font-size:12px;color:#9ca3af;padding:3px 0;">Pedido {{orderId}}</td></tr>
+</table>`,
+    cta_label: "Ver no painel →",
+    cta_href: "/admin/billing",
+    variables: [
+      { tag: "buyerName", description: "Nome do comprador" },
+      { tag: "buyerEmail", description: "E-mail do comprador" },
+      { tag: "cohortName", description: "Turma estornada" },
+      { tag: "amount", description: "Valor estornado formatado" },
+      { tag: "actorName", description: "Admin que processou o estorno" },
+      { tag: "reason", description: "Motivo informado (pode vir vazio)" },
+      { tag: "orderId", description: "ID do pedido" },
+    ],
+    active: true,
+    sort_order: 9,
+  },
+  "admin-digest": {
+    kind: "admin-digest",
+    name: "[Admin] Resumo diário",
+    description:
+      "Resumo diário das atividades (compras, problemas, estornos) para admins que escolheram receber por dia.",
+    subject: "Resumo diário — {{digestDate}}",
+    kicker: "Resumo de notificações",
+    headline: "Atividade das últimas 24h",
+    body_html: "{{digestBody}}",
+    cta_label: "Abrir painel →",
+    cta_href: "/admin",
+    variables: [
+      { tag: "digestDate", description: "Data do resumo por extenso" },
+      {
+        tag: "digestBody",
+        description: "Resumo em HTML gerado automaticamente pelo cron",
+      },
+    ],
+    active: true,
+    sort_order: 10,
+  },
 };
 
 // Sample values for the editor preview and the admin "test send" — one entry per
@@ -375,6 +492,19 @@ export const SAMPLE_VARS: Record<string, string> = {
   summaryBody:
     "Esta semana: <strong>42 questões</strong> respondidas com <strong>78% de acerto</strong>, <strong>5 aulas</strong> concluídas, em <strong>4 dias</strong> ativos. Faltam 120 dias para a prova.",
   daysToExamLine: " <br/><br/>Faltam <strong>120 dias</strong> para sua prova.",
+  // Admin-alert samples
+  buyerName: "João Silva",
+  buyerEmail: "joao.silva@example.com",
+  amount: "R$ 497,00",
+  paymentMethod: "Pix",
+  orderId: "a1b2c3d4-0000-0000-0000-000000000000",
+  expectedAmount: "R$ 497,00",
+  paidAmount: "R$ 297,00",
+  actorName: "Justin",
+  reason: "Solicitado pelo aluno",
+  digestDate: "25 de junho de 2026",
+  digestBody:
+    '<p style="margin:0 0 16px;font-size:15px;color:#4b5563;line-height:1.6;">Nas últimas 24h:</p><p style="margin:0 0 8px;font-size:14px;color:#374151;">💳 <strong>2 novas compras</strong> · R$ 994,00</p><p style="margin:0 0 8px;font-size:14px;color:#374151;">↩️ <strong>1 estorno</strong> · R$ 497,00</p>',
 };
 
 export function sampleVarsFor(template: EmailTemplateRow): Record<string, string> {

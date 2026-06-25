@@ -233,7 +233,21 @@
     "displayName": "Nome de exibição",
     "email": "E-mail",
     "changePassword": "Alterar senha",
-    "saveChanges": "Salvar alterações"
+    "saveChanges": "Salvar alterações",
+    "notifications": "Notificações por e-mail",
+    "notificationsDesc": "Escolha como você quer ser avisado sobre eventos do negócio. Vale apenas para a sua conta.",
+    "freqInstant": "Na hora",
+    "freqDaily": "Resumo diário",
+    "freqOff": "Desligado",
+    "saveError": "Não foi possível salvar. Tente novamente.",
+    "events": {
+      "new_purchase": "Nova compra",
+      "new_purchaseDesc": "Um membro conclui um pedido pago.",
+      "payment_problem": "Problema de pagamento",
+      "payment_problemDesc": "Uma cobrança liquida com valor divergente e fica retida para revisão manual.",
+      "refund": "Estorno realizado",
+      "refundDesc": "Um administrador processa um estorno."
+    }
   },
   "errors": {
     "generic": "Algo deu errado. Tente novamente.",

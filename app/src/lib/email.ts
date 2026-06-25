@@ -139,6 +139,31 @@ export async function sendTemplateEmail({
   return sendEmailRaw({ to, subject, html, from: settings.from_address });
 }
 
+// Render a template ONCE (settings + template fetched once) and send the same body
+// to multiple recipients — used by the admin-alert fan-out, where every admin gets
+// identical content. Sends are awaited (serverless: a fire-and-forget Resend call
+// is killed when the handler returns). Returns one result per recipient.
+export async function sendTemplateEmailToMany({
+  kind,
+  recipients,
+  vars,
+}: {
+  kind: string;
+  recipients: string[];
+  vars: Record<string, string>;
+}): Promise<{ to: string; ok: boolean; reason?: string }[]> {
+  if (recipients.length === 0) return [];
+  const settings = await getEmailSettings();
+  const tpl = await getEmailTemplate(kind);
+  const { subject, html } = renderEmail(tpl, settings, vars);
+  return Promise.all(
+    recipients.map(async (to) => {
+      const r = await sendEmailRaw({ to, subject, html, from: settings.from_address });
+      return { to, ok: r.ok, reason: r.reason };
+    }),
+  );
+}
+
 // ── Public, named send helpers (signatures preserved for existing callers) ───────
 
 // Purchase confirmation. Caller (finalize.ts) is fire-and-forget; the admin resend

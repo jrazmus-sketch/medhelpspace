@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAdminAlert, formatBRL } from "@/lib/admin-notify";
 
 export async function POST(request: NextRequest) {
   // Auth + role check
@@ -134,6 +135,53 @@ export async function POST(request: NextRequest) {
   });
   if (auditErr) {
     console.error("Refund audit log failed:", orderId, auditErr);
+  }
+
+  // Alert admins of the refund — instant emails to opted-in admins + an
+  // admin_alerts row for the daily digest. Best-effort: the money already moved,
+  // so a failed alert must not surface as a refund failure to the operator.
+  try {
+    const [{ data: buyer }, { data: cohort }, { data: actor }] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("email, display_name")
+        .eq("id", order.user_id as string)
+        .maybeSingle(),
+      admin.from("cohorts").select("name").eq("id", order.cohort_id as number).maybeSingle(),
+      admin.from("profiles").select("display_name, email").eq("id", user.id).maybeSingle(),
+    ]);
+    const buyerName =
+      ((buyer?.display_name as string | null) ||
+        (buyer?.email as string | null)?.split("@")[0] ||
+        "Aluno") as string;
+    const actorName =
+      ((actor?.display_name as string | null) ||
+        (actor?.email as string | null)?.split("@")[0] ||
+        "Admin") as string;
+    await recordAdminAlert({
+      event: "refund",
+      title: `Estorno — ${cohort?.name ?? "turma"} (${formatBRL(order.amount_cents as number)})`,
+      body: `${actorName} estornou a compra de ${buyerName}.`,
+      metadata: {
+        order_id: orderId,
+        charge_id: chargeId,
+        amount_cents: order.amount_cents,
+        actor_user_id: user.id,
+        reason: reason || null,
+      },
+      contextId: orderId,
+      emailVars: {
+        buyerName,
+        buyerEmail: (buyer?.email as string | null) ?? "—",
+        cohortName: (cohort?.name as string | null) ?? "—",
+        amount: formatBRL(order.amount_cents as number),
+        actorName,
+        reason: reason || "—",
+        orderId,
+      },
+    });
+  } catch (e) {
+    console.error("admin refund alert failed", orderId, e);
   }
 
   return NextResponse.json({ ok: true });

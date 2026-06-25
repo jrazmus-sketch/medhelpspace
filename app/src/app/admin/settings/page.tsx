@@ -10,6 +10,7 @@ import { useState, useTransition } from "react";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import AdminNotificationPrefs from "@/components/admin/notification-prefs";
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -145,6 +146,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Email notifications — self-hides for non-eligible roles */}
+      <AdminNotificationPrefs />
     </div>
   );
 }

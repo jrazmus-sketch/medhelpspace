@@ -233,7 +233,21 @@
     "displayName": "Display name",
     "email": "Email",
     "changePassword": "Change password",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "notifications": "Email notifications",
+    "notificationsDesc": "Choose how you want to be alerted about business events. Applies to your account only.",
+    "freqInstant": "Instant",
+    "freqDaily": "Daily digest",
+    "freqOff": "Off",
+    "saveError": "Couldn't save. Try again.",
+    "events": {
+      "new_purchase": "New purchase",
+      "new_purchaseDesc": "A member completes a paid order.",
+      "payment_problem": "Payment problem",
+      "payment_problemDesc": "A charge settles with the wrong amount and is held for manual review.",
+      "refund": "Refund issued",
+      "refundDesc": "An admin processes a refund."
+    }
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

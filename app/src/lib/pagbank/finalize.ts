@@ -1,4 +1,5 @@
 import { sendPurchaseConfirmation } from "@/lib/email";
+import { recordAdminAlert, formatBRL, paymentMethodLabel } from "@/lib/admin-notify";
 import type { PagBankCharge } from "./types";
 
 // Race-safe transition of an order to 'paid' with idempotent membership
@@ -54,6 +55,33 @@ export async function finalizePaidOrder(
       "charged_value=",
       paidCents,
     );
+    // Alert admins: this charge settled for a different amount than the order, so
+    // access was NOT granted and the order is held for manual review. Without this
+    // the only trace is the console.error above — invisible in production.
+    const [{ data: mp }, { data: mc }] = await Promise.all([
+      admin.from("profiles").select("email").eq("id", userId).maybeSingle(),
+      admin.from("cohorts").select("name").eq("id", cohortId).maybeSingle(),
+    ]);
+    await recordAdminAlert({
+      event: "payment_problem",
+      title: `Pagamento retido — valor divergente (pago ${formatBRL(paidCents ?? 0)} vs esperado ${formatBRL(expectedCents)})`,
+      body: "Cobrança liquidada com valor diferente do pedido; acesso não liberado.",
+      metadata: {
+        order_id: orderId,
+        expected_cents: expectedCents,
+        paid_cents: paidCents ?? null,
+        buyer_email: (mp?.email as string | null) ?? null,
+        cohort: (mc?.name as string | null) ?? null,
+      },
+      contextId: orderId,
+      emailVars: {
+        buyerEmail: (mp?.email as string | null) ?? "—",
+        cohortName: (mc?.name as string | null) ?? "—",
+        expectedAmount: formatBRL(expectedCents),
+        paidAmount: formatBRL(paidCents ?? 0),
+        orderId,
+      },
+    }).catch((e) => console.error("admin payment_problem alert failed", orderId, e));
     return { wonRace: false };
   }
 
@@ -137,6 +165,35 @@ export async function finalizePaidOrder(
         .eq("context_id", orderId);
     }
   }
+
+  // Alert admins of the new paid order — instant emails to opted-in admins, plus a
+  // row in admin_alerts for the daily digest. Keyed on the order id so concurrent
+  // finalizers fire it once. Best-effort: a failed alert never affects the grant.
+  const buyerName =
+    ((profile?.display_name as string | null) ||
+      (profile?.email as string | null)?.split("@")[0] ||
+      "Novo aluno") as string;
+  await recordAdminAlert({
+    event: "new_purchase",
+    title: `Nova compra — ${cohort?.name ?? "turma"} (${formatBRL(expectedCents)})`,
+    body: `${buyerName} entrou na turma ${cohort?.name ?? ""}.`,
+    metadata: {
+      order_id: orderId,
+      user_id: userId,
+      cohort: (cohort?.name as string | null) ?? null,
+      amount_cents: expectedCents,
+      payment_method: charge.payment_method?.type ?? null,
+    },
+    contextId: orderId,
+    emailVars: {
+      buyerName,
+      buyerEmail: (profile?.email as string | null) ?? "—",
+      cohortName: (cohort?.name as string | null) ?? "—",
+      amount: formatBRL(expectedCents),
+      paymentMethod: paymentMethodLabel(charge.payment_method?.type),
+      orderId,
+    },
+  }).catch((e) => console.error("admin new_purchase alert failed", orderId, e));
 
   return { wonRace: true };
 }
