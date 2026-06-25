@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SiteText } from "@/components/landing/site-text";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 
 function mapSignupError(msg: string): string {
@@ -115,7 +116,9 @@ export function SignupPageClient() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm border-border/50 bg-surface-1">
           <CardHeader className="pb-4 text-center">
-            <CardTitle className="text-xl">Criar conta</CardTitle>
+            <CardTitle className="text-xl">
+              <SiteText as="span" k="signup.title" fallback="Criar conta" />
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

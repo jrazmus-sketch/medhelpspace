@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { SiteText } from "@/components/landing/site-text";
 
 export function LoginPageClient({ initialError }: { initialError: string | null }) {
   return (
@@ -21,7 +22,9 @@ export function LoginPageClient({ initialError }: { initialError: string | null 
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm border-border/50 bg-surface-1">
           <CardHeader className="pb-4 text-center">
-            <CardTitle className="text-xl">Entrar na plataforma</CardTitle>
+            <CardTitle className="text-xl">
+              <SiteText as="span" k="login.title" fallback="Entrar na plataforma" />
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form action="/auth/login" method="post" className="space-y-4">

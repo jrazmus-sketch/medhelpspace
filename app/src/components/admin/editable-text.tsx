@@ -24,7 +24,8 @@ type ScalarTable =
   | "specialties"
   | "study_types"
   | "simulado_sections"
-  | "site_content";
+  | "site_content"
+  | "editable_pages";
 
 type Common = {
   className?: string;

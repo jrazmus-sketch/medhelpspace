@@ -9,6 +9,9 @@ import { AuthProvider } from "@/providers/auth-provider";
 import { EditModeProvider } from "@/providers/edit-mode-provider";
 import { EDIT_MODE_COOKIE, parseEditMode } from "@/lib/edit-mode";
 import { Toaster } from "@/components/ui/sonner";
+import { PublicEditToggle } from "@/components/layout/public-edit-toggle";
+import { SiteContentProvider } from "@/components/landing/site-text";
+import { getSiteContent } from "@/lib/queries/site-content";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -64,7 +67,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const editModeEnabled = parseEditMode((await cookies()).get(EDIT_MODE_COOKIE)?.value);
+  const [cookieStore, siteContent] = await Promise.all([cookies(), getSiteContent()]);
+  const editModeEnabled = parseEditMode(cookieStore.get(EDIT_MODE_COOKIE)?.value);
   return (
     <html lang="pt-BR" suppressHydrationWarning className={`${bricolage.variable} ${geistSans.variable} ${geistMono.variable}`}>
       <body
@@ -75,8 +79,11 @@ export default async function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <EditModeProvider initialEnabled={editModeEnabled}>
-                {children}
-                <Toaster richColors position="top-right" />
+                <SiteContentProvider rows={siteContent}>
+                  {children}
+                  <PublicEditToggle />
+                  <Toaster richColors position="top-right" />
+                </SiteContentProvider>
               </EditModeProvider>
             </AuthProvider>
           </QueryProvider>

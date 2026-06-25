@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SiteText } from "@/components/landing/site-text";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 
 export default function ResetPasswordPage() {
@@ -71,9 +72,16 @@ export default function ResetPasswordPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm border-border/50 bg-surface-1">
           <CardHeader className="pb-4 text-center">
-            <CardTitle className="text-xl">Nova senha</CardTitle>
+            <CardTitle className="text-xl">
+              <SiteText as="span" k="reset.title" fallback="Nova senha" />
+            </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Escolha uma nova senha para sua conta.
+              <SiteText
+                as="span"
+                multiline
+                k="reset.subtitle"
+                fallback="Escolha uma nova senha para sua conta."
+              />
             </p>
           </CardHeader>
           <CardContent>

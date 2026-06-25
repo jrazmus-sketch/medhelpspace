@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { SiteText } from "@/components/landing/site-text";
 import { Check, Lock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
 import type { CohortProduct } from "@/types/supabase";
@@ -57,12 +58,24 @@ export default async function LojaPage() {
               className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl md:text-5xl"
               style={{ fontFamily: "var(--font-bricolage)" }}
             >
-              Comece sua preparação.
+              <SiteText as="span" k="loja.title" fallback="Comece sua preparação." />
             </h1>
             <p className="mt-4 text-base text-foreground/55 sm:text-lg">
-              {cohorts.length === 0
-                ? "As inscrições para a próxima turma abrem em breve."
-                : "Escolha a turma da sua prova. Acesso imediato ao sistema completo."}
+              {cohorts.length === 0 ? (
+                <SiteText
+                  as="span"
+                  multiline
+                  k="loja.subhead_closed"
+                  fallback="As inscrições para a próxima turma abrem em breve."
+                />
+              ) : (
+                <SiteText
+                  as="span"
+                  multiline
+                  k="loja.subhead"
+                  fallback="Escolha a turma da sua prova. Acesso imediato ao sistema completo."
+                />
+              )}
             </p>
           </div>
 
@@ -74,10 +87,15 @@ export default async function LojaPage() {
                 className="text-xl font-bold text-foreground"
                 style={{ fontFamily: "var(--font-bricolage)" }}
               >
-                Inscrições abertas em breve
+                <SiteText as="span" k="loja.soon.title" fallback="Inscrições abertas em breve" />
               </h2>
               <p className="mt-2 text-sm text-foreground/55">
-                Estamos preparando a próxima turma. Volte em breve para garantir sua vaga.
+                <SiteText
+                  as="span"
+                  multiline
+                  k="loja.soon.body"
+                  fallback="Estamos preparando a próxima turma. Volte em breve para garantir sua vaga."
+                />
               </p>
             </div>
           ) : (
@@ -99,15 +117,15 @@ export default async function LojaPage() {
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-8">
                 <div className="flex items-center gap-2 text-sm text-foreground/50">
                   <Check className="h-4 w-4 text-brand" />
-                  Acesso imediato após confirmação
+                  <SiteText as="span" k="loja.trust.access" fallback="Acesso imediato após confirmação" />
                 </div>
                 <div className="flex items-center gap-2 text-sm text-foreground/50">
                   <Check className="h-4 w-4 text-brand" />
-                  Garantia incondicional de 7 dias
+                  <SiteText as="span" k="loja.trust.guarantee" fallback="Garantia incondicional de 7 dias" />
                 </div>
                 <div className="flex items-center gap-2 text-sm text-foreground/50">
                   <Lock className="h-4 w-4 text-brand" />
-                  Pagamento 100% seguro · PagBank
+                  <SiteText as="span" k="loja.trust.secure" fallback="Pagamento 100% seguro · PagBank" />
                 </div>
               </div>
 
@@ -119,17 +137,22 @@ export default async function LojaPage() {
                     className="text-lg font-bold text-foreground"
                     style={{ fontFamily: "var(--font-bricolage)" }}
                   >
-                    MedHelp 60D — já incluso em todas as turmas
+                    <SiteText as="span" k="loja.60d.title" fallback="MedHelp 60D — já incluso em todas as turmas" />
                   </h3>
                 </div>
                 <p className="mb-4 text-sm text-foreground/60 sm:text-base">
-                  A fase final do sistema é liberada automaticamente 60 dias antes da sua prova. Você não precisa fazer nada — o acesso abre na hora certa.
+                  <SiteText
+                    as="span"
+                    multiline
+                    k="loja.60d.body"
+                    fallback="A fase final do sistema é liberada automaticamente 60 dias antes da sua prova. Você não precisa fazer nada — o acesso abre na hora certa."
+                  />
                 </p>
                 <ul className="flex flex-col gap-2">
-                  {INCLUDED_60D.map((item) => (
+                  {INCLUDED_60D.map((item, i) => (
                     <li key={item} className="flex items-start gap-2 text-sm text-foreground/65">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                      {item}
+                      <SiteText as="span" k={`loja.60d.item.${i}`} fallback={item} />
                     </li>
                   ))}
                 </ul>
@@ -152,7 +175,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
     <div className="relative flex flex-col rounded-2xl bg-background border-2 border-brand shadow-lg transition-shadow">
       <div className="px-6 py-5 border-b border-brand/20">
         <div className="mb-1 text-xs font-bold uppercase tracking-widest text-brand/60">
-          Turma
+          <SiteText as="span" k="loja.card.turma" fallback="Turma" />
         </div>
         <h2
           className="text-2xl font-extrabold text-foreground"
@@ -168,7 +191,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
             {cohort.priceLabel}
           </div>
           <p className="mt-1 text-sm text-foreground/45">
-            ou parcele em até 12x no cartão
+            <SiteText as="span" k="loja.card.installments" fallback="ou parcele em até 12x no cartão" />
           </p>
         </div>
 
@@ -179,7 +202,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
           aria-label={`Comprar ${cohort.name}`}
           className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
         >
-          Comprar agora
+          <SiteText as="span" k="loja.card.cta" fallback="Comprar agora" />
         </Link>
       </div>
     </div>
@@ -189,15 +212,15 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
 function IncludedList() {
   return (
     <ul className="flex flex-col gap-2">
-      {INCLUDED.map((item) => (
+      {INCLUDED.map((item, i) => (
         <li key={item} className="flex items-start gap-2 text-sm text-foreground/65">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-          {item}
+          <SiteText as="span" k={`loja.included.${i}`} fallback={item} />
         </li>
       ))}
       <li className="mt-1 flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 px-3 py-2 text-sm font-medium text-brand">
         <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-        MedHelp 60D — liberado 60 dias antes da prova
+        <SiteText as="span" k="loja.included.lock" fallback="MedHelp 60D — liberado 60 dias antes da prova" />
       </li>
     </ul>
   );

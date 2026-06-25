@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { SiteText } from "@/components/landing/site-text";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 
@@ -76,22 +77,30 @@ function VerifyContent() {
           <>
             <div className="mb-4 text-center text-4xl">⚠️</div>
             <h2 className="mb-2 text-center text-lg font-semibold">
-              Link inválido ou expirado
+              <SiteText as="span" k="verify.invalid.title" fallback="Link inválido ou expirado" />
             </h2>
             <p className="mb-6 text-center text-sm text-muted-foreground">
-              O link de confirmação não é mais válido. Digite seu e-mail
-              abaixo para receber um novo link.
+              <SiteText
+                as="span"
+                multiline
+                k="verify.invalid.body"
+                fallback="O link de confirmação não é mais válido. Digite seu e-mail abaixo para receber um novo link."
+              />
             </p>
           </>
         ) : (
           <>
             <div className="mb-4 text-center text-4xl">📬</div>
             <h2 className="mb-2 text-center text-lg font-semibold">
-              Verifique seu e-mail
+              <SiteText as="span" k="verify.title" fallback="Verifique seu e-mail" />
             </h2>
             <p className="mb-6 text-center text-sm text-muted-foreground">
-              Clique no link que enviamos para ativar sua conta. Não
-              recebeu? Reenvie abaixo.
+              <SiteText
+                as="span"
+                multiline
+                k="verify.body"
+                fallback="Clique no link que enviamos para ativar sua conta. Não recebeu? Reenvie abaixo."
+              />
             </p>
           </>
         )}

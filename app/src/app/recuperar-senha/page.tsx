@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SiteText } from "@/components/landing/site-text";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 
 export default function RecuperarSenhaPage() {
@@ -84,9 +85,16 @@ export default function RecuperarSenhaPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-sm border-border/50 bg-surface-1">
           <CardHeader className="pb-4 text-center">
-            <CardTitle className="text-xl">Recuperar senha</CardTitle>
+            <CardTitle className="text-xl">
+              <SiteText as="span" k="recuperar.title" fallback="Recuperar senha" />
+            </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Digite seu e-mail e enviaremos um link para redefinir sua senha.
+              <SiteText
+                as="span"
+                multiline
+                k="recuperar.subtitle"
+                fallback="Digite seu e-mail e enviaremos um link para redefinir sua senha."
+              />
             </p>
           </CardHeader>
           <CardContent>

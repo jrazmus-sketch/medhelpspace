@@ -8,10 +8,7 @@ import { PricingCTA } from "@/components/landing/pricing-cta";
 import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
-import { SiteContentProvider } from "@/components/landing/site-text";
-import { LandingEditToggle } from "@/components/landing/landing-edit-toggle";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
-import { getSiteContent } from "@/lib/queries/site-content";
 
 export const metadata = {
   title: "MedHelpSpace Revalida — Sistema de Aprovação",
@@ -25,29 +22,25 @@ export const metadata = {
 export const revalidate = 3600;
 
 export default async function LandingPage() {
-  const [cohorts, siteContent] = await Promise.all([
-    getCohortsForSale(),
-    getSiteContent(),
-  ]);
+  // site_content is provided by the root layout's SiteContentProvider, so every
+  // <SiteText> below is wired without a local provider here.
+  const cohorts = await getCohortsForSale();
 
   return (
-    <SiteContentProvider rows={siteContent}>
-      <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
-        <div className="lp-grain" aria-hidden="true" />
-        <LandingNav />
-        <main>
-          <HeroSection />
-          <ProblemSection />
-          <StatsNumbers />
-          <CinematicFeatures />
-          <SixtyDSection />
-          <PricingCTA cohorts={cohorts} />
-          <FaqSection />
-        </main>
-        <LandingFooter />
-        <StickyCTABar />
-        <LandingEditToggle />
-      </div>
-    </SiteContentProvider>
+    <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
+      <div className="lp-grain" aria-hidden="true" />
+      <LandingNav />
+      <main>
+        <HeroSection />
+        <ProblemSection />
+        <StatsNumbers />
+        <CinematicFeatures />
+        <SixtyDSection />
+        <PricingCTA cohorts={cohorts} />
+        <FaqSection />
+      </main>
+      <LandingFooter />
+      <StickyCTABar />
+    </div>
   );
 }

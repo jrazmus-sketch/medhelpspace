@@ -22,6 +22,8 @@ const SCALAR_ALLOWED = new Set<string>([
   "study_types.description",
   "simulado_sections.label",
   "site_content.value",
+  "editable_pages.title",
+  "editable_pages.body_html",
 ]);
 
 // Plain-text fields trim + reject empty; everything else is HTML and goes through safe().
@@ -34,6 +36,7 @@ const PLAIN_FIELDS = new Set<string>([
   "study_types.description",
   "simulado_sections.label",
   "site_content.value",
+  "editable_pages.title",
 ]);
 
 async function requireAdmin() {
@@ -106,8 +109,18 @@ export async function updateScalarField(
   });
 
   revalidatePath("/app", "layout");
-  // Landing copy lives at "/" (hourly ISR) — bust it so edits show immediately.
-  if (table === "site_content") revalidatePath("/");
+  // Site strings render on every public page via the root-layout provider; the
+  // ISR'd marketing routes ("/" and "/loja") cache their output, so bust both so
+  // edits show immediately. Dynamic public pages (auth) re-read on every request.
+  if (table === "site_content") {
+    revalidatePath("/");
+    revalidatePath("/loja");
+  }
+  // Legal pages (privacidade/termos) are ISR too — bust both so edits show now.
+  if (table === "editable_pages") {
+    revalidatePath("/privacidade");
+    revalidatePath("/termos");
+  }
 }
 
 interface QuizAnswer {
