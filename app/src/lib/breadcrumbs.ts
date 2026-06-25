@@ -9,13 +9,16 @@ const FLASHCARDS_TRACK_ID = 3;
 const MEDHELP_60D_MODULE_ID = 1;
 
 // Top-level type root (the first crumb after Início) for a given content page.
-// Derived from `view` first, then `track_id`, then `content_module_id`.
+// Flashcard decks are checked FIRST: they reuse the `h5p-quiz` type and carry
+// view='quiz', but belong to the Flashcards track — without this they'd resolve
+// as "Questões". Otherwise derived from `view`, then `track_id`, then module.
 function typeRootFor(input: {
   view: PageView | null;
   track_id: number | null;
   content_module_id: number | null;
 }): Crumb | null {
   const { view, track_id, content_module_id } = input;
+  if (track_id === FLASHCARDS_TRACK_ID) return { label: "Flashcards", href: "/app/flashcards" };
   if (view === "quiz")      return { label: "Questões",  href: "/app/estudo-por-questoes" };
   if (view === "simulados") return { label: "Simulados", href: "/app/estudo-por-questoes?tab=simulados" };
   if (view === "resumos")   return { label: "Resumos",   href: "/app/resumos" };
@@ -23,7 +26,6 @@ function typeRootFor(input: {
   if (view === "revalida-up") return { label: "Revalida Up", href: "/app/revalida-up" };
   if (track_id === MEDVOICE_TRACK_ID)   return { label: "MedVoice",   href: "/app/medvoice" };
   if (track_id === AUDIOCARDS_TRACK_ID) return { label: "AudioCards", href: "/app/audiocards" };
-  if (track_id === FLASHCARDS_TRACK_ID) return { label: "Flashcards", href: "/app/flashcards" };
   if (content_module_id === MEDHELP_60D_MODULE_ID) return { label: "MedHelp 60D", href: "/app/medhelp-60d" };
   return null;
 }

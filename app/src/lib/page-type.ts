@@ -73,15 +73,17 @@ const AUDIOCARDS_TRACK_ID = 2;
 const FLASHCARDS_TRACK_ID = 3;
 const MEDHELP_60D_MODULE_ID = 1;
 
-// Same precedence as typeRootFor() in lib/breadcrumbs.ts — view first, then
-// track, then content module. Returns null when the page has no type root
-// (rare; e.g. plain-content with no view/track/module).
+// Same precedence as typeRootFor() in lib/breadcrumbs.ts — flashcards track FIRST
+// (it carries view='quiz' but isn't a quiz), then view, then track, then module.
+// Returns null when the page has no type root (rare; e.g. plain-content with no
+// view/track/module).
 export function getStudyTypeKey(input: {
   view: PageView | null;
   track_id: number | null;
   content_module_id: number | null;
 }): StudyTypeKey | null {
   const { view, track_id, content_module_id } = input;
+  if (track_id === FLASHCARDS_TRACK_ID) return "flashcards";
   if (view === "quiz")      return "quiz";
   if (view === "simulados") return "simulados";
   if (view === "resumos")   return "resumos";
@@ -89,7 +91,6 @@ export function getStudyTypeKey(input: {
   if (view === "revalida-up") return "revalida-up";
   if (track_id === MEDVOICE_TRACK_ID)   return "medvoice";
   if (track_id === AUDIOCARDS_TRACK_ID) return "audiocards";
-  if (track_id === FLASHCARDS_TRACK_ID) return "flashcards";
   if (content_module_id === MEDHELP_60D_MODULE_ID) return "medhelp60";
   return null;
 }
