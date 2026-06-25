@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 
 export function LoginPageClient({ initialError }: { initialError: string | null }) {
@@ -46,10 +47,9 @@ export function LoginPageClient({ initialError }: { initialError: string | null 
                     Esqueceu a senha?
                   </Link>
                 </div>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   autoComplete="current-password"
                   placeholder="••••••••"
                   required

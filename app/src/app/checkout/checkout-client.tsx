@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Check, Lock, ShieldCheck, Tag, X } from "lucide-react";
+import { Check, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "lucide-react";
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
 import { BillingForm } from "./billing-form";
@@ -103,6 +103,7 @@ export function CheckoutClient({
   const [accountMode, setAccountMode] = useState<AccountMode>("signup");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPassword, setGuestPassword] = useState("");
+  const [showGuestPassword, setShowGuestPassword] = useState(false);
   const [guestName, setGuestName] = useState("");
 
   // Billing details (tax / nota fiscal). Prefilled from the buyer's profile when
@@ -587,14 +588,29 @@ export function CheckoutClient({
                       </span>
                     )}
                   </label>
-                  <input
-                    type="password"
-                    autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
-                    value={guestPassword}
-                    onChange={(e) => setGuestPassword(e.target.value)}
-                    required
-                    className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showGuestPassword ? "text" : "password"}
+                      autoComplete={accountMode === "signup" ? "new-password" : "current-password"}
+                      value={guestPassword}
+                      onChange={(e) => setGuestPassword(e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 pr-12 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGuestPassword((v) => !v)}
+                      aria-label={showGuestPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={showGuestPassword}
+                      className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-foreground/40 transition-colors hover:text-foreground"
+                    >
+                      {showGuestPassword ? (
+                        <EyeOff className="h-5 w-5" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-5 w-5" aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
