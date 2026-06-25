@@ -106,11 +106,36 @@ export async function finalizePaidOrder(
   ]);
 
   if (profile?.email) {
-    sendPurchaseConfirmation({
+    // AWAIT the send — do NOT fire-and-forget. This runs on Vercel serverless,
+    // where the function is frozen the instant the route handler returns its
+    // response; an un-awaited Resend HTTP call is cut off mid-flight and never
+    // completes unless a later invocation happens to thaw the same warm
+    // container. That's the exact reason Pix purchases delivered (the QR screen
+    // keeps polling /status, thawing the container) while one-shot credit-card
+    // charges logged the email but never sent it. Awaiting keeps the function
+    // alive until Resend actually accepts the message.
+    const sendResult = await sendPurchaseConfirmation({
       to: profile.email as string,
       name: (profile.display_name as string | null) ?? "",
       cohortName: (cohort?.name as string | null) ?? "",
-    }).catch((err) => console.error("Purchase email send failed:", err));
+    }).catch((err) => {
+      console.error("Purchase email send threw:", orderId, err);
+      return { ok: false as const, reason: "send_threw" };
+    });
+
+    if (!sendResult.ok) {
+      // The email_log row is a "this purchase email was handled" claim that
+      // dedupes concurrent finalizers. The send actually failed, so release the
+      // claim — otherwise the row lies (says sent when it wasn't) and the admin
+      // "resend" tool / any retry path would be deduped into silence.
+      console.error("Purchase email not sent:", orderId, sendResult.reason);
+      await admin
+        .from("email_log")
+        .delete()
+        .eq("user_id", userId)
+        .eq("kind", "purchase")
+        .eq("context_id", orderId);
+    }
   }
 
   return { wonRace: true };
