@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { useAuth } from "@/providers/auth-provider";
 import { useTheme } from "@/components/theme/theme-provider";
@@ -22,6 +23,8 @@ export default function ConfiguracoesPage() {
   const [isPending, startTransition] = useTransition();
   const [pwSaved, setPwSaved] = useState(false);
   const [pwError, setPwError] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleThemeChange(next: "system" | "light" | "dark") {
     setTheme(next);
@@ -105,23 +108,53 @@ export default function ConfiguracoesPage() {
           <form onSubmit={handlePasswordSave} className="space-y-4">
             <label className="block space-y-1">
               <span className="text-sm text-muted-foreground">Nova senha</span>
-              <input
-                name="new_password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Mínimo 8 caracteres"
-                className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
-              />
+              <div className="relative">
+                <input
+                  name="new_password"
+                  type={showNew ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Mínimo 8 caracteres"
+                  className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 pr-10 text-sm outline-none focus:border-brand/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNew((v) => !v)}
+                  aria-label={showNew ? "Ocultar senha" : "Mostrar senha"}
+                  aria-pressed={showNew}
+                  className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showNew ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </label>
             <label className="block space-y-1">
               <span className="text-sm text-muted-foreground">Confirmar nova senha</span>
-              <input
-                name="confirm_password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="Repita a senha"
-                className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
-              />
+              <div className="relative">
+                <input
+                  name="confirm_password"
+                  type={showConfirm ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Repita a senha"
+                  className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 pr-10 text-sm outline-none focus:border-brand/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}
+                  aria-pressed={showConfirm}
+                  className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showConfirm ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </label>
             <div className="flex items-center gap-3">
               <button
