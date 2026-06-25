@@ -14,7 +14,7 @@ function mapAuthError(msg: string): string {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; reset?: string }>;
 }) {
   if (!USE_MOCK_DATA) {
     const supabase = await createClient();
@@ -22,6 +22,15 @@ export default async function LoginPage({
     if (user) redirect("/app");
   }
 
-  const { error } = await searchParams;
-  return <LoginPageClient initialError={error ? mapAuthError(error) : null} />;
+  const { error, reset } = await searchParams;
+  return (
+    <LoginPageClient
+      initialError={error ? mapAuthError(error) : null}
+      initialNotice={
+        reset === "sucesso"
+          ? "Senha alterada com sucesso. Faça login com sua nova senha."
+          : null
+      }
+    />
+  );
 }

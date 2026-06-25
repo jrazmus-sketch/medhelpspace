@@ -7,7 +7,13 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { SiteText } from "@/components/landing/site-text";
 
-export function LoginPageClient({ initialError }: { initialError: string | null }) {
+export function LoginPageClient({
+  initialError,
+  initialNotice = null,
+}: {
+  initialError: string | null;
+  initialNotice?: string | null;
+}) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-14 items-center border-b border-border/50 px-6">
@@ -27,6 +33,12 @@ export function LoginPageClient({ initialError }: { initialError: string | null 
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {initialNotice && (
+              <div className="mb-4 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 text-sm text-emerald-700 dark:text-emerald-300">
+                {initialNotice}
+              </div>
+            )}
+
             <form action="/auth/login" method="post" className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>

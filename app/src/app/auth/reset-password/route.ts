@@ -12,5 +12,11 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+  // Don't silently sign the user in on the recovery session. A reset is often
+  // triggered because the account may be compromised or access was lost, so
+  // revoke ALL sessions (scope: "global" — including any attacker's) and clear
+  // this request's cookies. The client then redirects to /login for a fresh
+  // manual login with the new password.
+  await supabase.auth.signOut({ scope: "global" });
   return NextResponse.json({ ok: true });
 }

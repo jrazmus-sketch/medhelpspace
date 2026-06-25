@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
 
     if (USE_MOCK_DATA) {
       await new Promise((r) => setTimeout(r, 500));
-      router.push("/app");
+      router.push("/login?reset=sucesso");
       return;
     }
 
@@ -57,8 +57,8 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    router.push("/app");
-    router.refresh();
+    // Session was revoked server-side; send the user to log in with the new password.
+    router.push("/login?reset=sucesso");
   }
 
   return (
