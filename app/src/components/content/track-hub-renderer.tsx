@@ -81,7 +81,9 @@ export async function TrackHubRenderer({
       superGroups.push({ label: "Outros", iconSlug: "outros", minOrder: 999, items: [] });
     }
 
-    return <TrackHubAccordion groups={superGroups} accentColor={accentColor} />;
+    // MedVoice / AudioCards are audio ("Ouvir"); Flashcards are read/flip ("Ler").
+    const ctaLabel = typeKey === "flashcards" ? "Ler" : "Ouvir";
+    return <TrackHubAccordion groups={superGroups} accentColor={accentColor} ctaLabel={ctaLabel} />;
   }
 
   // Multiple pages per some specialties → grouped sections with page cards
