@@ -724,7 +724,7 @@ export default async function MemberDashboardPage() {
           lastPageLessonCount={lastPageLessonCount}
           lastPageCompletedCount={lastPageCompletedCount}
           coveredSpecialtyIds={coveredSpecialtyIds}
-          specialtiesAll={(specialtiesAll ?? []) as { id: number; name: string }[]}
+          specialtiesAll={(specialtiesAll ?? []).filter((s) => s.slug !== "outros") as { id: number; name: string }[]}
         />
       </section>
 
@@ -863,7 +863,7 @@ export default async function MemberDashboardPage() {
         <Coachmark coachKey="dash-specialties" />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {(specialtiesAll ?? []).map((spec, i) => (
+          {(specialtiesAll ?? []).filter((s) => s.slug !== "outros").map((spec, i) => (
             <Link
               key={spec.id}
               href={`/app/${spec.slug}`}

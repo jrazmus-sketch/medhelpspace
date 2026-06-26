@@ -26,9 +26,9 @@ export default async function EstudoPorQuestoesPage({
   const quiz = overridesMap.get("quiz")!;
   const simulados = overridesMap.get("simulados")!;
 
-  // "Questões Revalida" tab gets an extra "Outros" section, empty for now —
-  // content TBD. Deliberately NOT added to the simulados tab.
-  quizGroups.push({ label: "Outros", iconSlug: "outros", items: [] });
+  // The "Outros" group (Urologia / Oftalmologia / Otorrinolaringologia) now comes
+  // from the DB — an 'outros' specialty + quiz hub — so getViewHubGroups("quiz")
+  // already returns it. Simulados deliberately has no "Outros" group.
 
   // Simulados tab is being reorganized into two simulated-test categories:
   //  - "Geral": a mixed simulado covering many specialties at once.
