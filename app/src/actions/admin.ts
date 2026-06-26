@@ -766,6 +766,7 @@ export type QuizQuestionInput = {
   question: string;
   answers: QuizAnswerInput[];
   media_url: string | null;
+  explanation_html: string | null;
   position: number;
 };
 
@@ -793,6 +794,7 @@ export async function updateQuizQuestions(pageId: number, questions: QuizQuestio
       question: q.question,
       answers: q.answers,
       media_url: q.media_url || null,
+      explanation_html: q.explanation_html || null,
       position: q.position,
     };
     if (q.id !== null) {

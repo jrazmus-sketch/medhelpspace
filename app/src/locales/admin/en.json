@@ -399,6 +399,9 @@
     "deleteAnswer": "Delete answer",
     "answerPlaceholder": "Answer text",
     "feedbackPlaceholder": "Comment/feedback (optional)",
+    "explanation": "Comentário (explanation)",
+    "explanationHint": "Block shown after answering (Comentário, PEGA REVALIDA, Resumo-chave).",
+    "explanationPlaceholder": "Detailed explanation for this question…",
     "addQuestion": "Add question",
     "saveError": "Error saving"
   },

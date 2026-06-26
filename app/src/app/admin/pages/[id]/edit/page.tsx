@@ -48,7 +48,7 @@ export default async function PageEditPage({
     isQuiz
       ? admin
           .from("quiz_questions")
-          .select("id, position, question, answers, media_url")
+          .select("id, position, question, answers, media_url, explanation_html")
           .eq("page_id", pageId)
           .order("position")
       : Promise.resolve({ data: [] }),
@@ -146,6 +146,7 @@ export type QuizQuestionRow = {
   question: string;
   answers: QuizAnswerRow[];
   media_url: string | null;
+  explanation_html: string | null;
 };
 
 export type FlashcardRow = {

@@ -15,6 +15,7 @@ type QuestionDraft = {
   question: string;
   answers: { text: string; correct: boolean; feedback: string }[];
   media_url: string;
+  explanation_html: string;
   position: number;
   open: boolean;
 };
@@ -39,6 +40,7 @@ export const QuizEditor = forwardRef<
       question: q.question,
       answers: q.answers && q.answers.length > 0 ? q.answers : [emptyAnswer(), emptyAnswer()],
       media_url: q.media_url ?? "",
+      explanation_html: q.explanation_html ?? "",
       position: q.position,
       open: false,
     })),
@@ -54,6 +56,7 @@ export const QuizEditor = forwardRef<
         question: "",
         answers: [emptyAnswer(), emptyAnswer(), emptyAnswer(), emptyAnswer()],
         media_url: "",
+        explanation_html: "",
         position: maxPos + 1,
         open: true,
       },
@@ -113,6 +116,7 @@ export const QuizEditor = forwardRef<
           question: q.question,
           answers: q.answers.filter((a) => a.text.trim()),
           media_url: q.media_url || null,
+          explanation_html: q.explanation_html || null,
           position: i + 1,
         })),
       );
@@ -231,6 +235,17 @@ export const QuizEditor = forwardRef<
                     />
                   </div>
                 ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">{t("quizEditor.explanation")}</label>
+                <p className="text-xs text-muted-foreground">{t("quizEditor.explanationHint")}</p>
+                <RichTextEditor
+                  content={q.explanation_html}
+                  onChange={(html) => patch(idx, { explanation_html: html })}
+                  placeholder={t("quizEditor.explanationPlaceholder")}
+                  minHeight="140px"
+                />
               </div>
             </div>
           )}

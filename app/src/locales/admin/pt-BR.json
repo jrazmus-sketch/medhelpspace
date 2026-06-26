@@ -399,6 +399,9 @@
     "deleteAnswer": "Excluir alternativa",
     "answerPlaceholder": "Texto da alternativa",
     "feedbackPlaceholder": "Comentário/feedback (opcional)",
+    "explanation": "Comentário",
+    "explanationHint": "Bloco exibido após a resposta (Comentário, PEGA REVALIDA, Resumo-chave).",
+    "explanationPlaceholder": "Comentário detalhado da questão…",
     "addQuestion": "Adicionar questão",
     "saveError": "Erro ao salvar"
   },
