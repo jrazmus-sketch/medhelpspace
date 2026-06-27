@@ -16,7 +16,7 @@
  *  - specialty comes from frontmatter (honors the 11 cross-tags: GI cancers →
  *    gastroenterologia, trauma → emergencia, cirurgia-pediatrica → cirurgia-geral)
  *  - slug == filename; type=plain-content; view=revalida-up;
- *    content_module_id=1 (MedHelp 60D gate); status=publish
+ *    content_module_id=NULL (day-1, ungated — post Revalida Up⇄Fórmula swap); status=publish
  *  - the legacy WP skeleton (hub 4308 + 17 specialty stubs) is archived to
  *    status=draft so it never surfaces ("fresh routes" decision)
  *  - PADRÃO DE PROVA lines are authored as bold paragraphs in source; emitted as
@@ -40,6 +40,7 @@ const SPECIALTIES = new Set([
   "gastroenterologia", "hematologia", "infectologia", "nefrologia",
   "neurologia", "pneumologia", "psiquiatria", "reumatologia",
   "cirurgia-geral", "ginecologia", "obstetricia", "pediatria", "saude-coletiva",
+  "outros",
 ]);
 
 // Legacy Revalida Up skeleton: hub (4308) + 17 specialty stubs. Archived, not deleted.
@@ -188,7 +189,7 @@ ins AS (
     'plain-content'::page_type,
     'publish',
     'revalida-up'::page_view,
-    1,
+    NULL,
     (SELECT id FROM specialties WHERE slug = np.spec_slug),
     now(),
     now()

@@ -57,8 +57,10 @@ export default async function RevalidaUpHubPage() {
     .sort((a, b) => a.minOrder - b.minOrder)
     .map(({ minOrder: _drop, ...rest }) => rest);
 
-  // Trailing "Outros" (Em breve) row to match the other study hubs.
-  if (groups.length > 0) {
+  // Trailing "Outros" (Em breve) row to match the other study hubs — but only when
+  // there isn't already a real "Outros" specialty group (it now carries content,
+  // e.g. the oftalmologia/otorrino/urologia Revalida Up topics).
+  if (groups.length > 0 && !groups.some((g) => g.label === "Outros")) {
     groups.push({ label: "Outros", iconSlug: "outros", items: [] });
   }
 
