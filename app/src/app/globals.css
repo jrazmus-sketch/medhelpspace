@@ -541,6 +541,15 @@
   font-weight: 400 !important;
 }
 
+/* AudioCards Q/A transcripts: bold the whole question line (.ac-q), answer (.ac-a)
+   stays normal. Higher specificity + !important to override the de-bold rule above,
+   which exists for MedVoice prose transcripts. */
+.prose-content.prose-transcript p.ac-q,
+.prose-content.prose-transcript p.ac-q strong,
+.prose-content.prose-transcript p.ac-q b {
+  font-weight: 700 !important;
+}
+
 /* Bloco header: branded section label with left-border accent */
 .bloco-header {
   font-family: var(--font-display, sans-serif);
