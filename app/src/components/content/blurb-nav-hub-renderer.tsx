@@ -175,15 +175,27 @@ export function TopicCard({
 function QuizMeta({ stats }: { stats: QuizStats }) {
   const { total, attempted, correctLatest } = stats;
   const pct = attempted > 0 ? Math.round((correctLatest / attempted) * 100) : null;
+  // Completion (how many of the topic's questions you've answered) is a separate
+  // axis from accuracy (how many of *those* you got right). Surface both, always.
+  const isComplete = total > 0 && attempted >= total;
+  const completionPct = total > 0 ? Math.round((attempted / total) * 100) : 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] tabular-nums">
-      <span className="text-muted-foreground">
-        {total} {total === 1 ? "questão" : "questões"}
-      </span>
-      {pct !== null && (
-        <>
-          <span className="text-muted-foreground/40" aria-hidden="true">·</span>
+    <div className="flex flex-col gap-1.5 text-[11px] tabular-nums">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {/* Completion — always shown so an untouched topic reads as 0/N, not blank */}
+        {isComplete ? (
+          <span className="inline-flex items-center gap-1 font-medium text-brand">
+            <Check size={12} strokeWidth={3} aria-hidden="true" />
+            Concluído
+          </span>
+        ) : (
+          <span className="text-muted-foreground">
+            {attempted}/{total} respondidas
+          </span>
+        )}
+        {/* Accuracy — labeled so it can't be mistaken for completion */}
+        {pct !== null && (
           <span
             className={
               "rounded-full px-1.5 py-0.5 font-medium " +
@@ -193,17 +205,22 @@ function QuizMeta({ stats }: { stats: QuizStats }) {
                   ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
                   : "bg-rose-500/10 text-rose-700 dark:text-rose-300")
             }
-            title={`${correctLatest} de ${attempted} respondidas`}
+            title={`${correctLatest} de ${attempted} corretas no último teste`}
           >
-            {pct}%
+            {pct}% acertos
           </span>
-          {attempted < total && (
-            <span className="text-muted-foreground/70">
-              {attempted}/{total}
-            </span>
-          )}
-        </>
-      )}
+        )}
+      </div>
+      {/* Visual completion bar — language-free reinforcement of attempted/total */}
+      <div
+        className="h-1 w-full overflow-hidden rounded-full bg-foreground/10"
+        aria-hidden="true"
+      >
+        <div
+          className="h-full rounded-full bg-brand transition-[width] duration-300"
+          style={{ width: `${completionPct}%` }}
+        />
+      </div>
     </div>
   );
 }
