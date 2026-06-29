@@ -132,10 +132,10 @@ export async function replyToTicket(
       kind: "support-ticket-reply",
       to: memberEmail,
       vars: {
-        // Member-controlled fields land in an HTML email body → escape each.
+        // Notification only — the reply content lives on the site, not in email.
+        // Member-controlled fields still land in HTML, so escape them.
         displayName: escapeHtml(memberName),
         ticketSubject: escapeHtml(subject),
-        replyExcerpt: escapeHtml(excerpt(text, 300)),
         ticketId: String(ticketId),
       },
     }).catch((e) => console.error("support reply email failed", ticketId, e));

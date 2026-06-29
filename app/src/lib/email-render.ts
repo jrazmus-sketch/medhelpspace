@@ -491,14 +491,16 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     headline: "Recebemos sua mensagem",
     body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
   Seu chamado sobre <strong style="color:#111827;">{{ticketSubject}}</strong> foi registrado.
-  Nossa equipe vai responder por aqui e também dentro da plataforma o quanto antes.
+  Nossa equipe vai responder direto na plataforma — avisamos você por e-mail e pelo
+  sino da sua conta assim que a resposta chegar.
 </p>
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-radius:8px;padding:16px;margin-bottom:24px;">
   <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Assunto:</strong> {{ticketCategory}}</td></tr>
   <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Protocolo:</strong> #{{ticketId}}</td></tr>
 </table>
 <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
-  Você pode acompanhar e responder a qualquer momento pelo link abaixo.
+  Acompanhe e responda pela plataforma a qualquer momento pelo link abaixo.
+  Não responda este e-mail.
 </p>`,
     cta_label: "Ver meu chamado →",
     cta_href: "/suporte/{{ticketId}}",
@@ -515,24 +517,22 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     kind: "support-ticket-reply",
     name: "Resposta ao chamado de suporte",
     description: "Enviado ao membro quando um administrador responde ao chamado.",
-    subject: "Resposta ao seu chamado — MedHelpSpace",
+    subject: "Você tem uma resposta — MedHelpSpace",
     kicker: "Olá, {{displayName}}",
     headline: "Você tem uma resposta do suporte",
-    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
-  Respondemos seu chamado sobre <strong style="color:#111827;">{{ticketSubject}}</strong>:
+    body_html: `<p style="margin:0 0 24px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Nossa equipe respondeu seu chamado sobre
+  <strong style="color:#111827;">{{ticketSubject}}</strong>.
+  Abra a conversa na plataforma para ver a resposta e responder.
 </p>
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-left:3px solid #7a1d91;border-radius:6px;padding:16px;margin-bottom:24px;">
-  <tr><td style="font-size:14px;color:#374151;line-height:1.6;">{{replyExcerpt}}</td></tr>
-</table>
 <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
-  Abra para ver a resposta completa e continuar a conversa.
+  Não responda este e-mail — continue a conversa direto na plataforma.
 </p>`,
-    cta_label: "Ver resposta →",
+    cta_label: "Ver no site →",
     cta_href: "/suporte/{{ticketId}}",
     variables: [
       { tag: "displayName", description: "Primeiro nome do membro" },
       { tag: "ticketSubject", description: "Assunto do chamado" },
-      { tag: "replyExcerpt", description: "Trecho da resposta do suporte" },
       { tag: "ticketId", description: "Número do protocolo (id do chamado)" },
     ],
     active: true,

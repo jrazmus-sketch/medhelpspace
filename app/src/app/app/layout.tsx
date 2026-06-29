@@ -11,6 +11,7 @@ import { requireActiveMembership } from "@/lib/membership-gate";
 import { createClient } from "@/lib/supabase/server";
 import { getDueReviewCount } from "@/lib/review/queries";
 import { getSiteCompletion } from "@/lib/progress/site-completion";
+import { getMyUnreadSupportCount } from "@/lib/support-data";
 
 export const metadata = { title: { template: "%s | MedHelpSpace", default: "Dashboard" } };
 
@@ -28,11 +29,12 @@ export default async function MemberLayout({ children }: { children: React.React
   // Review due-count for the nav badge (re-evaluated per navigation).
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const [reviewDueCount, completion] = await Promise.all([
+  const [reviewDueCount, completion, supportUnreadCount] = await Promise.all([
     user ? getDueReviewCount(user.id) : Promise.resolve(0),
     // In mock mode the id is ignored (returns sample data); in real mode a member
     // is always present here because requireActiveMembership() ran first.
     getSiteCompletion(user?.id ?? "mock"),
+    user ? getMyUnreadSupportCount(user.id) : Promise.resolve(0),
   ]);
 
   // Editable onboarding strings (site_content) — seeds the OnboardingProvider so
@@ -45,7 +47,7 @@ export default async function MemberLayout({ children }: { children: React.React
         <CopyGuard />
         <div className="sticky top-0 z-50">
           <AdminBarServer />
-          <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} completion={completion} />
+          <MemberHeader bellSlot={<NotificationBellServer />} show60d={show60d} reviewDueCount={reviewDueCount} completion={completion} supportUnreadCount={supportUnreadCount} />
         </div>
         {/* pb-16 reserves space above the fixed bottom nav (shown below lg) */}
         <main className="flex-1 pb-16 lg:pb-0">{children}</main>

@@ -52,6 +52,18 @@ export async function getMyTicketWithMessages(
   };
 }
 
+// How many of the member's tickets have an unread admin reply — drives the
+// "Suporte" badge in the member header so replies are noticed in-app.
+export async function getMyUnreadSupportCount(userId: string): Promise<number> {
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("support_tickets")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("member_unread", true);
+  return count ?? 0;
+}
+
 // Clear the member-unread flag once they open the thread. No-op if not the owner.
 export async function markTicketReadByMember(userId: string, ticketId: number): Promise<void> {
   const admin = createAdminClient();

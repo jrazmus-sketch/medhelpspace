@@ -147,11 +147,13 @@ export function MemberHeader({
   show60d = false,
   reviewDueCount = 0,
   completion = null,
+  supportUnreadCount = 0,
 }: {
   bellSlot?: React.ReactNode;
   show60d?: boolean;
   reviewDueCount?: number;
   completion?: SiteCompletion | null;
+  supportUnreadCount?: number;
 } = {}) {
   const pathname = usePathname();
   const router = useRouter();
@@ -286,6 +288,11 @@ export function MemberHeader({
                 <DropdownMenuItem onClick={() => router.push("/suporte")}>
                   <LifeBuoy className="mr-2 h-4 w-4" />
                   Suporte
+                  {supportUnreadCount > 0 && (
+                    <span className="ml-auto inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold tabular-nums text-brand-fg">
+                      {supportUnreadCount > 9 ? "9+" : supportUnreadCount}
+                    </span>
+                  )}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
 
