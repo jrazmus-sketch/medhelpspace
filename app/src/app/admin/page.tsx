@@ -1,26 +1,43 @@
-import { createAdminClient } from "@/lib/supabase/admin";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getAdminDashboardData } from "@/lib/admin/dashboard-stats";
 import { AdminDashboardClient } from "./dashboard-client";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Dashboard" };
 
-export default async function AdminDashboardPage() {
-  const admin = createAdminClient();
+const BILLING_ROLES = ["super_admin", "billing_admin"];
+const SUPPORT_ROLES = ["super_admin", "support_admin", "billing_admin"];
 
-  const [
-    { count: memberCount },
-    { count: cohortCount },
-    { count: draftCount },
-  ] = await Promise.all([
-    admin.from("profiles").select("*", { count: "exact", head: true }),
-    admin.from("cohorts").select("*", { count: "exact", head: true }),
-    admin.from("pages").select("*", { count: "exact", head: true }).eq("status", "draft"),
-  ]);
+export default async function AdminDashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, display_name")
+    .eq("id", user.id)
+    .single();
+
+  const role = (profile?.role as string) ?? "member";
+  if (role === "member") redirect("/app");
+
+  const canSeeBilling = BILLING_ROLES.includes(role);
+  const canSeeSupport = SUPPORT_ROLES.includes(role);
+  const canSeeAudit = role === "super_admin";
+
+  const data = await getAdminDashboardData({ canSeeBilling, canSeeSupport, canSeeAudit });
 
   return (
     <AdminDashboardClient
-      memberCount={memberCount ?? 0}
-      cohortCount={cohortCount ?? 0}
-      draftCount={draftCount ?? 0}
+      data={data}
+      displayName={(profile?.display_name as string | null) ?? null}
+      canSeeBilling={canSeeBilling}
+      canSeeSupport={canSeeSupport}
+      canSeeAudit={canSeeAudit}
     />
   );
 }

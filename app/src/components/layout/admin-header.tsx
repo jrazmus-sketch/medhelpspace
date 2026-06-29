@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { AdminBell } from "@/components/layout/admin-bell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -116,6 +117,8 @@ export function AdminHeader() {
           </Button>
 
           <ThemeToggle />
+
+          <AdminBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger

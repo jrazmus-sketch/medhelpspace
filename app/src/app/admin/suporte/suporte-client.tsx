@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { LifeBuoy, ArrowLeft, Send, Mail, Monitor, ExternalLink } from "lucide-react";
@@ -98,6 +98,23 @@ export function SuporteClient({ initialTickets }: { initialTickets: SupportTicke
       setDetail((d) => (d ? { ...d, ticket: { ...d.ticket, status: next } } : d));
     });
   }
+
+  // Deep link: /admin/suporte?ticket=123 auto-opens that ticket (e.g. from the
+  // dashboard Action Center). Reads window.location to avoid a Suspense boundary.
+  const didDeepLink = useRef(false);
+  useEffect(() => {
+    if (didDeepLink.current) return;
+    const idParam = new URLSearchParams(window.location.search).get("ticket");
+    if (!idParam) return;
+    const id = Number(idParam);
+    const tk = initialTickets.find((t) => t.id === id);
+    if (tk) {
+      didDeepLink.current = true;
+      openTicket(tk);
+    }
+    // openTicket is stable enough; ref guard prevents re-open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTickets]);
 
   const memberName = selected
     ? selected.display_name || selected.email.split("@")[0]

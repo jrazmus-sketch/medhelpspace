@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmail } from "@/lib/email";
 import { formatBRL, getAdminDailySubscriptions } from "@/lib/admin-notify";
 import { ADMIN_DIGEST_EMAIL_KIND, type AdminAlertEvent } from "@/lib/admin-notify-types";
+import { getNfseBacklog } from "@/lib/admin/nfse";
 
 // Daily admin digest. Summarizes the last 24h of admin_alerts (new purchases,
 // payment problems, refunds) and emails ONE digest to each admin who chose
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest) {
     payment_problem: { n: 0, cents: 0 },
     refund: { n: 0, cents: 0 },
     support_ticket: { n: 0, cents: 0 },
+    nfse_ready: { n: 0, cents: 0 },
   };
   for (const row of alerts ?? []) {
     const e = row.event_type as AdminAlertEvent;
@@ -74,6 +76,12 @@ export async function GET(request: NextRequest) {
     const md = (row.metadata ?? {}) as Record<string, unknown>;
     if (typeof md.amount_cents === "number") counts[e].cents += md.amount_cents;
   }
+
+  // nfse_ready is a STANDING backlog, not a 24h event — compute it live from orders
+  // (shared rule in lib/admin/nfse.ts) rather than from admin_alerts.
+  const nfse = await getNfseBacklog();
+  const nfseAtRisk = nfse.atRisk;
+  counts.nfse_ready.n = nfse.ready;
 
   function lineFor(e: AdminAlertEvent): string | null {
     const c = counts[e];
@@ -84,6 +92,13 @@ export async function GET(request: NextRequest) {
       return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">↩️ <strong>${c.n} estorno(s)</strong> · ${formatBRL(c.cents)}</p>`;
     if (e === "support_ticket")
       return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">🆘 <strong>${c.n} chamado(s) de suporte</strong></p>`;
+    if (e === "nfse_ready") {
+      const risk =
+        nfseAtRisk > 0
+          ? ` <span style="color:#b91c1c;">(${nfseAtRisk} vencendo a competência)</span>`
+          : "";
+      return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">📝 <strong>${c.n} nota(s) fiscal(is) a emitir</strong>${risk}</p>`;
+    }
     return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">⚠️ <strong>${c.n} pagamento(s) retido(s)</strong> para revisão</p>`;
   }
 

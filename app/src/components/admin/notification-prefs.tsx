@@ -9,6 +9,7 @@ import {
   updateMyNotificationPref,
 } from "@/actions/admin-notifications";
 import {
+  DAILY_ONLY_EVENTS,
   type AdminAlertEvent,
   type AdminNotifyFrequency,
 } from "@/lib/admin-notify-types";
@@ -84,7 +85,9 @@ export default function AdminNotificationPrefs() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2" role="radiogroup">
-              {FREQUENCIES.map((freq) => {
+              {FREQUENCIES.filter(
+                (freq) => !(freq === "instant" && DAILY_ONLY_EVENTS.has(event)),
+              ).map((freq) => {
                 const selected = prefs[event] === freq;
                 return (
                   <button

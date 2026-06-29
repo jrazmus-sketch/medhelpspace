@@ -15,11 +15,17 @@ export const ADMIN_ALERT_EVENTS = [
   "payment_problem",
   "refund",
   "support_ticket",
+  "nfse_ready",
 ] as const;
 
 export type AdminAlertEvent = (typeof ADMIN_ALERT_EVENTS)[number];
 
 export type AdminNotifyFrequency = "instant" | "daily" | "off";
+
+// Events with no real-time trigger — they describe a STANDING backlog detected by
+// the daily cron (computed live), not a one-off moment. The settings UI hides the
+// 'instant' option for these, and they are never passed to recordAdminAlert().
+export const DAILY_ONLY_EVENTS = new Set<AdminAlertEvent>(["nfse_ready"]);
 
 // Effective frequency when an admin has no saved pref row for an event.
 // Purchases / payment problems / support tickets matter immediately; refunds are
@@ -29,6 +35,8 @@ export const ADMIN_NOTIFY_DEFAULTS: Record<AdminAlertEvent, AdminNotifyFrequency
   payment_problem: "instant",
   refund: "off",
   support_ticket: "instant",
+  // A standing backlog → digest by default (no instant path exists for it).
+  nfse_ready: "daily",
 };
 
 // Roles eligible to receive each event AT ALL — gating is PER EVENT so a
@@ -40,6 +48,7 @@ export const ADMIN_NOTIFY_ELIGIBLE_ROLES: Record<AdminAlertEvent, readonly strin
   payment_problem: ["super_admin", "billing_admin"],
   refund: ["super_admin", "billing_admin"],
   support_ticket: ["super_admin", "support_admin", "billing_admin"],
+  nfse_ready: ["super_admin", "billing_admin"],
 };
 
 // Union of every role eligible for at least one event — for the broad profiles
@@ -60,6 +69,8 @@ export const EVENT_EMAIL_KIND: Record<AdminAlertEvent, string> = {
   payment_problem: "admin-payment-problem",
   refund: "admin-refund",
   support_ticket: "admin-support-ticket",
+  // Digest-only: no per-event instant email is ever sent for this one.
+  nfse_ready: "admin-nfse-ready",
 };
 
 export const ADMIN_DIGEST_EMAIL_KIND = "admin-digest";

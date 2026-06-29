@@ -78,7 +78,46 @@
     "module60d": "MedHelp 60D Module",
     "statsPages": "Total Pages",
     "statsLessons": "Total Lessons",
-    "statsMembers": "Total Members"
+    "statsMembers": "Total Members",
+    "greeting": "Hi, {{name}}",
+    "attention": "Needs attention",
+    "allClear": "All clear",
+    "allClearSub": "Nothing pending right now.",
+    "openTickets": "Open tickets",
+    "notasToIssue": "Invoices to issue",
+    "notasAtRisk": "{{count}} past competência",
+    "oldestWaiting": "oldest {{count}}d ago",
+    "draftsToReview": "Drafts to review",
+    "pendingPix": "Pending Pix",
+    "declined": "Declined (24h)",
+    "revenue": "Sales",
+    "thisMonth": "This month",
+    "vsLastMonth": "vs last month",
+    "last30days": "Last 30 days",
+    "salesMonth": "Sales this month",
+    "today": "today",
+    "week": "7 days",
+    "methodMix": "Pix / Card",
+    "pixCard": "payments this month",
+    "avgOrder": "Avg. order",
+    "lifetime": "Lifetime",
+    "recentSales": "Recent sales",
+    "cohorts": "Cohorts",
+    "testPassed": "Exam done",
+    "daysToTest": "Exam in {{count}} days",
+    "studentsN": "{{count}} students",
+    "unlock60d": "60D opens in {{count}}d",
+    "accessEnds": "Access ends in {{count}} days",
+    "saleEnds": "On sale until {{date}}",
+    "members": "Members",
+    "newSignups7": "New (7 days)",
+    "newSignups30": "New (30 days)",
+    "active7": "Active (7 days)",
+    "active30": "Active (30 days)",
+    "library": "Library",
+    "audioCoverage": "Audio coverage",
+    "recentActivity": "Recent activity",
+    "noActivity": "No recent activity."
   },
   "pages": {
     "title": "Pages",
@@ -277,7 +316,9 @@
       "refund": "Refund issued",
       "refundDesc": "An admin processes a refund.",
       "support_ticket": "Support ticket",
-      "support_ticketDesc": "A member opens a new support ticket."
+      "support_ticketDesc": "A member opens a new support ticket.",
+      "nfse_ready": "Invoices to issue",
+      "nfse_readyDesc": "Daily summary of invoices ready to issue (after the guarantee window)."
     }
   },
   "errors": {
@@ -767,6 +808,10 @@
   },
   "adminBar": {
     "viewSite": "View site"
+  },
+  "adminBell": {
+    "title": "Action items",
+    "empty": "Nothing pending."
   },
   "auth": {
     "signIn": "Sign in",

@@ -78,7 +78,46 @@
     "module60d": "Módulo MedHelp 60D",
     "statsPages": "Total de páginas",
     "statsLessons": "Total de aulas",
-    "statsMembers": "Total de membros"
+    "statsMembers": "Total de membros",
+    "greeting": "Olá, {{name}}",
+    "attention": "Precisa de atenção",
+    "allClear": "Tudo em dia",
+    "allClearSub": "Nada pendente no momento.",
+    "openTickets": "Chamados abertos",
+    "notasToIssue": "Notas a emitir",
+    "notasAtRisk": "{{count}} vencendo a competência",
+    "oldestWaiting": "mais antiga há {{count}}d",
+    "draftsToReview": "Rascunhos a revisar",
+    "pendingPix": "Pix pendentes",
+    "declined": "Recusados (24h)",
+    "revenue": "Vendas",
+    "thisMonth": "Este mês",
+    "vsLastMonth": "vs mês anterior",
+    "last30days": "Últimos 30 dias",
+    "salesMonth": "Vendas no mês",
+    "today": "hoje",
+    "week": "7 dias",
+    "methodMix": "Pix / Cartão",
+    "pixCard": "pagamentos do mês",
+    "avgOrder": "Ticket médio",
+    "lifetime": "Acumulado",
+    "recentSales": "Vendas recentes",
+    "cohorts": "Turmas",
+    "testPassed": "Prova realizada",
+    "daysToTest": "Prova em {{count}} dias",
+    "studentsN": "{{count}} alunos",
+    "unlock60d": "60D abre em {{count}}d",
+    "accessEnds": "Acesso encerra em {{count}} dias",
+    "saleEnds": "Vendas até {{date}}",
+    "members": "Membros",
+    "newSignups7": "Novos (7 dias)",
+    "newSignups30": "Novos (30 dias)",
+    "active7": "Ativos (7 dias)",
+    "active30": "Ativos (30 dias)",
+    "library": "Biblioteca",
+    "audioCoverage": "Cobertura de áudio",
+    "recentActivity": "Atividade recente",
+    "noActivity": "Sem atividade recente."
   },
   "pages": {
     "title": "Páginas",
@@ -277,7 +316,9 @@
       "refund": "Estorno realizado",
       "refundDesc": "Um administrador processa um estorno.",
       "support_ticket": "Chamado de suporte",
-      "support_ticketDesc": "Um membro abre um novo chamado de suporte."
+      "support_ticketDesc": "Um membro abre um novo chamado de suporte.",
+      "nfse_ready": "Notas fiscais a emitir",
+      "nfse_readyDesc": "Resumo diário das notas prontas para emissão (após o prazo de garantia)."
     }
   },
   "errors": {
@@ -767,6 +808,10 @@
   },
   "adminBar": {
     "viewSite": "Ver site"
+  },
+  "adminBell": {
+    "title": "Pendências",
+    "empty": "Nada pendente."
   },
   "auth": {
     "signIn": "Entrar",
