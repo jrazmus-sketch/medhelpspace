@@ -9,7 +9,6 @@ import {
   updateMyNotificationPref,
 } from "@/actions/admin-notifications";
 import {
-  ADMIN_ALERT_EVENTS,
   type AdminAlertEvent,
   type AdminNotifyFrequency,
 } from "@/lib/admin-notify-types";
@@ -27,6 +26,7 @@ export default function AdminNotificationPrefs() {
   const { t } = useTranslation();
   const [eligible, setEligible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<AdminAlertEvent[]>([]);
   const [prefs, setPrefs] = useState<Record<string, AdminNotifyFrequency>>({});
   const [savingEvent, setSavingEvent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +37,7 @@ export default function AdminNotificationPrefs() {
       .then((res) => {
         if (!active) return;
         setEligible(res.eligible);
+        setEvents(res.events);
         setPrefs(res.prefs);
       })
       .finally(() => active && setLoading(false));
@@ -69,7 +70,7 @@ export default function AdminNotificationPrefs() {
       <CardContent className="space-y-5">
         <p className="text-sm text-muted-foreground">{t("settings.notificationsDesc")}</p>
 
-        {ADMIN_ALERT_EVENTS.map((event) => (
+        {events.map((event) => (
           <div
             key={event}
             className="space-y-2 border-b border-border/40 pb-4 last:border-0 last:pb-0"

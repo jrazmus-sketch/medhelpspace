@@ -181,6 +181,16 @@ export default async function AcessoEncerradoPage({
           >
             ← Voltar ao início
           </Link>
+          <p style={{ marginTop: 14, fontSize: 13, color: "var(--muted-foreground)" }}>
+            Problema com acesso ou pagamento?{" "}
+            <Link
+              href="/suporte"
+              style={{ color: "var(--brand)", textDecoration: "none", fontWeight: 600 }}
+              className="hover:underline"
+            >
+              Falar com o suporte
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar, Hourglass, ChevronDown, Compass } from "lucide-react";
+import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar, Hourglass, ChevronDown, Compass, LifeBuoy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -282,6 +282,10 @@ export function MemberHeader({
                 <DropdownMenuItem onClick={() => router.push("/app/comecar")}>
                   <Compass className="mr-2 h-4 w-4" />
                   Comece por aqui
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/suporte")}>
+                  <LifeBuoy className="mr-2 h-4 w-4" />
+                  Suporte
                 </DropdownMenuItem>
               </DropdownMenuGroup>
 

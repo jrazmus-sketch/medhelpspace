@@ -7,6 +7,10 @@ export function MemberFooter({ className }: { className?: string }) {
         Comece por aqui
       </Link>
       <span aria-hidden="true" className="mx-2 opacity-50">·</span>
+      <Link href="/suporte" className="transition-colors hover:text-foreground">
+        Suporte
+      </Link>
+      <span aria-hidden="true" className="mx-2 opacity-50">·</span>
       © 2026 MedHelpSpace. Todos os direitos reservados.
     </footer>
   );

@@ -480,6 +480,99 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     active: true,
     sort_order: 10,
   },
+
+  // ── Support / contact tickets ─────────────────────────────────────────────────
+  "support-ticket-confirmation": {
+    kind: "support-ticket-confirmation",
+    name: "Confirmação de chamado de suporte",
+    description: "Enviado ao membro quando ele abre um chamado de suporte.",
+    subject: "Recebemos seu contato — MedHelpSpace",
+    kicker: "Olá, {{displayName}}",
+    headline: "Recebemos sua mensagem",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Seu chamado sobre <strong style="color:#111827;">{{ticketSubject}}</strong> foi registrado.
+  Nossa equipe vai responder por aqui e também dentro da plataforma o quanto antes.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Assunto:</strong> {{ticketCategory}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Protocolo:</strong> #{{ticketId}}</td></tr>
+</table>
+<p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
+  Você pode acompanhar e responder a qualquer momento pelo link abaixo.
+</p>`,
+    cta_label: "Ver meu chamado →",
+    cta_href: "/suporte/{{ticketId}}",
+    variables: [
+      { tag: "displayName", description: "Primeiro nome do membro" },
+      { tag: "ticketSubject", description: "Assunto informado pelo membro" },
+      { tag: "ticketCategory", description: "Categoria do chamado por extenso" },
+      { tag: "ticketId", description: "Número do protocolo (id do chamado)" },
+    ],
+    active: true,
+    sort_order: 11,
+  },
+  "support-ticket-reply": {
+    kind: "support-ticket-reply",
+    name: "Resposta ao chamado de suporte",
+    description: "Enviado ao membro quando um administrador responde ao chamado.",
+    subject: "Resposta ao seu chamado — MedHelpSpace",
+    kicker: "Olá, {{displayName}}",
+    headline: "Você tem uma resposta do suporte",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Respondemos seu chamado sobre <strong style="color:#111827;">{{ticketSubject}}</strong>:
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-left:3px solid #7a1d91;border-radius:6px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:14px;color:#374151;line-height:1.6;">{{replyExcerpt}}</td></tr>
+</table>
+<p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">
+  Abra para ver a resposta completa e continuar a conversa.
+</p>`,
+    cta_label: "Ver resposta →",
+    cta_href: "/suporte/{{ticketId}}",
+    variables: [
+      { tag: "displayName", description: "Primeiro nome do membro" },
+      { tag: "ticketSubject", description: "Assunto do chamado" },
+      { tag: "replyExcerpt", description: "Trecho da resposta do suporte" },
+      { tag: "ticketId", description: "Número do protocolo (id do chamado)" },
+    ],
+    active: true,
+    sort_order: 12,
+  },
+
+  // ── Admin-facing: new support ticket alert ────────────────────────────────────
+  "admin-support-ticket": {
+    kind: "admin-support-ticket",
+    name: "[Admin] Novo chamado de suporte",
+    description: "Enviado aos administradores quando um membro abre um chamado de suporte.",
+    subject: "🆘 Novo chamado — {{ticketCategory}} ({{memberName}})",
+    kicker: "Novo chamado de suporte",
+    headline: "{{memberName}}: {{ticketSubject}}",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Um membro abriu um chamado de suporte. Responda pelo painel — a resposta chega ao
+  membro por e-mail e dentro da plataforma.
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f5ff;border-radius:8px;padding:16px;margin-bottom:16px;">
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Membro:</strong> {{memberName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">E-mail:</strong> {{memberEmail}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Categoria:</strong> {{ticketCategory}}</td></tr>
+  <tr><td style="font-size:12px;color:#9ca3af;padding:3px 0;">Protocolo #{{ticketId}}</td></tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:14px;color:#374151;line-height:1.6;">{{ticketBody}}</td></tr>
+</table>`,
+    cta_label: "Abrir no painel →",
+    cta_href: "/admin/suporte",
+    variables: [
+      { tag: "memberName", description: "Nome do membro" },
+      { tag: "memberEmail", description: "E-mail do membro" },
+      { tag: "ticketCategory", description: "Categoria do chamado por extenso" },
+      { tag: "ticketSubject", description: "Assunto do chamado" },
+      { tag: "ticketBody", description: "Mensagem do membro (texto, já com escape)" },
+      { tag: "ticketId", description: "Número do protocolo (id do chamado)" },
+    ],
+    active: true,
+    sort_order: 13,
+  },
 };
 
 // Sample values for the editor preview and the admin "test send" — one entry per
@@ -505,6 +598,16 @@ export const SAMPLE_VARS: Record<string, string> = {
   digestDate: "25 de junho de 2026",
   digestBody:
     '<p style="margin:0 0 16px;font-size:15px;color:#4b5563;line-height:1.6;">Nas últimas 24h:</p><p style="margin:0 0 8px;font-size:14px;color:#374151;">💳 <strong>2 novas compras</strong> · R$ 994,00</p><p style="margin:0 0 8px;font-size:14px;color:#374151;">↩️ <strong>1 estorno</strong> · R$ 497,00</p>',
+  // Support-ticket samples
+  memberName: "Maria Souza",
+  memberEmail: "maria.souza@example.com",
+  ticketCategory: "Problema técnico",
+  ticketSubject: "O áudio do MedVoice não toca no celular",
+  ticketBody:
+    "Quando abro uma aula do MedVoice pelo celular, o player aparece mas o áudio não começa. No computador funciona normal.",
+  replyExcerpt:
+    "Oi, Maria! Já corrigimos o player no celular — pode testar de novo e nos contar se resolveu?",
+  ticketId: "1042",
 };
 
 export function sampleVarsFor(template: EmailTemplateRow): Record<string, string> {

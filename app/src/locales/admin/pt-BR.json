@@ -14,7 +14,35 @@
     "auditLog": "Log de auditoria",
     "billing": "Financeiro",
     "notasFiscais": "Notas Fiscais",
-    "coupons": "Cupons"
+    "coupons": "Cupons",
+    "support": "Suporte"
+  },
+  "support": {
+    "title": "Suporte",
+    "subtitle": "Chamados de membros — responda por aqui.",
+    "filterAll": "Todos",
+    "empty": "Nenhum chamado.",
+    "selectPrompt": "Selecione um chamado para ver a conversa.",
+    "protocol": "Protocolo",
+    "backToList": "Voltar à lista",
+    "statusLabel": "Status",
+    "replyPlaceholder": "Escreva sua resposta…",
+    "send": "Enviar",
+    "sending": "Enviando…",
+    "fromTeam": "Equipe",
+    "status": {
+      "open": "Aberto",
+      "in_progress": "Em atendimento",
+      "resolved": "Resolvido",
+      "closed": "Encerrado"
+    },
+    "cat": {
+      "tecnico": "Problema técnico",
+      "pagamento": "Pagamento",
+      "acesso": "Acesso",
+      "conteudo": "Conteúdo",
+      "outro": "Outro"
+    }
   },
   "common": {
     "save": "Salvar",
@@ -247,7 +275,9 @@
       "payment_problem": "Problema de pagamento",
       "payment_problemDesc": "Uma cobrança liquida com valor divergente e fica retida para revisão manual.",
       "refund": "Estorno realizado",
-      "refundDesc": "Um administrador processa um estorno."
+      "refundDesc": "Um administrador processa um estorno.",
+      "support_ticket": "Chamado de suporte",
+      "support_ticketDesc": "Um membro abre um novo chamado de suporte."
     }
   },
   "errors": {

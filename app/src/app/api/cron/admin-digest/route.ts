@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
     new_purchase: { n: 0, cents: 0 },
     payment_problem: { n: 0, cents: 0 },
     refund: { n: 0, cents: 0 },
+    support_ticket: { n: 0, cents: 0 },
   };
   for (const row of alerts ?? []) {
     const e = row.event_type as AdminAlertEvent;
@@ -81,6 +82,8 @@ export async function GET(request: NextRequest) {
       return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">💳 <strong>${c.n} nova(s) compra(s)</strong> · ${formatBRL(c.cents)}</p>`;
     if (e === "refund")
       return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">↩️ <strong>${c.n} estorno(s)</strong> · ${formatBRL(c.cents)}</p>`;
+    if (e === "support_ticket")
+      return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">🆘 <strong>${c.n} chamado(s) de suporte</strong></p>`;
     return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">⚠️ <strong>${c.n} pagamento(s) retido(s)</strong> para revisão</p>`;
   }
 

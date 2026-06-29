@@ -15,9 +15,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmailToMany } from "@/lib/email";
 import {
-  ADMIN_ALERT_EVENTS,
   ADMIN_NOTIFY_DEFAULTS,
   ADMIN_NOTIFY_ELIGIBLE_ROLES,
+  ANY_NOTIFY_ELIGIBLE_ROLE,
+  eligibleEventsForRole,
   EVENT_EMAIL_KIND,
   type AdminAlertEvent,
   type AdminNotifyFrequency,
@@ -52,7 +53,7 @@ export async function getAdminRecipients(
     const { data: admins, error } = await admin
       .from("profiles")
       .select("id, email, role")
-      .in("role", ADMIN_NOTIFY_ELIGIBLE_ROLES as unknown as string[]);
+      .in("role", ADMIN_NOTIFY_ELIGIBLE_ROLES[event] as unknown as string[]);
     if (error || !admins || admins.length === 0) return [];
 
     const ids = admins.map((a) => a.id as string);
@@ -148,7 +149,7 @@ export async function getAdminDailySubscriptions(): Promise<
     const { data: admins, error } = await admin
       .from("profiles")
       .select("id, email, role")
-      .in("role", ADMIN_NOTIFY_ELIGIBLE_ROLES as unknown as string[]);
+      .in("role", ANY_NOTIFY_ELIGIBLE_ROLE as unknown as string[]);
     if (error || !admins || admins.length === 0) return [];
 
     const ids = admins.map((a) => a.id as string);
@@ -165,7 +166,8 @@ export async function getAdminDailySubscriptions(): Promise<
     for (const a of admins) {
       const email = a.email as string | null;
       if (!email) continue;
-      const events = ADMIN_ALERT_EVENTS.filter(
+      // Only events this admin's role is eligible for (per-event gating).
+      const events = eligibleEventsForRole(a.role as string | null).filter(
         (e) => (prefMap.get(`${a.id}|${e}`) ?? ADMIN_NOTIFY_DEFAULTS[e]) === "daily",
       );
       if (events.length > 0) out.push({ id: a.id as string, email, events: [...events] });

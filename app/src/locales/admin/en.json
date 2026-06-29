@@ -14,7 +14,35 @@
     "auditLog": "Audit Log",
     "billing": "Billing",
     "notasFiscais": "Invoices",
-    "coupons": "Coupons"
+    "coupons": "Coupons",
+    "support": "Support"
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Member tickets — reply right here.",
+    "filterAll": "All",
+    "empty": "No tickets.",
+    "selectPrompt": "Select a ticket to see the conversation.",
+    "protocol": "Ref",
+    "backToList": "Back to list",
+    "statusLabel": "Status",
+    "replyPlaceholder": "Write your reply…",
+    "send": "Send",
+    "sending": "Sending…",
+    "fromTeam": "Team",
+    "status": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "cat": {
+      "tecnico": "Technical issue",
+      "pagamento": "Payment",
+      "acesso": "Access",
+      "conteudo": "Content",
+      "outro": "Other"
+    }
   },
   "common": {
     "save": "Save",
@@ -247,7 +275,9 @@
       "payment_problem": "Payment problem",
       "payment_problemDesc": "A charge settles with the wrong amount and is held for manual review.",
       "refund": "Refund issued",
-      "refundDesc": "An admin processes a refund."
+      "refundDesc": "An admin processes a refund.",
+      "support_ticket": "Support ticket",
+      "support_ticketDesc": "A member opens a new support ticket."
     }
   },
   "errors": {

@@ -26,7 +26,7 @@ export function AdminHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { profile, isSuperAdmin, isContentAdmin, isBillingAdmin } = useAuth();
+  const { profile, isSuperAdmin, isContentAdmin, isSupportAdmin, isBillingAdmin } = useAuth();
 
   const displayName = profile?.display_name ?? "A";
   const initial = displayName.charAt(0).toUpperCase();
@@ -54,6 +54,7 @@ export function AdminHeader() {
     { href: "/admin/notifications", label: t("nav.notifications") },
     ...(isContentAdmin() ? [{ href: "/admin/email-templates", label: t("nav.emailTemplates") }] : []),
     { href: "/admin/members", label: t("nav.members") },
+    ...(isSupportAdmin() || isBillingAdmin() ? [{ href: "/admin/suporte", label: t("nav.support") }] : []),
     { href: "/admin/cohorts", label: t("nav.cohorts") },
     ...(isSuperAdmin() || isBillingAdmin() ? [{ href: "/admin/billing", label: t("nav.billing") }] : []),
     ...(isSuperAdmin() || isBillingAdmin() ? [{ href: "/admin/notas-fiscais", label: t("nav.notasFiscais") }] : []),
