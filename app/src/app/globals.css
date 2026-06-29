@@ -527,6 +527,20 @@
   color: var(--brand);
 }
 
+/* Approved text colors for the admin page editor. Class-based (not inline style)
+   so each shifts per theme AND survives the dark-mode inline-color override below,
+   which only targets [style*="color"]. Swatches mirror the status tokens used
+   elsewhere (green-700/amber-700 in light, *-400 in dark) and the documented brand
+   shift (#7a1d91 → #c084e8). Keep in sync with APPROVED_COLORS in text-color-mark.ts. */
+.prose-content .prose-color-brand { color: #7a1d91; }
+.prose-content .prose-color-green { color: #15803d; }
+.prose-content .prose-color-red   { color: #dc2626; }
+.prose-content .prose-color-amber { color: #b45309; }
+.dark .prose-content .prose-color-brand { color: #c084e8; }
+.dark .prose-content .prose-color-green { color: #4ade80; }
+.dark .prose-content .prose-color-red   { color: #f87171; }
+.dark .prose-content .prose-color-amber { color: #fbbf24; }
+
 /* Override WP inline color styles in dark mode — they're all hardcoded light values */
 .dark .prose-content [style*="color"] {
   color: var(--foreground) !important;
