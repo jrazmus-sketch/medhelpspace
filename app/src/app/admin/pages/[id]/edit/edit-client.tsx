@@ -33,6 +33,29 @@ const TYPE_LABELS: Record<string, string> = {
   "h5p-quiz": "quiz",
 };
 
+// Specialty-less pages that are reachable only through a dedicated static route
+// under /app (not the [specialty] dynamic route). Keep in sync with the routes
+// in src/app/app/.
+const STATIC_ROUTE_SLUGS = new Set(["estudo-por-questoes", "medhelp-60d", "revalida-up"]);
+
+// Resolves the page's real member-site URL, mirroring the routing in
+// app/[specialty]/[slug] (any page WITH a specialty) and app/[specialty] (a
+// specialty-less page only renders at /app/{slug} when it's a top-level hub —
+// track, view, or blurb-nav-hub). Legacy specialty-less leaf pages have no
+// public URL, so the editor disables the "Ver no site" link instead of pointing
+// it at a guaranteed 404.
+function memberUrlForPage(
+  page: { slug: string; type: string; view: string | null; track_id: number | null },
+  specialtySlug: string | null,
+): string | null {
+  if (specialtySlug) return `/app/${specialtySlug}/${page.slug}`;
+  if (page.track_id != null || page.view != null || page.type === "blurb-nav-hub") {
+    return `/app/${page.slug}`;
+  }
+  if (STATIC_ROUTE_SLUGS.has(page.slug)) return `/app/${page.slug}`;
+  return null;
+}
+
 function slugify(text: string) {
   return text
     .normalize("NFD")
@@ -228,11 +251,9 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   const typeColor = TYPE_COLORS[page.type] ?? TYPE_COLORS.default;
 
   // Breadcrumb wayfinding: hubs get "Hubs › Specialty › Title"; others "Pages › Title".
-  // "Ver no site" link uses /app/{specialty.slug}/{page.slug} when specialty is set.
   const specialtyForCrumb = specialties.find((s) => s.id === page.specialty_id) ?? null;
-  const liveUrl = specialtyForCrumb
-    ? `/app/${specialtyForCrumb.slug}/${page.slug}`
-    : `/app/${page.slug}`;
+  // "Ver no site" resolves the page's real member URL (or null if it has none).
+  const liveUrl = memberUrlForPage(page, specialtyForCrumb?.slug ?? null);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -271,15 +292,26 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
           <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", typeColor)}>
             {TYPE_LABELS[page.type] ?? page.type}
           </span>
-          <a
-            href={liveUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-surface-1 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            {t("pageEdit.viewOnSite")}
-          </a>
+          {liveUrl ? (
+            <a
+              href={liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-surface-1 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {t("pageEdit.viewOnSite")}
+            </a>
+          ) : (
+            <span
+              title={t("pageEdit.viewOnSiteUnavailable")}
+              aria-disabled="true"
+              className="inline-flex min-h-9 cursor-not-allowed items-center gap-1.5 rounded-md border border-border bg-surface-1 px-3 py-1.5 text-xs font-medium text-muted-foreground/40"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {t("pageEdit.viewOnSite")}
+            </span>
+          )}
         </div>
       </div>
 

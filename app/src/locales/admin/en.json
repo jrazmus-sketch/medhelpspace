@@ -374,6 +374,7 @@
     "crumbHubs": "Hubs",
     "crumbPages": "Pages",
     "viewOnSite": "View on site",
+    "viewOnSiteUnavailable": "This page has no public URL on the site.",
     "advanced": "Advanced",
     "saveAll": "Save page",
     "sectionSaveError": "Some content couldn't be saved — check the highlighted section below.",

@@ -374,6 +374,7 @@
     "crumbHubs": "Hubs",
     "crumbPages": "Páginas",
     "viewOnSite": "Ver no site",
+    "viewOnSiteUnavailable": "Esta página não tem URL pública no site.",
     "advanced": "Avançado",
     "saveAll": "Salvar página",
     "sectionSaveError": "Parte do conteúdo não pôde ser salva — verifique a seção destacada abaixo.",
