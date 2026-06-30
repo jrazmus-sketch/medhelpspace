@@ -6,11 +6,18 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 export const MAGNET_PATH = "/simulado-honesto";
+export const FREE_DECK_PATH = "/flashcards-gratis";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
 
 export function magnetUrl(): string {
   return `${SITE_URL}${MAGNET_PATH}`;
+}
+
+// The free flashcard deck delivered as the magnet bonus (what {{deckUrl}} resolves
+// to in the D0 email) and an SEO landing for the "flashcards revalida" long-tail.
+export function freeDeckUrl(): string {
+  return `${SITE_URL}${FREE_DECK_PATH}`;
 }
 
 export function unsubscribeUrl(token: string): string {

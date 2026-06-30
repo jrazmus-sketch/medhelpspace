@@ -8,7 +8,8 @@ import {
   type MagnetQuestion,
 } from "@/lib/magnet/questions";
 import { buildPlanPreview, type MagnetAnswer, type PlanPreview } from "@/lib/magnet/plan-preview";
-import { magnetUrl, unsubscribeUrl, offerCheckoutUrl } from "@/lib/magnet/links";
+import { getSampleFlashcardsForSpecialties, type MagnetFlashcard } from "@/lib/magnet/flashcards";
+import { magnetUrl, freeDeckUrl, unsubscribeUrl, offerCheckoutUrl } from "@/lib/magnet/links";
 
 // Free-magnet capture/unlock + result finalization (FREE-FUNNEL-BUILD-SPEC.md §3.3).
 // All writes go through the service-role admin client — leads has deny-all RLS and
@@ -78,20 +79,27 @@ export async function captureLeadAndUnlock(input: {
     token = (inserted?.unsubscribe_token as string) ?? "";
   }
 
-  // D0 delivery email — awaited; a Resend failure must NOT block the unlock.
+  // D0 delivery email — awaited; a Resend failure must NOT block the unlock, but
+  // it must be VISIBLE. sendEmailRaw reports soft failures (missing API key,
+  // rejected/unverified domain, rate limit) via { ok:false, reason } instead of
+  // throwing, so an uninspected return silently looks like success. Log both the
+  // soft-failure and the genuine-throw paths to Vercel logs. Reason only — no
+  // email address — to keep PII out of logs (mirrors the lead-drip cron).
   try {
-    await sendTemplateEmail({
+    const res = await sendTemplateEmail({
       kind: "lead-d0",
       to: email,
       vars: {
         magnetUrl: magnetUrl(),
-        deckUrl: magnetUrl(),
+        deckUrl: freeDeckUrl(),
         checkoutUrl: offerCheckoutUrl({ email, coupon: "RETA2026", utmCampaign: "lead-d0" }),
         unsubscribeUrl: token ? unsubscribeUrl(token) : magnetUrl(),
       },
     });
-  } catch {
+    if (!res.ok) console.error("lead-d0 send failed:", res.reason);
+  } catch (e) {
     // swallow — capture succeeds regardless of email deliverability
+    console.error("lead-d0 send threw:", e);
   }
 
   const gatedQuestions = await getMagnetQuestions(MAGNET_GATED_IDS);
@@ -108,9 +116,9 @@ export async function finalizeLeadResult(input: {
   email: string;
   answers: MagnetAnswer[];
   targetCohort?: string;
-}): Promise<{ ok: boolean; planPreview: PlanPreview | null }> {
+}): Promise<{ ok: boolean; planPreview: PlanPreview | null; sampleCards: MagnetFlashcard[] }> {
   const email = input.email.trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) return { ok: false, planPreview: null };
+  if (!EMAIL_RE.test(email)) return { ok: false, planPreview: null, sampleCards: [] };
 
   const targetCohort = VALID_COHORTS.has(input.targetCohort ?? "")
     ? (input.targetCohort as string)
@@ -141,6 +149,13 @@ export async function finalizeLeadResult(input: {
     })
     .eq("email", email);
 
-  const planPreview = await buildPlanPreview(answers, targetCohort);
-  return { ok: true, planPreview };
+  // Personalized flashcard taste for the results view: one card from each weak
+  // specialty (falls back to a generic spread when nothing's weak). Shows the
+  // spaced-repetition system instead of only naming it. A read failure must not
+  // block the result, so degrade to no taste.
+  const [planPreview, sampleCards] = await Promise.all([
+    buildPlanPreview(answers, targetCohort),
+    getSampleFlashcardsForSpecialties(weakSpecialtyIds, 3).catch(() => [] as MagnetFlashcard[]),
+  ]);
+  return { ok: true, planPreview, sampleCards };
 }

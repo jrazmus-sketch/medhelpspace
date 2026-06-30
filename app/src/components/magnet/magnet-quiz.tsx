@@ -5,6 +5,8 @@ import { safe } from "@/lib/sanitize";
 import { captureLeadAndUnlock, finalizeLeadResult } from "@/actions/magnet";
 import type { MagnetQuestion } from "@/lib/magnet/questions";
 import type { MagnetAnswer, PlanPreview } from "@/lib/magnet/plan-preview";
+import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
+import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
 // security hook (see components/admin/editable-text.tsx).
@@ -46,6 +48,7 @@ export function MagnetQuiz({
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanPreview | null>(null);
+  const [sampleCards, setSampleCards] = useState<MagnetFlashcard[]>([]);
   const [cohort, setCohort] = useState("revalida-2026-2");
   const [pending, startTransition] = useTransition();
 
@@ -98,6 +101,7 @@ export function MagnetQuiz({
     startTransition(async () => {
       const res = await finalizeLeadResult({ email, answers: allAnswers, targetCohort: slug });
       setPlan(res.planPreview);
+      setSampleCards(res.sampleCards ?? []);
       setPhase("results");
     });
   }
@@ -125,7 +129,14 @@ export function MagnetQuiz({
   // ── Results / offer ─────────────────────────────────────────────────────────
   if (phase === "results") {
     return (
-      <MagnetResults score={correctCount} plan={plan} email={email} utm={utm} cohort={cohort} />
+      <MagnetResults
+        score={correctCount}
+        plan={plan}
+        sampleCards={sampleCards}
+        email={email}
+        utm={utm}
+        cohort={cohort}
+      />
     );
   }
 
@@ -322,12 +333,14 @@ export function MagnetQuiz({
 function MagnetResults({
   score,
   plan,
+  sampleCards,
   email,
   utm,
   cohort,
 }: {
   score: number;
   plan: PlanPreview | null;
+  sampleCards: MagnetFlashcard[];
   email: string;
   utm: MagnetUtm;
   cohort: string;
@@ -389,6 +402,35 @@ function MagnetResults({
             </>
           )}
         </p>
+      )}
+
+      {/* Flashcard taste — show the spaced-repetition system, don't just name it.
+          Cards come from the lead's weak specialties (server, finalizeLeadResult). */}
+      {sampleCards.length > 0 && (
+        <div className="rounded-2xl border border-border bg-surface-1 p-6">
+          <h3 className="text-lg font-bold tracking-tight">
+            Não basta reler — você precisa recordar
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {weakNames ? (
+              <>
+                Experimente agora, com {weakNames}. Vire o card e responda se você lembrou.
+              </>
+            ) : (
+              <>Experimente agora. Vire o card e responda se você lembrou.</>
+            )}
+          </p>
+          <div className="mt-4">
+            <MagnetFlashcards
+              cards={sampleCards}
+              compact
+              doneTitle="É exatamente assim no método completo."
+              doneNote="O baralho completo já está no seu e-mail."
+              ctaHref="/flashcards-gratis"
+              ctaLabel="Abrir o baralho grátis →"
+            />
+          </div>
+        </div>
       )}
 
       {/* Locked personalized plan preview */}

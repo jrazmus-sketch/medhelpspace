@@ -746,7 +746,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   weakSpecialties: "Cardiologia, Nefrologia",
   examLabel: "13 de setembro",
   magnetUrl: "https://medhelpspace.com.br/simulado-honesto",
-  deckUrl: "https://medhelpspace.com.br/simulado-honesto",
+  deckUrl: "https://medhelpspace.com.br/flashcards-gratis",
   checkoutUrl:
     "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=RETA2026",
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",

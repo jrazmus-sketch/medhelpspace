@@ -15,6 +15,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      // Free lead magnet — indexable SEO landing for "simulado revalida".
+      url: "https://medhelpspace.com.br/simulado-honesto",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      // Free flashcard deck — indexable SEO landing for "flashcards revalida".
+      url: "https://medhelpspace.com.br/flashcards-gratis",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: "https://medhelpspace.com.br/termos",
       lastModified: new Date(),
       changeFrequency: "yearly",
