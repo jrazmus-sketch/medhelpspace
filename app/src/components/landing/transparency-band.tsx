@@ -40,6 +40,18 @@ export function TransparencyBand() {
         <p className="mx-auto mt-10 max-w-md text-sm leading-relaxed" style={{ color: "var(--lp-fg-40)" }}>
           <SiteText as="span" multiline k="transp.stakes" fallback="A prova já custa R$4.516 em taxas do INEP. Reprovar e refazer a 2ª etapa custa outros R$4.106. Do lado dessa conta, a preparação certa é o item mais barato — e o único que muda o resultado." />
         </p>
+
+        <p
+          className="mx-auto mt-6 max-w-md border-t pt-6 text-sm leading-relaxed"
+          style={{ color: "var(--lp-fg-40)", borderColor: "var(--lp-border)" }}
+        >
+          <SiteText
+            as="span"
+            multiline
+            k="transp.scope"
+            fallback="E a maior transparência de todas: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria é reprovada. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte."
+          />
+        </p>
       </div>
     </section>
   );

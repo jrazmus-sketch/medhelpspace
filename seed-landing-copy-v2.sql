@@ -5,7 +5,7 @@
 
 INSERT INTO site_content (key, value) VALUES
   -- Hero (changed)
-  ('hero.eyebrow',   $$Feito para quem vai revalidar$$),
+  ('hero.eyebrow',   $$1ª etapa do Revalida · prova teórica$$),
   ('hero.headline',  $$Você já é médico.$$),
   ('hero.headline2', $$Falta o Brasil reconhecer.$$),
   ('hero.subhead',   $$Não é curso. Não é videoaula. É o sistema que treina o raciocínio do Revalida — e faz você lembrar dele no dia da prova.$$),
@@ -61,6 +61,7 @@ INSERT INTO site_content (key, value) VALUES
   ('transp.p3', $$Sem preço escondido atrás de um consultor$$),
   ('transp.p4', $$7 dias para testar tudo e pedir reembolso, sem justificar$$),
   ('transp.stakes', $$A prova já custa R$4.516 em taxas do INEP. Reprovar e refazer a 2ª etapa custa outros R$4.106. Do lado dessa conta, a preparação certa é o item mais barato — e o único que muda o resultado.$$),
+  ('transp.scope',  $$E a maior transparência de todas: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria é reprovada. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte.$$),
 
   -- MedHelp 60D — post-swap lineup (Fórmula in, Revalida Up moved to day-1)
   ('sixtyd.item1.name', $$Fórmula MedHelp$$),

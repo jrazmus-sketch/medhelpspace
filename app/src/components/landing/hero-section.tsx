@@ -247,7 +247,7 @@ export function HeroSection() {
           className="mb-8 text-xs uppercase tracking-[0.22em]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.32)" }}
         >
-          <SiteText as="span" k="hero.eyebrow" fallback="Feito para quem vai revalidar" />
+          <SiteText as="span" k="hero.eyebrow" fallback="1ª etapa do Revalida · prova teórica" />
         </motion.div>
 
         <motion.h1
