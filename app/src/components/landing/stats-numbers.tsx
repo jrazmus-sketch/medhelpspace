@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 
 const STATS = [
-  { value: 204, label: "simulados comentados" },
-  { value: 3506, label: "flashcards" },
-  { value: 12, label: "especialidades" },
-  { value: 94, label: "áudios MedVoice" },
+  { value: 5140, label: "flashcards" },
+  { value: 2528, label: "questões comentadas" },
+  { value: 162, label: "áudios MedVoice" },
+  { value: 17, label: "especialidades" },
 ];
 
 function Counter({ target, duration = 1400 }: { target: number; duration?: number }) {

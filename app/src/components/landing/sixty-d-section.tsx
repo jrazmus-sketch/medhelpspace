@@ -68,7 +68,7 @@ export function SixtyDSection() {
           {/* What's inside */}
           <div className="mt-10 grid gap-px sm:grid-cols-3">
             {[
-              { name: "Revalida Up", desc: "Mini-resumos: padrão + decisão treinada" },
+              { name: "Fórmula MedHelp", desc: "Atalhos de prova: macetes, mnemônicos e frases-chave" },
               { name: "MemoreCards", desc: "Cards visuais de alta fixação por especialidade" },
               { name: "Simulados 100Q", desc: "Treino completo do dia da prova" },
             ].map((item, i) => (
@@ -96,7 +96,7 @@ export function SixtyDSection() {
           <div className="mt-12 flex items-center gap-0">
             {[
               { label: "Compra", sub: "Acesso imediato" },
-              { label: "Estudo", sub: "Questões · Resumos · MedVoice · Fórmula · Audiocards" },
+              { label: "Estudo", sub: "Questões · Resumos · Revalida Up · MedVoice · Flashcards · Audiocards" },
               { label: "60D antes", sub: "MedHelp 60D liberado" },
               { label: "Prova", sub: "Revalida 2026.2 / 2027.1" },
             ].map((step, i) => (

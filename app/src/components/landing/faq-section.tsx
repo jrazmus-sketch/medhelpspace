@@ -53,6 +53,18 @@ const FAQS = [
     q: "Como funciona o suporte?",
     a: "Você tem canal de suporte para acesso, pagamento e uso da plataforma.",
   },
+  {
+    q: "O que é a Revisão (repetição espaçada)?",
+    a: "Cada questão que você responde e cada flashcard que você vira entram numa fila inteligente. A Revisão traz cada conteúdo de volta no momento exato antes de você esquecer — e o que você erra volta primeiro. É o que faz o conteúdo durar até o dia da prova.",
+  },
+  {
+    q: "O MedHelpSpace prepara para a 2ª fase (prova prática)?",
+    a: "O foco do MedHelpSpace é a 1ª etapa — a prova teórica, que é o primeiro filtro do Revalida e onde a maior parte dos candidatos para. Aqui você treina o raciocínio, as questões e a fixação para passar dessa fase com segurança. A 2ª etapa (estações práticas) é presencial e tem uma preparação própria — o MedHelpSpace não cobre essa parte.",
+  },
+  {
+    q: "Tem mensalidade?",
+    a: "Não. É uma compra só, com acesso até a sua prova. Sem mensalidade, sem renovação automática e sem multa para cancelar.",
+  },
 ] as const;
 
 export function FaqSection() {

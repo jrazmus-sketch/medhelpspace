@@ -59,6 +59,11 @@ export function ProblemSection() {
       className="lp-cin-block relative overflow-hidden px-5 py-28 md:px-8 md:py-36"
       style={{ background: "var(--lp-alt)" }}
     >
+      {/* Background photo — only its bottom band (students reading from behind)
+          is shown; the busy bright top (whiteboard / skeleton) is masked away so
+          it dissolves into the section bg instead of colliding with the copy.
+          Full-width (no side crop) + low opacity = a tasteful, intentional
+          backdrop rather than a hard-edged image behind the text. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
@@ -72,23 +77,26 @@ export function ProblemSection() {
           width: "100%",
           height: "auto",
           display: "block",
-          opacity: 0.32,
+          opacity: 0.3,
           pointerEvents: "none",
           willChange: "transform",
+          WebkitMaskImage: "linear-gradient(to top, #000 0%, #000 40%, transparent 78%)",
+          maskImage: "linear-gradient(to top, #000 0%, #000 40%, transparent 78%)",
         }}
       />
 
-      {/* Gradient overlay: opaque section bg at top, transparent from midpoint down */}
+      {/* Legibility scrim: a touch of section bg at the very bottom so the lowest
+          copy stays readable where it meets the top of the visible photo band. */}
       <div
-        className="pointer-events-none absolute inset-0"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
         style={{
-          background: "linear-gradient(to bottom, var(--lp-alt) 0%, var(--lp-alt) 25%, transparent 60%)",
+          background: "linear-gradient(to top, var(--lp-alt) 0%, transparent 100%)",
         }}
       />
 
       {/* Content */}
       <div className="relative mx-auto max-w-5xl" style={{ zIndex: 1, borderTop: "1px solid var(--lp-border)" }}>
-        <div className="pt-16 text-center md:pt-24">
+        <div className="pb-20 pt-16 text-center md:pb-28 md:pt-24">
           <div
             className="mb-10 text-[10px] uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}

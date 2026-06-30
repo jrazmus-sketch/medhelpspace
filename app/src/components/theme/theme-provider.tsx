@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { isThemeUnlockedPath } from "@/lib/theme-scope";
 
 type Theme = "light" | "dark" | "system";
 
@@ -8,12 +10,15 @@ interface ThemeContextValue {
   theme: Theme;
   resolvedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
+  /** true on public pages where the theme is forced to dark and the toggle is hidden */
+  locked: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: "system",
   resolvedTheme: "dark",
   setTheme: () => {},
+  locked: true,
 });
 
 const STORAGE_KEY = "mhs-theme";
@@ -43,23 +48,32 @@ function applyClass(r: "light" | "dark") {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const pathname = usePathname();
+  // Public pages are locked to dark; only /app and /admin honor the preference.
+  const locked = !isThemeUnlockedPath(pathname);
+
+  // Lazy-init from storage so the first client render already has the user's
+  // preference (no SSR localStorage → falls back to "system" on the server, which
+  // is fine: the provider renders no theme-dependent DOM, the class lives on <html>).
+  const [theme, setThemeState] = useState<Theme>(() => readStored());
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 
-  // Sync from localStorage on mount
+  // Apply the resolved theme to <html> whenever the route's lock state or the
+  // preference changes. Forces dark on public pages, resolves the preference on
+  // product pages. Runs on client-side navigation too — the pre-hydration script
+  // in /public/theme-init.js only covers the initial/hard load.
   useEffect(() => {
-    const stored = readStored();
-    const r = resolve(stored);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setThemeState(stored);
-     
-    setResolvedTheme(r);
+    const r = locked ? "dark" : resolve(theme);
     applyClass(r);
-  }, []);
+    // Mirror the applied value into context for consumers (sonner, etc.); this
+    // effect's purpose is the external <html> class sync, not derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResolvedTheme(r);
+  }, [locked, theme]);
 
-  // Track OS preference changes when theme is "system"
+  // Track OS preference changes — only relevant on product pages set to "system".
   useEffect(() => {
-    if (theme !== "system") return;
+    if (locked || theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
       const r = systemPref();
@@ -68,18 +82,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [theme]);
+  }, [locked, theme]);
 
+  // Persist the user's preference. On locked pages the apply effect still forces
+  // dark, but the choice is kept so it's restored on return to /app or /admin.
   const setTheme = useCallback((next: Theme) => {
     try { localStorage.setItem(STORAGE_KEY, next); } catch {}
-    const r = resolve(next);
     setThemeState(next);
-    setResolvedTheme(r);
-    applyClass(r);
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, locked }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -199,163 +199,8 @@ function EcgBackground() {
   );
 }
 
-function QuizCard() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.35, duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="w-full rounded-2xl p-4 text-left"
-      style={{
-        background: "#12112a",
-        border: "1px solid rgba(122,29,145,0.40)",
-        boxShadow: "0 16px 48px rgba(0,0,0,0.55)",
-      }}
-    >
-      <div className="mb-3 flex items-center justify-between">
-        <span
-          className="text-[9px] font-bold uppercase tracking-[0.2em]"
-          style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.38)" }}
-        >
-          Cardiologia · Simulado
-        </span>
-        <span
-          className="text-[9px]"
-          style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.25)" }}
-        >
-          3 / 12
-        </span>
-      </div>
-
-      <p className="mb-3.5 text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.78)" }}>
-        Mulher, 58 anos, dispneia progressiva aos esforços há 3 meses.
-        B3, estase jugular e edema em MMII. Diagnóstico mais provável?
-      </p>
-
-      <div className="flex flex-col gap-1.5">
-        {[
-          { label: "A", text: "Insuficiência cardíaca", correct: true },
-          { label: "B", text: "Tromboembolismo pulmonar", correct: false },
-          { label: "C", text: "Derrame pleural", correct: false },
-          { label: "D", text: "Pneumonia atípica", correct: false },
-        ].map((opt) => (
-          <div
-            key={opt.label}
-            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs"
-            style={{
-              background: opt.correct ? "rgba(122,29,145,0.18)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${opt.correct ? "rgba(122,29,145,0.55)" : "rgba(255,255,255,0.06)"}`,
-              color: opt.correct ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.45)",
-            }}
-          >
-            <span
-              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded text-[9px] font-bold"
-              style={{
-                background: opt.correct ? "rgba(122,29,145,0.90)" : "rgba(255,255,255,0.07)",
-                color: opt.correct ? "#fff" : "rgba(255,255,255,0.38)",
-                fontFamily: "var(--font-geist-mono)",
-              }}
-            >
-              {opt.label}
-            </span>
-            <span className="flex-1">{opt.text}</span>
-            {opt.correct && (
-              <span className="text-[9px]" style={{ color: "rgba(200,120,220,0.90)" }}>✓</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function MedVoiceCard() {
-  const bars = [35, 55, 42, 70, 88, 62, 78, 45, 92, 68, 50, 80, 58, 66, 40, 72, 85, 48, 60, 75, 44, 56];
-  const filled = 13;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.50, duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="w-full rounded-2xl p-4 text-left"
-      style={{
-        background: "#12112a",
-        border: "1px solid rgba(122,29,145,0.40)",
-        boxShadow: "0 16px 48px rgba(0,0,0,0.55)",
-      }}
-    >
-      <div className="mb-3">
-        <span
-          className="text-[9px] font-bold uppercase tracking-[0.2em]"
-          style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.38)" }}
-        >
-          MedVoice · Cardiologia
-        </span>
-      </div>
-
-      <div className="mb-3">
-        <div className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.88)" }}>
-          Fibrilação Atrial
-        </div>
-        <div className="mt-0.5 text-[10px]" style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.32)" }}>
-          Áudio 4 de 19 · 4:32
-        </div>
-      </div>
-
-      <div className="mb-2 flex items-end gap-[2px]" style={{ height: 34 }}>
-        {bars.map((h, i) => (
-          <div
-            key={i}
-            className="flex-1 rounded-sm"
-            style={{
-              height: `${h}%`,
-              background: i < filled ? "rgba(122,29,145,0.90)" : "rgba(255,255,255,0.12)",
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="mb-3">
-        <div className="h-0.5 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.10)" }}>
-          <div className="h-full rounded-full" style={{ width: "48%", background: "rgba(122,29,145,0.90)" }} />
-        </div>
-        <div className="mt-1 flex justify-between">
-          <span className="text-[9px]" style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.28)" }}>02:10</span>
-          <span className="text-[9px]" style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.28)" }}>04:32</span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-5">
-        <button style={{ color: "rgba(255,255,255,0.30)" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" /></svg>
-        </button>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: "#7a1d91" }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z" /></svg>
-        </div>
-        <button style={{ color: "rgba(255,255,255,0.30)" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z" /></svg>
-        </button>
-      </div>
-
-      <div className="mt-3 flex gap-1.5">
-        {["Diagnóstico", "Conduta"].map((tag) => (
-          <span
-            key={tag}
-            className="rounded-md px-2 py-0.5 text-[9px] font-medium"
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.09)",
-              color: "rgba(255,255,255,0.40)",
-            }}
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
+/* The old fabricated QuizCard / MedVoiceCard previews were replaced by a real
+   in-hand app screenshot (public/landing/hero-medvoice.webp). */
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -364,7 +209,7 @@ export function HeroSection() {
     <section
       ref={sectionRef}
       id="hero-section"
-      className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-5 pb-16 pt-24 text-center md:px-8"
+      className="relative flex min-h-[100svh] flex-col items-center justify-start overflow-hidden px-5 pb-0 pt-24 text-center md:px-8"
       style={{
         background: "radial-gradient(ellipse 160% 90% at 50% 20%, #140830 0%, #08031a 50%, #020108 100%)",
       }}
@@ -402,7 +247,7 @@ export function HeroSection() {
           className="mb-8 text-xs uppercase tracking-[0.22em]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.32)" }}
         >
-          <SiteText as="span" k="hero.eyebrow" fallback="Prepare-se para o Revalida" />
+          <SiteText as="span" k="hero.eyebrow" fallback="Feito para quem vai revalidar" />
         </motion.div>
 
         <motion.h1
@@ -412,18 +257,40 @@ export function HeroSection() {
           className="max-w-4xl text-[clamp(3rem,7.5vw,6.5rem)] font-black leading-[1.01] tracking-[-0.03em]"
           style={{ fontFamily: "var(--font-bricolage)", color: "#ffffff" }}
         >
-          <SiteText as="span" k="hero.headline" fallback="É um sistema de aprovação." />
+          <SiteText as="span" k="hero.headline" fallback="Você já é médico." />
+          <br />
+          <span style={{ color: "#c084e8" }}>
+            <SiteText as="span" k="hero.headline2" fallback="Falta o Brasil reconhecer." />
+          </span>
         </motion.h1>
 
-        <motion.p
+        <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.20, duration: 0.55 }}
-          className="mt-7 max-w-md text-base leading-relaxed sm:text-lg"
-          style={{ color: "rgba(255,255,255,0.52)" }}
+          className="relative isolate mt-7 w-full max-w-md"
         >
-          <SiteText as="span" multiline k="hero.subhead" fallback="Não é curso. Não é videoaula. É o método que treina o raciocínio que o Revalida cobra." />
-        </motion.p>
+          {/* Soft scrim so the bright ECG trace doesn't cut through this
+              lower-contrast subhead. Sits above the ECG layer (it's inside the
+              z-10 content stack) but behind the text (-z-10 within this isolated
+              wrapper). Tinted to the section's darkest bg tone so it reads as a
+              natural darkening, not a visible box. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[210%] w-[130%] -translate-x-1/2 -translate-y-1/2"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(2,1,8,0.9) 0%, rgba(2,1,8,0.62) 42%, transparent 72%)",
+              filter: "blur(8px)",
+            }}
+          />
+          <p
+            className="text-base leading-relaxed sm:text-lg"
+            style={{ color: "rgba(255,255,255,0.6)", textShadow: "0 1px 12px rgba(2,1,8,0.7)" }}
+          >
+            <SiteText as="span" multiline k="hero.subhead" fallback="Não é curso. Não é videoaula. É o sistema que treina o raciocínio do Revalida — e faz você lembrar dele no dia da prova." />
+          </p>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -454,7 +321,7 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.32, duration: 0.50 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs"
+          className="mt-6 hidden flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs md:flex"
           style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.25)" }}
         >
           <SiteText as="span" k="hero.trust1" fallback="Acesso imediato" />
@@ -464,32 +331,38 @@ export function HeroSection() {
           <SiteText as="span" k="hero.trust3" fallback="Pagamento via PagBank" />
         </motion.div>
 
-        {/* Preview cards — stacked on mobile, staggered side-by-side on sm+ */}
-        <div className="mt-10 flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <div className="hero-card-left w-full max-w-[280px]">
-            <QuizCard />
-          </div>
-          <div className="hero-card-right w-full max-w-[280px]">
-            <MedVoiceCard />
-          </div>
-        </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2" style={{ zIndex: 10 }}>
-        <div
-          className="flex h-10 w-6 items-start justify-center rounded-full border"
-          style={{ borderColor: "rgba(255,255,255,0.12)" }}
+      {/* Real app — MedVoice player in-hand. Kept in NORMAL FLOW (not absolute)
+          as the last flex child, with the SAME treatment at every width so it
+          always cuts at the section break (phone, tablet, desktop alike):
+          - `mt-auto` parks it against the section bottom, soaking up any leftover
+            height — critical on tall tablets where the copy is short and an
+            absolute/fixed-margin phone would leave a big gap above the break.
+          - the img's `translate-y-[15%]` bleeds it past the section edge where
+            `overflow-hidden` clips it, so it reads as going behind the next section.
+          In-flow means the copy can NEVER overlap it, no matter how short the
+          viewport (mobile Safari's url-bar shrinks 100svh) — which is why this
+          replaced the earlier `absolute bottom-0` version that overlapped the CTA. */}
+      <div
+        className="pointer-events-none mt-auto w-[84vw] max-w-[300px] sm:max-w-[360px]"
+        style={{ zIndex: 6 }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 44 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45, duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
         >
-          <div
-            className="mt-2 h-1.5 w-1 rounded-full"
-            style={{
-              background: "rgba(255,255,255,0.25)",
-              animation: "lp-scroll-dot 1.8s cubic-bezier(0.45,0,0.55,1) infinite",
-            }}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/landing/hero-medvoice.webp"
+            alt="MedHelpSpace no celular — player MedVoice em tela cheia"
+            className="block w-full translate-y-[15%]"
+            style={{ height: "auto", filter: "drop-shadow(0 6px 40px rgba(0,0,0,0.5))" }}
           />
-        </div>
+        </motion.div>
       </div>
+
     </section>
   );
 }

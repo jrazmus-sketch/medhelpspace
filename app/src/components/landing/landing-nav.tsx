@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useTheme } from "@/components/theme/theme-provider";
 import { useAuth } from "@/providers/auth-provider";
 
 export function LandingNav({ embedded = false }: { embedded?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
-  const { resolvedTheme, setTheme } = useTheme();
   // Auth state is read client-side (getSession reads the cookie locally) so these
   // ISR-cached public pages stay static. A logged-in visitor must never be shown a
   // plain "Entrar" link: /login redirects authenticated users to /app, and a
@@ -51,23 +49,6 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
         </Link>
 
         <div className="flex items-center gap-4">
-          <button
-            aria-label="Alternar tema"
-            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors"
-            style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
-          >
-            {resolvedTheme === "dark" ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-              </svg>
-            ) : (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
-          </button>
-
           {loggedIn ? (
             <>
               {/* Full navigation (not Next <Link>) — /auth/signout is a route handler

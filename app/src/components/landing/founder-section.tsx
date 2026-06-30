@@ -60,9 +60,9 @@ export function FounderSection() {
           {/* Stat row */}
           <div className="mt-8 grid grid-cols-3 gap-4 text-center">
             {[
-              { value: "12", label: "especialidades cobertas" },
-              { value: "220+", label: "aulas com raciocínio clínico" },
-              { value: "3.506", label: "flashcards de fixação" },
+              { value: "17", label: "especialidades cobertas" },
+              { value: "2.528", label: "questões comentadas" },
+              { value: "5.140", label: "flashcards de fixação" },
             ].map((stat) => (
               <div key={stat.label}>
                 <div

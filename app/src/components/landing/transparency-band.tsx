@@ -1,0 +1,46 @@
+"use client";
+
+import { useReveal } from "@/hooks/use-reveal";
+import { SiteText } from "./site-text";
+
+/* Transparency band — attacks the market's universal wound (auto-renew traps,
+   surprise installments, hidden prices). Framed as fairness, not cheapness. */
+export function TransparencyBand() {
+  const ref = useReveal(0.14);
+
+  const points = [
+    { k: "transp.p1", fallback: "Sem mensalidade e sem renovação automática" },
+    { k: "transp.p2", fallback: "Sem “segunda parcela” que aparece um ano depois" },
+    { k: "transp.p3", fallback: "Sem preço escondido atrás de um consultor" },
+    { k: "transp.p4", fallback: "7 dias para testar tudo e pedir reembolso, sem justificar" },
+  ];
+
+  return (
+    <section
+      className="px-5 py-24 md:px-8 md:py-28"
+      style={{ background: "var(--lp-alt)", borderTop: "1px solid var(--lp-border)" }}
+    >
+      <div ref={ref} className="lp-reveal mx-auto max-w-2xl text-center">
+        <div className="mb-8 text-[10px] uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
+          <SiteText as="span" k="transp.eyebrow" fallback="Sem pegadinha" />
+        </div>
+        <h2 className="text-[clamp(2rem,4.6vw,3.4rem)] font-black leading-[1.07] tracking-[-0.025em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>
+          <SiteText as="span" multiline k="transp.headline" fallback="Uma compra. Sem mensalidade. Sem surpresa no cartão." />
+        </h2>
+
+        <ul className="mx-auto mt-10 flex max-w-md flex-col gap-3 text-left">
+          {points.map((p) => (
+            <li key={p.k} className="flex items-start gap-3 text-sm sm:text-base" style={{ color: "var(--lp-fg-55)" }}>
+              <span className="mt-0.5 flex-shrink-0 font-bold" style={{ color: "var(--brand)" }}>✓</span>
+              <SiteText as="span" k={p.k} fallback={p.fallback} />
+            </li>
+          ))}
+        </ul>
+
+        <p className="mx-auto mt-10 max-w-md text-sm leading-relaxed" style={{ color: "var(--lp-fg-40)" }}>
+          <SiteText as="span" multiline k="transp.stakes" fallback="A prova já custa R$4.516 em taxas do INEP. Reprovar e refazer a 2ª etapa custa outros R$4.106. Do lado dessa conta, a preparação certa é o item mais barato — e o único que muda o resultado." />
+        </p>
+      </div>
+    </section>
+  );
+}
