@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { Headphones } from "lucide-react";
 import { recordFlashcardAttempt } from "@/actions/flashcard-attempts";
 import { updateFlashcardSM2 } from "@/actions/flashcard-sm2";
 import { safe } from "@/lib/sanitize";
 import { EditableText } from "@/components/admin/editable-text";
+import { SiteText } from "@/components/landing/site-text";
 
 export interface FlashCard {
   id: number;
@@ -38,6 +40,8 @@ interface Props {
   nextDeckTitle: string | null;
   specialtyHref: string;
   specialtyName: string;
+  /** Passive nudge to this specialty's audiocards page on the deck-done summary. Null = none. */
+  audiocardsHref?: string | null;
 }
 
 export function FlashcardPlayer({
@@ -52,6 +56,7 @@ export function FlashcardPlayer({
   nextDeckTitle,
   specialtyHref,
   specialtyName,
+  audiocardsHref = null,
 }: Props) {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [groupIdx, setGroupIdx] = useState(0);
@@ -291,6 +296,36 @@ export function FlashcardPlayer({
             </Link>
           </div>
         </div>
+
+        {/* Passive AudioCards nudge — optional aid, reached AROUND the flashcard
+            loop. Not a review item, not the thing that "finishes" the deck. */}
+        {audiocardsHref && (
+          <div className="rounded-xl border border-border bg-surface-1 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                <Headphones size={18} strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground">
+                  <SiteText k="audiocards.nudge.title" fallback="Fixe ouvindo" />
+                </p>
+                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                  <SiteText
+                    k="audiocards.nudge.body"
+                    fallback="Os mesmos cartões em áudio, para revisar de novo — no trânsito, na academia, sem olhar a tela."
+                  />
+                </p>
+              </div>
+            </div>
+            <Link
+              href={audiocardsHref}
+              className="mt-3 flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-brand/30 bg-brand/5 px-4 text-xs font-semibold text-brand transition-colors hover:bg-brand/10"
+            >
+              Ouvir AudioCards de {specialtyName}
+              <span aria-hidden>→</span>
+            </Link>
+          </div>
+        )}
       </div>
     );
   }

@@ -14,6 +14,8 @@ import { WelcomeCard } from "@/components/onboarding/welcome-card";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 import { get60dAccess } from "@/lib/medhelp-60d";
+import { getAudiocardsPlaylist } from "@/lib/audiocards/discovery";
+import { SiteText } from "@/components/landing/site-text";
 import type { Cohort } from "@/types/supabase";
 
 type StudyType = {
@@ -376,6 +378,10 @@ export default async function MemberDashboardPage() {
 
   // Derived study plan (from study_plans preferences + signals)
   const derivedPlan = user ? await getDerivedPlanForUser(user.id) : null;
+
+  // Passive audio playlist — audiocards for the specialties studied in flashcards
+  // recently. A standing card (never a notification), kept separate from the plan.
+  const audiocardsPlaylist = user ? await getAudiocardsPlaylist(user.id) : [];
 
   // Daily plan signals — derived from today's quiz + lesson activity
   const todayKey = new Date().toISOString().split("T")[0];
@@ -850,6 +856,76 @@ export default async function MemberDashboardPage() {
           })}
         </div>
       </div>
+
+      {/* ── REVISÃO PASSIVA EM ÁUDIO — standing playlist (not a notification) ──
+           Surfaces audiocards for the specialties studied in flashcards recently.
+           A passive aid reached AROUND the study loop — never the thing that
+           completes the day, never a review item. */}
+      {audiocardsPlaylist.length > 0 && (
+        <div style={{ marginTop: "clamp(28px, 5vw, 48px)", paddingTop: 20, borderTop: "1px solid var(--surface-2)" }}>
+          <div style={{ marginBottom: 16, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={LABEL_STYLE}>
+                <SiteText as="span" k="audiocards.playlist.title" fallback="Revisão passiva em áudio" />
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: 13.5, color: "var(--muted-foreground)", maxWidth: "54ch", lineHeight: 1.5 }}>
+                <SiteText
+                  as="span"
+                  k="audiocards.playlist.subtitle"
+                  fallback="Os temas que você estudou nos flashcards, agora em áudio — para fixar no trânsito ou na academia. É só ouvir."
+                />
+              </p>
+            </div>
+            <Link
+              href="/app/audiocards"
+              style={{ fontSize: 13, color: "var(--muted-foreground)", textDecoration: "none", flexShrink: 0 }}
+              className="hover:text-foreground transition-colors"
+            >
+              Ver tudo →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {audiocardsPlaylist.map((item) => (
+              <Link
+                key={item.pageId}
+                href={item.href}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  background: "var(--surface-1)", borderRadius: "var(--radius)",
+                  padding: "14px 16px", textDecoration: "none",
+                  outline: "1px solid var(--surface-2)", outlineOffset: "-1px",
+                  minHeight: 44,
+                }}
+                className="hover:bg-surface-2 transition-colors"
+              >
+                <span style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 38, height: 38, borderRadius: 9, flexShrink: 0,
+                  background: "color-mix(in srgb, var(--c-audiocards) 16%, transparent)",
+                  color: "var(--c-audiocards)",
+                }}>
+                  <Headphones size={18} strokeWidth={1.8} />
+                </span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-.01em", color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.specialtyName}
+                  </div>
+                  <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ flex: 1, height: 3, background: "var(--surface-3)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${item.pctListened}%`, background: "var(--c-audiocards)", borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 11, color: "var(--muted-foreground)", fontFamily: "var(--font-geist-mono)", flexShrink: 0 }}>
+                      {item.pctListened > 0 ? `${item.pctListened}% ouvido` : "Ouvir"}
+                    </span>
+                  </div>
+                </div>
+                <span aria-hidden style={{ color: "var(--c-audiocards)", fontSize: 13, flexShrink: 0 }}>▶</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── ESTUDE POR ESPECIALIDADE ── */}
       <div style={{ marginTop: "clamp(28px, 5vw, 48px)", paddingTop: 20, borderTop: "1px solid var(--surface-2)" }}>

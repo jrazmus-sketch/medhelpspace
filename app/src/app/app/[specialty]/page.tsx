@@ -7,7 +7,8 @@ import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer
 import { TrackHubRenderer } from "@/components/content/track-hub-renderer";
 import { ViewHubRenderer } from "@/components/content/view-hub-renderer";
 import { buildCrumbsForPage, type Crumb } from "@/lib/breadcrumbs";
-import { STUDY_TYPE_CONFIG, type StudyTypeConfig, type StudyTypeKey } from "@/lib/page-type";
+import { STUDY_TYPE_CONFIG, getStudyTypeKey, type StudyTypeConfig, type StudyTypeKey } from "@/lib/page-type";
+import { SiteText } from "@/components/landing/site-text";
 import { getStudyTypeOverrides } from "@/lib/queries/study-types";
 import { TypeChip } from "@/components/content/type-chip";
 import { EditableText } from "@/components/admin/editable-text";
@@ -68,6 +69,14 @@ export default async function SpecialtyHubPage({
 
     if (!body) notFound();
 
+    // AudioCards hub gets a "revisão passiva" label so students read it as an
+    // optional listening aid, not an active-recall section (the Flashcards are).
+    const hubTypeKey = getStudyTypeKey({
+      view: page.view,
+      track_id: page.track_id,
+      content_module_id: page.content_module_id,
+    });
+
     // Top-level type hub (no specialty) → buildCrumbsForPage emits
     // [Início, <Type root terminal>]. Voltar falls back to /app.
     const crumbs: Crumb[] = buildCrumbsForPage({
@@ -89,6 +98,15 @@ export default async function SpecialtyHubPage({
             </h1>
             <TypeChip page={page} withHelp />
           </div>
+          {hubTypeKey === "audiocards" && (
+            <p className="mt-2.5 max-w-prose text-sm leading-relaxed text-muted-foreground">
+              <SiteText
+                as="span"
+                k="audiocards.hub.intro"
+                fallback="Revisão passiva: os mesmos cartões dos Flashcards, agora em áudio — ouça no trânsito, na academia, onde quiser. Quem agenda a sua revisão espaçada são os Flashcards."
+              />
+            </p>
+          )}
         </header>
         <Coachmark coachKey="type-hub" />
         {body}

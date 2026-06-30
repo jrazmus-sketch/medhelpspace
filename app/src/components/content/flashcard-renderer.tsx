@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getPageSiblings } from "@/lib/page-siblings";
+import { getAudiocardsSlugForSpecialty } from "@/lib/audiocards/discovery";
 import { FlashcardPlayer } from "./flashcard-player";
 import type { CardGroup } from "./flashcard-player";
 import { FlashcardHub } from "./flashcard-hub";
@@ -78,10 +79,13 @@ export async function FlashcardRenderer({
             .in("item_id", cardIds),
           userClient
             .from("flashcard_attempts")
-            .select("flashcard_item_id, result, created_at")
+            // Column is `attempted_at` (NOT created_at). Selecting/ordering by a
+            // non-existent column makes PostgREST return null → the per-group
+            // accuracy stats silently went empty in prod. Fixed.
+            .select("flashcard_item_id, result, attempted_at")
             .eq("user_id", user.id)
             .in("flashcard_item_id", cardIds)
-            .order("created_at", { ascending: false }),
+            .order("attempted_at", { ascending: false }),
         ]);
         for (const p of progress ?? []) {
           progressByCard.set(p.item_id as number, {
@@ -222,6 +226,13 @@ export async function FlashcardRenderer({
   const nextGroup = groups.length > 1 && idx < groups.length - 1 ? groups[idx + 1] : null;
   const hasGrid = groups.length > 1;
 
+  // Passive AudioCards nudge for the deck-done summary: the same cards in audio,
+  // for the specialty just studied. Reaches AROUND the flashcard loop — never a
+  // plan task, never a review item. Null when this specialty has no audiocards page.
+  const { data: pageRow } = await supabase.from("pages").select("specialty_id").eq("id", pageId).single();
+  const audiocardsSlug = await getAudiocardsSlugForSpecialty((pageRow?.specialty_id as number | null) ?? null);
+  const audiocardsHref = audiocardsSlug ? `/app/${specialtySlug}/${audiocardsSlug}` : null;
+
   return (
     <FlashcardPlayer
       groups={[selectedGroup]}
@@ -237,6 +248,7 @@ export async function FlashcardRenderer({
       nextDeckTitle={siblings.nextTitle}
       specialtyHref={siblings.specialtyHref}
       specialtyName={siblings.specialtyName}
+      audiocardsHref={audiocardsHref}
     />
   );
 }

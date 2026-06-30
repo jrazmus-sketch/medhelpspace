@@ -136,7 +136,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "audiocards",
     title: "Como funcionam os AudioCards",
     body:
-      "São os mesmos cartões dos **Flashcards**, agora em áudio: ouça a pergunta e a resposta de cada tema sem precisar olhar a tela. Toque em **Transcrição do áudio** para ler junto; avance e volte 15s pelos controles.",
+      "São os mesmos cartões dos **Flashcards**, agora em áudio: ouça a pergunta e a resposta de cada tema sem precisar olhar a tela. Toque em **Transcrição do áudio** para ler junto; avance e volte 15s pelos controles. Sugerimos os áudios da especialidade logo depois das suas sessões de flashcards e no seu painel — é um apoio opcional, é só ouvir, sem marcar nada.",
     reviewNote:
       "Os AudioCards são só para escuta — quem agenda a **Revisão** espaçada é o mesmo tema nos **Flashcards**.",
     href: "/app/audiocards",
