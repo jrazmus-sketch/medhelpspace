@@ -15,7 +15,14 @@
     "billing": "Billing",
     "notasFiscais": "Invoices",
     "coupons": "Coupons",
-    "support": "Support"
+    "support": "Support",
+    "menu": "Menu",
+    "group": {
+      "content": "Content",
+      "people": "People",
+      "commerce": "Commerce",
+      "system": "System"
+    }
   },
   "support": {
     "title": "Support",

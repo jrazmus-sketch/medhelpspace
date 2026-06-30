@@ -15,7 +15,14 @@
     "billing": "Financeiro",
     "notasFiscais": "Notas Fiscais",
     "coupons": "Cupons",
-    "support": "Suporte"
+    "support": "Suporte",
+    "menu": "Menu",
+    "group": {
+      "content": "Conteúdo",
+      "people": "Pessoas",
+      "commerce": "Comercial",
+      "system": "Sistema"
+    }
   },
   "support": {
     "title": "Suporte",
