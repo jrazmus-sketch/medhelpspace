@@ -30,8 +30,8 @@ const FEATURES: Feature[] = [
     body: "Questões no estilo INEP com comentário em cada alternativa — a pegadinha, o raciocínio e a conduta que marca ponto. Refaça só as que errou até dominar.",
     result: "Você treina o que cai, do jeito que cai — e ganha segurança.",
     color: "var(--c-questoes)",
-    shot: "/landing/shot-questoes-comentario.webp",
-    alt: "Tela de questão respondida, com a alternativa correta e o comentário.",
+    shot: "/landing/shot-questoes-ecg.webp",
+    alt: "Tela de uma questão de cardiologia com ECG e enunciado no estilo Revalida.",
   },
   {
     num: "02",
