@@ -5,8 +5,9 @@ import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { updateQuizQuestions } from "@/actions/admin";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
-import { AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus, ClipboardPaste } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { parseQuizText, type ParseResult } from "@/lib/quiz-bulk-parse";
 import type { QuizQuestionRow } from "./page";
 import type { SectionEditorHandle } from "./section-editor-handle";
 
@@ -46,6 +47,42 @@ export const QuizEditor = forwardRef<
     })),
   );
   const [error, setError] = useState<string | null>(null);
+
+  // ── Bulk paste ──────────────────────────────────────────────────────────────
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
+  const [preview, setPreview] = useState<ParseResult | null>(null);
+  const warningCount = preview ? preview.questions.filter((q) => q.warning).length : 0;
+
+  function handleParse() {
+    setPreview(parseQuizText(bulkText));
+  }
+
+  function handleClearBulk() {
+    setBulkText("");
+    setPreview(null);
+  }
+
+  function handleAddParsed() {
+    if (!preview || preview.questions.length === 0) return;
+    setDrafts((prev) => {
+      let maxPos = prev.reduce((m, q) => Math.max(m, q.position), 0);
+      const added = preview.questions.map((q) => ({
+        id: null,
+        question: q.question,
+        answers: q.answers.length > 0 ? q.answers : [emptyAnswer(), emptyAnswer()],
+        media_url: q.media_url,
+        explanation_html: q.explanation_html,
+        position: ++maxPos,
+        // Expand only the ones needing a manual correct-answer tick so they stand out.
+        open: q.warning,
+      }));
+      return [...prev, ...added];
+    });
+    setBulkText("");
+    setPreview(null);
+    setBulkOpen(false);
+  }
 
   function addQuestion() {
     const maxPos = drafts.reduce((m, q) => Math.max(m, q.position), 0);
@@ -136,6 +173,126 @@ export const QuizEditor = forwardRef<
           {t("quizEditor.title")}
         </h2>
         <span className="text-xs text-muted-foreground">{drafts.length}</span>
+      </div>
+
+      {/* Bulk paste — auto-format a batch of Revalida-format questions at once */}
+      <div className="px-5 py-4">
+        <button
+          type="button"
+          onClick={() => setBulkOpen((o) => !o)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <ClipboardPaste className="h-4 w-4 text-brand" />
+            {t("quizEditor.bulkTitle")}
+          </span>
+          {bulkOpen ? (
+            <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+        </button>
+
+        {bulkOpen && (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs leading-relaxed text-muted-foreground">{t("quizEditor.bulkHint")}</p>
+            <textarea
+              id="quiz-bulk-paste"
+              name="quiz-bulk-paste"
+              aria-label={t("quizEditor.bulkTitle")}
+              value={bulkText}
+              onChange={(e) => {
+                setBulkText(e.target.value);
+                setPreview(null);
+              }}
+              placeholder={t("quizEditor.bulkPlaceholder")}
+              rows={10}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed outline-none focus:border-brand/60"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleParse}
+                disabled={!bulkText.trim()}
+                className="rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-40"
+              >
+                {t("quizEditor.bulkParse")}
+              </button>
+              {bulkText.trim() && (
+                <button
+                  type="button"
+                  onClick={handleClearBulk}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {t("quizEditor.bulkClear")}
+                </button>
+              )}
+            </div>
+
+            {preview && (
+              <div className="space-y-3 rounded-lg border border-border bg-surface-2 p-3">
+                <div className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium text-foreground">
+                    {t("quizEditor.bulkRecognized", { count: preview.questions.length })}
+                  </span>
+                  {warningCount > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      ⚠ {t("quizEditor.bulkNeedsReview", { count: warningCount })}
+                    </span>
+                  )}
+                  {preview.errors.length > 0 && (
+                    <span className="text-xs text-destructive">
+                      {t("quizEditor.bulkSkipped", { count: preview.errors.length })}
+                    </span>
+                  )}
+                </div>
+
+                {preview.questions.length > 0 && (
+                  <ol className="space-y-1 text-xs text-muted-foreground">
+                    {preview.questions.map((q, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="shrink-0 tabular-nums">{i + 1}.</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {stripHtml(q.question).slice(0, 90) || t("quizEditor.noPrompt")}
+                          {q.warning && (
+                            <span className="ml-1" title={t("quizEditor.bulkWarnTip")}>⚠</span>
+                          )}
+                          {q.needsImage && (
+                            <span className="ml-1" title={t("quizEditor.bulkImageHint")}>🖼️</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                {preview.errors.length > 0 && (
+                  <ul className="space-y-1 text-xs text-destructive">
+                    {preview.errors.map((er, i) => (
+                      <li key={i}>
+                        {er.number ? `Questão ${er.number}: ` : ""}
+                        {er.reason}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {preview.questions.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleAddParsed}
+                    className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-brand-fg transition-opacity hover:opacity-90"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    {t("quizEditor.bulkAdd", { count: preview.questions.length })}
+                  </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{t("quizEditor.bulkEmpty")}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {drafts.length === 0 && (

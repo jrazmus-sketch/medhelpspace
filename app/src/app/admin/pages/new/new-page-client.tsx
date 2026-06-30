@@ -7,9 +7,15 @@ import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { AlertCircle, Check, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createPage, checkSlugAvailable } from "@/actions/admin";
+import { createPage, checkSlugAvailable, updateQuizQuestions } from "@/actions/admin";
 import { PAGE_TEMPLATES, type PageTemplate } from "@/lib/page-templates";
+import { parseQuizText, type ParseResult } from "@/lib/quiz-bulk-parse";
 import type { SpecialtyOption, TrackOption, ModuleOption } from "./page";
+
+// Plain regex strip — safe and works in both Node and browser.
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
+}
 
 const PAGE_VIEWS = [
   "hub",
@@ -53,7 +59,7 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [tile, setTile] = useState<PageTemplate | null>(null);
 
   const [title, setTitle] = useState("");
@@ -70,6 +76,15 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Optional quiz bulk-paste step (only for h5p-quiz tiles).
+  const [bulkText, setBulkText] = useState("");
+  const [preview, setPreview] = useState<ParseResult | null>(null);
+
+  const isQuiz = tile?.dbType === "h5p-quiz";
+  const totalSteps = isQuiz ? 3 : 2;
+  const parsedCount = preview?.questions.length ?? 0;
+  const warningCount = preview ? preview.questions.filter((q) => q.warning).length : 0;
 
   // When the title changes and the user hasn't manually edited the slug, derive it.
   useEffect(() => {
@@ -110,6 +125,9 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
     if (t.defaultView) setView(t.defaultView);
     else setView("");
     if (t.forceTrackId !== null) setTrackId(t.forceTrackId);
+    // Reset any quiz bulk-paste from a previously-selected tile.
+    setBulkText("");
+    setPreview(null);
     setStep(2);
   }
 
@@ -121,13 +139,14 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
       tile.dbType === "h5p-quiz" ||
       tile.dbType === "blurb-nav-hub");
 
-  const canSubmit =
+  const metadataValid =
     !!tile &&
     title.trim().length > 0 &&
     slug.length > 0 &&
     slugState.status === "available" &&
-    (!isSpecialtyRequired || specialtyId !== "") &&
-    !submitting;
+    (!isSpecialtyRequired || specialtyId !== "");
+
+  const canSubmit = metadataValid && !submitting;
 
   async function handleSubmit() {
     if (!tile || !canSubmit) return;
@@ -154,6 +173,25 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
         setSubmitting(false);
         return;
       }
+      // Persist any bulk-pasted quiz questions (best-effort — the page already
+      // exists, so on failure we still land on the editor where they can re-paste).
+      if (isQuiz && preview && preview.questions.length > 0) {
+        try {
+          await updateQuizQuestions(
+            result.id,
+            preview.questions.map((q, i) => ({
+              id: null,
+              question: q.question,
+              answers: q.answers,
+              media_url: q.media_url || null,
+              explanation_html: q.explanation_html || null,
+              position: i + 1,
+            })),
+          );
+        } catch {
+          /* non-fatal: questions can be re-pasted on the edit screen */
+        }
+      }
       router.push(`/admin/pages/${result.id}/edit`);
     } catch {
       setSubmitError(t("pageNew.errorCreate"));
@@ -175,7 +213,7 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
           <h1 className="text-2xl font-bold">{t("pageNew.title")}</h1>
         </div>
         <span className="text-sm text-muted-foreground" aria-live="polite">
-          {t("pageNew.stepOf", { current: step, total: 2 })}
+          {t("pageNew.stepOf", { current: step, total: totalSteps })}
         </span>
       </div>
 
@@ -448,6 +486,157 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
               {t("pageNew.back")}
             </button>
 
+            {isQuiz ? (
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                disabled={!metadataValid}
+                className={cn(
+                  "rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg transition-opacity",
+                  metadataValid ? "hover:opacity-90" : "opacity-50 cursor-not-allowed",
+                )}
+              >
+                {t("pageNew.next")}
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                {submitError && (
+                  <span className="flex items-center gap-1.5 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    {submitError}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={!canSubmit}
+                  className={cn(
+                    "rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-brand-fg transition-opacity",
+                    canSubmit ? "hover:opacity-90" : "opacity-50 cursor-not-allowed",
+                  )}
+                >
+                  {submitting ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      {t("pageNew.creating")}
+                    </span>
+                  ) : (
+                    t("pageNew.submit")
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Step 3 — optional quiz bulk-paste (quiz pages only) */}
+      {step === 3 && tile && isQuiz && (
+        <div className="space-y-5">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">{t("pageNew.step3Title")}</h2>
+            <p className="text-sm text-muted-foreground">{t("pageNew.step3Help")}</p>
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-border bg-surface-1 p-5">
+            <p className="text-xs leading-relaxed text-muted-foreground">{t("quizEditor.bulkHint")}</p>
+            <textarea
+              id="np-bulk-questions"
+              name="np-bulk-questions"
+              aria-label={t("pageNew.step3Title")}
+              value={bulkText}
+              onChange={(e) => {
+                setBulkText(e.target.value);
+                setPreview(null);
+              }}
+              placeholder={t("quizEditor.bulkPlaceholder")}
+              rows={12}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs leading-relaxed outline-none focus:border-brand/60"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setPreview(parseQuizText(bulkText))}
+                disabled={!bulkText.trim()}
+                className="rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-brand/50 disabled:pointer-events-none disabled:opacity-40"
+              >
+                {t("quizEditor.bulkParse")}
+              </button>
+              {bulkText.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkText("");
+                    setPreview(null);
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {t("quizEditor.bulkClear")}
+                </button>
+              )}
+            </div>
+
+            {preview && (
+              <div className="space-y-3 rounded-lg border border-border bg-surface-2 p-3">
+                <div className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium text-foreground">
+                    {t("quizEditor.bulkRecognized", { count: preview.questions.length })}
+                  </span>
+                  {warningCount > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      ⚠ {t("quizEditor.bulkNeedsReview", { count: warningCount })}
+                    </span>
+                  )}
+                  {preview.errors.length > 0 && (
+                    <span className="text-xs text-destructive">
+                      {t("quizEditor.bulkSkipped", { count: preview.errors.length })}
+                    </span>
+                  )}
+                </div>
+
+                {preview.questions.length > 0 && (
+                  <ol className="space-y-1 text-xs text-muted-foreground">
+                    {preview.questions.map((q, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="shrink-0 tabular-nums">{i + 1}.</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {stripHtml(q.question).slice(0, 90) || t("quizEditor.noPrompt")}
+                          {q.warning && (
+                            <span className="ml-1" title={t("quizEditor.bulkWarnTip")}>⚠</span>
+                          )}
+                          {q.needsImage && (
+                            <span className="ml-1" title={t("quizEditor.bulkImageHint")}>🖼️</span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                {preview.errors.length > 0 && (
+                  <ul className="space-y-1 text-xs text-destructive">
+                    {preview.errors.map((er, i) => (
+                      <li key={i}>
+                        {er.number ? `Questão ${er.number}: ` : ""}
+                        {er.reason}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Footer actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="rounded-lg border border-border bg-surface-1 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t("pageNew.back")}
+            </button>
+
             <div className="flex items-center gap-3">
               {submitError && (
                 <span className="flex items-center gap-1.5 text-sm text-destructive">
@@ -469,6 +658,8 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     {t("pageNew.creating")}
                   </span>
+                ) : parsedCount > 0 ? (
+                  t("pageNew.submitWithQuestions", { count: parsedCount })
                 ) : (
                   t("pageNew.submit")
                 )}
