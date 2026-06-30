@@ -296,18 +296,31 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.27, duration: 0.50 }}
-          className="mt-10 flex flex-col items-center gap-3 sm:flex-row"
+          className="mt-10 flex w-full flex-col items-center gap-4"
         >
-          <Link
-            href="/loja"
-            className="rounded-xl px-8 py-4 text-base font-bold text-white transition-all hover:opacity-85 hover:-translate-y-px active:scale-95"
-            style={{
-              background: "var(--brand)",
-              boxShadow: "0 0 40px rgba(122,29,145,0.45)",
-            }}
-          >
-            <SiteText as="span" k="hero.cta" fallback="Comprar Agora →" />
-          </Link>
+          <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
+            <Link
+              href="/loja"
+              className="w-full rounded-xl px-8 py-4 text-center text-base font-bold text-white transition-all hover:opacity-85 hover:-translate-y-px active:scale-95 sm:w-auto"
+              style={{
+                background: "var(--brand)",
+                boxShadow: "0 0 40px rgba(122,29,145,0.45)",
+              }}
+            >
+              <SiteText as="span" k="hero.cta" fallback="Comprar Agora →" />
+            </Link>
+            {/* Secondary, lower-commitment door for cold/skeptical traffic: the free
+                sample test. utm_source=site separates these organic-homepage leads
+                from paid-ad leads (which carry utm_source=google/etc.) in the leads
+                table — the magnet page already plumbs UTM straight into the row. */}
+            <Link
+              href="/simulado-honesto?utm_source=site&utm_medium=hero&utm_campaign=home"
+              className="w-full rounded-xl border px-8 py-4 text-center text-base font-semibold text-white transition-all hover:-translate-y-px hover:bg-white/5 active:scale-95 sm:w-auto"
+              style={{ borderColor: "rgba(255,255,255,0.22)" }}
+            >
+              <SiteText as="span" k="hero.cta_free" fallback="Fazer o simulado grátis" />
+            </Link>
+          </div>
           <a
             href="#features"
             className="text-sm font-medium transition-colors"

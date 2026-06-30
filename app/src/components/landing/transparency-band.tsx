@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useReveal } from "@/hooks/use-reveal";
 import { SiteText } from "./site-text";
 
@@ -52,6 +53,27 @@ export function TransparencyBand() {
             fallback="Transparência total: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria reprova. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte."
           />
         </p>
+
+        {/* "Prove it yourself" — the same honesty promise, made testable. Lands
+            here because the section is already about having nothing to hide.
+            utm_medium=transparencia tags this placement so we can see which
+            on-page door drove each lead. */}
+        <div className="mt-12 border-t pt-10" style={{ borderColor: "var(--lp-border)" }}>
+          <Link
+            href="/simulado-honesto?utm_source=site&utm_medium=transparencia&utm_campaign=home"
+            className="inline-block rounded-xl px-7 py-3.5 text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-px active:scale-95"
+            style={{ background: "var(--brand)", boxShadow: "0 0 32px rgba(122,29,145,0.35)" }}
+          >
+            <SiteText as="span" k="transp.cta" fallback="Não acredita? Faça o simulado honesto →" />
+          </Link>
+          <p className="mt-3 text-xs" style={{ color: "var(--lp-fg-40)" }}>
+            <SiteText
+              as="span"
+              k="transp.cta_sub"
+              fallback="15 questões comentadas da 1ª etapa. As 5 primeiras sem nem pedir e-mail."
+            />
+          </p>
+        </div>
       </div>
     </section>
   );
