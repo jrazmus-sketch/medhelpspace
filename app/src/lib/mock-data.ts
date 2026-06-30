@@ -59,6 +59,8 @@ export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
     priceCents: 399000,
     priceLabel: "R$ 3.990",
     displayOrder: 1,
+    testDate: "2026-09-15",
+    unlock60dDate: "2026-07-15",
   },
   {
     id: 2,
@@ -67,6 +69,8 @@ export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
     priceCents: 499000,
     priceLabel: "R$ 4.990",
     displayOrder: 2,
+    testDate: "2027-01-15",
+    unlock60dDate: "2026-11-16",
   },
 ];
 

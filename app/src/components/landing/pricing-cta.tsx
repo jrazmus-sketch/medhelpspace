@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { Check } from "lucide-react";
+import { Check, Clock, Lock, Unlock } from "lucide-react";
 import type { CohortProduct } from "@/types/supabase";
+import { getCohortTiming, defaultCohortTagline } from "@/lib/cohort-timing";
 import { SiteText } from "./site-text";
 
+// The generic 60D feature line states the rule ("liberado 60 dias antes"); the
+// selected turma's live unlock status is shown separately below the price.
 const INCLUDED = [
   "Estudo por Questões",
   "Resumos Narrativos",
@@ -22,6 +25,9 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
   const ref = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState(0);
   const cohort = cohorts[selected] ?? cohorts[0];
+  // Date-driven copy for the selected turma; recomputed client-side each render
+  // so the countdown / 60D status is always current (the page itself is ISR).
+  const timing = cohort ? getCohortTiming(cohort) : null;
 
   useEffect(() => {
     const el = ref.current;
@@ -144,6 +150,23 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
             </div>
           )}
 
+          {/* Exam countdown chip for the selected turma (urgent = brand-tinted) */}
+          {timing?.examChip && (
+            <div className="mb-3">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
+                style={
+                  timing.examChip.urgent
+                    ? { background: "var(--lp-glow)", color: "var(--brand)" }
+                    : { border: "1px solid var(--lp-border)", color: "var(--lp-fg-40)" }
+                }
+              >
+                <Clock className="h-3 w-3" />
+                {timing.examChip.text}
+              </span>
+            </div>
+          )}
+
           {/* Price — animates on cohort switch */}
           <div className="mb-1 overflow-hidden">
             <AnimatePresence mode="wait">
@@ -160,9 +183,39 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
               </motion.div>
             </AnimatePresence>
           </div>
-          <div className="mb-8 text-xs" style={{ color: "var(--lp-fg-25)" }}>
+          <div className="mb-5 text-xs" style={{ color: "var(--lp-fg-25)" }}>
             <SiteText as="span" k="pricing.installments" fallback="ou parcele em até 12x no cartão" />
           </div>
+
+          {/* Per-turma tagline (editable per slug; honest time-tradeoff default) +
+              live MedHelp 60D status for the selected turma. */}
+          {timing && (
+            <div className="mb-8 flex flex-col gap-3">
+              <p className="text-sm leading-relaxed" style={{ color: "var(--lp-fg-55)" }}>
+                <SiteText
+                  as="span"
+                  multiline
+                  k={`pricing.tagline.${cohort.slug}`}
+                  fallback={defaultCohortTagline(timing)}
+                />
+              </p>
+              <span
+                className="inline-flex items-center gap-2 self-start rounded-lg px-3 py-1.5 text-sm font-semibold"
+                style={{
+                  border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
+                  background: "var(--lp-glow)",
+                  color: "var(--brand)",
+                }}
+              >
+                {timing.is60dUnlocked ? (
+                  <Unlock className="h-4 w-4 shrink-0" />
+                ) : (
+                  <Lock className="h-4 w-4 shrink-0" />
+                )}
+                {timing.unlock60dLabel}
+              </span>
+            </div>
+          )}
 
           {/* Feature list */}
           <ul className="mb-8 flex flex-col gap-2.5">

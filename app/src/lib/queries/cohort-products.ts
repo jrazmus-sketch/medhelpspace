@@ -25,13 +25,39 @@ export function formatBRL(cents: number): string {
 
 const PRODUCT_COLUMNS = "id, slug, name, price_cents, display_order";
 
+// Storefront columns also pull test_date and the per-cohort MedHelp 60D unlock
+// date (embedded from cohort_module_access) so the loja/landing cards can render
+// the date-driven countdown + 60D status. Checkout/charge use PRODUCT_COLUMNS
+// (no timing needed), so toCohortProduct coalesces the timing fields to null.
+const SALE_COLUMNS =
+  "id, slug, name, price_cents, display_order, test_date, " +
+  "cohort_module_access ( unlock_date, content_modules ( slug ) )";
+
+type ModuleAccessRow = {
+  unlock_date: string | null;
+  content_modules: { slug: string } | { slug: string }[] | null;
+};
+
 type CohortRow = {
   id: number;
   slug: string;
   name: string;
   price_cents: number | null;
   display_order: number | null;
+  test_date?: string | null;
+  cohort_module_access?: ModuleAccessRow[] | null;
 };
+
+// The MedHelp 60D unlock date for this cohort, from the embedded
+// cohort_module_access rows. Returns null when not fetched (PRODUCT_COLUMNS) or
+// when the cohort has no 60D access row.
+function extract60dUnlock(row: CohortRow): string | null {
+  for (const a of row.cohort_module_access ?? []) {
+    const cm = Array.isArray(a.content_modules) ? a.content_modules[0] : a.content_modules;
+    if (cm?.slug === "medhelp-60d") return a.unlock_date ?? null;
+  }
+  return null;
+}
 
 function toCohortProduct(row: CohortRow): CohortProduct {
   // is_for_sale rows always have a price (enforced by the
@@ -44,6 +70,8 @@ function toCohortProduct(row: CohortRow): CohortProduct {
     priceCents,
     priceLabel: formatBRL(priceCents),
     displayOrder: row.display_order ?? 0,
+    testDate: row.test_date ?? null,
+    unlock60dDate: extract60dUnlock(row),
   };
 }
 
@@ -60,7 +88,7 @@ export const getCohortsForSale = cache(async (): Promise<CohortProduct[]> => {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("cohorts")
-    .select(PRODUCT_COLUMNS)
+    .select(SALE_COLUMNS)
     .eq("active", true)
     .eq("is_for_sale", true)
     .or(`sale_ends_at.is.null,sale_ends_at.gt.${new Date().toISOString()}`)
@@ -68,7 +96,7 @@ export const getCohortsForSale = cache(async (): Promise<CohortProduct[]> => {
     .order("id", { ascending: true });
 
   if (error) throw error;
-  return ((data ?? []) as CohortRow[]).map(toCohortProduct);
+  return ((data ?? []) as unknown as CohortRow[]).map(toCohortProduct);
 });
 
 // All cohorts (regardless of sale status), minimal shape — for admin pickers

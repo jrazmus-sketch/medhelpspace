@@ -60,6 +60,8 @@ export interface CohortProduct {
   priceCents: number;
   priceLabel: string;       // formatted for display, e.g. "R$ 3.990"
   displayOrder: number;
+  testDate: string | null;       // ISO date of the exam (cohorts.test_date); drives the countdown
+  unlock60dDate: string | null;  // ISO date MedHelp 60D unlocks for this cohort (cohort_module_access)
 }
 
 export interface UserCohortMembership {

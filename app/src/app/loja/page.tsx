@@ -3,8 +3,9 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { SiteText } from "@/components/landing/site-text";
-import { Check, Lock } from "lucide-react";
+import { Check, Lock, Unlock, Clock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
+import { getCohortTiming, defaultCohortTagline, type CohortTiming } from "@/lib/cohort-timing";
 import type { CohortProduct } from "@/types/supabase";
 
 const INCLUDED = [
@@ -169,13 +170,30 @@ export default async function LojaPage() {
 }
 
 function CohortCard({ cohort }: { cohort: CohortProduct }) {
-  // Cohorts are never promoted over each other — both cards render identically.
-  // The choice is dictated by the user's exam date, not by a sales pitch.
+  // Cards differ only by the cohort's real exam timing: a closer prova means less
+  // study time, which is why that turma is priced lower and shows a countdown.
+  // No "popular/recomendado" badges and no fake scarcity — honest information by
+  // exam date, not a sales ranking.
+  const timing = getCohortTiming(cohort);
   return (
     <div className="relative flex flex-col rounded-2xl bg-background border-2 border-brand shadow-lg transition-shadow">
       <div className="px-6 py-5 border-b border-brand/20">
-        <div className="mb-1 text-xs font-bold uppercase tracking-widest text-brand/60">
-          <SiteText as="span" k="loja.card.turma" fallback="Turma" />
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-brand/60">
+            <SiteText as="span" k="loja.card.turma" fallback="Turma" />
+          </span>
+          {timing.examChip && (
+            <span
+              className={
+                timing.examChip.urgent
+                  ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2.5 py-1 text-[11px] font-semibold text-brand"
+                  : "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-foreground/45"
+              }
+            >
+              <Clock className="h-3 w-3 shrink-0" />
+              {timing.examChip.text}
+            </span>
+          )}
         </div>
         <h2
           className="text-2xl font-extrabold text-foreground"
@@ -193,9 +211,19 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
           <p className="mt-1 text-sm text-foreground/45">
             <SiteText as="span" k="loja.card.installments" fallback="ou parcele em até 12x no cartão" />
           </p>
+          {/* Per-turma tagline. Editable per cohort slug; the date-driven default
+              explains the lower price for the near turma (honest time-tradeoff). */}
+          <p className="mt-3 text-sm leading-relaxed text-foreground/60">
+            <SiteText
+              as="span"
+              multiline
+              k={`loja.card.tagline.${cohort.slug}`}
+              fallback={defaultCohortTagline(timing)}
+            />
+          </p>
         </div>
 
-        <IncludedList />
+        <IncludedList timing={timing} />
 
         <Link
           href={`/checkout?cohort=${cohort.slug}`}
@@ -209,7 +237,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
   );
 }
 
-function IncludedList() {
+function IncludedList({ timing }: { timing: CohortTiming }) {
   return (
     <ul className="flex flex-col gap-2">
       {INCLUDED.map((item, i) => (
@@ -218,9 +246,21 @@ function IncludedList() {
           <SiteText as="span" k={`loja.included.${i}`} fallback={item} />
         </li>
       ))}
-      <li className="mt-1 flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 px-3 py-2 text-sm font-medium text-brand">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0" />
-        <SiteText as="span" k="loja.included.lock" fallback="MedHelp 60D — liberado 60 dias antes da prova" />
+      {/* MedHelp 60D — live unlock status for THIS cohort (computed, not editable):
+          "abre em N dias" / "abre em DD/MM", flipping to "já está liberado". */}
+      <li
+        className={
+          timing.is60dUnlocked
+            ? "mt-1 flex items-start gap-2 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm font-semibold text-brand"
+            : "mt-1 flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 px-3 py-2 text-sm font-medium text-brand"
+        }
+      >
+        {timing.is60dUnlocked ? (
+          <Unlock className="mt-0.5 h-4 w-4 shrink-0" />
+        ) : (
+          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+        )}
+        {timing.unlock60dLabel}
       </li>
     </ul>
   );
