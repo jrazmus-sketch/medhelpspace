@@ -573,6 +573,139 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     active: true,
     sort_order: 13,
   },
+
+  // ── Lead-magnet drip (recipients are anonymous leads, not members) ────────────
+  // FREE-FUNNEL-BUILD-SPEC.md §7. Every body carries a working {{unsubscribeUrl}}
+  // (the fixed footer's account link goes to /app, which leads can't use).
+  "lead-d0": {
+    kind: "lead-d0",
+    name: "[Lead] D0 — Entrega do simulado",
+    description: "Enviado no momento da captura: entrega o material, sem pitch.",
+    subject: "Seu Simulado Honesto chegou 👇",
+    kicker: "",
+    headline: "Seu material está liberado",
+    body_html: `<p style="margin:0 0 16px;">Aqui está o seu <strong>Simulado Honesto</strong> da 1ª etapa:</p>
+<p style="margin:0 0 8px;">🔹 As 15 questões comentadas — <a href="{{magnetUrl}}" style="color:#7a1d91;">retomar de onde parou</a></p>
+<p style="margin:0 0 20px;">🔹 Seu baralho de flashcards com revisão espaçada — <a href="{{deckUrl}}" style="color:#7a1d91;">abrir baralho</a></p>
+<p style="margin:0 0 8px;">Estuda 15 minutos hoje? É o suficiente pra sentir a diferença de estudar com método.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Abrir meu material →",
+    cta_href: "{{magnetUrl}}",
+    variables: [
+      { tag: "magnetUrl", description: "Link para o simulado" },
+      { tag: "deckUrl", description: "Link para o baralho de flashcards" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14,
+  },
+  "lead-d1": {
+    kind: "lead-d1",
+    name: "[Lead] D1 — Diagnóstico honesto",
+    description: "Enviado 1 dia após a captura: o resultado e o que fazer com ele.",
+    subject: "Você acertou {{score}}/15. O que isso diz sobre {{examLabel}}.",
+    kicker: "",
+    headline: "Seu resultado e o que fazer com ele",
+    body_html: `<p style="margin:0 0 16px;">Você acertou <strong>{{score}}/15</strong>. A 1ª etapa aprova cerca de 1 em cada 4 — então cada ponto conta.</p>
+<p style="margin:0 0 16px;">Pelo seu resultado, seus pontos mais fracos agora são <strong>{{weakSpecialties}}</strong>. A boa notícia: dá pra virar esse jogo, se você revisar as matérias certas, na ordem certa.</p>
+<p style="margin:0 0 8px;">Montamos um plano que prioriza exatamente os seus pontos fracos até {{examLabel}}.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Ver meu plano até a prova →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "score", description: "Acertos do lead (0–15)" },
+      { tag: "weakSpecialties", description: "Especialidades mais fracas (nomes)" },
+      { tag: "examLabel", description: "Data da prova do cohort (ex.: 13 de setembro)" },
+      { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 15,
+  },
+  "lead-d2": {
+    kind: "lead-d2",
+    name: "[Lead] D2 — A conta de reprovar",
+    description: "Enviado 2 dias após a captura: o custo real de reprovar.",
+    subject: "A conta que ninguém te mostra",
+    kicker: "",
+    headline: "Quanto custa reprovar",
+    body_html: `<p style="margin:0 0 12px;">Ninguém gosta de fazer essa conta, mas ela importa:</p>
+<p style="margin:0 0 6px;">• Taxa da prova: <strong>R$410</strong></p>
+<p style="margin:0 0 6px;">• A prova custa <strong>R$4.516</strong> em taxas</p>
+<p style="margin:0 0 16px;">• Reprovar e refazer a 2ª fase: <strong>+~R$4.106</strong> — e mais um ano sem poder exercer</p>
+<p style="margin:0 0 8px;">O método completo da 1ª etapa custa <strong>R$3.990</strong> — menos do que custa reprovar uma vez.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Conhecer o método completo →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 16,
+  },
+  "lead-d4": {
+    kind: "lead-d4",
+    name: "[Lead] D4 — Seu plano está esperando",
+    description: "Enviado 4 dias após a captura: a transformação/o plano.",
+    subject: "Seu plano de estudos está esperando",
+    kicker: "",
+    headline: "Seu plano continua aqui",
+    body_html: `<p style="margin:0 0 16px;">Seu plano personalizado até {{examLabel}} continua disponível, com <strong>{{weakSpecialties}}</strong> no topo da fila.</p>
+<p style="margin:0 0 16px;">Não é mais conteúdo — é a ordem certa: questões comentadas, flashcards com revisão espaçada e áudio-aulas, distribuídos dia a dia até a prova. Você sempre sabe o que estudar hoje.</p>
+<p style="margin:0 0 8px;">Quanto antes você entra, mais tempo de estudo. Esperar custa caro — em dias de revisão.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Desbloquear meu plano completo →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "weakSpecialties", description: "Especialidades mais fracas (nomes)" },
+      { tag: "examLabel", description: "Data da prova do cohort (ex.: 13 de setembro)" },
+      { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 17,
+  },
+  "lead-d7": {
+    kind: "lead-d7",
+    name: "[Lead] D7 — A oferta honesta",
+    description: "Enviado 7 dias após a captura: anti-claim + garantia.",
+    subject: "Não prometo aprovação. Prometo isto:",
+    kicker: "",
+    headline: "A oferta mais honesta da categoria",
+    body_html: `<p style="margin:0 0 16px;">Vou ser direto: <strong>não prometo sua aprovação.</strong> Nenhum curso honesto pode.</p>
+<p style="margin:0 0 16px;">O que eu prometo é que você vai resolver mais questões comentadas, com revisão espaçada, do que em qualquer cursão de R$10 mil — e se em 7 dias você achar que não é pra você, <strong>devolvo cada centavo, sem perguntas.</strong></p>
+<p style="margin:0 0 8px;">Feito pra quem se formou fora. Você já é médico — falta o reconhecimento.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Garantir minha vaga (7 dias de garantia) →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 18,
+  },
+  "lead-final": {
+    kind: "lead-final",
+    name: "[Lead] Final — Última chamada",
+    description: "Enviado na reta final: urgência honesta + desconto último (ULTIMA2026).",
+    subject: "Faltam poucas semanas para a 1ª etapa",
+    kicker: "",
+    headline: "Última chamada para a turma 2026.2",
+    body_html: `<p style="margin:0 0 16px;">Faltam poucas semanas para a 1ª etapa (13/09) e a turma 2026.2 já está na reta de estudo.</p>
+<p style="margin:0 0 16px;">Como o tempo de estudo até a prova é curto, liberamos a sua condição de reta final — o melhor preço que a gente oferece, só pra quem está nesta lista. É justo dos dois lados: menos tempo, preço menor.</p>
+<p style="margin:0 0 8px;">Seu plano está pronto. É só começar.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Começar agora →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "checkoutUrl", description: "Link de checkout com cupom último + e-mail" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 19,
+  },
 };
 
 // Sample values for the editor preview and the admin "test send" — one entry per
@@ -608,6 +741,15 @@ export const SAMPLE_VARS: Record<string, string> = {
   replyExcerpt:
     "Oi, Maria! Já corrigimos o player no celular — pode testar de novo e nos contar se resolveu?",
   ticketId: "1042",
+  // Lead-magnet drip samples
+  score: "7",
+  weakSpecialties: "Cardiologia, Nefrologia",
+  examLabel: "13 de setembro",
+  magnetUrl: "https://medhelpspace.com.br/simulado-honesto",
+  deckUrl: "https://medhelpspace.com.br/simulado-honesto",
+  checkoutUrl:
+    "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=RETA2026",
+  unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",
 };
 
 export function sampleVarsFor(template: EmailTemplateRow): Record<string, string> {

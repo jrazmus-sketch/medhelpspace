@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "lucide-react";
 import { PixDisplay } from "./pix-display";
@@ -53,6 +53,10 @@ interface Props {
   pagbankPublicKey: string;
   initialInstallments: InstallmentOption[];
   initialBilling: Partial<BillingDetails> | null;
+  // Prefill from a magnet/drip CTA: the lead's email (powers the §6.5 lead→order
+  // match) and a coupon code to auto-apply (RETA2026 / ULTIMA2026).
+  initialEmail?: string;
+  initialCoupon?: string | null;
   // A still-valid pending Pix order to resume (buyer generated a QR, then returned).
   initialPixResult: {
     orderId: string;
@@ -79,6 +83,8 @@ export function CheckoutClient({
   initialInstallments,
   initialBilling,
   initialPixResult,
+  initialEmail,
+  initialCoupon,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [loading, setLoading] = useState(false);
@@ -101,7 +107,7 @@ export function CheckoutClient({
 
   // Guest-checkout state (only relevant when !isLoggedIn)
   const [accountMode, setAccountMode] = useState<AccountMode>("signup");
-  const [guestEmail, setGuestEmail] = useState("");
+  const [guestEmail, setGuestEmail] = useState(initialEmail ?? "");
   const [guestPassword, setGuestPassword] = useState("");
   const [showGuestPassword, setShowGuestPassword] = useState(false);
   const [guestName, setGuestName] = useState("");
@@ -147,15 +153,16 @@ export function CheckoutClient({
   const effectiveAmountCents = appliedCoupon?.finalAmountCents ?? amountCents;
   const isFullDiscount = appliedCoupon?.isFullDiscount ?? false;
 
-  async function applyCoupon() {
-    if (!couponInput.trim()) return;
+  async function applyCoupon(codeArg?: string) {
+    const code = (codeArg ?? couponInput).trim();
+    if (!code) return;
     setCouponLoading(true);
     setCouponError(null);
     try {
       const res = await fetch("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: couponInput.trim(), cohortSlug }),
+        body: JSON.stringify({ code, cohortSlug }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -182,6 +189,14 @@ export function CheckoutClient({
     setCouponInput("");
     setCouponError(null);
   }
+
+  // Auto-apply a coupon arriving from a magnet/drip CTA (?cupom=RETA2026).
+  useEffect(() => {
+    if (initialCoupon && !appliedCoupon) {
+      applyCoupon(initialCoupon);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function advanceFromAccount() {
     const err = validateGuestFields();
@@ -461,7 +476,7 @@ export function CheckoutClient({
                   />
                   <button
                     type="button"
-                    onClick={applyCoupon}
+                    onClick={() => applyCoupon()}
                     disabled={couponLoading || !couponInput.trim()}
                     className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand/85 disabled:opacity-50"
                   >

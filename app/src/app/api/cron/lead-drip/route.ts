@@ -1,0 +1,152 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import crypto from "node:crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendTemplateEmail } from "@/lib/email";
+import { offerCheckoutUrl, magnetUrl, unsubscribeUrl } from "@/lib/magnet/links";
+
+// Lead-magnet email drip (FREE-FUNNEL-BUILD-SPEC.md §7). Advances each active lead
+// by AT MOST one step per run; the per-step offsetDays gate enforces the real
+// schedule (D1/D2/D4/D7/final) even though we step sequentially.
+// Schedule: app/vercel.json (daily). Auth: Bearer CRON_SECRET (Vercel sends it).
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+const STEPS = [
+  { step: 1, kind: "lead-d1", offsetDays: 1, coupon: "RETA2026" },
+  { step: 2, kind: "lead-d2", offsetDays: 2, coupon: "RETA2026" },
+  { step: 3, kind: "lead-d4", offsetDays: 4, coupon: "RETA2026" },
+  { step: 4, kind: "lead-d7", offsetDays: 7, coupon: "RETA2026" },
+  // Final stretch uses the PRIVATE deeper coupon (R$2.990).
+  { step: 5, kind: "lead-final", offsetDays: 11, coupon: "ULTIMA2026" },
+] as const;
+
+export async function GET(request: NextRequest) {
+  // Vercel Cron auth — constant-time Bearer compare (mirrors lifecycle cron).
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const expected = Buffer.from(`Bearer ${process.env.CRON_SECRET}`, "utf8");
+  const actual = Buffer.from(request.headers.get("authorization") ?? "", "utf8");
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+  const now = Date.now();
+
+  // Active leads only; oldest first. drip_step < last step (5) means more to send.
+  const { data: leads } = await admin
+    .from("leads")
+    .select("id, email, score, weak_specialty_ids, drip_step, created_at, target_cohort")
+    .eq("drip_status", "active")
+    .lt("drip_step", STEPS[STEPS.length - 1].step)
+    .order("created_at", { ascending: true })
+    .limit(300);
+
+  if (!leads || leads.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, note: "no active leads due" });
+  }
+
+  // Read-side backstop for §6.5 Guarantee A: never email anyone who already bought
+  // (matched by email), even if the finalize.ts converted-flip was missed/raced.
+  const { data: memberUsers } = await admin
+    .from("user_cohort_memberships")
+    .select("user_id");
+  const memberIds = [...new Set((memberUsers ?? []).map((r) => r.user_id as string))];
+  let excluded = new Set<string>();
+  if (memberIds.length) {
+    const { data: memberEmails } = await admin
+      .from("profiles")
+      .select("email")
+      .in("id", memberIds);
+    excluded = new Set(
+      (memberEmails ?? [])
+        .map((r) => (r.email as string | null)?.toLowerCase())
+        .filter((e): e is string => Boolean(e)),
+    );
+  }
+
+  // Specialty id → name, for personalizing {{weakSpecialties}}.
+  const { data: specs } = await admin.from("specialties").select("id, name");
+  const specName = new Map((specs ?? []).map((s) => [s.id as number, s.name as string]));
+
+  const examLabelByCohort: Record<string, string> = {
+    "revalida-2026-2": "13 de setembro",
+    "revalida-2027-1": "início de 2027",
+  };
+
+  let sent = 0;
+  let skippedBuyer = 0;
+
+  for (const lead of leads) {
+    const email = (lead.email as string).toLowerCase();
+    if (excluded.has(email)) {
+      skippedBuyer++;
+      continue;
+    }
+
+    const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
+    const is2027 = targetCohort === "revalida-2027-1";
+
+    const nextStep = STEPS.find((s) => s.step === (lead.drip_step as number) + 1);
+    if (!nextStep) continue;
+
+    // 2027.1 leads NEVER get the final discount email (no urgency, full price).
+    // Mark them done so they drop out of future scans.
+    if (is2027 && nextStep.step === 5) {
+      await admin.from("leads").update({ drip_step: 5 }).eq("id", lead.id);
+      continue;
+    }
+
+    const elapsedDays = Math.floor(
+      (now - new Date(lead.created_at as string).getTime()) / 86_400_000,
+    );
+    if (elapsedDays < nextStep.offsetDays) continue; // not due yet
+
+    const weakNames = ((lead.weak_specialty_ids as number[] | null) ?? [])
+      .map((id) => specName.get(id))
+      .filter(Boolean)
+      .join(", ");
+
+    // 2027.1 = full price, no coupon. 2026.2 = the step's coupon (RETA/ULTIMA).
+    const coupon = is2027 ? null : nextStep.coupon;
+
+    const vars: Record<string, string> = {
+      score: lead.score != null ? String(lead.score) : "—",
+      weakSpecialties: weakNames || "suas matérias mais difíceis",
+      examLabel: examLabelByCohort[targetCohort] ?? "a sua prova",
+      magnetUrl: magnetUrl(),
+      deckUrl: magnetUrl(),
+      checkoutUrl: offerCheckoutUrl({
+        email,
+        coupon,
+        cohort: targetCohort,
+        utmCampaign: nextStep.kind,
+      }),
+      unsubscribeUrl: unsubscribeUrl(""), // token filled below
+    };
+
+    // Need the token for a working unsubscribe link — fetch lazily per lead.
+    const { data: tokRow } = await admin
+      .from("leads")
+      .select("unsubscribe_token")
+      .eq("id", lead.id)
+      .single();
+    vars.unsubscribeUrl = unsubscribeUrl((tokRow?.unsubscribe_token as string) ?? "");
+
+    try {
+      await sendTemplateEmail({ kind: nextStep.kind, to: email, vars });
+      await admin
+        .from("leads")
+        .update({ drip_step: nextStep.step, last_emailed_at: new Date().toISOString() })
+        .eq("id", lead.id);
+      sent++;
+    } catch (e) {
+      console.error("lead-drip send failed", lead.id, e);
+    }
+  }
+
+  return NextResponse.json({ ok: true, sent, skippedBuyer, scanned: leads.length });
+}

@@ -18,9 +18,9 @@ export const dynamic = "force-dynamic";
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cohort?: string }>;
+  searchParams: Promise<{ cohort?: string; email?: string; cupom?: string }>;
 }) {
-  const { cohort: cohortSlug } = await searchParams;
+  const { cohort: cohortSlug, email: prefillEmail, cupom: prefillCoupon } = await searchParams;
 
   // Unknown or not-for-sale cohort → back to store
   const config = cohortSlug ? await getCohortProduct(cohortSlug) : null;
@@ -149,6 +149,8 @@ export default async function CheckoutPage({
             initialInstallments={initialInstallments}
             initialBilling={initialBilling}
             initialPixResult={initialPixResult}
+            initialEmail={prefillEmail}
+            initialCoupon={prefillCoupon ?? null}
           />
         </div>
       </main>

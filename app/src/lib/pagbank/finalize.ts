@@ -114,6 +114,28 @@ export async function finalizePaidOrder(
       { onConflict: "user_id,cohort_id" },
     );
 
+  // §6.5 Guarantee A (FREE-FUNNEL-BUILD-SPEC): a purchase removes the buyer from
+  // the lead drip, so an early R$3.290 buyer never receives the deeper R$2.990
+  // last-minute email. Matched by email (leads has no user_id; stored lowercased).
+  // Best-effort — a failure here must never affect the grant.
+  try {
+    const { data: buyer } = await admin
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .maybeSingle();
+    const buyerEmail = (buyer?.email as string | null)?.toLowerCase();
+    if (buyerEmail) {
+      await admin
+        .from("leads")
+        .update({ drip_status: "converted", converted_at: new Date().toISOString() })
+        .eq("email", buyerEmail)
+        .neq("drip_status", "converted");
+    }
+  } catch (e) {
+    console.error("lead convert flip failed", orderId, e);
+  }
+
   // Email idempotency: UNIQUE (user_id, kind, context_id) on email_log means
   // the second insert with the same context_id (order id) fails — never sends.
   const { error: logErr } = await admin
