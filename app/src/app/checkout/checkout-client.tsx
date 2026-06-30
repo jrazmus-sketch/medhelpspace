@@ -191,10 +191,12 @@ export function CheckoutClient({
   }
 
   // Auto-apply a coupon arriving from a magnet/drip CTA (?cupom=RETA2026).
+  // Deferred to a macrotask so the validate fetch's setState isn't called
+  // synchronously inside the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {
-    if (initialCoupon && !appliedCoupon) {
-      applyCoupon(initialCoupon);
-    }
+    if (!initialCoupon || appliedCoupon) return;
+    const id = setTimeout(() => applyCoupon(initialCoupon), 0);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
