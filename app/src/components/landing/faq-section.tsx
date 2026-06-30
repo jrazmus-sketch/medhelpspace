@@ -75,6 +75,7 @@ export function FaqSection() {
 
   return (
     <section
+      id="faq"
       className="px-5 py-20 md:px-8 md:py-28"
       style={{ background: "var(--lp-alt)", borderTop: "1px solid var(--lp-border)" }}
     >

@@ -74,9 +74,14 @@ export function LandingFooter() {
               Produto
             </h4>
             <ul className="space-y-2.5 text-sm">
-              <li><a href="#sistema" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>O Sistema</a></li>
+              {/* Root-relative hashes (/#…) so these resolve from any page the
+                  footer appears on: on the homepage the browser scrolls in-page;
+                  on /loja and /checkout it routes home, then scrolls to the
+                  section. Bare "#sistema"/"#faq" only worked on / and the ids
+                  changed in the landing v2 rebuild (now #features + #faq). */}
+              <li><a href="/#features" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>O Sistema</a></li>
               <li><Link href="/loja" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Comprar Agora</Link></li>
-              <li><a href="#faq" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Perguntas Frequentes</a></li>
+              <li><a href="/#faq" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Perguntas Frequentes</a></li>
             </ul>
           </div>
 
