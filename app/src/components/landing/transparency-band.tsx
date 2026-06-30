@@ -49,7 +49,7 @@ export function TransparencyBand() {
             as="span"
             multiline
             k="transp.scope"
-            fallback="E a maior transparência de todas: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria é reprovada. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte."
+            fallback="Transparência total: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria reprova. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte."
           />
         </p>
       </div>

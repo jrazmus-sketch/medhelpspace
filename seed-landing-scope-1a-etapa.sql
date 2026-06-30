@@ -7,5 +7,5 @@
 
 INSERT INTO site_content (key, value) VALUES
   ('hero.eyebrow', $$1ª etapa do Revalida · prova teórica$$),
-  ('transp.scope', $$E a maior transparência de todas: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria é reprovada. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte.$$)
+  ('transp.scope', $$Transparência total: o foco aqui é a 1ª etapa — a prova teórica, onde a maioria reprova. A 2ª etapa (estações práticas) é presencial e tem preparação própria; o MedHelpSpace não cobre essa parte.$$)
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
