@@ -39,16 +39,46 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
         borderBottom: solid ? "1px solid var(--lp-border)" : "none",
       }}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-8">
+        {/* Logo + "Revalida" lockup. The course exists for one exam, so the word
+            is part of the wordmark: same geometric face (Bricolage, extrabold) as
+            the logo, set off by a hairline divider and a purple→fuchsia gradient
+            fill so it draws the eye while reading as brand identity, not a tag.
+            Slightly larger than the logo on desktop; matched size on mobile so the
+            whole lockup + auth controls fit a 360px bar. */}
         <Link
           href="/"
-          className="text-lg font-extrabold tracking-tight"
-          style={{ fontFamily: "var(--font-bricolage)", color: solid ? "var(--lp-fg)" : "#ffffff" }}
+          aria-label="MedHelpSpace Revalida — início"
+          className="group flex items-center gap-1.5 sm:gap-2.5"
         >
-          MedHelp<span style={{ color: "var(--brand)" }}>Space</span>
+          <span
+            className="text-sm font-extrabold tracking-tight sm:text-lg"
+            style={{ fontFamily: "var(--font-bricolage)", color: solid ? "var(--lp-fg)" : "#ffffff" }}
+          >
+            MedHelp<span style={{ color: "var(--brand)" }}>Space</span>
+          </span>
+          <span
+            aria-hidden="true"
+            className="h-3.5 w-px shrink-0 sm:h-5"
+            style={{ background: solid ? "var(--lp-border)" : "rgba(255,255,255,0.20)" }}
+          />
+          <span
+            className="text-sm font-extrabold leading-none tracking-tight transition-[filter] duration-300 group-hover:[filter:drop-shadow(0_0_18px_rgba(217,70,239,0.55))] sm:text-xl"
+            style={{
+              fontFamily: "var(--font-bricolage)",
+              backgroundImage: "linear-gradient(120deg, #a855f7 0%, #e879f9 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              color: "transparent",
+              filter: "drop-shadow(0 0 12px rgba(217,70,239,0.30))",
+            }}
+          >
+            Revalida
+          </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           {loggedIn ? (
             <>
               {/* Full navigation (not Next <Link>) — /auth/signout is a route handler
