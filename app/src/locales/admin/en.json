@@ -353,6 +353,7 @@
     "step1Help": "The page type determines how the content is edited and rendered. It cannot be changed later.",
     "step2Title": "Page details",
     "step2Help": "Fill in the basics. You'll add content on the next screen.",
+    "step2HelpEditor": "Fill in the basics. After creating, the content editor opens.",
     "step3Title": "Questions (optional)",
     "step3Help": "Paste questions to create them together with the page. It's optional — you can also add them later on the edit screen.",
     "back": "← Back",

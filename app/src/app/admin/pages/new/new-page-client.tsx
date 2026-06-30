@@ -262,7 +262,9 @@ export function NewPageClient({ specialties, tracks, modules }: Props) {
         <div className="space-y-5">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">{t("pageNew.step2Title")}</h2>
-            <p className="text-sm text-muted-foreground">{t("pageNew.step2Help")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t(isQuiz ? "pageNew.step2Help" : "pageNew.step2HelpEditor")}
+            </p>
             <div className="flex items-center gap-2 pt-2 text-sm">
               <span className="text-muted-foreground">{t("pageEdit.pageTypeLabel")}:</span>
               <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium">

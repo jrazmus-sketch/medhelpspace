@@ -353,6 +353,7 @@
     "step1Help": "O tipo de página define como o conteúdo será editado e renderizado. Não pode ser alterado depois.",
     "step2Title": "Detalhes da página",
     "step2Help": "Preencha as informações básicas. Você poderá adicionar o conteúdo na próxima tela.",
+    "step2HelpEditor": "Preencha as informações básicas. Ao criar, o editor de conteúdo será aberto.",
     "step3Title": "Questões (opcional)",
     "step3Help": "Cole as questões para criá-las junto com a página. É opcional — você também pode adicioná-las depois, na tela de edição.",
     "back": "← Voltar",
