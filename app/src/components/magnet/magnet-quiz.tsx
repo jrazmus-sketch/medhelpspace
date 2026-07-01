@@ -310,7 +310,7 @@ export function MagnetQuiz({
             </span>
             <span>
               No final: seu nível real + um plano de estudo até{" "}
-              <strong className="font-semibold text-foreground">13/09</strong>
+              <strong className="font-semibold text-foreground">a data da sua prova</strong>
             </span>
           </li>
         </ul>

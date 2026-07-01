@@ -11,7 +11,7 @@ import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 export const metadata: Metadata = {
   title: "Simulado Revalida 1ª Etapa — 15 Questões Comentadas Grátis",
   description:
-    "Faça um simulado honesto da 1ª etapa do Revalida: 15 questões comentadas, veja seu nível e receba um plano de estudo até 13 de setembro. Grátis, sem cartão.",
+    "Faça um simulado honesto da 1ª etapa do Revalida: 15 questões comentadas, veja seu nível e receba um plano de estudo até a data da sua prova. Grátis, sem cartão.",
   alternates: { canonical: "/questoes-revalida" },
 };
 
@@ -58,14 +58,14 @@ export default async function SimuladoHonestoPage({
         {/* Hero / intro */}
         <div className="mx-auto mb-10 max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-            Revalida 2026.2 · 1ª etapa
+            Revalida · 1ª etapa
           </p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
             15 questões comentadas da 1ª etapa. De graça.
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
             Sem promessa de aprovação. Resolva, veja exatamente onde você está e receba um
-            plano de estudo até <strong className="text-foreground">13 de setembro</strong>. As 5
+            plano de estudo até <strong className="text-foreground">a data da sua prova</strong>. As 5
             primeiras são abertas — depois é só o seu e-mail.
           </p>
         </div>
