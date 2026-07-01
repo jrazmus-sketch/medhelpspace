@@ -886,7 +886,20 @@
     "testSent": "Test sent to {{email}}.",
     "testNotConfigured": "Email sending not configured (Resend API key missing).",
     "testInvalidEmail": "Enter a valid email address.",
-    "testFailed": "Send failed — check the domain in Resend."
+    "testFailed": "Send failed — check the domain in Resend.",
+    "editor": {
+      "modeVisual": "Visual",
+      "modeHtml": "HTML",
+      "help": "Visual editor — click to edit the text. {{tag}} variables show as chips: insert or delete them whole, without breaking anything.",
+      "ariaLabel": "Email body",
+      "bold": "Bold",
+      "italic": "Italic",
+      "bulletList": "Bullet list",
+      "link": "Insert link",
+      "unlink": "Remove link",
+      "linkPlaceholder": "https://… or {{resultUrl}}",
+      "linkApply": "Apply"
+    }
   },
   "adminBar": {
     "viewSite": "View site"

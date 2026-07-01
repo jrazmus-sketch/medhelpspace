@@ -886,7 +886,20 @@
     "testSent": "Teste enviado para {{email}}.",
     "testNotConfigured": "Envio não configurado (chave do Resend ausente).",
     "testInvalidEmail": "Informe um e-mail válido.",
-    "testFailed": "Falha no envio — verifique o domínio no Resend."
+    "testFailed": "Falha no envio — verifique o domínio no Resend.",
+    "editor": {
+      "modeVisual": "Visual",
+      "modeHtml": "HTML",
+      "help": "Editor visual — clique para editar o texto. As variáveis {{tag}} aparecem como etiquetas: insira ou apague inteiras, sem quebrar.",
+      "ariaLabel": "Corpo do e-mail",
+      "bold": "Negrito",
+      "italic": "Itálico",
+      "bulletList": "Lista",
+      "link": "Inserir link",
+      "unlink": "Remover link",
+      "linkPlaceholder": "https://… ou {{resultUrl}}",
+      "linkApply": "Aplicar"
+    }
   },
   "adminBar": {
     "viewSite": "Ver site"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { useAuth } from "@/providers/auth-provider";
@@ -13,6 +13,8 @@ import {
   type EmailTemplateRow,
   type EmailSettingsRow,
 } from "@/lib/email-render";
+import { defaultsToVisualEditor } from "@/lib/email-template-editing";
+import { EmailBodyEditor } from "@/components/admin/email-body-editor";
 import {
   updateEmailTemplate,
   updateEmailSettings,
@@ -182,9 +184,24 @@ function TemplateEditor({
   const [isPending, startTransition] = useTransition();
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
-  // Insert {{tag}} at the textarea cursor (or append). Body is the most common
-  // target so chips write there.
-  function insertTag(tag: string) {
+  // Visual (WYSIWYG) vs raw-HTML editing. Prose templates default to visual;
+  // structural table-layout templates default to raw (a WYSIWYG would flatten
+  // them). The admin can toggle either way per session — the raw mode is always
+  // available as an escape hatch. Keyed by kind via the parent's remount, so this
+  // resets to the right default whenever the selected template changes.
+  const [mode, setMode] = useState<"visual" | "raw">(
+    defaultsToVisualEditor(template.kind) ? "visual" : "raw",
+  );
+
+  // The visual editor registers its cursor-insert function here so the shared
+  // variable-chip row can drop pills into whichever editor is active.
+  const visualInsertRef = useRef<((tag: string) => void) | null>(null);
+  const registerVisualInsert = useCallback((fn: (tag: string) => void) => {
+    visualInsertRef.current = fn;
+  }, []);
+
+  // Insert {{tag}} into the raw textarea at the cursor (or append).
+  function insertIntoTextarea(tag: string) {
     const el = bodyRef.current;
     const token = `{{${tag}}}`;
     if (!el) {
@@ -201,6 +218,12 @@ function TemplateEditor({
       const pos = start + token.length;
       el.setSelectionRange(pos, pos);
     });
+  }
+
+  // Dispatch a chip click to the active editor.
+  function insertVariable(tag: string) {
+    if (mode === "visual") visualInsertRef.current?.(tag);
+    else insertIntoTextarea(tag);
   }
 
   function handleSave() {
@@ -271,19 +294,32 @@ function TemplateEditor({
             />
           </label>
 
-          <label className="block space-y-1">
-            <span className={labelCls}>{t("emailTemplates.fieldBody")}</span>
-            <textarea
-              ref={bodyRef}
-              value={draft.body_html}
-              onChange={(e) => onPatch({ body_html: e.target.value })}
-              rows={12}
-              className={`${inputCls} font-mono text-xs leading-relaxed`}
-            />
+          <div className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className={labelCls}>{t("emailTemplates.fieldBody")}</span>
+              <ModeToggle mode={mode} onChange={setMode} />
+            </div>
+            {mode === "visual" ? (
+              <EmailBodyEditor
+                value={draft.body_html}
+                onChange={(html) => onPatch({ body_html: html })}
+                onInsertReady={registerVisualInsert}
+              />
+            ) : (
+              <textarea
+                ref={bodyRef}
+                value={draft.body_html}
+                onChange={(e) => onPatch({ body_html: e.target.value })}
+                rows={12}
+                className={`${inputCls} font-mono text-xs leading-relaxed`}
+              />
+            )}
             <span className="block text-xs text-muted-foreground">
-              {t("emailTemplates.bodyHelp")}
+              {mode === "visual"
+                ? t("emailTemplates.editor.help")
+                : t("emailTemplates.bodyHelp")}
             </span>
-          </label>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block space-y-1">
@@ -342,7 +378,8 @@ function TemplateEditor({
                 <button
                   key={v.tag}
                   type="button"
-                  onClick={() => insertTag(v.tag)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => insertVariable(v.tag)}
                   title={v.description}
                   className="rounded-md border border-border bg-surface-1 px-2 py-1 font-mono text-xs text-foreground hover:border-brand/50 hover:text-brand"
                 >
@@ -353,7 +390,8 @@ function TemplateEditor({
                 <button
                   key={tag}
                   type="button"
-                  onClick={() => insertTag(tag)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => insertVariable(tag)}
                   title={t("emailTemplates.globalVar")}
                   className="rounded-md border border-dashed border-border bg-surface-1 px-2 py-1 font-mono text-xs text-muted-foreground hover:border-brand/50 hover:text-brand"
                 >
@@ -390,6 +428,42 @@ function TemplateEditor({
       </Card>
 
       <TestSend kind={template.kind} defaultEmail={adminEmail} />
+    </div>
+  );
+}
+
+// ── Visual / raw-HTML mode toggle ────────────────────────────────────────────────
+
+function ModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: "visual" | "raw";
+  onChange: (m: "visual" | "raw") => void;
+}) {
+  const { t } = useTranslation();
+  const options: Array<{ key: "visual" | "raw"; label: string }> = [
+    { key: "visual", label: t("emailTemplates.editor.modeVisual") },
+    { key: "raw", label: t("emailTemplates.editor.modeHtml") },
+  ];
+  return (
+    <div className="inline-flex rounded-lg border border-border bg-surface-1 p-0.5 text-xs">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => onChange(o.key)}
+          aria-pressed={mode === o.key}
+          className={[
+            "rounded-md px-3 py-1.5 font-medium transition-colors sm:px-2.5 sm:py-1",
+            mode === o.key
+              ? "bg-brand text-brand-fg"
+              : "text-muted-foreground hover:text-foreground",
+          ].join(" ")}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

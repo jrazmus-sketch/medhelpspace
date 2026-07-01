@@ -1350,3 +1350,63 @@
   overflow: hidden;
   background: var(--background);
 }
+
+/* ── Email body visual editor (TipTap / ProseMirror) ─────────────── */
+.email-editor-surface {
+  min-height: 220px;
+  outline: none;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.email-editor-surface:focus {
+  outline: none;
+}
+.email-editor-surface p {
+  margin: 0 0 0.75rem;
+}
+.email-editor-surface p:last-child {
+  margin-bottom: 0;
+}
+.email-editor-surface strong {
+  font-weight: 700;
+}
+.email-editor-surface a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+.email-editor-surface ul {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+.email-editor-surface ol {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  list-style: decimal;
+}
+/* Placeholder shown by the TipTap Placeholder extension (empty doc). */
+.email-editor-surface p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Atomic {{variable}} pill inside the editor. */
+.email-var-pill {
+  display: inline-block;
+  padding: 0.05em 0.4em;
+  margin: 0 0.05em;
+  border-radius: 0.35rem;
+  background: var(--brand-muted);
+  color: var(--brand);
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+  user-select: all;
+  cursor: default;
+}
