@@ -97,9 +97,15 @@ function resolveHref(href: string, appUrl: string): string {
   return href.startsWith("/") ? `${appUrl}${href}` : href;
 }
 
-function renderFooter(settings: EmailSettingsRow): string {
+// `unsubscribeUrl` is set ONLY for list/marketing mail (the lead funnel). When
+// present the footer switches to list-mail mode: a permission reminder ("you
+// asked for the Simulado Honesto") + a working one-click unsubscribe — the two
+// things that keep a young sending domain out of the spam folder. Member/
+// transactional mail (no unsubscribe URL) keeps the account-settings line.
+function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): string {
   const site = settings.app_url.replace(/^https?:\/\//, "");
   const contact = settings.contact_email;
+  const isListEmail = Boolean(unsubscribeUrl && /^https?:\/\//.test(unsubscribeUrl));
 
   // Line 2 segments — only render the ones that are filled in.
   const idParts: string[] = [];
@@ -121,6 +127,18 @@ function renderFooter(settings: EmailSettingsRow): string {
     ? `<p style="margin:0 0 8px;font-size:11px;color:#9ca3af;line-height:1.5;">${settings.footer_note.trim()}</p>`
     : "";
 
+  // List mail: why-you-got-this + one-click unsubscribe. Member mail: account link
+  // (a lead has no /app account, so that link would be dead for them).
+  const manageLine = isListEmail
+    ? `<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+      Você recebeu este e-mail porque pediu o Simulado Honesto no MedHelpSpace.
+      <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.
+    </p>`
+    : `<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+      Para gerenciar suas notificações por email, acesse suas
+      <a href="${settings.app_url}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
+    </p>`;
+
   return `<tr>
   <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
     <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
@@ -130,10 +148,7 @@ function renderFooter(settings: EmailSettingsRow): string {
     ${idLine}
     ${addressLine}
     ${noteLine}
-    <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
-      Para gerenciar suas notificações por email, acesse suas
-      <a href="${settings.app_url}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
-    </p>
+    ${manageLine}
   </td>
 </tr>`;
 }
@@ -210,7 +225,7 @@ export function renderEmail(
               ${ctaHtml}
             </td>
           </tr>
-          ${renderFooter(settings)}
+          ${renderFooter(settings, allVars.unsubscribeUrl)}
         </table>
       </td>
     </tr>

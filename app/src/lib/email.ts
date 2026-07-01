@@ -103,16 +103,37 @@ export async function sendEmailRaw({
   subject,
   html,
   from,
+  listUnsubscribeUrl,
 }: {
   to: string;
   subject: string;
   html: string;
   from: string;
+  // When set, emits one-click List-Unsubscribe headers (RFC 8058). Pass ONLY for
+  // list/marketing mail (the funnel drip) — transactional + member mail omits it.
+  listUnsubscribeUrl?: string;
 }): Promise<{ ok: boolean; reason?: string }> {
   const resend = getResend();
   if (!resend) return { ok: false, reason: "no_api_key" };
   try {
-    const { error } = await resend.emails.send({ from, to, subject, html });
+    // One-click unsubscribe is the single biggest anti-spam signal for Gmail/Yahoo
+    // bulk mail: it surfaces a native "Unsubscribe" affordance in the client so
+    // recipients opt out instead of hitting "spam" (which tanks domain reputation).
+    // Only attach when we have a real unsubscribe URL (the funnel emails carry one).
+    const headers =
+      listUnsubscribeUrl && /^https?:\/\//.test(listUnsubscribeUrl)
+        ? {
+            "List-Unsubscribe": `<${listUnsubscribeUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          }
+        : undefined;
+    const { error } = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+      ...(headers ? { headers } : {}),
+    });
     // The Resend SDK reports API errors (e.g. an unverified sending domain) on the
     // returned `error` field rather than throwing — so a silently-rejected send
     // looks like success unless we inspect it. Callers that need to know (the admin
@@ -145,7 +166,9 @@ export async function sendTemplateEmail({
   const from = fromName
     ? withSenderName(settings.from_address, fromName)
     : settings.from_address;
-  return sendEmailRaw({ to, subject, html, from });
+  // Funnel/list emails carry an {{unsubscribeUrl}} var → attach the one-click
+  // List-Unsubscribe header. Transactional/member templates have no such var → no header.
+  return sendEmailRaw({ to, subject, html, from, listUnsubscribeUrl: vars.unsubscribeUrl });
 }
 
 // Render a template ONCE (settings + template fetched once) and send the same body
@@ -270,6 +293,13 @@ export async function sendTestEmail(
 ): Promise<{ ok: boolean; reason?: string }> {
   const settings = await getEmailSettings();
   const tpl = await getEmailTemplate(kind);
-  const { subject, html } = renderEmail(tpl, settings, sampleVarsFor(tpl));
-  return sendEmailRaw({ to, subject, html, from: settings.from_address });
+  const vars = sampleVarsFor(tpl);
+  const { subject, html } = renderEmail(tpl, settings, vars);
+  return sendEmailRaw({
+    to,
+    subject,
+    html,
+    from: settings.from_address,
+    listUnsubscribeUrl: vars.unsubscribeUrl,
+  });
 }

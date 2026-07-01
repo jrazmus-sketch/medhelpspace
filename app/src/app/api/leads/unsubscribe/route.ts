@@ -21,29 +21,43 @@ function page(message: string): Response {
   );
 }
 
-export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get("t");
-  if (!token) {
-    return page("Link inválido. Nenhuma alteração foi feita.");
-  }
-
+// Shared action for GET (browser click) and POST (mail-client one-click). Idempotent:
+// re-unsubscribing an already-unsubscribed lead just re-stamps it.
+async function unsubscribeByToken(
+  token: string | null,
+): Promise<"ok" | "invalid" | "notfound"> {
+  if (!token) return "invalid";
   const admin = createAdminClient();
   const { data: lead } = await admin
     .from("leads")
     .select("id")
     .eq("unsubscribe_token", token)
     .maybeSingle();
-
-  if (!lead) {
-    return page("Este link não é mais válido. Nenhuma alteração foi feita.");
-  }
-
+  if (!lead) return "notfound";
   await admin
     .from("leads")
     .update({ drip_status: "unsubscribed", unsubscribed_at: new Date().toISOString() })
     .eq("id", lead.id);
+  return "ok";
+}
 
+export async function GET(request: NextRequest) {
+  const result = await unsubscribeByToken(request.nextUrl.searchParams.get("t"));
+  if (result === "invalid") {
+    return page("Link inválido. Nenhuma alteração foi feita.");
+  }
+  if (result === "notfound") {
+    return page("Este link não é mais válido. Nenhuma alteração foi feita.");
+  }
   return page(
     "Pronto — você não vai mais receber nossos e-mails. Sentiremos sua falta. Boa prova!",
   );
+}
+
+// RFC 8058 one-click: with the List-Unsubscribe-Post header, Gmail/Apple Mail/etc.
+// POST here directly (no page load) when the user taps the client's unsubscribe
+// button. Must act and return 2xx without any further interaction.
+export async function POST(request: NextRequest) {
+  await unsubscribeByToken(request.nextUrl.searchParams.get("t"));
+  return new Response(null, { status: 200 });
 }
