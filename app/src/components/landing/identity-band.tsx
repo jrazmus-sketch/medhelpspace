@@ -16,7 +16,7 @@ export function IdentityBand() {
       <div ref={ref} className="lp-reveal mx-auto max-w-5xl">
         <div className="grid items-center gap-12 md:grid-cols-[1.1fr_0.9fr] md:gap-16">
           <div>
-            <div className="mb-6 text-[10px] uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
+            <div className="mb-6 text-sm uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
               <SiteText as="span" k="identity.eyebrow" fallback="A saga pelo CRM" />
             </div>
             <h2 className="text-[clamp(2rem,4.8vw,3.6rem)] font-black leading-[1.06] tracking-[-0.03em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>

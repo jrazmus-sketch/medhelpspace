@@ -83,7 +83,7 @@ export function FaqSection() {
         {/* Header */}
         <div className="pb-12 text-center">
           <div
-            className="mb-8 text-[10px] uppercase tracking-[0.25em]"
+            className="mb-8 text-sm uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
             <SiteText as="span" k="faq.eyebrow" fallback="Dúvidas frequentes" />

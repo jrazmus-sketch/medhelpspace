@@ -8,7 +8,6 @@ import { RevisaoSection } from "@/components/landing/revisao-section";
 import { PlanoSection } from "@/components/landing/plano-section";
 import { SixtyDSection } from "@/components/landing/sixty-d-section";
 import { ComparisonSection } from "@/components/landing/comparison-section";
-import { TransparencyBand } from "@/components/landing/transparency-band";
 import { FounderSection } from "@/components/landing/founder-section";
 import { PricingCTA } from "@/components/landing/pricing-cta";
 import { FaqSection } from "@/components/landing/faq-section";
@@ -47,7 +46,6 @@ export default async function LandingPage() {
         <RevisaoSection />
         <PlanoSection />
         <ComparisonSection />
-        <TransparencyBand />
         <FounderSection stats={stats} />
         <PricingCTA cohorts={cohorts} />
         <FaqSection />

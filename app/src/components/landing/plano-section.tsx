@@ -28,7 +28,7 @@ export function PlanoSection() {
       <div ref={ref} className="lp-reveal relative z-10 mx-auto max-w-5xl">
         <div className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
           <div>
-            <div className="mb-6 text-[10px] uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-revalida)" }}>
+            <div className="mb-6 text-sm uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-revalida)" }}>
               <SiteText as="span" k="plano.eyebrow" fallback="Seu plano, sozinho" />
             </div>
             <h2 className="text-[clamp(1.9rem,4.4vw,3.2rem)] font-black leading-[1.08] tracking-[-0.025em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>

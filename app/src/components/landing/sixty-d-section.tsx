@@ -34,14 +34,14 @@ export function SixtyDSection() {
           {/* Label */}
           <div className="mb-8 flex items-center gap-3">
             <span
-              className="text-[10px] uppercase tracking-[0.25em]"
+              className="text-sm uppercase tracking-[0.25em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
             >
               06
             </span>
             <span className="h-px w-8" style={{ background: "var(--c-pop)", opacity: 0.6 }} />
             <span
-              className="text-[10px] uppercase tracking-[0.2em]"
+              className="text-sm uppercase tracking-[0.2em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-pop)" }}
             >
               <SiteText as="span" k="sixtyd.eyebrow" fallback="MedHelp 60D" />

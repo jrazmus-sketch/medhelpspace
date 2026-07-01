@@ -69,6 +69,17 @@ const FEATURES: Feature[] = [
   },
   {
     num: "05",
+    id: "audiocards",
+    name: "AudioCards",
+    tagline: "Os mesmos temas dos flashcards — agora no ouvido.",
+    body: "A extensão em áudio dos flashcards: cada assunto que você fixa nos cartões volta como narração curta. Ouça no trânsito, na academia, entre um plantão e outro — sem tela, sem parar.",
+    result: "Reforço no modo passivo — o assunto gruda de tanto ouvir.",
+    color: "var(--c-audiocards)",
+    shot: "/landing/shot-audiocards.webp",
+    alt: "Tela do AudioCards com a transcrição aberta enquanto o áudio toca.",
+  },
+  {
+    num: "06",
     id: "revalida-up",
     name: "Revalida Up",
     tagline: "Os padrões que mais caem — em recordação ativa.",
@@ -125,11 +136,11 @@ function FeatureRow({ f, i, vars }: { f: Feature; i: number; vars: Record<string
         {/* Copy */}
         <div className={reversed ? "md:order-2" : ""}>
           <div className="mb-5 flex items-center gap-3">
-            <span className="text-[10px] uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
+            <span className="text-sm uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
               {f.num}
             </span>
             <span className="h-px w-8" style={{ background: f.color, opacity: 0.5 }} />
-            <span className="text-[10px] uppercase tracking-[0.2em]" style={{ fontFamily: "var(--font-geist-mono)", color: f.color }}>
+            <span className="text-sm uppercase tracking-[0.2em]" style={{ fontFamily: "var(--font-geist-mono)", color: f.color }}>
               <SiteText as="span" k={`sys.${f.id}.name`} fallback={f.name} />
             </span>
           </div>
@@ -176,7 +187,7 @@ export function SystemShowcase({ stats }: { stats: LandingStats }) {
   return (
     <div id="features" style={{ background: "var(--lp-base)", borderTop: "1px solid var(--lp-border)" }}>
       <div className="mx-auto max-w-6xl px-5 pt-16 md:px-8 md:pt-24">
-        <div className="text-[10px] uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
+        <div className="text-sm uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}>
           <SiteText as="span" k="sys.eyebrow" fallback="O que está incluído" />
         </div>
         <h2 className="mt-4 max-w-3xl text-[clamp(1.7rem,3.6vw,2.8rem)] font-black leading-tight tracking-[-0.02em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>

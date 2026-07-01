@@ -98,7 +98,7 @@ export function ProblemSection() {
       <div className="relative mx-auto max-w-5xl" style={{ zIndex: 1, borderTop: "1px solid var(--lp-border)" }}>
         <div className="pb-20 pt-16 text-center md:pb-28 md:pt-24">
           <div
-            className="mb-10 text-[10px] uppercase tracking-[0.25em]"
+            className="mb-10 text-sm uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
             <SiteText as="span" k="problem.eyebrow" fallback="O problema" />

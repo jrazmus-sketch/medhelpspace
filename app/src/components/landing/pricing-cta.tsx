@@ -55,7 +55,7 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
       >
         <div className="relative mx-auto max-w-xl text-center">
           <div
-            className="mb-8 text-[10px] uppercase tracking-[0.25em]"
+            className="mb-8 text-sm uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
             <SiteText as="span" k="pricing.soon.eyebrow" fallback="Inscrições" />
@@ -93,7 +93,7 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
         {/* Header */}
         <div className="mb-10 text-center">
           <div
-            className="mb-8 text-[10px] uppercase tracking-[0.25em]"
+            className="mb-8 text-sm uppercase tracking-[0.25em]"
             style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
           >
             <SiteText as="span" k="pricing.eyebrow" fallback="Comece sua preparação" />
@@ -248,6 +248,23 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
           <SiteText as="span" k="pricing.trust1" fallback="✓ Acesso imediato" />
           <SiteText as="span" k="pricing.trust2" fallback="✓ Garantia incondicional de 7 dias" />
           <SiteText as="span" k="pricing.trust3" fallback="✓ Pagamento 100% seguro · PagBank" />
+        </div>
+
+        {/* Free-questions door — lower-commitment downsell for visitors who reach
+            pricing but aren't ready to buy. Ghost styling so it never competes with
+            the primary "Comprar Agora" CTA above. Relocated from the removed
+            TransparencyBand; utm_medium=pricing_downsell tags this placement. */}
+        <div className="mt-10 border-t pt-8 text-center" style={{ borderColor: "var(--lp-border)" }}>
+          <Link
+            href="/questoes-revalida?utm_source=site&utm_medium=pricing_downsell&utm_campaign=home"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-px active:scale-95"
+            style={{ borderColor: "var(--lp-border)", color: "var(--lp-fg-55)", background: "var(--lp-fg-05)" }}
+          >
+            <SiteText as="span" k="pricing.free_cta" fallback="Prefere testar antes? Faça 15 questões grátis →" />
+          </Link>
+          <p className="mt-3 text-xs" style={{ color: "var(--lp-fg-40)" }}>
+            <SiteText as="span" k="pricing.free_cta_sub" fallback="Questões comentadas da 1ª etapa. As 5 primeiras sem nem pedir e-mail." />
+          </p>
         </div>
       </div>
     </section>

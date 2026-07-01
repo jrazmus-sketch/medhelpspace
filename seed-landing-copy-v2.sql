@@ -36,6 +36,10 @@ INSERT INTO site_content (key, value) VALUES
   ('sys.flashcards.tagline', $$5.140 cartões que decidem sozinhos quando voltar.$$),
   ('sys.flashcards.body',    $$Você se autoavalia — “errei” ou “acertei” — e a repetição espaçada cuida do resto. O que você domina espaça; o que você erra volta amanhã.$$),
   ('sys.flashcards.result',  $$Fixação real, não releitura passiva.$$),
+  ('sys.audiocards.name',    $$AudioCards$$),
+  ('sys.audiocards.tagline', $$Os mesmos temas dos flashcards — agora no ouvido.$$),
+  ('sys.audiocards.body',    $$A extensão em áudio dos flashcards: cada assunto que você fixa nos cartões volta como narração curta. Ouça no trânsito, na academia, entre um plantão e outro — sem tela, sem parar.$$),
+  ('sys.audiocards.result',  $$Reforço no modo passivo — o assunto gruda de tanto ouvir.$$),
   ('sys.revalida-up.name',    $$Revalida Up$$),
   ('sys.revalida-up.tagline', $$Os padrões que mais caem — em recordação ativa.$$),
   ('sys.revalida-up.body',    $$Temas de “caiu na prova” no formato que fixa: a pista aparece, você tenta prever, e só então revela o padrão de prova.$$),
@@ -65,5 +69,9 @@ INSERT INTO site_content (key, value) VALUES
 
   -- MedHelp 60D — post-swap lineup (Fórmula in, Revalida Up moved to day-1)
   ('sixtyd.item1.name', $$Fórmula MedHelp$$),
-  ('sixtyd.item1.desc', $$Atalhos de prova: macetes, mnemônicos e frases-chave$$)
+  ('sixtyd.item1.desc', $$Atalhos de prova: macetes, mnemônicos e frases-chave$$),
+
+  -- Pricing — free-questions downsell (relocated from the removed Transparency band)
+  ('pricing.free_cta',     $$Prefere testar antes? Faça 15 questões grátis →$$),
+  ('pricing.free_cta_sub', $$Questões comentadas da 1ª etapa. As 5 primeiras sem nem pedir e-mail.$$)
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();

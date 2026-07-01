@@ -244,7 +244,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05, duration: 0.55 }}
-          className="mb-8 text-xs uppercase tracking-[0.22em]"
+          className="mb-8 text-sm uppercase tracking-[0.22em]"
           style={{ fontFamily: "var(--font-geist-mono)", color: "rgba(255,255,255,0.32)" }}
         >
           <SiteText as="span" k="hero.eyebrow" fallback="1ª etapa do Revalida · prova teórica" />

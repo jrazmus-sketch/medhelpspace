@@ -50,7 +50,7 @@ export function RevisaoSection() {
       </div>
 
       <div ref={ref} className="lp-reveal relative z-10 mx-auto max-w-3xl text-center">
-        <div className="mb-8 text-[10px] uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-questoes)" }}>
+        <div className="mb-8 text-sm uppercase tracking-[0.25em]" style={{ fontFamily: "var(--font-geist-mono)", color: "var(--c-questoes)" }}>
           <SiteText as="span" k="revisao.eyebrow" fallback="O que ninguém mais tem no Revalida" />
         </div>
         <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-black leading-[1.06] tracking-[-0.025em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>
