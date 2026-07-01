@@ -37,7 +37,7 @@ export function SixtyDSection() {
               className="text-sm uppercase tracking-[0.25em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
             >
-              06
+              07
             </span>
             <span className="h-px w-8" style={{ background: "var(--c-pop)", opacity: 0.6 }} />
             <span
