@@ -19,6 +19,45 @@ function htmlProps(html: string): React.HTMLAttributes<HTMLDivElement> {
 
 type Result = "correct" | "incorrect";
 
+// Truthful spaced-repetition ladder — mirrors the member app's real SM-2 intervals
+// (lib/review/sm2.ts): a card you keep getting right returns in 1 → 6 → 15 → 38
+// days (ease 2.5), then all but disappears; a single miss sends it back to
+// tomorrow and the ladder restarts. We SHOW the system instead of only naming it.
+// FREE-FUNNEL-V2-SCOPE.md item 7 (kept honest: the real first interval is 1 day,
+// not 6 — the value is the EXPANDING spacing, so that's what we visualize).
+const SPACING_LADDER = [1, 6, 15, 38];
+
+function SpacingLadder() {
+  return (
+    <div className="rounded-xl border border-brand/20 bg-brand-muted/50 p-4 text-left">
+      <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+        Como a revisão espaçada trabalha por você
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {SPACING_LADDER.map((d, i) => (
+          <span key={d} className="flex items-center gap-1.5">
+            <span className="rounded-md bg-surface-1 px-2 py-1 text-xs font-semibold tabular-nums text-foreground ring-1 ring-border">
+              {d} {d === 1 ? "dia" : "dias"}
+            </span>
+            {i < SPACING_LADDER.length - 1 && (
+              <span aria-hidden className="text-muted-foreground">→</span>
+            )}
+          </span>
+        ))}
+        <span aria-hidden className="text-muted-foreground">→</span>
+        <span className="rounded-md px-2 py-1 text-xs font-medium text-muted-foreground">
+          …e some do seu caminho
+        </span>
+      </div>
+      <p className="mt-3 text-xs leading-snug text-muted-foreground">
+        Acertando sempre, cada card volta em intervalos cada vez maiores.{" "}
+        <strong className="text-foreground">Errou uma vez?</strong> Ele volta amanhã e
+        recomeça a subir — o sistema garante que você não esquece na hora da prova.
+      </p>
+    </div>
+  );
+}
+
 export function MagnetFlashcards({
   cards,
   compact = false,
@@ -26,6 +65,7 @@ export function MagnetFlashcards({
   ctaLabel,
   doneTitle,
   doneNote,
+  spacingViz = false,
 }: {
   cards: MagnetFlashcard[];
   /** Tighter spacing + smaller summary for the inline results taste. */
@@ -35,6 +75,8 @@ export function MagnetFlashcards({
   ctaLabel?: string;
   doneTitle?: string;
   doneNote?: string;
+  /** Show the truthful SM-2 spacing ladder on the done summary (reward payoff). */
+  spacingViz?: boolean;
 }) {
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -94,10 +136,16 @@ export function MagnetFlashcards({
           <div className="mt-1 text-sm text-muted-foreground">
             que você lembrou ({pct}%)
           </div>
-          <p className="mx-auto mt-3 max-w-sm text-xs leading-snug text-muted-foreground">
-            É assim que a revisão espaçada funciona: o sistema traz de volta exatamente o
-            que você errou, no intervalo certo para fixar.
-          </p>
+          {spacingViz ? (
+            <div className="mx-auto mt-4 max-w-sm">
+              <SpacingLadder />
+            </div>
+          ) : (
+            <p className="mx-auto mt-3 max-w-sm text-xs leading-snug text-muted-foreground">
+              É assim que a revisão espaçada funciona: o sistema traz de volta exatamente o
+              que você errou, no intervalo certo para fixar.
+            </p>
+          )}
           {doneNote && (
             <p className="mx-auto mt-3 max-w-sm text-xs font-medium text-foreground">{doneNote}</p>
           )}

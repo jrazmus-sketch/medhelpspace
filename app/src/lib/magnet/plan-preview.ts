@@ -38,6 +38,17 @@ export type PlanPreview = {
   totalItems: number;
 };
 
+// The FREE summary shown after Q15, before verification (raw score + missed topics
+// + days). The plan CONTENT (items) + flashcards are the gated reward. Lives here
+// (a plain module) rather than in the "use server" actions file, which must export
+// only async functions. FREE-FUNNEL-V2-SCOPE.md item 6.
+export type FreeResultSummary = {
+  score: number;
+  weakSpecialties: { id: number; name: string }[];
+  daysToExam: number | null;
+  planItemCount: number;
+};
+
 export async function buildPlanPreview(
   answers: MagnetAnswer[],
   cohort?: string,

@@ -73,6 +73,23 @@ export function isKnownTag(tag: string, template: EmailTemplateRow): boolean {
   return IMPLICIT_TAGS.has(tag) || template.variables.some((v) => v.tag === tag);
 }
 
+// ── Sender identity ─────────────────────────────────────────────────────────────
+
+// Warm-but-anonymous sender for EVERY funnel email (code, delivery, drip). A sender
+// NAME is not the same as publicly naming a person, so this stays within the
+// landing-page team-anonymity decision. FREE-FUNNEL-V2-SCOPE.md "Resolved decisions".
+export const FUNNEL_SENDER_NAME = "Equipe MedHelpSpace";
+
+// Swap the display name on a "Name <addr>" From header while KEEPING the verified
+// sending address. Lets funnel emails go out as `Equipe MedHelpSpace <addr>`
+// without touching the shared global from_address that other transactional emails
+// use. Pure string logic — no DB, safe to import anywhere.
+export function withSenderName(fromAddress: string, name: string): string {
+  const m = fromAddress.match(/<([^>]+)>/);
+  const addr = (m ? m[1] : fromAddress).trim();
+  return `${name} <${addr}>`;
+}
+
 // ── Rendering ──────────────────────────────────────────────────────────────────
 
 function resolveHref(href: string, appUrl: string): string {
@@ -574,26 +591,56 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     sort_order: 13,
   },
 
-  // ── Lead-magnet drip (recipients are anonymous leads, not members) ────────────
-  // FREE-FUNNEL-BUILD-SPEC.md §7. Every body carries a working {{unsubscribeUrl}}
-  // (the fixed footer's account link goes to /app, which leads can't use).
+  // ── Lead-magnet funnel (recipients are anonymous leads, not members) ──────────
+  // FREE-FUNNEL-V2-SCOPE.md. Every body carries a working {{unsubscribeUrl}} (the
+  // fixed footer's account link goes to /app, which leads can't use). Sender name
+  // is overridden to "Equipe MedHelpSpace" at the call site (fromName).
+
+  // Verify-to-claim code. The code is FIRST in the subject so it shows in the phone
+  // notification without opening. Transactional (user-requested) → minimal body,
+  // no marketing unsubscribe. FREE-FUNNEL-V2-SCOPE.md items 3 + 8.
+  "lead-code": {
+    kind: "lead-code",
+    name: "[Lead] Código de confirmação",
+    description: "Código de 6 dígitos para desbloquear o plano + demonstração de flashcards.",
+    subject: "{{code}} é o seu código — MedHelpSpace",
+    kicker: "",
+    headline: "Seu código de confirmação",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Use este código para desbloquear seu resultado completo, o plano de estudos e a demonstração de flashcards:</p>
+<p style="margin:0 0 20px;text-align:center;">
+  <span style="display:inline-block;background:#f9f5ff;border:1px solid #e9d5ff;border-radius:10px;padding:14px 24px;font-size:30px;font-weight:700;letter-spacing:.35em;color:#7a1d91;">{{code}}</span>
+</p>
+<p style="margin:0 0 8px;">Ele vale por <strong>10 minutos</strong>. Se não foi você que pediu, é só ignorar este e-mail.</p>`,
+    cta_label: "",
+    cta_href: "",
+    variables: [
+      { tag: "code", description: "Código de 6 dígitos" },
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+    ],
+    active: true,
+    sort_order: 13,
+  },
+  // Delivery, fired on CONFIRM (verify). Present tense — nothing was locked, the
+  // material IS here now. Personalized greeting; plan link points at the durable
+  // /resultado page (never the bare quiz URL). FREE-FUNNEL-V2-SCOPE.md item 9.
   "lead-d0": {
     kind: "lead-d0",
-    name: "[Lead] D0 — Entrega do simulado",
-    description: "Enviado no momento da captura: entrega o material, sem pitch.",
-    subject: "Seu Simulado Honesto chegou 👇",
+    name: "[Lead] Entrega — plano + flashcards",
+    description: "Enviado ao confirmar o código: entrega o plano + flashcards, present tense, sem pitch.",
+    subject: "Seu plano de estudos e seus flashcards estão prontos",
     kicker: "",
-    headline: "Seu material está liberado",
-    body_html: `<p style="margin:0 0 16px;">Aqui está o seu <strong>Simulado Honesto</strong> da 1ª etapa:</p>
-<p style="margin:0 0 8px;">🔹 As 15 questões comentadas — <a href="{{magnetUrl}}" style="color:#7a1d91;">retomar de onde parou</a></p>
-<p style="margin:0 0 20px;">🔹 Seu baralho de flashcards com revisão espaçada — <a href="{{deckUrl}}" style="color:#7a1d91;">abrir baralho</a></p>
-<p style="margin:0 0 8px;">Estuda 15 minutos hoje? É o suficiente pra sentir a diferença de estudar com método.</p>
+    headline: "Tudo pronto pra você começar",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Seu resultado, seu plano de estudos personalizado e sua demonstração de flashcards com revisão espaçada estão aqui:</p>
+<p style="margin:0 0 8px;">🔹 Seu plano + resultado completo — <a href="{{resultUrl}}" style="color:#7a1d91;">abrir meu plano</a></p>
+<p style="margin:0 0 20px;">🔹 Os flashcards das suas matérias mais fracas, já prontos pra praticar</p>
+<p style="margin:0 0 16px;">São <strong>questões reais de provas anteriores</strong> do Revalida, comentadas uma a uma.</p>
+<p style="margin:0 0 8px;">Nos próximos dias eu te mando alguns lembretes e o caminho até a prova — mas o material já está todo aqui, sem esperar.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
-    cta_label: "Abrir meu material →",
-    cta_href: "{{magnetUrl}}",
+    cta_label: "Ver meu plano de estudos →",
+    cta_href: "{{resultUrl}}",
     variables: [
-      { tag: "magnetUrl", description: "Link para o simulado" },
-      { tag: "deckUrl", description: "Link para o baralho de flashcards" },
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "resultUrl", description: "Link durável do resultado/plano (token)" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
     active: true,
@@ -606,17 +653,18 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Você acertou {{score}}/15. O que isso diz sobre {{examLabel}}.",
     kicker: "",
     headline: "Seu resultado e o que fazer com ele",
-    body_html: `<p style="margin:0 0 16px;">Você acertou <strong>{{score}}/15</strong>. A 1ª etapa aprova cerca de 1 em cada 4 — então cada ponto conta.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você acertou <strong>{{score}}/15</strong>. A 1ª etapa aprova cerca de 1 em cada 4 — então cada ponto conta.</p>
 <p style="margin:0 0 16px;">Pelo seu resultado, seus pontos mais fracos agora são <strong>{{weakSpecialties}}</strong>. A boa notícia: dá pra virar esse jogo, se você revisar as matérias certas, na ordem certa.</p>
-<p style="margin:0 0 8px;">Montamos um plano que prioriza exatamente os seus pontos fracos até {{examLabel}}.</p>
+<p style="margin:0 0 8px;">Montamos um plano que prioriza exatamente os seus pontos fracos até {{examLabel}} — ele continua aqui.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Ver meu plano até a prova →",
-    cta_href: "{{checkoutUrl}}",
+    cta_href: "{{resultUrl}}",
     variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "score", description: "Acertos do lead (0–15)" },
       { tag: "weakSpecialties", description: "Especialidades mais fracas (nomes)" },
       { tag: "examLabel", description: "Data da prova do cohort (ex.: 13 de setembro)" },
-      { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
+      { tag: "resultUrl", description: "Link durável do resultado/plano (token)" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
     active: true,
@@ -629,7 +677,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "A conta que ninguém te mostra",
     kicker: "",
     headline: "Quanto custa reprovar",
-    body_html: `<p style="margin:0 0 12px;">Ninguém gosta de fazer essa conta, mas ela importa:</p>
+    body_html: `<p style="margin:0 0 12px;">{{greeting}}Ninguém gosta de fazer essa conta, mas ela importa:</p>
 <p style="margin:0 0 6px;">• Taxa da prova: <strong>R$410</strong></p>
 <p style="margin:0 0 6px;">• A prova custa <strong>R$4.516</strong> em taxas</p>
 <p style="margin:0 0 16px;">• Reprovar e refazer a 2ª fase: <strong>+~R$4.106</strong> — e mais um ano sem poder exercer</p>
@@ -638,6 +686,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     cta_label: "Conhecer o método completo →",
     cta_href: "{{checkoutUrl}}",
     variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
@@ -651,16 +700,17 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Seu plano de estudos está esperando",
     kicker: "",
     headline: "Seu plano continua aqui",
-    body_html: `<p style="margin:0 0 16px;">Seu plano personalizado até {{examLabel}} continua disponível, com <strong>{{weakSpecialties}}</strong> no topo da fila.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Seu plano personalizado até {{examLabel}} continua disponível, com <strong>{{weakSpecialties}}</strong> no topo da fila.</p>
 <p style="margin:0 0 16px;">Não é mais conteúdo — é a ordem certa: questões comentadas, flashcards com revisão espaçada e áudio-aulas, distribuídos dia a dia até a prova. Você sempre sabe o que estudar hoje.</p>
 <p style="margin:0 0 8px;">Quanto antes você entra, mais tempo de estudo. Esperar custa caro — em dias de revisão.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
-    cta_label: "Desbloquear meu plano completo →",
-    cta_href: "{{checkoutUrl}}",
+    cta_label: "Ver meu plano de estudos →",
+    cta_href: "{{resultUrl}}",
     variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "weakSpecialties", description: "Especialidades mais fracas (nomes)" },
       { tag: "examLabel", description: "Data da prova do cohort (ex.: 13 de setembro)" },
-      { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
+      { tag: "resultUrl", description: "Link durável do resultado/plano (token)" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
     active: true,
@@ -673,13 +723,14 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Não prometo aprovação. Prometo isto:",
     kicker: "",
     headline: "A oferta mais honesta da categoria",
-    body_html: `<p style="margin:0 0 16px;">Vou ser direto: <strong>não prometo sua aprovação.</strong> Nenhum curso honesto pode.</p>
-<p style="margin:0 0 16px;">O que eu prometo é que você vai resolver mais questões comentadas, com revisão espaçada, do que em qualquer cursão de R$10 mil — e se em 7 dias você achar que não é pra você, <strong>devolvo cada centavo, sem perguntas.</strong></p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Vou ser direto: <strong>não prometo sua aprovação.</strong> Nenhum curso honesto pode.</p>
+<p style="margin:0 0 16px;">O que eu prometo é que você vai resolver mais questões reais comentadas, com revisão espaçada, do que em qualquer cursão de R$10 mil — e se em 7 dias você achar que não é pra você, <strong>devolvo cada centavo, sem perguntas.</strong></p>
 <p style="margin:0 0 8px;">Feito pra quem se formou fora. Você já é médico — falta o reconhecimento.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Garantir minha vaga (7 dias de garantia) →",
     cta_href: "{{checkoutUrl}}",
     variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
@@ -693,13 +744,14 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Faltam poucas semanas para a 1ª etapa",
     kicker: "",
     headline: "Última chamada para a turma 2026.2",
-    body_html: `<p style="margin:0 0 16px;">Faltam poucas semanas para a 1ª etapa (13/09) e a turma 2026.2 já está na reta de estudo.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Faltam poucas semanas para a 1ª etapa (13/09) e a turma 2026.2 já está na reta de estudo.</p>
 <p style="margin:0 0 16px;">Como o tempo de estudo até a prova é curto, liberamos a sua condição de reta final — o melhor preço que a gente oferece, só pra quem está nesta lista. É justo dos dois lados: menos tempo, preço menor.</p>
 <p style="margin:0 0 8px;">Seu plano está pronto. É só começar.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Começar agora →",
     cta_href: "{{checkoutUrl}}",
     variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "checkoutUrl", description: "Link de checkout com cupom último + e-mail" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
@@ -741,12 +793,16 @@ export const SAMPLE_VARS: Record<string, string> = {
   replyExcerpt:
     "Oi, Maria! Já corrigimos o player no celular — pode testar de novo e nos contar se resolveu?",
   ticketId: "1042",
-  // Lead-magnet drip samples
+  // Lead-magnet funnel samples
   score: "7",
   weakSpecialties: "Cardiologia, Nefrologia",
   examLabel: "13 de setembro",
+  code: "483920",
+  greeting: "Oi, Maria! ",
   magnetUrl: "https://medhelpspace.com.br/simulado-honesto",
   deckUrl: "https://medhelpspace.com.br/flashcards-gratis",
+  resultUrl:
+    "https://medhelpspace.com.br/simulado-honesto/resultado?lead=00000000-0000-0000-0000-000000000000",
   checkoutUrl:
     "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=RETA2026",
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",

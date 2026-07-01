@@ -3,12 +3,24 @@ import type { NextRequest } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmail } from "@/lib/email";
-import { offerCheckoutUrl, magnetUrl, unsubscribeUrl } from "@/lib/magnet/links";
+import { FUNNEL_SENDER_NAME } from "@/lib/email-render";
+import { offerCheckoutUrl, resultUrl, unsubscribeUrl } from "@/lib/magnet/links";
 
-// Lead-magnet email drip (FREE-FUNNEL-BUILD-SPEC.md §7). Advances each active lead
-// by AT MOST one step per run; the per-step offsetDays gate enforces the real
-// schedule (D1/D2/D4/D7/final) even though we step sequentially.
+// Lead-magnet email drip (FREE-FUNNEL-V2-SCOPE.md Group 6). Advances each lead by
+// AT MOST one step per run; the per-step offsetDays gate enforces the real schedule
+// (D1/D2/D4/D7/final) even though we step sequentially.
 // Schedule: app/vercel.json (daily). Auth: Bearer CRON_SECRET (Vercel sends it).
+//
+// Segmentation (item 11): the drip targets ONLY VERIFIED leads. In this funnel a
+// lead can only verify AT the results step (after finishing all 15), so verified ⟹
+// finished ⟹ "hot" — they get the full sequence. Unverified soft-captures are
+// SUPPRESSED entirely (we never confirmed their inbox → high bounce/complaint risk
+// for a young sending domain). The clock starts at verified_at, not created_at.
+
+function greetingFor(firstName?: string | null): string {
+  const n = (firstName ?? "").trim();
+  return n ? `Oi, ${n}! ` : "Oi! ";
+}
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -36,17 +48,21 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const now = Date.now();
 
-  // Active leads only; oldest first. drip_step < last step (5) means more to send.
+  // Active + VERIFIED leads only; oldest-verified first. drip_step < last step (5)
+  // means more to send. Unverified soft-captures are intentionally excluded.
   const { data: leads } = await admin
     .from("leads")
-    .select("id, email, score, weak_specialty_ids, drip_step, created_at, target_cohort")
+    .select(
+      "id, email, score, weak_specialty_ids, drip_step, verified_at, target_cohort, first_name, result_token",
+    )
     .eq("drip_status", "active")
+    .not("verified_at", "is", null)
     .lt("drip_step", STEPS[STEPS.length - 1].step)
-    .order("created_at", { ascending: true })
+    .order("verified_at", { ascending: true })
     .limit(300);
 
   if (!leads || leads.length === 0) {
-    return NextResponse.json({ ok: true, sent: 0, note: "no active leads due" });
+    return NextResponse.json({ ok: true, sent: 0, note: "no active verified leads due" });
   }
 
   // Read-side backstop for §6.5 Guarantee A: never email anyone who already bought
@@ -100,8 +116,10 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
+    // Clock starts when the lead VERIFIED (entered the funnel proper), not at
+    // soft-capture — a lead who verifies days later still gets a clean D1…final run.
     const elapsedDays = Math.floor(
-      (now - new Date(lead.created_at as string).getTime()) / 86_400_000,
+      (now - new Date(lead.verified_at as string).getTime()) / 86_400_000,
     );
     if (elapsedDays < nextStep.offsetDays) continue; // not due yet
 
@@ -114,11 +132,11 @@ export async function GET(request: NextRequest) {
     const coupon = is2027 ? null : nextStep.coupon;
 
     const vars: Record<string, string> = {
+      greeting: greetingFor(lead.first_name as string | null),
       score: lead.score != null ? String(lead.score) : "—",
       weakSpecialties: weakNames || "suas matérias mais difíceis",
       examLabel: examLabelByCohort[targetCohort] ?? "a sua prova",
-      magnetUrl: magnetUrl(),
-      deckUrl: magnetUrl(),
+      resultUrl: resultUrl((lead.result_token as string) ?? ""),
       checkoutUrl: offerCheckoutUrl({
         email,
         coupon,
@@ -137,7 +155,12 @@ export async function GET(request: NextRequest) {
     vars.unsubscribeUrl = unsubscribeUrl((tokRow?.unsubscribe_token as string) ?? "");
 
     try {
-      await sendTemplateEmail({ kind: nextStep.kind, to: email, vars });
+      await sendTemplateEmail({
+        kind: nextStep.kind,
+        to: email,
+        vars,
+        fromName: FUNNEL_SENDER_NAME,
+      });
       await admin
         .from("leads")
         .update({ drip_step: nextStep.step, last_emailed_at: new Date().toISOString() })

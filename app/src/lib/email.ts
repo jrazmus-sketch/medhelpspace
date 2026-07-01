@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   renderEmail,
+  withSenderName,
   EMAIL_TEMPLATE_DEFAULTS,
   DEFAULT_EMAIL_SETTINGS,
   sampleVarsFor,
@@ -124,19 +125,27 @@ export async function sendEmailRaw({
 }
 
 // Fetch settings + template for `kind`, render against `vars`, and send.
+// `fromName` overrides ONLY the display name on the From header (the verified
+// sending address is preserved) — the funnel uses it to send as "Equipe
+// MedHelpSpace" without changing the shared global from_address.
 export async function sendTemplateEmail({
   kind,
   to,
   vars,
+  fromName,
 }: {
   kind: string;
   to: string;
   vars: Record<string, string>;
+  fromName?: string;
 }): Promise<{ ok: boolean; reason?: string }> {
   const settings = await getEmailSettings();
   const tpl = await getEmailTemplate(kind);
   const { subject, html } = renderEmail(tpl, settings, vars);
-  return sendEmailRaw({ to, subject, html, from: settings.from_address });
+  const from = fromName
+    ? withSenderName(settings.from_address, fromName)
+    : settings.from_address;
+  return sendEmailRaw({ to, subject, html, from });
 }
 
 // Render a template ONCE (settings + template fetched once) and send the same body

@@ -6,12 +6,22 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 export const MAGNET_PATH = "/simulado-honesto";
+export const RESULTADO_PATH = "/simulado-honesto/resultado";
 export const FREE_DECK_PATH = "/flashcards-gratis";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
 
 export function magnetUrl(): string {
   return `${SITE_URL}${MAGNET_PATH}`;
+}
+
+// Durable "meu material" page. EVERY email link to the plan/result points here —
+// NOT the bare magnet URL, which cold-restarts at Q1 with only the 5 free
+// questions. The token is leads.result_token (unguessable UUID); the page
+// reconstructs score + plan + flashcards + offer from the stored lead row, so it
+// survives cross-device opens. FREE-FUNNEL-V2-SCOPE.md Group 3.
+export function resultUrl(token: string): string {
+  return `${SITE_URL}${RESULTADO_PATH}?lead=${encodeURIComponent(token)}`;
 }
 
 // The free flashcard deck delivered as the magnet bonus (what {{deckUrl}} resolves

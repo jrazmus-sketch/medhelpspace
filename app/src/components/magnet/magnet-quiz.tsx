@@ -2,11 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { safe } from "@/lib/sanitize";
-import { captureLeadAndUnlock, finalizeLeadResult } from "@/actions/magnet";
+import {
+  captureLeadAndUnlock,
+  finalizeLeadResult,
+  requestClaimCode,
+  verifyClaimCode,
+} from "@/actions/magnet";
 import type { MagnetQuestion } from "@/lib/magnet/questions";
-import type { MagnetAnswer, PlanPreview } from "@/lib/magnet/plan-preview";
+import type { MagnetAnswer, PlanPreview, FreeResultSummary } from "@/lib/magnet/plan-preview";
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
-import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
+import { MagnetReward, scoreFraming } from "@/components/magnet/magnet-reward";
+import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
 // security hook (see components/admin/editable-text.tsx).
@@ -32,6 +38,7 @@ type AnswerRecord = {
 
 const FREE_COUNT = 5;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TURNSTILE_ENABLED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export function MagnetQuiz({
   freeQuestions,
@@ -44,12 +51,17 @@ export function MagnetQuiz({
   const [idx, setIdx] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, AnswerRecord>>({});
-  const [phase, setPhase] = useState<"quiz" | "gate" | "cohort" | "results">("quiz");
+  const [phase, setPhase] = useState<"quiz" | "gate" | "cohort" | "resultsFree" | "reward">(
+    "quiz",
+  );
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState<string | null>(null);
+  const [hp, setHp] = useState(""); // honeypot — real users leave this blank
+  const [summary, setSummary] = useState<FreeResultSummary | null>(null);
+  const [cohort, setCohort] = useState("revalida-2026-2");
+  // Reward (post-verify)
   const [plan, setPlan] = useState<PlanPreview | null>(null);
   const [sampleCards, setSampleCards] = useState<MagnetFlashcard[]>([]);
-  const [cohort, setCohort] = useState("revalida-2026-2");
   const [pending, startTransition] = useTransition();
 
   const total = questions.length === FREE_COUNT ? 15 : questions.length;
@@ -100,9 +112,8 @@ export function MagnetQuiz({
     }));
     startTransition(async () => {
       const res = await finalizeLeadResult({ email, answers: allAnswers, targetCohort: slug });
-      setPlan(res.planPreview);
-      setSampleCards(res.sampleCards ?? []);
-      setPhase("results");
+      setSummary(res.summary);
+      setPhase("resultsFree");
     });
   }
 
@@ -114,11 +125,12 @@ export function MagnetQuiz({
     }
     setEmailErr(null);
     startTransition(async () => {
-      const res = await captureLeadAndUnlock({ email: em, utm });
+      const res = await captureLeadAndUnlock({ email: em, utm, honeypot: hp });
       if (!res.ok) {
-        setEmailErr("Não foi possível continuar. Tente novamente.");
+        setEmailErr("Não foi possível continuar. Confira o e-mail e tente novamente.");
         return;
       }
+      setEmail(em);
       setQuestions([...freeQuestions, ...res.gatedQuestions]);
       setIdx(FREE_COUNT);
       setSelectedIdx(null);
@@ -126,16 +138,42 @@ export function MagnetQuiz({
     });
   }
 
-  // ── Results / offer ─────────────────────────────────────────────────────────
-  if (phase === "results") {
+  function onVerified(res: {
+    plan: PlanPreview | null;
+    sampleCards: MagnetFlashcard[];
+  }) {
+    setPlan(res.plan);
+    setSampleCards(res.sampleCards);
+    setPhase("reward");
+  }
+
+  // ── Reward (post-verify) ──────────────────────────────────────────────────────
+  if (phase === "reward") {
     return (
-      <MagnetResults
-        score={correctCount}
+      <MagnetReward
+        score={summary?.score ?? correctCount}
         plan={plan}
         sampleCards={sampleCards}
         email={email}
         utm={utm}
         cohort={cohort}
+        showDeliveredNote
+      />
+    );
+  }
+
+  // ── Free results + verify-to-claim ────────────────────────────────────────────
+  if (phase === "resultsFree") {
+    return (
+      <MagnetResultsFree
+        summary={summary}
+        fallbackScore={correctCount}
+        email={email}
+        cohort={cohort}
+        honeypot={hp}
+        setHoneypot={setHp}
+        onEmailCorrected={setEmail}
+        onVerified={onVerified}
       />
     );
   }
@@ -175,14 +213,12 @@ export function MagnetQuiz({
             </div>
           </button>
         </div>
-        {pending && (
-          <p className="mt-4 text-xs text-muted-foreground">Montando seu plano…</p>
-        )}
+        {pending && <p className="mt-4 text-xs text-muted-foreground">Montando seu plano…</p>}
       </div>
     );
   }
 
-  // ── Email gate ──────────────────────────────────────────────────────────────
+  // ── Email gate (soft capture — NO email sent; the code comes at the reward) ───
   if (phase === "gate") {
     return (
       <div className="mx-auto max-w-xl rounded-2xl border border-brand/30 bg-surface-1 p-6 sm:p-8">
@@ -193,10 +229,21 @@ export function MagnetQuiz({
           Veja as 10 questões restantes + seu resultado comentado
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Mais o baralho de flashcards com revisão espaçada da 1ª etapa. É grátis — só
-          precisamos do seu e-mail para enviar.
+          São questões reais de provas anteriores. Deixe seu e-mail para continuar e receber
+          seu resultado no final — sem custo.
         </p>
         <div className="mt-5 space-y-3">
+          {/* Honeypot: visually hidden, real users never fill it. */}
+          <input
+            type="text"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={hp}
+            onChange={(e) => setHp(e.target.value)}
+            className="absolute left-[-9999px] h-0 w-0 opacity-0"
+          />
           <input
             type="email"
             inputMode="email"
@@ -328,44 +375,133 @@ export function MagnetQuiz({
   );
 }
 
-// ── Results + offer view ───────────────────────────────────────────────────────
+// ── Free results view + verify-to-claim ─────────────────────────────────────────
 
-function MagnetResults({
-  score,
-  plan,
-  sampleCards,
+function reasonToMessage(reason?: string): string {
+  switch (reason) {
+    case "invalid_email":
+      return "E-mail inválido. Confira e tente de novo.";
+    case "disposable_email":
+      return "Use um e-mail permanente (não um temporário) para receber seu material.";
+    case "undeliverable_domain":
+      return "Não conseguimos entregar nesse e-mail. Confira o endereço.";
+    case "rate_limited":
+      return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
+    case "too_soon":
+      return "Acabamos de enviar. Aguarde alguns segundos antes de reenviar.";
+    case "turnstile_failed":
+      return "Não conseguimos confirmar que você não é um robô. Recarregue e tente de novo.";
+    case "send_failed":
+      return "Falha ao enviar o código. Tente novamente em instantes.";
+    case "invalid_code":
+      return "Código incorreto. Confira e digite novamente.";
+    case "expired":
+      return "Esse código expirou. Peça um novo.";
+    case "too_many_attempts":
+      return "Muitas tentativas. Peça um novo código.";
+    case "no_code":
+      return "Peça um código primeiro.";
+    default:
+      return "Algo deu errado. Tente novamente.";
+  }
+}
+
+function MagnetResultsFree({
+  summary,
+  fallbackScore,
   email,
-  utm,
   cohort,
+  honeypot,
+  setHoneypot,
+  onEmailCorrected,
+  onVerified,
 }: {
-  score: number;
-  plan: PlanPreview | null;
-  sampleCards: MagnetFlashcard[];
+  summary: FreeResultSummary | null;
+  fallbackScore: number;
   email: string;
-  utm: MagnetUtm;
   cohort: string;
+  honeypot: string;
+  setHoneypot: (v: string) => void;
+  onEmailCorrected: (email: string) => void;
+  onVerified: (res: { plan: PlanPreview | null; sampleCards: MagnetFlashcard[] }) => void;
 }) {
+  const score = summary?.score ?? fallbackScore;
   const pct = Math.round((score / 15) * 100);
-  const weak = plan?.weakSpecialties ?? [];
-  const weakNames = weak.map((w) => w.name).join(", ");
-  const days = plan?.daysToExam ?? null;
-  const isReta = cohort === "revalida-2026-2"; // near-term cohort gets the discount
+  const weak = summary?.weakSpecialties ?? [];
+  const days = summary?.daysToExam ?? null;
+  const isReta = cohort === "revalida-2026-2";
+  const planCount = summary?.planItemCount ?? 0;
 
-  const checkoutHref = (() => {
-    const p = new URLSearchParams({
-      cohort,
-      email,
-      utm_source: utm.source ?? "magnet",
-      utm_medium: utm.medium ?? "site",
-      utm_campaign: utm.campaign ?? "simulado-honesto",
+  // Claim state
+  const [stage, setStage] = useState<"intro" | "code">("intro");
+  const [firstName, setFirstName] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [correcting, setCorrecting] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const needsTurnstile = TURNSTILE_ENABLED && !turnstileToken;
+
+  function sendCode(toEmail: string, previousEmail?: string) {
+    setErr(null);
+    startTransition(async () => {
+      const res = await requestClaimCode({
+        email: toEmail,
+        previousEmail: previousEmail ?? null,
+        firstName: firstName || null,
+        honeypot,
+        turnstileToken,
+      });
+      if (!res.ok) {
+        setErr(reasonToMessage(res.reason));
+        return;
+      }
+      setMaskedEmail(res.maskedEmail ?? "");
+      if (previousEmail) onEmailCorrected(toEmail);
+      setCorrecting(false);
+      setCode("");
+      setStage("code");
     });
-    if (isReta) p.set("cupom", "RETA2026"); // 2027.1 = full price, no coupon
-    return `/checkout?${p.toString()}`;
-  })();
+  }
+
+  function doVerify(codeValue: string) {
+    setErr(null);
+    startTransition(async () => {
+      const res = await verifyClaimCode({ email, code: codeValue, firstName: firstName || null });
+      if (!res.ok) {
+        setErr(reasonToMessage(res.reason));
+        if (res.reason === "invalid_code") setCode("");
+        return;
+      }
+      onVerified({ plan: res.plan ?? null, sampleCards: res.sampleCards ?? [] });
+    });
+  }
+
+  function onCodeChange(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    setCode(digits);
+    if (digits.length === 6 && !pending) doVerify(digits); // auto-submit on 6th digit
+  }
+
+  const HoneypotField = (
+    <input
+      type="text"
+      name="company"
+      tabIndex={-1}
+      autoComplete="off"
+      aria-hidden="true"
+      value={honeypot}
+      onChange={(e) => setHoneypot(e.target.value)}
+      className="absolute left-[-9999px] h-0 w-0 opacity-0"
+    />
+  );
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* Score + honest diagnostic */}
+      {/* Score + adaptive framing (FREE) */}
       <div className="rounded-2xl border border-border bg-surface-1 p-6 text-center">
         <div className="text-5xl font-bold tabular-nums text-brand">
           {score}
@@ -375,19 +511,39 @@ function MagnetResults({
         <div className="mx-auto mt-4 h-2 w-full max-w-sm overflow-hidden rounded-full bg-surface-2">
           <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
         </div>
-        <p className="mx-auto mt-4 max-w-md text-sm text-muted-foreground">
-          A 1ª etapa aprova cerca de 1 em cada 4. {weakNames ? (
-            <>
-              Pelo seu resultado, seus pontos mais fracos agora são{" "}
-              <strong className="text-foreground">{weakNames}</strong>.
-            </>
-          ) : (
-            <>O que falta não é esforço — é método nas matérias certas.</>
-          )}
-        </p>
+        <p className="mx-auto mt-4 max-w-md text-sm text-muted-foreground">{scoreFraming(score)}</p>
       </div>
 
-      {/* Stakes */}
+      {/* Missed-topics list (FREE) — so the plan feels earned, not generic */}
+      <div className="rounded-2xl border border-border bg-surface-1 p-6">
+        <h3 className="text-base font-bold tracking-tight">
+          {weak.length > 0 ? "O que escapou desta vez" : "Você foi bem nas áreas testadas"}
+        </h3>
+        {weak.length > 0 ? (
+          <>
+            <p className="mt-1 text-sm text-muted-foreground">
+              São exatamente estas matérias que seu plano vai priorizar:
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {weak.map((w) => (
+                <span
+                  key={w.id}
+                  className="rounded-full border border-brand/30 bg-brand-muted px-3 py-1 text-xs font-medium text-foreground"
+                >
+                  {w.name}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Nenhum ponto fraco claro nas questões de hoje — o plano completo mantém você afiado
+            em todas as áreas até a prova.
+          </p>
+        )}
+      </div>
+
+      {/* Stakes (FREE) */}
       {days != null && (
         <p className="text-center text-sm font-medium">
           {isReta ? (
@@ -404,132 +560,148 @@ function MagnetResults({
         </p>
       )}
 
-      {/* Flashcard taste — show the spaced-repetition system, don't just name it.
-          Cards come from the lead's weak specialties (server, finalizeLeadResult). */}
-      {sampleCards.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface-1 p-6">
+      {/* Gated reward — verify-to-claim */}
+      <div className="rounded-2xl border border-brand/30 bg-surface-1 p-6">
+        <div className="flex items-center gap-2">
+          <span aria-hidden className="text-lg">🔒</span>
           <h3 className="text-lg font-bold tracking-tight">
-            Não basta reler — você precisa recordar
+            Seu plano de estudos + demonstração de flashcards
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {weakNames ? (
-              <>
-                Experimente agora, com {weakNames}. Vire o card e responda se você lembrou.
-              </>
-            ) : (
-              <>Experimente agora. Vire o card e responda se você lembrou.</>
-            )}
-          </p>
-          <div className="mt-4">
-            <MagnetFlashcards
-              cards={sampleCards}
-              compact
-              doneTitle="É exatamente assim no método completo."
-              doneNote="O baralho completo já está no seu e-mail."
-              ctaHref="/flashcards-gratis"
-              ctaLabel="Abrir o baralho grátis →"
+        </div>
+
+        {stage === "intro" && (
+          <>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {planCount > 0 ? (
+                <>
+                  Seu plano personalizado de <strong className="text-foreground">{planCount} passos</strong>{" "}
+                  até {isReta ? "13/09" : "a prova"} e uma demonstração de flashcards nas suas
+                  matérias fracas estão prontos.
+                </>
+              ) : (
+                <>
+                  Seu plano de estudos personalizado e uma demonstração de flashcards nas suas
+                  matérias fracas estão prontos.
+                </>
+              )}{" "}
+              Confirme seu e-mail para desbloquear — é assim que garantimos que o material chega
+              até você.
+            </p>
+
+            <div className="relative mt-4 space-y-3">
+              {HoneypotField}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Como podemos te chamar?
+                </label>
+                <input
+                  type="text"
+                  autoComplete="given-name"
+                  placeholder="Seu primeiro nome"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-4 py-3 text-base outline-none focus:border-brand"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Vamos enviar um código de 6 dígitos para{" "}
+                <strong className="text-foreground">{email}</strong>.
+              </p>
+              <TurnstileWidget onVerify={setTurnstileToken} />
+              {err && <p className="text-sm text-red-500">{err}</p>}
+              <button
+                onClick={() => sendCode(email)}
+                disabled={pending || needsTurnstile}
+                className="w-full rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {pending
+                  ? "Enviando código…"
+                  : needsTurnstile
+                    ? "Confirme que você não é um robô"
+                    : "Desbloquear meu plano + flashcards →"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {stage === "code" && (
+          <div className="relative mt-3 space-y-3">
+            {HoneypotField}
+            <p className="text-sm text-muted-foreground">
+              Enviamos um código de 6 dígitos para{" "}
+              <strong className="text-foreground">{maskedEmail || email}</strong>. Digite abaixo
+              para desbloquear.
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              placeholder="______"
+              value={code}
+              onChange={(e) => onCodeChange(e.target.value)}
+              autoFocus
+              className="w-full rounded-lg border border-border bg-background px-4 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none focus:border-brand"
             />
-          </div>
-        </div>
-      )}
+            {err && <p className="text-sm text-red-500">{err}</p>}
+            {pending && <p className="text-xs text-muted-foreground">Confirmando…</p>}
 
-      {/* Locked personalized plan preview */}
-      <div className="rounded-2xl border border-border bg-surface-1 p-6">
-        <h3 className="text-lg font-bold tracking-tight">
-          Seu plano de estudos até {isReta ? "13/09" : "a sua prova"}
-        </h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Montado a partir do seu resultado{weakNames ? <>, priorizando {weakNames}</> : null}.
-        </p>
-
-        <div className="mt-4 space-y-2">
-          {(plan?.visibleItems ?? []).map((it, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 rounded-lg border border-border bg-background p-3"
-            >
-              <span className="mt-0.5 text-brand">●</span>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{it.title}</div>
-                <div className="truncate text-xs text-muted-foreground">{it.subtitle}</div>
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <button
+                onClick={() => sendCode(email)}
+                disabled={pending}
+                className="text-muted-foreground underline hover:text-foreground disabled:opacity-50"
+              >
+                Não recebeu? Reenviar
+              </button>
+              <button
+                onClick={() => setCorrecting((v) => !v)}
+                disabled={pending}
+                className="text-muted-foreground underline hover:text-foreground disabled:opacity-50"
+              >
+                Corrigir e-mail
+              </button>
             </div>
-          ))}
 
-          {/* Blurred locked remainder */}
-          {plan && plan.lockedCount > 0 && (
-            <div className="relative overflow-hidden rounded-lg border border-border">
-              <div className="space-y-2 p-3 blur-[5px]" aria-hidden>
-                {Array.from({ length: Math.min(3, plan.lockedCount) }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="text-brand">●</span>
-                    <div className="h-3 w-2/3 rounded bg-surface-2" />
-                  </div>
-                ))}
+            {correcting && (
+              <div className="space-y-2 rounded-lg border border-border bg-background p-3">
+                <label className="block text-xs font-medium text-muted-foreground">
+                  Qual é o e-mail certo?
+                </label>
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="seu@email.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface-1 px-4 py-2.5 text-sm outline-none focus:border-brand"
+                />
+                <button
+                  onClick={() => {
+                    const em = newEmail.trim().toLowerCase();
+                    if (!EMAIL_RE.test(em)) {
+                      setErr("Digite um e-mail válido.");
+                      return;
+                    }
+                    sendCode(em, email);
+                  }}
+                  disabled={pending}
+                  className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  Enviar código para o novo e-mail →
+                </button>
               </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-background/40">
-                <span className="text-xs font-semibold text-foreground">
-                  + {plan.lockedCount} itens no plano completo
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Cost-of-failing receipt */}
-      <div className="rounded-2xl border border-border bg-surface-1 p-6 text-sm">
-        <h3 className="font-bold">A conta que ninguém te mostra</h3>
-        <ul className="mt-3 space-y-1.5 text-muted-foreground">
-          <li>• A taxa da 1ª etapa já custou <strong className="text-foreground">R$410</strong>.</li>
-          <li>• A prova custa <strong className="text-foreground">R$4.516</strong> em taxas.</li>
-          <li>
-            • Reprovar e refazer a 2ª fase: <strong className="text-foreground">+~R$4.106</strong> —
-            e mais um ano sem poder exercer.
-          </li>
-        </ul>
-        <p className="mt-3">
-          O método completo da 1ª etapa custa <strong className="text-foreground">R$3.990</strong> —
-          menos do que custa reprovar uma vez.
-        </p>
-      </div>
-
-      {/* Offer */}
-      <div className="rounded-2xl border border-brand/30 bg-brand-muted p-6">
-        <h3 className="text-lg font-bold tracking-tight">Continue sua revisão até a prova</h3>
-        <ul className="mt-3 space-y-1.5 text-sm">
-          <li>✓ Questões comentadas das 12 especialidades</li>
-          <li>✓ Flashcards com revisão espaçada nos seus pontos fracos</li>
-          <li>✓ Áudio-aulas MedVoice + plano de estudo personalizado</li>
-        </ul>
-        {isReta ? (
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-sm text-muted-foreground line-through">R$3.990</span>
-            <span className="text-2xl font-bold text-brand">R$3.290</span>
-            <span className="text-xs text-muted-foreground">em 12x ou Pix · reta final</span>
-          </div>
-        ) : (
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-brand">R$4.990</span>
-            <span className="text-xs text-muted-foreground">
-              em 12x ou Pix · comece no seu ritmo
-            </span>
+            )}
           </div>
         )}
-        <a
-          href={checkoutHref}
-          className="mt-4 block rounded-lg bg-brand px-5 py-3 text-center text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
-        >
-          {isReta ? "Desbloquear meu plano completo →" : "Quero começar agora →"}
-        </a>
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          7 dias de garantia incondicional. Sem pegadinha.
-        </p>
       </div>
 
       {/* Pressure release */}
       <p className="text-center text-xs text-muted-foreground">
-        Sem pressa — enviamos seu resultado e o baralho de flashcards no seu e-mail também.
+        Seu resultado é seu. Confirmar o e-mail só libera o plano personalizado e a demonstração
+        de flashcards.
       </p>
     </div>
   );
