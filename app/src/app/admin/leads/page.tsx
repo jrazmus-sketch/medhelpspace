@@ -3,8 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLeadsOverview } from "@/lib/admin/leads";
 import { getFunnelOverview } from "@/lib/admin/funnel";
+import { getOciReadyCounts } from "@/lib/admin/oci";
 import { LeadsClient } from "./leads-client";
 import { FunnelPanel } from "./funnel-panel";
+import { OciPanel } from "./oci-panel";
 
 export const metadata = { title: "Leads" };
 
@@ -32,13 +34,15 @@ export default async function LeadsPage() {
     redirect("/admin");
   }
 
-  const [{ rows, summary }, funnel] = await Promise.all([
+  const [{ rows, summary }, funnel, ociCounts] = await Promise.all([
     getLeadsOverview(),
     getFunnelOverview(),
+    getOciReadyCounts(),
   ]);
   return (
     <div className="space-y-8">
       <FunnelPanel funnel={funnel} />
+      <OciPanel counts={ociCounts} />
       <LeadsClient rows={rows} summary={summary} />
     </div>
   );

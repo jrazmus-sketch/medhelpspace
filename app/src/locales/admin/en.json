@@ -841,6 +841,20 @@
     "cplNote": "CPL/CAC show here once you record ad spend.",
     "warmingUp": "“Landed” and “Started” begin counting from now — leads captured before this have no such record."
   },
+  "oci": {
+    "title": "Offline conversions (Google Ads)",
+    "subtitle": "Send verified conversions back to Google, keyed on gclid.",
+    "ready": "{{verified}} verifications · {{purchase}} purchases ready to upload",
+    "readyNone": "Nothing to upload yet. Appears when a Google-ad lead verifies their email or buys.",
+    "download": "Download CSV",
+    "building": "Generating…",
+    "rowsIncluded": "{{count}} conversions in the file",
+    "afterDownload": "Upload the CSV in Google Ads (Goals → Conversions → Uploads), then mark as uploaded.",
+    "markUploaded": "Mark as uploaded",
+    "marking": "Marking…",
+    "error": "Something went wrong. Try again.",
+    "help": "Requires the “Lead verified” and “Purchase” conversion actions in the Google Ads account."
+  },
   "emailTemplates": {
     "title": "Email templates",
     "subtitle": "Edit the transactional emails and the footer / sender details sent to members.",

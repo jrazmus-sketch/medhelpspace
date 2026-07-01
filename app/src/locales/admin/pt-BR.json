@@ -841,6 +841,20 @@
     "cplNote": "CPL/CAC aparecem aqui quando você registrar o investimento em anúncios.",
     "warmingUp": "As etapas “Chegaram” e “Iniciaram” passam a contar a partir de agora — leads captados antes disso não têm esse registro."
   },
+  "oci": {
+    "title": "Conversões offline (Google Ads)",
+    "subtitle": "Envie as conversões verificadas de volta ao Google, por gclid.",
+    "ready": "{{verified}} verificações · {{purchase}} compras prontas para enviar",
+    "readyNone": "Nada para enviar agora. Aparece quando um lead vindo de anúncio do Google verifica o e-mail ou compra.",
+    "download": "Baixar CSV",
+    "building": "Gerando…",
+    "rowsIncluded": "{{count}} conversões no arquivo",
+    "afterDownload": "Suba o CSV no Google Ads (Metas → Conversões → Uploads) e depois marque como enviado.",
+    "markUploaded": "Marcar como enviado",
+    "marking": "Marcando…",
+    "error": "Algo deu errado. Tente novamente.",
+    "help": "Exige as ações de conversão “Lead verified” e “Purchase” criadas na conta do Google Ads."
+  },
   "emailTemplates": {
     "title": "Modelos de e-mail",
     "subtitle": "Edite os e-mails transacionais e o rodapé/identificação enviados aos membros.",
