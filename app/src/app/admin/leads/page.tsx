@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLeadsOverview } from "@/lib/admin/leads";
+import { getFunnelOverview } from "@/lib/admin/funnel";
 import { LeadsClient } from "./leads-client";
+import { FunnelPanel } from "./funnel-panel";
 
 export const metadata = { title: "Leads" };
 
@@ -30,6 +32,14 @@ export default async function LeadsPage() {
     redirect("/admin");
   }
 
-  const { rows, summary } = await getLeadsOverview();
-  return <LeadsClient rows={rows} summary={summary} />;
+  const [{ rows, summary }, funnel] = await Promise.all([
+    getLeadsOverview(),
+    getFunnelOverview(),
+  ]);
+  return (
+    <div className="space-y-8">
+      <FunnelPanel funnel={funnel} />
+      <LeadsClient rows={rows} summary={summary} />
+    </div>
+  );
 }

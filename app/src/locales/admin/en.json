@@ -819,6 +819,28 @@
     "scoreShort": "{{score}} correct",
     "noResults": "No leads found."
   },
+  "funnel": {
+    "title": "Acquisition funnel",
+    "subtitle": "From click to sale — where visitors enter and where they drop off.",
+    "stage_landing": "Landed",
+    "stage_start": "Started",
+    "stage_capture": "Email",
+    "stage_verified": "Verified",
+    "stage_sale": "Purchased",
+    "overall": "Overall",
+    "bySource": "By source",
+    "colSource": "Source",
+    "colLandings": "Landed",
+    "colStart": "Started",
+    "colCapture": "Email",
+    "colVerified": "Verif.",
+    "colSale": "Sale",
+    "colLandToSale": "Land→sale",
+    "sourceOrganic": "organic",
+    "empty": "No funnel data yet. Events appear as soon as someone visits the simulado.",
+    "cplNote": "CPL/CAC show here once you record ad spend.",
+    "warmingUp": "“Landed” and “Started” begin counting from now — leads captured before this have no such record."
+  },
   "emailTemplates": {
     "title": "Email templates",
     "subtitle": "Edit the transactional emails and the footer / sender details sent to members.",

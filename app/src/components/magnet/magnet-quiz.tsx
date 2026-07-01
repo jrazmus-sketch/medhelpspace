@@ -13,6 +13,7 @@ import type { MagnetAnswer, PlanPreview, FreeResultSummary } from "@/lib/magnet/
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetReward, scoreFraming } from "@/components/magnet/magnet-reward";
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
+import { trackFunnel } from "@/lib/magnet/funnel-track";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
 // security hook (see components/admin/editable-text.tsx).
@@ -26,6 +27,7 @@ export type MagnetUtm = {
   campaign?: string;
   term?: string;
   content?: string;
+  gclid?: string; // Google Ads click id — attribution + offline conversion import
 };
 
 type AnswerRecord = {
@@ -51,9 +53,9 @@ export function MagnetQuiz({
   const [idx, setIdx] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, AnswerRecord>>({});
-  const [phase, setPhase] = useState<"quiz" | "gate" | "cohort" | "resultsFree" | "reward">(
-    "quiz",
-  );
+  const [phase, setPhase] = useState<
+    "welcome" | "quiz" | "gate" | "cohort" | "resultsFree" | "reward"
+  >("welcome");
   const [email, setEmail] = useState("");
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [hp, setHp] = useState(""); // honeypot — real users leave this blank
@@ -270,6 +272,65 @@ export function MagnetQuiz({
     );
   }
 
+  // ── Welcome (step 0) — frames the experience for cold/ad traffic before Q1 ────
+  // The server hero above carries the headline + SEO <h1>; this card sets honest
+  // expectations (time, format, payoff) and captures a micro-commitment click.
+  // If paid ads ever land here, this can be gated to paid traffic only (via a UTM
+  // param) so organic/SEO visitors keep going straight to the questions.
+  if (phase === "welcome") {
+    return (
+      <div className="mx-auto max-w-xl rounded-2xl border border-border bg-surface-1 p-6 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand">
+          Antes de começar
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+          Você resolve, vê o comentário na hora e, no final, a gente monta seu plano de estudo —
+          focado nas matérias que você errou. Sem pegadinha.
+        </p>
+
+        <ul className="mt-5 space-y-3 text-sm">
+          <li className="flex items-start gap-3">
+            <span aria-hidden className="mt-0.5 text-base leading-none">
+              ⏱
+            </span>
+            <span>
+              <strong className="font-semibold text-foreground">10–15 min</strong> · 15 questões
+              comentadas, no seu ritmo
+            </span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span aria-hidden className="mt-0.5 text-base leading-none">
+              💬
+            </span>
+            <span>Comentário e explicação logo após cada resposta</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span aria-hidden className="mt-0.5 text-base leading-none">
+              🎯
+            </span>
+            <span>
+              No final: seu nível real + um plano de estudo até{" "}
+              <strong className="font-semibold text-foreground">13/09</strong>
+            </span>
+          </li>
+        </ul>
+
+        <button
+          onClick={() => {
+            trackFunnel("quiz_start", utm); // top-of-funnel: land → START → capture
+            setPhase("quiz");
+          }}
+          className="mt-6 w-full rounded-lg bg-brand px-5 py-3.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
+        >
+          Começar agora →
+        </button>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Grátis · sem cartão · as 5 primeiras sem cadastro
+        </p>
+      </div>
+    );
+  }
+
   // ── Quiz ────────────────────────────────────────────────────────────────────
   if (!q) return null;
   const isLastFree = idx === FREE_COUNT - 1 && questions.length === FREE_COUNT;
@@ -282,7 +343,13 @@ export function MagnetQuiz({
           <span>
             Questão {idx + 1} de {total}
           </span>
-          <span>{correctCount} corretas</span>
+          {/* Hide the score until there's something to count — a cold user
+              starting at "0 corretas" reads like they're already failing. */}
+          {Object.keys(answers).length > 0 && (
+            <span>
+              {correctCount} {correctCount === 1 ? "correta" : "corretas"}
+            </span>
+          )}
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
           <div
@@ -291,6 +358,20 @@ export function MagnetQuiz({
           />
         </div>
       </div>
+
+      {/* One-time guidance hint on Q1 — teaches the loop, then gets out of the way
+          the moment they answer. Delivers the "this site guides you" feel. */}
+      {idx === 0 && !answered && (
+        <div className="flex items-start gap-2 rounded-lg border border-brand/20 bg-brand-muted px-3 py-2.5 text-xs text-muted-foreground">
+          <span aria-hidden className="text-sm leading-none">
+            💡
+          </span>
+          <span>
+            Escolha uma alternativa. Assim que responder, você vê o comentário — e no final,
+            montamos seu plano.
+          </span>
+        </div>
+      )}
 
       {q.media_url && (
         <div className="overflow-hidden rounded-lg border border-border">

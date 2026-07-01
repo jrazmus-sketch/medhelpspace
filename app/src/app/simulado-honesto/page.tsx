@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getMagnetQuestions, MAGNET_FREE_IDS } from "@/lib/magnet/questions";
 import { MagnetQuiz, type MagnetUtm } from "@/components/magnet/magnet-quiz";
+import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 
 // PUBLIC, indexable landing page — lives OUTSIDE the /app gate, so it never hits
 // requireActiveMembership(). The 5 free questions render server-side (instant +
@@ -32,12 +33,17 @@ export default async function SimuladoHonestoPage({
     campaign: pick("utm_campaign"),
     term: pick("utm_term"),
     content: pick("utm_content"),
+    // Google auto-tagging appends ?gclid= on ad clicks; the whole funnel is one
+    // route so it survives in the query string through Q5 capture.
+    gclid: pick("gclid"),
   };
 
   const freeQuestions = await getMagnetQuestions(MAGNET_FREE_IDS);
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
+      {/* Top-of-funnel beacon (invisible): records the 'landing' step. */}
+      <FunnelBeacon utm={utm} />
       {/* Minimal brand bar — kept lean for Quality Score / conversion focus */}
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">

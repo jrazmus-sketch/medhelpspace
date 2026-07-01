@@ -50,6 +50,7 @@ type Utm = {
   campaign?: string;
   term?: string;
   content?: string;
+  gclid?: string; // Google Ads click id — attribution + offline conversion import
 };
 
 // ── Small helpers (module-local; "use server" files export only async fns) ──────
@@ -145,6 +146,8 @@ export async function captureLeadAndUnlock(input: {
     .maybeSingle();
 
   if (existing) {
+    // `?? undefined` omits the key from the PATCH so a later submit without a
+    // value never wipes an already-captured attribution field.
     await admin
       .from("leads")
       .update({
@@ -153,6 +156,7 @@ export async function captureLeadAndUnlock(input: {
         utm_campaign: utm.campaign ?? undefined,
         utm_term: utm.term ?? undefined,
         utm_content: utm.content ?? undefined,
+        gclid: utm.gclid ?? undefined,
       })
       .eq("id", existing.id);
   } else {
@@ -163,6 +167,7 @@ export async function captureLeadAndUnlock(input: {
       utm_campaign: utm.campaign ?? null,
       utm_term: utm.term ?? null,
       utm_content: utm.content ?? null,
+      gclid: utm.gclid ?? null,
     });
   }
 

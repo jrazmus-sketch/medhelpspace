@@ -819,6 +819,28 @@
     "scoreShort": "{{score}} acertos",
     "noResults": "Nenhum lead encontrado."
   },
+  "funnel": {
+    "title": "Funil de aquisição",
+    "subtitle": "Do clique à venda — onde os visitantes entram e onde desistem.",
+    "stage_landing": "Chegaram",
+    "stage_start": "Iniciaram",
+    "stage_capture": "E-mail",
+    "stage_verified": "Verificaram",
+    "stage_sale": "Compraram",
+    "overall": "Geral",
+    "bySource": "Por origem",
+    "colSource": "Origem",
+    "colLandings": "Chegaram",
+    "colStart": "Iniciaram",
+    "colCapture": "E-mail",
+    "colVerified": "Verif.",
+    "colSale": "Venda",
+    "colLandToSale": "Chegada→venda",
+    "sourceOrganic": "orgânico",
+    "empty": "Sem dados de funil ainda. Os eventos aparecem assim que alguém acessa o simulado.",
+    "cplNote": "CPL/CAC aparecem aqui quando você registrar o investimento em anúncios.",
+    "warmingUp": "As etapas “Chegaram” e “Iniciaram” passam a contar a partir de agora — leads captados antes disso não têm esse registro."
+  },
   "emailTemplates": {
     "title": "Modelos de e-mail",
     "subtitle": "Edite os e-mails transacionais e o rodapé/identificação enviados aos membros.",
