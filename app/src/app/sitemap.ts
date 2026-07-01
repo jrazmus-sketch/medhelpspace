@@ -15,8 +15,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
-      // Free lead magnet — indexable SEO landing for "simulado revalida".
-      url: "https://medhelpspace.com.br/simulado-honesto",
+      // Free lead magnet — indexable SEO landing for "questões revalida".
+      url: "https://medhelpspace.com.br/questoes-revalida",
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,

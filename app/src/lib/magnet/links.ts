@@ -5,8 +5,12 @@ export const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://medhelpspace.com.br"
 ).replace(/\/$/, "");
 
-export const MAGNET_PATH = "/simulado-honesto";
-export const RESULTADO_PATH = "/simulado-honesto/resultado";
+// Renamed from /simulado-honesto (2026-07-01) — the free magnet is now framed as
+// real past-exam questions, not a mock "simulado". A permanent redirect in
+// next.config.ts keeps live ad clicks, already-sent drip-email links, and indexed
+// SEO URLs working.
+export const MAGNET_PATH = "/questoes-revalida";
+export const RESULTADO_PATH = "/questoes-revalida/resultado";
 export const FREE_DECK_PATH = "/flashcards-gratis";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";

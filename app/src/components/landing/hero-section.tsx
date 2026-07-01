@@ -314,7 +314,7 @@ export function HeroSection() {
                 from paid-ad leads (which carry utm_source=google/etc.) in the leads
                 table — the magnet page already plumbs UTM straight into the row. */}
             <Link
-              href="/simulado-honesto?utm_source=site&utm_medium=hero&utm_campaign=home"
+              href="/questoes-revalida?utm_source=site&utm_medium=hero&utm_campaign=home"
               className="w-full rounded-xl border px-8 py-4 text-center text-base font-semibold text-white transition-all hover:-translate-y-px hover:bg-white/5 active:scale-95 sm:w-auto"
               style={{ borderColor: "rgba(255,255,255,0.22)" }}
             >

@@ -1,5 +1,5 @@
 "use client";
-// Fire-and-forget top-of-funnel beacon for /simulado-honesto. Deduped per session
+// Fire-and-forget top-of-funnel beacon for /questoes-revalida. Deduped per session
 // on the client (sessionStorage) AND on the server (unique index). Strictly best-
 // effort: analytics must never break the funnel, so every failure is swallowed.
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";

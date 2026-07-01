@@ -65,7 +65,7 @@ export default async function ResultadoPage({
               gerar um novo.
             </p>
             <Link
-              href="/simulado-honesto"
+              href="/questoes-revalida"
               className="mt-5 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
             >
               Fazer o Simulado Honesto →

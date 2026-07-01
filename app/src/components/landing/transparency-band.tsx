@@ -60,7 +60,7 @@ export function TransparencyBand() {
             on-page door drove each lead. */}
         <div className="mt-12 border-t pt-10" style={{ borderColor: "var(--lp-border)" }}>
           <Link
-            href="/simulado-honesto?utm_source=site&utm_medium=transparencia&utm_campaign=home"
+            href="/questoes-revalida?utm_source=site&utm_medium=transparencia&utm_campaign=home"
             className="inline-block rounded-xl px-7 py-3.5 text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-px active:scale-95"
             style={{ background: "var(--brand)", boxShadow: "0 0 32px rgba(122,29,145,0.35)" }}
           >

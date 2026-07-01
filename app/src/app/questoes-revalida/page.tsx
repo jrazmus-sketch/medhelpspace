@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Simulado Revalida 1ª Etapa — 15 Questões Comentadas Grátis",
   description:
     "Faça um simulado honesto da 1ª etapa do Revalida: 15 questões comentadas, veja seu nível e receba um plano de estudo até 13 de setembro. Grátis, sem cartão.",
-  alternates: { canonical: "/simulado-honesto" },
+  alternates: { canonical: "/questoes-revalida" },
 };
 
 export const dynamic = "force-dynamic"; // reads UTM from the query string

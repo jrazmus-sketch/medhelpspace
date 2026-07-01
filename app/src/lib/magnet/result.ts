@@ -7,7 +7,7 @@ import {
 import { getSampleFlashcardsForSpecialties, type MagnetFlashcard } from "@/lib/magnet/flashcards";
 
 // Server loader for the durable "meu material" page
-// (/simulado-honesto/resultado?lead=<result_token>). Reconstructs the reward from
+// (/questoes-revalida/resultado?lead=<result_token>). Reconstructs the reward from
 // the stored lead row so it survives cross-device opens — every funnel email links
 // here, never the bare quiz URL. FREE-FUNNEL-V2-SCOPE.md Group 3.
 //

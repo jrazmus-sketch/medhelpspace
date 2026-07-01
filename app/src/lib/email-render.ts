@@ -814,10 +814,10 @@ export const SAMPLE_VARS: Record<string, string> = {
   examLabel: "13 de setembro",
   code: "483920",
   greeting: "Oi, Maria! ",
-  magnetUrl: "https://medhelpspace.com.br/simulado-honesto",
+  magnetUrl: "https://medhelpspace.com.br/questoes-revalida",
   deckUrl: "https://medhelpspace.com.br/flashcards-gratis",
   resultUrl:
-    "https://medhelpspace.com.br/simulado-honesto/resultado?lead=00000000-0000-0000-0000-000000000000",
+    "https://medhelpspace.com.br/questoes-revalida/resultado?lead=00000000-0000-0000-0000-000000000000",
   checkoutUrl:
     "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=RETA2026",
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",

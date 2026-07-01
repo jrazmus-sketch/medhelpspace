@@ -7,7 +7,7 @@ import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
 // The post-confirm REWARD — the gated payoff of the verify-to-claim flow. Rendered
 // in two places from the SAME component so they never drift:
 //   • inline on the results view once the 6-digit code is confirmed, and
-//   • on the durable /simulado-honesto/resultado page (email links land here).
+//   • on the durable /questoes-revalida/resultado page (email links land here).
 // FREE-FUNNEL-V2-SCOPE.md Groups 4 + 3. score card + stakes + interactive
 // flashcard demo (with SM-2 spacing viz) + personalized plan + cost receipt +
 // offer + immediate buy path.
@@ -60,7 +60,7 @@ export function MagnetReward({
       email,
       utm_source: utm.source ?? "magnet",
       utm_medium: utm.medium ?? "site",
-      utm_campaign: utm.campaign ?? "simulado-honesto",
+      utm_campaign: utm.campaign ?? "questoes-revalida",
     });
     if (isReta) p.set("cupom", "RETA2026"); // 2027.1 = full price, no coupon
     return `/checkout?${p.toString()}`;

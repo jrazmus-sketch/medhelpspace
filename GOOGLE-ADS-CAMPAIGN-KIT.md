@@ -1,8 +1,14 @@
-# Google Ads Campaign Kit — `/simulado-honesto`
+# Google Ads Campaign Kit — `/questoes-revalida`
 
 > Created 2026-07-01. Ready-to-launch kit for the first paid Google **Search** test
-> (~$200 USD) driving long-tail traffic to the free simulado magnet at
-> `medhelpspace.com.br/simulado-honesto`.
+> (~$200 USD) driving long-tail traffic to the free questions magnet at
+> `medhelpspace.com.br/questoes-revalida`.
+>
+> **Magnet reframe (2026-07-01):** the free sample was renamed from `/simulado-honesto`
+> to `/questoes-revalida` and reframed from a mock "simulado" to **real questions from
+> past Revalida exams** (Karina's call). A **permanent 301 redirect** (`next.config.ts`)
+> keeps the old URL alive, so any old link still lands correctly. The route rename is in
+> code but **not yet deployed** — the new URL only goes live after the next Vercel deploy.
 >
 > **Prereqs (done):** dedicated Google Ads account (BRL · America/São Paulo ·
 > auto-tagging ON), conversion actions `Lead verified` + `Purchase` defined as
@@ -10,7 +16,7 @@
 > (Offline Conversion Import export) shipped on `/admin/leads`. See
 > `FREE-FUNNEL-V2-SCOPE.md` → "Paid-ads conversion tracking".
 >
-> **How this connects:** paid clicks land on `/simulado-honesto` with a `gclid`
+> **How this connects:** paid clicks land on `/questoes-revalida` with a `gclid`
 > (auto-tagging) + `utm_source=google` (the Final URL suffix below). They then show
 > as source **`google`** in the `/admin/leads` funnel dashboard, and their
 > verify/purchase conversions surface in the **Offline conversions** panel there to
@@ -35,6 +41,10 @@
 ---
 
 ## Keywords
+
+> **Keep bidding on "simulado"** even though the page is now "questões". "Simulado
+> revalida" is high-volume search demand — real past questions satisfy that intent.
+> Keywords = what people type; ad copy = what we promise. They don't have to match.
 
 **Ad group A — Simulado / Questões** (highest intent)
 ```
@@ -69,7 +79,7 @@ diploma trabalho, "o que significa"
 
 **Headlines** (≤30 chars each):
 ```
-Simulado Revalida Grátis
+Questões Revalida Grátis
 15 Questões Comentadas
 Revalida 1ª Etapa
 Veja Onde Você Está
@@ -81,6 +91,9 @@ Estude o Que Cai na Prova
 Grátis, Sem Cadastro
 Revalida 2026.2
 Descubra Seus Pontos Fracos
+Questões de Provas Passadas
+Provas Anteriores do Revalida
+Banco de Questões Revalida
 ```
 
 **Descriptions** (≤90 chars each):
@@ -88,14 +101,17 @@ Descubra Seus Pontos Fracos
 Resolva 15 questões comentadas da 1ª etapa e veja exatamente onde você está. Grátis.
 Receba um plano de estudo até a prova. Sem cartão e sem promessa de aprovação.
 Questões reais de provas anteriores, comentadas uma a uma. Comece agora, de graça.
-Descubra seus pontos fracos e o que estudar primeiro. Simulado gratuito.
+Descubra seus pontos fracos e o que estudar primeiro. Questões reais, de graça.
 ```
 
 > The **"Sem promessa de aprovação"** headline is the differentiator — lean into the
-> honest brand; it's disarming in a category full of guarantees.
+> honest brand; it's disarming in a category full of guarantees. The **"provas
+> passadas / questões reais"** angle reinforces that these are the real thing, not a
+> fabricated mock.
 
 **Extensions:**
-- Sitelinks: `Simulado grátis`, `Como funciona`, `Turmas 2026`
+- Sitelinks: `Questões grátis` (`/questoes-revalida`), `Flashcards grátis`
+  (`/flashcards-gratis`), `Turmas 2026` (`/loja`), `Como funciona` (`/`)
 - Callouts: `Grátis`, `Sem cartão`, `Questões comentadas`, `Plano de estudo`
 
 ---
@@ -109,11 +125,17 @@ Descubra seus pontos fracos e o que estudar primeiro. Simulado gratuito.
 | Language | Portuguese |
 | Daily budget | ~R$65 (spends ~$200 over ~2–3 weeks) |
 | Bidding | Manual CPC, max CPC ~R$4 (→ conversion bidding later) |
-| Final URL | `https://medhelpspace.com.br/simulado-honesto` |
+| Final URL | `https://medhelpspace.com.br/questoes-revalida` |
+| Display path | `revalida` / `questoes` |
 | Final URL suffix | `utm_source=google&utm_medium=cpc&utm_campaign=revalida-simulado` |
 
 The Final URL suffix is what makes paid traffic separate cleanly as `google` in the
 funnel dashboard (gclid is auto-appended for OCI).
+
+> **Do not launch the campaign until `/questoes-revalida` is live in production.**
+> While it 404s, Google flags "destination not working" (harmless while paused, clears
+> once deployed). The old `/simulado-honesto` still 301-redirects here, so pointing the
+> ad at either works — but the new URL is the clean, canonical one.
 
 ---
 
@@ -128,10 +150,10 @@ CONTEXT
   exam prep. Portuguese. Dedicated Ads account already set up (BRL,
   America/Sao_Paulo, auto-tagging ON, conversion actions "Lead verified" +
   "Purchase" defined as Import/offline).
-- Goal: a ~$200 USD long-tail Search test driving free-simulado leads to
-  medhelpspace.com.br/simulado-honesto (a free 15-question mock exam, email-
-  gated). Conversions are fed to Google later via Offline Conversion Import,
-  so DON'T add a website tag.
+- Goal: a ~$200 USD long-tail Search test driving free-questions leads to
+  medhelpspace.com.br/questoes-revalida (a free set of 15 real past-exam
+  questions, comentadas, email-gated after the first 5). Conversions are fed
+  to Google later via Offline Conversion Import, so DON'T add a website tag.
 
 BUILD IT THIS WAY
 - Campaign type: Search. Networks: Search only (uncheck Display + Search
@@ -139,7 +161,7 @@ BUILD IT THIS WAY
 - Bidding: Manual CPC to start (new account, no conversion history), max CPC
   ~R$4. I'll switch to conversion bidding after OCI feeds data.
 - Daily budget: R$65.
-- Final URL: https://medhelpspace.com.br/simulado-honesto
+- Final URL: https://medhelpspace.com.br/questoes-revalida
 - Final URL suffix: utm_source=google&utm_medium=cpc&utm_campaign=revalida-simulado
 - Two ad groups (I'll paste the keywords), tight match types (phrase/exact
   only — no broad). One Responsive Search Ad per ad group (I'll paste

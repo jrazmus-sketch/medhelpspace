@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Public top-of-funnel beacon for /simulado-honesto. Records the two PRE-capture
+// Public top-of-funnel beacon for /questoes-revalida. Records the two PRE-capture
 // steps a lead row can't see ('landing', 'quiz_start') so landing→capture rate is
 // computable. Written via service role (funnel_events is deny-all RLS). Deduped by
 // (session_id, event_type) — a refresh / re-mount is a no-op, not an inflated count.

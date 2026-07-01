@@ -7,8 +7,8 @@ import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
 // "baralho de flashcards" the D0 email + magnet results promise (deckUrl), and an
 // SEO landing for the "flashcards revalida" long-tail (one of the paid-ads terms).
 // Fully open (no email gate): the simulado is the capture; the deck is the gift +
-// the funnel-in for cold SEO visitors (CTA → /simulado-honesto). Mirrors the lean
-// chrome of /simulado-honesto. Public pages are dark-only (lib/theme-scope).
+// the funnel-in for cold SEO visitors (CTA → /questoes-revalida). Mirrors the lean
+// chrome of /questoes-revalida. Public pages are dark-only (lib/theme-scope).
 
 export const metadata: Metadata = {
   title: "Flashcards Revalida 1ª Etapa — Baralho Grátis com Revisão Espaçada",
@@ -55,7 +55,7 @@ export default async function FlashcardsGratisPage() {
         ) : (
           <MagnetFlashcards
             cards={cards}
-            ctaHref="/simulado-honesto"
+            ctaHref="/questoes-revalida"
             ctaLabel="Fazer o Simulado Honesto e receber meu plano →"
             doneTitle="Esse é o método."
             doneNote="No simulado você descobre exatamente onde focar — e recebe um plano até a prova."
