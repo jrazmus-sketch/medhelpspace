@@ -1,15 +1,16 @@
 # Free-Funnel v2 — Trust-First Simulado Scope
 
-> Status: **BUILT (2026-06-30)** — all 6 groups implemented, tsc+lint clean, mobile-checked
-> at 375/414/768, full happy-path + "corrigir e-mail" re-key driven end-to-end on the local
-> test DB. Schema patch (`schema-patch-leads-verify-claim.sql`) applied to LOCAL only — **not
-> yet applied to prod, not yet committed.** Optional Turnstile is env-gated off (no keys set).
-> Supersedes the delivery/timing assumptions in `FREE-FUNNEL-BUILD-SPEC.md` where they conflict.
+> Status: **BUILT + COMMITTED (2026-06-30, main `e1b2dd4`)** — all 6 groups implemented,
+> tsc+lint clean, mobile-checked at 375/414/768, full happy-path + "corrigir e-mail" re-key
+> driven end-to-end. Schema patch (`schema-patch-leads-verify-claim.sql`) **applied to PROD
+> and LOCAL**. Dev preview harness deleted. Committed by explicit path (16 files) — **NOT yet
+> pushed** (go-live is a manual `git push` → Vercel deploy). Supersedes the delivery/timing
+> assumptions in `FREE-FUNNEL-BUILD-SPEC.md` where they conflict.
 >
-> **Before prod:** (1) `node scripts/run-sql.js schema-patch-leads-verify-claim.sql` against prod;
-> (2) commit the changed files by explicit path; (3) delete the untracked dev preview
-> `app/src/app/dev/magnet-v2/` (never ships — dev/ is untracked); (4) optionally set
-> `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (both-or-neither) to enable the bot wall.
+> **Remaining to go live:** (1) `git push` main → Vercel deploys the new funnel (prod schema
+> is already in place, so this is the go-live switch); (2) optionally set
+> `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` (both-or-neither) to enable the
+> Turnstile bot wall; (3) confirm Resend is verified in prod so the code + delivery emails land.
 > Origin: this file grew out of a bug report — the D0 email button dumped leads back
 > to question 1 of the test — which unspooled into a full rethink of the funnel's
 > trust model. Built to be a strong trust-building experience for a brand-new site
