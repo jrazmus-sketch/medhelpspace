@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   renderEmail,
   withSenderName,
+  FUNNEL_SENDER_NAME,
   EMAIL_TEMPLATE_DEFAULTS,
   DEFAULT_EMAIL_SETTINGS,
   sampleVarsFor,
@@ -295,11 +296,17 @@ export async function sendTestEmail(
   const tpl = await getEmailTemplate(kind);
   const vars = sampleVarsFor(tpl);
   const { subject, html } = renderEmail(tpl, settings, vars);
+  // Funnel emails (lead-*) go out as "Equipe MedHelpSpace" in production (the
+  // funnel callers pass fromName), so the test send must match — otherwise the
+  // admin previews a different From name than real leads actually receive.
+  const from = kind.startsWith("lead-")
+    ? withSenderName(settings.from_address, FUNNEL_SENDER_NAME)
+    : settings.from_address;
   return sendEmailRaw({
     to,
     subject,
     html,
-    from: settings.from_address,
+    from,
     listUnsubscribeUrl: vars.unsubscribeUrl,
   });
 }
