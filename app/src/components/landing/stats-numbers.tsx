@@ -9,6 +9,7 @@ const STAT_LABELS: { key: keyof LandingStats; label: string }[] = [
   { key: "flashcards", label: "flashcards" },
   { key: "questoes", label: "questões comentadas" },
   { key: "audios", label: "áudios MedVoice" },
+  { key: "audiocards", label: "audiocards" },
   { key: "especialidades", label: "especialidades" },
 ];
 
@@ -57,11 +58,18 @@ export function StatsNumbers({ stats }: { stats: LandingStats }) {
         borderBottom: "1px solid var(--lp-border)",
       }}
     >
-      <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4">
-        {STAT_LABELS.map((stat, i) => (
+      <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-5">
+        {STAT_LABELS.map((stat, i) => {
+          // With an odd count the final cell would sit alone in the last
+          // 2-col mobile row — let it span full width so it stays centered.
+          const orphanOnMobile =
+            i === STAT_LABELS.length - 1 && STAT_LABELS.length % 2 === 1;
+          return (
           <div
             key={stat.label}
-            className="flex flex-col items-center justify-center px-6 py-14 text-center md:px-10"
+            className={`flex flex-col items-center justify-center px-6 py-14 text-center md:px-10 ${
+              orphanOnMobile ? "col-span-2 md:col-span-1" : ""
+            }`}
             style={{
               borderRight: i < STAT_LABELS.length - 1 ? "1px solid var(--lp-border)" : "none",
             }}
@@ -79,7 +87,8 @@ export function StatsNumbers({ stats }: { stats: LandingStats }) {
               {stat.label}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
