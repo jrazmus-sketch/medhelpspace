@@ -197,3 +197,91 @@ table) + rollback notes per repo convention.
   and the original bug fix).
 - **Phase 2:** Groups 4 + 5 (report + flashcard experience + emails).
 - **Phase 3:** Group 6 + polish.
+
+---
+
+## Paid-ads conversion tracking (attribution)
+
+> Added 2026-07-01 while prepping paid Google Search traffic to `/simulado-honesto`.
+> These "Phase 0/1/2" are the **attribution** phases — distinct from the build-order
+> phases directly above. Architecture decision: **server-first, first-party**. The
+> conversions that matter (verified, purchased) are server events we already record, so
+> we do **not** add a client-side GA4 / Google-Ads tag — it would be lossier and force an
+> LGPD consent banner onto the dark-only public site. The only client-side need is reading
+> the gclid off the URL, which the landing page already does for UTM.
+
+### Attribution Phase 0 — gclid capture *(SHIPPED — main `9694e7f`)*
+
+- `leads.gclid` column — `schema-patch-leads-gclid.sql`, **applied prod + local**.
+- Threaded from the landing URL like UTM: `simulado-honesto/page.tsx` → `MagnetUtm` →
+  `captureLeadAndUnlock` (write on insert; `?? undefined` on update so a later submit never
+  wipes a captured value). → `app/src/actions/magnet.ts`.
+- **Why it had to ship before any spend:** gclid cannot be backfilled. No capture at click
+  time = no per-keyword attribution or offline import, ever.
+
+### Attribution Phase 1 — funnel visibility *(SHIPPED — main `9694e7f`)*
+
+- `funnel_events` table — `schema-patch-funnel-events.sql` (deny-all RLS + REVOKE, like
+  `leads`), **applied prod + local**. Records the two PRE-capture steps a lead row can't see:
+  `landing`, `quiz_start`.
+- Public `/api/funnel-event` beacon — `lib/magnet/funnel-track.ts` + `components/magnet/funnel-beacon.tsx`.
+  Deduped per session on the client (sessionStorage) **and** by a `(session_id, event_type)`
+  unique index on the server. Best-effort: analytics never breaks the funnel.
+- Dashboard on `/admin/leads` — `lib/admin/funnel.ts` + `app/admin/leads/funnel-panel.tsx`:
+  land → start → capture → verified → sale, with step-conversion + a by-source breakdown.
+  i18n (`locales/admin/pt-BR.json` + `en.json`).
+- Top-of-funnel only counts from the beacon's deploy onward; older leads predate it, so
+  captures can exceed landings for a while (the "warming up" note in the panel explains this).
+
+### Attribution Phase 2 — Google Ads Offline Conversion Import (OCI) *(DEFERRED — needs the Ads account)*
+
+**What it does:** reports server-verified conversions back to Google, keyed on gclid, so Google
+credits the exact keyword/campaign and can optimize bidding. Solves the fact that our real
+conversions (the 6-digit verify, and the purchase confirmed by the PagBank webhook) happen
+server-side and often days later — where no client tag can see them.
+
+**The gclid round-trip:**
+1. Click → Google auto-tagging appends `?gclid=…` → stored on `leads.gclid`. ✅ (Phase 0)
+2. Convert → `verified_at` / `converted_at` recorded on the lead. ✅ (already)
+3. **Upload** (this phase) → send Google `gclid + conversion name + time + value`.
+4. Google matches gclid → original click → credits the keyword + feeds Smart Bidding.
+
+**What to build:** an admin export ("Export offline conversions") that emits Google's CSV from
+leads where `gclid IS NOT NULL` and a conversion fired. Two conversion actions:
+
+| Conversion action | Fires on | Value | Job |
+|---|---|---|---|
+| **Lead verified** | `verified_at` | `0` (default) | volume → enough events to train Smart Bidding |
+| **Purchase** | `converted_at` | order amount in BRL (join lead → `orders` by email) | ROI / ROAS by keyword |
+
+Both are needed — 2 sales is far too sparse to train bidding; verified-lead supplies volume,
+purchase supplies value. CSV columns: `Google Click ID, Conversion Name, Conversion Time,
+Conversion Value, Conversion Currency`, preceded by `Parameters:TimeZone=America/Sao_Paulo`
+(BRT — match Google's downloadable template exactly).
+
+**Prerequisites (all Ads-account-side — why it's deferred):**
+- A Google Ads account with **auto-tagging ON** (default) — that's what appends the gclid.
+- **Define the two conversion actions in Google Ads first** (type "Import → from clicks"); the
+  CSV references them **by name**, so they must exist before the first upload.
+- Conversion must land inside Google's click-to-conversion window (default 90 days; our drip is
+  ~11, so fine).
+
+**Manual vs. API:** build the **manual CSV upload** first (Ads UI → Goals → Conversions →
+Uploads) — right for a $200 test. Automate via the Google Ads API `ConversionUploadService`
+later only if volume warrants (needs a developer token + OAuth).
+
+**Gotchas:**
+- Only gclid-bearing conversions get uploaded; organic / `site` leads stay in our own dashboard
+  and are never sent to Google (correct — Google shouldn't take credit for them).
+- Don't double-upload — add an `oci_uploaded_at` marker on the lead (or export by strict date
+  range) so each conversion is reported once.
+- Wait a few hours after the click before uploading (Google must register the click first).
+- Timezone/format must match Google's template or rows get rejected.
+
+**Alternative to keep in the back pocket:** Enhanced Conversions for Leads keys on a *hashed
+email* instead of gclid — useful only if gclid capture ever has gaps. We capture gclid reliably,
+so standard gclid-OCI is primary.
+
+**Open decisions at build time:** which conversion(s) to optimize on (rec: verified-lead for
+volume + purchase for value) and the verified-lead value (rec: `0`). Everything else is already
+in `leads` + `orders`.
