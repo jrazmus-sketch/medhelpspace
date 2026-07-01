@@ -43,9 +43,9 @@ export default async function LandingPage() {
         <ProblemSection />
         <StatsNumbers stats={stats} />
         <SystemShowcase stats={stats} />
+        <SixtyDSection />
         <RevisaoSection />
         <PlanoSection />
-        <SixtyDSection />
         <ComparisonSection />
         <TransparencyBand />
         <FounderSection stats={stats} />
