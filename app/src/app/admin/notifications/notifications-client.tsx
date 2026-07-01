@@ -557,17 +557,17 @@ export function NotificationsClient({
                               type="button"
                               onClick={() => handleDelete(a.id)}
                               disabled={pending}
-                              className="rounded p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-60"
+                              className="rounded-md bg-destructive px-2.5 py-1 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                               title={t("notifications.confirmDelete")}
                             >
-                              <Check className="h-3.5 w-3.5" />
+                              {t("common.delete")}
                             </button>
                             <button
                               type="button"
                               onClick={() => setDeleteConfirm(null)}
-                              className="rounded p-1.5 text-muted-foreground hover:bg-accent"
+                              className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
                             >
-                              <X className="h-3.5 w-3.5" />
+                              {t("common.cancel")}
                             </button>
                           </>
                         ) : (
