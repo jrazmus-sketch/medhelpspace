@@ -39,6 +39,13 @@ type PlainProps = Common & {
   id: number;
   field: string;
   value: string;
+  /**
+   * Optional raw text to seed the editor; defaults to `value`. Use when the
+   * displayed `value` differs from the stored source — e.g. a live-count token
+   * like `{flashcards}` that renders substituted but must be edited as the token
+   * (mirrors the rich variant's `editHtml`).
+   */
+  editValue?: string;
   /** Render a `<textarea>` instead of `<input>` for longer plain text. */
   multiline?: boolean;
 };
@@ -106,7 +113,7 @@ function EditableInner(props: Props) {
     e.stopPropagation();
     setOriginal(
       props.variant === "plain"
-        ? props.value
+        ? (props.editValue ?? props.value)
         : (props.editHtml ?? props.html),
     );
   }
@@ -239,7 +246,7 @@ function EditableInner(props: Props) {
         {multiline ? (
           <textarea
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
-            defaultValue={props.value}
+            defaultValue={props.editValue ?? props.value}
             onKeyDown={onKeyDown}
             disabled={pending}
             rows={3}
@@ -250,7 +257,7 @@ function EditableInner(props: Props) {
           <input
             ref={inputRef as React.RefObject<HTMLInputElement>}
             type="text"
-            defaultValue={props.value}
+            defaultValue={props.editValue ?? props.value}
             onKeyDown={onKeyDown}
             disabled={pending}
             style={{ ...INHERIT_STYLE, width: "100%", minWidth: "8em" }}

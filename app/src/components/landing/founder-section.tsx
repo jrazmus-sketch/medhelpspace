@@ -1,9 +1,11 @@
 "use client";
 
 import { useReveal } from "@/hooks/use-reveal";
+import type { LandingStats } from "@/lib/landing/stats";
 
-export function FounderSection() {
+export function FounderSection({ stats }: { stats: LandingStats }) {
   const ref = useReveal(0.15);
+  const nf = (n: number) => n.toLocaleString("pt-BR");
 
   return (
     <section className="bg-[var(--lp-alt-bg)] px-5 py-20 md:px-8 md:py-28">
@@ -60,9 +62,9 @@ export function FounderSection() {
           {/* Stat row */}
           <div className="mt-8 grid grid-cols-3 gap-4 text-center">
             {[
-              { value: "17", label: "especialidades cobertas" },
-              { value: "2.528", label: "questões comentadas" },
-              { value: "5.140", label: "flashcards de fixação" },
+              { value: nf(stats.especialidades), label: "especialidades cobertas" },
+              { value: nf(stats.questoes), label: "questões comentadas" },
+              { value: nf(stats.flashcards), label: "flashcards de fixação" },
             ].map((stat) => (
               <div key={stat.label}>
                 <div

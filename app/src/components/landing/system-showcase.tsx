@@ -2,6 +2,7 @@
 
 import { useReveal } from "@/hooks/use-reveal";
 import { SiteText } from "./site-text";
+import type { LandingStats } from "@/lib/landing/stats";
 
 /* ════════════════════════════════════════════════════════════════════════════
    System showcase — replaces the flipping tablet. Each tool is a real app
@@ -59,7 +60,7 @@ const FEATURES: Feature[] = [
     num: "04",
     id: "flashcards",
     name: "Flashcards",
-    tagline: "5.140 cartões que decidem sozinhos quando voltar.",
+    tagline: "{flashcards} cartões que decidem sozinhos quando voltar.",
     body: "Você se autoavalia — “errei” ou “acertei” — e a repetição espaçada cuida do resto. O que você domina espaça; o que você erra volta amanhã.",
     result: "Fixação real, não releitura passiva.",
     color: "var(--c-flashcards)",
@@ -79,7 +80,7 @@ const FEATURES: Feature[] = [
   },
 ];
 
-function FeatureRow({ f, i }: { f: Feature; i: number }) {
+function FeatureRow({ f, i, vars }: { f: Feature; i: number; vars: Record<string, string | number> }) {
   const ref = useReveal(0.18);
   const reversed = i % 2 === 1;
   // Decorations follow the layout so each band leans toward its screenshot side.
@@ -133,7 +134,7 @@ function FeatureRow({ f, i }: { f: Feature; i: number }) {
             </span>
           </div>
           <h3 className="text-[clamp(1.6rem,3.6vw,2.6rem)] font-black leading-[1.1] tracking-[-0.02em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>
-            <SiteText as="span" multiline k={`sys.${f.id}.tagline`} fallback={f.tagline} />
+            <SiteText as="span" multiline k={`sys.${f.id}.tagline`} fallback={f.tagline} vars={vars} />
           </h3>
           <p className="mt-5 text-base leading-relaxed sm:text-[1.05rem]" style={{ color: "var(--lp-fg-40)" }}>
             <SiteText as="span" multiline k={`sys.${f.id}.body`} fallback={f.body} />
@@ -169,7 +170,9 @@ function FeatureRow({ f, i }: { f: Feature; i: number }) {
   );
 }
 
-export function SystemShowcase() {
+export function SystemShowcase({ stats }: { stats: LandingStats }) {
+  // Live values available to `{token}` placeholders in the editable taglines.
+  const taglineVars = { flashcards: stats.flashcards.toLocaleString("pt-BR") };
   return (
     <div id="features" style={{ background: "var(--lp-base)", borderTop: "1px solid var(--lp-border)" }}>
       <div className="mx-auto max-w-6xl px-5 pt-16 md:px-8 md:pt-24">
@@ -184,7 +187,7 @@ export function SystemShowcase() {
 
       <div className="mt-8">
         {FEATURES.map((f, i) => (
-          <FeatureRow key={f.id} f={f} i={i} />
+          <FeatureRow key={f.id} f={f} i={i} vars={taglineVars} />
         ))}
       </div>
       <div className="h-16 md:h-24" />

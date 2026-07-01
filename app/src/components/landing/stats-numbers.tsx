@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { LandingStats } from "@/lib/landing/stats";
 
-const STATS = [
-  { value: 5140, label: "flashcards" },
-  { value: 2528, label: "questões comentadas" },
-  { value: 162, label: "áudios MedVoice" },
-  { value: 17, label: "especialidades" },
+// Labels are fixed; the values are live counts passed in from the server
+// component (see lib/landing/stats.ts). Order here is the display order.
+const STAT_LABELS: { key: keyof LandingStats; label: string }[] = [
+  { key: "flashcards", label: "flashcards" },
+  { key: "questoes", label: "questões comentadas" },
+  { key: "audios", label: "áudios MedVoice" },
+  { key: "especialidades", label: "especialidades" },
 ];
 
 function Counter({ target, duration = 1400 }: { target: number; duration?: number }) {
@@ -45,7 +48,7 @@ function Counter({ target, duration = 1400 }: { target: number; duration?: numbe
   return <span ref={ref}>{count.toLocaleString("pt-BR")}</span>;
 }
 
-export function StatsNumbers() {
+export function StatsNumbers({ stats }: { stats: LandingStats }) {
   return (
     <section
       style={{
@@ -55,19 +58,19 @@ export function StatsNumbers() {
       }}
     >
       <div className="mx-auto grid max-w-7xl grid-cols-2 md:grid-cols-4">
-        {STATS.map((stat, i) => (
+        {STAT_LABELS.map((stat, i) => (
           <div
             key={stat.label}
             className="flex flex-col items-center justify-center px-6 py-14 text-center md:px-10"
             style={{
-              borderRight: i < STATS.length - 1 ? "1px solid var(--lp-border)" : "none",
+              borderRight: i < STAT_LABELS.length - 1 ? "1px solid var(--lp-border)" : "none",
             }}
           >
             <div
               className="text-[clamp(2.8rem,5vw,4.5rem)] font-bold leading-none tracking-[-0.03em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
             >
-              <Counter target={stat.value} />
+              <Counter target={stats[stat.key]} />
             </div>
             <div
               className="mt-3 text-[10px] uppercase tracking-[0.2em]"

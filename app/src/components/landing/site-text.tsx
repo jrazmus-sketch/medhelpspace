@@ -34,18 +34,36 @@ type Props = {
   as?: "span" | "div";
   /** Render a <textarea> in edit mode for longer copy (paragraphs, FAQ answers). */
   multiline?: boolean;
+  /**
+   * Live values to substitute for `{token}` placeholders in the copy. The stored
+   * text keeps the token (so it stays editable and self-updating); only the
+   * displayed text is substituted. E.g. `vars={{ flashcards: "5.280" }}` turns
+   * "{flashcards} cartões..." into "5.280 cartões..." on screen.
+   */
+  vars?: Record<string, string | number>;
 };
+
+// Replace `{token}` occurrences with vars[token]; unknown tokens are left as-is.
+function interpolate(text: string, vars?: Record<string, string | number>): string {
+  if (!vars) return text;
+  return text.replace(/\{(\w+)\}/g, (m, key) => (key in vars ? String(vars[key]) : m));
+}
 
 // A single piece of editable landing copy. When the row exists it renders an
 // inline-editable field (active only for admins in edit mode on desktop, via
 // EditableText); otherwise it renders the fallback as plain, non-editable text.
-export function SiteText({ k, fallback, className, as = "span", multiline }: Props) {
+export function SiteText({ k, fallback, className, as = "span", multiline, vars }: Props) {
   const map = useContext(Ctx);
   const row = map[k];
 
+  // Raw text is the source of truth (kept editable, with tokens); the displayed
+  // text has tokens substituted for their live values.
+  const raw = (row?.value || fallback) ?? "";
+  const display = interpolate(raw, vars);
+
   if (!row) {
     const Tag = as;
-    return <Tag className={className}>{fallback}</Tag>;
+    return <Tag className={className}>{display}</Tag>;
   }
 
   return (
@@ -54,7 +72,8 @@ export function SiteText({ k, fallback, className, as = "span", multiline }: Pro
       table="site_content"
       id={row.id}
       field="value"
-      value={row.value || fallback}
+      value={display}
+      editValue={raw}
       as={as}
       className={className}
       multiline={multiline}

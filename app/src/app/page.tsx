@@ -15,6 +15,7 @@ import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
+import { getLandingStats } from "@/lib/landing/stats";
 
 export const metadata = {
   title: "MedHelpSpace Revalida — Sistema de Aprovação",
@@ -30,7 +31,7 @@ export const revalidate = 3600;
 export default async function LandingPage() {
   // site_content is provided by the root layout's SiteContentProvider, so every
   // <SiteText> below is wired without a local provider here.
-  const cohorts = await getCohortsForSale();
+  const [cohorts, stats] = await Promise.all([getCohortsForSale(), getLandingStats()]);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
@@ -40,14 +41,14 @@ export default async function LandingPage() {
         <HeroSection />
         <IdentityBand />
         <ProblemSection />
-        <StatsNumbers />
-        <SystemShowcase />
+        <StatsNumbers stats={stats} />
+        <SystemShowcase stats={stats} />
         <RevisaoSection />
         <PlanoSection />
         <SixtyDSection />
         <ComparisonSection />
         <TransparencyBand />
-        <FounderSection />
+        <FounderSection stats={stats} />
         <PricingCTA cohorts={cohorts} />
         <FaqSection />
       </main>
