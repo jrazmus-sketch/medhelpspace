@@ -1,0 +1,135 @@
+import { createAdminClient } from "@/lib/supabase/admin";
+
+// Server-only read model for the /admin/leads viewer. `leads` is deny-all RLS
+// (service-role only — see schema-patch-leads.sql), so this MUST run through
+// createAdminClient() from a server component. The free-funnel v2 build owns the
+// `leads` schema (schema-patch-leads-verify-claim.sql); this file only READS it.
+//
+// `verification_code`/`code_sent_at`/`code_attempts` are deliberately NOT selected
+// — the code is a live short-lived secret and never belongs in an admin UI.
+
+// Drip targeting tier, mirroring the funnel's segmentation + the partial index
+// `leads_drip_verified_idx` (active AND verified). See FREE-FUNNEL-V2-SCOPE §6.
+//   hot        = verified + finished all 15  (aggressive offer)
+//   nurture    = verified but didn't finish  (light nurture)
+//   suppressed = unverified                  (NOT emailed — protects the domain)
+export type LeadTier = "hot" | "nurture" | "suppressed";
+
+export type LeadRow = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  createdAt: string;
+  utmSource: string | null;
+  utmCampaign: string | null;
+  targetCohort: string;
+  score: number | null;
+  questionsAnswered: number | null;
+  completed: boolean;
+  weakSpecialties: string[];
+  verified: boolean;
+  dripStep: number;
+  dripStatus: string;
+  convertedAt: string | null;
+  lastEmailedAt: string | null;
+  tier: LeadTier;
+};
+
+export type LeadsSummary = {
+  total: number;
+  verified: number;
+  completed: number;
+  converted: number;
+  unsubscribed: number;
+  bySource: { source: string | null; count: number }[];
+  byCohort: { cohort: string; count: number }[];
+};
+
+export type LeadsOverview = { rows: LeadRow[]; summary: LeadsSummary };
+
+function tierOf(verified: boolean, completed: boolean): LeadTier {
+  if (!verified) return "suppressed";
+  return completed ? "hot" : "nurture";
+}
+
+export async function getLeadsOverview(): Promise<LeadsOverview> {
+  const admin = createAdminClient();
+
+  const [{ data: leads }, { data: specialties }] = await Promise.all([
+    admin
+      .from("leads")
+      .select(
+        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at",
+      )
+      .order("created_at", { ascending: false })
+      .limit(1000),
+    // 12-row reference table — cheap join to turn weak_specialty_ids into names.
+    admin.from("specialties").select("id, name"),
+  ]);
+
+  const specialtyName = new Map<number, string>(
+    (specialties ?? []).map((s) => [s.id as number, s.name as string]),
+  );
+
+  const rows: LeadRow[] = (leads ?? []).map((l) => {
+    const verified = Boolean(l.verified_at);
+    const completed = Boolean(l.completed_at);
+    const weakIds = (l.weak_specialty_ids as number[] | null) ?? [];
+    return {
+      id: l.id as string,
+      email: l.email as string,
+      firstName: (l.first_name as string | null) ?? null,
+      createdAt: l.created_at as string,
+      utmSource: (l.utm_source as string | null) ?? null,
+      utmCampaign: (l.utm_campaign as string | null) ?? null,
+      targetCohort: (l.target_cohort as string) ?? "revalida-2026-2",
+      score: (l.score as number | null) ?? null,
+      questionsAnswered: (l.questions_answered as number | null) ?? null,
+      completed,
+      weakSpecialties: weakIds
+        .map((id) => specialtyName.get(id))
+        .filter((n): n is string => Boolean(n)),
+      verified,
+      dripStep: (l.drip_step as number | null) ?? 0,
+      dripStatus: (l.drip_status as string) ?? "active",
+      convertedAt: (l.converted_at as string | null) ?? null,
+      lastEmailedAt: (l.last_emailed_at as string | null) ?? null,
+      tier: tierOf(verified, completed),
+    };
+  });
+
+  const bySourceMap = new Map<string | null, number>();
+  const byCohortMap = new Map<string, number>();
+  let verified = 0;
+  let completed = 0;
+  let converted = 0;
+  let unsubscribed = 0;
+  for (const r of rows) {
+    if (r.verified) verified++;
+    if (r.completed) completed++;
+    if (r.convertedAt) converted++;
+    if (r.dripStatus === "unsubscribed") unsubscribed++;
+    bySourceMap.set(r.utmSource, (bySourceMap.get(r.utmSource) ?? 0) + 1);
+    byCohortMap.set(r.targetCohort, (byCohortMap.get(r.targetCohort) ?? 0) + 1);
+  }
+
+  const bySource = [...bySourceMap.entries()]
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+  const byCohort = [...byCohortMap.entries()]
+    .map(([cohort, count]) => ({ cohort, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    rows,
+    summary: {
+      total: rows.length,
+      verified,
+      completed,
+      converted,
+      unsubscribed,
+      bySource,
+      byCohort,
+    },
+  };
+}
