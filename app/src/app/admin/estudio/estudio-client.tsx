@@ -877,6 +877,911 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
   );
 }
 
+// ── List helper: one entry per non-empty line ────────────────────────────────
+function toLines(s: string): string[] {
+  return (s || "").split("\n").map((x) => x.trim()).filter(Boolean);
+}
+
+// Myth is always semantic red, independent of the specialty accent.
+const MYTH_RED = "#ff6b6b";
+
+// ── Template 8 — Nuvem de temas (pill cloud; lines starting with * = destaque) ─
+function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
+  const items = toLines(v.topics);
+  return (
+    <CardShell accent={accent}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+        {v.spec ? <SpecChip accent={accent}>{v.spec}</SpecChip> : null}
+      </div>
+
+      <h1
+        style={{
+          marginTop: 40,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 64,
+          lineHeight: 1.06,
+          letterSpacing: "-0.03em",
+          color: "#ffffff",
+          maxWidth: "18ch",
+        }}
+      >
+        {v.title}
+      </h1>
+
+      <div
+        style={{
+          marginTop: 44,
+          flex: 1,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 18,
+          alignContent: "flex-start",
+        }}
+      >
+        {items.map((raw, i) => {
+          const hot = raw.startsWith("*");
+          const text = hot ? raw.slice(1).trim() : raw;
+          return (
+            <span
+              key={i}
+              style={{
+                fontFamily: FONT_SANS,
+                fontSize: 32,
+                fontWeight: 600,
+                padding: "16px 30px",
+                borderRadius: 999,
+                whiteSpace: "nowrap",
+                color: hot ? "#0a0510" : "#e8e8ea",
+                background: hot ? accent : hexA(accent, 0.08),
+                border: hot ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.12)",
+                boxShadow: hot ? `0 0 40px ${hexA(accent, 0.35)}` : "none",
+              }}
+            >
+              {text}
+            </span>
+          );
+        })}
+      </div>
+
+      {v.footnote ? (
+        <div style={{ marginTop: 20, fontFamily: FONT_MONO, fontSize: 22, color: hexA(accent, 0.9) }}>
+          {v.footnote}
+        </div>
+      ) : null}
+
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 9 — Comparação (two-column contrast) ────────────────────────────
+function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
+  const column = (title: string, items: string[], filled: boolean) => (
+    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+      <div
+        style={{
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 34,
+          textAlign: "center",
+          color: filled ? "#0a0510" : accent,
+          background: filled ? accent : hexA(accent, 0.1),
+          border: `1px solid ${filled ? accent : hexA(accent, 0.4)}`,
+          borderRadius: 14,
+          padding: "16px 12px",
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+        {items.map((it, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: 27,
+              color: "#e2e2e6",
+              lineHeight: 1.35,
+              padding: "14px 18px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 12,
+            }}
+          >
+            {it}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  return (
+    <CardShell accent={accent}>
+      <div style={{ textAlign: "center" }}>
+        <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+        <h1
+          style={{
+            marginTop: 14,
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: 58,
+            lineHeight: 1.05,
+            letterSpacing: "-0.03em",
+            color: "#ffffff",
+          }}
+        >
+          {v.title}
+        </h1>
+      </div>
+
+      <div style={{ marginTop: 40, flex: 1, display: "flex", gap: 22, alignItems: "flex-start" }}>
+        {column(v.leftTitle, toLines(v.leftItems), true)}
+        <div
+          style={{
+            alignSelf: "center",
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: 44,
+            color: hexA(accent, 0.85),
+          }}
+        >
+          ×
+        </div>
+        {column(v.rightTitle, toLines(v.rightItems), false)}
+      </div>
+
+      {v.footnote ? (
+        <div
+          style={{
+            marginTop: 12,
+            padding: "20px 24px",
+            borderLeft: `4px solid ${accent}`,
+            background: hexA(accent, 0.08),
+            borderRadius: "0 12px 12px 0",
+            fontSize: 25,
+            color: "#ffffff",
+            lineHeight: 1.35,
+          }}
+        >
+          {v.footnote}
+        </div>
+      ) : null}
+
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 10 — Mito × Verdade ─────────────────────────────────────────────
+function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
+  const block = (label: string, text: string, color: string, mark: string) => (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: 16,
+        padding: "36px 40px",
+        borderRadius: 20,
+        background: hexA(color, 0.1),
+        border: `1px solid ${hexA(color, 0.4)}`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <span
+          style={{
+            flexShrink: 0,
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            background: color,
+            color: "#0a0510",
+            fontWeight: 800,
+            fontSize: 30,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {mark}
+        </span>
+        <span
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 24,
+            fontWeight: 700,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color,
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <div style={{ fontSize: 34, lineHeight: 1.4, color: "#ffffff", fontWeight: 500 }}>{text}</div>
+    </div>
+  );
+  return (
+    <CardShell accent={accent}>
+      <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+      <h1
+        style={{
+          marginTop: 16,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 52,
+          lineHeight: 1.08,
+          letterSpacing: "-0.02em",
+          color: "#ffffff",
+          maxWidth: "20ch",
+        }}
+      >
+        {v.title}
+      </h1>
+      <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column", gap: 22 }}>
+        {block("Mito", v.myth, MYTH_RED, "✕")}
+        {block("Verdade", v.truth, accent, "✓")}
+      </div>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 11 — Checklist ──────────────────────────────────────────────────
+function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
+  const items = toLines(v.items);
+  return (
+    <CardShell accent={accent}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+        {v.spec ? <SpecChip accent={accent}>{v.spec}</SpecChip> : null}
+      </div>
+
+      <h1
+        style={{
+          marginTop: 36,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 62,
+          lineHeight: 1.05,
+          letterSpacing: "-0.03em",
+          color: "#ffffff",
+          maxWidth: "18ch",
+        }}
+      >
+        {v.title}
+      </h1>
+
+      <div style={{ marginTop: 40, flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
+        {items.map((it, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 22 }}>
+            <span
+              style={{
+                flexShrink: 0,
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: hexA(accent, 0.14),
+                border: `1.5px solid ${accent}`,
+                color: accent,
+                fontWeight: 800,
+                fontSize: 28,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ✓
+            </span>
+            <span style={{ fontSize: 33, color: "#eaeaee", lineHeight: 1.3 }}>{it}</span>
+          </div>
+        ))}
+      </div>
+
+      {v.footnote ? (
+        <div
+          style={{
+            marginTop: 20,
+            textAlign: "center",
+            fontSize: 27,
+            color: "#ffffff",
+            background: hexA(accent, 0.12),
+            border: `1px solid ${hexA(accent, 0.4)}`,
+            borderRadius: 999,
+            padding: "16px 26px",
+          }}
+        >
+          {v.footnote}
+        </div>
+      ) : null}
+
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 12 — Mnemônico / Macete (lines: "L=Palavra=detalhe") ────────────
+function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
+  const rows = toLines(v.items).map((l) => {
+    const parts = l.split("=").map((x) => x.trim());
+    return { letter: parts[0] || "", word: parts[1] || "", detail: parts[2] || "" };
+  });
+  return (
+    <CardShell accent={accent}>
+      <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+      <h1
+        style={{
+          marginTop: 14,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 88,
+          lineHeight: 1,
+          letterSpacing: "0.02em",
+          color: accent,
+        }}
+      >
+        {v.title}
+      </h1>
+      {v.sub ? (
+        <p style={{ marginTop: 10, fontSize: 30, color: "rgba(255,255,255,0.7)" }}>{v.sub}</p>
+      ) : null}
+
+      <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
+        {rows.map((r, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 22 }}>
+            <span
+              style={{
+                flexShrink: 0,
+                width: 58,
+                height: 58,
+                borderRadius: 12,
+                background: hexA(accent, 0.14),
+                border: `1px solid ${hexA(accent, 0.4)}`,
+                color: accent,
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 800,
+                fontSize: 34,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {r.letter}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontSize: 32, fontWeight: 700, color: "#ffffff" }}>{r.word}</span>
+              {r.detail ? (
+                <span style={{ fontSize: 26, color: "rgba(255,255,255,0.6)" }}>{"  ·  " + r.detail}</span>
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Shared: object-fit / position from a `fit` field ─────────────────────────
+function fitProps(fit: string): { objectFit: React.CSSProperties["objectFit"]; objectPosition: string } {
+  return {
+    objectFit: fit === "contain" ? "contain" : "cover",
+    objectPosition: fit === "cover-top" ? "top" : fit === "cover-bottom" ? "bottom" : "center",
+  };
+}
+
+// ── Template 13 — Imagem em tela cheia (full-bleed + overlay) ─────────────────
+function DestaqueCard({ v, accent }: { v: Vals; accent: string }) {
+  const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
+  return (
+    <CardShell accent={accent} padded={false}>
+      {v.image ? (
+        <img
+          data-no-frame
+          src={v.image}
+          alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit, objectPosition, display: "block" }}
+        />
+      ) : (
+        <div style={{ padding: 88, height: "100%" }}>
+          <ImgPlaceholder />
+        </div>
+      )}
+      {/* legibility scrims: darken top for the brand mark, bottom for the text */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(to bottom, rgba(5,5,9,0.72) 0%, transparent 24%, transparent 44%, rgba(5,5,9,0.86) 80%, #050509 100%)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `radial-gradient(900px 520px at 50% 118%, ${hexA(accent, 0.28)}, transparent 60%)`,
+        }}
+      />
+      <div style={{ position: "absolute", inset: 0, padding: 88, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 28, letterSpacing: "-0.02em", color: "#ffffff" }}>
+          MedHelpSpace
+          <span style={{ color: "rgba(255,255,255,0.3)", padding: "0 8px" }}>|</span>
+          <span style={{ color: accent }}>Revalida</span>
+        </div>
+        <div>
+          <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+          <h1
+            style={{
+              marginTop: 14,
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 800,
+              fontSize: 78,
+              lineHeight: 1.02,
+              letterSpacing: "-0.03em",
+              color: "#ffffff",
+              textShadow: "0 4px 30px rgba(0,0,0,0.5)",
+            }}
+          >
+            {v.headline}
+          </h1>
+          {v.caption ? (
+            <p style={{ marginTop: 18, fontSize: 30, color: "rgba(255,255,255,0.82)" }}>{v.caption}</p>
+          ) : null}
+        </div>
+      </div>
+    </CardShell>
+  );
+}
+
+// ── Template 14 — Meio a meio (image left, text right) ───────────────────────
+function SplitCard({ v, accent }: { v: Vals; accent: string }) {
+  const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
+  const pills = toLines(v.pills);
+  return (
+    <CardShell accent={accent} padded={false}>
+      <div style={{ position: "absolute", inset: 0, display: "flex" }}>
+        <div style={{ width: "50%", height: "100%", position: "relative", background: "#0b0b12", flexShrink: 0 }}>
+          {v.image ? (
+            <img data-no-frame src={v.image} alt="" style={{ width: "100%", height: "100%", objectFit, objectPosition, display: "block" }} />
+          ) : (
+            <div style={{ padding: 40, height: "100%" }}>
+              <ImgPlaceholder />
+            </div>
+          )}
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 68%, rgba(5,5,9,0.9))" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", padding: "72px 64px" }}>
+          <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+          <h1
+            style={{
+              marginTop: 18,
+              fontFamily: FONT_DISPLAY,
+              fontWeight: 800,
+              fontSize: 56,
+              lineHeight: 1.04,
+              letterSpacing: "-0.03em",
+              color: "#ffffff",
+            }}
+          >
+            {v.headline}
+          </h1>
+          {v.body ? (
+            <p style={{ marginTop: 22, fontSize: 30, lineHeight: 1.45, color: "rgba(255,255,255,0.72)" }}>{v.body}</p>
+          ) : null}
+          {pills.length ? (
+            <div style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}>
+              {pills.map((p, i) => (
+                <span
+                  key={i}
+                  style={{
+                    fontFamily: FONT_SANS,
+                    fontSize: 24,
+                    fontWeight: 600,
+                    color: accent,
+                    border: `1px solid ${hexA(accent, 0.4)}`,
+                    background: hexA(accent, 0.1),
+                    borderRadius: 999,
+                    padding: "10px 22px",
+                  }}
+                >
+                  {p}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <div style={{ marginTop: "auto", paddingTop: 30, fontFamily: FONT_MONO, fontSize: 22, color: "rgba(255,255,255,0.5)" }}>
+            medhelpspace.com.br
+          </div>
+        </div>
+      </div>
+    </CardShell>
+  );
+}
+
+// ── Template 15 — Imagem clínica + selo (callout) ────────────────────────────
+function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
+  const height = React.useContext(CardHeightContext);
+  const boxH = Math.round(height * 0.42);
+  const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
+  return (
+    <CardShell accent={accent}>
+      <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+      <h1
+        style={{
+          marginTop: 14,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 60,
+          lineHeight: 1.05,
+          letterSpacing: "-0.03em",
+          color: "#ffffff",
+          maxWidth: "18ch",
+        }}
+      >
+        {v.headline}
+      </h1>
+
+      <div
+        style={{
+          marginTop: 34,
+          position: "relative",
+          width: "100%",
+          height: boxH,
+          borderRadius: 20,
+          overflow: "hidden",
+          border: `1px solid ${hexA(accent, 0.35)}`,
+          background: "#0b0b12",
+          boxShadow: `0 0 60px ${hexA(accent, 0.16)}`,
+        }}
+      >
+        {v.image ? (
+          <img data-no-frame src={v.image} alt="" style={{ width: "100%", height: "100%", objectFit, objectPosition, display: "block" }} />
+        ) : (
+          <div style={{ padding: 30, height: "100%" }}>
+            <ImgPlaceholder />
+          </div>
+        )}
+        {v.callout ? (
+          <span
+            style={{
+              position: "absolute",
+              top: 22,
+              right: 22,
+              fontFamily: FONT_MONO,
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              color: "#0a0510",
+              background: accent,
+              borderRadius: 999,
+              padding: "10px 20px",
+              boxShadow: `0 6px 30px ${hexA(accent, 0.5)}`,
+            }}
+          >
+            {v.callout}
+          </span>
+        ) : null}
+      </div>
+
+      {v.caption ? (
+        <div
+          style={{
+            marginTop: "auto",
+            marginBottom: 4,
+            textAlign: "center",
+            fontSize: 30,
+            color: "#ffffff",
+            background: hexA(accent, 0.12),
+            border: `1px solid ${hexA(accent, 0.4)}`,
+            borderRadius: 999,
+            padding: "18px 28px",
+          }}
+        >
+          {v.caption}
+        </div>
+      ) : null}
+
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 16 — Depoimento (testimonial with avatar) ───────────────────────
+function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
+  return (
+    <CardShell accent={accent}>
+      <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 36 }}>
+        <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 150, lineHeight: 0.55, color: hexA(accent, 0.5) }}>“</div>
+        <blockquote
+          style={{
+            margin: 0,
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 700,
+            fontSize: 56,
+            lineHeight: 1.15,
+            letterSpacing: "-0.02em",
+            color: "#ffffff",
+            maxWidth: "20ch",
+          }}
+        >
+          {v.quote}
+        </blockquote>
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: "50%",
+              overflow: "hidden",
+              flexShrink: 0,
+              background: "#0b0b12",
+              border: `2px solid ${hexA(accent, 0.5)}`,
+            }}
+          >
+            {v.image ? (
+              <img data-no-frame src={v.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            ) : null}
+          </div>
+          <div>
+            <div style={{ fontSize: 34, fontWeight: 700, color: "#ffffff" }}>{v.name}</div>
+            {v.role ? (
+              <div
+                style={{
+                  marginTop: 6,
+                  fontFamily: FONT_MONO,
+                  fontSize: 22,
+                  fontWeight: 600,
+                  letterSpacing: "0.04em",
+                  color: accent,
+                }}
+              >
+                {v.role}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 17 — Número gigante (big stat) ──────────────────────────────────
+function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
+  const pills = toLines(v.pills);
+  return (
+    <CardShell accent={accent}>
+      <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+        {/* key={accent} — see FraseCard: WebKit won't re-run background-clip:text in place */}
+        <div
+          key={accent}
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: 240,
+            lineHeight: 0.9,
+            letterSpacing: "-0.04em",
+            background: `linear-gradient(135deg, #ffffff 40%, ${accent})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            color: "transparent",
+          }}
+        >
+          {v.bignum}
+        </div>
+        <p style={{ marginTop: 20, fontSize: 36, lineHeight: 1.4, color: "rgba(255,255,255,0.78)", maxWidth: "22ch" }}>
+          {v.label}
+        </p>
+        {pills.length ? (
+          <div style={{ marginTop: 30, display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
+            {pills.map((p, i) => (
+              <span
+                key={i}
+                style={{
+                  fontFamily: FONT_SANS,
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: accent,
+                  border: `1px solid ${hexA(accent, 0.4)}`,
+                  background: hexA(accent, 0.1),
+                  borderRadius: 999,
+                  padding: "12px 24px",
+                }}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 18 — Grade de recursos (lines: "Título|descrição") ──────────────
+function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
+  const items = toLines(v.items).map((l) => {
+    const [title, ...rest] = l.split("|");
+    return { title: (title || "").trim(), desc: rest.join("|").trim() };
+  });
+  return (
+    <CardShell accent={accent}>
+      <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+      <h1
+        style={{
+          marginTop: 14,
+          fontFamily: FONT_DISPLAY,
+          fontWeight: 800,
+          fontSize: 60,
+          lineHeight: 1.05,
+          letterSpacing: "-0.03em",
+          color: "#ffffff",
+          maxWidth: "16ch",
+        }}
+      >
+        {v.title}
+      </h1>
+      <div style={{ marginTop: 40, flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        {items.map((it, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              padding: 30,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <span
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 12,
+                background: hexA(accent, 0.16),
+                border: `1px solid ${hexA(accent, 0.4)}`,
+                color: accent,
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 800,
+                fontSize: 28,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {String(i + 1)}
+            </span>
+            <div style={{ fontSize: 32, fontWeight: 700, color: "#ffffff", lineHeight: 1.15 }}>{it.title}</div>
+            {it.desc ? <div style={{ fontSize: 25, color: "rgba(255,255,255,0.62)", lineHeight: 1.35 }}>{it.desc}</div> : null}
+          </div>
+        ))}
+      </div>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 19 — Capa de carrossel (slide-1 cover) ──────────────────────────
+function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
+  return (
+    <CardShell accent={accent}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+        {v.index ? (
+          <span
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 26,
+              fontWeight: 700,
+              color: accent,
+              border: `1px solid ${hexA(accent, 0.4)}`,
+              borderRadius: 10,
+              padding: "8px 16px",
+            }}
+          >
+            {v.index}
+          </span>
+        ) : null}
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <h1
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: 96,
+            lineHeight: 1,
+            letterSpacing: "-0.04em",
+            color: "#ffffff",
+            maxWidth: "14ch",
+          }}
+        >
+          {v.title}
+        </h1>
+        {v.sub ? (
+          <p style={{ marginTop: 28, fontSize: 36, lineHeight: 1.4, color: "rgba(255,255,255,0.72)", maxWidth: "24ch" }}>
+            {v.sub}
+          </p>
+        ) : null}
+      </div>
+      {v.swipe ? (
+        <div style={{ marginBottom: 4 }}>
+          <span
+            style={{
+              display: "inline-block",
+              fontFamily: FONT_SANS,
+              fontSize: 30,
+              fontWeight: 700,
+              color: "#0a0510",
+              background: accent,
+              borderRadius: 999,
+              padding: "16px 30px",
+              boxShadow: `0 0 50px ${hexA(accent, 0.35)}`,
+            }}
+          >
+            {v.swipe}
+          </span>
+        </div>
+      ) : null}
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Template 20 — Contagem regressiva (countdown) ────────────────────────────
+function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
+  return (
+    <CardShell accent={accent}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
+        {v.dateBadge ? <SpecChip accent={accent}>{v.dateBadge}</SpecChip> : null}
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+        {v.pre ? (
+          <div style={{ fontFamily: FONT_MONO, fontSize: 30, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
+            {v.pre}
+          </div>
+        ) : null}
+        {/* key={accent} — see FraseCard */}
+        <div
+          key={accent}
+          style={{
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: 320,
+            lineHeight: 0.85,
+            letterSpacing: "-0.05em",
+            background: `linear-gradient(135deg, #ffffff 35%, ${accent})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            color: "transparent",
+          }}
+        >
+          {v.days}
+        </div>
+        <div style={{ marginTop: 12, fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 48, color: "#ffffff" }}>
+          {v.unit}
+        </div>
+        {v.sub ? (
+          <p style={{ marginTop: 26, fontSize: 34, lineHeight: 1.4, color: "rgba(255,255,255,0.72)", maxWidth: "22ch" }}>
+            {v.sub}
+          </p>
+        ) : null}
+      </div>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
 // ── Template registry ────────────────────────────────────────────────────────
 // `labelKey`/`labelKey` on options resolve to studio.fields.* / studio.opt.* i18n
 // keys. Template names resolve to studio.templates.<id>. `defaults` are the card
@@ -888,7 +1793,35 @@ type Field = {
   options?: { value: string; labelKey: string }[];
   showIf?: (v: Vals) => boolean;
 };
-type TemplateId = "questao" | "dica" | "promo" | "frase" | "cronograma" | "imagem" | "mockup";
+type TemplateId =
+  | "questao"
+  | "dica"
+  | "promo"
+  | "frase"
+  | "cronograma"
+  | "imagem"
+  | "mockup"
+  | "nuvem"
+  | "comparacao"
+  | "mitoverdade"
+  | "checklist"
+  | "mnemonico"
+  | "destaque"
+  | "split"
+  | "clinica"
+  | "depoimento"
+  | "numero"
+  | "recursos"
+  | "carrossel"
+  | "contagem";
+
+// Reused image-fit select options (destaque / split / clinica share these).
+const FIT_OPTIONS: { value: string; labelKey: string }[] = [
+  { value: "cover-center", labelKey: "fitCoverCenter" },
+  { value: "cover-top", labelKey: "fitCoverTop" },
+  { value: "cover-bottom", labelKey: "fitCoverBottom" },
+  { value: "contain", labelKey: "fitContain" },
+];
 
 type Template = {
   id: TemplateId;
@@ -1060,6 +1993,249 @@ const TEMPLATES: Template[] = [
       mode: "page",
       pagePath: "/questoes-revalida",
       image: "/landing/shot-medvoice.webp",
+    },
+  },
+  {
+    id: "nuvem",
+    Render: NuvemCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "spec", labelKey: "spec" },
+      { key: "title", labelKey: "title", type: "textarea" },
+      { key: "topics", labelKey: "topics", type: "textarea" },
+      { key: "footnote", labelKey: "footnote", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Cai muito na prova",
+      spec: "Clínica Médica",
+      title: "Os temas mais cobrados na 2ª fase",
+      topics:
+        "*IAM com supra\n*Sepse\nInsuficiência cardíaca\n*Pré-eclâmpsia\nAVC isquêmico\nCetoacidose diabética\nPneumonia\n*Choque\nTEP\nAsma\nDPOC\nAbdome agudo",
+      footnote: "Em destaque: os temas que mais aparecem.",
+    },
+  },
+  {
+    id: "comparacao",
+    Render: ComparacaoCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "title", labelKey: "title", type: "textarea" },
+      { key: "leftTitle", labelKey: "leftTitle" },
+      { key: "leftItems", labelKey: "leftItems", type: "textarea" },
+      { key: "rightTitle", labelKey: "rightTitle" },
+      { key: "rightItems", labelKey: "rightItems", type: "textarea" },
+      { key: "footnote", labelKey: "footnote", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Compare e nunca mais erre",
+      title: "Exsudato × Transudato",
+      leftTitle: "Exsudato",
+      leftItems:
+        "Proteína LP/soro > 0,5\nLDH LP/soro > 0,6\nLDH > 2/3 do limite\nCausas: infecção, neoplasia",
+      rightTitle: "Transudato",
+      rightItems:
+        "Proteína LP/soro < 0,5\nLDH LP/soro < 0,6\nLDH normal\nCausas: ICC, cirrose, s. nefrótica",
+      footnote: "Critérios de Light: 1 positivo já classifica como exsudato.",
+    },
+  },
+  {
+    id: "mitoverdade",
+    Render: MitoVerdadeCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "title", labelKey: "title", type: "textarea" },
+      { key: "myth", labelKey: "myth", type: "textarea" },
+      { key: "truth", labelKey: "truth", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Mito ou verdade?",
+      title: "Antibiótico corta o efeito do anticoncepcional?",
+      myth: "Todo antibiótico reduz a eficácia do anticoncepcional oral.",
+      truth:
+        "Só a rifampicina (e a rifabutina) têm efeito comprovado. Os demais antibióticos não reduzem a eficácia de forma clinicamente relevante.",
+    },
+  },
+  {
+    id: "checklist",
+    Render: ChecklistCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "spec", labelKey: "spec" },
+      { key: "title", labelKey: "title", type: "textarea" },
+      { key: "items", labelKey: "items", type: "textarea" },
+      { key: "footnote", labelKey: "footnote", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Reta final",
+      spec: "Revalida",
+      title: "5 coisas pra revisar na véspera",
+      items:
+        "Protocolos de PCR e via aérea\nDoses das drogas da emergência\nCritérios diagnósticos mais cobrados\nConduta na sepse e no choque\nIdade gestacional e cálculo da DPP",
+      footnote: "Salva esse post pra revisar depois 👆",
+    },
+  },
+  {
+    id: "mnemonico",
+    Render: MnemonicoCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "title", labelKey: "title" },
+      { key: "sub", labelKey: "sub" },
+      { key: "items", labelKey: "mnemonicItems", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Macete que salva",
+      title: "MONABICH",
+      sub: "Conduta na síndrome coronariana aguda",
+      items:
+        "M=Morfina=analgesia se dor refratária\nO=Oxigênio=se SatO₂ < 90%\nN=Nitrato=alívio da dor anginosa\nA=AAS=antiagregação imediata\nB=Betabloqueador=reduz consumo de O₂\nI=IECA=nas primeiras 24h\nC=Clopidogrel=dupla antiagregação\nH=Heparina=anticoagulação",
+    },
+  },
+  {
+    id: "destaque",
+    Render: DestaqueCard,
+    fields: [
+      { key: "image", labelKey: "image", type: "image" },
+      { key: "fit", labelKey: "fit", type: "select", options: FIT_OPTIONS },
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "headline", labelKey: "title", type: "textarea" },
+      { key: "caption", labelKey: "caption", type: "textarea" },
+    ],
+    defaults: {
+      image: "/images/students.webp",
+      fit: "cover-center",
+      eyebrow: "Turma Revalida 2026.2",
+      headline: "Sua aprovação começa com o próximo estudo.",
+      caption: "medhelpspace.com.br",
+    },
+  },
+  {
+    id: "split",
+    Render: SplitCard,
+    fields: [
+      { key: "image", labelKey: "image", type: "image" },
+      { key: "fit", labelKey: "fit", type: "select", options: FIT_OPTIONS },
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "headline", labelKey: "title", type: "textarea" },
+      { key: "body", labelKey: "body", type: "textarea" },
+      { key: "pills", labelKey: "pills", type: "textarea" },
+    ],
+    defaults: {
+      image: "/landing/shot-medvoice.webp",
+      fit: "cover-center",
+      eyebrow: "Conheça o MedVoice",
+      headline: "Estude ouvindo, onde você estiver.",
+      body: "Aulas em áudio por especialidade, no ritmo da sua rotina.",
+      pills: "Por especialidade\nOffline no fone\nRevisão rápida",
+    },
+  },
+  {
+    id: "clinica",
+    Render: ClinicaCard,
+    fields: [
+      { key: "image", labelKey: "image", type: "image" },
+      { key: "fit", labelKey: "fit", type: "select", options: FIT_OPTIONS },
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "headline", labelKey: "title", type: "textarea" },
+      { key: "callout", labelKey: "callout" },
+      { key: "caption", labelKey: "caption", type: "textarea" },
+    ],
+    defaults: {
+      image: "/landing/shot-questoes-ecg.webp",
+      fit: "cover-center",
+      eyebrow: "Desafio diagnóstico",
+      headline: "Você reconhece esse ritmo?",
+      callout: "ECG · 12 derivações",
+      caption: "Comente sua hipótese 👇",
+    },
+  },
+  {
+    id: "depoimento",
+    Render: DepoimentoCard,
+    fields: [
+      { key: "image", labelKey: "image", type: "image" },
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "quote", labelKey: "quote", type: "textarea" },
+      { key: "name", labelKey: "name" },
+      { key: "role", labelKey: "role" },
+    ],
+    defaults: {
+      image: "/images/students.webp",
+      eyebrow: "Quem estuda com a gente",
+      quote: "O plano me deu direção. Parei de estudar no escuro e passei na primeira.",
+      name: "Ana Beatriz",
+      role: "Aprovada · Revalida 2025.1",
+    },
+  },
+  {
+    id: "numero",
+    Render: NumeroCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "bignum", labelKey: "bignum" },
+      { key: "label", labelKey: "label", type: "textarea" },
+      { key: "pills", labelKey: "pills", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Dentro da plataforma",
+      bignum: "+3.000",
+      label: "questões comentadas, atualizadas pelo padrão do INEP",
+      pills: "877 gratuitas\n130 simulados\nGabarito comentado",
+    },
+  },
+  {
+    id: "recursos",
+    Render: RecursosCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "title", labelKey: "title", type: "textarea" },
+      { key: "items", labelKey: "gridItems", type: "textarea" },
+      { key: "footnote", labelKey: "footnote", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Tudo num lugar só",
+      title: "O que você tem no MedHelpSpace",
+      items:
+        "Questões comentadas|Banco atualizado pelo padrão INEP\nMedVoice|Aulas em áudio por especialidade\nFlashcards|Revisão ativa com repetição espaçada\nMemoreCards|Revisão visual pra reta final",
+      footnote: "medhelpspace.com.br",
+    },
+  },
+  {
+    id: "carrossel",
+    Render: CarrosselCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "index", labelKey: "indexNum" },
+      { key: "title", labelKey: "title", type: "textarea" },
+      { key: "sub", labelKey: "sub", type: "textarea" },
+      { key: "swipe", labelKey: "swipe" },
+    ],
+    defaults: {
+      eyebrow: "Carrossel · salva pra depois",
+      index: "01",
+      title: "7 erros que reprovam no Revalida",
+      sub: "E como evitar cada um deles.",
+      swipe: "Arrasta pra ver →",
+    },
+  },
+  {
+    id: "contagem",
+    Render: ContagemCard,
+    fields: [
+      { key: "eyebrow", labelKey: "eyebrow" },
+      { key: "dateBadge", labelKey: "dateBadge" },
+      { key: "pre", labelKey: "pre" },
+      { key: "days", labelKey: "days" },
+      { key: "unit", labelKey: "unit" },
+      { key: "sub", labelKey: "sub", type: "textarea" },
+    ],
+    defaults: {
+      eyebrow: "Revalida 2026.2",
+      dateBadge: "Prova · 20/10/2026",
+      pre: "Faltam",
+      days: "47",
+      unit: "dias para a prova",
+      sub: "Cada dia de revisão ativa conta. Bora?",
     },
   },
 ];
