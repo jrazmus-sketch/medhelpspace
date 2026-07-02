@@ -104,11 +104,3 @@ export function getCohortTiming(
 
   return { daysToTest, examDateLabel, isNearExam, examChip, is60dUnlocked, days60d, unlock60dLabel };
 }
-
-// Default tagline by role. The editable site_content key (keyed per cohort slug)
-// overrides this; it's the fallback so the copy works before Karina edits it.
-export function defaultCohortTagline(t: CohortTiming): string {
-  return t.isNearExam
-    ? "Menos tempo até a prova — por isso o valor menor. Comece hoje; cada dia conta."
-    : "Mais tempo para construir uma base sólida, no seu ritmo.";
-}

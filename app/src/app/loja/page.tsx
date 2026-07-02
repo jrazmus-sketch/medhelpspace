@@ -5,7 +5,7 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { SiteText } from "@/components/landing/site-text";
 import { Check, Lock, Unlock, Clock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
-import { getCohortTiming, defaultCohortTagline, type CohortTiming } from "@/lib/cohort-timing";
+import { getCohortTiming, type CohortTiming } from "@/lib/cohort-timing";
 import type { CohortProduct } from "@/types/supabase";
 
 const INCLUDED = [
@@ -227,16 +227,6 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
           {cohort.isOnSale && cohort.savingsLabel && (
             <p className="mt-1 text-sm font-semibold text-brand">{cohort.savingsLabel}</p>
           )}
-          {/* Per-turma tagline. Editable per cohort slug; the date-driven default
-              explains the lower price for the near turma (honest time-tradeoff). */}
-          <p className="mt-3 text-sm leading-relaxed text-foreground/60">
-            <SiteText
-              as="span"
-              multiline
-              k={`loja.card.tagline.${cohort.slug}`}
-              fallback={defaultCohortTagline(timing)}
-            />
-          </p>
         </div>
 
         <IncludedList timing={timing} />
