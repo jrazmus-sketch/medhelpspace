@@ -6,7 +6,7 @@ import { getDerivedPlanForUser, getStudyPlanPrefs, getStudyPlanPauses } from "@/
 import { PlanoClient } from "./plano-client";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListOrdered } from "lucide-react";
 
 export const metadata = { title: "Meu Plano de Estudos — MedHelpSpace" };
 
@@ -65,10 +65,20 @@ export default async function PlanoPage() {
         Meu Plano de Estudos
       </h1>
       {plan && plan.daysToExam !== null && (
-        <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 32 }}>
+        <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 16 }}>
           {plan.daysToExam} dias para a prova · Fase: {phaseLabel(plan.phase)}
         </p>
       )}
+
+      <Link
+        href="/app/plano/roteiro"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: "var(--brand)", textDecoration: "none", marginBottom: 28 }}
+        className="hover:underline"
+      >
+        <ListOrdered size={15} />
+        Ver o roteiro completo dos temas
+        <ChevronRight size={14} />
+      </Link>
 
       <Coachmark coachKey="plano" className="mt-0" />
 

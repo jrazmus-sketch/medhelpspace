@@ -32,6 +32,7 @@ export type CoachKey =
   | "revalida-up"
   | "revisao"
   | "plano"
+  | "roteiro"
   | "medhelp-60d"
   | "progresso"
   | "nav";
@@ -194,6 +195,15 @@ export const TIPS: Record<CoachKey, Tip> = {
     hrefLabel: "Ver meu plano",
   },
 
+  roteiro: {
+    key: "roteiro",
+    title: "Seu roteiro de estudos",
+    body:
+      "A lista completa dos temas do Revalida, **ordenados pelo que mais cai na prova** (2020–2025) e agrupados por prioridade A→D. Vá de cima para baixo — os temas do topo dão o **maior retorno**. Cada tema mostra se você já **iniciou** ou **dominou**.",
+    href: "/app/plano/roteiro",
+    hrefLabel: "Abrir o roteiro",
+  },
+
   "medhelp-60d": {
     key: "medhelp-60d",
     title: "O que é o MedHelp 60D",
@@ -237,6 +247,6 @@ export const GUIDE_GROUPS: { title: string; keys: CoachKey[] }[] = [
     keys: ["dash-study-types", "dash-specialties", "quiz", "simulados", "flashcards", "lesson", "audio", "audiocards", "revalida-up"],
   },
   { title: "A Revisão espaçada", keys: ["revisao", "memorecards"] },
-  { title: "Planejamento", keys: ["plano"] },
+  { title: "Planejamento", keys: ["plano", "roteiro"] },
   { title: "MedHelp 60D", keys: ["medhelp-60d"] },
 ];
