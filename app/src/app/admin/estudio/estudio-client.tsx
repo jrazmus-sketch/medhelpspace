@@ -517,7 +517,11 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
         }}
       >
         <div style={{ width: 72, height: 5, borderRadius: 3, background: accent, marginBottom: 48 }} />
+        {/* key={accent} remounts the node on color change — WebKit doesn't
+            re-run background-clip:text when `background` updates in place,
+            which left the gradient painting over the text until a reflow. */}
         <blockquote
+          key={accent}
           style={{
             margin: 0,
             fontFamily: FONT_DISPLAY,
@@ -701,6 +705,9 @@ function ImgPlaceholder() {
 function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
   const height = React.useContext(CardHeightContext);
   const imgH = Math.round(height * 0.56);
+  const fit = v.fit || "cover-center";
+  const objectFit: React.CSSProperties["objectFit"] = fit === "contain" ? "contain" : "cover";
+  const objectPosition = fit === "cover-top" ? "top" : fit === "cover-bottom" ? "bottom" : "center";
   return (
     <CardShell accent={accent} padded={false}>
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -713,8 +720,8 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
-                objectPosition: v.position || "center",
+                objectFit,
+                objectPosition,
                 display: "block",
               }}
             />
@@ -991,13 +998,14 @@ const TEMPLATES: Template[] = [
     fields: [
       { key: "image", labelKey: "image", type: "image" },
       {
-        key: "position",
-        labelKey: "position",
+        key: "fit",
+        labelKey: "fit",
         type: "select",
         options: [
-          { value: "center", labelKey: "posCenter" },
-          { value: "top", labelKey: "posTop" },
-          { value: "bottom", labelKey: "posBottom" },
+          { value: "cover-center", labelKey: "fitCoverCenter" },
+          { value: "cover-top", labelKey: "fitCoverTop" },
+          { value: "cover-bottom", labelKey: "fitCoverBottom" },
+          { value: "contain", labelKey: "fitContain" },
         ],
       },
       { key: "eyebrow", labelKey: "eyebrow" },
@@ -1006,7 +1014,7 @@ const TEMPLATES: Template[] = [
     ],
     defaults: {
       image: "/landing/memorecards/card-1.webp",
-      position: "center",
+      fit: "cover-center",
       eyebrow: "Novidade no MedHelp 60D",
       headline: "MemoreCards de Cardiologia já disponíveis",
       caption: "Revisão visual rápida para a reta final da sua prova.",
@@ -1207,23 +1215,11 @@ export function EstudioClient() {
           </button>
         </div>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 28,
-            alignItems: "flex-start",
-            padding: 28,
-            maxWidth: 1600,
-            margin: "0 auto",
-          }}
-        >
-          {/* ── Controls ── */}
+        <div className="flex flex-col gap-6 p-6 lg:h-[calc(100dvh-7rem)] lg:flex-row">
+          {/* ── Controls (scrolls independently) ── */}
           <section
+            className="scrollbar-brand w-full min-h-0 lg:w-[420px] lg:shrink-0 lg:overflow-y-auto"
             style={{
-              flex: "1 1 380px",
-              minWidth: 300,
-              maxWidth: 460,
               background: "#0a0a12",
               border: "1px solid rgba(255,255,255,0.07)",
               borderRadius: 20,
@@ -1487,8 +1483,11 @@ export function EstudioClient() {
             </div>
           </section>
 
-          {/* ── Preview ── */}
-          <section style={{ flex: "1 1 560px", display: "flex", justifyContent: "center" }}>
+          {/* ── Preview (stays on screen while the builder scrolls) ── */}
+          <section
+            className="min-h-0 flex-1 lg:overflow-auto"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}
+          >
             <div
               style={{
                 width: dims.w * effectiveScale,
@@ -1516,73 +1515,150 @@ export function EstudioClient() {
 
 function ImageField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const { t } = useTranslation();
-  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) onChange(URL.createObjectURL(f));
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [drag, setDrag] = useState(false);
+
+  const setFromFile = (f?: File | null) => {
+    if (f && f.type.startsWith("image/")) onChange(URL.createObjectURL(f));
   };
-  const isBlob = value.startsWith("blob:");
+
+  // Paste an image from the clipboard (Ctrl+V) anywhere while the field is open.
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          setFromFile(items[i].getAsFile());
+          break;
+        }
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const uploadLabel = value.startsWith("blob:") ? "upload" : value;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <input
-        type="text"
-        placeholder={t("studio.imageUrlPlaceholder")}
-        value={isBlob ? "" : value}
-        onChange={(e) => onChange(e.target.value)}
-        style={inputStyle}
-      />
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <label
-          style={{
-            fontFamily: FONT_MONO,
-            fontSize: 11,
-            color: "#c084e8",
-            background: "rgba(122,29,145,0.14)",
-            border: "1px solid rgba(192,132,232,0.25)",
-            borderRadius: 7,
-            padding: "7px 11px",
-            cursor: "pointer",
-          }}
-        >
-          {isBlob ? t("studio.changeFile") : t("studio.uploadFile")}
-          <input type="file" accept="image/*" onChange={onFile} style={{ display: "none" }} />
-        </label>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Drop / paste / click zone */}
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDrag(false);
+          setFromFile(e.dataTransfer.files?.[0]);
+        }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: value ? 8 : "18px 14px",
+          borderRadius: 12,
+          cursor: "pointer",
+          border: `1.5px dashed ${drag ? "#c084e8" : "rgba(255,255,255,0.16)"}`,
+          background: drag ? "rgba(192,132,232,0.1)" : "rgba(255,255,255,0.02)",
+          transition: "border-color .15s, background .15s",
+        }}
+      >
         {value ? (
-          <button
-            onClick={() => onChange("")}
-            style={{
-              fontFamily: FONT_MONO,
-              fontSize: 11,
-              color: "#a8a8a8",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 7,
-              padding: "7px 11px",
-              cursor: "pointer",
-            }}
-          >
-            {t("studio.clear")}
-          </button>
-        ) : null}
+          <>
+            <img
+              data-no-frame
+              src={value}
+              alt=""
+              style={{ width: 52, height: 52, objectFit: "cover", borderRadius: 8, flexShrink: 0, background: "#111" }}
+            />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 12, color: "#e8e8ea", fontWeight: 600 }}>{t("studio.changeFile")}</div>
+              <div
+                style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: 10,
+                  color: "#8a8a95",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {uploadLabel}
+              </div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange("");
+              }}
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 10.5,
+                color: "#a8a8a8",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 6,
+                padding: "5px 9px",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              {t("studio.clear")}
+            </button>
+          </>
+        ) : (
+          <div style={{ width: "100%", textAlign: "center", color: "#8a8a95", fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>🖼️</div>
+            {t("studio.dropzone")}
+          </div>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" onChange={(e) => setFromFile(e.target.files?.[0])} style={{ display: "none" }} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-        {SITE_IMAGES.map((src) => (
-          <button
-            key={src}
-            onClick={() => onChange(src)}
-            title={src}
-            style={{
-              padding: 0,
-              aspectRatio: "1 / 1",
-              border: value === src ? "2px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 8,
-              overflow: "hidden",
-              cursor: "pointer",
-              background: "#111",
-            }}
-          >
-            <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-          </button>
-        ))}
+
+      {/* Gallery of existing site imagery */}
+      <div>
+        <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.06em", color: "#7f7f8c", marginBottom: 6 }}>
+          {t("studio.gallery")}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+          {SITE_IMAGES.map((src) => (
+            <button
+              key={src}
+              onClick={() => onChange(src)}
+              title={src}
+              style={{
+                padding: 0,
+                aspectRatio: "1 / 1",
+                border: value === src ? "2px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 8,
+                overflow: "hidden",
+                cursor: "pointer",
+                background: "#111",
+              }}
+            >
+              <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* URL fallback (for Bunny CDN / any external link) */}
+      <div>
+        <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.06em", color: "#7f7f8c", marginBottom: 6 }}>
+          {t("studio.urlLabel")}
+        </div>
+        <input
+          type="text"
+          placeholder={t("studio.imageUrlPlaceholder")}
+          value={value.startsWith("blob:") ? "" : value}
+          onChange={(e) => onChange(e.target.value)}
+          style={inputStyle}
+        />
       </div>
     </div>
   );
