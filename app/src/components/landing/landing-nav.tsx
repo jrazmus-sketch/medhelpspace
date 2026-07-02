@@ -97,7 +97,7 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
                 className="rounded-lg px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95"
                 style={{ background: "var(--brand)" }}
               >
-                Meu painel
+                Área do aluno
               </Link>
             </>
           ) : (

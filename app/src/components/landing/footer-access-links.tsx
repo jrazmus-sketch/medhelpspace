@@ -17,7 +17,7 @@ export function FooterAccessLinks() {
       <ul className="space-y-2.5 text-sm">
         <li>
           <Link href="/app" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>
-            Meu painel
+            Área do aluno
           </Link>
         </li>
         <li>
