@@ -2,6 +2,7 @@
 
 import { useReveal } from "@/hooks/use-reveal";
 import { SiteText } from "./site-text";
+import { MemorecardsScreen } from "./memorecards-carousel";
 import type { LandingStats } from "@/lib/landing/stats";
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -20,6 +21,8 @@ type Feature = {
   color: string;
   shot: string;
   alt: string;
+  interactive?: boolean; // renders the swipeable device instead of a static shot
+  badge?: string; // small pill under the name (e.g. "incluído no MedHelp 60D")
 };
 
 const FEATURES: Feature[] = [
@@ -58,6 +61,19 @@ const FEATURES: Feature[] = [
   },
   {
     num: "04",
+    id: "memorecards",
+    name: "MemoreCards",
+    tagline: "O mapa visual que sua memória lembra na prova.",
+    body: "Cada tema condensado num card visual de alta fixação: o padrão, os sinais e o “grito da prova” numa imagem só. Você folheia, reconhece e grava — a memória visual faz o trabalho pesado.",
+    result: "O que você vê uma vez, você lembra na hora certa.",
+    color: "var(--c-memorecards)",
+    shot: "/landing/memorecards/card-3.webp",
+    alt: "Biblioteca de MemoreCards visuais por especialidade.",
+    interactive: true,
+    badge: "incluído no MedHelp 60D",
+  },
+  {
+    num: "05",
     id: "flashcards",
     name: "Flashcards",
     tagline: "{flashcards} cartões que decidem sozinhos quando voltar.",
@@ -68,7 +84,7 @@ const FEATURES: Feature[] = [
     alt: "Tela de um flashcard com a frente da pergunta.",
   },
   {
-    num: "05",
+    num: "06",
     id: "audiocards",
     name: "AudioCards",
     tagline: "Os mesmos temas dos flashcards — agora no ouvido.",
@@ -79,7 +95,7 @@ const FEATURES: Feature[] = [
     alt: "Tela do AudioCards com a transcrição aberta enquanto o áudio toca.",
   },
   {
-    num: "06",
+    num: "07",
     id: "revalida-up",
     name: "Revalida Up",
     tagline: "Os padrões que mais caem — em recordação ativa.",
@@ -144,6 +160,19 @@ function FeatureRow({ f, i, vars }: { f: Feature; i: number; vars: Record<string
               <SiteText as="span" k={`sys.${f.id}.name`} fallback={f.name} />
             </span>
           </div>
+          {f.badge && (
+            <div
+              className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+              style={{
+                background: `color-mix(in srgb, ${f.color} 12%, transparent)`,
+                color: f.color,
+                border: `1px solid color-mix(in srgb, ${f.color} 30%, transparent)`,
+              }}
+            >
+              <span aria-hidden>✦</span>
+              <SiteText as="span" k={`sys.${f.id}.badge`} fallback={f.badge} />
+            </div>
+          )}
           <h3 className="text-[clamp(1.6rem,3.6vw,2.6rem)] font-black leading-[1.1] tracking-[-0.02em]" style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}>
             <SiteText as="span" multiline k={`sys.${f.id}.tagline`} fallback={f.tagline} vars={vars} />
           </h3>
@@ -165,15 +194,19 @@ function FeatureRow({ f, i, vars }: { f: Feature; i: number; vars: Record<string
             style={{ background: `color-mix(in srgb, ${f.color} 24%, transparent)`, opacity: 0.55 }}
           />
           <div
-            className="overflow-hidden rounded-[26px]"
+            className="w-full overflow-hidden rounded-[26px]"
             style={{
               maxWidth: 270,
               border: `1px solid color-mix(in srgb, ${f.color} 30%, var(--lp-border))`,
               boxShadow: `0 30px 70px rgba(0,0,0,0.45), 0 0 50px color-mix(in srgb, ${f.color} 18%, transparent)`,
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={f.shot} alt={f.alt} width={1170} height={2532} className="block w-full" style={{ height: "auto" }} loading="lazy" />
+            {f.interactive ? (
+              <MemorecardsScreen color={f.color} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={f.shot} alt={f.alt} width={1170} height={2532} className="block w-full" style={{ height: "auto" }} loading="lazy" />
+            )}
           </div>
         </div>
       </div>

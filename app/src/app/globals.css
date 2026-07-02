@@ -690,6 +690,7 @@
   --c-revalida:    #1d4ed8;
   --c-audiocards:  #0284c7;
   --c-flashcards:  #06b6d4;
+  --c-memorecards: #c2410c;   /* warm orange — the lone warm accent, so MemoreCards pops */
   --c-pop:         #06b6d4;
   --c-medhelp60:   #94a3b8;
   --c-success:     #059669;
@@ -704,6 +705,7 @@
   --c-revalida:    #5b8cff;
   --c-audiocards:  #5eb3ff;
   --c-flashcards:  #66e0ff;
+  --c-memorecards: #fb923c;   /* warm orange (light) — the accent shown on the dark landing */
   --c-pop:         #66e0ff;
   --c-medhelp60:   #3a4055;
   --c-success:     #5dd6a8;
