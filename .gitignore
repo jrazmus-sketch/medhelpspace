@@ -58,3 +58,23 @@ scratch/
 
 # Generated Bunny CDN file listing — regenerable via scripts/bunny-list-medvoice.js
 scripts/bunny-medvoice-listing.json
+
+# Local Supabase test stack — mirrors prod schema/content; local dev infra, never commit
+supabase/
+
+# Generated /marketing skill output — planning docs, not source (like .review/)
+.marketing/
+
+# Landing mockup source images — large binaries, not referenced by app code
+# (curated/optimized assets live in app/public/ instead)
+landing-shots/
+
+# Logs — dev-server / build output, regenerable
+*.log
+
+# Orphan dev-only route (unlinked visual-concepts playground) — kept local, not shipped
+app/src/app/dev/
+
+# One-off data-import scripts (already run against prod; read machine-local sources)
+scripts/add-pediatria-simulado-3.js
+scripts/import-revalida-questoes.js
