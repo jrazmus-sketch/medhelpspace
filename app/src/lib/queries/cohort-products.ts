@@ -23,14 +23,14 @@ export function formatBRL(cents: number): string {
   })}`;
 }
 
-const PRODUCT_COLUMNS = "id, slug, name, price_cents, display_order";
+const PRODUCT_COLUMNS = "id, slug, name, price_cents, sale_price_cents, display_order";
 
 // Storefront columns also pull test_date and the per-cohort MedHelp 60D unlock
 // date (embedded from cohort_module_access) so the loja/landing cards can render
 // the date-driven countdown + 60D status. Checkout/charge use PRODUCT_COLUMNS
 // (no timing needed), so toCohortProduct coalesces the timing fields to null.
 const SALE_COLUMNS =
-  "id, slug, name, price_cents, display_order, test_date, " +
+  "id, slug, name, price_cents, sale_price_cents, display_order, test_date, " +
   "cohort_module_access ( unlock_date, content_modules ( slug ) )";
 
 type ModuleAccessRow = {
@@ -43,6 +43,7 @@ type CohortRow = {
   slug: string;
   name: string;
   price_cents: number | null;
+  sale_price_cents?: number | null;
   display_order: number | null;
   test_date?: string | null;
   cohort_module_access?: ModuleAccessRow[] | null;
@@ -62,13 +63,26 @@ function extract60dUnlock(row: CohortRow): string | null {
 function toCohortProduct(row: CohortRow): CohortProduct {
   // is_for_sale rows always have a price (enforced by the
   // cohorts_for_sale_needs_price CHECK constraint), but coalesce defensively.
-  const priceCents = row.price_cents ?? 0;
+  const base = row.price_cents ?? 0;
+  // A sale is on when a valid promo price is set: non-negative and strictly below
+  // the base. The cohorts_sale_price_below_base CHECK enforces this at the DB
+  // level; we re-check here so a bad row can never invert the discount. The sale
+  // price then becomes the effective price everywhere — including the charge,
+  // which already reads priceCents — with the base shown struck through.
+  const sale = row.sale_price_cents ?? null;
+  const onSale = sale != null && base > 0 && sale >= 0 && sale < base;
+  const effective = onSale ? (sale as number) : base;
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
-    priceCents,
-    priceLabel: formatBRL(priceCents),
+    priceCents: effective,
+    priceLabel: formatBRL(effective),
+    compareAtPriceCents: onSale ? base : null,
+    compareAtPriceLabel: onSale ? formatBRL(base) : null,
+    isOnSale: onSale,
+    discountPercent: onSale ? Math.round((1 - effective / base) * 100) : null,
+    savingsLabel: onSale ? `Economize ${formatBRL(base - effective)}` : null,
     displayOrder: row.display_order ?? 0,
     testDate: row.test_date ?? null,
     unlock60dDate: extract60dUnlock(row),

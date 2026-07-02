@@ -205,12 +205,28 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
 
       <div className="flex flex-1 flex-col gap-6 p-6">
         <div>
+          {/* On sale: struck-through original + badge above the discounted price. */}
+          {cohort.isOnSale && cohort.compareAtPriceLabel && (
+            <div className="mb-1 flex items-center gap-2.5">
+              <span className="text-lg font-medium text-foreground/40 line-through">
+                {cohort.compareAtPriceLabel}
+              </span>
+              {cohort.discountPercent != null && (
+                <span className="inline-flex items-center rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-white">
+                  −{cohort.discountPercent}%
+                </span>
+              )}
+            </div>
+          )}
           <div className="text-4xl font-extrabold tracking-tight text-foreground" style={{ fontFamily: "var(--font-bricolage)" }}>
             {cohort.priceLabel}
           </div>
           <p className="mt-1 text-sm text-foreground/45">
             <SiteText as="span" k="loja.card.installments" fallback="ou parcele em até 12x no cartão" />
           </p>
+          {cohort.isOnSale && cohort.savingsLabel && (
+            <p className="mt-1 text-sm font-semibold text-brand">{cohort.savingsLabel}</p>
+          )}
           {/* Per-turma tagline. Editable per cohort slug; the date-driven default
               explains the lower price for the near turma (honest time-tradeoff). */}
           <p className="mt-3 text-sm leading-relaxed text-foreground/60">

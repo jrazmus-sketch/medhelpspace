@@ -167,7 +167,8 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
             </div>
           )}
 
-          {/* Price — animates on cohort switch */}
+          {/* Price — animates on cohort switch. On sale: struck-through original +
+              badge above the discounted price (which becomes the big number). */}
           <div className="mb-1 overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
@@ -176,10 +177,31 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.18 }}
-                className="text-[clamp(2.8rem,6vw,4rem)] font-bold leading-none tracking-[-0.03em]"
-                style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
               >
-                {cohort.priceLabel}
+                {cohort.isOnSale && cohort.compareAtPriceLabel && (
+                  <div className="mb-1.5 flex items-center gap-2.5">
+                    <span
+                      className="text-lg font-medium line-through"
+                      style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
+                    >
+                      {cohort.compareAtPriceLabel}
+                    </span>
+                    {cohort.discountPercent != null && (
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold"
+                        style={{ background: "var(--brand)", color: "#ffffff" }}
+                      >
+                        −{cohort.discountPercent}%
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div
+                  className="text-[clamp(2.8rem,6vw,4rem)] font-bold leading-none tracking-[-0.03em]"
+                  style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg)" }}
+                >
+                  {cohort.priceLabel}
+                </div>
               </motion.div>
             </AnimatePresence>
           </div>

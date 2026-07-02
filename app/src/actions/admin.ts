@@ -57,8 +57,11 @@ async function requireMemberAccessRole() {
 }
 
 // Cohort commerce/catalog fields (price + storefront), shared by create/update.
+// sale_price_cents is a manual on/off promo price: NULL = no sale; else the
+// discounted price (< price_cents) that becomes the effective price everywhere.
 type CohortCommerce = {
   price_cents: number | null;
+  sale_price_cents: number | null;
   is_for_sale: boolean;
   display_order: number;
   sale_ends_at: string | null;
@@ -68,16 +71,26 @@ function validateCommerce(c: CohortCommerce): string | null {
   if (c.is_for_sale && c.price_cents == null) return "PRICE_REQUIRED_FOR_SALE";
   if (c.price_cents != null && (!Number.isInteger(c.price_cents) || c.price_cents < 0))
     return "INVALID_PRICE";
+  if (c.sale_price_cents != null) {
+    if (!Number.isInteger(c.sale_price_cents) || c.sale_price_cents < 0) return "INVALID_SALE_PRICE";
+    if (c.price_cents == null) return "SALE_PRICE_NEEDS_BASE";
+    if (c.sale_price_cents >= c.price_cents) return "SALE_PRICE_ABOVE_BASE";
+  }
   return null;
 }
 
 function commerceFromFormData(f: FormData): CohortCommerce {
   const priceRaw = f.get("price");
+  const salePriceRaw = f.get("sale_price");
   const saleEndsRaw = f.get("sale_ends_at");
   return {
     price_cents:
       priceRaw != null && String(priceRaw).trim() !== ""
         ? Math.round(Number(priceRaw) * 100)
+        : null,
+    sale_price_cents:
+      salePriceRaw != null && String(salePriceRaw).trim() !== ""
+        ? Math.round(Number(salePriceRaw) * 100)
         : null,
     is_for_sale: f.get("is_for_sale") === "on" || f.get("is_for_sale") === "true",
     display_order: Number(f.get("display_order")) || 0,

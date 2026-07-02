@@ -24,6 +24,7 @@ type CohortRow = {
   member_count: number;
   active: boolean;
   price_cents: number | null;
+  sale_price_cents: number | null;
   is_for_sale: boolean;
   display_order: number;
   sale_ends_at: string | null;
@@ -65,6 +66,9 @@ function mapCohortError(e: unknown, t: (k: string) => string): string {
   const msg = e instanceof Error ? e.message : "";
   if (msg === "PRICE_REQUIRED_FOR_SALE") return t("cohorts.priceRequiredForSale");
   if (msg === "INVALID_PRICE") return t("cohorts.priceInvalid");
+  if (msg === "INVALID_SALE_PRICE") return t("cohorts.salePriceInvalid");
+  if (msg === "SALE_PRICE_NEEDS_BASE") return t("cohorts.salePriceNeedsBase");
+  if (msg === "SALE_PRICE_ABOVE_BASE") return t("cohorts.salePriceAboveBase");
   if (msg === "Unauthorized") return t("errors.unauthorized");
   return t("errors.generic");
 }
@@ -84,6 +88,7 @@ interface EditState {
   membership_starts_at: string;
   membership_ends_at: string;
   price: string;          // reais, converted to cents on save
+  sale_price: string;     // reais; blank = no sale. Must be below `price`.
   is_for_sale: boolean;
   display_order: string;  // parsed to number on save
   sale_ends_at: string;   // YYYY-MM-DD or ""
@@ -122,6 +127,7 @@ export function CohortsClient({ rows, modules, access }: Props) {
       membership_starts_at: row.membership_starts_at.slice(0, 10),
       membership_ends_at: row.membership_ends_at.slice(0, 10),
       price: row.price_cents != null ? String(row.price_cents / 100) : "",
+      sale_price: row.sale_price_cents != null ? String(row.sale_price_cents / 100) : "",
       is_for_sale: row.is_for_sale,
       display_order: String(row.display_order ?? 0),
       sale_ends_at: row.sale_ends_at ? row.sale_ends_at.slice(0, 10) : "",
@@ -141,6 +147,11 @@ export function CohortsClient({ rows, modules, access }: Props) {
     if (state.membership_starts_at >= state.membership_ends_at) return t("cohorts.startBeforeEnd");
     if (state.price.trim() && !(Number(state.price) >= 0)) return t("cohorts.priceInvalid");
     if (state.is_for_sale && !state.price.trim()) return t("cohorts.priceRequiredForSale");
+    if (state.sale_price.trim()) {
+      if (!(Number(state.sale_price) >= 0)) return t("cohorts.salePriceInvalid");
+      if (!state.price.trim()) return t("cohorts.salePriceNeedsBase");
+      if (Number(state.sale_price) >= Number(state.price)) return t("cohorts.salePriceAboveBase");
+    }
     return null;
   }
 
@@ -162,6 +173,7 @@ export function CohortsClient({ rows, modules, access }: Props) {
           membership_starts_at: d.membership_starts_at,
           membership_ends_at: d.membership_ends_at,
           price_cents: d.price.trim() ? Math.round(Number(d.price) * 100) : null,
+          sale_price_cents: d.sale_price.trim() ? Math.round(Number(d.sale_price) * 100) : null,
           is_for_sale: d.is_for_sale,
           display_order: Number(d.display_order) || 0,
           sale_ends_at: d.sale_ends_at ? `${d.sale_ends_at}T23:59:59` : null,
@@ -304,6 +316,10 @@ export function CohortsClient({ rows, modules, access }: Props) {
                 <input name="price" type="number" min="0" step="0.01" placeholder={t("cohorts.pricePlaceholder")} className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
               </label>
               <label className="space-y-1">
+                <span className="text-xs text-muted-foreground">{t("cohorts.salePrice")}</span>
+                <input name="sale_price" type="number" min="0" step="0.01" placeholder={t("cohorts.salePricePlaceholder")} className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
+              </label>
+              <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">{t("cohorts.displayOrder")}</span>
                 <input name="display_order" type="number" min="0" step="1" defaultValue="0" className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
               </label>
@@ -423,6 +439,19 @@ export function CohortsClient({ rows, modules, access }: Props) {
                         />
                       </label>
                       <label className="space-y-1">
+                        <span className="text-xs text-muted-foreground">{t("cohorts.salePrice")}</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editState.sale_price}
+                          onChange={(e) => setEditState({ ...editState, sale_price: e.target.value })}
+                          placeholder={t("cohorts.salePricePlaceholder")}
+                          className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
+                        />
+                        <span className="text-[11px] text-muted-foreground">{t("cohorts.salePriceHint")}</span>
+                      </label>
+                      <label className="space-y-1">
                         <span className="text-xs text-muted-foreground">{t("cohorts.displayOrder")}</span>
                         <input
                           type="number"
@@ -487,7 +516,14 @@ export function CohortsClient({ rows, modules, access }: Props) {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t("cohorts.price")}</span>
-                        <span className="font-medium">{fmtPrice(c.price_cents)}</span>
+                        {c.sale_price_cents != null ? (
+                          <span className="font-medium">
+                            <span className="text-muted-foreground line-through mr-1.5">{fmtPrice(c.price_cents)}</span>
+                            <span className="text-brand">{fmtPrice(c.sale_price_cents)}</span>
+                          </span>
+                        ) : (
+                          <span className="font-medium">{fmtPrice(c.price_cents)}</span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">{t("cohorts.forSale")}</span>

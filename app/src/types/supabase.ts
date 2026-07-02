@@ -57,8 +57,18 @@ export interface CohortProduct {
   id: number;
   slug: string;
   name: string;
+  // EFFECTIVE price — the promo/sale price when a sale is on, otherwise the base
+  // price. This is what the whole payment path charges and what shows as the big
+  // number, so a sale needs no logic change downstream.
   priceCents: number;
-  priceLabel: string;       // formatted for display, e.g. "R$ 3.990"
+  priceLabel: string;       // formatted effective price, e.g. "R$ 2.990"
+  // When a sale is on, these carry the original (pre-sale) base price so the card
+  // can strike it through and show the savings. All null when not on sale.
+  compareAtPriceCents: number | null;  // original base price, e.g. 399000
+  compareAtPriceLabel: string | null;  // formatted original, e.g. "R$ 3.990"
+  isOnSale: boolean;
+  discountPercent: number | null;      // rounded % off, for the "-25%" badge
+  savingsLabel: string | null;         // "Economize R$ 1.000"
   displayOrder: number;
   testDate: string | null;       // ISO date of the exam (cohorts.test_date); drives the countdown
   unlock60dDate: string | null;  // ISO date MedHelp 60D unlocks for this cohort (cohort_module_access)

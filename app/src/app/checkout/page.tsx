@@ -140,6 +140,7 @@ export default async function CheckoutPage({
             cohortSlug={cohortSlug!}
             cohortName={config.name}
             priceLabel={config.priceLabel}
+            compareAtPriceLabel={config.compareAtPriceLabel}
             amountCents={config.priceCents}
             isLoggedIn={!!user}
             userEmail={userEmail}

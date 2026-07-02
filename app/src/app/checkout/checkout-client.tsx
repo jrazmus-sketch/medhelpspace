@@ -45,6 +45,7 @@ interface Props {
   cohortSlug: string;
   cohortName: string;
   priceLabel: string;
+  compareAtPriceLabel: string | null;  // struck-through original when the turma is on sale
   amountCents: number;
   isLoggedIn: boolean;
   userEmail: string;
@@ -74,6 +75,7 @@ export function CheckoutClient({
   cohortSlug,
   cohortName,
   priceLabel,
+  compareAtPriceLabel,
   amountCents,
   isLoggedIn,
   userEmail,
@@ -432,11 +434,18 @@ export function CheckoutClient({
           ) : (
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-foreground/55">Total</span>
-              <span
-                className="text-3xl font-extrabold text-foreground"
-                style={{ fontFamily: "var(--font-bricolage)" }}
-              >
-                {priceLabel}
+              <span className="flex items-baseline gap-2">
+                {compareAtPriceLabel && (
+                  <span className="text-base font-medium text-foreground/40 line-through">
+                    {compareAtPriceLabel}
+                  </span>
+                )}
+                <span
+                  className="text-3xl font-extrabold text-foreground"
+                  style={{ fontFamily: "var(--font-bricolage)" }}
+                >
+                  {priceLabel}
+                </span>
               </span>
             </div>
           )}
