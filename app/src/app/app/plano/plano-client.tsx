@@ -990,10 +990,10 @@ function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
 
 function NotificationsEditor({ prefs }: { prefs: StudyPlanPrefs }) {
   const [pending, startTransition] = useTransition();
-  // We don't include email prefs in StudyPlanPrefs core type — fetch them from a separate hook later.
-  // For now, default-render based on form state.
-  const [weeklySummary, setWeeklySummary] = useState(true);  // server default
-  const [dailyPlan, setDailyPlan] = useState(false);
+  // Initialize from the saved DB prefs so the toggles reflect the user's actual
+  // choice on load (not a hardcoded default that ignored what they'd saved).
+  const [weeklySummary, setWeeklySummary] = useState(prefs.email_weekly_summary);
+  const [dailyPlan, setDailyPlan] = useState(prefs.email_daily_plan);
 
   function update(patch: { email_weekly_summary?: boolean; email_daily_plan?: boolean }) {
     startTransition(() => setEmailPrefs(patch));
@@ -1136,9 +1136,11 @@ function contentSummary(p: StudyPlanPrefs, specialties: Specialty[]): string {
 }
 
 function notificationSummary(p: StudyPlanPrefs): string {
-  // We don't track email prefs here yet — placeholder
-  return "Resumo semanal · sem WhatsApp ainda";
-  void p;
+  const parts: string[] = [];
+  if (p.email_weekly_summary) parts.push("Resumo semanal");
+  if (p.email_daily_plan) parts.push("Plano diário");
+  if (parts.length === 0) parts.push("Emails desativados");
+  return parts.join(" · ");
 }
 
 // ── Style helpers ─────────────────────────────────────────────────────────────

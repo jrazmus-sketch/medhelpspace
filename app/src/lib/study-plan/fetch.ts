@@ -37,7 +37,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
         intensity, available_days, recurring_off_days, weekly_hours,
         temp_intensity, temp_intensity_until, weakness_sensitivity, include_60d,
         flashcard_daily_cap, preferred_content_types, content_type_weights,
-        intensification_start_days
+        intensification_start_days, email_weekly_summary, email_daily_plan
       `)
       .eq("user_id", userId)
       .maybeSingle(),
@@ -106,6 +106,8 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     intensification_start_days: raw?.intensification_start_days ?? defaults.intensification_start_days,
     focus_specialty_ids: focusIds,
     excluded_specialty_ids: excludedIds,
+    email_weekly_summary: raw?.email_weekly_summary ?? defaults.email_weekly_summary,
+    email_daily_plan: raw?.email_daily_plan ?? defaults.email_daily_plan,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,7 +176,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
         intensity, available_days, recurring_off_days, weekly_hours,
         temp_intensity, temp_intensity_until, weakness_sensitivity, include_60d,
         flashcard_daily_cap, preferred_content_types, content_type_weights,
-        intensification_start_days, welcomed_at
+        intensification_start_days, email_weekly_summary, email_daily_plan, welcomed_at
       `)
       .eq("user_id", userId)
       .maybeSingle(),
@@ -212,6 +214,8 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       intensification_start_days: raw?.intensification_start_days ?? defaults.intensification_start_days,
       focus_specialty_ids: focusIds,
       excluded_specialty_ids: excludedIds,
+      email_weekly_summary: raw?.email_weekly_summary ?? defaults.email_weekly_summary,
+      email_daily_plan: raw?.email_daily_plan ?? defaults.email_daily_plan,
     },
     welcomedAt: (raw?.welcomed_at as string | null) ?? null,
   };

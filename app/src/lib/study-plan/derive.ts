@@ -95,6 +95,8 @@ export type StudyPlanPrefs = {
   intensification_start_days: number;
   focus_specialty_ids: number[];     // from study_plan_focus_specialties
   excluded_specialty_ids: number[];   // from study_plan_excluded_specialties
+  email_weekly_summary: boolean;      // Monday recap email (default on)
+  email_daily_plan: boolean;          // opt-in daily plan email (default off)
 };
 
 export type SpecialtyRow = { id: number; name: string; slug: string };
@@ -164,6 +166,8 @@ export function defaultPrefs(): StudyPlanPrefs {
     intensification_start_days: 60,
     focus_specialty_ids: [],
     excluded_specialty_ids: [],
+    email_weekly_summary: true,
+    email_daily_plan: false,
   };
 }
 

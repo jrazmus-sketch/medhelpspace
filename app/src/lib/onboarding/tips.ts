@@ -66,7 +66,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "dash-study-types",
     title: "Escolha como estudar",
     body:
-      "Cada modalidade cobre **todas as especialidades**: Praticar (Questões, Flashcards), Ler (Resumos, Revalida Up) ou Ouvir (MedVoice, AudioCards). Escolha o tipo e depois a especialidade.",
+      "Cada tipo de conteúdo cobre **todas as especialidades**. Você pode **praticar** (Questões, Flashcards, Revalida Up), **ler** (Resumos) ou **ouvir** (MedVoice, AudioCards). Escolha o tipo e depois a especialidade.",
   },
 
   "dash-specialties": {
@@ -94,7 +94,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "quiz",
     title: "Como funcionam as questões",
     body:
-      "Uma questão por vez, com **correção e comentário** logo após responder. No fim, dá para refazer só as que você errou.",
+      "Uma questão por vez, com **correção e comentário** logo após responder. Errou? Você pode marcar **por que errou** (faltou conteúdo, interpretação, distração…) para o plano entender seus pontos fracos. No fim, dá para refazer só as que você errou.",
     reviewNote:
       "Cada questão respondida entra na **Revisão**. Errou? Ela volta amanhã em “Só as que errei”.",
     href: "/app/estudo-por-questoes",
@@ -105,7 +105,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "simulados",
     title: "Como funcionam os simulados",
     body:
-      "Cada simulado é um **treino de prova**: uma questão por vez, com correção e comentário logo após responder. Em **Geral** você treina um mix de todas as áreas, como na prova real; em **Por área**, foca numa especialidade. No fim, dá para refazer só as que errou.",
+      "Cada simulado é um **treino de prova**: uma questão por vez, com correção e comentário logo após responder — e, ao errar, você pode marcar **por que errou**. Em **Geral** você treina um mix de todas as áreas, como na prova real; em **Por área**, foca numa especialidade. No fim, dá para refazer só as que errou.",
     reviewNote:
       "Cada questão respondida entra na **Revisão** e volta na hora certa — errou, ela retorna em “Só as que errei”.",
     href: "/app/estudo-por-questoes?tab=simulados",
@@ -127,7 +127,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "lesson",
     title: "Como ler os resumos",
     body:
-      "Use o índice lateral para navegar entre as seções e o botão “Próxima seção” para avançar. Onde houver, marque cada seção como **concluída** ao terminar.",
+      "Use o índice lateral para navegar entre as seções. Ao terminar cada uma, toque em **“Concluir e continuar”** para marcá-la como concluída e avançar para a próxima.",
     reviewNote:
       "Resumos não entram na Revisão — fixe o conteúdo praticando as **questões e flashcards** do mesmo tema.",
     href: "/app/resumos",
@@ -149,7 +149,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "audiocards",
     title: "Como funcionam os AudioCards",
     body:
-      "São os mesmos cartões dos **Flashcards**, agora em áudio: ouça a pergunta e a resposta de cada tema sem precisar olhar a tela. Toque em **Transcrição do áudio** para ler junto; avance e volte 15s pelos controles. Sugerimos os áudios da especialidade logo depois das suas sessões de flashcards e no seu painel — é um apoio opcional, é só ouvir, sem marcar nada.",
+      "São os mesmos cartões dos **Flashcards**, agora em áudio: ouça a pergunta e a resposta de cada tema sem precisar olhar a tela. Toque em **Transcrição do áudio** para ler junto; avance e volte 15s pelos controles. Você encontra os áudios da especialidade logo depois das suas sessões de flashcards, no seu painel e na própria seção de AudioCards — é um apoio opcional, é só ouvir, sem marcar nada.",
     reviewNote:
       "Os AudioCards são só para escuta — quem agenda a **Revisão** espaçada é o mesmo tema nos **Flashcards**.",
     href: "/app/audiocards",
@@ -178,7 +178,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "revisao",
     title: "Sua central de Revisão",
     body:
-      "Aqui voltam, na hora certa, as questões e flashcards que você já estudou. **Revisar hoje** traz o que está no ponto; **Só as que errei** recupera os erros; **Pontos fracos** foca nas especialidades mais frágeis.",
+      "Aqui voltam, na hora certa, as questões e flashcards que você já estudou. **Revisar hoje** traz o que está no ponto; **Só as que errei** recupera os erros; **Pontos fracos** foca nas especialidades mais frágeis; e **Reler memorecards** traz os conjuntos do MedHelp 60D na hora da releitura.",
     reviewNote:
       "O número ao lado de *Revisão* no menu mostra quantos itens estão prontos para hoje.",
     href: "/app/revisao",
@@ -189,7 +189,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "plano",
     title: "Seu plano de estudos",
     body:
-      "Um roteiro diário montado a partir das suas metas e do seu desempenho, com **links diretos** para o próximo conteúdo. Pode pausar quando precisar — ele se reajusta.",
+      "Um cronograma diário montado a partir das suas metas e do seu desempenho. Faça a **calibração rápida** — data da prova, especialidades fracas, horas por semana e os tipos de conteúdo que quer treinar — e o plano organiza o que estudar a cada dia, com **links diretos** para o próximo conteúdo. Ative os **lembretes por email** (resumo semanal e plano do dia) para saber quando e o que estudar. Pode pausar ou ajustar quando precisar — ele se reequilibra sozinho.",
     reviewNote: "O plano já prioriza as suas revisões pendentes do dia.",
     href: "/app/plano",
     hrefLabel: "Ver meu plano",
@@ -217,14 +217,14 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "progresso",
     title: "Acompanhe sua jornada",
     body:
-      "No alto da tela, a barra **Sua jornada** mostra num relance quanto você já concluiu de todo o conteúdo liberado. Toque nela para ver o detalhe por seção — **Questões, Resumos, MedVoice, Flashcards** e mais.",
+      "No alto da tela, a barrinha de progresso mostra num relance quanto você já concluiu de todo o conteúdo liberado. Toque nela para abrir **Sua jornada** e ver o detalhe por seção — **Questões, Resumos, MedVoice, Flashcards** e mais.",
   },
 
   nav: {
     key: "nav",
     title: "Como navegar",
     body:
-      "No menu **Estudar** você acessa os seis tipos de conteúdo. Use a **busca** para achar qualquer tema, o **sino** para avisos, e o número na **Revisão** mostra o que revisar hoje. No celular, tudo isso fica na barra inferior.",
+      "No menu **Estudar** você acessa os seis tipos de conteúdo. Use a **busca** para achar qualquer tema, o **sino** para avisos, e o número na **Revisão** mostra o que revisar hoje. No celular, a barra inferior traz o **Estudar** e a **Revisão**; a busca e o sino ficam no topo da tela.",
   },
 };
 
