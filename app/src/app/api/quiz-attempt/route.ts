@@ -32,13 +32,17 @@ export async function POST(request: Request) {
   const { questionId, pageId, specialtyId, isCorrect } = parsed.data;
 
   const admin = createAdminClient();
-  const { error } = await admin.from("quiz_attempts").insert({
-    user_id: user.id,
-    question_id: questionId,
-    page_id: pageId,
-    specialty_id: specialtyId ?? null,
-    is_correct: isCorrect,
-  });
+  const { data: inserted, error } = await admin
+    .from("quiz_attempts")
+    .insert({
+      user_id: user.id,
+      question_id: questionId,
+      page_id: pageId,
+      specialty_id: specialtyId ?? null,
+      is_correct: isCorrect,
+    })
+    .select("id")
+    .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
@@ -46,5 +50,6 @@ export async function POST(request: Request) {
   // the normal player) is what makes it "completed" and thus reviewable later.
   await gradeReviewItem("quiz_question", questionId, isCorrect ? "correct" : "incorrect", specialtyId ?? null);
 
-  return NextResponse.json({ ok: true });
+  // attemptId lets the player attach an error-classification tag to THIS attempt.
+  return NextResponse.json({ ok: true, attemptId: inserted.id });
 }

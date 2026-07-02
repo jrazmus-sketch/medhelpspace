@@ -18,7 +18,10 @@
  *  - weekly_hours overrides intensity-tier daily minutes when set
  *  - Paused state early-returns (no wasted item-building work)
  *  - questionsTarget/lessonsTarget now actually drive plan size (fixed dead values)
+ *  - error-classification tilt: specialties with knowledge-gap errors surface sooner
  */
+
+import { GAP_ERROR_CATEGORIES, type QuizErrorCategory } from "@/lib/quiz-errors";
 
 export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
@@ -130,7 +133,7 @@ export type CohortInfo = {
 };
 
 export type Signals = {
-  quizAttempts: { specialty_id: number | null; is_correct: boolean; created_at: string; page_id: number }[];
+  quizAttempts: { specialty_id: number | null; is_correct: boolean; created_at: string; page_id: number; error_category?: string | null }[];
   lessonCompletions: { lesson_id: number; page_id: number; completed_at: string }[];
   reviewDueToday: number;
   lessonsByPageId: Map<number, number>;
@@ -367,15 +370,32 @@ export function derivePlan(args: {
   // capped small so incidence stays dominant — weakness only reorders topics
   // of comparable frequency, never leapfrogs a much-higher-yield one.
   const TILT_STRENGTH = 3;
+  const ERROR_TILT = 2;
   const FOCUS_BONUS = 2;
   const PIN_BONUS = 1;
   const weaknessBySpecId = new Map(
     allRanked.map((r) => [r.id, r.weight] as [number, number]),
   );
   const focusSetTopics = new Set(prefs.focus_specialty_ids);
-  // Guard the un-split "Outros" bucket (Urologia/Oftalmo/Otorrino): those coarse
-  // topics carry tier-A incidence and would dominate until 0c splits them.
-  const outrosSpecId = specialties.find((s) => s.slug === "outros")?.id ?? -1;
+
+  // Error-classification tilt (Phase 4): specialties where the student's TAGGED
+  // wrong answers are knowledge gaps (conteudo/conduta/memorizacao) get a small,
+  // bounded boost so their topics surface sooner — because those errors mean
+  // "study this topic more". Test-taking errors (interpretacao/distracao) are
+  // excluded: they don't implicate the topic, so they only inform the report's
+  // insight text, never the ranking. Normalized by the worst specialty, so the
+  // signal is relative and self-scaling; empty (no tags) → zero tilt for everyone.
+  const gapErrorBySpec = new Map<number, number>();
+  for (const a of signals.quizAttempts) {
+    if (a.specialty_id == null || a.is_correct) continue;
+    if (excludedSet.has(a.specialty_id)) continue;
+    if (a.error_category && GAP_ERROR_CATEGORIES.has(a.error_category as QuizErrorCategory)) {
+      gapErrorBySpec.set(a.specialty_id, (gapErrorBySpec.get(a.specialty_id) ?? 0) + 1);
+    }
+  }
+  const maxGapErrors = gapErrorBySpec.size > 0 ? Math.max(...gapErrorBySpec.values()) : 0;
+  const gapWeightForSpec = (specId: number): number =>
+    maxGapErrors > 0 ? (gapErrorBySpec.get(specId) ?? 0) / maxGapErrors : 0;
 
   const specialtyById = new Map(specialties.map((s) => [s.id, s]));
   const isMemorecardsPage = (p: PageRow): boolean =>
@@ -385,18 +405,19 @@ export function derivePlan(args: {
     .filter(
       (t) =>
         t.specialty_id != null &&
-        !excludedSet.has(t.specialty_id) &&
-        t.specialty_id !== outrosSpecId,
+        !excludedSet.has(t.specialty_id),
     )
     .map((t) => {
       const specId = t.specialty_id as number;
       const weakness = weaknessBySpecId.get(specId) ?? 1.0;
+      const gapWeight = gapWeightForSpec(specId);
       const score =
         t.incidence_count +
         weakness * TILT_STRENGTH +
+        gapWeight * ERROR_TILT +
         (focusSetTopics.has(specId) ? FOCUS_BONUS : 0) +
         (t.is_pinned ? PIN_BONUS : 0);
-      return { topic: t, weakness, score };
+      return { topic: t, weakness, gapWeight, score };
     })
     .sort((a, b) => b.score - a.score);
 
@@ -413,7 +434,7 @@ export function derivePlan(args: {
   const items: PlanItem[] = [];
   const seenFlashcardDecks = new Set<number>();
   let surfaced = 0;
-  for (const { topic, weakness } of rankedTopics) {
+  for (const { topic, weakness, gapWeight } of rankedTopics) {
     if (surfaced >= topicsToday) break;
     const specInfo = specialtyById.get(topic.specialty_id as number);
     if (!specInfo) continue;
@@ -433,11 +454,13 @@ export function derivePlan(args: {
           estimatedMinutes: Math.round(15 * minutesScale),
           iconHint: "quiz",
           reason:
-            weakness > 0.5
-              ? "Ponto fraco + alta incidência no Revalida"
-              : topic.priority_tier === "A"
-                ? "Tema de altíssima incidência no Revalida"
-                : "Próximo tema por incidência no exame",
+            gapWeight >= 0.5
+              ? "Você tem errado por conteúdo aqui — reforce este tema"
+              : weakness > 0.5
+                ? "Ponto fraco + alta incidência no Revalida"
+                : topic.priority_tier === "A"
+                  ? "Tema de altíssima incidência no Revalida"
+                  : "Próximo tema por incidência no exame",
           specialtyId: topic.specialty_id as number,
           pageId: quizPage.id,
         });

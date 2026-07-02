@@ -69,7 +69,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
       .order("id"),
     admin
       .from("quiz_attempts")
-      .select("specialty_id, is_correct, created_at, page_id")
+      .select("specialty_id, is_correct, created_at, page_id, error_category")
       .eq("user_id", userId),
     admin
       .from("lesson_completions")

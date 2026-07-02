@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getReviewStats, type ReviewStats } from "@/lib/review/queries";
+import {
+  QUIZ_ERROR_CATEGORIES,
+  isQuizErrorCategory,
+  type QuizErrorCategory,
+} from "@/lib/quiz-errors";
 import Link from "next/link";
 import { ChevronLeft, Target, Flame, BookOpen, Calendar, RotateCcw } from "lucide-react";
 
@@ -47,6 +52,12 @@ type DayBucket = {
   correct: number;
 };
 
+type ErrorProfile = {
+  taggedWrong: number;
+  totalWrong: number;
+  byCategory: { slug: QuizErrorCategory; label: string; tip: string; count: number }[];
+};
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default async function RelatorioPage() {
@@ -66,7 +77,7 @@ export default async function RelatorioPage() {
   const [attemptsRes, specialtiesRes, membershipRes, reviewStats] = await Promise.all([
     admin
       .from("quiz_attempts")
-      .select("is_correct, created_at, question_id, specialty_id")
+      .select("is_correct, created_at, question_id, specialty_id, error_category")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     admin.from("specialties").select("id, name").order("display_order"),
@@ -82,6 +93,7 @@ export default async function RelatorioPage() {
     created_at: string;
     question_id: number;
     specialty_id: number | null;
+    error_category: string | null;
   }[];
 
   const specialties = (specialtiesRes.data ?? []) as { id: number; name: string }[];
@@ -114,6 +126,26 @@ export default async function RelatorioPage() {
   const specialtyStats: SpecialtyStats[] = [...specMap.values()]
     .filter((s) => s.total > 0)
     .sort((a, b) => (pct(a.correct, a.total) ?? 100) - (pct(b.correct, b.total) ?? 100));
+
+  // ── Error profile (Phase 4) — how the student's wrong answers break down
+  const wrongAttempts = attempts.filter((a) => !a.is_correct);
+  const errorCounts = new Map<QuizErrorCategory, number>();
+  for (const a of wrongAttempts) {
+    if (isQuizErrorCategory(a.error_category)) {
+      errorCounts.set(a.error_category, (errorCounts.get(a.error_category) ?? 0) + 1);
+    }
+  }
+  const taggedWrong = [...errorCounts.values()].reduce((s, n) => s + n, 0);
+  const errorProfile: ErrorProfile = {
+    taggedWrong,
+    totalWrong: wrongAttempts.length,
+    byCategory: QUIZ_ERROR_CATEGORIES.map((c) => ({
+      slug: c.slug,
+      label: c.label,
+      tip: c.tip,
+      count: errorCounts.get(c.slug) ?? 0,
+    })),
+  };
 
   // ── 30-day daily buckets
   const buckets = new Map<string, DayBucket>();
@@ -154,6 +186,7 @@ export default async function RelatorioPage() {
       cohortName={cohort?.name ?? null}
       daysToExam={daysToExam}
       reviewStats={reviewStats}
+      errorProfile={errorProfile}
     />
   );
 }
@@ -172,6 +205,7 @@ function RelatorioShell({
   cohortName = null,
   daysToExam = null,
   reviewStats = { scheduled: 0, dueToday: 0, overdue: 0, wrong: 0, mastered: 0 },
+  errorProfile = { taggedWrong: 0, totalWrong: 0, byCategory: [] },
 }: {
   mockMode?: boolean;
   total?: number;
@@ -184,6 +218,7 @@ function RelatorioShell({
   cohortName?: string | null;
   daysToExam?: number | null;
   reviewStats?: ReviewStats;
+  errorProfile?: ErrorProfile;
 }) {
   const accuracy = pct(correct, total);
   const MONTH_PT = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
@@ -337,6 +372,70 @@ function RelatorioShell({
           </div>
         </section>
       )}
+
+      {/* ── Análise de erros (Phase 4) ── */}
+      <section style={{ marginBottom: 40 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 16 }}>
+          Análise de erros
+        </div>
+        <div style={{ background: "var(--surface-1)", border: "1px solid var(--surface-2)", borderRadius: "var(--radius)", padding: "20px" }}>
+          {errorProfile.taggedWrong === 0 ? (
+            <p style={{ fontSize: 14, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+              Ao errar uma questão, marque <strong style={{ color: "var(--foreground)" }}>por que</strong> você errou
+              (conteúdo, interpretação, distração, conduta ou memorização). Seu perfil de erros aparece aqui
+              e ajuda o seu plano a priorizar os temas onde o problema é de conteúdo.
+            </p>
+          ) : (
+            (() => {
+              const sorted = errorProfile.byCategory
+                .filter((c) => c.count > 0)
+                .sort((a, b) => b.count - a.count);
+              const top = sorted[0];
+              const maxCount = top.count;
+              return (
+                <>
+                  {/* Top-error insight */}
+                  <div style={{ marginBottom: 18, paddingBottom: 16, borderBottom: "1px solid var(--surface-2)" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+                      Seu erro mais comum: <span style={{ color: "var(--brand)" }}>{top.label}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+                      {top.tip}
+                    </div>
+                  </div>
+
+                  {/* Per-category bars */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {sorted.map((c) => {
+                      const share = Math.round((c.count / errorProfile.taggedWrong) * 100);
+                      return (
+                        <div key={c.slug} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ flex: "0 0 108px", fontSize: 13, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {c.label}
+                          </div>
+                          <div style={{ flex: 1, height: 6, background: "var(--surface-2)", borderRadius: 3, overflow: "hidden" }}>
+                            <div style={{ height: "100%", borderRadius: 3, width: `${Math.max(6, Math.round((c.count / maxCount) * 100))}%`, background: "var(--brand)", transition: "width 0.4s ease" }} />
+                          </div>
+                          <div style={{ flex: "0 0 auto", textAlign: "right", fontSize: 13, fontWeight: 600 }}>
+                            {c.count}
+                          </div>
+                          <div style={{ flex: "0 0 40px", textAlign: "right", fontSize: 12, color: "var(--muted-foreground)" }}>
+                            {share}%
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 14 }}>
+                    {errorProfile.taggedWrong} de {errorProfile.totalWrong} {errorProfile.totalWrong === 1 ? "erro classificado" : "erros classificados"}.
+                  </p>
+                </>
+              );
+            })()
+          )}
+        </div>
+      </section>
 
       {/* ── Per-specialty breakdown ── */}
       {specialtyStats.length > 0 ? (

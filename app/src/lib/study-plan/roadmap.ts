@@ -61,7 +61,6 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
 
   const specialties = (specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[];
   const specById = new Map(specialties.map((s) => [s.id, s]));
-  const outrosId = specialties.find((s) => s.slug === "outros")?.id ?? -1;
 
   // Source-page slugs for building the quiz link.
   const topicsRaw = (topicsRes.data ?? []) as {
@@ -84,13 +83,14 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
     byPage.set(a.page_id, b);
   }
 
-  // Build per-tier buckets (skip Outros — coarse buckets guarded until 0c).
+  // Build per-tier buckets. Outros is no longer guarded — its coarse buckets were
+  // split into per-condition sub-topics (0c), so they rank at their true incidence.
   const tierMap = new Map<string, RoadmapTopic[]>();
   let started = 0;
   let mastered = 0;
 
   for (const t of topicsRaw) {
-    if (t.specialty_id == null || t.specialty_id === outrosId) continue;
+    if (t.specialty_id == null) continue;
     const spec = specById.get(t.specialty_id);
     if (!spec) continue;
 

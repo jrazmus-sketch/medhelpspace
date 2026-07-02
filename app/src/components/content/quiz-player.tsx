@@ -6,6 +6,8 @@ import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { safe } from "@/lib/sanitize";
 import { EditableText } from "@/components/admin/editable-text";
 import { useEditMode } from "@/providers/edit-mode-provider";
+import { QUIZ_ERROR_CATEGORIES, type QuizErrorCategory } from "@/lib/quiz-errors";
+import { setQuizErrorTag } from "@/actions/quiz-attempts";
 import type { QuizQuestionData } from "./quiz-renderer";
 
 // Builds the "Análise das alternativas incorretas:" block from each wrong
@@ -73,6 +75,10 @@ export function QuizPlayer({
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [phase, setPhase] = useState<"quiz" | "summary">("quiz");
+  // Error classification (Phase 4): attemptId of the current wrong answer +
+  // the student's chosen "why I missed it" tag.
+  const [attemptId, setAttemptId] = useState<number | null>(null);
+  const [errorTag, setErrorTag] = useState<QuizErrorCategory | null>(null);
 
   const activeQuestions = activeIds.map((id) => questions.find((q) => q.id === id)!);
   const question = activeQuestions[currentIdx];
@@ -96,34 +102,59 @@ export function QuizPlayer({
     ? augmentExplanationForDisplay(explanationHtml, question.answers)
     : null;
 
-  function handleSelect(idx: number) {
+  function resetAnswerState() {
+    setSelectedIdx(null);
+    setAttemptId(null);
+    setErrorTag(null);
+  }
+
+  async function handleSelect(idx: number) {
     if (answered) return;
     const correct = question.answers[idx].correct;
     setSelectedIdx(idx);
     setResults((prev) => ({ ...prev, [question.id]: correct }));
+    setAttemptId(null);
+    setErrorTag(null);
 
     if (!USE_MOCK_DATA) {
-      fetch("/api/quiz-attempt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          questionId: question.id,
-          pageId,
-          specialtyId,
-          isCorrect: correct,
-        }),
-      });
+      try {
+        const res = await fetch("/api/quiz-attempt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            questionId: question.id,
+            pageId,
+            specialtyId,
+            isCorrect: correct,
+          }),
+        });
+        // Only wrong answers can be error-tagged; capture the attempt id for it.
+        if (!correct && res.ok) {
+          const data = await res.json();
+          if (data?.attemptId) setAttemptId(data.attemptId);
+        }
+      } catch {
+        /* attempt logging is best-effort; a failure just means no tagging UI */
+      }
     }
+  }
+
+  function handleTag(slug: QuizErrorCategory) {
+    if (!attemptId) return;
+    const next = errorTag === slug ? null : slug; // tap again to clear
+    setErrorTag(next);
+    // Optimistic — persist in the background; the UI already reflects the choice.
+    void setQuizErrorTag(attemptId, next);
   }
 
   function handleNext() {
     if (currentIdx < activeQuestions.length - 1) {
       setCurrentIdx((i) => i + 1);
-      setSelectedIdx(null);
+      resetAnswerState();
     } else {
       setPhase("summary");
       setCurrentIdx(0);
-      setSelectedIdx(null);
+      resetAnswerState();
     }
   }
 
@@ -131,7 +162,7 @@ export function QuizPlayer({
     const wrongIds = questions.filter((q) => results[q.id] === false).map((q) => q.id);
     setActiveIds(wrongIds);
     setCurrentIdx(0);
-    setSelectedIdx(null);
+    resetAnswerState();
     setPhase("quiz");
   }
 
@@ -139,7 +170,7 @@ export function QuizPlayer({
     setResults({});
     setActiveIds(questions.map((q) => q.id));
     setCurrentIdx(0);
-    setSelectedIdx(null);
+    resetAnswerState();
     setPhase("quiz");
   }
 
@@ -376,6 +407,43 @@ export function QuizPlayer({
             html={safe(explanationDisplayHtml)}
             editHtml={explanationHtml ?? ""}
           />
+        </div>
+      )}
+
+      {/* Error classification (Phase 4) — only after a WRONG answer, once the
+          attempt is logged. Optional: helps the student build an error profile
+          and tilts the study plan toward genuine knowledge gaps. */}
+      {answered && selectedAnswer && !selectedAnswer.correct && attemptId && (
+        <div className="rounded-lg border border-border bg-surface-1 p-4">
+          <div className="mb-2.5 text-xs font-medium text-muted-foreground">
+            Por que você errou? <span className="opacity-60">(opcional)</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {QUIZ_ERROR_CATEGORIES.map((c) => {
+              const on = errorTag === c.slug;
+              return (
+                <button
+                  key={c.slug}
+                  onClick={() => handleTag(c.slug)}
+                  title={c.hint}
+                  aria-pressed={on}
+                  className={[
+                    "rounded-full border px-3.5 py-2.5 text-xs font-medium transition-colors",
+                    on
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-border text-muted-foreground hover:border-brand/50 hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+          {errorTag && (
+            <div className="mt-2.5 text-xs text-muted-foreground">
+              {QUIZ_ERROR_CATEGORIES.find((c) => c.slug === errorTag)?.hint} · registrado ✓
+            </div>
+          )}
         </div>
       )}
 
