@@ -879,13 +879,25 @@ export type AnnouncementInput = {
   priority: "normal" | "urgent";
   status: "draft" | "published" | "scheduled";
   pinned: boolean;
+  is_welcome: boolean;
   publish_at: string;
   cohort_id: number | null;
 };
 
+// Only one welcome message may exist at a time (enforced by a partial unique
+// index). Before marking one as the welcome, clear the flag on every other row
+// so the constraint never trips. `exceptId` skips the row being updated.
+async function clearOtherWelcomes(admin: ReturnType<typeof createAdminClient>, exceptId?: number) {
+  let q = admin.from("announcements").update({ is_welcome: false }).eq("is_welcome", true);
+  if (exceptId != null) q = q.neq("id", exceptId);
+  const { error } = await q;
+  if (error) throw new Error(error.message);
+}
+
 export async function createAnnouncement(data: AnnouncementInput) {
   const { user } = await requireAdmin();
   const admin = createAdminClient();
+  if (data.is_welcome) await clearOtherWelcomes(admin);
   const { error } = await admin.from("announcements").insert({
     ...data,
     body_html: data.body_html != null ? safe(data.body_html) : null,
@@ -893,11 +905,13 @@ export async function createAnnouncement(data: AnnouncementInput) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/notifications");
+  revalidatePath("/app", "layout");
 }
 
 export async function updateAnnouncement(id: number, data: AnnouncementInput) {
   await requireAdmin();
   const admin = createAdminClient();
+  if (data.is_welcome) await clearOtherWelcomes(admin, id);
   const { error } = await admin
     .from("announcements")
     .update({
@@ -965,6 +979,21 @@ export async function markAnnouncementsRead(ids: number[]) {
     ids.map((announcement_id) => ({ announcement_id, user_id: user.id })),
     { onConflict: "announcement_id,user_id" },
   );
+}
+
+// Member-facing — dismiss a welcome announcement for the current user. Distinct
+// from "read": opening the strip marks items read but must not dismiss the
+// welcome, which stays pinned to the top until the member explicitly closes it.
+export async function dismissAnnouncement(id: number) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = createAdminClient();
+  await admin.from("announcement_dismissals").upsert(
+    { announcement_id: id, user_id: user.id },
+    { onConflict: "announcement_id,user_id" },
+  );
+  revalidatePath("/app", "layout");
 }
 
 // ── Nav items (hub page cards) ────────────────────────────────────────────────

@@ -39,12 +39,15 @@ export async function getLiveAnnouncementsForUser(
 
   // RLS would filter, but the admin client bypasses it — filter manually so the
   // member-facing view respects status + publish_at + cohort targeting.
+  // is_welcome leads the ordering so the welcome is always fetched (never pushed
+  // out of the limit) and lands first; per-user dismissal is applied below.
   const { data: rows } = await admin
     .from("announcements")
     .select("*, category:announcement_categories(*)")
     .neq("status", "draft")
     .lte("publish_at", new Date().toISOString())
     .or(cohortFilter)
+    .order("is_welcome", { ascending: false })
     .order("pinned", { ascending: false })
     .order("publish_at", { ascending: false })
     .limit(limit);
@@ -52,14 +55,20 @@ export async function getLiveAnnouncementsForUser(
   if (!rows || rows.length === 0) return [];
 
   let readIds = new Set<number>();
+  let dismissedIds = new Set<number>();
   if (userId) {
-    const { data: reads } = await admin
-      .from("announcement_reads")
-      .select("announcement_id")
-      .eq("user_id", userId)
-      .in("announcement_id", rows.map((r: { id: number }) => r.id));
+    const ids = rows.map((r: { id: number }) => r.id);
+    const [{ data: reads }, { data: dismissals }] = await Promise.all([
+      admin.from("announcement_reads").select("announcement_id").eq("user_id", userId).in("announcement_id", ids),
+      admin.from("announcement_dismissals").select("announcement_id").eq("user_id", userId).in("announcement_id", ids),
+    ]);
     readIds = new Set((reads ?? []).map((r: { announcement_id: number }) => r.announcement_id));
+    dismissedIds = new Set((dismissals ?? []).map((r: { announcement_id: number }) => r.announcement_id));
   }
 
-  return rows.map((r) => ({ ...r, is_read: readIds.has(r.id) }));
+  // A dismissed welcome disappears entirely for that member (strip + bell).
+  // Non-welcome rows are never affected by dismissals.
+  return rows
+    .filter((r) => !(r.is_welcome && dismissedIds.has(r.id)))
+    .map((r) => ({ ...r, is_read: readIds.has(r.id), is_dismissed: dismissedIds.has(r.id) }));
 }

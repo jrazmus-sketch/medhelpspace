@@ -27,6 +27,7 @@ const EMPTY_FORM: AnnouncementInput = {
   priority: "normal",
   status: "published",
   pinned: false,
+  is_welcome: false,
   publish_at: "",
   cohort_id: null,
 };
@@ -112,6 +113,7 @@ export function NotificationsClient({
       // "published" choice in the dropdown.
       status: a.status === "scheduled" ? "published" : a.status,
       pinned: a.pinned,
+      is_welcome: a.is_welcome,
       publish_at: a.publish_at,
       publish_at_local: a.publish_at.slice(0, 16),
       cohort_id: a.cohort_id,
@@ -163,6 +165,7 @@ export function NotificationsClient({
       priority: form.priority,
       status,
       pinned: form.pinned,
+      is_welcome: form.is_welcome,
       publish_at: publishAt,
       cohort_id: form.cohort_id,
     };
@@ -175,7 +178,8 @@ export function NotificationsClient({
             prev.map((a) =>
               a.id === editingId
                 ? { ...a, ...payload, category: cats.find((c) => c.id === payload.category_id) ?? a.category }
-                : a,
+                // Setting one welcome clears it on every other row (single-welcome rule).
+                : payload.is_welcome ? { ...a, is_welcome: false } : a,
             ),
           );
         } else {
@@ -464,6 +468,20 @@ export function NotificationsClient({
               </div>
             </div>
 
+            {/* Welcome message: pins to the top of each member's strip until they dismiss it */}
+            <label className="flex items-start gap-2.5 rounded-md border border-border bg-surface-2 p-3">
+              <input
+                type="checkbox"
+                checked={form.is_welcome}
+                onChange={(e) => patch({ is_welcome: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-border accent-brand"
+              />
+              <span>
+                <span className="block text-sm font-medium">{t("notifications.welcome")}</span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">{t("notifications.welcomeHint")}</span>
+              </span>
+            </label>
+
             {formError && <p className="text-sm text-destructive">{formError}</p>}
 
             <div className="flex items-center gap-3 pt-1">
@@ -514,6 +532,14 @@ export function NotificationsClient({
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {a.pinned && <span className="text-brand" title="Fixado">📌</span>}
+                        {a.is_welcome && (
+                          <span
+                            className="inline-flex h-4 items-center rounded px-1.5 text-[9px] font-bold uppercase tracking-wide bg-brand/15 text-brand"
+                            title={t("notifications.welcome")}
+                          >
+                            {t("notifications.welcomeBadge")}
+                          </span>
+                        )}
                         {a.priority === "urgent" && (
                           <span className="inline-flex h-4 items-center rounded px-1.5 text-[9px] font-bold uppercase tracking-wide bg-amber-500/15 text-amber-600 dark:text-amber-400">
                             URGENTE

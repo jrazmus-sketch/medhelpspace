@@ -246,6 +246,8 @@ export interface Announcement {
   priority: AnnouncementPriority;
   status: AnnouncementStatus;
   pinned: boolean;
+  // Welcome message: pinned to the top of each member's strip until they dismiss it.
+  is_welcome: boolean;
   publish_at: string;
   cohort_id: number | null;
   created_by: string | null;
@@ -259,9 +261,17 @@ export interface AnnouncementRead {
   read_at: string;
 }
 
+export interface AnnouncementDismissal {
+  announcement_id: number;
+  user_id: string;
+  dismissed_at: string;
+}
+
 export interface AnnouncementWithCategory extends Announcement {
   category: AnnouncementCategory;
   is_read: boolean;
+  // Per-user dismissal of a welcome message (always false for non-welcome rows).
+  is_dismissed: boolean;
 }
 
 // ── Orders / payments ────────────────────────────────────────────────────────

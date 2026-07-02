@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Bell, ChevronDown, ChevronUp } from "lucide-react";
-import { markAnnouncementsRead } from "@/actions/admin";
+import { Bell, ChevronDown, ChevronUp, X } from "lucide-react";
+import { markAnnouncementsRead, dismissAnnouncement } from "@/actions/admin";
 import { safe } from "@/lib/sanitize";
 import type { AnnouncementWithCategory } from "@/types/supabase";
 
@@ -31,28 +31,46 @@ export function NotificationStripClient({
   const [readSet, setReadSet] = useState<Set<number>>(
     () => new Set(announcements.filter((a) => a.is_read).map((a) => a.id)),
   );
+  // Welcome messages the user has dismissed this session — removed from the strip
+  // immediately (the server also filters them out on the next load).
+  const [dismissedSet, setDismissedSet] = useState<Set<number>>(new Set());
   const [, startTransition] = useTransition();
 
-  const unreadCount = announcements.filter((a) => !readSet.has(a.id)).length;
-  const hasUrgentUnread = announcements.some(
+  // Server already orders the welcome first and drops previously-dismissed ones;
+  // this only strips out anything dismissed during this session. Order is preserved.
+  const visible = announcements.filter((a) => !dismissedSet.has(a.id));
+
+  const unreadCount = visible.filter((a) => !readSet.has(a.id)).length;
+  const hasUrgentUnread = visible.some(
     (a) => !readSet.has(a.id) && a.priority === "urgent",
   );
 
   const accentColor = hasUrgentUnread ? "var(--color-amber-500, #f59e0b)" : "var(--brand)";
-  const latest = announcements[0];
+  const latest = visible[0];
+
+  // Everything dismissed → nothing to show.
+  if (!latest) return null;
 
   function handleExpand() {
     const next = !expanded;
     setExpanded(next);
     if (next) {
-      const unreadIds = announcements.filter((a) => !readSet.has(a.id)).map((a) => a.id);
+      const unreadIds = visible.filter((a) => !readSet.has(a.id)).map((a) => a.id);
       if (unreadIds.length > 0) {
-        setReadSet(new Set(announcements.map((a) => a.id)));
+        setReadSet(new Set(visible.map((a) => a.id)));
         startTransition(() => {
           markAnnouncementsRead(unreadIds).catch((e) => console.error("markAnnouncementsRead failed:", e));
         });
       }
     }
+  }
+
+  // Dismiss the welcome for this member — it won't come back on refresh.
+  function handleDismiss(id: number) {
+    setDismissedSet((prev) => new Set(prev).add(id));
+    startTransition(() => {
+      dismissAnnouncement(id).catch((e) => console.error("dismissAnnouncement failed:", e));
+    });
   }
 
   return (
@@ -64,14 +82,16 @@ export function NotificationStripClient({
     }}>
       <div style={{ height: 2, background: accentColor }} />
 
+      <div style={{ display: "flex", alignItems: "stretch", background: "var(--surface-1)" }}>
       <button
         type="button"
         onClick={handleExpand}
         style={{
-          width: "100%",
+          flex: 1,
+          minWidth: 0,
           display: "flex",
           alignItems: "stretch",
-          background: "var(--surface-1)",
+          background: "transparent",
           border: "none",
           cursor: "pointer",
           padding: 0,
@@ -157,11 +177,35 @@ export function NotificationStripClient({
           whiteSpace: "nowrap",
         }}>
           {expanded
-            ? <><ChevronUp size={13} strokeWidth={2.5} /> Ver menos</>
-            : <><ChevronDown size={13} strokeWidth={2.5} /> Ver mais</>
+            ? <><ChevronUp size={13} strokeWidth={2.5} /> <span className="hidden sm:inline">Ver menos</span></>
+            : <><ChevronDown size={13} strokeWidth={2.5} /> <span className="hidden sm:inline">Ver mais</span></>
           }
         </div>
       </button>
+
+      {latest.is_welcome && (
+        <button
+          type="button"
+          onClick={() => handleDismiss(latest.id)}
+          title="Dispensar mensagem de boas-vindas"
+          aria-label="Dispensar"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 12px",
+            background: "transparent",
+            border: "none",
+            borderLeft: "1px solid var(--surface-2)",
+            cursor: "pointer",
+            color: "var(--muted-foreground)",
+            flexShrink: 0,
+          }}
+        >
+          <X size={14} strokeWidth={2.5} />
+        </button>
+      )}
+      </div>
 
       {expanded && (
         <div style={{
@@ -176,10 +220,10 @@ export function NotificationStripClient({
             fontSize: 10.5, color: "var(--muted-foreground)",
             letterSpacing: ".06em", padding: "2px 6px 6px",
           }}>
-            {announcements.length} {announcements.length === 1 ? "atualização" : "atualizações"}
+            {visible.length} {visible.length === 1 ? "atualização" : "atualizações"}
           </div>
 
-          {announcements.map((a) => {
+          {visible.map((a) => {
             const isUnread = !readSet.has(a.id);
             const urgent = a.priority === "urgent";
             const borderColor = urgent ? "#f59e0b" : a.category.color;
