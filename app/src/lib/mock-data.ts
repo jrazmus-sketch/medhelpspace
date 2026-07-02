@@ -37,6 +37,7 @@ export const MOCK_COHORTS: Cohort[] = [
     slug: "revalida-2026-2",
     name: "Revalida 2026.2",
     test_date: "2026-07-01",
+    date_confirmed: true,
     membership_starts_at: "2025-08-01T00:00:00Z",
     membership_ends_at: "2026-08-31T23:59:59Z",
   },
@@ -45,6 +46,7 @@ export const MOCK_COHORTS: Cohort[] = [
     slug: "revalida-2027-1",
     name: "Revalida 2027.1",
     test_date: "2027-01-15",
+    date_confirmed: false,
     membership_starts_at: "2026-02-01T00:00:00Z",
     membership_ends_at: "2027-02-28T23:59:59Z",
   },
@@ -67,6 +69,7 @@ export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
     displayOrder: 1,
     testDate: "2026-09-15",
     unlock60dDate: "2026-07-15",
+    dateConfirmed: true,
   },
   {
     id: 2,
@@ -82,6 +85,7 @@ export const MOCK_COHORT_PRODUCTS: CohortProduct[] = [
     displayOrder: 2,
     testDate: "2027-01-15",
     unlock60dDate: "2026-11-16",
+    dateConfirmed: false,
   },
 ];
 

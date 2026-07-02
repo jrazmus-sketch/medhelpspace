@@ -19,6 +19,7 @@ type CohortRow = {
   slug: string;
   name: string;
   test_date: string;
+  date_confirmed: boolean;
   membership_starts_at: string;
   membership_ends_at: string;
   member_count: number;
@@ -85,6 +86,7 @@ function fmtPrice(cents: number | null): string {
 interface EditState {
   name: string;
   test_date: string;
+  date_confirmed: boolean;
   membership_starts_at: string;
   membership_ends_at: string;
   price: string;          // reais, converted to cents on save
@@ -124,6 +126,7 @@ export function CohortsClient({ rows, modules, access }: Props) {
     setEditState({
       name: row.name,
       test_date: row.test_date.slice(0, 10),
+      date_confirmed: row.date_confirmed,
       membership_starts_at: row.membership_starts_at.slice(0, 10),
       membership_ends_at: row.membership_ends_at.slice(0, 10),
       price: row.price_cents != null ? String(row.price_cents / 100) : "",
@@ -170,6 +173,7 @@ export function CohortsClient({ rows, modules, access }: Props) {
         await updateCohort(confirmSave.cohortId, {
           name: d.name,
           test_date: d.test_date,
+          date_confirmed: d.date_confirmed,
           membership_starts_at: d.membership_starts_at,
           membership_ends_at: d.membership_ends_at,
           price_cents: d.price.trim() ? Math.round(Number(d.price) * 100) : null,
@@ -397,6 +401,19 @@ export function CohortsClient({ rows, modules, access }: Props) {
                           className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
                         />
                       </label>
+                      <label className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={editState.date_confirmed}
+                          onChange={(e) => setEditState({ ...editState, date_confirmed: e.target.checked })}
+                          className="mt-0.5"
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {t("cohorts.dateConfirmed")}
+                          <br />
+                          <span className="text-[11px] opacity-80">{t("cohorts.dateConfirmedHint")}</span>
+                        </span>
+                      </label>
                       {/* Cascade preview when test_date differs from original */}
                       {editState.test_date && editState.test_date !== c.test_date.slice(0, 10) && modules.length > 0 && (
                         <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 space-y-1.5">
@@ -513,7 +530,18 @@ export function CohortsClient({ rows, modules, access }: Props) {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t("cohorts.testDate")}</span>
-                        <span className="font-medium">{fmt(c.test_date)}</span>
+                        <span className="font-medium">
+                          {fmt(c.test_date)}{" "}
+                          <span
+                            className={
+                              c.date_confirmed
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-amber-600 dark:text-amber-400"
+                            }
+                          >
+                            {c.date_confirmed ? t("cohorts.confirmedBadge") : t("cohorts.unconfirmedBadge")}
+                          </span>
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">{t("cohorts.startsAt")}</span>

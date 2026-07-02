@@ -22,6 +22,7 @@ type Specialty = { id: number; name: string };
 export function CalibrateWizard({
   examDate,
   examDateLabel,
+  cohortName,
   specialties,
   initialAvailableDays,
   initialWeeklyHours,
@@ -29,8 +30,11 @@ export function CalibrateWizard({
   initialResourceTypes,
   onClose,
 }: {
+  // Both null when the exam board hasn't confirmed the date yet — never a
+  // literal "unknown", since a cohort always has an internal planning date.
   examDate: string | null;
   examDateLabel: string | null;
+  cohortName: string | null;
   specialties: Specialty[];
   initialAvailableDays: number;
   initialWeeklyHours: number | null;
@@ -166,35 +170,63 @@ export function CalibrateWizard({
           {step === 1 && (
             <>
               <Calendar size={32} style={{ color: "var(--brand)", marginBottom: 16 }} />
-              <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.025em", marginBottom: 8 }}>
-                Sua prova é em…
-              </h2>
-              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 24, lineHeight: 1.5 }}>
-                Esta data vem do seu cohort e é o que orienta todas as fases do plano (fundação, intensificação e reta final).
-              </p>
-              <div style={{
-                padding: "20px 24px",
-                background: "var(--surface-1)",
-                border: "1px solid var(--surface-2)",
-                borderRadius: "var(--radius)",
-                textAlign: "center",
-              }}>
-                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 8 }}>
-                  Data da prova
-                </div>
-                <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em" }}>
-                  {examDateLabel ?? "Não definida"}
-                </div>
-                {examDate && (
-                  <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 6 }}>
-                    {daysToDate(examDate)} dias a partir de hoje
+              {examDateLabel ? (
+                <>
+                  <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.025em", marginBottom: 8 }}>
+                    Sua prova é em…
+                  </h2>
+                  <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 24, lineHeight: 1.5 }}>
+                    Esta data vem do seu cohort e é o que orienta todas as fases do plano (fundação, intensificação e reta final).
+                  </p>
+                  <div style={{
+                    padding: "20px 24px",
+                    background: "var(--surface-1)",
+                    border: "1px solid var(--surface-2)",
+                    borderRadius: "var(--radius)",
+                    textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 8 }}>
+                      Data da prova
+                    </div>
+                    <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em" }}>
+                      {examDateLabel}
+                    </div>
+                    {examDate && (
+                      <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 6 }}>
+                        {daysToDate(examDate)} dias a partir de hoje
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {!examDate && (
-                <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 12, lineHeight: 1.4 }}>
-                  Você ainda não está em um cohort. Solicite a um administrador.
-                </p>
+                </>
+              ) : cohortName ? (
+                <>
+                  <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.025em", marginBottom: 8 }}>
+                    Sua prova ainda não tem data oficial
+                  </h2>
+                  <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 24, lineHeight: 1.5 }}>
+                    A banca ainda não divulgou a data do Revalida para a sua turma — isso é normal e pode mudar até lá. Vamos montar seu plano com uma estimativa interna, e ele se ajusta automaticamente assim que a data for confirmada.
+                  </p>
+                  <div style={{
+                    padding: "20px 24px",
+                    background: "var(--surface-1)",
+                    border: "1px solid var(--surface-2)",
+                    borderRadius: "var(--radius)",
+                    textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: 14, color: "var(--muted-foreground)" }}>
+                      Data a confirmar
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.025em", marginBottom: 8 }}>
+                    Sua prova é em…
+                  </h2>
+                  <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 12, lineHeight: 1.4 }}>
+                    Você ainda não está em um cohort. Solicite a um administrador.
+                  </p>
+                </>
               )}
             </>
           )}
@@ -409,7 +441,7 @@ export function CalibrateWizard({
           {step < 4 ? (
             <button
               onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
-              disabled={pending || (step === 1 && !examDate) || (step === 3 && daysSelected === 0)}
+              disabled={pending || (step === 1 && !examDate && !cohortName) || (step === 3 && daysSelected === 0)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 padding: "10px 18px", borderRadius: "var(--radius-sm)",

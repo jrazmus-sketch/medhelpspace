@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
   {
     const { data: access } = await supabase
       .from("cohort_module_access")
-      .select("cohort_id, unlock_date, cohort:cohorts(id, name, slug, test_date)")
+      .select("cohort_id, unlock_date, cohort:cohorts(id, name, slug, test_date, date_confirmed)")
       .eq("content_module_id", MEDHELP_60D_MODULE_ID)
       .eq("unlock_date", todayKey());
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -227,9 +227,12 @@ export async function GET(request: NextRequest) {
         for (const m of members) {
           try {
             const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+            // Never mention the exam date in this email until the board has
+            // actually confirmed it — testDate carries its own leading " (…)"
+            // so the sentence still reads cleanly when it's blank.
             const { subject, html } = renderEmail(templates["60d-unlock"], settings, {
               displayName,
-              testDate: fmtPtBr(cohort.test_date),
+              testDate: cohort.date_confirmed ? ` (${fmtPtBr(cohort.test_date)})` : "",
             });
             await sendOne({
               to: m.email,

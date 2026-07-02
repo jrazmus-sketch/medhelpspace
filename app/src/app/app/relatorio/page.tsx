@@ -83,7 +83,7 @@ export default async function RelatorioPage() {
     admin.from("specialties").select("id, name").order("display_order"),
     admin
       .from("user_cohort_memberships")
-      .select("joined_at, cohort:cohorts(name, test_date)")
+      .select("joined_at, cohort:cohorts(name, test_date, date_confirmed)")
       .eq("user_id", user.id),
     getReviewStats(user.id),
   ]);
@@ -169,7 +169,8 @@ export default async function RelatorioPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cohort = membership?.cohort as any;
-  const examDate = cohort?.test_date ? new Date(cohort.test_date) : null;
+  // Don't show a countdown for a guessed, unconfirmed exam date (see cohort-timing.ts).
+  const examDate = cohort?.test_date && cohort.date_confirmed ? new Date(cohort.test_date) : null;
   const daysToExam = examDate
     ? Math.max(0, Math.ceil((examDate.getTime() - nowMs) / 86_400_000))
     : null;

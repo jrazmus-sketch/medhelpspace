@@ -163,6 +163,7 @@ export async function updateCohort(
   data: {
     name: string;
     test_date: string;
+    date_confirmed: boolean;
     membership_starts_at: string;
     membership_ends_at: string;
   } & CohortCommerce,

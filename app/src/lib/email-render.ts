@@ -306,12 +306,16 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     kicker: "Olá, {{displayName}}",
     headline: "MedHelp 60D está liberado",
     body_html:
-      "Faltam 60 dias para sua prova ({{testDate}}). O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Revalida Up, Memorecards e todos os recursos de reta final.",
+      "Faltam 60 dias para sua prova{{testDate}}. O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Revalida Up, Memorecards e todos os recursos de reta final.",
     cta_label: "Acessar MedHelp 60D →",
     cta_href: "/app",
     variables: [
       { tag: "displayName", description: "Primeiro nome do membro" },
-      { tag: "testDate", description: "Data da prova por extenso (ex.: 15 de novembro de 2026)" },
+      {
+        tag: "testDate",
+        description:
+          "Data da prova por extenso, já com o parêntese (ex.: \" (15 de novembro de 2026)\") — vazio quando a data da turma ainda não foi confirmada pela banca.",
+      },
     ],
     active: true,
     sort_order: 2,
@@ -781,7 +785,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
 export const SAMPLE_VARS: Record<string, string> = {
   displayName: "Maria",
   cohortName: "Revalida 2026.2",
-  testDate: "15 de novembro de 2026",
+  testDate: " (15 de novembro de 2026)",
   endsAt: "30 de novembro de 2026",
   summaryBody:
     "Esta semana: <strong>42 questões</strong> respondidas com <strong>78% de acerto</strong>, <strong>5 aulas</strong> concluídas, em <strong>4 dias</strong> ativos. Faltam 120 dias para a prova.",

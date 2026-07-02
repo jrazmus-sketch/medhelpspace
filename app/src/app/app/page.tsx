@@ -359,10 +359,16 @@ export default async function MemberDashboardPage() {
 
   const { daysUntilUnlock } = await get60dAccess();
 
-  const examDays = activeCohort?.test_date
+  // Exam dates are often a guess (Revalida dates shift by up to 60 days) — never
+  // show a countdown/date until the exam board has actually confirmed it. An
+  // unconfirmed cohort falls back to the same "—" + cohort-name display as one
+  // with no date at all.
+  const examDays = activeCohort?.test_date && activeCohort.date_confirmed
     ? Math.max(0, Math.ceil((new Date(activeCohort.test_date).getTime() - nowMs) / 86_400_000))
     : null;
-  const examDateLabel = activeCohort?.test_date ? fmtDate(new Date(activeCohort.test_date)) : null;
+  const examDateLabel = activeCohort?.test_date && activeCohort.date_confirmed
+    ? fmtDate(new Date(activeCohort.test_date))
+    : null;
 
   // Quiz attempts — include question_id for coverage + per-page stats, specialty_id for daily plan
   let quizAttempts: { is_correct: boolean; created_at: string; question_id: number; specialty_id: number | null }[] = [];

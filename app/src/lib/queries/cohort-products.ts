@@ -30,7 +30,7 @@ const PRODUCT_COLUMNS = "id, slug, name, price_cents, sale_price_cents, display_
 // the date-driven countdown + 60D status. Checkout/charge use PRODUCT_COLUMNS
 // (no timing needed), so toCohortProduct coalesces the timing fields to null.
 const SALE_COLUMNS =
-  "id, slug, name, price_cents, sale_price_cents, display_order, test_date, " +
+  "id, slug, name, price_cents, sale_price_cents, display_order, test_date, date_confirmed, " +
   "cohort_module_access ( unlock_date, content_modules ( slug ) )";
 
 type ModuleAccessRow = {
@@ -46,6 +46,7 @@ type CohortRow = {
   sale_price_cents?: number | null;
   display_order: number | null;
   test_date?: string | null;
+  date_confirmed?: boolean | null;
   cohort_module_access?: ModuleAccessRow[] | null;
 };
 
@@ -86,6 +87,7 @@ function toCohortProduct(row: CohortRow): CohortProduct {
     displayOrder: row.display_order ?? 0,
     testDate: row.test_date ?? null,
     unlock60dDate: extract60dUnlock(row),
+    dateConfirmed: row.date_confirmed ?? false,
   };
 }
 

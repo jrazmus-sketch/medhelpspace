@@ -35,15 +35,21 @@ export default async function PlanoPage() {
     admin.from("specialties").select("id, name, slug").order("display_order"),
     admin
       .from("user_cohort_memberships")
-      .select("cohort:cohorts(name, test_date)")
+      .select("cohort:cohorts(name, test_date, date_confirmed)")
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle(),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cohort = (membershipRes.data as any)?.cohort as { name: string; test_date: string | null } | null;
-  const examDate = cohort?.test_date ?? null;
+  const cohort = (membershipRes.data as any)?.cohort as
+    | { name: string; test_date: string | null; date_confirmed: boolean }
+    | null;
+  // Don't show the exam date/countdown until the exam board confirms it — the
+  // plan itself still paces off the internal guess (see derivePlan), this only
+  // gates what's rendered.
+  const dateConfirmed = cohort?.date_confirmed ?? false;
+  const examDate = dateConfirmed ? cohort?.test_date ?? null : null;
   const examDateLabel = examDate
     ? new Date(examDate + "T12:00:00").toLocaleDateString("pt-BR", {
         day: "numeric", month: "long", year: "numeric",
@@ -64,9 +70,10 @@ export default async function PlanoPage() {
       <h1 style={{ fontSize: "clamp(22px, 5vw, 30px)", fontWeight: 700, letterSpacing: "-.03em", marginBottom: 4 }}>
         Meu Plano de Estudos
       </h1>
-      {plan && plan.daysToExam !== null && (
+      {plan && (
         <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 16 }}>
-          {plan.daysToExam} dias para a prova · Fase: {phaseLabel(plan.phase)}
+          {dateConfirmed && plan.daysToExam !== null ? `${plan.daysToExam} dias para a prova · ` : ""}
+          Fase: {phaseLabel(plan.phase)}
         </p>
       )}
 
@@ -90,6 +97,7 @@ export default async function PlanoPage() {
         welcomedAt={welcomedAt}
         examDate={examDate}
         examDateLabel={examDateLabel}
+        cohortName={cohort?.name ?? null}
       />
     </div>
   );

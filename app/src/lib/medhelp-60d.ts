@@ -85,5 +85,10 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
     0,
     Math.ceil((new Date(access.unlock_date as string).getTime() - Date.now()) / 86_400_000),
   );
-  return { unlocked: days === 0, daysUntilUnlock: days };
+  const unlocked = days === 0;
+  // "Already open" is safe to state even on an unconfirmed date — it reveals nothing.
+  // The pre-open countdown is what leaks the guessed exam date (unlock = exam - 60),
+  // so it's withheld until the exam board actually confirms cohort.test_date.
+  const daysUntilUnlock = unlocked || cohort.date_confirmed ? days : null;
+  return { unlocked, daysUntilUnlock };
 }

@@ -55,17 +55,25 @@ function fmtShort(ymd: string): string {
 }
 
 export function getCohortTiming(
-  c: Pick<CohortProduct, "testDate" | "unlock60dDate">,
+  c: Pick<CohortProduct, "testDate" | "unlock60dDate" | "dateConfirmed">,
   now: Date = new Date(),
 ): CohortTiming {
   const today = todayInTZ(now);
+
+  // Revalida exam dates are notoriously unreliable — until the exam board has
+  // actually announced one, testDate/unlock60dDate are only an internal planning
+  // guess. Treat them as unset here so every downstream field falls back to the
+  // same "we don't know yet" copy a cohort with no date at all would get; no
+  // countdown, no calendar date is ever shown for an unconfirmed cohort.
+  const testDate = c.dateConfirmed ? c.testDate : null;
+  const unlock60dDate = c.dateConfirmed ? c.unlock60dDate : null;
 
   let daysToTest: number | null = null;
   let examDateLabel: string | null = null;
   let examChip: CohortTiming["examChip"] = null;
 
-  if (c.testDate) {
-    const t = dateOnly(c.testDate);
+  if (testDate) {
+    const t = dateOnly(testDate);
     daysToTest = daysBetween(today, t);
     examDateLabel = fmtFull(t);
     if (daysToTest > 0) {
@@ -88,8 +96,8 @@ export function getCohortTiming(
   let days60d: number | null = null;
   let unlock60dLabel = "MedHelp 60D — liberado 60 dias antes da prova";
 
-  if (c.unlock60dDate) {
-    const u = dateOnly(c.unlock60dDate);
+  if (unlock60dDate) {
+    const u = dateOnly(unlock60dDate);
     const d = daysBetween(today, u);
     days60d = Math.max(0, d);
     if (d <= 0) {

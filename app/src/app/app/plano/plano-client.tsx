@@ -64,6 +64,7 @@ export function PlanoClient({
   welcomedAt,
   examDate,
   examDateLabel,
+  cohortName,
 }: {
   plan: DerivedPlan | null;
   prefs: StudyPlanPrefs;
@@ -72,6 +73,7 @@ export function PlanoClient({
   welcomedAt: string | null;
   examDate: string | null;
   examDateLabel: string | null;
+  cohortName: string | null;
 }) {
   const [showWizard, setShowWizard] = useState(false);
 
@@ -101,6 +103,7 @@ export function PlanoClient({
         <CalibrateWizard
           examDate={examDate}
           examDateLabel={examDateLabel}
+          cohortName={cohortName}
           specialties={specialties}
           initialAvailableDays={prefs.available_days}
           initialWeeklyHours={prefs.weekly_hours}

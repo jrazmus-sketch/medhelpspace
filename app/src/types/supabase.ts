@@ -45,7 +45,8 @@ export interface Cohort {
   id: number;
   slug: string;                  // e.g. "revalida-2027-1"
   name: string;                  // e.g. "Revalida 2027.1" — display name
-  test_date: string;             // ISO date "YYYY-MM-DD"
+  test_date: string;             // ISO date "YYYY-MM-DD" — internal planning anchor; may be a guess
+  date_confirmed: boolean;       // true once the exam board has actually announced test_date
   membership_starts_at: string;  // ISO timestamptz
   membership_ends_at: string;    // ISO timestamptz
 }
@@ -70,8 +71,12 @@ export interface CohortProduct {
   discountPercent: number | null;      // rounded % off, for the "-25%" badge
   savingsLabel: string | null;         // "Economize R$ 1.000"
   displayOrder: number;
+  // testDate/unlock60dDate are the internal planning anchors — they exist even when
+  // date_confirmed is false so downstream scheduling keeps working. Display code must
+  // check dateConfirmed before rendering either as a countdown/date to a student.
   testDate: string | null;       // ISO date of the exam (cohorts.test_date); drives the countdown
   unlock60dDate: string | null;  // ISO date MedHelp 60D unlocks for this cohort (cohort_module_access)
+  dateConfirmed: boolean;        // true once the exam board has actually announced testDate
 }
 
 export interface UserCohortMembership {
