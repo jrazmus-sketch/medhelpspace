@@ -1,45 +1,57 @@
 "use client";
 
 import { useReveal } from "@/hooks/use-reveal";
+import { SiteText } from "./site-text";
 
+// `id` keys each row's editable copy into site_content (comp.<id>.cat/mhs/alt).
+// Positional/stable: renaming an id remaps its stored copy, so treat it as a
+// code change, not a content edit (mirrors the faq.<i> / pricing.included.<i>
+// convention in schema-patch-site-content.sql).
 const ROWS = [
   {
+    id: "feito",
     category: "Feito para",
     mhs: "Feito só para o Revalida — pensado para quem se formou fora",
     tradicional: "Curso de residência adaptado às pressas para o Revalida",
     mhsWins: true,
   },
   {
+    id: "fixacao",
     category: "Fixação",
     mhs: "Repetição espaçada inclusa: o que você erra volta no momento certo",
     tradicional: "Você relê o conteúdo e torce para lembrar na prova",
     mhsWins: true,
   },
   {
+    id: "direcao",
     category: "Direção",
     mhs: "Um plano diário que se monta sozinho a partir do seu desempenho",
     tradicional: "Você decide sozinho por onde começar, no meio do volume",
     mhsWins: true,
   },
   {
+    id: "formatos",
     category: "Formatos",
     mhs: "Questões · Resumos · Áudios · Flashcards — feitos para o celular",
     tradicional: "Videoaulas longas, difíceis de consumir no plantão",
     mhsWins: true,
   },
   {
+    id: "reta",
     category: "Reta final",
     mhs: "MedHelp 60D já incluso — libera sozinho 60 dias antes da prova",
     tradicional: "Módulo de reta final cobrado à parte",
     mhsWins: true,
   },
   {
+    id: "cobranca",
     category: "Cobrança",
     mhs: "Uma compra, sem mensalidade e sem renovação automática",
     tradicional: "Assinatura que renova sozinha — e multa para cancelar",
     mhsWins: true,
   },
   {
+    id: "garantia",
     category: "Garantia",
     mhs: "7 dias para testar e pedir reembolso, sem precisar justificar",
     tradicional: "Reembolso travado nas letras miúdas do contrato",
@@ -74,14 +86,16 @@ export function ComparisonSection() {
         {/* Header */}
         <div ref={headerRef} className="lp-reveal mb-12 text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand">
-            Por que MedHelpSpace?
+            <SiteText as="span" k="comp.eyebrow" fallback="Por que MedHelpSpace?" />
           </p>
           <h2
             className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl md:text-[2.5rem]"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
-            MedHelpSpace vs.{" "}
-            <span className="text-foreground/40">Cursos Tradicionais</span>
+            <SiteText as="span" k="comp.title_lead" fallback="MedHelpSpace vs." />{" "}
+            <span className="text-foreground/40">
+              <SiteText as="span" k="comp.title_alt" fallback="Cursos Tradicionais" />
+            </span>
           </h2>
         </div>
 
@@ -114,14 +128,16 @@ export function ComparisonSection() {
             >
               {/* Category */}
               <div className="flex items-start pt-0.5">
-                <span className="text-sm font-semibold text-foreground/70">{row.category}</span>
+                <span className="text-sm font-semibold text-foreground/70">
+                  <SiteText as="span" k={`comp.${row.id}.cat`} fallback={row.category} />
+                </span>
               </div>
 
               {/* MHS column */}
               <div className="flex items-start gap-2">
                 <CheckIcon />
                 <p className="hidden text-sm leading-relaxed text-foreground/70 md:block">
-                  {row.mhs}
+                  <SiteText as="span" multiline k={`comp.${row.id}.mhs`} fallback={row.mhs} />
                 </p>
               </div>
 
@@ -129,7 +145,7 @@ export function ComparisonSection() {
               <div className="flex items-start gap-2">
                 <CrossIcon />
                 <p className="hidden text-sm leading-relaxed text-foreground/40 md:block">
-                  {row.tradicional}
+                  <SiteText as="span" multiline k={`comp.${row.id}.alt`} fallback={row.tradicional} />
                 </p>
               </div>
             </div>
@@ -141,15 +157,19 @@ export function ComparisonSection() {
           {ROWS.map((row) => (
             <div key={row.category} className="rounded-xl border border-border p-4">
               <div className="mb-2 text-xs font-bold uppercase tracking-widest text-foreground/40">
-                {row.category}
+                <SiteText as="span" k={`comp.${row.id}.cat`} fallback={row.category} />
               </div>
               <div className="mb-1.5 flex items-start gap-2">
                 <CheckIcon />
-                <p className="text-sm text-foreground/70">{row.mhs}</p>
+                <p className="text-sm text-foreground/70">
+                  <SiteText as="span" multiline k={`comp.${row.id}.mhs`} fallback={row.mhs} />
+                </p>
               </div>
               <div className="flex items-start gap-2">
                 <CrossIcon />
-                <p className="text-sm text-foreground/40">{row.tradicional}</p>
+                <p className="text-sm text-foreground/40">
+                  <SiteText as="span" multiline k={`comp.${row.id}.alt`} fallback={row.tradicional} />
+                </p>
               </div>
             </div>
           ))}

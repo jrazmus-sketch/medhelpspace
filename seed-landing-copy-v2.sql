@@ -33,7 +33,7 @@ INSERT INTO site_content (key, value) VALUES
   ('sys.medvoice.body',    $$Cenas clínicas em áudio: diagnóstico, pegadinha e conduta entrando na sua cabeça. Com transcrição para ler enquanto ouve.$$),
   ('sys.medvoice.result',  $$Revisão rápida todo dia — resposta mais automática na prova.$$),
   ('sys.flashcards.name',    $$Flashcards$$),
-  ('sys.flashcards.tagline', $$5.140 cartões que decidem sozinhos quando voltar.$$),
+  ('sys.flashcards.tagline', $${flashcards} cartões que decidem sozinhos quando voltar.$$),
   ('sys.flashcards.body',    $$Você se autoavalia — “errei” ou “acertei” — e a repetição espaçada cuida do resto. O que você domina espaça; o que você erra volta amanhã.$$),
   ('sys.flashcards.result',  $$Fixação real, não releitura passiva.$$),
   ('sys.audiocards.name',    $$AudioCards$$),

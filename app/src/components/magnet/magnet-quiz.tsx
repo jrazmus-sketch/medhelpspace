@@ -14,6 +14,7 @@ import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetReward, scoreFraming } from "@/components/magnet/magnet-reward";
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
 import { trackFunnel } from "@/lib/magnet/funnel-track";
+import { SiteText } from "@/components/landing/site-text";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
 // security hook (see components/admin/editable-text.tsx).
@@ -185,13 +186,23 @@ export function MagnetQuiz({
     return (
       <div className="mx-auto max-w-xl rounded-2xl border border-border bg-surface-1 p-6 text-center sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-          Quase lá — montando seu plano
+          <SiteText as="span" k="magnet.cohort_eyebrow" fallback="Quase lá — montando seu plano" />
         </p>
         <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-          Para qual prova você está estudando?
+          <SiteText
+            as="span"
+            multiline
+            k="magnet.cohort_title"
+            fallback="Para qual prova você está estudando?"
+          />
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Usamos isso para montar seu cronograma até a data certa.
+          <SiteText
+            as="span"
+            multiline
+            k="magnet.cohort_body"
+            fallback="Usamos isso para montar seu cronograma até a data certa."
+          />
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <button
@@ -228,11 +239,20 @@ export function MagnetQuiz({
           {correctCount} de 5 — você está indo bem
         </p>
         <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-          Veja as 10 questões restantes + seu resultado comentado
+          <SiteText
+            as="span"
+            multiline
+            k="magnet.gate_title"
+            fallback="Veja as 10 questões restantes + seu resultado comentado"
+          />
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          São questões reais de provas anteriores. Deixe seu e-mail para continuar e receber
-          seu resultado no final — sem custo.
+          <SiteText
+            as="span"
+            multiline
+            k="magnet.gate_body"
+            fallback="São questões reais de provas anteriores. Deixe seu e-mail para continuar e receber seu resultado no final — sem custo."
+          />
         </p>
         <div className="mt-5 space-y-3">
           {/* Honeypot: visually hidden, real users never fill it. */}
@@ -265,7 +285,7 @@ export function MagnetQuiz({
             {pending ? "Liberando…" : "Ver as 10 restantes →"}
           </button>
           <p className="text-center text-xs text-muted-foreground">
-            Sem spam. Você pode sair quando quiser.
+            <SiteText as="span" k="magnet.gate_note" fallback="Sem spam. Você pode sair quando quiser." />
           </p>
         </div>
       </div>
@@ -281,11 +301,15 @@ export function MagnetQuiz({
     return (
       <div className="mx-auto max-w-xl rounded-2xl border border-border bg-surface-1 p-6 sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-          Antes de começar
+          <SiteText as="span" k="magnet.wel_eyebrow" fallback="Antes de começar" />
         </p>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-          Você resolve, vê o comentário na hora e, no final, a gente monta seu plano de estudo —
-          focado nas matérias que você errou. Sem pegadinha.
+          <SiteText
+            as="span"
+            multiline
+            k="magnet.wel_body"
+            fallback="Você resolve, vê o comentário na hora e, no final, a gente monta seu plano de estudo — focado nas matérias que você errou. Sem pegadinha."
+          />
         </p>
 
         <ul className="mt-5 space-y-3 text-sm">
@@ -294,23 +318,38 @@ export function MagnetQuiz({
               ⏱
             </span>
             <span>
-              <strong className="font-semibold text-foreground">10–15 min</strong> · 15 questões
-              comentadas, no seu ritmo
+              <SiteText
+                as="span"
+                multiline
+                k="magnet.wel_b1"
+                fallback="10–15 min · 15 questões comentadas, no seu ritmo"
+              />
             </span>
           </li>
           <li className="flex items-start gap-3">
             <span aria-hidden className="mt-0.5 text-base leading-none">
               💬
             </span>
-            <span>Comentário e explicação logo após cada resposta</span>
+            <span>
+              <SiteText
+                as="span"
+                multiline
+                k="magnet.wel_b2"
+                fallback="Comentário e explicação logo após cada resposta"
+              />
+            </span>
           </li>
           <li className="flex items-start gap-3">
             <span aria-hidden className="mt-0.5 text-base leading-none">
               🎯
             </span>
             <span>
-              No final: seu nível real + um plano de estudo até{" "}
-              <strong className="font-semibold text-foreground">a data da sua prova</strong>
+              <SiteText
+                as="span"
+                multiline
+                k="magnet.wel_b3"
+                fallback="No final: seu nível real + um plano de estudo até a data da sua prova"
+              />
             </span>
           </li>
         </ul>
@@ -322,10 +361,14 @@ export function MagnetQuiz({
           }}
           className="mt-6 w-full rounded-lg bg-brand px-5 py-3.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
         >
-          Começar agora →
+          <SiteText as="span" k="magnet.wel_cta" fallback="Começar agora →" />
         </button>
         <p className="mt-3 text-center text-xs text-muted-foreground">
-          Grátis · sem cartão · as 5 primeiras sem cadastro
+          <SiteText
+            as="span"
+            k="magnet.wel_note"
+            fallback="Grátis · sem cartão · as 5 primeiras sem cadastro"
+          />
         </p>
       </div>
     );

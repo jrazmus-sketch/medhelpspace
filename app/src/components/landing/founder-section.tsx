@@ -1,6 +1,7 @@
 "use client";
 
 import { useReveal } from "@/hooks/use-reveal";
+import { SiteText } from "./site-text";
 import type { LandingStats } from "@/lib/landing/stats";
 
 export function FounderSection({ stats }: { stats: LandingStats }) {
@@ -26,9 +27,19 @@ export function FounderSection({ stats }: { stats: LandingStats }) {
               className="text-xl font-semibold leading-[1.55] tracking-tight text-foreground sm:text-2xl md:text-3xl"
               style={{ fontFamily: "var(--font-bricolage)" }}
             >
-              Criar o MedHelpSpace foi uma decisão de repensar o jeito de estudar para o Revalida. Não mais aulas que precisam de 3 horas para dizer o que a prova cobra em 30 segundos. A ideia foi simples:{" "}
+              <SiteText
+                as="span"
+                multiline
+                k="founder.quote"
+                fallback="Criar o MedHelpSpace foi uma decisão de repensar o jeito de estudar para o Revalida. Não mais aulas que precisam de 3 horas para dizer o que a prova cobra em 30 segundos. A ideia foi simples:"
+              />{" "}
               <span className="text-brand">
-                tirar o excesso, deixar o que cai, e treinar do jeito que a banca pensa.
+                <SiteText
+                  as="span"
+                  multiline
+                  k="founder.quote_hl"
+                  fallback="tirar o excesso, deixar o que cai, e treinar do jeito que a banca pensa."
+                />
               </span>
             </p>
 
@@ -42,9 +53,15 @@ export function FounderSection({ stats }: { stats: LandingStats }) {
                   M
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-foreground">Equipe MedHelpSpace</div>
+                  <div className="text-sm font-bold text-foreground">
+                    <SiteText as="span" k="founder.attr_name" fallback="Equipe MedHelpSpace" />
+                  </div>
                   <div className="text-xs text-foreground/45">
-                    Médicos e especialistas em aprovação no Revalida
+                    <SiteText
+                      as="span"
+                      k="founder.attr_role"
+                      fallback="Médicos e especialistas em aprovação no Revalida"
+                    />
                   </div>
                 </div>
               </div>
@@ -62,18 +79,20 @@ export function FounderSection({ stats }: { stats: LandingStats }) {
           {/* Stat row */}
           <div className="mt-8 grid grid-cols-3 gap-4 text-center">
             {[
-              { value: nf(stats.especialidades), label: "especialidades cobertas" },
-              { value: nf(stats.questoes), label: "questões comentadas" },
-              { value: nf(stats.flashcards), label: "flashcards de fixação" },
+              { value: nf(stats.especialidades), label: "especialidades cobertas", k: "founder.stat1_label" },
+              { value: nf(stats.questoes), label: "questões comentadas", k: "founder.stat2_label" },
+              { value: nf(stats.flashcards), label: "flashcards de fixação", k: "founder.stat3_label" },
             ].map((stat) => (
-              <div key={stat.label}>
+              <div key={stat.k}>
                 <div
                   className="text-2xl font-extrabold text-foreground md:text-3xl"
                   style={{ fontFamily: "var(--font-bricolage)" }}
                 >
                   {stat.value}
                 </div>
-                <div className="mt-1 text-xs text-foreground/45">{stat.label}</div>
+                <div className="mt-1 text-xs text-foreground/45">
+                  <SiteText as="span" k={stat.k} fallback={stat.label} />
+                </div>
               </div>
             ))}
           </div>

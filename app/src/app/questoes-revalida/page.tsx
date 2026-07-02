@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getMagnetQuestions, MAGNET_FREE_IDS } from "@/lib/magnet/questions";
 import { MagnetQuiz, type MagnetUtm } from "@/components/magnet/magnet-quiz";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
+import { SiteText } from "@/components/landing/site-text";
 
 // PUBLIC, indexable landing page — lives OUTSIDE the /app gate, so it never hits
 // requireActiveMembership(). The 5 free questions render server-side (instant +
@@ -50,7 +51,9 @@ export default async function SimuladoHonestoPage({
           <Link href="/" className="text-sm font-bold tracking-tight">
             MedHelp<span className="text-brand">Space</span>
           </Link>
-          <span className="text-xs text-muted-foreground">Simulado Honesto · 1ª etapa</span>
+          <span className="text-xs text-muted-foreground">
+            <SiteText as="span" k="magnet.header_tag" fallback="Simulado Honesto · 1ª etapa" />
+          </span>
         </div>
       </header>
 
@@ -58,21 +61,33 @@ export default async function SimuladoHonestoPage({
         {/* Hero / intro */}
         <div className="mx-auto mb-10 max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-            Revalida · 1ª etapa
+            <SiteText as="span" k="magnet.hero_eyebrow" fallback="Revalida · 1ª etapa" />
           </p>
           <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            15 questões comentadas da 1ª etapa. De graça.
+            <SiteText
+              as="span"
+              multiline
+              k="magnet.hero_title"
+              fallback="15 questões comentadas da 1ª etapa. De graça."
+            />
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Sem promessa de aprovação. Resolva, veja exatamente onde você está e receba um
-            plano de estudo até <strong className="text-foreground">a data da sua prova</strong>. As 5
-            primeiras são abertas — depois é só o seu e-mail.
+            <SiteText
+              as="span"
+              multiline
+              k="magnet.hero_subhead"
+              fallback="Sem promessa de aprovação. Resolva, veja exatamente onde você está e receba um plano de estudo até a data da sua prova. As 5 primeiras são abertas — depois é só o seu e-mail."
+            />
           </p>
         </div>
 
         {freeQuestions.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">
-            Simulado em preparação. Volte em instantes.
+            <SiteText
+              as="span"
+              k="magnet.empty"
+              fallback="Simulado em preparação. Volte em instantes."
+            />
           </p>
         ) : (
           <MagnetQuiz freeQuestions={freeQuestions} utm={utm} />

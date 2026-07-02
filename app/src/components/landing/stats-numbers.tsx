@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SiteText } from "./site-text";
 import type { LandingStats } from "@/lib/landing/stats";
 
 // Labels are fixed; the values are live counts passed in from the server
@@ -84,7 +85,7 @@ export function StatsNumbers({ stats }: { stats: LandingStats }) {
               className="mt-3 text-[10px] uppercase tracking-[0.2em]"
               style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-25)" }}
             >
-              {stat.label}
+              <SiteText as="span" k={`statsnum.${stat.key}`} fallback={stat.label} />
             </div>
           </div>
           );
