@@ -111,6 +111,25 @@
       "modePage": "Live site page",
       "modeImage": "Image"
     },
+    "pages": {
+      "pick": "Pick a page",
+      "custom": "Or type a path (e.g. /app/plano)",
+      "loginHint": "Dashboard pages only render if you're logged in.",
+      "group_marketing": "Marketing (public)",
+      "group_app": "Dashboard (needs login)",
+      "group_specialty": "Specialties",
+      "home": "Home",
+      "store": "Store / Plans",
+      "freeQuiz": "Free quiz",
+      "freeFlashcards": "Free flashcards",
+      "dashboard": "Dashboard",
+      "studyPlan": "Study plan",
+      "roadmap": "Roadmap",
+      "review": "Review",
+      "report": "Report",
+      "revalidaUp": "Revalida Up",
+      "medhelp60d": "MedHelp 60D"
+    },
     "accents": {
       "brand": "MedHelp Purple",
       "cardiologia": "Cardiology",

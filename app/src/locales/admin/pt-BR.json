@@ -111,6 +111,25 @@
       "modePage": "Página do site (ao vivo)",
       "modeImage": "Imagem"
     },
+    "pages": {
+      "pick": "Escolha uma página",
+      "custom": "Ou digite um caminho (ex.: /app/plano)",
+      "loginHint": "As páginas do painel só aparecem se você estiver logado.",
+      "group_marketing": "Marketing (público)",
+      "group_app": "Painel (precisa de login)",
+      "group_specialty": "Especialidades",
+      "home": "Home",
+      "store": "Loja / Planos",
+      "freeQuiz": "Simulado grátis",
+      "freeFlashcards": "Flashcards grátis",
+      "dashboard": "Painel",
+      "studyPlan": "Plano de estudo",
+      "roadmap": "Roteiro",
+      "review": "Revisão",
+      "report": "Relatório",
+      "revalidaUp": "Revalida Up",
+      "medhelp60d": "MedHelp 60D"
+    },
     "accents": {
       "brand": "Roxo MedHelp",
       "cardiologia": "Cardiologia",

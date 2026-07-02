@@ -77,6 +77,22 @@ const SITE_IMAGES: string[] = [
   "/images/students.webp",
 ];
 
+// Specialty hubs for the page picker (slugs from MOCK_SPECIALTIES; /app/<slug>).
+const STUDIO_SPECIALTIES: { slug: string; name: string }[] = [
+  { slug: "cardiologia", name: "Cardiologia" },
+  { slug: "pneumologia", name: "Pneumologia" },
+  { slug: "neurologia", name: "Neurologia" },
+  { slug: "clinica-medica", name: "Clínica Médica" },
+  { slug: "cirurgia", name: "Cirurgia Geral" },
+  { slug: "ginecologia", name: "Ginecologia e Obstetrícia" },
+  { slug: "pediatria", name: "Pediatria" },
+  { slug: "medicina-intensiva", name: "Medicina Intensiva" },
+  { slug: "infectologia", name: "Infectologia" },
+  { slug: "endocrinologia", name: "Endocrinologia" },
+  { slug: "gastroenterologia", name: "Gastroenterologia" },
+  { slug: "reumatologia", name: "Reumatologia" },
+];
+
 // Phone-mockup geometry (px, inside the 1080 canvas)
 const PHONE_W = 300;
 const PHONE_H = 620;
@@ -868,7 +884,7 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
 type Field = {
   key: string;
   labelKey: string;
-  type?: "text" | "textarea" | "image" | "select";
+  type?: "text" | "textarea" | "image" | "select" | "page";
   options?: { value: string; labelKey: string }[];
   showIf?: (v: Vals) => boolean;
 };
@@ -1035,7 +1051,7 @@ const TEMPLATES: Template[] = [
           { value: "image", labelKey: "modeImage" },
         ],
       },
-      { key: "pagePath", labelKey: "pagePath", showIf: (v) => v.mode === "page" },
+      { key: "pagePath", labelKey: "pagePath", type: "page", showIf: (v) => v.mode === "page" },
       { key: "image", labelKey: "image", type: "image", showIf: (v) => v.mode === "image" },
     ],
     defaults: {
@@ -1353,7 +1369,9 @@ export function EstudioClient() {
                     >
                       {t(`studio.fields.${f.labelKey}`)}
                     </label>
-                    {f.type === "image" ? (
+                    {f.type === "page" ? (
+                      <PageField value={values[f.key] ?? ""} onChange={(val) => update(f.key, val)} />
+                    ) : f.type === "image" ? (
                       <ImageField value={values[f.key] ?? ""} onChange={(val) => update(f.key, val)} />
                     ) : f.type === "select" ? (
                       <select
@@ -1509,6 +1527,72 @@ export function EstudioClient() {
           </section>
         </div>
       )}
+    </div>
+  );
+}
+
+function PageField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation();
+  const groups: { label: string; items: { value: string; label: string }[] }[] = [
+    {
+      label: t("studio.pages.group_marketing"),
+      items: [
+        { value: "/", label: t("studio.pages.home") },
+        { value: "/loja", label: t("studio.pages.store") },
+        { value: "/questoes-revalida", label: t("studio.pages.freeQuiz") },
+        { value: "/flashcards-gratis", label: t("studio.pages.freeFlashcards") },
+      ],
+    },
+    {
+      label: t("studio.pages.group_app"),
+      items: [
+        { value: "/app", label: t("studio.pages.dashboard") },
+        { value: "/app/plano", label: t("studio.pages.studyPlan") },
+        { value: "/app/plano/roteiro", label: t("studio.pages.roadmap") },
+        { value: "/app/revisao", label: t("studio.pages.review") },
+        { value: "/app/relatorio", label: t("studio.pages.report") },
+        { value: "/app/revalida-up", label: t("studio.pages.revalidaUp") },
+        { value: "/app/medhelp-60d", label: t("studio.pages.medhelp60d") },
+      ],
+    },
+    {
+      label: t("studio.pages.group_specialty"),
+      items: STUDIO_SPECIALTIES.map((s) => ({ value: `/app/${s.slug}`, label: s.name })),
+    },
+  ];
+  const known = groups.some((g) => g.items.some((it) => it.value === value));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <select
+        value={known ? value : ""}
+        onChange={(e) => {
+          if (e.target.value) onChange(e.target.value);
+        }}
+        style={{ ...inputStyle, cursor: "pointer" }}
+      >
+        <option value="" style={{ background: "#0a0a12", color: "#fff" }}>
+          {t("studio.pages.pick")}…
+        </option>
+        {groups.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.items.map((it) => (
+              <option key={it.value} value={it.value} style={{ background: "#0a0a12", color: "#fff" }}>
+                {it.label} · {it.value}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={t("studio.pages.custom")}
+        style={inputStyle}
+      />
+      <p style={{ fontSize: 11, color: "#7f7f8c", margin: 0, lineHeight: 1.4 }}>
+        {t("studio.pages.loginHint")}
+      </p>
     </div>
   );
 }
