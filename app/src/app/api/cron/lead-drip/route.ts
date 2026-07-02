@@ -128,8 +128,8 @@ export async function GET(request: NextRequest) {
       .filter(Boolean)
       .join(", ");
 
-    // 2027.1 = full price, no coupon. 2026.2 = the step's coupon (RETA/ULTIMA).
-    const coupon = is2027 ? null : nextStep.coupon;
+    // 2026.2 = step's coupon (RETA/ULTIMA). 2027.1 = welcome 10% in D2 only, no final email.
+    const coupon = is2027 ? (nextStep.step === 2 ? "REVALIDA10" : null) : nextStep.coupon;
 
     const vars: Record<string, string> = {
       greeting: greetingFor(lead.first_name as string | null),

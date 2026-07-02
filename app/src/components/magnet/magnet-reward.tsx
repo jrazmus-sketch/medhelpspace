@@ -52,7 +52,8 @@ export function MagnetReward({
   const weak = plan?.weakSpecialties ?? [];
   const weakNames = weak.map((w) => w.name).join(", ");
   const days = plan?.daysToExam ?? null;
-  const isReta = cohort === "revalida-2026-2"; // near-term cohort gets the discount
+  const isReta = cohort === "revalida-2026-2";
+  const is2027 = cohort === "revalida-2027-1";
 
   const checkoutHref = (() => {
     const p = new URLSearchParams({
@@ -62,7 +63,8 @@ export function MagnetReward({
       utm_medium: utm.medium ?? "site",
       utm_campaign: utm.campaign ?? "questoes-revalida",
     });
-    if (isReta) p.set("cupom", "RETA2026"); // 2027.1 = full price, no coupon
+    if (isReta) p.set("cupom", "RETA2026");
+    if (is2027) p.set("cupom", "REVALIDA10");
     return `/checkout?${p.toString()}`;
   })();
 
@@ -208,6 +210,19 @@ export function MagnetReward({
             <span className="text-2xl font-bold text-brand">R$3.290</span>
             <span className="text-xs text-muted-foreground">em 12x ou Pix · reta final</span>
           </div>
+        ) : is2027 ? (
+          <>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-sm text-muted-foreground line-through">R$4.990</span>
+              <span className="text-2xl font-bold text-brand">R$4.491</span>
+              <span className="text-xs text-muted-foreground">em 12x ou Pix · 10% de desconto</span>
+            </div>
+            <div className="mt-2 rounded-lg border border-brand/30 bg-brand-muted/30 px-3 py-2 text-center text-xs text-foreground">
+              Cupom de boas-vindas{" "}
+              <span className="font-mono font-bold tracking-widest">REVALIDA10</span> — aplicado
+              automaticamente
+            </div>
+          </>
         ) : (
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-2xl font-bold text-brand">R$4.990</span>
@@ -220,7 +235,7 @@ export function MagnetReward({
           href={checkoutHref}
           className="mt-4 block rounded-lg bg-brand px-5 py-3 text-center text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
         >
-          {isReta ? "Desbloquear meu plano completo →" : "Quero começar agora →"}
+          {isReta ? "Desbloquear meu plano completo →" : is2027 ? "Garantir meu desconto →" : "Quero começar agora →"}
         </a>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           7 dias de garantia incondicional. Sem pegadinha.
