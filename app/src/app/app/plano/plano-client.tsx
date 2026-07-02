@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ClipboardList, ScrollText, Headphones, Layers, Sparkles, ChevronRight,
   Settings, Check, AlertCircle, Mail, Calendar, Clock, Target, Plus,
-  Trash2, Sparkles as Star, ChevronDown, ChevronUp, Sliders, Pause, X,
+  Trash2, Sparkles as Star, ChevronDown, ChevronUp, Sliders, Pause, X, FileStack,
 } from "lucide-react";
 import {
   setIntensity, setTempIntensity, setAvailableDays, setRecurringOffDays,
@@ -21,6 +21,7 @@ import { CalibrateWizard } from "./calibrate-wizard";
 
 const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   quiz: ClipboardList,
+  simulado: FileStack,
   lesson: ScrollText,
   audio: Headphones,
   flashcards: Layers,
@@ -29,6 +30,7 @@ const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number
 
 const ITEM_COLOR: Record<PlanItem["iconHint"], string> = {
   quiz: "var(--c-questoes)",
+  simulado: "#0891b2",
   lesson: "var(--c-resumos)",
   audio: "var(--c-medvoice)",
   flashcards: "#a78bfa",
@@ -44,6 +46,7 @@ const INTENSITY_LABEL: Record<Intensity, { label: string; sub: string }> = {
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   quiz: "Questões",
+  simulado: "Simulados",
   lesson: "Resumos / Fórmula",
   audio: "MedVoice (áudio)",
   flashcards: "Flashcards",
@@ -102,6 +105,7 @@ export function PlanoClient({
           initialAvailableDays={prefs.available_days}
           initialWeeklyHours={prefs.weekly_hours}
           initialFocusIds={prefs.focus_specialty_ids}
+          initialResourceTypes={prefs.preferred_content_types}
           onClose={() => setShowWizard(false)}
         />
       )}
@@ -947,7 +951,7 @@ function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
         Desmarque tipos que você não gosta (ex: se você não estuda por áudio, desmarque MedVoice).
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {(["quiz", "lesson", "audio", "flashcards", "memorecards"] as ContentType[]).map((type) => {
+        {(["quiz", "simulado", "lesson", "audio", "flashcards", "memorecards"] as ContentType[]).map((type) => {
           const active = selected.has(type);
           const Icon = ICON_MAP[type];
           const color = ITEM_COLOR[type];

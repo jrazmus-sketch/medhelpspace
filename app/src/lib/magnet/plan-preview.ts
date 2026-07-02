@@ -3,6 +3,8 @@ import {
   defaultPrefs,
   type SpecialtyRow,
   type PageRow,
+  type TopicRow,
+  type TopicContentRow,
   type Signals,
 } from "@/lib/study-plan/derive";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -57,12 +59,19 @@ export async function buildPlanPreview(
     COHORT_EXAM_DATE[cohort ?? DEFAULT_TARGET_COHORT] ??
     COHORT_EXAM_DATE[DEFAULT_TARGET_COHORT];
   const admin = createAdminClient();
-  const [{ data: specialties }, { data: pages }] = await Promise.all([
-    admin.from("specialties").select("id, name, slug"),
-    admin
-      .from("pages")
-      .select("id, slug, title, type, specialty_id, track_id, content_module_id, view"),
-  ]);
+  const [{ data: specialties }, { data: pages }, { data: topics }, { data: topicContent }] =
+    await Promise.all([
+      admin.from("specialties").select("id, name, slug"),
+      admin
+        .from("pages")
+        .select("id, slug, title, type, specialty_id, track_id, content_module_id, view"),
+      admin
+        .from("topics")
+        .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier, is_pinned"),
+      admin
+        .from("topic_content")
+        .select("topic_id, resource_type, page_id, question_filter"),
+    ]);
 
   // Weak specialties = the ones the lead got wrong; pinned as plan focus so the
   // preview leads with exactly the topics the simulado just exposed.
@@ -95,6 +104,8 @@ export async function buildPlanPreview(
     cohort: { test_date: examDate },
     specialties: (specialties ?? []) as SpecialtyRow[],
     pages: (pages ?? []) as PageRow[],
+    topics: (topics ?? []) as TopicRow[],
+    topicContent: (topicContent ?? []) as TopicContentRow[],
     signals,
   });
 

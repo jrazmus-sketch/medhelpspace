@@ -22,7 +22,7 @@
 
 export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
-export type ContentType = "quiz" | "lesson" | "audio" | "flashcards" | "memorecards";
+export type ContentType = "quiz" | "simulado" | "lesson" | "audio" | "flashcards" | "memorecards";
 export type WeaknessSensitivity = "strict" | "balanced" | "off";
 
 export type IntensitySpec = {
@@ -107,6 +107,24 @@ export type PageRow = {
   view: string | null;
 };
 
+export type TopicRow = {
+  id: number;
+  name: string;
+  slug: string;
+  specialty_id: number | null;
+  source_page_id: number | null;
+  incidence_count: number;
+  priority_tier: string | null;   // 'A' | 'B' | 'C' | 'D' | null
+  is_pinned: boolean;
+};
+
+export type TopicContentRow = {
+  topic_id: number;
+  resource_type: string;          // quiz | simulado | flashcards | medvoice | revalida_up
+  page_id: number | null;
+  question_filter: unknown | null;
+};
+
 export type CohortInfo = {
   test_date: string | null;
 };
@@ -122,9 +140,6 @@ export type Signals = {
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const MEDHELP_60D_MODULE_ID = 1;
-const FLASHCARDS_TRACK_ID = 3;
-const MEDVOICE_TRACK_ID = 1;
-const AUDIOCARDS_TRACK_ID = 2;
 
 const DAY_NAMES_PT = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
@@ -141,8 +156,8 @@ export function defaultPrefs(): StudyPlanPrefs {
     weakness_sensitivity: "balanced",
     include_60d: true,
     flashcard_daily_cap: null,
-    preferred_content_types: ["quiz", "lesson", "audio", "flashcards", "memorecards"],
-    content_type_weights: { quiz: 40, lesson: 25, audio: 15, flashcards: 15, memorecards: 5 },
+    preferred_content_types: ["quiz", "simulado", "flashcards", "audio", "memorecards"],
+    content_type_weights: { quiz: 30, simulado: 20, lesson: 10, audio: 15, flashcards: 20, memorecards: 5 },
     intensification_start_days: 60,
     focus_specialty_ids: [],
     excluded_specialty_ids: [],
@@ -156,9 +171,11 @@ export function derivePlan(args: {
   cohort: CohortInfo | null;
   specialties: SpecialtyRow[];
   pages: PageRow[];
+  topics: TopicRow[];
+  topicContent: TopicContentRow[];
   signals: Signals;
 }): DerivedPlan {
-  const { prefs, cohort, specialties, pages, signals } = args;
+  const { prefs, cohort, specialties, pages, topics, topicContent, signals } = args;
 
   // ── Date setup ────────────────────────────────────────────────────────────
   const today = new Date();
@@ -331,129 +348,164 @@ export function derivePlan(args: {
     ranked.push(...allRanked.sort((a, b) => b.weight - a.weight));
   }
 
-  // ── Content type filtering + weighting ───────────────────────────────────
+  // ── Content type prefs + already-completed quiz pages ────────────────────
   const allowedTypes = new Set(prefs.preferred_content_types);
-
-  // ── Already-completed page sets ──────────────────────────────────────────
   const completedQuizPages = new Set<number>();
   for (const a of signals.quizAttempts) completedQuizPages.add(a.page_id);
-  const completionsByPage = new Map<number, number>();
-  for (const c of signals.lessonCompletions) {
-    completionsByPage.set(c.page_id, (completionsByPage.get(c.page_id) ?? 0) + 1);
-  }
-  const fullyCompletedLessonPages = new Set<number>();
-  for (const [pageId, completed] of completionsByPage) {
-    const total = signals.lessonsByPageId.get(pageId) ?? 0;
-    if (total > 0 && completed >= total) fullyCompletedLessonPages.add(pageId);
-  }
 
-  // ── Phase-tuned content mix ──────────────────────────────────────────────
-  // V2: respects allowedTypes + content_type_weights
-  const phaseMix = (() => {
-    switch (phase) {
-      case "foundation":      return { quizPerSpec: 1, lessonPerSpec: 1, audioPerSpec: 0 };
-      case "intensification": return { quizPerSpec: 2, lessonPerSpec: 0, audioPerSpec: 0 };
-      case "taper":           return { quizPerSpec: 1, lessonPerSpec: 0, audioPerSpec: 0 };
-    }
-  })();
+  // ── Topic → content pointers (from topic_content) ────────────────────────
+  const contentByTopic = new Map<number, TopicContentRow[]>();
+  for (const tc of topicContent) {
+    const arr = contentByTopic.get(tc.topic_id);
+    if (arr) arr.push(tc);
+    else contentByTopic.set(tc.topic_id, [tc]);
+  }
+  const pageById = new Map(pages.map((p) => [p.id, p]));
 
-  // ── Page lookup helpers ──────────────────────────────────────────────────
-  function findNextPage(specialtyId: number, predicate: (p: PageRow) => boolean, exclude: Set<number>): PageRow | null {
-    return pages.find((p) =>
-      p.specialty_id === specialtyId &&
-      predicate(p) &&
-      !exclude.has(p.id),
-    ) ?? null;
-  }
-  function isQuizPage(p: PageRow): boolean {
-    return p.type === "h5p-quiz"
-      && p.track_id !== FLASHCARDS_TRACK_ID
-      && p.content_module_id !== MEDHELP_60D_MODULE_ID;
-  }
-  function isLessonPage(p: PageRow): boolean {
-    return (p.type === "text-lesson" || p.type === "audio-lesson")
-      && p.track_id !== MEDVOICE_TRACK_ID && p.track_id !== AUDIOCARDS_TRACK_ID;
-  }
-  function isAudioPage(p: PageRow): boolean {
-    return p.track_id === MEDVOICE_TRACK_ID;
-  }
-  function isMemorecardsPage(p: PageRow): boolean {
-    return p.type === "h5p-quiz" && p.content_module_id === MEDHELP_60D_MODULE_ID;
-  }
+  // ── Topic ranking: incidence primary, weakness tilts ─────────────────────
+  // Score = incidence + (specialty weakness × TILT) + focus + pin. TILT is
+  // capped small so incidence stays dominant — weakness only reorders topics
+  // of comparable frequency, never leapfrogs a much-higher-yield one.
+  const TILT_STRENGTH = 3;
+  const FOCUS_BONUS = 2;
+  const PIN_BONUS = 1;
+  const weaknessBySpecId = new Map(
+    allRanked.map((r) => [r.id, r.weight] as [number, number]),
+  );
+  const focusSetTopics = new Set(prefs.focus_specialty_ids);
+  // Guard the un-split "Outros" bucket (Urologia/Oftalmo/Otorrino): those coarse
+  // topics carry tier-A incidence and would dominate until 0c splits them.
+  const outrosSpecId = specialties.find((s) => s.slug === "outros")?.id ?? -1;
 
-  // ── Build items ──────────────────────────────────────────────────────────
-  const items: PlanItem[] = [];
   const specialtyById = new Map(specialties.map((s) => [s.id, s]));
-  const todaysSpecialties = ranked.slice(0, effectiveSpec.specialtiesPerDay);
+  const isMemorecardsPage = (p: PageRow): boolean =>
+    p.type === "h5p-quiz" && p.content_module_id === MEDHELP_60D_MODULE_ID;
 
-  for (const s of todaysSpecialties) {
-    const specInfo = specialtyById.get(s.id);
+  const rankedTopics = topics
+    .filter(
+      (t) =>
+        t.specialty_id != null &&
+        !excludedSet.has(t.specialty_id) &&
+        t.specialty_id !== outrosSpecId,
+    )
+    .map((t) => {
+      const specId = t.specialty_id as number;
+      const weakness = weaknessBySpecId.get(specId) ?? 1.0;
+      const score =
+        t.incidence_count +
+        weakness * TILT_STRENGTH +
+        (focusSetTopics.has(specId) ? FOCUS_BONUS : 0) +
+        (t.is_pinned ? PIN_BONUS : 0);
+      return { topic: t, weakness, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // ── Build items: walk ranked topics, surface each topic's content ────────
+  // Generic narrative "lesson" items are intentionally dropped — Karina's plan
+  // keeps narrative summaries out of the schedule.
+  const topicsToday = Math.max(1, Math.round((spec.specialtiesPerDay + 1) * minutesScale));
+  const contentPageFor = (t: TopicRow, kind: "quiz" | "medvoice"): PageRow | null => {
+    const tc = (contentByTopic.get(t.id) ?? []).find((c) => c.resource_type === kind);
+    const pid = tc?.page_id ?? (kind === "quiz" ? t.source_page_id : null);
+    return pid != null ? pageById.get(pid) ?? null : null;
+  };
+
+  const items: PlanItem[] = [];
+  const seenFlashcardDecks = new Set<number>();
+  let surfaced = 0;
+  for (const { topic, weakness } of rankedTopics) {
+    if (surfaced >= topicsToday) break;
+    const specInfo = specialtyById.get(topic.specialty_id as number);
     if (!specInfo) continue;
-    const reasonBase = s.accuracy != null
-      ? `${specInfo.name} · ${Math.round(s.accuracy * 100)}% acerto`
-      : `${specInfo.name} · sem questões ainda`;
+    const topicRows = contentByTopic.get(topic.id) ?? [];
+    let emitted = false;
 
-    // QUIZ
+    // QUIZ — the primary driver; skip topics whose quiz page is already done.
     if (allowedTypes.has("quiz")) {
-      for (let i = 0; i < phaseMix.quizPerSpec; i++) {
-        const next = findNextPage(s.id, isQuizPage, completedQuizPages);
-        if (next) {
+      const quizPage = contentPageFor(topic, "quiz");
+      if (quizPage && !completedQuizPages.has(quizPage.id)) {
+        const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
+        items.push({
+          kind: "quiz",
+          title: topic.name,
+          subtitle: `${specInfo.name} · ${tierLabel} · ${topic.incidence_count} no exame`,
+          href: `/app/${specInfo.slug}/${quizPage.slug}`,
+          estimatedMinutes: Math.round(15 * minutesScale),
+          iconHint: "quiz",
+          reason:
+            weakness > 0.5
+              ? "Ponto fraco + alta incidência no Revalida"
+              : topic.priority_tier === "A"
+                ? "Tema de altíssima incidência no Revalida"
+                : "Próximo tema por incidência no exame",
+          specialtyId: topic.specialty_id as number,
+          pageId: quizPage.id,
+        });
+        completedQuizPages.add(quizPage.id);
+        emitted = true;
+      }
+    }
+
+    // FLASHCARDS — memorize the topic's key points (deduped per deck page).
+    if (allowedTypes.has("flashcards")) {
+      const fc = topicRows.find((c) => c.resource_type === "flashcards");
+      if (fc?.page_id != null && !seenFlashcardDecks.has(fc.page_id)) {
+        const deck = pageById.get(fc.page_id);
+        if (deck) {
           items.push({
-            kind: "quiz",
-            title: next.title,
-            subtitle: reasonBase,
-            href: `/app/${specInfo.slug}/${next.slug}`,
-            estimatedMinutes: Math.round(15 * minutesScale),
-            iconHint: "quiz",
-            reason: s.accuracy != null && s.accuracy < 0.7
-              ? "Ponto fraco identificado pelas suas respostas"
-              : "Próxima questão sequencial",
-            specialtyId: s.id,
-            pageId: next.id,
+            kind: "flashcards",
+            title: topic.name,
+            subtitle: `${specInfo.name} · flashcards`,
+            href: `/app/${specInfo.slug}/${deck.slug}`,
+            estimatedMinutes: Math.round(8 * minutesScale),
+            iconHint: "flashcards",
+            reason: "Memorize os pontos-chave do tema",
+            specialtyId: topic.specialty_id as number,
+            pageId: deck.id,
           });
-          completedQuizPages.add(next.id);
+          seenFlashcardDecks.add(fc.page_id);
+          emitted = true;
         }
       }
     }
 
-    // LESSON
-    if (allowedTypes.has("lesson")) {
-      for (let i = 0; i < phaseMix.lessonPerSpec; i++) {
-        const next = findNextPage(s.id, isLessonPage, fullyCompletedLessonPages);
-        if (next) {
-          items.push({
-            kind: "lesson",
-            title: next.title,
-            subtitle: reasonBase,
-            href: `/app/${specInfo.slug}/${next.slug}`,
-            estimatedMinutes: Math.round(10 * minutesScale),
-            iconHint: "lesson",
-            reason: "Conteúdo narrativo para reforço conceitual",
-            specialtyId: s.id,
-            pageId: next.id,
-          });
-          fullyCompletedLessonPages.add(next.id);
-        }
-      }
-    }
-
-    // AUDIO (foundation only, opt-in via content type)
-    if (allowedTypes.has("audio") && phaseMix.audioPerSpec > 0) {
-      const next = findNextPage(s.id, isAudioPage, fullyCompletedLessonPages);
-      if (next) {
+    // AUDIO (MedVoice) — foundation only, opt-in, when the topic has it.
+    if (phase === "foundation" && allowedTypes.has("audio")) {
+      const audioPage = contentPageFor(topic, "medvoice");
+      if (audioPage) {
         items.push({
           kind: "audio",
-          title: next.title,
+          title: topic.name,
           subtitle: `${specInfo.name} · áudio`,
-          href: `/app/${specInfo.slug}/${next.slug}`,
+          href: `/app/${specInfo.slug}/${audioPage.slug}`,
           estimatedMinutes: Math.round(12 * minutesScale),
           iconHint: "audio",
-          reason: "Áudio para revisão passiva (commute, exaustão)",
-          specialtyId: s.id,
-          pageId: next.id,
+          reason: "Reforço em áudio para o tema de hoje",
+          specialtyId: topic.specialty_id as number,
+          pageId: audioPage.id,
         });
+        emitted = true;
       }
     }
+
+    if (emitted) surfaced++;
+  }
+
+  // Simulado — a standalone timed mock (not topic-anchored). Surfaced in the
+  // practice-heavy phases when the student opted into Simulados. Answers already
+  // enroll into SM-2 via /api/quiz-attempt, so no extra review wiring is needed.
+  if (allowedTypes.has("simulado") && (phase === "intensification" || phase === "taper")) {
+    items.push({
+      kind: "simulado",
+      title: "Simulado do dia",
+      subtitle: "Treino cronometrado · prova completa",
+      href: "/app/estudo-por-questoes",
+      estimatedMinutes: Math.round(40 * minutesScale),
+      iconHint: "simulado",
+      reason: phase === "taper"
+        ? "Reta final — simule as condições da prova"
+        : "Ganhe volume e ritmo de prova",
+    });
   }
 
   // Spaced-repetition review queue (all due items, any type). Shown whenever

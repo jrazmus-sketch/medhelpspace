@@ -2,10 +2,20 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, ChevronRight, ChevronLeft, Calendar, Target, Clock, Check } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Calendar, Target, Clock, Check, Layers } from "lucide-react";
 import { completeCalibration, dismissCalibrationBanner } from "@/actions/study-plan";
+import type { ContentType } from "@/lib/study-plan/derive";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+// The four student-facing resources the plan can schedule (memorecards is a 60D
+// auto-feature, not a picker toggle; narrative summaries stay out of the schedule).
+const PICKER_RESOURCES: { type: ContentType; label: string; desc: string }[] = [
+  { type: "quiz", label: "Questões Revalida", desc: "Provas reais 2020–2025" },
+  { type: "simulado", label: "Simulados", desc: "Simulados originais MedHelp" },
+  { type: "flashcards", label: "Flashcards", desc: "Memorização com repetição espaçada" },
+  { type: "audio", label: "MedVoice", desc: "Áudio-aulas por tema" },
+];
 
 type Specialty = { id: number; name: string };
 
@@ -16,6 +26,7 @@ export function CalibrateWizard({
   initialAvailableDays,
   initialWeeklyHours,
   initialFocusIds,
+  initialResourceTypes,
   onClose,
 }: {
   examDate: string | null;
@@ -24,10 +35,11 @@ export function CalibrateWizard({
   initialAvailableDays: number;
   initialWeeklyHours: number | null;
   initialFocusIds: number[];
+  initialResourceTypes: ContentType[];
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [pending, startTransition] = useTransition();
 
   // Step 1: exam date — just confirm (cohort-managed). No editable field for V2.
@@ -36,6 +48,22 @@ export function CalibrateWizard({
   // Step 3: weekly hours + days
   const [weeklyHours, setWeeklyHours] = useState<number>(initialWeeklyHours ?? 15);
   const [availableDays, setAvailableDays] = useState<number>(initialAvailableDays);
+  // Step 4: resources to schedule (default: all four picker resources)
+  const [resources, setResources] = useState<Set<ContentType>>(() => {
+    const enabled = PICKER_RESOURCES.map((r) => r.type).filter((t) =>
+      initialResourceTypes.includes(t),
+    );
+    return new Set(enabled.length > 0 ? enabled : PICKER_RESOURCES.map((r) => r.type));
+  });
+
+  function toggleResource(t: ContentType) {
+    setResources((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
+  }
 
   function toggleFocus(id: number) {
     setFocusIds((prev) => {
@@ -55,6 +83,7 @@ export function CalibrateWizard({
         weeklyHours,
         availableDays,
         focusSpecialtyIds: focusIds,
+        resourceTypes: [...resources],
       });
       router.refresh();
       onClose();
@@ -99,7 +128,7 @@ export function CalibrateWizard({
           borderBottom: "1px solid var(--surface-2)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 style={{
@@ -114,7 +143,7 @@ export function CalibrateWizard({
               />
             ))}
             <span style={{ fontSize: 11, color: "var(--muted-foreground)", marginLeft: 10 }}>
-              Passo {step} de 3
+              Passo {step} de 4
             </span>
           </div>
           <button
@@ -286,6 +315,59 @@ export function CalibrateWizard({
               </div>
             </>
           )}
+
+          {step === 4 && (
+            <>
+              <Layers size={32} style={{ color: "var(--brand)", marginBottom: 16 }} />
+              <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.025em", marginBottom: 8 }}>
+                Quais recursos você quer no seu plano?
+              </h2>
+              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 20, lineHeight: 1.5 }}>
+                Escolha o que entra no cronograma diário — dá para mudar depois. Audiocards e resumos ficam sempre disponíveis à parte, fora do cronograma.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {PICKER_RESOURCES.map((r) => {
+                  const on = resources.has(r.type);
+                  return (
+                    <button
+                      key={r.type}
+                      onClick={() => toggleResource(r.type)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12,
+                        padding: "14px 16px", textAlign: "left", width: "100%",
+                        borderRadius: "var(--radius-sm)",
+                        border: on ? "1px solid var(--brand)" : "1px solid var(--surface-2)",
+                        background: on ? "color-mix(in srgb, var(--brand) 10%, transparent)" : "transparent",
+                        cursor: "pointer", transition: "all 0.15s",
+                      }}
+                    >
+                      <div style={{
+                        width: 22, height: 22, flexShrink: 0, borderRadius: 6,
+                        border: on ? "none" : "1.5px solid var(--surface-2)",
+                        background: on ? "var(--brand)" : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        {on && <Check size={14} style={{ color: "var(--brand-fg)" }} />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: on ? "var(--brand)" : "var(--foreground)" }}>
+                          {r.label}
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2 }}>
+                          {r.desc}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {resources.size === 0 && (
+                <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 12 }}>
+                  Selecione pelo menos 1 recurso.
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Footer */}
@@ -297,7 +379,7 @@ export function CalibrateWizard({
         }}>
           {step > 1 ? (
             <button
-              onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}
+              onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4)}
               disabled={pending}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
@@ -324,31 +406,32 @@ export function CalibrateWizard({
             </button>
           )}
 
-          {step < 3 ? (
+          {step < 4 ? (
             <button
-              onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3)}
-              disabled={pending || (step === 1 && !examDate)}
+              onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
+              disabled={pending || (step === 1 && !examDate) || (step === 3 && daysSelected === 0)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 padding: "10px 18px", borderRadius: "var(--radius-sm)",
                 background: "var(--brand)", color: "var(--brand-fg)",
                 border: "none", fontSize: 13, fontWeight: 600,
                 cursor: pending ? "not-allowed" : "pointer",
+                opacity: step === 3 && daysSelected === 0 ? 0.5 : 1,
               }}
             >
-              {step === 1 ? "Continuar" : focusIds.length > 0 ? "Continuar" : "Pular esta etapa"}
+              {step === 2 && focusIds.length === 0 ? "Pular esta etapa" : "Continuar"}
               <ChevronRight size={14} />
             </button>
           ) : (
             <button
               onClick={finish}
-              disabled={pending || daysSelected === 0}
+              disabled={pending || resources.size === 0}
               style={{
                 padding: "10px 22px", borderRadius: "var(--radius-sm)",
                 background: "var(--brand)", color: "var(--brand-fg)",
                 border: "none", fontSize: 13, fontWeight: 600,
-                cursor: pending || daysSelected === 0 ? "not-allowed" : "pointer",
-                opacity: daysSelected === 0 ? 0.5 : 1,
+                cursor: pending || resources.size === 0 ? "not-allowed" : "pointer",
+                opacity: resources.size === 0 ? 0.5 : 1,
               }}
             >
               {pending ? "Salvando…" : "Concluir calibração"}

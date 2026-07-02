@@ -217,12 +217,15 @@ export async function completeCalibration(params: {
   weeklyHours: number;
   availableDays: number;
   focusSpecialtyIds: number[];
+  resourceTypes?: ContentType[];
 }): Promise<void> {
   const user = await getUser();
   if (!user) return;
   const supabase = await createClient();
 
-  // Update study_plans with weekly hours + days + welcomed_at
+  // Update study_plans with weekly hours + days + welcomed_at. When the wizard
+  // sends resource picks, persist them as preferred_content_types — always
+  // keeping "memorecards" (a 60D auto-feature, not a picker toggle).
   await supabase
     .from("study_plans")
     .upsert(
@@ -232,6 +235,13 @@ export async function completeCalibration(params: {
         available_days: params.availableDays,
         welcomed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        ...(params.resourceTypes
+          ? {
+              preferred_content_types: Array.from(
+                new Set<ContentType>([...params.resourceTypes, "memorecards"]),
+              ),
+            }
+          : {}),
       },
       { onConflict: "user_id" },
     );

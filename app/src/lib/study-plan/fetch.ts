@@ -28,6 +28,8 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     pagesRes,
     quizAttemptsRes,
     completionsRes,
+    topicsRes,
+    topicContentRes,
   ] = await Promise.all([
     admin
       .from("study_plans")
@@ -73,6 +75,12 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
       .from("lesson_completions")
       .select("lesson_id, page_id, completed_at")
       .eq("user_id", userId),
+    admin
+      .from("topics")
+      .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier, is_pinned"),
+    admin
+      .from("topic_content")
+      .select("topic_id, resource_type, page_id, question_filter"),
   ]);
 
   // Build prefs object, applying defaults for missing fields
@@ -143,6 +151,10 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     specialties: (specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pages: (pagesRes.data ?? []) as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    topics: (topicsRes.data ?? []) as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    topicContent: (topicContentRes.data ?? []) as any,
     signals,
   });
 }
