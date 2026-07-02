@@ -11,7 +11,7 @@ import {
 import type { MagnetQuestion } from "@/lib/magnet/questions";
 import type { MagnetAnswer, PlanPreview, FreeResultSummary } from "@/lib/magnet/plan-preview";
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
-import { MagnetReward, scoreFraming } from "@/components/magnet/magnet-reward";
+import { MagnetReward, scoreFraming, type RewardOffer } from "@/components/magnet/magnet-reward";
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
 import { trackFunnel } from "@/lib/magnet/funnel-track";
 import { SiteText } from "@/components/landing/site-text";
@@ -46,9 +46,12 @@ const TURNSTILE_ENABLED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 export function MagnetQuiz({
   freeQuestions,
   utm,
+  offers = {},
 }: {
   freeQuestions: MagnetQuestion[];
   utm: MagnetUtm;
+  /** Live storefront price per turma slug, for the reward offer block. */
+  offers?: Record<string, RewardOffer>;
 }) {
   const [questions, setQuestions] = useState<MagnetQuestion[]>(freeQuestions);
   const [idx, setIdx] = useState(0);
@@ -160,6 +163,7 @@ export function MagnetQuiz({
         email={email}
         utm={utm}
         cohort={cohort}
+        offer={offers[cohort] ?? null}
         showDeliveredNote
       />
     );

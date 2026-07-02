@@ -755,7 +755,8 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
   "lead-final": {
     kind: "lead-final",
     name: "[Lead] Final — Última chamada",
-    description: "Enviado na reta final: urgência honesta + desconto último (ULTIMA2026).",
+    description:
+      "APOSENTADO (2026-07-02): o funil não envia mais este e-mail. O ciclo de desconto grande (ULTIMA2026) foi removido; a promo agora é só o cupom de boas-vindas no D2.",
     subject: "Faltam poucas semanas para a 1ª etapa",
     kicker: "",
     headline: "Última chamada para a turma 2026.2",
@@ -819,7 +820,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   resultUrl:
     "https://medhelpspace.com.br/questoes-revalida/resultado?lead=00000000-0000-0000-0000-000000000000",
   checkoutUrl:
-    "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=RETA2026",
+    "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=REVALIDA5",
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",
 };
 

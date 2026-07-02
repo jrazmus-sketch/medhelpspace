@@ -3,6 +3,24 @@
 import type { PlanPreview } from "@/lib/magnet/plan-preview";
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
+import { WELCOME_COUPONS } from "@/lib/magnet/links";
+
+// Live storefront pricing for the turma, threaded from the server so the offer
+// block never shows a stale/hardcoded number (or, worse, a promo price ABOVE the
+// public price). Minimal serializable shape — mirrors CohortProduct's two fields.
+export type RewardOffer = {
+  priceCents: number;
+  compareAtPriceCents: number | null;
+};
+
+// Brazilian currency, matching lib/queries/cohort-products.ts formatBRL (that one
+// is server-only). "R$ 3.990" / "R$ 2.840,50".
+function fmtBRL(cents: number): string {
+  return `R$ ${(cents / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 // The post-confirm REWARD — the gated payoff of the verify-to-claim flow. Rendered
 // in two places from the SAME component so they never drift:
@@ -37,6 +55,7 @@ export function MagnetReward({
   email,
   utm,
   cohort,
+  offer = null,
   showDeliveredNote = false,
 }: {
   score: number;
@@ -45,6 +64,8 @@ export function MagnetReward({
   email: string;
   utm: MagnetRewardUtm;
   cohort: string;
+  /** Live storefront price for this turma (null → offer block omits the price line). */
+  offer?: RewardOffer | null;
   /** Inline (post-verify) shows "enviamos para seu e-mail"; the durable page hides it. */
   showDeliveredNote?: boolean;
 }) {
@@ -52,8 +73,19 @@ export function MagnetReward({
   const weak = plan?.weakSpecialties ?? [];
   const weakNames = weak.map((w) => w.name).join(", ");
   const days = plan?.daysToExam ?? null;
-  const isReta = cohort === "revalida-2026-2";
-  const is2027 = cohort === "revalida-2027-1";
+  const isReta = cohort === "revalida-2026-2"; // drives the 13/09 date framing only
+
+  // The small welcome discount for this turma (5% on 2026-2, 10% on 2027.1). The
+  // code is auto-applied at checkout; the percent is computed off the LIVE price so
+  // the display can never undercut or exceed the public storefront number. Discount
+  // math mirrors the redeem_coupon RPC exactly (integer division) → same final cent.
+  const welcome = WELCOME_COUPONS[cohort] ?? null;
+  const effCents = offer?.priceCents ?? null;
+  const baseCents = offer?.compareAtPriceCents ?? effCents;
+  const discountCents =
+    welcome && effCents != null ? Math.floor((effCents * welcome.percent) / 100) : 0;
+  const finalCents = effCents != null ? effCents - discountCents : null;
+  const showStrike = baseCents != null && finalCents != null && baseCents > finalCents;
 
   const checkoutHref = (() => {
     const p = new URLSearchParams({
@@ -63,8 +95,7 @@ export function MagnetReward({
       utm_medium: utm.medium ?? "site",
       utm_campaign: utm.campaign ?? "questoes-revalida",
     });
-    if (isReta) p.set("cupom", "RETA2026");
-    if (is2027) p.set("cupom", "REVALIDA10");
+    if (welcome) p.set("cupom", welcome.code);
     return `/checkout?${p.toString()}`;
   })();
 
@@ -204,38 +235,34 @@ export function MagnetReward({
           <li>✓ Flashcards com revisão espaçada nos seus pontos fracos</li>
           <li>✓ Áudio-aulas MedVoice + plano de estudo personalizado</li>
         </ul>
-        {isReta ? (
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-sm text-muted-foreground line-through">R$3.990</span>
-            <span className="text-2xl font-bold text-brand">R$3.290</span>
-            <span className="text-xs text-muted-foreground">em 12x ou Pix · reta final</span>
-          </div>
-        ) : is2027 ? (
-          <>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-sm text-muted-foreground line-through">R$4.990</span>
-              <span className="text-2xl font-bold text-brand">R$4.491</span>
-              <span className="text-xs text-muted-foreground">em 12x ou Pix · 10% de desconto</span>
-            </div>
-            <div className="mt-2 rounded-lg border border-brand/30 bg-brand-muted/30 px-3 py-2 text-center text-xs text-foreground">
-              Cupom de boas-vindas{" "}
-              <span className="font-mono font-bold tracking-widest">REVALIDA10</span> — aplicado
-              automaticamente
-            </div>
-          </>
-        ) : (
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-brand">R$4.990</span>
+        {finalCents != null ? (
+          <div className="mt-4 flex flex-wrap items-baseline gap-2">
+            {showStrike && (
+              <span className="text-sm text-muted-foreground line-through">
+                {fmtBRL(baseCents!)}
+              </span>
+            )}
+            <span className="text-2xl font-bold text-brand">{fmtBRL(finalCents)}</span>
             <span className="text-xs text-muted-foreground">
-              em 12x ou Pix · comece no seu ritmo
+              em 12x ou Pix
+              {welcome ? ` · ${welcome.percent}% de boas-vindas` : " · comece no seu ritmo"}
             </span>
+          </div>
+        ) : (
+          <div className="mt-4 text-sm text-muted-foreground">em 12x ou Pix · no seu ritmo</div>
+        )}
+        {welcome && (
+          <div className="mt-2 rounded-lg border border-brand/30 bg-brand-muted/30 px-3 py-2 text-center text-xs text-foreground">
+            Cupom de boas-vindas{" "}
+            <span className="font-mono font-bold tracking-widest">{welcome.code}</span> — aplicado
+            automaticamente
           </div>
         )}
         <a
           href={checkoutHref}
           className="mt-4 block rounded-lg bg-brand px-5 py-3 text-center text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
         >
-          {isReta ? "Desbloquear meu plano completo →" : is2027 ? "Garantir meu desconto →" : "Quero começar agora →"}
+          {welcome ? "Garantir meu desconto →" : "Quero começar agora →"}
         </a>
         <p className="mt-3 text-center text-xs text-muted-foreground">
           7 dias de garantia incondicional. Sem pegadinha.

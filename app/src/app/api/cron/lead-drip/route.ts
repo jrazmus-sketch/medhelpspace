@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmail } from "@/lib/email";
 import { FUNNEL_SENDER_NAME } from "@/lib/email-render";
-import { offerCheckoutUrl, resultUrl, unsubscribeUrl } from "@/lib/magnet/links";
+import { offerCheckoutUrl, resultUrl, unsubscribeUrl, WELCOME_COUPONS } from "@/lib/magnet/links";
 
 // Lead-magnet email drip (FREE-FUNNEL-V2-SCOPE.md Group 6). Advances each lead by
 // AT MOST one step per run; the per-step offsetDays gate enforces the real schedule
@@ -25,13 +25,18 @@ function greetingFor(firstName?: string | null): string {
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// The discount lives ONLY on the D2 step (the turma's WELCOME coupon — REVALIDA5 /
+// REVALIDA10, see WELCOME_COUPONS). D1/D4/D7 are pure nurture (no coupon → checkout
+// lands on the live storefront price). The old large-discount cycle (RETA2026 on
+// every step + ULTIMA2026 final) was removed 2026-07-02: step 5 (lead-final) is now
+// skipped for ALL turmas — the entry is kept so re-enabling a final push is a
+// one-liner, and the `.lt(drip_step, 5)` boundary below still terminates the drip.
 const STEPS = [
-  { step: 1, kind: "lead-d1", offsetDays: 1, coupon: "RETA2026" },
-  { step: 2, kind: "lead-d2", offsetDays: 2, coupon: "RETA2026" },
-  { step: 3, kind: "lead-d4", offsetDays: 4, coupon: "RETA2026" },
-  { step: 4, kind: "lead-d7", offsetDays: 7, coupon: "RETA2026" },
-  // Final stretch uses the PRIVATE deeper coupon (R$2.990).
-  { step: 5, kind: "lead-final", offsetDays: 11, coupon: "ULTIMA2026" },
+  { step: 1, kind: "lead-d1", offsetDays: 1 },
+  { step: 2, kind: "lead-d2", offsetDays: 2 },
+  { step: 3, kind: "lead-d4", offsetDays: 4 },
+  { step: 4, kind: "lead-d7", offsetDays: 7 },
+  { step: 5, kind: "lead-final", offsetDays: 11 },
 ] as const;
 
 export async function GET(request: NextRequest) {
@@ -106,15 +111,14 @@ export async function GET(request: NextRequest) {
     }
 
     const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
-    const is2027 = targetCohort === "revalida-2027-1";
 
     const currentStep = lead.drip_step as number;
     const nextStep = STEPS.find((s) => s.step === currentStep + 1);
     if (!nextStep) continue;
 
-    // 2027.1 leads NEVER get the final discount email (no urgency, full price).
-    // Mark them done so they drop out of future scans.
-    if (is2027 && nextStep.step === 5) {
+    // The final deep-discount email (lead-final / ULTIMA2026) is retired — no turma
+    // gets it. Mark the lead done so it drops out of future scans.
+    if (nextStep.step === 5) {
       await admin.from("leads").update({ drip_step: 5 }).eq("id", lead.id);
       continue;
     }
@@ -131,8 +135,8 @@ export async function GET(request: NextRequest) {
       .filter(Boolean)
       .join(", ");
 
-    // 2026.2 = step's coupon (RETA/ULTIMA). 2027.1 = welcome 10% in D2 only, no final email.
-    const coupon = is2027 ? (nextStep.step === 2 ? "REVALIDA10" : null) : nextStep.coupon;
+    // Welcome discount on D2 only; the code is the turma's own (REVALIDA5 / REVALIDA10).
+    const coupon = nextStep.step === 2 ? (WELCOME_COUPONS[targetCohort]?.code ?? null) : null;
 
     const vars: Record<string, string> = {
       greeting: greetingFor(lead.first_name as string | null),

@@ -4,6 +4,9 @@ import { getMagnetQuestions, MAGNET_FREE_IDS } from "@/lib/magnet/questions";
 import { MagnetQuiz, type MagnetUtm } from "@/components/magnet/magnet-quiz";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 import { SiteText } from "@/components/landing/site-text";
+import { getCohortProduct } from "@/lib/queries/cohort-products";
+import { REVALIDA_2026_2_SLUG, REVALIDA_2027_1_SLUG } from "@/lib/magnet/links";
+import type { RewardOffer } from "@/components/magnet/magnet-reward";
 
 // PUBLIC, indexable landing page — lives OUTSIDE the /app gate, so it never hits
 // requireActiveMembership(). The 5 free questions render server-side (instant +
@@ -40,6 +43,17 @@ export default async function SimuladoHonestoPage({
   };
 
   const freeQuestions = await getMagnetQuestions(MAGNET_FREE_IDS);
+
+  // Live storefront prices for both selectable turmas, so the post-verify reward
+  // shows the real price + its welcome discount (never a stale/hardcoded number).
+  const [p2026, p2027] = await Promise.all([
+    getCohortProduct(REVALIDA_2026_2_SLUG),
+    getCohortProduct(REVALIDA_2027_1_SLUG),
+  ]);
+  const offers: Record<string, RewardOffer> = {};
+  for (const p of [p2026, p2027]) {
+    if (p) offers[p.slug] = { priceCents: p.priceCents, compareAtPriceCents: p.compareAtPriceCents };
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -90,7 +104,7 @@ export default async function SimuladoHonestoPage({
             />
           </p>
         ) : (
-          <MagnetQuiz freeQuestions={freeQuestions} utm={utm} />
+          <MagnetQuiz freeQuestions={freeQuestions} utm={utm} offers={offers} />
         )}
       </main>
 

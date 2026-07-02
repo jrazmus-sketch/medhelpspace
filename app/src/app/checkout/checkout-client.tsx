@@ -55,7 +55,7 @@ interface Props {
   initialInstallments: InstallmentOption[];
   initialBilling: Partial<BillingDetails> | null;
   // Prefill from a magnet/drip CTA: the lead's email (powers the §6.5 lead→order
-  // match) and a coupon code to auto-apply (RETA2026 / ULTIMA2026).
+  // match) and a coupon code to auto-apply (the turma welcome code, e.g. REVALIDA5).
   initialEmail?: string;
   initialCoupon?: string | null;
   // A still-valid pending Pix order to resume (buyer generated a QR, then returned).
@@ -192,7 +192,7 @@ export function CheckoutClient({
     setCouponError(null);
   }
 
-  // Auto-apply a coupon arriving from a magnet/drip CTA (?cupom=RETA2026).
+  // Auto-apply a coupon arriving from a magnet/drip CTA (?cupom=REVALIDA5).
   // Deferred to a macrotask so the validate fetch's setState isn't called
   // synchronously inside the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {

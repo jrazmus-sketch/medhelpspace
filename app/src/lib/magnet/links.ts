@@ -15,6 +15,18 @@ export const FREE_DECK_PATH = "/flashcards-gratis";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
 
+// Per-turma WELCOME coupon: a small discount auto-applied at the end of the free
+// test and delivered in ONE follow-up drip email (D2). This REPLACED the old large
+// RETA2026/ULTIMA2026 stack for 2026-2 (deactivated 2026-07-02) — that turma is
+// already marked down on the storefront, so the promo only adds a light 5% nudge.
+// Each code is locked to its own turma in the DB (coupons.applies_to_cohort_slugs),
+// so 5% never redeems on 2027.1 and 10% never redeems on 2026.2. Keep this in sync
+// with schema-patch-revalida5-welcome-coupon.sql.
+export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> = {
+  [REVALIDA_2026_2_SLUG]: { code: "REVALIDA5", percent: 5 },
+  [REVALIDA_2027_1_SLUG]: { code: "REVALIDA10", percent: 10 },
+};
+
 export function magnetUrl(): string {
   return `${SITE_URL}${MAGNET_PATH}`;
 }
@@ -39,8 +51,9 @@ export function unsubscribeUrl(token: string): string {
 }
 
 // Offer/checkout link carrying the cohort, the lead's email (prefill → powers the
-// §6.5 Guarantee-A match), UTM tags, and OPTIONALLY a coupon. 2027.1 links pass no
-// coupon (full price); 2026.2 links carry RETA2026 / ULTIMA2026.
+// §6.5 Guarantee-A match), UTM tags, and OPTIONALLY a coupon. The drip passes the
+// turma's WELCOME_COUPONS code only on the D2 step; all other steps pass no coupon
+// (checkout then lands on the turma's live storefront price).
 export function offerCheckoutUrl(opts: {
   email: string;
   coupon?: string | null;
