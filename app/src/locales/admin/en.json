@@ -287,6 +287,7 @@
     "inactive": "Inactive",
     "modules": "Module access",
     "saveConfirmTitle": "Confirm cohort update",
+    "saveConfirmSimple": "Save the changes to this cohort?",
     "deactivateTitle": "Deactivate cohort",
     "deactivateDesc": "\"{{name}}\" will be hidden from members. Existing memberships are not affected.",
     "cascadePreview": "Cascade effect on test date change:",

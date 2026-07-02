@@ -287,6 +287,7 @@
     "inactive": "Inativa",
     "modules": "Acesso a módulos",
     "saveConfirmTitle": "Confirmar atualização da turma",
+    "saveConfirmSimple": "Salvar as alterações desta turma?",
     "deactivateTitle": "Desativar turma",
     "deactivateDesc": "\"{{name}}\" ficará oculta para os membros. As matrículas existentes não serão afetadas.",
     "cascadePreview": "Impacto da mudança na data da prova:",

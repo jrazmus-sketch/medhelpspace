@@ -226,8 +226,17 @@ export function CohortsClient({ rows, modules, access }: Props) {
     });
   }
 
-  // Cascade preview for save confirmation modal
+  // Cascade preview for save confirmation modal. The module-unlock cascade only
+  // fires when the test date changes; for any other edit (price, sale price,
+  // name, membership window) there's nothing to cascade, so showing the "0 rows /
+  // will not change" preview is misleading. Fall back to a plain confirmation.
   function buildCascadePreview(cohortId: number, newTestDate: string) {
+    const original = rows.find((r) => r.id === cohortId);
+    const dateChanged = original ? newTestDate !== original.test_date.slice(0, 10) : true;
+    if (!dateChanged) {
+      return <p className="text-sm text-muted-foreground">{t("cohorts.saveConfirmSimple")}</p>;
+    }
+
     const cohortAccess = access.filter((a) => a.cohort_id === cohortId);
     const autoRows = cohortAccess.filter((a) => !a.is_manual_override);
     const manualRows = cohortAccess.filter((a) => a.is_manual_override);
