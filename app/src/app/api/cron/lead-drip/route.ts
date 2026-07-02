@@ -95,6 +95,8 @@ export async function GET(request: NextRequest) {
 
   let sent = 0;
   let skippedBuyer = 0;
+  let skippedClaimed = 0;
+  let failed = 0;
 
   for (const lead of leads) {
     const email = (lead.email as string).toLowerCase();
@@ -106,7 +108,8 @@ export async function GET(request: NextRequest) {
     const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
     const is2027 = targetCohort === "revalida-2027-1";
 
-    const nextStep = STEPS.find((s) => s.step === (lead.drip_step as number) + 1);
+    const currentStep = lead.drip_step as number;
+    const nextStep = STEPS.find((s) => s.step === currentStep + 1);
     if (!nextStep) continue;
 
     // 2027.1 leads NEVER get the final discount email (no urgency, full price).
@@ -154,22 +157,62 @@ export async function GET(request: NextRequest) {
       .single();
     vars.unsubscribeUrl = unsubscribeUrl((tokRow?.unsubscribe_token as string) ?? "");
 
+    // Reserve-first conditional claim: atomically advance drip_step ONLY if it still
+    // matches what we read (`currentStep`). If another overlapping run already claimed
+    // this step, zero rows come back and we skip — this prevents double-sends. We only
+    // find out whether the send itself succeeded AFTER this claim, so on failure below
+    // we revert it so the next run retries.
+    const { data: claimed, error: claimErr } = await admin
+      .from("leads")
+      .update({ drip_step: nextStep.step, last_emailed_at: new Date().toISOString() })
+      .eq("id", lead.id)
+      .eq("drip_step", currentStep)
+      .select("id");
+    if (claimErr) {
+      console.error("lead-drip claim failed", lead.id, claimErr);
+      failed++;
+      continue;
+    }
+    if (!claimed || claimed.length === 0) {
+      skippedClaimed++;
+      continue;
+    }
+
+    let res: { ok: boolean; reason?: string };
     try {
-      await sendTemplateEmail({
+      res = await sendTemplateEmail({
         kind: nextStep.kind,
         to: email,
         vars,
         fromName: FUNNEL_SENDER_NAME,
       });
-      await admin
-        .from("leads")
-        .update({ drip_step: nextStep.step, last_emailed_at: new Date().toISOString() })
-        .eq("id", lead.id);
-      sent++;
     } catch (e) {
-      console.error("lead-drip send failed", lead.id, e);
+      res = { ok: false, reason: e instanceof Error ? e.message : String(e) };
+    }
+
+    if (res.ok) {
+      sent++;
+    } else {
+      console.error("lead-drip send failed", lead.id, res.reason);
+      // Revert the claim so the next run retries this same step.
+      const { error: revertErr } = await admin
+        .from("leads")
+        .update({ drip_step: currentStep })
+        .eq("id", lead.id)
+        .eq("drip_step", nextStep.step);
+      if (revertErr) {
+        console.error("lead-drip revert failed", lead.id, revertErr);
+      }
+      failed++;
     }
   }
 
-  return NextResponse.json({ ok: true, sent, skippedBuyer, scanned: leads.length });
+  return NextResponse.json({
+    ok: true,
+    sent,
+    failed,
+    skippedBuyer,
+    skippedClaimed,
+    scanned: leads.length,
+  });
 }

@@ -1,10 +1,29 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BillingClient } from "./billing-client";
 
 export const metadata = { title: "Financeiro" };
 
 export default async function BillingPage() {
+  // Role gate: this page exposes financial data, so restrict to billing roles.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const admin = createAdminClient();
+
+  const { data: me } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!me || !["super_admin", "billing_admin"].includes(me.role as string)) {
+    redirect("/admin");
+  }
 
   const { data: orders } = await admin
     .from("orders")

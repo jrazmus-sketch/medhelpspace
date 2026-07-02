@@ -85,6 +85,59 @@ export async function finalizePaidOrder(
     return { wonRace: false };
   }
 
+  // Membership grant happens BEFORE the status flip, and its {error} is checked
+  // (Bug 1 fix). Two reasons this ordering matters:
+  //   1. The upsert is idempotent (onConflict user_id,cohort_id), so two
+  //      concurrent finalizers both upserting is harmless — access is never
+  //      lost to whichever caller happens to lose the status-flip race below.
+  //   2. If the upsert FAILS, we must bail out BEFORE marking the order 'paid'.
+  //      Every retry path (webhook replay, Pix status poll, reconcile-pix cron)
+  //      short-circuits on `status != 'paid'`, so a paid-but-ungranted order
+  //      would previously never be retried — the buyer paid with no access and
+  //      no way back in. Leaving status alone here keeps the door open.
+  const { error: membershipErr } = await admin
+    .from("user_cohort_memberships")
+    .upsert(
+      { user_id: userId, cohort_id: cohortId },
+      { onConflict: "user_id,cohort_id" },
+    );
+
+  if (membershipErr) {
+    console.error(
+      "finalizePaidOrder: membership upsert failed — refusing to mark order paid",
+      orderId,
+      membershipErr,
+    );
+    // Alert admins: money moved but access was NOT granted and the order stays
+    // pending so a later retry (webhook/poll/cron) can attempt the grant again.
+    // Without this the only trace is the console.error above — invisible in prod.
+    const [{ data: mp }, { data: mc }] = await Promise.all([
+      admin.from("profiles").select("email").eq("id", userId).maybeSingle(),
+      admin.from("cohorts").select("name").eq("id", cohortId).maybeSingle(),
+    ]);
+    await recordAdminAlert({
+      event: "payment_problem",
+      title: `Pagamento retido — falha ao liberar acesso (turma ${(mc?.name as string | null) ?? cohortId})`,
+      body: "Cobrança confirmada pelo PagBank, mas a concessão de acesso (user_cohort_memberships) falhou. Pedido mantido pendente para nova tentativa automática.",
+      metadata: {
+        order_id: orderId,
+        user_id: userId,
+        cohort_id: cohortId,
+        stage: "membership_grant_failed",
+        db_error: membershipErr.message ?? String(membershipErr),
+      },
+      contextId: orderId,
+      emailVars: {
+        buyerEmail: (mp?.email as string | null) ?? "—",
+        cohortName: (mc?.name as string | null) ?? "—",
+        expectedAmount: formatBRL(expectedCents),
+        paidAmount: formatBRL(paidCents ?? 0),
+        orderId,
+      },
+    }).catch((e) => console.error("admin membership_grant_failed alert failed", orderId, e));
+    return { wonRace: false };
+  }
+
   const { data: winners, error: updErr } = await admin
     .from("orders")
     .update({
@@ -100,19 +153,39 @@ export async function finalizePaidOrder(
     .select("id");
 
   if (updErr) {
-    console.error("finalizePaidOrder: order update failed", orderId, updErr);
+    // Membership was already granted above — the buyer has access — but the
+    // order's own status didn't flip, so it stays 'pending' and gets retried by
+    // webhook replay / status poll / reconcile-pix. Alert so this isn't silent.
+    console.error(
+      "finalizePaidOrder: order status flip failed after membership was granted",
+      orderId,
+      updErr,
+    );
+    await recordAdminAlert({
+      event: "payment_problem",
+      title: `Pedido pago sem atualização de status — ação pode ser necessária (pedido ${orderId})`,
+      body: "Acesso já foi liberado ao aluno, mas a atualização do pedido para 'paid' falhou. O pedido será reprocessado automaticamente (webhook/poll/cron).",
+      metadata: {
+        order_id: orderId,
+        user_id: userId,
+        cohort_id: cohortId,
+        stage: "status_flip_failed",
+        db_error: updErr.message ?? String(updErr),
+      },
+      contextId: orderId,
+      emailVars: {
+        buyerEmail: "—",
+        cohortName: "—",
+        expectedAmount: formatBRL(expectedCents),
+        paidAmount: formatBRL(paidCents ?? 0),
+        orderId,
+      },
+    }).catch((e) => console.error("admin status_flip_failed alert failed", orderId, e));
     return { wonRace: false };
   }
   if (!winners || winners.length === 0) {
     return { wonRace: false };
   }
-
-  await admin
-    .from("user_cohort_memberships")
-    .upsert(
-      { user_id: userId, cohort_id: cohortId },
-      { onConflict: "user_id,cohort_id" },
-    );
 
   // §6.5 Guarantee A (FREE-FUNNEL-BUILD-SPEC): a purchase removes the buyer from
   // the lead drip, so an early R$3.290 buyer never receives the deeper R$2.990

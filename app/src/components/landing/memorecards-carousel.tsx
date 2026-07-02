@@ -74,10 +74,12 @@ export function MemorecardsScreen({ color }: { color: string }) {
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
+    if (el.clientWidth === 0) return;
     const i = Math.round(el.scrollLeft / el.clientWidth);
-    setIdx((prev) => (prev === i ? prev : i));
+    const clamped = Math.max(0, Math.min(total - 1, i));
+    setIdx((prev) => (prev === clamped ? prev : clamped));
     if (el.scrollLeft > 4) setHintGone(true);
-  }, []);
+  }, [total]);
 
   const card = CARDS[idx];
 

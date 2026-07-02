@@ -7,6 +7,44 @@ import type { PagBankChargeRequest, PagBankCustomer, PagBankOrderRequest } from 
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { validateBilling, onlyDigits, type BillingDetails } from "@/lib/br";
+import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
+
+// pt-BR error for both the credit-card in-flight guard (app-layer) and the
+// idx_orders_one_pending_card_per_user_cohort unique-violation (DB-layer) —
+// see schema-patch-card-order-dedup.sql.
+const CARD_ORDER_IN_PROGRESS_ERROR =
+  "Já existe um pagamento em processamento para esta turma. Aguarde alguns instantes e tente novamente.";
+
+// A pending credit_card order should only ever exist for the few seconds of the
+// PagBank /charges round-trip. Anything older than this is treated as abandoned
+// (e.g. a crash mid-charge) rather than genuinely in flight, so it doesn't block
+// a legitimate retry forever once the dedup index is in place.
+const CARD_ORDER_STALE_MS = 15 * 60 * 1000;
+
+// Dedicated, tighter per-IP limiter for the guest signup/login path below (account
+// creation + password testing). checkRateLimit() from lib/pagbank/rate-limit is a
+// generic 60 req/min backstop shared by every route that imports it (webhook,
+// coupons/validate, installments) — this route also uses it, but auth.admin.createUser
+// / signInWithPassword are a much higher-value abuse target (account-creation
+// flooding, credential stuffing) than a read-only coupon/installment check, so they
+// get their own much stricter, independently-keyed bucket. Mirrors the fixed-window
+// pattern in lib/pagbank/rate-limit.ts.
+type GuestAuthBucket = { count: number; resetAt: number };
+const guestAuthBuckets = new Map<string, GuestAuthBucket>();
+const GUEST_AUTH_WINDOW_MS = 60_000;
+const GUEST_AUTH_MAX_PER_WINDOW = 5;
+
+function checkGuestAuthRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const bucket = guestAuthBuckets.get(ip);
+  if (!bucket || bucket.resetAt < now) {
+    guestAuthBuckets.set(ip, { count: 1, resetAt: now + GUEST_AUTH_WINDOW_MS });
+    return true;
+  }
+  if (bucket.count >= GUEST_AUTH_MAX_PER_WINDOW) return false;
+  bucket.count += 1;
+  return true;
+}
 
 export async function POST(request: NextRequest) {
   let body: {
@@ -73,6 +111,16 @@ export async function POST(request: NextRequest) {
   // Guest path: caller is not logged in but supplied signup or login credentials.
   // We create-and-sign-in (or just sign-in) here so the rest of the charge flow
   // — order insert, RLS checks, membership lookups — runs as an authenticated user.
+  // Rate-limit BEFORE any auth.admin.createUser / signInWithPassword call: this is
+  // an unauthenticated, unlimited-by-default surface for account-creation flooding
+  // and credential stuffing. Two layers, keyed per-IP: the shared backstop used by
+  // the sibling public routes, plus a tighter limiter dedicated to this path.
+  if (!user && (signup || login)) {
+    const guestIp = getClientIp(request.headers);
+    if (!checkRateLimit(guestIp) || !checkGuestAuthRateLimit(guestIp)) {
+      return NextResponse.json({ error: "Muitas tentativas. Aguarde um momento." }, { status: 429 });
+    }
+  }
   if (!user && signup) {
     if (!signup.email || !signup.password) {
       return NextResponse.json({ error: "E-mail e senha são obrigatórios." }, { status: 400 });
@@ -200,6 +248,47 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Credit card: no server-side idempotency existed here before — every POST
+  // inserted a fresh order and called PagBank /charges, so a network-timeout retry
+  // or a second tab produced two real card charges. Unlike Pix there's no QR to
+  // reuse, so we (1) expire genuinely-stale pending card orders (crash mid-charge;
+  // treat anything older than CARD_ORDER_STALE_MS as abandoned so it never blocks a
+  // legitimate retry forever) and (2) block a second request while a non-stale one
+  // is still in flight with a 409, mirroring idx_orders_one_pending_card_per_user_cohort
+  // (schema-patch-card-order-dedup.sql) at the app layer. This runs BEFORE coupon
+  // redemption below, so this 409 never needs a coupon rollback — nothing has been
+  // redeemed for this request yet.
+  if (paymentMethod === "credit_card") {
+    const staleBefore = new Date(Date.now() - CARD_ORDER_STALE_MS).toISOString();
+
+    const { data: staleCard } = await admin
+      .from("orders")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("cohort_id", product.id)
+      .eq("payment_method", "credit_card")
+      .eq("status", "pending")
+      .lt("created_at", staleBefore);
+    const staleCardIds = (staleCard ?? []).map((o: { id: string }) => o.id);
+    if (staleCardIds.length) {
+      await admin.from("orders").update({ status: "cancelled" }).in("id", staleCardIds);
+      await releaseRedemptionsForOrders(admin, staleCardIds);
+    }
+
+    const { data: inFlightCard } = await admin
+      .from("orders")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("cohort_id", product.id)
+      .eq("payment_method", "credit_card")
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle();
+    if (inFlightCard) {
+      return NextResponse.json({ error: CARD_ORDER_IN_PROGRESS_ERROR }, { status: 409 });
+    }
+  }
+
   // Coupon redemption — atomic via redeem_coupon RPC (locks the coupon row,
   // inserts the redemption, bumps the counter). The RPC enforces the per-user
   // limit (coupons.max_uses_per_user; NULL = unlimited) at the DB level. We redeem
@@ -316,6 +405,19 @@ export async function POST(request: NextRequest) {
     if (paymentMethod === "pix" && orderError?.code === "23505" && !couponCode) {
       const reusable = await findReusablePixOrder(admin, user.id, product.id, new Date().toISOString());
       if (reusable) return NextResponse.json(reusable);
+    }
+    // 23505 on idx_orders_one_pending_card_per_user_cohort: a concurrent request
+    // (retry after a network timeout, or a second tab) won the race and already has
+    // a pending card order in flight for this (user, cohort). The app-layer guard
+    // above should normally catch this first, but the DB constraint is the real
+    // backstop for a true race. There's no QR to reuse like Pix — surface a 409 so
+    // the client backs off instead of resubmitting the card. The coupon RPC above
+    // already redeemed (if a code was supplied), so roll it back same as any other
+    // failed-insert path.
+    if (paymentMethod === "credit_card" && orderError?.code === "23505") {
+      console.error("Failed to create order (duplicate pending card order):", orderError);
+      await rollbackCouponRedemption(admin, couponId, couponRedemptionId);
+      return NextResponse.json({ error: CARD_ORDER_IN_PROGRESS_ERROR }, { status: 409 });
     }
     console.error("Failed to create order:", orderError);
     await rollbackCouponRedemption(admin, couponId, couponRedemptionId);

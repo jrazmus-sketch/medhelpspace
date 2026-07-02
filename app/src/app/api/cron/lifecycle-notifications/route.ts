@@ -99,6 +99,18 @@ export async function GET(request: NextRequest) {
     return (data?.id as number) ?? null;
   }
 
+  let sentCount = 0;
+  let failedCount = 0;
+
+  // Roll back an email_log reservation and record the failure. Shared by both the
+  // "Resend returned {error} without throwing" path and the thrown-exception path,
+  // so a rejected send is never left marked as reserved/sent.
+  async function rollbackAndFail(logId: number, tag: string, reason: string) {
+    await supabase.from("email_log").delete().eq("id", logId);
+    push(`  FAIL ${tag} — ${reason}`);
+    failedCount++;
+  }
+
   async function sendOne(opts: {
     to: string; subject: string; html: string; userId: string; kind: string; contextId: string;
   }) {
@@ -109,12 +121,18 @@ export async function GET(request: NextRequest) {
     const logId = await reserveEmailLog(opts.userId, opts.kind, opts.contextId);
     if (logId === null) { push(`  SKIP ${tag} — already sent`); return; }
     try {
-      await resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
+      // The Resend SDK reports API rejections (invalid recipient, rate limit, etc.)
+      // via the returned `error` field WITHOUT throwing (see lib/email.ts:138-141) —
+      // must check it explicitly or a rejected send is logged as sent.
+      const { error } = await resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: opts.html });
+      if (error) {
+        await rollbackAndFail(logId, tag, error.message ?? "send_error");
+        return;
+      }
       push(`  SEND ${tag} ✓`);
+      sentCount++;
     } catch (e) {
-      // Roll back the reservation so the next cron run retries.
-      await supabase.from("email_log").delete().eq("id", logId);
-      push(`  FAIL ${tag} — ${e instanceof Error ? e.message : String(e)}`);
+      await rollbackAndFail(logId, tag, e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -207,23 +225,27 @@ export async function GET(request: NextRequest) {
         const members = await getCohortMembers(cohort.id);
         push(`    ${members.length} members`);
         for (const m of members) {
-          const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
-          const { subject, html } = renderEmail(templates["60d-unlock"], settings, {
-            displayName,
-            testDate: fmtPtBr(cohort.test_date),
-          });
-          await sendOne({
-            to: m.email,
-            subject,
-            html,
-            userId: m.user_id, kind: "60d-unlock", contextId: String(cohort.id),
-          });
-          await insertNotification({
-            userId: m.user_id, kind: "60d-unlock",
-            title: "MedHelp 60D liberado",
-            body: "Sua reta final começa agora — Revalida Up + Memorecards disponíveis.",
-            href: "/app", icon: "lock", contextId: String(cohort.id),
-          });
+          try {
+            const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+            const { subject, html } = renderEmail(templates["60d-unlock"], settings, {
+              displayName,
+              testDate: fmtPtBr(cohort.test_date),
+            });
+            await sendOne({
+              to: m.email,
+              subject,
+              html,
+              userId: m.user_id, kind: "60d-unlock", contextId: String(cohort.id),
+            });
+            await insertNotification({
+              userId: m.user_id, kind: "60d-unlock",
+              title: "MedHelp 60D liberado",
+              body: "Sua reta final começa agora — Revalida Up + Memorecards disponíveis.",
+              href: "/app", icon: "lock", contextId: String(cohort.id),
+            });
+          } catch (e) {
+            push(`    ERROR [60d-unlock → ${m.email}] — ${e instanceof Error ? e.message : String(e)}`);
+          }
         }
         if (categoryId) {
           const title = `MedHelp 60D liberado — ${cohort.name}`;
@@ -257,24 +279,28 @@ export async function GET(request: NextRequest) {
       push(`  Cohort: ${cohort.name} (${cohort.id})`);
       const members = await getCohortMembers(cohort.id);
       for (const m of members) {
-        const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
-        const { subject, html } = renderEmail(templates["expiry-warning-7d"], settings, {
-          displayName,
-          cohortName: cohort.name,
-          endsAt: fmtPtBr(cohort.membership_ends_at.split("T")[0]),
-        });
-        await sendOne({
-          to: m.email,
-          subject,
-          html,
-          userId: m.user_id, kind: "expiry-warning-7d", contextId: String(cohort.id),
-        });
-        await insertNotification({
-          userId: m.user_id, kind: "expiry-warning-7d",
-          title: "Seu acesso encerra em 7 dias",
-          body: `Renove para continuar estudando após ${fmtPtBr(cohort.membership_ends_at.split("T")[0])}.`,
-          href: "/app/acesso-encerrado", icon: "alert", contextId: String(cohort.id),
-        });
+        try {
+          const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+          const { subject, html } = renderEmail(templates["expiry-warning-7d"], settings, {
+            displayName,
+            cohortName: cohort.name,
+            endsAt: fmtPtBr(cohort.membership_ends_at.split("T")[0]),
+          });
+          await sendOne({
+            to: m.email,
+            subject,
+            html,
+            userId: m.user_id, kind: "expiry-warning-7d", contextId: String(cohort.id),
+          });
+          await insertNotification({
+            userId: m.user_id, kind: "expiry-warning-7d",
+            title: "Seu acesso encerra em 7 dias",
+            body: `Renove para continuar estudando após ${fmtPtBr(cohort.membership_ends_at.split("T")[0])}.`,
+            href: "/app/acesso-encerrado", icon: "alert", contextId: String(cohort.id),
+          });
+        } catch (e) {
+          push(`    ERROR [expiry-warning-7d → ${m.email}] — ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
     }
   }
@@ -293,23 +319,27 @@ export async function GET(request: NextRequest) {
       push(`  Cohort: ${cohort.name} (${cohort.id})`);
       const members = await getCohortMembers(cohort.id);
       for (const m of members) {
-        const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
-        const { subject, html } = renderEmail(templates["expiry-notice"], settings, {
-          displayName,
-          cohortName: cohort.name,
-        });
-        await sendOne({
-          to: m.email,
-          subject,
-          html,
-          userId: m.user_id, kind: "expiry-notice", contextId: String(cohort.id),
-        });
-        await insertNotification({
-          userId: m.user_id, kind: "expiry-notice",
-          title: "Acesso encerrado",
-          body: "Renove para continuar estudando na próxima turma.",
-          href: "/app/acesso-encerrado", icon: "alert", contextId: String(cohort.id),
-        });
+        try {
+          const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
+          const { subject, html } = renderEmail(templates["expiry-notice"], settings, {
+            displayName,
+            cohortName: cohort.name,
+          });
+          await sendOne({
+            to: m.email,
+            subject,
+            html,
+            userId: m.user_id, kind: "expiry-notice", contextId: String(cohort.id),
+          });
+          await insertNotification({
+            userId: m.user_id, kind: "expiry-notice",
+            title: "Acesso encerrado",
+            body: "Renove para continuar estudando na próxima turma.",
+            href: "/app/acesso-encerrado", icon: "alert", contextId: String(cohort.id),
+          });
+        } catch (e) {
+          push(`    ERROR [expiry-notice → ${m.email}] — ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
     }
   }
@@ -332,35 +362,39 @@ export async function GET(request: NextRequest) {
     const sevenIso = sevenDaysAgo.toISOString();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const s of eligible as any[]) {
-      const [{ data: attempts }, { count: completions }] = await Promise.all([
-        supabase.from("quiz_attempts").select("is_correct, created_at").eq("user_id", s.user_id).gte("created_at", sevenIso),
-        supabase.from("lesson_completions").select("*", { count: "exact", head: true }).eq("user_id", s.user_id).gte("completed_at", sevenIso),
-      ]);
-      const totalQ = (attempts ?? []).length;
-      const correctQ = (attempts ?? []).filter((a) => a.is_correct).length;
-      const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : null;
-      const lessonsDone = completions ?? 0;
-      const daysActive = new Set((attempts ?? []).map((a) => (a.created_at as string).split("T")[0])).size;
-      const daysToExam = s.cohort?.test_date
-        ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
-        : null;
-      const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
-      const body = totalQ === 0 && lessonsDone === 0
-        ? `Esta semana foi corrida — sem registros de estudo. Sem culpa. Comece com uma sessão curta hoje, mesmo que sejam 15 minutos.`
-        : `Esta semana: <strong>${totalQ} questões</strong> respondidas${accuracy != null ? ` com <strong>${accuracy}% de acerto</strong>` : ""}, <strong>${lessonsDone} aulas</strong> concluídas, em <strong>${daysActive} dia${daysActive !== 1 ? "s" : ""}</strong> ativos.${daysToExam != null ? ` Faltam ${daysToExam} dias para a prova.` : ""}`;
-      const { subject, html } = renderEmail(templates["weekly-summary"], settings, {
-        displayName, summaryBody: body,
-      });
-      await sendOne({
-        to: s.email, subject, html,
-        userId: s.user_id, kind: "weekly-summary", contextId: weekKey,
-      });
-      await insertNotification({
-        userId: s.user_id, kind: "weekly-summary",
-        title: "Resumo da semana disponível",
-        body: totalQ > 0 ? `${totalQ} questões · ${accuracy ?? 0}% acerto · ${lessonsDone} aulas` : "Veja o que você pode estudar essa semana.",
-        href: "/app/plano", icon: "calendar", contextId: weekKey,
-      });
+      try {
+        const [{ data: attempts }, { count: completions }] = await Promise.all([
+          supabase.from("quiz_attempts").select("is_correct, created_at").eq("user_id", s.user_id).gte("created_at", sevenIso),
+          supabase.from("lesson_completions").select("*", { count: "exact", head: true }).eq("user_id", s.user_id).gte("completed_at", sevenIso),
+        ]);
+        const totalQ = (attempts ?? []).length;
+        const correctQ = (attempts ?? []).filter((a) => a.is_correct).length;
+        const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : null;
+        const lessonsDone = completions ?? 0;
+        const daysActive = new Set((attempts ?? []).map((a) => (a.created_at as string).split("T")[0])).size;
+        const daysToExam = s.cohort?.test_date
+          ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
+          : null;
+        const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
+        const body = totalQ === 0 && lessonsDone === 0
+          ? `Esta semana foi corrida — sem registros de estudo. Sem culpa. Comece com uma sessão curta hoje, mesmo que sejam 15 minutos.`
+          : `Esta semana: <strong>${totalQ} questões</strong> respondidas${accuracy != null ? ` com <strong>${accuracy}% de acerto</strong>` : ""}, <strong>${lessonsDone} aulas</strong> concluídas, em <strong>${daysActive} dia${daysActive !== 1 ? "s" : ""}</strong> ativos.${daysToExam != null ? ` Faltam ${daysToExam} dias para a prova.` : ""}`;
+        const { subject, html } = renderEmail(templates["weekly-summary"], settings, {
+          displayName, summaryBody: body,
+        });
+        await sendOne({
+          to: s.email, subject, html,
+          userId: s.user_id, kind: "weekly-summary", contextId: weekKey,
+        });
+        await insertNotification({
+          userId: s.user_id, kind: "weekly-summary",
+          title: "Resumo da semana disponível",
+          body: totalQ > 0 ? `${totalQ} questões · ${accuracy ?? 0}% acerto · ${lessonsDone} aulas` : "Veja o que você pode estudar essa semana.",
+          href: "/app/plano", icon: "calendar", contextId: weekKey,
+        });
+      } catch (e) {
+        push(`  ERROR [weekly-summary → ${s.email}] — ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
   }
 
@@ -377,21 +411,25 @@ export async function GET(request: NextRequest) {
     push(`  ${eligible.length} eligible (opt-in)`);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const s of eligible as any[]) {
-      const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
-      const daysToExam = s.cohort?.test_date
-        ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
-        : null;
-      const { subject, html } = renderEmail(templates["daily-plan"], settings, {
-        displayName,
-        daysToExamLine:
-          daysToExam != null
-            ? ` <br/><br/>Faltam <strong>${daysToExam} dias</strong> para sua prova.`
-            : "",
-      });
-      await sendOne({
-        to: s.email, subject, html,
-        userId: s.user_id, kind: "daily-plan", contextId: todayKey(),
-      });
+      try {
+        const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
+        const daysToExam = s.cohort?.test_date
+          ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
+          : null;
+        const { subject, html } = renderEmail(templates["daily-plan"], settings, {
+          displayName,
+          daysToExamLine:
+            daysToExam != null
+              ? ` <br/><br/>Faltam <strong>${daysToExam} dias</strong> para sua prova.`
+              : "",
+        });
+        await sendOne({
+          to: s.email, subject, html,
+          userId: s.user_id, kind: "daily-plan", contextId: todayKey(),
+        });
+      } catch (e) {
+        push(`  ERROR [daily-plan → ${s.email}] — ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
   }
 
@@ -423,14 +461,18 @@ export async function GET(request: NextRequest) {
           const last = activityMap.get(userId);
           if (!last) continue;          // never studied — skip
           if (last > threeIso) continue; // active within 3 days — skip
-          const contextId = `last-${last.split("T")[0]}`;
-          await insertNotification({
-            userId, kind: "missed-3-days",
-            title: "Que tal voltar com calma?",
-            body: "Você não precisa fazer tudo hoje — apenas uma sessão curta já mantém o ritmo.",
-            href: "/app/plano", icon: "calendar", contextId,
-          });
-          nudged++;
+          try {
+            const contextId = `last-${last.split("T")[0]}`;
+            await insertNotification({
+              userId, kind: "missed-3-days",
+              title: "Que tal voltar com calma?",
+              body: "Você não precisa fazer tudo hoje — apenas uma sessão curta já mantém o ritmo.",
+              href: "/app/plano", icon: "calendar", contextId,
+            });
+            nudged++;
+          } catch (e) {
+            push(`  ERROR [missed-3-days → ${userId}] — ${e instanceof Error ? e.message : String(e)}`);
+          }
         }
       }
     }
@@ -443,44 +485,48 @@ export async function GET(request: NextRequest) {
     const students = await getActiveStudents();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const s of students as any[]) {
-      const { count: totalQ } = await supabase
-        .from("quiz_attempts").select("*", { count: "exact", head: true }).eq("user_id", s.user_id);
-      if ((totalQ ?? 0) >= 100) {
-        await insertNotification({
-          userId: s.user_id, kind: "milestone-100q",
-          title: "100 questões respondidas",
-          body: "Você passou da marca de 100 questões. Continue assim.",
-          href: "/app/relatorio", icon: "trophy", contextId: "100",
-        });
-      }
-      const { data: recentAttempts } = await supabase
-        .from("quiz_attempts").select("created_at").eq("user_id", s.user_id)
-        .order("created_at", { ascending: false }).limit(200);
-      const dates = [...new Set((recentAttempts ?? []).map((a) => (a.created_at as string).split("T")[0]))].sort().reverse();
-      let streak = 0;
-      const today = todayKey();
-      let cursor = today;
-      for (const d of dates) {
-        if (d === cursor) {
-          streak++;
-          const prev = new Date(cursor); prev.setDate(prev.getDate() - 1);
-          cursor = prev.toISOString().split("T")[0];
-        } else if (d < cursor) break;
-      }
-      if (streak >= 30) {
-        await insertNotification({
-          userId: s.user_id, kind: "milestone-streak-30",
-          title: "30 dias de sequência",
-          body: "Disciplina impressionante. Você está construindo um hábito de verdade.",
-          href: "/app/relatorio", icon: "trophy", contextId: `streak-30-${today}`,
-        });
-      } else if (streak >= 7) {
-        await insertNotification({
-          userId: s.user_id, kind: "milestone-streak-7",
-          title: "7 dias seguidos",
-          body: "Uma semana inteira de estudo. Mantenha o ritmo.",
-          href: "/app/relatorio", icon: "trophy", contextId: `streak-7-${today}`,
-        });
+      try {
+        const { count: totalQ } = await supabase
+          .from("quiz_attempts").select("*", { count: "exact", head: true }).eq("user_id", s.user_id);
+        if ((totalQ ?? 0) >= 100) {
+          await insertNotification({
+            userId: s.user_id, kind: "milestone-100q",
+            title: "100 questões respondidas",
+            body: "Você passou da marca de 100 questões. Continue assim.",
+            href: "/app/relatorio", icon: "trophy", contextId: "100",
+          });
+        }
+        const { data: recentAttempts } = await supabase
+          .from("quiz_attempts").select("created_at").eq("user_id", s.user_id)
+          .order("created_at", { ascending: false }).limit(200);
+        const dates = [...new Set((recentAttempts ?? []).map((a) => (a.created_at as string).split("T")[0]))].sort().reverse();
+        let streak = 0;
+        const today = todayKey();
+        let cursor = today;
+        for (const d of dates) {
+          if (d === cursor) {
+            streak++;
+            const prev = new Date(cursor); prev.setDate(prev.getDate() - 1);
+            cursor = prev.toISOString().split("T")[0];
+          } else if (d < cursor) break;
+        }
+        if (streak >= 30) {
+          await insertNotification({
+            userId: s.user_id, kind: "milestone-streak-30",
+            title: "30 dias de sequência",
+            body: "Disciplina impressionante. Você está construindo um hábito de verdade.",
+            href: "/app/relatorio", icon: "trophy", contextId: `streak-30-${today}`,
+          });
+        } else if (streak >= 7) {
+          await insertNotification({
+            userId: s.user_id, kind: "milestone-streak-7",
+            title: "7 dias seguidos",
+            body: "Uma semana inteira de estudo. Mantenha o ritmo.",
+            href: "/app/relatorio", icon: "trophy", contextId: `streak-7-${today}`,
+          });
+        }
+      } catch (e) {
+        push(`  ERROR [milestones → ${s.user_id}] — ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
@@ -497,27 +543,31 @@ export async function GET(request: NextRequest) {
     );
     let notified = 0;
     for (const s of eligible) {
-      // Count all SM-2-due review items (flashcards + quiz + memorecards) from the
-      // unified review_schedule (flashcard_progress is frozen).
-      const { count: dueCount } = await supabase
-        .from("review_schedule")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", s.user_id)
-        .eq("suspended", false)
-        .lte("due_date", today);
-      if ((dueCount ?? 0) < FLASHCARD_DUE_THRESHOLD) continue;
-      // contextId = today → at most one review-due bell per user per day.
-      await insertNotification({
-        userId: s.user_id, kind: "flashcards-due",
-        title: "Itens para revisar",
-        body: `Você tem ${dueCount} itens prontos para revisão hoje.`,
-        href: "/app/revisao", icon: "calendar", contextId: today,
-      });
-      notified++;
+      try {
+        // Count all SM-2-due review items (flashcards + quiz + memorecards) from the
+        // unified review_schedule (flashcard_progress is frozen).
+        const { count: dueCount } = await supabase
+          .from("review_schedule")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", s.user_id)
+          .eq("suspended", false)
+          .lte("due_date", today);
+        if ((dueCount ?? 0) < FLASHCARD_DUE_THRESHOLD) continue;
+        // contextId = today → at most one review-due bell per user per day.
+        await insertNotification({
+          userId: s.user_id, kind: "flashcards-due",
+          title: "Itens para revisar",
+          body: `Você tem ${dueCount} itens prontos para revisão hoje.`,
+          href: "/app/revisao", icon: "calendar", contextId: today,
+        });
+        notified++;
+      } catch (e) {
+        push(`  ERROR [flashcards-due → ${s.user_id}] — ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
     push(`  Notified ${notified} students (threshold ${FLASHCARD_DUE_THRESHOLD}).`);
   }
 
-  push(`\nDone.`);
-  return NextResponse.json({ ok: true, log });
+  push(`\nDone. Sent ${sentCount}, failed ${failedCount}.`);
+  return NextResponse.json({ ok: true, log, sent: sentCount, failed: failedCount });
 }
