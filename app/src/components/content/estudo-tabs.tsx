@@ -1,13 +1,22 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { STUDY_TYPE_CONFIG } from "@/lib/page-type";
 import { TypeChip } from "./type-chip";
 import { TrackHubAccordion, type SuperGroupData } from "./track-hub-accordion";
+import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { EditableText } from "@/components/admin/editable-text";
 
 type TabKey = "quiz" | "simulados";
+
+// One "Geral" / "Por área" heading inside the Simulados tab. Label is DB-backed
+// (simulado_sections) so admins can rename it inline.
+export type SimuladoSectionMeta = {
+  label: string;
+  iconSlug: string;
+  editable?: { table: "simulado_sections"; id: number; field: "label" };
+};
 
 // Server-fetched overrides from the `study_types` table.
 export type StudyTypeOverrideRow = {
@@ -32,18 +41,24 @@ function countPages(groups: SuperGroupData[]): number {
 
 export function EstudoTabs({
   quizGroups,
-  simuladosGroups,
+  simuladoGeralSlot,
+  simuladoPorAreaGroups,
+  simuladoSections,
   defaultTab,
   overrides,
   countOverrides,
 }: {
   quizGroups: SuperGroupData[];
-  simuladosGroups: SuperGroupData[];
+  /** The "Geral" flat grid of mock-exam boxes (server-rendered element). */
+  simuladoGeralSlot: ReactNode;
+  /** The "Por área" specialty accordion (Clínica Médica bundles its subspecialties). */
+  simuladoPorAreaGroups: SuperGroupData[];
+  /** DB-backed section headings for the Simulados tab. */
+  simuladoSections: { geral: SimuladoSectionMeta; porArea: SimuladoSectionMeta };
   defaultTab: TabKey;
   overrides: Record<TabKey, StudyTypeOverrideRow>;
-  /** Explicit card counts that override the item-derived count. Used when the
-   *  accordion shows placeholder sections (e.g. simulados' Geral / Por Temas)
-   *  but the selector card should still reflect the real content total. */
+  /** Explicit card counts that override the item-derived count. The simulados
+   *  total spans the Geral grid + Por-área boxes, so it's always passed in. */
   countOverrides?: Partial<Record<TabKey, number>>;
 }) {
   const [active, setActive] = useState<TabKey>(defaultTab);
@@ -67,10 +82,9 @@ export function EstudoTabs({
   const order: TabKey[] = ["quiz", "simulados"];
   const counts: Record<TabKey, number> = {
     quiz: countOverrides?.quiz ?? countPages(quizGroups),
-    simulados: countOverrides?.simulados ?? countPages(simuladosGroups),
+    simulados: countOverrides?.simulados ?? 0,
   };
 
-  const activeGroups = active === "quiz" ? quizGroups : simuladosGroups;
   const activeCfg = STUDY_TYPE_CONFIG[active];
 
   return (
@@ -194,25 +208,82 @@ export function EstudoTabs({
         })}
       </div>
 
-      {/* Accordion for the active source.
+      {/* Active-source content.
           key={active} forces remount on toggle → the wrapper's fade-up animation
           replays, giving a clear visual signal that the content has switched. */}
       <div
         key={active}
         style={{ animation: "dash-fade-up 0.36s cubic-bezier(.16,1,.3,1) both" }}
       >
-        {activeGroups.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
-            Conteúdo em preparação.
-          </p>
+        {active === "quiz" ? (
+          quizGroups.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+              Conteúdo em preparação.
+            </p>
+          ) : (
+            <TrackHubAccordion
+              groups={quizGroups}
+              ctaLabel={CTA_FOR.quiz}
+              accentColor={activeCfg.color}
+            />
+          )
         ) : (
-          <TrackHubAccordion
-            groups={activeGroups}
-            ctaLabel={CTA_FOR[active]}
-            accentColor={activeCfg.color}
-          />
+          // Simulados: a "Geral" flat grid of mock exams, then a "Por área"
+          // specialty accordion (Clínica Médica expands into its subspecialties).
+          <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+            <section>
+              <SectionHeading meta={simuladoSections.geral} />
+              {simuladoGeralSlot}
+            </section>
+            <section>
+              <SectionHeading meta={simuladoSections.porArea} />
+              {simuladoPorAreaGroups.length === 0 ? (
+                <p style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
+                  Conteúdo em preparação.
+                </p>
+              ) : (
+                <TrackHubAccordion
+                  groups={simuladoPorAreaGroups}
+                  ctaLabel={CTA_FOR.simulados}
+                  accentColor={activeCfg.color}
+                />
+              )}
+            </section>
+          </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// Section heading inside the Simulados tab — icon + uppercase label, matching the
+// accordion row header's typographic treatment. Label is inline-editable.
+function SectionHeading({ meta }: { meta: SimuladoSectionMeta }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+      <SpecialtyIcon specialtySlug={meta.iconSlug} size={20} />
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--foreground)",
+        }}
+      >
+        {meta.editable ? (
+          <EditableText
+            variant="plain"
+            table={meta.editable.table}
+            id={meta.editable.id}
+            field={meta.editable.field}
+            value={meta.label}
+            as="span"
+          />
+        ) : (
+          meta.label
+        )}
+      </span>
     </div>
   );
 }

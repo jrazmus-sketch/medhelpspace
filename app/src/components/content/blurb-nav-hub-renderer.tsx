@@ -270,7 +270,7 @@ async function loadCompletedLessonPages(pageIds: number[]): Promise<Set<number>>
 
 // ── Data: quiz stats per page ────────────────────────────────────────────────
 
-async function loadQuizStats(quizPageIds: number[]): Promise<Map<number, QuizStats>> {
+export async function loadQuizStats(quizPageIds: number[]): Promise<Map<number, QuizStats>> {
   const out = new Map<number, QuizStats>();
   if (quizPageIds.length === 0) return out;
 

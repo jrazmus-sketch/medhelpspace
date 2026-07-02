@@ -23,6 +23,7 @@ export type CoachKey =
   | "specialty-hub"
   | "type-hub"
   | "quiz"
+  | "simulados"
   | "flashcards"
   | "lesson"
   | "audio"
@@ -97,6 +98,17 @@ export const TIPS: Record<CoachKey, Tip> = {
       "Cada questão respondida entra na **Revisão**. Errou? Ela volta amanhã em “Só as que errei”.",
     href: "/app/estudo-por-questoes",
     hrefLabel: "Estudar questões",
+  },
+
+  simulados: {
+    key: "simulados",
+    title: "Como funcionam os simulados",
+    body:
+      "Cada simulado é um **treino de prova**: uma questão por vez, com correção e comentário logo após responder. Em **Geral** você treina um mix de todas as áreas, como na prova real; em **Por área**, foca numa especialidade. No fim, dá para refazer só as que errou.",
+    reviewNote:
+      "Cada questão respondida entra na **Revisão** e volta na hora certa — errou, ela retorna em “Só as que errei”.",
+    href: "/app/estudo-por-questoes?tab=simulados",
+    hrefLabel: "Abrir simulados",
   },
 
   flashcards: {
@@ -222,7 +234,7 @@ export const GUIDE_GROUPS: { title: string; keys: CoachKey[] }[] = [
   { title: "Visão geral", keys: ["welcome", "nav"] },
   {
     title: "Como estudar",
-    keys: ["dash-study-types", "dash-specialties", "quiz", "flashcards", "lesson", "audio", "audiocards", "revalida-up"],
+    keys: ["dash-study-types", "dash-specialties", "quiz", "simulados", "flashcards", "lesson", "audio", "audiocards", "revalida-up"],
   },
   { title: "A Revisão espaçada", keys: ["revisao", "memorecards"] },
   { title: "Planejamento", keys: ["plano"] },

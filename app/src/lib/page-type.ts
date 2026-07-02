@@ -128,6 +128,9 @@ export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null 
     if (slug.endsWith("-revalida-up")) return "revalida-up";
     if (slug.endsWith("-formula"))    return "formula";
     if (slug.endsWith("-simulados"))  return "simulados";
+    // New simulados leaves: '<spec>-simulado-<n>' (por área) and
+    // 'simulado-geral-<n>' (Geral), routed at /app/<spec>/… and /app/geral/….
+    if (/-simulado-\d+$/.test(slug) || /^simulado-geral-\d+$/.test(slug)) return "simulados";
     if (slug.endsWith("-quiz"))       return "quiz";
   }
 

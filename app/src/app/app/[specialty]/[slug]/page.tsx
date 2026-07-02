@@ -172,8 +172,8 @@ const MEDHELP_60D_MODULE_ID = 1;
 const MEDVOICE_TRACK_ID = 1;
 const AUDIOCARDS_TRACK_ID = 2;
 
-function isSimulado(page: { slug: string; type: string }) {
-  return page.type === "h5p-quiz" && page.slug.endsWith("-simulados");
+function isSimulado(page: { view: string | null; type: string }) {
+  return page.type === "h5p-quiz" && page.view === "simulados";
 }
 
 // Suppress the "Ver toda X" link on the few pages where it would be redundant —
@@ -202,6 +202,7 @@ function coachmarkKeyForPage(page: {
     case "h5p-quiz":
       if (page.track_id === FLASHCARDS_TRACK_ID) return "flashcards";
       if (page.content_module_id === MEDHELP_60D_MODULE_ID) return "memorecards";
+      if (page.view === "simulados") return "simulados";
       return "quiz";
     case "plain-content":
       return "lesson";

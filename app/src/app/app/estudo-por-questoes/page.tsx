@@ -1,8 +1,10 @@
 import { requireActiveMembership } from "@/lib/membership-gate";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { getViewHubGroups } from "@/components/content/view-hub-renderer";
-import { EstudoTabs } from "@/components/content/estudo-tabs";
+import { GeralSimuladosGrid } from "@/components/content/geral-simulados-grid";
+import { EstudoTabs, type SimuladoSectionMeta } from "@/components/content/estudo-tabs";
 import { getStudyTypeOverrides } from "@/lib/queries/study-types";
 import { getSimuladoSectionOverrides } from "@/lib/queries/simulado-sections";
 
@@ -15,40 +17,39 @@ export default async function EstudoPorQuestoesPage({
   const { tab } = await searchParams;
   const defaultTab = tab === "simulados" ? "simulados" : "quiz";
 
-  // Fetch both data sets in parallel so tab switches are instant.
-  const [quizGroups, simuladosGroups, overridesMap, simSections] = await Promise.all([
-    getViewHubGroups("quiz", null),
-    getViewHubGroups("simulados", null),
-    getStudyTypeOverrides(),
-    getSimuladoSectionOverrides(),
-  ]);
+  // Fetch everything in parallel so tab switches are instant.
+  //  - quiz tab: the Questões accordion (per-specialty hubs).
+  //  - simulados tab: "Por área" reuses the same accordion machinery over
+  //    view='simulados' hubs (Clínica Médica bundles its 12 subspecialties);
+  //    "Geral" is a flat grid of cross-specialty mock exams rendered separately.
+  const [quizGroups, simuladoPorAreaGroups, overridesMap, simSections, simuladoCount] =
+    await Promise.all([
+      getViewHubGroups("quiz", null),
+      getViewHubGroups("simulados", null),
+      getStudyTypeOverrides(),
+      getSimuladoSectionOverrides(),
+      countSimulados(),
+    ]);
 
   const quiz = overridesMap.get("quiz")!;
   const simulados = overridesMap.get("simulados")!;
 
-  // The "Outros" group (Urologia / Oftalmologia / Otorrinolaringologia) now comes
-  // from the DB — an 'outros' specialty + quiz hub — so getViewHubGroups("quiz")
-  // already returns it. Simulados deliberately has no "Outros" group.
-
-  // Simulados tab is being reorganized into two simulated-test categories:
-  //  - "Geral": a mixed simulado covering many specialties at once.
-  //  - "Por Temas": a simulado focused on a single specialty (e.g. cardiologia).
-  // Both empty placeholders for now — content TBD. The existing per-specialty
-  // simulado pages are kept (their total feeds the card count below) and will be
-  // re-homed into these sections later.
-  const simuladosCount = simuladosGroups.reduce((sum, g) => sum + g.items.length, 0);
-  // Labels are DB-backed (simulado_sections) so admins can rename them inline.
-  // id > 0 means a real row exists → header becomes inline-editable; id === -1
-  // (table missing / fetch failed) falls back to a plain, non-editable label.
-  const simuladosSections = simSections.map((s) => ({
-    label: s.label,
-    iconSlug: s.iconSlug,
-    items: [],
+  // Section headings for the Simulados tab, DB-backed (simulado_sections) so
+  // admins can rename them inline. id > 0 → a real row exists → editable.
+  const geralRow = simSections.find((s) => s.key === "geral");
+  const porAreaRow = simSections.find((s) => s.key === "por-temas");
+  const toMeta = (
+    row: { id: number; label: string; iconSlug: string } | undefined,
+    fallbackLabel: string,
+    fallbackIcon: string,
+  ): SimuladoSectionMeta => ({
+    label: row?.label ?? fallbackLabel,
+    iconSlug: row?.iconSlug ?? fallbackIcon,
     editable:
-      s.id > 0
-        ? { table: "simulado_sections" as const, id: s.id, field: "label" }
+      row && row.id > 0
+        ? { table: "simulado_sections" as const, id: row.id, field: "label" as const }
         : undefined,
-  }));
+  });
 
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
@@ -59,8 +60,13 @@ export default async function EstudoPorQuestoesPage({
 
       <EstudoTabs
         quizGroups={quizGroups}
-        simuladosGroups={simuladosSections}
-        countOverrides={{ simulados: simuladosCount }}
+        simuladoGeralSlot={<GeralSimuladosGrid />}
+        simuladoPorAreaGroups={simuladoPorAreaGroups}
+        simuladoSections={{
+          geral: toMeta(geralRow, "Geral", "geral"),
+          porArea: toMeta(porAreaRow, "Por área", "por-temas"),
+        }}
+        countOverrides={{ simulados: simuladoCount }}
         defaultTab={defaultTab}
         overrides={{
           quiz: { id: quiz.id, label: quiz.label, description: quiz.description },
@@ -69,4 +75,17 @@ export default async function EstudoPorQuestoesPage({
       />
     </div>
   );
+}
+
+// Total published simulados (Geral + Por área) — feeds the "N simulados" count on
+// the selector card.
+async function countSimulados(): Promise<number> {
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("pages")
+    .select("id", { count: "exact", head: true })
+    .eq("view", "simulados")
+    .eq("type", "h5p-quiz")
+    .eq("status", "publish");
+  return count ?? 0;
 }
