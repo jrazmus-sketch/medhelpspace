@@ -89,6 +89,7 @@ export function AdminHeader() {
         { href: "/admin/hubs", label: t("nav.hubs") },
         { href: "/admin/notifications", label: t("nav.notifications") },
         { href: "/admin/email-templates", label: t("nav.emailTemplates"), show: isContentAdmin() },
+        { href: "/admin/estudio", label: t("nav.studio"), show: isSuperAdmin() || isContentAdmin() },
       ],
     },
     {
