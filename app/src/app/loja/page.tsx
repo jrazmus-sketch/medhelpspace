@@ -3,21 +3,28 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { SiteText } from "@/components/landing/site-text";
-import { Check, Lock, Unlock, Clock } from "lucide-react";
+import { Check, Lock, Unlock, Clock, CalendarClock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
 import { getCohortTiming, type CohortTiming } from "@/lib/cohort-timing";
 import type { CohortProduct } from "@/types/supabase";
 
-const INCLUDED = [
-  "Estudo por Questões — questões oficiais + simulados comentados",
-  "Resumos Narrativos — casos clínicos com raciocínio e conduta",
-  "MedVoice — treinamento de decisão em áudios curtos",
-  "Fórmula MedHelp — atalhos de prova, macetes e mnemônicos",
-  "Audiocards — flashcards em áudio com o que já caiu",
-  "Guia de estudos completo",
-  "Acesso em celular, tablet e computador",
-  "Tema claro e escuro",
-  "Atualizações contínuas",
+// `key` is the site_content suffix (loja.included.<key>) — deliberately decoupled
+// from array order. The live DB rows were seeded positionally (…​.0 through …​.8),
+// so keeping each item's original numeric key preserves its DB binding (and any
+// inline edits, e.g. the .3 row now reads "Revalida Up" in prod) even as we
+// reorder or insert new lines. New items get a stable slug key instead of a index;
+// seed it (seed-loja-flashcards-line.sql) to make it inline-editable.
+const INCLUDED: { key: string; text: string }[] = [
+  { key: "0", text: "Estudo por Questões — questões oficiais + simulados comentados" },
+  { key: "1", text: "Resumos Narrativos — casos clínicos com raciocínio e conduta" },
+  { key: "2", text: "MedVoice — treinamento de decisão em áudios curtos" },
+  { key: "3", text: "Fórmula MedHelp — atalhos de prova, macetes e mnemônicos" },
+  { key: "flashcards", text: "Flashcards — revisão ativa por especialidade com repetição espaçada" },
+  { key: "4", text: "Audiocards — flashcards em áudio com o que já caiu" },
+  { key: "5", text: "Guia de estudos completo" },
+  { key: "6", text: "Acesso em celular, tablet e computador" },
+  { key: "7", text: "Tema claro e escuro" },
+  { key: "8", text: "Atualizações contínuas" },
 ];
 
 const INCLUDED_60D = [
@@ -151,36 +158,86 @@ export default async function LojaPage() {
                 </div>
               </div>
 
-              {/* 60D note */}
-              <div
-                className="loja-rise mt-12 rounded-2xl border border-brand/25 bg-brand/5 p-6 shadow-lg backdrop-blur-sm md:p-8"
-                style={{ animationDelay: "340ms" }}
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-xl">🔓</span>
-                  <h3
-                    className="text-lg font-bold text-foreground"
-                    style={{ fontFamily: "var(--font-bricolage)" }}
+              {/* 60D panel — same premium treatment as the cohort cards (glow +
+                  gradient hairline border) so it reads as part of the offer, not a
+                  footnote. Item list becomes a 3-up grid on desktop, stacked on
+                  mobile. */}
+              <div className="loja-rise relative mt-12" style={{ animationDelay: "340ms" }}>
+                {/* Soft glow pool behind the panel */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-3 rounded-[2rem]"
+                  style={{
+                    background:
+                      "radial-gradient(60% 60% at 50% 30%, rgba(168,96,224,0.16), transparent 70%)",
+                    filter: "blur(32px)",
+                  }}
+                />
+                {/* Gradient hairline border */}
+                <div
+                  className="relative rounded-[22px] p-[1.5px] shadow-[0_24px_70px_-28px_rgba(0,0,0,0.8)]"
+                  style={{
+                    background:
+                      "linear-gradient(155deg, rgba(192,132,232,0.75) 0%, rgba(122,29,145,0.25) 46%, rgba(192,132,232,0.5) 100%)",
+                  }}
+                >
+                  <div
+                    className="relative overflow-hidden rounded-[20.5px] p-6 backdrop-blur-sm md:p-8"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(24,13,46,0.94) 0%, rgba(12,7,24,0.96) 100%)",
+                    }}
                   >
-                    <SiteText as="span" k="loja.60d.title" fallback="MedHelp 60D — já incluso em todas as turmas" />
-                  </h3>
+                    {/* Corner light bloom */}
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(192,132,232,0.20), transparent 70%)",
+                      }}
+                    />
+
+                    {/* Header */}
+                    <div className="relative mb-4 flex items-center gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-brand/40 bg-brand/10 text-brand shadow-[0_0_22px_-4px_rgba(192,132,232,0.55)]">
+                        <Unlock className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-brand/70">
+                          Fase final do sistema
+                        </span>
+                        <h3
+                          className="text-lg font-bold leading-tight text-foreground"
+                          style={{ fontFamily: "var(--font-bricolage)" }}
+                        >
+                          <SiteText as="span" k="loja.60d.title" fallback="MedHelp 60D — já incluso em todas as turmas" />
+                        </h3>
+                      </div>
+                    </div>
+
+                    <p className="relative mb-5 text-sm text-foreground/60 sm:text-base">
+                      <SiteText
+                        as="span"
+                        multiline
+                        k="loja.60d.body"
+                        fallback="A fase final do sistema é liberada automaticamente 60 dias antes da sua prova. Você não precisa fazer nada — o acesso abre na hora certa."
+                      />
+                    </p>
+
+                    <ul className="relative grid gap-2.5 sm:grid-cols-3">
+                      {INCLUDED_60D.map((item, i) => (
+                        <li
+                          key={item}
+                          className="flex items-start gap-2 rounded-xl border border-brand/15 bg-white/[0.02] p-3 text-sm text-foreground/70"
+                        >
+                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+                          <SiteText as="span" k={`loja.60d.item.${i}`} fallback={item} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-                <p className="mb-4 text-sm text-foreground/60 sm:text-base">
-                  <SiteText
-                    as="span"
-                    multiline
-                    k="loja.60d.body"
-                    fallback="A fase final do sistema é liberada automaticamente 60 dias antes da sua prova. Você não precisa fazer nada — o acesso abre na hora certa."
-                  />
-                </p>
-                <ul className="flex flex-col gap-2">
-                  {INCLUDED_60D.map((item, i) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-foreground/65">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                      <SiteText as="span" k={`loja.60d.item.${i}`} fallback={item} />
-                    </li>
-                  ))}
-                </ul>
               </div>
             </>
           )}
@@ -229,28 +286,13 @@ function LojaAtmosphere() {
   );
 }
 
-/* Corner registration ticks — small lavender L-brackets framing each card, like
-   a medical chart or film frame. Decorative only. */
-function CornerTicks() {
-  const base = "pointer-events-none absolute h-3 w-3";
-  const col = "rgba(192,132,232,0.45)";
-  return (
-    <>
-      <span aria-hidden className={`${base} left-3 top-3 border-l border-t`} style={{ borderColor: col }} />
-      <span aria-hidden className={`${base} right-3 top-3 border-r border-t`} style={{ borderColor: col }} />
-      <span aria-hidden className={`${base} bottom-3 left-3 border-b border-l`} style={{ borderColor: col }} />
-      <span aria-hidden className={`${base} bottom-3 right-3 border-b border-r`} style={{ borderColor: col }} />
-    </>
-  );
-}
-
 function CohortCard({ cohort }: { cohort: CohortProduct }) {
   // Cards differ only by the cohort's real exam timing: a closer prova means less
   // study time, which is why that turma is priced lower and shows a countdown.
   // No "popular/recomendado" badges and no fake scarcity — honest information by
   // exam date, not a sales ranking. Every decorative treatment below (glow pool,
-  // gradient border, corner ticks) is IDENTICAL per card so neither turma reads
-  // as promoted over the other.
+  // gradient border) is IDENTICAL per card so neither turma reads as promoted
+  // over the other.
   const timing = getCohortTiming(cohort);
   return (
     // h-full down the whole wrapper chain so both grid cards stay equal height
@@ -284,8 +326,6 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
               "linear-gradient(180deg, rgba(24,13,46,0.92) 0%, rgba(12,7,24,0.94) 100%)",
           }}
         >
-          <CornerTicks />
-
           <div className="px-6 py-5 border-b border-brand/20">
             <div className="mb-1 flex items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-widest text-brand/60">
@@ -295,7 +335,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
                 <span
                   className={
                     timing.examChip.urgent
-                      ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-brand/10 px-2.5 py-1 text-[11px] font-semibold text-brand"
+                      ? "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-brand/20 px-3 py-1 text-[11px] font-semibold text-[#f2e4ff] ring-1 ring-inset ring-brand/45"
                       : "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-foreground/45"
                   }
                 >
@@ -310,6 +350,12 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
             >
               {cohort.name}
             </h2>
+            {/* Access term: this is exam-cycle access, not lifetime — it closes on
+                the day of the prova. Kept generic (no date) per product decision. */}
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-foreground/45">
+              <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+              <SiteText as="span" k="loja.card.validity" fallback="Válido até a data da prova" />
+            </p>
           </div>
 
           <div className="flex flex-1 flex-col gap-6 p-6">
@@ -357,10 +403,10 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
 function IncludedList({ timing }: { timing: CohortTiming }) {
   return (
     <ul className="flex flex-col gap-2">
-      {INCLUDED.map((item, i) => (
-        <li key={item} className="flex items-start gap-2 text-sm text-foreground/65">
+      {INCLUDED.map((item) => (
+        <li key={item.key} className="flex items-start gap-2 text-sm text-foreground/65">
           <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-          <SiteText as="span" k={`loja.included.${i}`} fallback={item} />
+          <SiteText as="span" k={`loja.included.${item.key}`} fallback={item.text} />
         </li>
       ))}
       {/* MedHelp 60D — live unlock status for THIS cohort (computed, not editable):

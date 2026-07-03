@@ -3,22 +3,26 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
-import { Check, Clock, Lock, Unlock } from "lucide-react";
+import { Check, Clock, Lock, Unlock, CalendarClock } from "lucide-react";
 import type { CohortProduct } from "@/types/supabase";
 import { getCohortTiming } from "@/lib/cohort-timing";
 import { SiteText } from "./site-text";
 
 // The generic 60D feature line states the rule ("liberado 60 dias antes"); the
 // selected turma's live unlock status is shown separately below the price.
-const INCLUDED = [
-  "Estudo por Questões",
-  "Resumos Narrativos",
-  "MedVoice",
-  "Fórmula MedHelp",
-  "Audiocards",
-  "MedHelp 60D — liberado 60 dias antes",
-  "Acesso em celular, tablet e computador",
-  "Atualizações contínuas",
+// `key` is the site_content suffix (pricing.included.<key>) — decoupled from array
+// order so new lines can be inserted without shifting any existing key's binding
+// (these render from fallbacks today; keeping stable keys keeps future edits safe).
+const INCLUDED: { key: string; text: string }[] = [
+  { key: "0", text: "Estudo por Questões" },
+  { key: "1", text: "Resumos Narrativos" },
+  { key: "2", text: "MedVoice" },
+  { key: "3", text: "Fórmula MedHelp" },
+  { key: "flashcards", text: "Flashcards" },
+  { key: "4", text: "Audiocards" },
+  { key: "5", text: "MedHelp 60D — liberado 60 dias antes" },
+  { key: "6", text: "Acesso em celular, tablet e computador" },
+  { key: "7", text: "Atualizações contínuas" },
 ];
 
 export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
@@ -205,8 +209,14 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
               </motion.div>
             </AnimatePresence>
           </div>
-          <div className="mb-5 text-xs" style={{ color: "var(--lp-fg-25)" }}>
+          <div className="mb-1.5 text-xs" style={{ color: "var(--lp-fg-25)" }}>
             <SiteText as="span" k="pricing.installments" fallback="ou parcele em até 12x no cartão" />
+          </div>
+          {/* Access term: exam-cycle access (closes on the day of the prova), not
+              lifetime. Generic wording, no date — matches the /loja card. */}
+          <div className="mb-5 flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--lp-fg-40)" }}>
+            <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
+            <SiteText as="span" k="pricing.validity" fallback="Válido até a data da prova" />
           </div>
 
           {/* Live MedHelp 60D status for the selected turma. */}
@@ -232,10 +242,10 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
 
           {/* Feature list */}
           <ul className="mb-8 flex flex-col gap-2.5">
-            {INCLUDED.map((item, i) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--lp-fg-55)" }}>
+            {INCLUDED.map((item) => (
+              <li key={item.key} className="flex items-start gap-2.5 text-sm" style={{ color: "var(--lp-fg-55)" }}>
                 <Check className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" style={{ color: "var(--brand)" }} />
-                <SiteText as="span" k={`pricing.included.${i}`} fallback={item} />
+                <SiteText as="span" k={`pricing.included.${item.key}`} fallback={item.text} />
               </li>
             ))}
           </ul>

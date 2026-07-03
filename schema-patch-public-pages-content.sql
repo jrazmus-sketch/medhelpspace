@@ -35,6 +35,7 @@ INSERT INTO site_content (key, value) VALUES
   ('loja.included.1',       'Resumos Narrativos — casos clínicos com raciocínio e conduta'),
   ('loja.included.2',       'MedVoice — treinamento de decisão em áudios curtos'),
   ('loja.included.3',       'Fórmula MedHelp — atalhos de prova, macetes e mnemônicos'),
+  ('loja.included.flashcards', 'Flashcards — revisão ativa por especialidade com repetição espaçada'),
   ('loja.included.4',       'Audiocards — flashcards em áudio com o que já caiu'),
   ('loja.included.5',       'Guia de estudos completo'),
   ('loja.included.6',       'Acesso em celular, tablet e computador'),
@@ -42,6 +43,7 @@ INSERT INTO site_content (key, value) VALUES
   ('loja.included.8',       'Atualizações contínuas'),
   ('loja.included.lock',    'MedHelp 60D — liberado 60 dias antes da prova'),
   ('loja.card.turma',       'Turma'),
+  ('loja.card.validity',    'Válido até a data da prova'),
   ('loja.card.installments','ou parcele em até 12x no cartão'),
   ('loja.card.cta',         'Comprar agora'),
 

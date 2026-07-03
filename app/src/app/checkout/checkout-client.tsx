@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "lucide-react";
+import { Check, ChevronRight, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "lucide-react";
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
 import { BillingForm } from "./billing-form";
@@ -502,10 +502,11 @@ export function CheckoutClient({
               <button
                 type="button"
                 onClick={() => setCouponExpanded(true)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-brand hover:underline"
+                className="flex w-full items-center gap-2.5 rounded-lg border border-dashed border-brand/45 bg-brand/[0.04] px-4 py-3 text-left text-sm font-semibold text-brand transition-colors hover:border-brand/75 hover:bg-brand/[0.08]"
               >
-                <Tag className="h-3 w-3" />
-                Tem um cupom de desconto?
+                <Tag className="h-4 w-4 shrink-0" />
+                <span className="flex-1">Tem um cupom de desconto?</span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-brand/60" />
               </button>
             )}
           </div>
