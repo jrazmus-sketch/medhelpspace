@@ -153,7 +153,9 @@ function buildTheme(id: string, accent: string): CardTheme {
     case "purple":
       return makeTheme("purple", "#ece3f7", "#1b1226", "#ded0ef", "#dc2626", LIGHT_OPTS);
     case "tinted":
-      return makeTheme("tinted", mix(accent, "#ffffff", 0.12), "#171320", mix(accent, "#ffffff", 0.24), "#dc2626", LIGHT_OPTS);
+      // Soft wash: mostly white with a HINT of the accent (start from white,
+      // add ~12% accent) — not the accent lightened by 12%.
+      return makeTheme("tinted", mix("#ffffff", accent, 0.12), "#171320", mix("#ffffff", accent, 0.22), "#dc2626", LIGHT_OPTS);
     default:
       return makeTheme("ink", "#050509", "#ffffff", "#0b0b12", "#ff6b6b", {
         gridAlpha: 0.04,
@@ -2645,7 +2647,7 @@ export function EstudioClient() {
                       height: 30,
                       borderRadius: 8,
                       cursor: "pointer",
-                      background: isLightBg ? a.light : a.value,
+                      background: a.value,
                       border:
                         accent === a.value
                           ? "2px solid #fff"
