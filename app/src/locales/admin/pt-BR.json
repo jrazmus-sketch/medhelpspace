@@ -994,6 +994,9 @@
     "saveIssued": "Salvar como emitida",
     "saving": "Salvando…",
     "skip": "Dispensar",
+    "edit": "Editar",
+    "lockedBadge": "Bloqueado",
+    "lockedNote": "Esta nota já está registrada. Clique em Editar para alterar o número ou o código de verificação.",
     "saveError": "Não foi possível salvar."
   },
   "coupons": {
