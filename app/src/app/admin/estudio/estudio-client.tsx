@@ -26,22 +26,32 @@ import "@/lib/i18n";
   + DevTools "Capture node screenshot" of #ig-card is the exact fallback.
 */
 
-// ── Accent palette (dark-mode specialty values — bright on the ink background) ──
-const ACCENTS: { key: string; value: string }[] = [
-  { key: "brand", value: "#c084e8" },
-  { key: "cardiologia", value: "#ff8080" },
-  { key: "pneumologia", value: "#ffb070" },
-  { key: "reumatologia", value: "#ffd96b" },
-  { key: "clinica", value: "#6ee79b" },
-  { key: "gastro", value: "#5dd8c8" },
-  { key: "neurologia", value: "#4dc8e8" },
-  { key: "obstetricia", value: "#b59dff" },
-  { key: "ginecologia", value: "#f786c0" },
-  { key: "pediatria", value: "#ff7b9b" },
-  { key: "infectologia", value: "#b8e05a" },
-  { key: "nefrologia", value: "#82b4ff" },
-  { key: "dermatologia", value: "#fbbf5a" },
+// ── Accent palette ────────────────────────────────────────────────────────────
+// `value` = dark-mode specialty value (bright, for the ink background). `light` =
+// the site's light-mode counterpart (deeper/saturated, for a white surface). Both
+// come straight from globals.css (--c-spec-* in .dark vs :root) so nothing is
+// invented — a light-background card just switches to the palette the brand
+// already designed. See CardTheme / buildTheme below.
+const ACCENTS: { key: string; value: string; light: string }[] = [
+  { key: "brand", value: "#c084e8", light: "#7a1d91" },
+  { key: "cardiologia", value: "#ff8080", light: "#e84343" },
+  { key: "pneumologia", value: "#ffb070", light: "#f97316" },
+  { key: "reumatologia", value: "#ffd96b", light: "#d4a017" },
+  { key: "clinica", value: "#6ee79b", light: "#16a34a" },
+  { key: "gastro", value: "#5dd8c8", light: "#0d9488" },
+  { key: "neurologia", value: "#4dc8e8", light: "#0891b2" },
+  { key: "obstetricia", value: "#b59dff", light: "#7c3aed" },
+  { key: "ginecologia", value: "#f786c0", light: "#db2777" },
+  { key: "pediatria", value: "#ff7b9b", light: "#e11d48" },
+  { key: "infectologia", value: "#b8e05a", light: "#65a30d" },
+  { key: "nefrologia", value: "#82b4ff", light: "#2563eb" },
+  { key: "dermatologia", value: "#fbbf5a", light: "#b45309" },
 ];
+
+// dark hex → light-mode hex (for switching accents when the surface is light)
+const LIGHT_ACCENT: Record<string, string> = Object.fromEntries(
+  ACCENTS.map((a) => [a.value, a.light]),
+);
 
 // hex → rgba with alpha
 function hexA(hex: string, a: number): string {
@@ -50,6 +60,117 @@ function hexA(hex: string, a: number): string {
   const g = parseInt(h.substring(2, 4), 16);
   const b = parseInt(h.substring(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// hex → "r, g, b" triplet for building rgba(...) with a variable alpha
+function rgbTriplet(hex: string): string {
+  const h = hex.replace("#", "");
+  return `${parseInt(h.substring(0, 2), 16)}, ${parseInt(h.substring(2, 4), 16)}, ${parseInt(h.substring(4, 6), 16)}`;
+}
+
+// WCAG relative luminance (0..1)
+function relLum(hex: string): number {
+  const h = hex.replace("#", "");
+  const lin = [0, 2, 4].map((i) => {
+    const c = parseInt(h.substring(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+// Best-contrast text color to sit ON a solid fill of `hex` (near-black or white),
+// chosen by WCAG contrast. Works for both palettes: bright pastels → dark text
+// (preserves the current look); deep light accents → white text.
+function bestOn(hex: string): string {
+  const L = relLum(hex);
+  const cBlack = (L + 0.05) / 0.05;
+  const cWhite = 1.05 / (L + 0.05);
+  return cBlack >= cWhite ? "#0a0510" : "#ffffff";
+}
+
+// Linear blend of two hex colors (t=0 → a, t=1 → b)
+function mix(a: string, b: string, t: number): string {
+  const ha = a.replace("#", "");
+  const hb = b.replace("#", "");
+  const ch = (i: number) =>
+    Math.round(parseInt(ha.substring(i, i + 2), 16) * (1 - t) + parseInt(hb.substring(i, i + 2), 16) * t);
+  const to2 = (n: number) => n.toString(16).padStart(2, "0");
+  return `#${to2(ch(0))}${to2(ch(2))}${to2(ch(4))}`;
+}
+
+// ── Card surface themes ───────────────────────────────────────────────────────
+// The whole point of the token layer: templates read colors from `theme` instead
+// of hardcoding #ffffff / rgba(255,255,255,…) / #050509, so the card background
+// can be swapped without white-on-white. `fgRgb` derives from `fgStrong` so muted
+// text and panel fills (rgba(fgRgb, α)) flip automatically; `scrimRgb` derives
+// from `bg` so image→card scrims fade to the right color.
+type CardTheme = {
+  id: string;
+  bg: string; // solid card background
+  fgStrong: string; // primary text (was "#ffffff")
+  fgRgb: string; // "r, g, b" of fgStrong for muted text / panels / hairlines
+  scrimRgb: string; // "r, g, b" of bg for image→card scrims
+  imgBg: string; // image well / placeholder background (was "#0b0b12")
+  danger: string; // "Mito" red, contrast-safe on this surface
+  gridAlpha: number; // accent grid-line opacity
+  glowAccent: number; // top-right accent glow opacity
+  brandGlow: string; // bottom-left brand glow (full rgba)
+  isLight: boolean;
+};
+
+function makeTheme(
+  id: string,
+  bg: string,
+  fgStrong: string,
+  imgBg: string,
+  danger: string,
+  o: { gridAlpha: number; glowAccent: number; brandGlow: string; isLight: boolean },
+): CardTheme {
+  return {
+    id,
+    bg,
+    fgStrong,
+    fgRgb: rgbTriplet(fgStrong),
+    scrimRgb: rgbTriplet(bg),
+    imgBg,
+    danger,
+    gridAlpha: o.gridAlpha,
+    glowAccent: o.glowAccent,
+    brandGlow: o.brandGlow,
+    isLight: o.isLight,
+  };
+}
+
+const LIGHT_OPTS = { gridAlpha: 0.06, glowAccent: 0.1, brandGlow: "rgba(122,29,145,0.06)", isLight: true };
+
+// `accent` is only needed for the accent-tinted "Tinted" surface.
+function buildTheme(id: string, accent: string): CardTheme {
+  switch (id) {
+    case "paper":
+      return makeTheme("paper", "#ffffff", "#141019", "#eceaf1", "#dc2626", LIGHT_OPTS);
+    case "cream":
+      return makeTheme("cream", "#faf6ef", "#1b1710", "#efe8dc", "#dc2626", LIGHT_OPTS);
+    case "purple":
+      return makeTheme("purple", "#ece3f7", "#1b1226", "#ded0ef", "#dc2626", LIGHT_OPTS);
+    case "tinted":
+      return makeTheme("tinted", mix(accent, "#ffffff", 0.12), "#171320", mix(accent, "#ffffff", 0.24), "#dc2626", LIGHT_OPTS);
+    default:
+      return makeTheme("ink", "#050509", "#ffffff", "#0b0b12", "#ff6b6b", {
+        gridAlpha: 0.04,
+        glowAccent: 0.22,
+        brandGlow: "rgba(122,29,145,0.18)",
+        isLight: false,
+      });
+  }
+}
+
+const INK_THEME = buildTheme("ink", "#c084e8");
+
+const BACKGROUNDS = ["ink", "paper", "cream", "purple", "tinted"] as const;
+type BgId = (typeof BACKGROUNDS)[number];
+// Swatch preview color for each background button (tinted follows the accent).
+function bgSwatch(id: BgId, accent: string): string {
+  return buildTheme(id, accent).bg;
 }
 
 const FONT_DISPLAY = "var(--font-bricolage), ui-sans-serif, system-ui, sans-serif";
@@ -107,6 +228,9 @@ type Vals = Record<string, string>;
 
 // Canvas height for the current aspect ratio (width is always 1080).
 const CardHeightContext = React.createContext<number>(1080);
+// Active surface theme (ink / paper / cream / purple / tinted). Templates read
+// colors from here instead of hardcoding dark-mode literals.
+const CardThemeContext = React.createContext<CardTheme>(INK_THEME);
 // During a live-page-mockup export, holds a frozen PNG data-URL of the embedded
 // page so the phone renders a static image the exporter can rasterize.
 const FrozenPageContext = React.createContext<string | null>(null);
@@ -122,6 +246,7 @@ function CardShell({
   padded?: boolean;
 }) {
   const height = React.useContext(CardHeightContext);
+  const theme = React.useContext(CardThemeContext);
   return (
     <div
       id="ig-card"
@@ -130,8 +255,8 @@ function CardShell({
         height,
         position: "relative",
         overflow: "hidden",
-        background: "#050509",
-        color: "#ededed",
+        background: theme.bg,
+        color: theme.fgStrong,
         fontFamily: FONT_SANS,
       }}
     >
@@ -140,7 +265,7 @@ function CardShell({
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: `linear-gradient(${hexA(accent, 0.04)} 1px, transparent 1px), linear-gradient(90deg, ${hexA(accent, 0.04)} 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(${hexA(accent, theme.gridAlpha)} 1px, transparent 1px), linear-gradient(90deg, ${hexA(accent, theme.gridAlpha)} 1px, transparent 1px)`,
           backgroundSize: "54px 54px",
         }}
       />
@@ -149,15 +274,14 @@ function CardShell({
         style={{
           position: "absolute",
           inset: 0,
-          background: `radial-gradient(720px 540px at 80% -10%, ${hexA(accent, 0.22)}, transparent 62%)`,
+          background: `radial-gradient(720px 540px at 80% -10%, ${hexA(accent, theme.glowAccent)}, transparent 62%)`,
         }}
       />
       <div
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "radial-gradient(680px 520px at 8% 110%, rgba(122,29,145,0.18), transparent 60%)",
+          background: `radial-gradient(680px 520px at 8% 110%, ${theme.brandGlow}, transparent 60%)`,
         }}
       />
       {/* top hairline */}
@@ -231,6 +355,7 @@ function SpecChip({ accent, children }: { accent: string; children: React.ReactN
 }
 
 function BrandFooter({ accent }: { accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <div
       style={{
@@ -239,7 +364,7 @@ function BrandFooter({ accent }: { accent: string }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        borderTop: `1px solid rgba(${theme.fgRgb}, 0.08)`,
       }}
     >
       <div
@@ -248,18 +373,18 @@ function BrandFooter({ accent }: { accent: string }) {
           fontWeight: 800,
           fontSize: 30,
           letterSpacing: "-0.02em",
-          color: "#ffffff",
+          color: theme.fgStrong,
         }}
       >
         MedHelpSpace
-        <span style={{ color: "rgba(255,255,255,0.22)", padding: "0 10px" }}>|</span>
+        <span style={{ color: `rgba(${theme.fgRgb}, 0.22)`, padding: "0 10px" }}>|</span>
         <span style={{ color: accent }}>Revalida</span>
       </div>
       <div
         style={{
           fontFamily: FONT_MONO,
           fontSize: 22,
-          color: "rgba(255,255,255,0.42)",
+          color: `rgba(${theme.fgRgb}, 0.42)`,
           letterSpacing: "0.02em",
         }}
       >
@@ -271,6 +396,7 @@ function BrandFooter({ accent }: { accent: string }) {
 
 // ── Template 1 — Questão do dia ──────────────────────────────────────────────
 function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const alts: [string, string][] = [
     ["A", v.a],
     ["B", v.b],
@@ -291,7 +417,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
           fontWeight: 700,
           fontSize: 42,
           lineHeight: 1.28,
-          color: "#ffffff",
+          color: theme.fgStrong,
           letterSpacing: "-0.01em",
         }}
       >
@@ -307,8 +433,8 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
               alignItems: "center",
               gap: 24,
               padding: "20px 26px",
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.02)",
+              border: `1px solid rgba(${theme.fgRgb}, 0.08)`,
+              background: `rgba(${theme.fgRgb}, 0.02)`,
               borderRadius: 16,
             }}
           >
@@ -330,7 +456,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
             >
               {letter}
             </span>
-            <span style={{ fontSize: 29, color: "#e8e8ea", lineHeight: 1.3 }}>{text}</span>
+            <span style={{ fontSize: 29, color: `rgba(${theme.fgRgb}, 0.9)`, lineHeight: 1.3 }}>{text}</span>
           </div>
         ))}
       </div>
@@ -340,7 +466,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 30,
           textAlign: "center",
           fontSize: 27,
-          color: "#ffffff",
+          color: theme.fgStrong,
           background: hexA(accent, 0.12),
           border: `1px solid ${hexA(accent, 0.4)}`,
           borderRadius: 999,
@@ -357,6 +483,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 2 — Dica clínica ────────────────────────────────────────────────
 function DicaCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -372,7 +499,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 76,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
-          color: "#ffffff",
+          color: theme.fgStrong,
         }}
       >
         {v.title}
@@ -383,7 +510,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 36,
           fontSize: 35,
           lineHeight: 1.5,
-          color: "rgba(255,255,255,0.72)",
+          color: `rgba(${theme.fgRgb}, 0.72)`,
         }}
       >
         {v.body}
@@ -410,7 +537,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
         >
           Lembre-se
         </div>
-        <div style={{ fontSize: 33, fontWeight: 600, color: "#ffffff", lineHeight: 1.35 }}>
+        <div style={{ fontSize: 33, fontWeight: 600, color: theme.fgStrong, lineHeight: 1.35 }}>
           {v.pearl}
         </div>
       </div>
@@ -422,6 +549,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 3 — Promo / oferta ──────────────────────────────────────────────
 function PromoCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -434,7 +562,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 82,
           lineHeight: 1.03,
           letterSpacing: "-0.03em",
-          color: "#ffffff",
+          color: theme.fgStrong,
         }}
       >
         {v.headline}
@@ -445,7 +573,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 30,
           fontSize: 34,
           lineHeight: 1.45,
-          color: "rgba(255,255,255,0.7)",
+          color: `rgba(${theme.fgRgb}, 0.7)`,
           maxWidth: "20ch",
         }}
       >
@@ -458,7 +586,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
             style={{
               fontSize: 40,
               textDecoration: "line-through",
-              color: "rgba(255,255,255,0.4)",
+              color: `rgba(${theme.fgRgb}, 0.4)`,
             }}
           >
             {v.basePrice}
@@ -470,7 +598,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
               fontSize: 96,
               lineHeight: 0.9,
               letterSpacing: "-0.03em",
-              color: "#ffffff",
+              color: theme.fgStrong,
             }}
           >
             {v.salePrice}
@@ -502,7 +630,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
             fontFamily: FONT_SANS,
             fontWeight: 700,
             fontSize: 32,
-            color: "#0a0510",
+            color: bestOn(accent),
             background: accent,
             borderRadius: 16,
             padding: "24px 30px",
@@ -520,6 +648,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 4 — Frase / motivação ───────────────────────────────────────────
 function FraseCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <div
@@ -533,11 +662,11 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
         }}
       >
         <div style={{ width: 72, height: 5, borderRadius: 3, background: accent, marginBottom: 48 }} />
-        {/* key={accent} remounts the node on color change — WebKit doesn't
+        {/* key remounts the node on color/theme change — WebKit doesn't
             re-run background-clip:text when `background` updates in place,
             which left the gradient painting over the text until a reflow. */}
         <blockquote
-          key={accent}
+          key={accent + theme.id}
           style={{
             margin: 0,
             fontFamily: FONT_DISPLAY,
@@ -545,7 +674,7 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
             fontSize: 78,
             lineHeight: 1.08,
             letterSpacing: "-0.03em",
-            background: `linear-gradient(135deg, #ffffff 45%, ${accent})`,
+            background: `linear-gradient(135deg, ${theme.fgStrong} 45%, ${accent})`,
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",
@@ -562,7 +691,7 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
             fontSize: 24,
             letterSpacing: "0.22em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.5)",
+            color: `rgba(${theme.fgRgb}, 0.5)`,
           }}
         >
           {v.sub}
@@ -576,6 +705,7 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 5 — Cronograma (structured "document" layout) ───────────────────
 function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const steps: { n: string; label: string; title: string; body: string }[] = [
     { n: "1", label: v.step1label, title: v.step1title, body: v.step1body },
     { n: "2", label: v.step2label, title: v.step2title, body: v.step2body },
@@ -591,7 +721,7 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
             fontSize: 60,
             lineHeight: 1.05,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: theme.fgStrong,
             maxWidth: "13ch",
           }}
         >
@@ -623,7 +753,7 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
               display: "flex",
               gap: 26,
               padding: "26px 0",
-              borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.08)",
+              borderTop: i === 0 ? "none" : `1px solid rgba(${theme.fgRgb}, 0.08)`,
             }}
           >
             <span
@@ -658,10 +788,10 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
               >
                 {s.label}
               </div>
-              <div style={{ marginTop: 8, fontSize: 33, fontWeight: 700, color: "#ffffff" }}>
+              <div style={{ marginTop: 8, fontSize: 33, fontWeight: 700, color: theme.fgStrong }}>
                 {s.title}
               </div>
-              <div style={{ marginTop: 6, fontSize: 26, color: "rgba(255,255,255,0.62)", lineHeight: 1.4 }}>
+              <div style={{ marginTop: 6, fontSize: 26, color: `rgba(${theme.fgRgb}, 0.62)`, lineHeight: 1.4 }}>
                 {s.body}
               </div>
             </div>
@@ -682,7 +812,7 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
         }}
       >
         <span style={{ flexShrink: 0, width: 16, height: 16, background: accent, borderRadius: 3 }} />
-        <span style={{ fontSize: 26, color: "#ffffff", fontWeight: 500, lineHeight: 1.35 }}>
+        <span style={{ fontSize: 26, color: theme.fgStrong, fontWeight: 500, lineHeight: 1.35 }}>
           {v.footnote}
         </span>
       </div>
@@ -695,6 +825,7 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Shared image placeholder ─────────────────────────────────────────────────
 function ImgPlaceholder() {
   const { t } = useTranslation();
+  const theme = React.useContext(CardThemeContext);
   return (
     <div
       style={{
@@ -703,11 +834,11 @@ function ImgPlaceholder() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "rgba(255,255,255,0.35)",
+        color: `rgba(${theme.fgRgb}, 0.35)`,
         fontFamily: FONT_MONO,
         fontSize: 22,
         textAlign: "center",
-        border: "2px dashed rgba(255,255,255,0.14)",
+        border: `2px dashed rgba(${theme.fgRgb}, 0.14)`,
         borderRadius: 12,
         padding: 24,
       }}
@@ -720,6 +851,7 @@ function ImgPlaceholder() {
 // ── Template 6 — Imagem (photo / screenshot hero) ────────────────────────────
 function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
   const height = React.useContext(CardHeightContext);
+  const theme = React.useContext(CardThemeContext);
   const imgH = Math.round(height * 0.56);
   const fit = v.fit || "cover-center";
   const objectFit: React.CSSProperties["objectFit"] = fit === "contain" ? "contain" : "cover";
@@ -727,7 +859,7 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
   return (
     <CardShell accent={accent} padded={false}>
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <div style={{ position: "relative", width: "100%", height: imgH, flexShrink: 0, background: "#0b0b12" }}>
+        <div style={{ position: "relative", width: "100%", height: imgH, flexShrink: 0, background: theme.imgBg }}>
           {v.image ? (
             <img
               data-no-frame
@@ -746,12 +878,12 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
               <ImgPlaceholder />
             </div>
           )}
-          {/* scrim fading the image into the ink background */}
+          {/* scrim fading the image into the card background */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              background: "linear-gradient(to bottom, transparent 50%, rgba(5,5,9,0.6) 80%, #050509)",
+              background: `linear-gradient(to bottom, transparent 50%, rgba(${theme.scrimRgb}, 0.6) 80%, ${theme.bg})`,
             }}
           />
         </div>
@@ -765,13 +897,13 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
               fontSize: 58,
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
-              color: "#ffffff",
+              color: theme.fgStrong,
             }}
           >
             {v.headline}
           </h1>
           {v.caption ? (
-            <p style={{ marginTop: 14, fontSize: 30, color: "rgba(255,255,255,0.66)", lineHeight: 1.4 }}>
+            <p style={{ marginTop: 14, fontSize: 30, color: `rgba(${theme.fgRgb}, 0.66)`, lineHeight: 1.4 }}>
               {v.caption}
             </p>
           ) : null}
@@ -827,6 +959,7 @@ function PhoneFrame({ accent, children }: { accent: string; children: React.Reac
 function MockupCard({ v, accent }: { v: Vals; accent: string }) {
   const isPage = v.mode === "page";
   const frozen = React.useContext(FrozenPageContext);
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -838,7 +971,7 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 52,
           lineHeight: 1.08,
           letterSpacing: "-0.02em",
-          color: "#ffffff",
+          color: theme.fgStrong,
           maxWidth: "20ch",
         }}
       >
@@ -882,11 +1015,9 @@ function toLines(s: string): string[] {
   return (s || "").split("\n").map((x) => x.trim()).filter(Boolean);
 }
 
-// Myth is always semantic red, independent of the specialty accent.
-const MYTH_RED = "#ff6b6b";
-
 // ── Template 8 — Nuvem de temas (pill cloud; lines starting with * = destaque) ─
 function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const items = toLines(v.topics);
   return (
     <CardShell accent={accent}>
@@ -903,7 +1034,7 @@ function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 64,
           lineHeight: 1.06,
           letterSpacing: "-0.03em",
-          color: "#ffffff",
+          color: theme.fgStrong,
           maxWidth: "18ch",
         }}
       >
@@ -933,9 +1064,9 @@ function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
                 padding: "16px 30px",
                 borderRadius: 999,
                 whiteSpace: "nowrap",
-                color: hot ? "#0a0510" : "#e8e8ea",
+                color: hot ? bestOn(accent) : `rgba(${theme.fgRgb}, 0.9)`,
                 background: hot ? accent : hexA(accent, 0.08),
-                border: hot ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.12)",
+                border: hot ? `1px solid ${accent}` : `1px solid rgba(${theme.fgRgb}, 0.12)`,
                 boxShadow: hot ? `0 0 40px ${hexA(accent, 0.35)}` : "none",
               }}
             >
@@ -958,6 +1089,7 @@ function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 9 — Comparação (two-column contrast) ────────────────────────────
 function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const column = (title: string, items: string[], filled: boolean) => (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
       <div
@@ -966,7 +1098,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
           fontWeight: 800,
           fontSize: 34,
           textAlign: "center",
-          color: filled ? "#0a0510" : accent,
+          color: filled ? bestOn(accent) : accent,
           background: filled ? accent : hexA(accent, 0.1),
           border: `1px solid ${filled ? accent : hexA(accent, 0.4)}`,
           borderRadius: 14,
@@ -981,11 +1113,11 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
             key={i}
             style={{
               fontSize: 27,
-              color: "#e2e2e6",
+              color: `rgba(${theme.fgRgb}, 0.88)`,
               lineHeight: 1.35,
               padding: "14px 18px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.07)",
+              background: `rgba(${theme.fgRgb}, 0.03)`,
+              border: `1px solid rgba(${theme.fgRgb}, 0.07)`,
               borderRadius: 12,
             }}
           >
@@ -1007,7 +1139,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
             fontSize: 58,
             lineHeight: 1.05,
             letterSpacing: "-0.03em",
-            color: "#ffffff",
+            color: theme.fgStrong,
           }}
         >
           {v.title}
@@ -1039,7 +1171,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
             background: hexA(accent, 0.08),
             borderRadius: "0 12px 12px 0",
             fontSize: 25,
-            color: "#ffffff",
+            color: theme.fgStrong,
             lineHeight: 1.35,
           }}
         >
@@ -1054,6 +1186,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 10 — Mito × Verdade ─────────────────────────────────────────────
 function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const block = (label: string, text: string, color: string, mark: string) => (
     <div
       style={{
@@ -1076,7 +1209,7 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
             height: 52,
             borderRadius: "50%",
             background: color,
-            color: "#0a0510",
+            color: bestOn(color),
             fontWeight: 800,
             fontSize: 30,
             display: "flex",
@@ -1099,7 +1232,7 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
           {label}
         </span>
       </div>
-      <div style={{ fontSize: 34, lineHeight: 1.4, color: "#ffffff", fontWeight: 500 }}>{text}</div>
+      <div style={{ fontSize: 34, lineHeight: 1.4, color: theme.fgStrong, fontWeight: 500 }}>{text}</div>
     </div>
   );
   return (
@@ -1113,14 +1246,14 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 52,
           lineHeight: 1.08,
           letterSpacing: "-0.02em",
-          color: "#ffffff",
+          color: theme.fgStrong,
           maxWidth: "20ch",
         }}
       >
         {v.title}
       </h1>
       <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column", gap: 22 }}>
-        {block("Mito", v.myth, MYTH_RED, "✕")}
+        {block("Mito", v.myth, theme.danger, "✕")}
         {block("Verdade", v.truth, accent, "✓")}
       </div>
       <BrandFooter accent={accent} />
@@ -1130,6 +1263,7 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 11 — Checklist ──────────────────────────────────────────────────
 function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const items = toLines(v.items);
   return (
     <CardShell accent={accent}>
@@ -1146,7 +1280,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 62,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
-          color: "#ffffff",
+          color: theme.fgStrong,
           maxWidth: "18ch",
         }}
       >
@@ -1174,7 +1308,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
             >
               ✓
             </span>
-            <span style={{ fontSize: 33, color: "#eaeaee", lineHeight: 1.3 }}>{it}</span>
+            <span style={{ fontSize: 33, color: `rgba(${theme.fgRgb}, 0.92)`, lineHeight: 1.3 }}>{it}</span>
           </div>
         ))}
       </div>
@@ -1185,7 +1319,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
             marginTop: 20,
             textAlign: "center",
             fontSize: 27,
-            color: "#ffffff",
+            color: theme.fgStrong,
             background: hexA(accent, 0.12),
             border: `1px solid ${hexA(accent, 0.4)}`,
             borderRadius: 999,
@@ -1203,6 +1337,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 12 — Mnemônico / Macete (lines: "L=Palavra=detalhe") ────────────
 function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const rows = toLines(v.items).map((l) => {
     const parts = l.split("=").map((x) => x.trim());
     return { letter: parts[0] || "", word: parts[1] || "", detail: parts[2] || "" };
@@ -1224,7 +1359,7 @@ function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
         {v.title}
       </h1>
       {v.sub ? (
-        <p style={{ marginTop: 10, fontSize: 30, color: "rgba(255,255,255,0.7)" }}>{v.sub}</p>
+        <p style={{ marginTop: 10, fontSize: 30, color: `rgba(${theme.fgRgb}, 0.7)` }}>{v.sub}</p>
       ) : null}
 
       <div style={{ marginTop: 34, flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1250,9 +1385,9 @@ function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
               {r.letter}
             </span>
             <div style={{ minWidth: 0 }}>
-              <span style={{ fontSize: 32, fontWeight: 700, color: "#ffffff" }}>{r.word}</span>
+              <span style={{ fontSize: 32, fontWeight: 700, color: theme.fgStrong }}>{r.word}</span>
               {r.detail ? (
-                <span style={{ fontSize: 26, color: "rgba(255,255,255,0.6)" }}>{"  ·  " + r.detail}</span>
+                <span style={{ fontSize: 26, color: `rgba(${theme.fgRgb}, 0.6)` }}>{"  ·  " + r.detail}</span>
               ) : null}
             </div>
           </div>
@@ -1338,12 +1473,13 @@ function DestaqueCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 14 — Meio a meio (image left, text right) ───────────────────────
 function SplitCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
   const pills = toLines(v.pills);
   return (
     <CardShell accent={accent} padded={false}>
       <div style={{ position: "absolute", inset: 0, display: "flex" }}>
-        <div style={{ width: "50%", height: "100%", position: "relative", background: "#0b0b12", flexShrink: 0 }}>
+        <div style={{ width: "50%", height: "100%", position: "relative", background: theme.imgBg, flexShrink: 0 }}>
           {v.image ? (
             <img data-no-frame src={v.image} alt="" style={{ width: "100%", height: "100%", objectFit, objectPosition, display: "block" }} />
           ) : (
@@ -1351,7 +1487,7 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
               <ImgPlaceholder />
             </div>
           )}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 68%, rgba(5,5,9,0.9))" }} />
+          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to right, transparent 68%, rgba(${theme.scrimRgb}, 0.9))` }} />
         </div>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", padding: "72px 64px" }}>
           <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -1363,13 +1499,13 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
               fontSize: 56,
               lineHeight: 1.04,
               letterSpacing: "-0.03em",
-              color: "#ffffff",
+              color: theme.fgStrong,
             }}
           >
             {v.headline}
           </h1>
           {v.body ? (
-            <p style={{ marginTop: 22, fontSize: 30, lineHeight: 1.45, color: "rgba(255,255,255,0.72)" }}>{v.body}</p>
+            <p style={{ marginTop: 22, fontSize: 30, lineHeight: 1.45, color: `rgba(${theme.fgRgb}, 0.72)` }}>{v.body}</p>
           ) : null}
           {pills.length ? (
             <div style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}>
@@ -1392,7 +1528,7 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
               ))}
             </div>
           ) : null}
-          <div style={{ marginTop: "auto", paddingTop: 30, fontFamily: FONT_MONO, fontSize: 22, color: "rgba(255,255,255,0.5)" }}>
+          <div style={{ marginTop: "auto", paddingTop: 30, fontFamily: FONT_MONO, fontSize: 22, color: `rgba(${theme.fgRgb}, 0.5)` }}>
             medhelpspace.com.br
           </div>
         </div>
@@ -1404,6 +1540,7 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 15 — Imagem clínica + selo (callout) ────────────────────────────
 function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
   const height = React.useContext(CardHeightContext);
+  const theme = React.useContext(CardThemeContext);
   const boxH = Math.round(height * 0.42);
   const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
   return (
@@ -1417,7 +1554,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 60,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
-          color: "#ffffff",
+          color: theme.fgStrong,
           maxWidth: "18ch",
         }}
       >
@@ -1433,7 +1570,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
           borderRadius: 20,
           overflow: "hidden",
           border: `1px solid ${hexA(accent, 0.35)}`,
-          background: "#0b0b12",
+          background: theme.imgBg,
           boxShadow: `0 0 60px ${hexA(accent, 0.16)}`,
         }}
       >
@@ -1454,7 +1591,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
               fontSize: 22,
               fontWeight: 700,
               letterSpacing: "0.06em",
-              color: "#0a0510",
+              color: bestOn(accent),
               background: accent,
               borderRadius: 999,
               padding: "10px 20px",
@@ -1473,7 +1610,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
             marginBottom: 4,
             textAlign: "center",
             fontSize: 30,
-            color: "#ffffff",
+            color: theme.fgStrong,
             background: hexA(accent, 0.12),
             border: `1px solid ${hexA(accent, 0.4)}`,
             borderRadius: 999,
@@ -1491,6 +1628,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 16 — Depoimento (testimonial with avatar) ───────────────────────
 function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -1504,7 +1642,7 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
             fontSize: 56,
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
-            color: "#ffffff",
+            color: theme.fgStrong,
             maxWidth: "20ch",
           }}
         >
@@ -1518,7 +1656,7 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
               borderRadius: "50%",
               overflow: "hidden",
               flexShrink: 0,
-              background: "#0b0b12",
+              background: theme.imgBg,
               border: `2px solid ${hexA(accent, 0.5)}`,
             }}
           >
@@ -1527,7 +1665,7 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
             ) : null}
           </div>
           <div>
-            <div style={{ fontSize: 34, fontWeight: 700, color: "#ffffff" }}>{v.name}</div>
+            <div style={{ fontSize: 34, fontWeight: 700, color: theme.fgStrong }}>{v.name}</div>
             {v.role ? (
               <div
                 style={{
@@ -1552,21 +1690,22 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 17 — Número gigante (big stat) ──────────────────────────────────
 function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const pills = toLines(v.pills);
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
-        {/* key={accent} — see FraseCard: WebKit won't re-run background-clip:text in place */}
+        {/* key — see FraseCard: WebKit won't re-run background-clip:text in place */}
         <div
-          key={accent}
+          key={accent + theme.id}
           style={{
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
             fontSize: 240,
             lineHeight: 0.9,
             letterSpacing: "-0.04em",
-            background: `linear-gradient(135deg, #ffffff 40%, ${accent})`,
+            background: `linear-gradient(135deg, ${theme.fgStrong} 40%, ${accent})`,
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",
@@ -1575,7 +1714,7 @@ function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
         >
           {v.bignum}
         </div>
-        <p style={{ marginTop: 20, fontSize: 36, lineHeight: 1.4, color: "rgba(255,255,255,0.78)", maxWidth: "22ch" }}>
+        <p style={{ marginTop: 20, fontSize: 36, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.78)`, maxWidth: "22ch" }}>
           {v.label}
         </p>
         {pills.length ? (
@@ -1607,6 +1746,7 @@ function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 18 — Grade de recursos (lines: "Título|descrição") ──────────────
 function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   const items = toLines(v.items).map((l) => {
     const [title, ...rest] = l.split("|");
     return { title: (title || "").trim(), desc: rest.join("|").trim() };
@@ -1622,7 +1762,7 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
           fontSize: 60,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
-          color: "#ffffff",
+          color: theme.fgStrong,
           maxWidth: "16ch",
         }}
       >
@@ -1638,8 +1778,8 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
               gap: 12,
               padding: 30,
               borderRadius: 18,
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: `rgba(${theme.fgRgb}, 0.03)`,
+              border: `1px solid rgba(${theme.fgRgb}, 0.08)`,
             }}
           >
             <span
@@ -1660,8 +1800,8 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
             >
               {String(i + 1)}
             </span>
-            <div style={{ fontSize: 32, fontWeight: 700, color: "#ffffff", lineHeight: 1.15 }}>{it.title}</div>
-            {it.desc ? <div style={{ fontSize: 25, color: "rgba(255,255,255,0.62)", lineHeight: 1.35 }}>{it.desc}</div> : null}
+            <div style={{ fontSize: 32, fontWeight: 700, color: theme.fgStrong, lineHeight: 1.15 }}>{it.title}</div>
+            {it.desc ? <div style={{ fontSize: 25, color: `rgba(${theme.fgRgb}, 0.62)`, lineHeight: 1.35 }}>{it.desc}</div> : null}
           </div>
         ))}
       </div>
@@ -1672,6 +1812,7 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 19 — Capa de carrossel (slide-1 cover) ──────────────────────────
 function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1700,14 +1841,14 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
             fontSize: 96,
             lineHeight: 1,
             letterSpacing: "-0.04em",
-            color: "#ffffff",
+            color: theme.fgStrong,
             maxWidth: "14ch",
           }}
         >
           {v.title}
         </h1>
         {v.sub ? (
-          <p style={{ marginTop: 28, fontSize: 36, lineHeight: 1.4, color: "rgba(255,255,255,0.72)", maxWidth: "24ch" }}>
+          <p style={{ marginTop: 28, fontSize: 36, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.72)`, maxWidth: "24ch" }}>
             {v.sub}
           </p>
         ) : null}
@@ -1720,7 +1861,7 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
               fontFamily: FONT_SANS,
               fontSize: 30,
               fontWeight: 700,
-              color: "#0a0510",
+              color: bestOn(accent),
               background: accent,
               borderRadius: 999,
               padding: "16px 30px",
@@ -1738,6 +1879,7 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
 
 // ── Template 20 — Contagem regressiva (countdown) ────────────────────────────
 function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
   return (
     <CardShell accent={accent}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1746,20 +1888,20 @@ function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
         {v.pre ? (
-          <div style={{ fontFamily: FONT_MONO, fontSize: 30, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
+          <div style={{ fontFamily: FONT_MONO, fontSize: 30, letterSpacing: "0.18em", textTransform: "uppercase", color: `rgba(${theme.fgRgb}, 0.6)` }}>
             {v.pre}
           </div>
         ) : null}
-        {/* key={accent} — see FraseCard */}
+        {/* key — see FraseCard */}
         <div
-          key={accent}
+          key={accent + theme.id}
           style={{
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
             fontSize: 320,
             lineHeight: 0.85,
             letterSpacing: "-0.05em",
-            background: `linear-gradient(135deg, #ffffff 35%, ${accent})`,
+            background: `linear-gradient(135deg, ${theme.fgStrong} 35%, ${accent})`,
             WebkitBackgroundClip: "text",
             backgroundClip: "text",
             WebkitTextFillColor: "transparent",
@@ -1768,11 +1910,11 @@ function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
         >
           {v.days}
         </div>
-        <div style={{ marginTop: 12, fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 48, color: "#ffffff" }}>
+        <div style={{ marginTop: 12, fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 48, color: theme.fgStrong }}>
           {v.unit}
         </div>
         {v.sub ? (
-          <p style={{ marginTop: 26, fontSize: 34, lineHeight: 1.4, color: "rgba(255,255,255,0.72)", maxWidth: "22ch" }}>
+          <p style={{ marginTop: 26, fontSize: 34, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.72)`, maxWidth: "22ch" }}>
             {v.sub}
           </p>
         ) : null}
@@ -2266,6 +2408,7 @@ export function EstudioClient() {
   const { t } = useTranslation();
   const [templateId, setTemplateId] = useState<TemplateId>("questao");
   const [accent, setAccent] = useState<string>("#c084e8");
+  const [bg, setBg] = useState<BgId>("ink");
   const [scale, setScale] = useState<number>(0.5);
   const [hideUI, setHideUI] = useState<boolean>(false);
   const [ratioId, setRatioId] = useState<RatioId>("1-1");
@@ -2282,6 +2425,11 @@ export function EstudioClient() {
   const effectiveScale = hideUI ? 1 : scale;
   const dims = RATIOS.find((r) => r.id === ratioId)!;
   const currentAccent = ACCENTS.find((a) => a.value === accent);
+  // On a light surface, switch to the site's light-mode accent (deeper, readable
+  // on white). `accent` state always stays the dark hex the swatches use.
+  const isLightBg = bg !== "ink";
+  const renderAccent = isLightBg ? LIGHT_ACCENT[accent] ?? accent : accent;
+  const cardTheme = buildTheme(bg, renderAccent);
 
   const update = useCallback(
     (key: string, val: string) => {
@@ -2381,9 +2529,11 @@ export function EstudioClient() {
         // ── Capture mode: card only, at true size, top-left ──
         <div style={{ padding: 24 }}>
           <CardHeightContext.Provider value={dims.h}>
-            <FrozenPageContext.Provider value={frozen}>
-              <Card v={values} accent={accent} />
-            </FrozenPageContext.Provider>
+            <CardThemeContext.Provider value={cardTheme}>
+              <FrozenPageContext.Provider value={frozen}>
+                <Card v={values} accent={renderAccent} />
+              </FrozenPageContext.Provider>
+            </CardThemeContext.Provider>
           </CardHeightContext.Provider>
           <button
             onClick={() => setHideUI(false)}
@@ -2495,7 +2645,7 @@ export function EstudioClient() {
                       height: 30,
                       borderRadius: 8,
                       cursor: "pointer",
-                      background: a.value,
+                      background: isLightBg ? a.light : a.value,
                       border:
                         accent === a.value
                           ? "2px solid #fff"
@@ -2507,6 +2657,32 @@ export function EstudioClient() {
               </div>
               <p style={{ fontSize: 11.5, color: "#8a8a95", margin: "8px 0 0" }}>
                 {currentAccent ? t(`studio.accents.${currentAccent.key}`) : ""}
+              </p>
+            </div>
+
+            {/* Background picker */}
+            <div>
+              <Label>{t("studio.background")}</Label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {BACKGROUNDS.map((id) => (
+                  <button
+                    key={id}
+                    onClick={() => setBg(id)}
+                    title={t(`studio.bg.${id}`)}
+                    style={{
+                      width: 44,
+                      height: 30,
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      background: bgSwatch(id, renderAccent),
+                      border: bg === id ? "2px solid #c084e8" : "2px solid rgba(255,255,255,0.14)",
+                      boxShadow: bg === id ? "0 0 0 3px rgba(192,132,232,0.35)" : "none",
+                    }}
+                  />
+                ))}
+              </div>
+              <p style={{ fontSize: 11.5, color: "#8a8a95", margin: "8px 0 0" }}>
+                {t(`studio.bg.${bg}`)}
               </p>
             </div>
 
@@ -2694,9 +2870,11 @@ export function EstudioClient() {
             >
               <div style={{ width: dims.w, height: dims.h, transform: `scale(${effectiveScale})`, transformOrigin: "top left" }}>
                 <CardHeightContext.Provider value={dims.h}>
-                  <FrozenPageContext.Provider value={frozen}>
-                    <Card v={values} accent={accent} />
-                  </FrozenPageContext.Provider>
+                  <CardThemeContext.Provider value={cardTheme}>
+                    <FrozenPageContext.Provider value={frozen}>
+                      <Card v={values} accent={renderAccent} />
+                    </FrozenPageContext.Provider>
+                  </CardThemeContext.Provider>
                 </CardHeightContext.Provider>
               </div>
             </div>

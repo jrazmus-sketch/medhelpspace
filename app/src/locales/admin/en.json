@@ -32,6 +32,14 @@
     "subtitle": "Rendered with the site's real fonts and colors. Edit the fields, pick a color and specialty, and download.",
     "model": "Template",
     "color": "Color / specialty",
+    "background": "Background",
+    "bg": {
+      "ink": "Dark (ink)",
+      "paper": "Paper (white)",
+      "cream": "Cream (warm)",
+      "purple": "Purple (brand)",
+      "tinted": "Tinted (accent)"
+    },
     "content": "Content",
     "format": "Format",
     "zoom": "Preview zoom",
