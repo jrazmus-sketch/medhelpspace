@@ -14,7 +14,7 @@ build health. This doc tracks every finding to closure. Fix details: session of 
 |---|---|---|
 | 0.1 | Working tree failed `next build` (`plan-preview.ts` missing `topics`/`topicContent` args) | ✅ resolved by study-plan sprint (committed in 90e1bfa) |
 
-## P1 — all fixed 2026-07-02 (⚠️ UNCOMMITTED as of 2026-07-02 — see "Commit guidance")
+## P1 — all fixed 2026-07-02 (✅ COMMITTED a9752e9 + pushed to origin/main — see "Commit guidance")
 
 | # | Finding | Fix | File |
 |---|---|---|---|
@@ -58,16 +58,39 @@ Do NOT sweep in: `app/src/components/landing/{comparison,founder,stats-*}` / `ty
 
 ## Manual pre-launch checklist (cannot be verified from code)
 
-- [ ] **`PAGBANK_WEBHOOK_ENFORCE` in Vercel prod is unset or `true`** — the literal value `false` disables
-      webhook signature enforcement (was a temporary verification window). If still `false` → treat as P0.
-- [ ] Migration drift: confirm every `schema-patch-*.sql` applied to prod (at minimum: topics, onboarding,
-      welcome-announcement, leads-*); commit untracked patches (`schema-patch-topics.sql`).
-- [ ] Supabase automated backups / PITR enabled on prod project.
-- [ ] PagBank prod env in Vercel: `PAGBANK_ENVIRONMENT=production`, prod access token; webhook token/URL
-      match PagBank dashboard; ledger diff vs orders table.
-- [ ] `email_settings` prod row carries real CNPJ 61.148.283/0001-08 + address (footer renders from DB row).
-- [ ] Resend domain SPF/DKIM still verified; send one test lifecycle email.
-- [ ] Spot-check live simulado grading (Karina's new 130 simulados).
+**Verification pass 2026-07-02** (session with Justin) — most items closed; details inline. Only genuinely
+open item is the Cloudflare backup restorability check; one live test (tab-closed Pix webhook) still pending.
+
+- [x] **`PAGBANK_WEBHOOK_ENFORCE` in Vercel prod** — variable is **unset**, which is the secure state: the code
+      reads `process.env.PAGBANK_WEBHOOK_ENFORCE !== "false"`, so absent → enforcement ON. Only the literal string
+      `false` disables it. ✅ Confirmed in Vercel 2026-07-02.
+      ⚠️ **Open follow-up (separate from the env value):** nobody has yet confirmed a *genuine* PagBank webhook
+      verifies as `"valid"` in prod (the signing format in `webhook-auth.ts` is a `dash` guess). With enforcement
+      ON, a wrong format silently rejects real webhooks. Revenue is NOT at risk (card = sync finalize, tab-open Pix
+      = 5s status poll, tab-closed Pix = daily `reconcile-pix` cron), but a closed-tab Pix buyer could wait up to
+      ~24h. **Test:** Karina does a real Pix sale and closes the tab immediately → access in ~1 min = webhook
+      verifies; stays pending = flip `FORMAT` `dash`→`concat` in `webhook-auth.ts`. Consider tightening the
+      reconcile-pix cadence (Vercel Pro / external scheduler) regardless.
+- [x] **Migration drift** — VERIFIED 2026-07-02 via read-only check of all **162** objects the `schema-patch-*.sql`
+      files create vs prod catalogs: every object present. The one flagged index (`coupon_redemptions_user_coupon_uniq`)
+      is *intentionally* dropped by `schema-patch-coupon-per-user-limit.sql` (replaced by a plain index that IS
+      present), so its absence proves that patch applied. `schema-patch-topics.sql` now committed. ✅
+- [ ] **Supabase automated backups / PITR** — Free tier has **no** automated backups (Pro-plan feature; PITR is a
+      paid add-on), so nothing to toggle on the current plan. **Covered for launch by the existing daily Cloudflare
+      backup.** OPEN: (a) confirm the Cloudflare dump is a *restorable full Postgres* backup (Justin downloading to
+      verify), (b) enable Supabase native daily backups + PITR right after the post-launch Pro upgrade.
+- [x] **PagBank prod env** — VERIFIED 2026-07-02: real production payments were made (appeared in PagBank) and
+      refunded. Confirms `PAGBANK_ENVIRONMENT=production` + prod access token are live. ✅ (Formal ledger diff not
+      run, but real settled + refunded transactions prove the env.)
+- [x] **`email_settings` prod row** — VERIFIED 2026-07-02: CNPJ `61.148.283/0001-08` ✅, company/from/contact set.
+      **`address` intentionally left blank** — home-based business, decided 2026-07-02; footer omits the line,
+      nothing breaks. ✅
+- [x] **Resend / lifecycle email** — VERIFIED 2026-07-02 via Resend logs: the `weekly-summary` lifecycle email
+      ("Resumo semanal do seu plano de estudos") **delivered** to Justin + Karina — proves the daily lifecycle cron
+      renders DB templates and sends through Resend. Same logs confirm admin purchase alerts, member access-granted,
+      funnel magnet, and password-reset emails all delivering (all `Delivered`, no bounces). Password-reset i18n
+      (English Supabase default → Portuguese "Redefinir sua senha") fixed live 2026-07-02. ✅
+- [ ] **Spot-check live simulado grading** (Karina's 130 simulados) — still deferred to Karina.
 
 ## Content follow-ups 👤 Karina
 
