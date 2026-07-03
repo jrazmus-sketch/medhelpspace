@@ -6,16 +6,20 @@ import Link from "next/link";
 import {
   LifeBuoy, FileText, Receipt, FileEdit, QrCode, AlertTriangle, CheckCircle2,
   TrendingUp, TrendingDown, GraduationCap, CalendarClock, Users, UserPlus,
-  Activity, ChevronRight, History,
+  Activity, ChevronRight, History, BarChart3, Globe,
 } from "lucide-react";
 import type { DashboardData } from "@/lib/admin/dashboard-stats";
+import type { AnalyticsStats } from "@/lib/admin/analytics-stats";
 
 interface Props {
   data: DashboardData;
+  analytics: AnalyticsStats | null;
+  analyticsConfigured: boolean;
   displayName: string | null;
   canSeeBilling: boolean;
   canSeeSupport: boolean;
   canSeeAudit: boolean;
+  canSeeAnalytics: boolean;
 }
 
 function brl(cents: number): string {
@@ -82,7 +86,8 @@ function ActionTile({
 }
 
 export function AdminDashboardClient({
-  data, displayName, canSeeBilling, canSeeSupport, canSeeAudit,
+  data, analytics, analyticsConfigured, displayName,
+  canSeeBilling, canSeeSupport, canSeeAudit, canSeeAnalytics,
 }: Props) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language;
@@ -265,6 +270,83 @@ export function AdminDashboardClient({
         </section>
       )}
 
+      {/* ── Zone 2.5 — Acquisition (GA4, super_admin) ── */}
+      {canSeeAnalytics && (
+        <section className="space-y-3">
+          <h2 className="flex items-center justify-between text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <BarChart3 className="h-3.5 w-3.5" />
+              {t("dashboard.acquisition")}
+              <span className="font-normal normal-case tracking-normal text-muted-foreground/70">
+                · {t("dashboard.last28days")}
+              </span>
+            </span>
+            <a
+              href="https://analytics.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center text-xs font-medium text-brand hover:underline"
+            >
+              {t("dashboard.openGA")} →
+            </a>
+          </h2>
+
+          {analytics ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <TrafficStat label={t("dashboard.visitors")} value={analytics.totals.users} prev={analytics.totals.usersPrev} />
+                <TrafficStat label={t("dashboard.sessions")} value={analytics.totals.sessions} prev={analytics.totals.sessionsPrev} />
+                <TrafficStat label={t("dashboard.pageviews")} value={analytics.totals.views} prev={analytics.totals.viewsPrev} />
+                <div className="rounded-xl border border-border bg-surface-1 p-4">
+                  <p className="text-xs text-muted-foreground">{t("dashboard.engagement")}</p>
+                  <p className="mt-2 text-2xl font-bold text-foreground">{fmtDuration(analytics.totals.avgEngagementSec)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("dashboard.newUsersN", { count: analytics.totals.newUsers })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-surface-1 p-4">
+                <p className="text-xs text-muted-foreground">
+                  {t("dashboard.visitors")} · {t("dashboard.last30days")}
+                </p>
+                <UsersSparkline series={analytics.sparkline} />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <BreakdownList
+                  title={t("dashboard.topChannels")}
+                  icon={Globe}
+                  rows={analytics.channels.map((c) => ({ label: c.name, value: c.sessions }))}
+                  empty={t("dashboard.collectingData")}
+                />
+                <BreakdownList
+                  title={t("dashboard.topLanding")}
+                  icon={FileText}
+                  rows={analytics.landingPages.map((p) => ({ label: p.path, value: p.sessions }))}
+                  empty={t("dashboard.collectingData")}
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-border bg-border">
+                <MiniStat label={t("dashboard.signupsConv")} value={analytics.conversions.signUps.toLocaleString("pt-BR")} />
+                <MiniStat label={t("dashboard.purchasesConv")} value={analytics.conversions.purchases.toLocaleString("pt-BR")} />
+                <MiniStat label={t("dashboard.gaRevenue")} value={brl(analytics.conversions.revenueCents)} />
+              </div>
+            </div>
+          ) : analyticsConfigured ? (
+            <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+              {t("dashboard.analyticsUnavailable")}
+            </p>
+          ) : (
+            <div className="rounded-xl border border-dashed border-brand/40 bg-brand/5 px-4 py-6 text-center">
+              <p className="text-sm font-medium text-foreground">{t("dashboard.analyticsNotConnected")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("dashboard.analyticsNotConnectedSub")}</p>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* ── Zone 3 — Cohorts ── */}
       {cohorts.length > 0 && (
         <section className="space-y-3">
@@ -415,6 +497,88 @@ function Sparkline({ series }: { series: { day: string; cents: number }[] }) {
           title={`${s.day}: ${brl(s.cents)}`}
         />
       ))}
+    </div>
+  );
+}
+
+function fmtDuration(sec: number): string {
+  if (!sec || sec < 0) return "0s";
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function TrafficStat({ label, value, prev }: { label: string; value: number; prev: number }) {
+  const pct = prev > 0 ? Math.round(((value - prev) / prev) * 100) : null;
+  return (
+    <div className="rounded-xl border border-border bg-surface-1 p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-foreground">{value.toLocaleString("pt-BR")}</p>
+      {pct != null ? (
+        <p
+          className={`flex items-center gap-1 text-xs font-medium ${
+            pct >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          {pct >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+          {pct >= 0 ? "+" : ""}{pct}%
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground">—</p>
+      )}
+    </div>
+  );
+}
+
+function UsersSparkline({ series }: { series: { date: string; users: number }[] }) {
+  const max = Math.max(...series.map((s) => s.users), 1);
+  return (
+    <div className="mt-3 flex h-12 items-end gap-0.5" aria-hidden="true">
+      {series.map((s) => (
+        <div
+          key={s.date}
+          className="flex-1 rounded-sm bg-brand/30"
+          style={{ height: `${Math.max((s.users / max) * 100, 2)}%` }}
+          title={`${s.date}: ${s.users}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function BreakdownList({
+  title, icon: Icon, rows, empty,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  rows: { label: string; value: number }[];
+  empty: string;
+}) {
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  return (
+    <div className="overflow-hidden rounded-xl border border-border">
+      <p className="flex items-center gap-2 border-b border-border bg-surface-1 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> {title}
+      </p>
+      {rows.length === 0 ? (
+        <p className="px-4 py-6 text-center text-xs text-muted-foreground">{empty}</p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {rows.map((r, i) => (
+            <li key={i} className="relative flex items-center justify-between gap-3 px-4 py-2.5">
+              <span
+                className="absolute inset-y-0 left-0 bg-brand/[0.07]"
+                style={{ width: `${(r.value / max) * 100}%` }}
+                aria-hidden="true"
+              />
+              <span className="relative z-10 min-w-0 truncate text-sm text-foreground">{r.label}</span>
+              <span className="relative z-10 shrink-0 text-sm font-semibold text-foreground">
+                {r.value.toLocaleString("pt-BR")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

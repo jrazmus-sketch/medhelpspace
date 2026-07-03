@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminDashboardData } from "@/lib/admin/dashboard-stats";
+import { getAnalyticsStats, analyticsConfigured } from "@/lib/admin/analytics-stats";
 import { AdminDashboardClient } from "./dashboard-client";
 
 export const dynamic = "force-dynamic";
@@ -28,16 +29,23 @@ export default async function AdminDashboardPage() {
   const canSeeBilling = BILLING_ROLES.includes(role);
   const canSeeSupport = SUPPORT_ROLES.includes(role);
   const canSeeAudit = role === "super_admin";
+  const canSeeAnalytics = role === "super_admin";
 
-  const data = await getAdminDashboardData({ canSeeBilling, canSeeSupport, canSeeAudit });
+  const [data, analytics] = await Promise.all([
+    getAdminDashboardData({ canSeeBilling, canSeeSupport, canSeeAudit }),
+    canSeeAnalytics ? getAnalyticsStats() : Promise.resolve(null),
+  ]);
 
   return (
     <AdminDashboardClient
       data={data}
+      analytics={analytics}
+      analyticsConfigured={canSeeAnalytics && analyticsConfigured()}
       displayName={(profile?.display_name as string | null) ?? null}
       canSeeBilling={canSeeBilling}
       canSeeSupport={canSeeSupport}
       canSeeAudit={canSeeAudit}
+      canSeeAnalytics={canSeeAnalytics}
     />
   );
 }
