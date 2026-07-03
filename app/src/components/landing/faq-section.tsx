@@ -15,7 +15,7 @@ const FAQS = [
   },
   {
     q: "O que eu recebo ao me inscrever?",
-    a: "Acesso imediato ao sistema completo: Estudos por Questões, Resumos Narrativos, MedVoice, Audiocards e Fórmula MedHelp. O MedHelp 60D já está incluído na compra — liberado automaticamente 60 dias antes da prova.",
+    a: "Acesso imediato ao sistema completo: Estudos por Questões, Resumos Narrativos, MedVoice, Audiocards e Revalida Up. O MedHelp 60D já está incluído na compra — liberado automaticamente 60 dias antes da prova.",
   },
   {
     q: "O acesso é imediato?",
@@ -31,7 +31,7 @@ const FAQS = [
   },
   {
     q: "O MedHelp 60D é liberado quando?",
-    a: "60 dias antes da prova — revisão final guiada com MemoreCards exclusivos, Revalida Up e simulados completos (100 questões).",
+    a: "60 dias antes da prova — revisão final guiada com MemoreCards exclusivos, Fórmula MedHelp e simulados completos (100 questões).",
   },
   {
     q: "Posso acessar pelo celular?",

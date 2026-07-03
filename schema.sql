@@ -86,7 +86,7 @@ CREATE TABLE content_modules (
 
 INSERT INTO content_modules (slug, name, description, unlock_offset_days) VALUES
   ('medhelp-60d', 'MedHelp 60D',
-   'Revalida Up + Memorecards — unlocks 60 days before the cohort test date', 60);
+   'Fórmula MedHelp + Memorecards — unlocks 60 days before the cohort test date', 60);
 
 
 -- ──────────────────────────────────────────────────────────────

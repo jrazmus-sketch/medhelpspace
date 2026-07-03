@@ -246,7 +246,7 @@ export async function GET(request: NextRequest) {
             await insertNotification({
               userId: m.user_id, kind: "60d-unlock",
               title: "MedHelp 60D liberado",
-              body: "Sua reta final começa agora — Revalida Up + Memorecards disponíveis.",
+              body: "Sua reta final começa agora — Fórmula MedHelp + Memorecards disponíveis.",
               href: "/app", icon: "lock", contextId: String(cohort.id),
             });
           } catch (e) {
@@ -260,7 +260,7 @@ export async function GET(request: NextRequest) {
           if (!existing) {
             await supabase.from("announcements").insert({
               title,
-              body_html: `<p>Sua reta final começa agora. O módulo MedHelp 60D está disponível com Revalida Up, Memorecards e todos os recursos intensivos.</p>`,
+              body_html: `<p>Sua reta final começa agora. O módulo MedHelp 60D está disponível com Fórmula MedHelp, Memorecards e todos os recursos intensivos.</p>`,
               category_id: categoryId, priority: "urgent", status: "published", pinned: true,
               cohort_id: cohort.id,
             });

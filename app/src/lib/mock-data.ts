@@ -94,7 +94,7 @@ export const MOCK_CONTENT_MODULES: ContentModule[] = [
     id: 1,
     slug: "medhelp-60d",
     name: "MedHelp 60D",
-    description: "Revalida Up + Memorecards — unlocks 60 days before the cohort test date",
+    description: "Fórmula MedHelp + Memorecards — unlocks 60 days before the cohort test date",
     unlock_offset_days: 60,
   },
 ];

@@ -269,7 +269,7 @@ const PURCHASE_BODY = `<p style="margin:0 0 24px;font-size:15px;color:#6b7280;li
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Resumos narrativos por especialidade</p>
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;MedVoice — treinamento em áudio</p>
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Audiocards e Flashcards</p>
-      <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Fórmula MedHelp</p>
+      <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Revalida Up — mini-resumos</p>
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;MedHelp 60D — liberado 60 dias antes da prova</p>
     </td>
   </tr>
@@ -306,7 +306,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     kicker: "Olá, {{displayName}}",
     headline: "MedHelp 60D está liberado",
     body_html:
-      "Faltam 60 dias para sua prova{{testDate}}. O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Revalida Up, Memorecards e todos os recursos de reta final.",
+      "Faltam 60 dias para sua prova{{testDate}}. O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Fórmula MedHelp, Memorecards e todos os recursos de reta final.",
     cta_label: "Acessar MedHelp 60D →",
     cta_href: "/app",
     variables: [

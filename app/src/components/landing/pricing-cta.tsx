@@ -17,7 +17,7 @@ const INCLUDED: { key: string; text: string }[] = [
   { key: "0", text: "Estudo por Questões" },
   { key: "1", text: "Resumos Narrativos" },
   { key: "2", text: "MedVoice" },
-  { key: "3", text: "Fórmula MedHelp" },
+  { key: "3", text: "Revalida Up" },
   { key: "flashcards", text: "Flashcards" },
   { key: "4", text: "Audiocards" },
   { key: "5", text: "MedHelp 60D — liberado 60 dias antes" },

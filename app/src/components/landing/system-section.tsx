@@ -61,7 +61,7 @@ const FEATURES = [
     name: "MedHelp 60D",
     tagline: "Fase final do sistema. Liberado 60 dias antes da prova.",
     body: "Aqui você revisa padrões recorrentes do INEP e as variações que a prova pode trazer, sem se perder em excesso.",
-    detail: "Revalida Up (mini-resumos: padrão + decisão treinada) + MemoreCards: biblioteca de cards visuais de alta fixação, baseada no que mais cai.",
+    detail: "Fórmula MedHelp (atalhos de prova: macetes, mnemônicos e frases-chave) + MemoreCards: biblioteca de cards visuais de alta fixação, baseada no que mais cai.",
     result: "Revisão rápida, visual e certeira — a sensação de 'eu já vi isso' na hora da prova.",
     color: "var(--c-pop)",
     special: true,

@@ -18,7 +18,7 @@ const INCLUDED: { key: string; text: string }[] = [
   { key: "0", text: "Estudo por Questões — questões oficiais + simulados comentados" },
   { key: "1", text: "Resumos Narrativos — casos clínicos com raciocínio e conduta" },
   { key: "2", text: "MedVoice — treinamento de decisão em áudios curtos" },
-  { key: "3", text: "Fórmula MedHelp — atalhos de prova, macetes e mnemônicos" },
+  { key: "3", text: "Revalida Up — mini-resumos: padrão + decisão treinada" },
   { key: "flashcards", text: "Flashcards — revisão ativa por especialidade com repetição espaçada" },
   { key: "4", text: "Audiocards — flashcards em áudio com o que já caiu" },
   { key: "5", text: "Guia de estudos completo" },
@@ -28,7 +28,7 @@ const INCLUDED: { key: string; text: string }[] = [
 ];
 
 const INCLUDED_60D = [
-  "Revalida Up — mini-resumos: padrão + decisão treinada",
+  "Fórmula MedHelp — atalhos de prova, macetes e mnemônicos",
   "MemoreCards — cards visuais de alta fixação por especialidade",
   "Simulados completos (100 questões) para treinar o dia da prova",
 ];

@@ -111,7 +111,7 @@ VALUES
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Resumos narrativos por especialidade</p>
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;MedVoice — treinamento em áudio</p>
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Audiocards e Flashcards</p>
-      <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Fórmula MedHelp</p>
+      <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;Revalida Up — mini-resumos</p>
       <p style="margin:0 0 6px;font-size:13.5px;color:#374151;">✓ &nbsp;MedHelp 60D — liberado 60 dias antes da prova</p>
     </td>
   </tr>
@@ -132,10 +132,10 @@ VALUES
     'MedHelp 60D liberado — sua reta final começa agora',
     'Olá, {{displayName}}',
     'MedHelp 60D está liberado',
-    'Faltam 60 dias para sua prova ({{testDate}}). O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Revalida Up, Memorecards e todos os recursos de reta final.',
+    'Faltam 60 dias para sua prova{{testDate}}. O módulo intensivo <strong>MedHelp 60D</strong> agora está disponível — Fórmula MedHelp, Memorecards e todos os recursos de reta final.',
     'Acessar MedHelp 60D →',
     '/app',
-    '[{"tag":"displayName","description":"Primeiro nome do membro"},{"tag":"testDate","description":"Data da prova por extenso (ex.: 15 de novembro de 2026)"}]'::jsonb,
+    '[{"tag":"displayName","description":"Primeiro nome do membro"},{"tag":"testDate","description":"Data da prova já entre parênteses e com espaço inicial (ex.: (15 de novembro de 2026)); vazio quando a data da turma ainda não foi confirmada pela banca."}]'::jsonb,
     2
   ),
   (
