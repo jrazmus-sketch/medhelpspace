@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmail } from "@/lib/email";
 import { FUNNEL_SENDER_NAME } from "@/lib/email-render";
 import { offerCheckoutUrl, resultUrl, unsubscribeUrl, WELCOME_COUPONS } from "@/lib/magnet/links";
+import { alertCronFailure } from "@/lib/admin/cron-alert";
 
 // Lead-magnet email drip (FREE-FUNNEL-V2-SCOPE.md Group 6). Advances each lead by
 // AT MOST one step per run; the per-step offsetDays gate enforces the real schedule
@@ -51,6 +52,8 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient();
+
+  try {
   const now = Date.now();
 
   // Active + VERIFIED leads only; oldest-verified first. drip_step < last step (5)
@@ -219,4 +222,8 @@ export async function GET(request: NextRequest) {
     skippedClaimed,
     scanned: leads.length,
   });
+  } catch (err) {
+    await alertCronFailure("lead-drip", err);
+    return NextResponse.json({ error: "cron_failed" }, { status: 500 });
+  }
 }

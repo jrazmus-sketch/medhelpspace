@@ -5,6 +5,7 @@ import { Resend } from "resend";
 import crypto from "node:crypto";
 import { getEmailSettings, getEmailTemplate } from "@/lib/email";
 import { renderEmail, type EmailTemplateRow } from "@/lib/email-render";
+import { alertCronFailure } from "@/lib/admin/cron-alert";
 
 // Mirror of scripts/send-lifecycle-notifications.js, ported for Vercel Cron.
 // Schedule: configured in app/vercel.json (daily 11:00 UTC = 08:00 BRT).
@@ -54,6 +55,8 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  try {
   const resendKey = process.env.RESEND_API_KEY;
   const resend = resendKey ? new Resend(resendKey) : null;
 
@@ -573,4 +576,11 @@ export async function GET(request: NextRequest) {
 
   push(`\nDone. Sent ${sentCount}, failed ${failedCount}.`);
   return NextResponse.json({ ok: true, log, sent: sentCount, failed: failedCount });
+  } catch (err) {
+    // The run itself crashed outside any per-item try/catch above (e.g. template
+    // fetch failed) — every section already isolates per-recipient errors into the
+    // `log`, so reaching here means the whole cron aborted, not just one send.
+    await alertCronFailure("lifecycle-notifications", err);
+    return NextResponse.json({ error: "cron_failed", log }, { status: 500 });
+  }
 }

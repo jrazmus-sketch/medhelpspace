@@ -16,6 +16,7 @@ import {
   type AdminAlertEvent,
   type AdminNotifyFrequency,
 } from "@/lib/admin-notify-types";
+import { markAdminAlertsSeen as markSeen } from "@/lib/admin/alerts-feed";
 
 // Current admin's prefs, with code defaults filled for any event they've never set.
 // Only the events the admin's role is eligible for are returned (per-event gating),
@@ -98,4 +99,18 @@ export async function updateMyNotificationPref(
   );
   if (error) return { error: "save_failed" };
   return { ok: true };
+}
+
+// Advance the current admin's "last seen" cursor for the bell's recent-events
+// feed (admin_alerts_seen) to now — called when the bell popover opens. Silent
+// no-op for a signed-out caller; never throws (markSeen already wraps its own
+// try/catch), matching the "notification plumbing must never break the page"
+// posture used throughout this file.
+export async function markAdminAlertsSeen(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  await markSeen(user.id);
 }

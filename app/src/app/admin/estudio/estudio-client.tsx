@@ -321,17 +321,35 @@ const TEXT_SCALES: { id: string; mult: number }[] = [
 // ("APROVADA ✓"). Positions are fractions of the canvas (0..1) so they hold
 // across ratios; size/rotation are design-space (1080 canvas). Rendered inside
 // #ig-card, so they're captured on export.
+// Which concrete color a text/box element paints with. "fg" follows the card
+// theme (flips light/dark); "accent" tracks the active accent; "custom" = a hex.
+type OvColor = "accent" | "fg" | "white" | "dark" | "custom";
+
 type Overlay = {
   id: string;
-  kind: "logo" | "badge";
+  kind: "logo" | "badge" | "text" | "box";
   src?: string; // logo image
-  text?: string; // badge text
-  variant: "solid" | "outline" | "white" | "dark";
+  text?: string; // badge / text / box copy (may contain \n line breaks)
+  variant: "solid" | "outline" | "white" | "dark"; // badge only
   xPct: number; // center X, fraction of width
   yPct: number; // center Y, fraction of height
-  size: number; // logo width px, OR badge font-size px (design space)
+  size: number; // logo width px, OR badge/text/box font-size px (design space)
   rot: number; // degrees
+  // text + box elements (optional; undefined on logo/badge):
+  color?: OvColor; // text / stroke color
+  customColor?: string; // hex when color === "custom"
+  align?: "left" | "center" | "right"; // text alignment (default center)
+  bold?: boolean; // heavier weight
+  width?: number; // text wrap width, OR box width (design px)
+  // box only:
+  height?: number; // box height (design px)
+  radius?: number; // corner radius (0 = sharp rectangle)
+  border?: number; // stroke weight (px); the "small line around it"
+  fill?: "none" | "tint" | "solid"; // box interior fill
 };
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+const clampN = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
 const BRAND_LOGOS: string[] = [
   "/brand/medhelpspace-mark-transparent.png",
@@ -357,8 +375,27 @@ type OverlayCtx = {
   canvasH: number;
   onSelect: (id: string | null) => void;
   onMove: (id: string, xPct: number, yPct: number) => void;
+  onUpdate: (id: string, patch: Partial<Overlay>) => void;
 };
 const OverlayContext = React.createContext<OverlayCtx | null>(null);
+
+// Resolve a text/box element's chosen color to a concrete hex on the current
+// surface. "fg" follows the card theme so it stays legible on any background.
+function ovColorHex(o: Overlay, accent: string, theme: CardTheme): string {
+  switch (o.color) {
+    case "accent":
+      return accent;
+    case "white":
+      return "#ffffff";
+    case "dark":
+      return "#0a0510";
+    case "custom":
+      return o.customColor || accent;
+    case "fg":
+    default:
+      return theme.fgStrong;
+  }
+}
 
 // Badge fill/stroke/text for a variant on the current accent.
 function badgeStyle(variant: Overlay["variant"], accent: string): React.CSSProperties {
@@ -376,10 +413,24 @@ function badgeStyle(variant: Overlay["variant"], accent: string): React.CSSPrope
 
 function OverlayLayer() {
   const ctx = React.useContext(OverlayContext);
+  const theme = React.useContext(CardThemeContext);
+  // Which center guide(s) to draw — set while a drag snaps to canvas center.
+  const [guides, setGuides] = React.useState<{ v: boolean; h: boolean }>({ v: false, h: false });
   if (!ctx || ctx.overlays.length === 0) return null;
-  const { overlays, accent, editable, selectedId, effectiveScale, canvasH, onSelect, onMove } = ctx;
+  const { overlays, accent, editable, selectedId, effectiveScale, canvasH, onSelect, onMove, onUpdate } = ctx;
+
+  const clearGuides = () => setGuides((g) => (g.v || g.h ? { v: false, h: false } : g));
+
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 20, pointerEvents: "none" }}>
+      {/* center alignment guides — only visible mid-drag when snapping */}
+      {editable && guides.v ? (
+        <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, transform: "translateX(-0.5px)", background: accent, opacity: 0.75, zIndex: 40 }} />
+      ) : null}
+      {editable && guides.h ? (
+        <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, transform: "translateY(-0.5px)", background: accent, opacity: 0.75, zIndex: 40 }} />
+      ) : null}
+
       {overlays.map((o) => {
         const selected = editable && selectedId === o.id;
         const startDrag = (e: React.PointerEvent) => {
@@ -391,15 +442,134 @@ function OverlayLayer() {
         const onDrag = (e: React.PointerEvent) => {
           if (!editable || !(e.buttons & 1)) return;
           // Screen px → canvas px (undo preview transform) → fraction of canvas.
-          const nx = o.xPct + e.movementX / effectiveScale / 1080;
-          const ny = o.yPct + e.movementY / effectiveScale / canvasH;
-          onMove(o.id, Math.min(1, Math.max(0, nx)), Math.min(1, Math.max(0, ny)));
+          let nx = o.xPct + e.movementX / effectiveScale / 1080;
+          let ny = o.yPct + e.movementY / effectiveScale / canvasH;
+          const snapV = Math.abs(nx - 0.5) < 0.012;
+          const snapH = Math.abs(ny - 0.5) < 0.012;
+          if (snapV) nx = 0.5;
+          if (snapH) ny = 0.5;
+          if (snapV !== guides.v || snapH !== guides.h) setGuides({ v: snapV, h: snapH });
+          onMove(o.id, clamp01(nx), clamp01(ny));
         };
+        // Bottom-right resize handle. Project screen movement onto the element's
+        // rotated axes so the corner tracks the cursor even when it's tilted.
+        const onResize = (e: React.PointerEvent) => {
+          if (!editable || !(e.buttons & 1)) return;
+          e.stopPropagation();
+          const rad = (o.rot * Math.PI) / 180;
+          const cos = Math.cos(rad);
+          const sin = Math.sin(rad);
+          const dx = e.movementX / effectiveScale;
+          const dy = e.movementY / effectiveScale;
+          const du = dx * cos + dy * sin; // local x (design px)
+          const dv = -dx * sin + dy * cos; // local y (design px)
+          if (o.kind === "box") {
+            onUpdate(o.id, {
+              width: clampN((o.width ?? 520) + 2 * du, 80, 1040),
+              height: clampN((o.height ?? 300) + 2 * dv, 60, 1400),
+            });
+          } else if (o.kind === "text") {
+            onUpdate(o.id, { width: clampN((o.width ?? 640) + 2 * du, 120, 1040) });
+          } else if (o.kind === "logo") {
+            onUpdate(o.id, { size: clampN(o.size + 2 * du, 80, 640) });
+          } else {
+            onUpdate(o.id, { size: clampN(o.size + du, 26, 120) });
+          }
+        };
+
+        const elColor = ovColorHex(o, accent, theme);
+        let content: React.ReactNode;
+        if (o.kind === "logo") {
+          content = <img data-no-frame src={o.src} alt="" draggable={false} style={{ display: "block", width: o.size, height: "auto", userSelect: "none" }} />;
+        } else if (o.kind === "badge") {
+          content = (
+            <span
+              style={{
+                display: "inline-block",
+                fontFamily: FONT_DISPLAY,
+                fontWeight: 800,
+                fontSize: o.size,
+                letterSpacing: "0.01em",
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                padding: `${o.size * 0.42}px ${o.size * 0.72}px`,
+                borderRadius: 999,
+                userSelect: "none",
+                boxShadow: o.variant === "solid" ? `0 10px 40px ${hexA(accent, 0.4)}` : "0 8px 30px rgba(0,0,0,0.3)",
+                ...badgeStyle(o.variant, accent),
+              }}
+            >
+              {o.text}
+            </span>
+          );
+        } else if (o.kind === "text") {
+          content = (
+            <div
+              style={{
+                width: o.width ?? 640,
+                fontFamily: FONT_SANS,
+                fontWeight: o.bold ? 800 : 500,
+                fontSize: o.size,
+                lineHeight: 1.22,
+                letterSpacing: "-0.01em",
+                textAlign: o.align ?? "center",
+                color: elColor,
+                whiteSpace: "pre-wrap", // honor manual line breaks + wrap at width
+                wordBreak: "break-word",
+                userSelect: "none",
+              }}
+            >
+              {o.text}
+            </div>
+          );
+        } else {
+          const fill = o.fill ?? "none";
+          const bg = fill === "solid" ? elColor : fill === "tint" ? hexA(elColor, 0.14) : "transparent";
+          const textColor = fill === "solid" ? bestOn(elColor) : theme.fgStrong;
+          const align = o.align ?? "center";
+          content = (
+            <div
+              style={{
+                width: o.width ?? 520,
+                height: o.height ?? 300,
+                boxSizing: "border-box",
+                border: `${o.border ?? 2}px solid ${elColor}`,
+                borderRadius: o.radius ?? 16,
+                background: bg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center",
+                padding: 28,
+                userSelect: "none",
+              }}
+            >
+              {o.text ? (
+                <span
+                  style={{
+                    fontFamily: FONT_SANS,
+                    fontWeight: o.bold ? 800 : 600,
+                    fontSize: o.size,
+                    lineHeight: 1.24,
+                    textAlign: align,
+                    color: textColor,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {o.text}
+                </span>
+              ) : null}
+            </div>
+          );
+        }
+
         return (
           <div
             key={o.id}
             onPointerDown={startDrag}
             onPointerMove={onDrag}
+            onPointerUp={clearGuides}
+            onLostPointerCapture={clearGuides}
             style={{
               position: "absolute",
               left: `${o.xPct * 100}%`,
@@ -412,34 +582,30 @@ function OverlayLayer() {
               outlineOffset: 8,
             }}
           >
-            {o.kind === "logo" ? (
-              <img
-                data-no-frame
-                src={o.src}
-                alt=""
-                draggable={false}
-                style={{ display: "block", width: o.size, height: "auto", userSelect: "none" }}
-              />
-            ) : (
-              <span
-                style={{
-                  display: "inline-block",
-                  fontFamily: FONT_DISPLAY,
-                  fontWeight: 800,
-                  fontSize: o.size,
-                  letterSpacing: "0.01em",
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                  padding: `${o.size * 0.42}px ${o.size * 0.72}px`,
-                  borderRadius: 999,
-                  userSelect: "none",
-                  boxShadow: o.variant === "solid" ? `0 10px 40px ${hexA(accent, 0.4)}` : "0 8px 30px rgba(0,0,0,0.3)",
-                  ...badgeStyle(o.variant, accent),
+            {content}
+            {selected ? (
+              <div
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  (e.target as HTMLElement).setPointerCapture(e.pointerId);
                 }}
-              >
-                {o.text}
-              </span>
-            )}
+                onPointerMove={onResize}
+                style={{
+                  position: "absolute",
+                  right: -9,
+                  bottom: -9,
+                  width: 18,
+                  height: 18,
+                  borderRadius: 5,
+                  background: accent,
+                  border: "2px solid #fff",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                  cursor: "nwse-resize",
+                  pointerEvents: "auto",
+                  zIndex: 30,
+                }}
+              />
+            ) : null}
           </div>
         );
       })}
@@ -2930,10 +3096,16 @@ export function EstudioClient() {
   const overlaySeq = React.useRef(0);
   const addOverlay = useCallback((kind: Overlay["kind"]) => {
     const id = `ov-${kind}-${overlaySeq.current++}`;
-    const ov: Overlay =
-      kind === "logo"
-        ? { id, kind: "logo", src: BRAND_LOGOS[0], variant: "solid", xPct: 0.5, yPct: 0.5, size: 260, rot: 0 }
-        : { id, kind: "badge", text: BADGE_PRESETS[0], variant: "solid", xPct: 0.72, yPct: 0.22, size: 46, rot: -8 };
+    let ov: Overlay;
+    if (kind === "logo") {
+      ov = { id, kind: "logo", src: BRAND_LOGOS[0], variant: "solid", xPct: 0.5, yPct: 0.5, size: 260, rot: 0 };
+    } else if (kind === "badge") {
+      ov = { id, kind: "badge", text: BADGE_PRESETS[0], variant: "solid", xPct: 0.72, yPct: 0.22, size: 46, rot: -8 };
+    } else if (kind === "text") {
+      ov = { id, kind: "text", text: "Escreva aqui\nmais de uma linha", variant: "solid", xPct: 0.5, yPct: 0.5, size: 54, rot: 0, color: "fg", align: "center", bold: true, width: 660 };
+    } else {
+      ov = { id, kind: "box", text: "", variant: "solid", xPct: 0.5, yPct: 0.5, size: 40, rot: 0, color: "accent", align: "center", bold: false, width: 540, height: 320, radius: 16, border: 2, fill: "none" };
+    }
     setOverlays((prev) => [...prev, ov]);
     setSelectedOverlay(id);
   }, []);
@@ -2949,6 +3121,35 @@ export function EstudioClient() {
 
   const moveOverlay = useCallback((id: string, xPct: number, yPct: number) => {
     setOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, xPct, yPct } : o)));
+  }, []);
+
+  // Arrow-key nudge (Shift = bigger step) — relative to the current position.
+  const nudgeOverlay = useCallback((id: string, dx: number, dy: number) => {
+    setOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, xPct: clamp01(o.xPct + dx), yPct: clamp01(o.yPct + dy) } : o)));
+  }, []);
+
+  // Stacking order: paint order = array order, so move to the end (front) or
+  // start (back).
+  const reorderOverlay = useCallback((id: string, dir: "front" | "back") => {
+    setOverlays((prev) => {
+      const idx = prev.findIndex((o) => o.id === id);
+      if (idx < 0) return prev;
+      const arr = prev.slice();
+      const [it] = arr.splice(idx, 1);
+      if (dir === "front") arr.push(it);
+      else arr.unshift(it);
+      return arr;
+    });
+  }, []);
+
+  const duplicateOverlay = useCallback((id: string) => {
+    const nid = `ov-dup-${overlaySeq.current++}`;
+    setOverlays((prev) => {
+      const o = prev.find((x) => x.id === id);
+      if (!o) return prev;
+      return [...prev, { ...o, id: nid, xPct: clamp01(o.xPct + 0.04), yPct: clamp01(o.yPct + 0.04) }];
+    });
+    setSelectedOverlay(nid);
   }, []);
 
   const update = useCallback(
@@ -3159,6 +3360,39 @@ export function EstudioClient() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Arrow keys nudge the selected element (Shift = larger step); Delete removes
+  // it; Escape deselects. Ignored while a form field is focused so typing in the
+  // control panel isn't hijacked.
+  useEffect(() => {
+    if (!selectedOverlay) return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+      if (e.key === "Escape") {
+        setSelectedOverlay(null);
+        return;
+      }
+      if (e.key === "Delete") {
+        e.preventDefault();
+        removeOverlay(selectedOverlay);
+        return;
+      }
+      const step = e.shiftKey ? 0.02 : 0.0025;
+      let dx = 0;
+      let dy = 0;
+      if (e.key === "ArrowLeft") dx = -step;
+      else if (e.key === "ArrowRight") dx = step;
+      else if (e.key === "ArrowUp") dy = -step;
+      else if (e.key === "ArrowDown") dy = step;
+      else return;
+      e.preventDefault();
+      nudgeOverlay(selectedOverlay, dx, dy);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedOverlay, nudgeOverlay, removeOverlay]);
+
   const Card = template.Render;
 
   return (
@@ -3189,6 +3423,7 @@ export function EstudioClient() {
                       canvasH: dims.h,
                       onSelect: () => {},
                       onMove: () => {},
+                      onUpdate: () => {},
                     }}
                   >
                     <FooterContext.Provider value={{ show: footerShow, right: footerText }}>
@@ -3525,6 +3760,8 @@ export function EstudioClient() {
               onSelect={setSelectedOverlay}
               onUpdate={updateOverlay}
               onRemove={removeOverlay}
+              onReorder={reorderOverlay}
+              onDuplicate={duplicateOverlay}
             />
 
             {/* Format + zoom + export */}
@@ -3758,6 +3995,7 @@ export function EstudioClient() {
                             canvasH: dims.h,
                             onSelect: setSelectedOverlay,
                             onMove: moveOverlay,
+                            onUpdate: updateOverlay,
                           }}
                         >
                           <FooterContext.Provider value={{ show: footerShow, right: footerText }}>
@@ -4183,6 +4421,93 @@ function PosGrid({ onPick }: { onPick: (x: number, y: number) => void }) {
   );
 }
 
+// Three-way text-alignment control drawn with bars, so it needs no wording.
+function AlignBtns({ value, onChange }: { value: "left" | "center" | "right"; onChange: (a: "left" | "center" | "right") => void }) {
+  const opts: ("left" | "center" | "right")[] = ["left", "center", "right"];
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      {opts.map((a) => {
+        const on = value === a;
+        return (
+          <button
+            key={a}
+            onClick={() => onChange(a)}
+            style={{
+              flex: 1,
+              height: 32,
+              borderRadius: 8,
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              gap: 3,
+              justifyContent: "center",
+              alignItems: a === "left" ? "flex-start" : a === "right" ? "flex-end" : "center",
+              padding: "0 9px",
+              background: on ? "#7a1d91" : "rgba(255,255,255,0.04)",
+              border: on ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
+            {[0.72, 0.46, 0.6].map((w, i) => (
+              <span key={i} style={{ width: `${w * 100}%`, height: 2, borderRadius: 2, background: on ? "#fff" : "#8a8a95" }} />
+            ))}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Compact color picker for text/box elements: accent · theme text · white · dark · custom.
+function OvColorPicker({
+  value,
+  custom,
+  accent,
+  onPick,
+  onCustom,
+}: {
+  value: OvColor;
+  custom: string;
+  accent: string;
+  onPick: (c: OvColor) => void;
+  onCustom: (hex: string) => void;
+}) {
+  const { t } = useTranslation();
+  const swatches: { id: OvColor; hex: string }[] = [
+    { id: "accent", hex: accent },
+    { id: "fg", hex: "#e9e9f0" },
+    { id: "white", hex: "#ffffff" },
+    { id: "dark", hex: "#0a0510" },
+  ];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      {swatches.map((s) => (
+        <button
+          key={s.id}
+          onClick={() => onPick(s.id)}
+          title={t(`studio.ovColor_${s.id}`)}
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 7,
+            cursor: "pointer",
+            background: s.hex,
+            border: value === s.id ? "2px solid #fff" : "2px solid rgba(255,255,255,0.15)",
+            boxShadow: value === s.id ? `0 0 0 2px ${hexA(accent, 0.5)}` : "none",
+          }}
+        />
+      ))}
+      <ColorSwatch
+        title={t("studio.ovColor_custom")}
+        value={custom}
+        selected={value === "custom"}
+        width={26}
+        onPick={(hex) => onCustom(hex)}
+        onSelect={() => onPick("custom")}
+      />
+    </div>
+  );
+}
+
 function OverlayControls({
   overlays,
   selectedId,
@@ -4191,6 +4516,8 @@ function OverlayControls({
   onSelect,
   onUpdate,
   onRemove,
+  onReorder,
+  onDuplicate,
 }: {
   overlays: Overlay[];
   selectedId: string | null;
@@ -4199,15 +4526,16 @@ function OverlayControls({
   onSelect: (id: string | null) => void;
   onUpdate: (id: string, patch: Partial<Overlay>) => void;
   onRemove: (id: string) => void;
+  onReorder: (id: string, dir: "front" | "back") => void;
+  onDuplicate: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const logoInput = React.useRef<HTMLInputElement>(null);
   const selected = overlays.find((o) => o.id === selectedId) ?? null;
 
   const addBtn: React.CSSProperties = {
-    flex: 1,
     padding: "9px 0",
-    fontSize: 12.5,
+    fontSize: 12,
     fontWeight: 600,
     borderRadius: 8,
     cursor: "pointer",
@@ -4215,16 +4543,44 @@ function OverlayControls({
     background: "rgba(122,29,145,0.2)",
     border: "1px solid rgba(192,132,232,0.3)",
   };
+  const mini: React.CSSProperties = { fontSize: 10.5, color: "#8a8a95", marginBottom: 5 };
+  const actBtn: React.CSSProperties = {
+    flex: 1,
+    padding: "8px 0",
+    fontSize: 11.5,
+    fontWeight: 600,
+    borderRadius: 8,
+    cursor: "pointer",
+    color: "#cfcfd6",
+    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(255,255,255,0.1)",
+  };
+
+  const chipLabel = (o: Overlay): string => {
+    if (o.kind === "logo") return "🖼 " + t("studio.addLogo");
+    if (o.kind === "badge") return "🏷 " + (o.text || t("studio.addBadge"));
+    const first = (o.text || "").split("\n")[0].trim();
+    if (o.kind === "text") return "✏ " + (first || t("studio.addText"));
+    return "▢ " + (first || t("studio.addBox"));
+  };
+
+  const isTextBox = selected?.kind === "text" || selected?.kind === "box";
 
   return (
     <div>
       <Label>{t("studio.overlays")}</Label>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         <button onClick={() => onAdd("logo")} style={addBtn}>
           ＋ {t("studio.addLogo")}
         </button>
         <button onClick={() => onAdd("badge")} style={addBtn}>
           ＋ {t("studio.addBadge")}
+        </button>
+        <button onClick={() => onAdd("text")} style={addBtn}>
+          ＋ {t("studio.addText")}
+        </button>
+        <button onClick={() => onAdd("box")} style={addBtn}>
+          ＋ {t("studio.addBox")}
         </button>
       </div>
       <p style={{ fontSize: 11, color: "#8a8a95", margin: "8px 0 0", lineHeight: 1.5 }}>
@@ -4252,7 +4608,7 @@ function OverlayControls({
               }}
             >
               <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 120 }}>
-                {o.kind === "logo" ? "🖼 " + t("studio.addLogo") : "🏷 " + (o.text || t("studio.addBadge"))}
+                {chipLabel(o)}
               </span>
               <span
                 onClick={(e) => {
@@ -4329,7 +4685,7 @@ function OverlayControls({
                 style={{ display: "none" }}
               />
             </>
-          ) : (
+          ) : selected.kind === "badge" ? (
             <>
               <input
                 type="text"
@@ -4379,28 +4735,125 @@ function OverlayControls({
                 })}
               </div>
             </>
+          ) : (
+            <>
+              {/* text + box shared controls */}
+              <textarea
+                value={selected.text ?? ""}
+                onChange={(e) => onUpdate(selected.id, { text: e.target.value })}
+                placeholder={selected.kind === "box" ? t("studio.boxTextPlaceholder") : t("studio.textPlaceholder")}
+                rows={3}
+                style={inputStyle}
+              />
+              <div>
+                <div style={mini}>{t("studio.elementColor")}</div>
+                <OvColorPicker
+                  value={selected.color ?? "fg"}
+                  custom={selected.customColor ?? "#c084e8"}
+                  accent={accent}
+                  onPick={(c) => onUpdate(selected.id, { color: c })}
+                  onCustom={(hex) => onUpdate(selected.id, { customColor: hex, color: "custom" })}
+                />
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={mini}>{t("studio.elementAlign")}</div>
+                  <AlignBtns value={selected.align ?? "center"} onChange={(a) => onUpdate(selected.id, { align: a })} />
+                </div>
+                <button
+                  onClick={() => onUpdate(selected.id, { bold: !selected.bold })}
+                  style={{
+                    width: 64,
+                    height: 32,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    color: selected.bold ? "#fff" : "#cfcfd6",
+                    background: selected.bold ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                    border: selected.bold ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  {t("studio.elementBold")}
+                </button>
+              </div>
+              {selected.kind === "box" ? (
+                <>
+                  <div>
+                    <div style={mini}>{t("studio.elementFill")}</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {(["none", "tint", "solid"] as const).map((f) => {
+                        const on = (selected.fill ?? "none") === f;
+                        return (
+                          <button
+                            key={f}
+                            onClick={() => onUpdate(selected.id, { fill: f })}
+                            style={{
+                              flex: 1,
+                              height: 30,
+                              fontSize: 11.5,
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              color: on ? "#fff" : "#cfcfd6",
+                              background: on ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                              border: on ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
+                            }}
+                          >
+                            {t(`studio.fill_${f}`)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <OvSlider label={t("studio.elementWidth")} value={selected.width ?? 540} min={80} max={1040} onChange={(n) => onUpdate(selected.id, { width: n })} />
+                  <OvSlider label={t("studio.elementHeight")} value={selected.height ?? 320} min={60} max={1200} onChange={(n) => onUpdate(selected.id, { height: n })} />
+                  <OvSlider label={t("studio.elementRadius")} value={selected.radius ?? 16} min={0} max={80} onChange={(n) => onUpdate(selected.id, { radius: n })} />
+                  <OvSlider label={t("studio.elementBorder")} value={selected.border ?? 2} min={0} max={14} onChange={(n) => onUpdate(selected.id, { border: n })} />
+                </>
+              ) : (
+                <OvSlider label={t("studio.elementWidth")} value={selected.width ?? 660} min={120} max={1040} onChange={(n) => onUpdate(selected.id, { width: n })} />
+              )}
+              <OvSlider
+                label={t("studio.elementFontSize")}
+                value={selected.size}
+                min={18}
+                max={selected.kind === "text" ? 180 : 120}
+                onChange={(n) => onUpdate(selected.id, { size: n })}
+              />
+            </>
           )}
 
-          <OvSlider
-            label={t("studio.overlaySize")}
-            value={selected.size}
-            min={selected.kind === "logo" ? 80 : 26}
-            max={selected.kind === "logo" ? 560 : 96}
-            onChange={(n) => onUpdate(selected.id, { size: n })}
-          />
-          <OvSlider
-            label={t("studio.overlayRotate")}
-            value={selected.rot}
-            min={-30}
-            max={30}
-            onChange={(n) => onUpdate(selected.id, { rot: n })}
-          />
+          {selected.kind === "logo" || selected.kind === "badge" ? (
+            <OvSlider
+              label={t("studio.overlaySize")}
+              value={selected.size}
+              min={selected.kind === "logo" ? 80 : 26}
+              max={selected.kind === "logo" ? 560 : 110}
+              onChange={(n) => onUpdate(selected.id, { size: n })}
+            />
+          ) : null}
+
+          <OvSlider label={t("studio.overlayRotate")} value={selected.rot} min={-30} max={30} onChange={(n) => onUpdate(selected.id, { rot: n })} />
+
+          {/* order + duplicate actions */}
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => onDuplicate(selected.id)} style={actBtn}>
+              ⧉ {t("studio.elementDuplicate")}
+            </button>
+            <button onClick={() => onReorder(selected.id, "front")} style={actBtn} title={t("studio.elementFront")}>
+              ▲ {t("studio.elementFront")}
+            </button>
+            <button onClick={() => onReorder(selected.id, "back")} style={actBtn} title={t("studio.elementBack")}>
+              ▼ {t("studio.elementBack")}
+            </button>
+          </div>
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 10.5, color: "#8a8a95" }}>{t("studio.overlayPos")}</span>
             <PosGrid onPick={(x, y) => onUpdate(selected.id, { xPct: x, yPct: y })} />
           </div>
           <p style={{ fontSize: 10.5, color: "#7f7f8c", margin: 0, lineHeight: 1.4 }}>
-            {t("studio.overlayDragHint")}
+            {isTextBox ? t("studio.elementDragHint") : t("studio.overlayDragHint")}
           </p>
         </div>
       ) : null}

@@ -6,6 +6,9 @@ import { sendTemplateEmail } from "@/lib/email";
 import { formatBRL, getAdminDailySubscriptions } from "@/lib/admin-notify";
 import { ADMIN_DIGEST_EMAIL_KIND, type AdminAlertEvent } from "@/lib/admin-notify-types";
 import { getNfseBacklog } from "@/lib/admin/nfse";
+import { getModulesUnlockingSoon } from "@/lib/admin/module-unlock";
+import { getExhaustedCoupons } from "@/lib/admin/coupons";
+import { alertCronFailure } from "@/lib/admin/cron-alert";
 
 // Daily admin digest. Summarizes the last 24h of admin_alerts (new purchases,
 // payment problems, refunds) and emails ONE digest to each admin who chose
@@ -48,6 +51,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, note: "no daily subscribers", sent: 0 });
   }
 
+  try {
   const supabase = createAdminClient();
   const dateKey = todayKey();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -56,10 +60,7 @@ export async function GET(request: NextRequest) {
     .from("admin_alerts")
     .select("event_type, metadata, created_at")
     .gte("created_at", since);
-  if (alertsErr) {
-    console.error("admin-digest: alerts query failed", alertsErr);
-    return NextResponse.json({ error: "alerts_query_failed" }, { status: 500 });
-  }
+  if (alertsErr) throw alertsErr;
 
   // Aggregate counts (+ summed amounts) per event type.
   const counts: Record<AdminAlertEvent, { n: number; cents: number }> = {
@@ -68,6 +69,9 @@ export async function GET(request: NextRequest) {
     refund: { n: 0, cents: 0 },
     support_ticket: { n: 0, cents: 0 },
     nfse_ready: { n: 0, cents: 0 },
+    cron_failure: { n: 0, cents: 0 },
+    module_unlock_soon: { n: 0, cents: 0 },
+    coupon_exhausted: { n: 0, cents: 0 },
   };
   for (const row of alerts ?? []) {
     const e = row.event_type as AdminAlertEvent;
@@ -77,11 +81,18 @@ export async function GET(request: NextRequest) {
     if (typeof md.amount_cents === "number") counts[e].cents += md.amount_cents;
   }
 
-  // nfse_ready is a STANDING backlog, not a 24h event — compute it live from orders
-  // (shared rule in lib/admin/nfse.ts) rather than from admin_alerts.
-  const nfse = await getNfseBacklog();
+  // nfse_ready / module_unlock_soon / coupon_exhausted are STANDING backlogs, not
+  // 24h events — compute them live rather than from admin_alerts (they never
+  // call recordAdminAlert — see DAILY_ONLY_EVENTS).
+  const [nfse, modulesUnlocking, couponsExhausted] = await Promise.all([
+    getNfseBacklog(),
+    getModulesUnlockingSoon(),
+    getExhaustedCoupons(),
+  ]);
   const nfseAtRisk = nfse.atRisk;
   counts.nfse_ready.n = nfse.ready;
+  counts.module_unlock_soon.n = modulesUnlocking.length;
+  counts.coupon_exhausted.n = couponsExhausted.length;
 
   function lineFor(e: AdminAlertEvent): string | null {
     const c = counts[e];
@@ -99,6 +110,18 @@ export async function GET(request: NextRequest) {
           : "";
       return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">📝 <strong>${c.n} nota(s) fiscal(is) a emitir</strong>${risk}</p>`;
     }
+    if (e === "module_unlock_soon") {
+      const names = modulesUnlocking
+        .map((m) => `${m.moduleName} (${m.cohortName}, ${m.daysUntil === 0 ? "hoje" : "amanhã"})`)
+        .join(", ");
+      return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">🔓 <strong>${c.n} módulo(s) abrindo</strong> — ${names}</p>`;
+    }
+    if (e === "coupon_exhausted") {
+      const codes = couponsExhausted.map((cp) => cp.code).join(", ");
+      return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">🎟️ <strong>${c.n} cupom(ns) esgotado(s)</strong> — ${codes}</p>`;
+    }
+    if (e === "cron_failure")
+      return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">🛑 <strong>${c.n} rotina(s) automática(s) falharam</strong></p>`;
     return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">⚠️ <strong>${c.n} pagamento(s) retido(s)</strong> para revisão</p>`;
   }
 
@@ -160,4 +183,8 @@ export async function GET(request: NextRequest) {
     skipped,
     failed,
   });
+  } catch (err) {
+    await alertCronFailure("admin-digest", err);
+    return NextResponse.json({ error: "cron_failed" }, { status: 500 });
+  }
 }

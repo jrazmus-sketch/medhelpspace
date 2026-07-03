@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 import { VIEWAS_COOKIE } from "@/lib/viewas";
 import { safe } from "@/lib/sanitize";
 import { sendPurchaseConfirmation } from "@/lib/email";
-import type { MemberDetail } from "@/lib/admin/member-detail";
+import type { MemberDetail, MemberFiscalInput } from "@/lib/admin/member-detail";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -653,6 +653,143 @@ export async function getMemberDetail(userId: string): Promise<MemberDetail> {
     emails,
     fiscal,
   };
+}
+
+// ── Member profile edits ──────────────────────────────────────────────────────
+//
+// Support/billing tooling for correcting member identity data — most importantly
+// a typo'd email captured at checkout. All four actions are member-access gated
+// (super/support/billing), except fiscal edits which are billing-only (PII), and
+// each writes an audit-log entry (never the password itself).
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Change a member's email. Email lives in TWO places that must stay in sync:
+// auth.users.email (the login identity AND the target for every transactional
+// mail + password reset — only the Auth Admin API can write it) and the
+// profiles.email mirror the admin list, member lookups, and all outbound mail
+// read from. handle_new_user() copies it once at signup and never re-syncs, so a
+// plain profiles UPDATE would leave the person still logging in with — and
+// getting resets at — the old address. We pre-check the mirror for a collision,
+// write Auth with email_confirm:true (the admin is deliberately fixing a typo, so
+// skip the confirm round-trip), then mirror into profiles.
+export async function updateMemberEmail(
+  targetUserId: string,
+  newEmailRaw: string,
+): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireMemberAccessRole();
+  const email = newEmailRaw.trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return { error: "invalid_email" };
+
+  const admin = createAdminClient();
+
+  const { data: current } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("id", targetUserId)
+    .single();
+  const oldEmail = (current?.email as string | null) ?? null;
+  if (oldEmail && oldEmail.toLowerCase() === email) return { ok: true };
+
+  // Pre-check the profiles mirror for a collision so the common duplicate case
+  // fails BEFORE we touch Auth (avoiding auth/profiles drift on a doomed write).
+  const { count: dupCount } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("email", email)
+    .neq("id", targetUserId);
+  if ((dupCount ?? 0) > 0) return { error: "email_taken" };
+
+  // Auth is the source of truth; write it first. A duplicate address that only
+  // exists in auth (no matching profile) still surfaces here as an error.
+  const { error: authErr } = await admin.auth.admin.updateUserById(targetUserId, {
+    email,
+    email_confirm: true,
+  });
+  if (authErr) {
+    const dup = /already|exists|registered|duplicate|taken/i.test(authErr.message);
+    return { error: dup ? "email_taken" : "auth_failed" };
+  }
+
+  // Mirror into profiles so the list, lookups, and outbound mail agree with Auth.
+  const { error: profErr } = await admin
+    .from("profiles")
+    .update({ email })
+    .eq("id", targetUserId);
+  if (profErr) return { error: "profile_sync_failed" };
+
+  await writeAuditLog(user.id, "member_email_change", targetUserId, {
+    from_email: oldEmail,
+    to_email: email,
+  });
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+export async function updateMemberDisplayName(
+  targetUserId: string,
+  displayNameRaw: string,
+): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireMemberAccessRole();
+  const admin = createAdminClient();
+  const displayName = displayNameRaw.trim().slice(0, 120) || null;
+  const { error } = await admin
+    .from("profiles")
+    .update({ display_name: displayName })
+    .eq("id", targetUserId);
+  if (error) return { error: "update_failed" };
+  await writeAuditLog(user.id, "member_name_change", targetUserId, {
+    display_name: displayName,
+  });
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+// Correct a member's fiscal/billing identity — the data behind their notas
+// fiscais, so a typo'd CPF or name here produces a wrong/rejected NFS-e. PII →
+// billing-role only, matching the drawer's billing gate. Empty string clears the
+// column (trim → null).
+export async function updateMemberFiscal(
+  targetUserId: string,
+  input: MemberFiscalInput,
+): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireBillingRole();
+  const admin = createAdminClient();
+  const clean = (s: string, n = 120) => s.trim().slice(0, n) || null;
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      billing_first_name: clean(input.firstName),
+      billing_last_name: clean(input.lastName),
+      billing_cpf: clean(input.cpf, 20),
+      billing_phone: clean(input.phone, 30),
+      billing_city: clean(input.city),
+      billing_state: clean(input.state, 8),
+    })
+    .eq("id", targetUserId);
+  if (error) return { error: "update_failed" };
+  await writeAuditLog(user.id, "member_fiscal_change", targetUserId, {});
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+// Set a member's password directly — the support escape hatch for when a reset
+// LINK can't reach them (e.g. the email itself was wrong; fix the email first,
+// then optionally set a temp password so they can sign in immediately). The
+// audit entry deliberately records NO password material.
+export async function setMemberPassword(
+  targetUserId: string,
+  newPassword: string,
+): Promise<{ ok: true } | { error: string }> {
+  const { user } = await requireMemberAccessRole();
+  if (newPassword.length < 8) return { error: "weak_password" };
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.updateUserById(targetUserId, {
+    password: newPassword,
+  });
+  if (error) return { error: "auth_failed" };
+  await writeAuditLog(user.id, "member_password_set", targetUserId, {});
+  return { ok: true };
 }
 
 // ── Page metadata ─────────────────────────────────────────────────────────────

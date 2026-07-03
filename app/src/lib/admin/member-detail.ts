@@ -70,6 +70,19 @@ export type MemberFiscal = {
   state: string | null;
 };
 
+// Input for updateMemberFiscal — the six editable billing/fiscal columns as
+// plain strings (empty = clear the column). Lives here, not in the "use server"
+// actions module, so the client drawer can import it as a pure type without
+// tripping the "use server only exports async functions" footgun.
+export type MemberFiscalInput = {
+  firstName: string;
+  lastName: string;
+  cpf: string;
+  phone: string;
+  city: string;
+  state: string;
+};
+
 // Returned by the getMemberDetail server action and lazy-loaded when the drawer
 // opens. Billing-sensitive sections (orders, lifetime paid, fiscal identity) are
 // only populated when the calling admin holds a billing/super role.

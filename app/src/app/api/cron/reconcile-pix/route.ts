@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrder } from "@/lib/pagbank/api";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
+import { alertCronFailure } from "@/lib/admin/cron-alert";
 
 // Pending-Pix reconciliation — the closed-tab safety net.
 //
@@ -54,65 +55,72 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 3_600_000).toISOString();
 
-  const { data: orders, error } = await admin
-    .from("orders")
-    .select("id, user_id, cohort_id, pagbank_order_id, status")
-    .eq("payment_method", "pix")
-    .eq("status", "pending")
-    .not("pagbank_order_id", "is", null)
-    .gte("created_at", sinceIso)
-    .order("created_at", { ascending: true })
-    .limit(MAX_ORDERS);
+  try {
+    const sinceIso = new Date(Date.now() - LOOKBACK_HOURS * 3_600_000).toISOString();
 
-  if (error) {
-    console.error("reconcile-pix: order query failed", error);
-    return NextResponse.json({ error: "query failed" }, { status: 500 });
-  }
+    const { data: orders, error } = await admin
+      .from("orders")
+      .select("id, user_id, cohort_id, pagbank_order_id, status")
+      .eq("payment_method", "pix")
+      .eq("status", "pending")
+      .not("pagbank_order_id", "is", null)
+      .gte("created_at", sinceIso)
+      .order("created_at", { ascending: true })
+      .limit(MAX_ORDERS);
 
-  let checked = 0;
-  let finalized = 0;
-  let stillPending = 0;
-  let errored = 0;
+    if (error) throw error;
 
-  for (const order of orders ?? []) {
-    checked++;
-    const pbOrderId = order.pagbank_order_id as string;
-    try {
-      const pbOrder = await getOrder(pbOrderId);
-      // The order's charges[] is empty until the QR is paid; a PAID entry is the
-      // settled payment. Anything else (waiting, declined) → leave it pending.
-      const paid = pbOrder.charges?.find((c) => c.status === "PAID");
-      if (!paid) {
-        stillPending++;
-        continue;
+    let checked = 0;
+    let finalized = 0;
+    let stillPending = 0;
+    let errored = 0;
+
+    for (const order of orders ?? []) {
+      checked++;
+      const pbOrderId = order.pagbank_order_id as string;
+      try {
+        const pbOrder = await getOrder(pbOrderId);
+        // The order's charges[] is empty until the QR is paid; a PAID entry is the
+        // settled payment. Anything else (waiting, declined) → leave it pending.
+        const paid = pbOrder.charges?.find((c) => c.status === "PAID");
+        if (!paid) {
+          stillPending++;
+          continue;
+        }
+        const { wonRace } = await finalizePaidOrder(admin, {
+          orderId: order.id as string,
+          userId: order.user_id as string,
+          cohortId: order.cohort_id as number,
+          charge: paid,
+        });
+        if (wonRace) {
+          finalized++;
+          console.warn(
+            "reconcile-pix: recovered a paid Pix order missed by the webhook/poll —",
+            "orderId=", order.id, "pagbank_order_id=", pbOrderId,
+          );
+        }
+      } catch (err) {
+        // Per-order failure — NOT a cron_failure (routine, e.g. one flaky PagBank
+        // call). Counted in `errored` for the JSON response; the run continues.
+        errored++;
+        console.error("reconcile-pix: failed for order", order.id, pbOrderId, err);
       }
-      const { wonRace } = await finalizePaidOrder(admin, {
-        orderId: order.id as string,
-        userId: order.user_id as string,
-        cohortId: order.cohort_id as number,
-        charge: paid,
-      });
-      if (wonRace) {
-        finalized++;
-        console.warn(
-          "reconcile-pix: recovered a paid Pix order missed by the webhook/poll —",
-          "orderId=", order.id, "pagbank_order_id=", pbOrderId,
-        );
-      }
-    } catch (err) {
-      errored++;
-      console.error("reconcile-pix: failed for order", order.id, pbOrderId, err);
     }
-  }
 
-  return NextResponse.json({
-    ok: true,
-    window_hours: LOOKBACK_HOURS,
-    checked,
-    finalized,
-    still_pending: stillPending,
-    errored,
-  });
+    return NextResponse.json({
+      ok: true,
+      window_hours: LOOKBACK_HOURS,
+      checked,
+      finalized,
+      still_pending: stillPending,
+      errored,
+    });
+  } catch (err) {
+    // The run itself crashed (e.g. the initial order query failed) — this is
+    // exactly the "silent cron outage" admins should hear about.
+    await alertCronFailure("reconcile-pix", err);
+    return NextResponse.json({ error: "cron_failed" }, { status: 500 });
+  }
 }

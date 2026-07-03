@@ -209,10 +209,10 @@ export function renderEmail(
       <td align="center">
         <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
           <tr>
-            <td style="background:#7a1d91;padding:28px 40px;">
-              <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:-.3px;">
-                ${settings.company_name}
-              </p>
+            <td style="background:#7a1d91;padding:24px 40px;">
+              <img src="${settings.app_url}/brand/medhelpspace-wordmark-email.png"
+                alt="${settings.company_name}" width="397" height="36"
+                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:100%;max-width:397px;height:auto;" />
             </td>
           </tr>
           <tr>
@@ -608,6 +608,39 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     ],
     active: true,
     sort_order: 13,
+  },
+
+  // ── Admin-facing: scheduled task (cron) failure ───────────────────────────────
+  // The only ADMIN_ALERT_EVENTS kind with a real instant email that isn't seeded
+  // in a schema-patch SQL file — mirrors admin-support-ticket's precedent of
+  // relying purely on this code-side default (sendTemplateEmail falls back to
+  // EMAIL_TEMPLATE_DEFAULTS when no DB row exists).
+  "admin-cron-failure": {
+    kind: "admin-cron-failure",
+    name: "[Admin] Falha em tarefa automática",
+    description: "Enviado aos administradores quando uma rotina agendada (cron) falha ao rodar.",
+    subject: "⚠️ Falha na rotina {{cronName}}",
+    kicker: "Tarefa automática falhou",
+    headline: "{{cronName}} não completou a execução",
+    body_html: `<p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.6;">
+  Uma rotina agendada encontrou um erro e não terminou de rodar. Verifique os logs do
+  Vercel para o(s) processo(s) que dependem dela (ex.: reconciliação de Pix, e-mails
+  de ciclo de vida, resumo diário).
+</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border-radius:8px;padding:16px;margin-bottom:24px;">
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Rotina:</strong> {{cronName}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#374151;padding:3px 0;"><strong style="color:#111827;">Horário:</strong> {{runAt}}</td></tr>
+  <tr><td style="font-size:13.5px;color:#b91c1c;padding:3px 0;"><strong style="color:#111827;">Erro:</strong> {{errorMessage}}</td></tr>
+</table>`,
+    cta_label: "Ver no painel →",
+    cta_href: "/admin",
+    variables: [
+      { tag: "cronName", description: "Nome da rotina agendada (ex.: reconcile-pix)" },
+      { tag: "runAt", description: "Data/hora da execução que falhou" },
+      { tag: "errorMessage", description: "Mensagem de erro capturada" },
+    ],
+    active: true,
+    sort_order: 20,
   },
 
   // ── Lead-magnet funnel (recipients are anonymous leads, not members) ──────────

@@ -4,13 +4,21 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { X, Mail, RefreshCw } from "lucide-react";
-import { getMemberDetail, resendWelcomeEmail } from "@/actions/admin";
+import { X, Mail, RefreshCw, Pencil, KeyRound } from "lucide-react";
+import {
+  getMemberDetail,
+  resendWelcomeEmail,
+  updateMemberEmail,
+  updateMemberDisplayName,
+  updateMemberFiscal,
+  setMemberPassword,
+} from "@/actions/admin";
 import { StatusPill } from "./member-status-pill";
 import type {
   MemberDetail,
   MemberListRow,
   MemberCompletion,
+  MemberFiscalInput,
 } from "@/lib/admin/member-detail";
 
 const ORDER_STATUS_STYLE: Record<string, string> = {
@@ -69,6 +77,37 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
   // Snapshot "now" once (lazy init) so the days-left math below stays pure — render
   // must not call the impure Date.now(). Day granularity makes a mount-time stamp fine.
   const [now] = useState(() => Date.now());
+
+  // ── Identity editing (email / name / password / fiscal) ──
+  // Header identity is optimistic: seed from the row, patch locally on save, and
+  // router.refresh() the table behind the drawer so it agrees on next open. The
+  // parent remounts this per member (key={row.id}), so these seeds are fresh.
+  const [localEmail, setLocalEmail] = useState(row?.email ?? "");
+  const [localName, setLocalName] = useState<string | null>(row?.display_name ?? null);
+
+  const [editingAccount, setEditingAccount] = useState(false);
+  const [formEmail, setFormEmail] = useState("");
+  const [formName, setFormName] = useState("");
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
+
+  const [editingPw, setEditingPw] = useState(false);
+  const [formPw, setFormPw] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwOk, setPwOk] = useState(false);
+
+  const [editingFiscal, setEditingFiscal] = useState(false);
+  const [formFiscal, setFormFiscal] = useState<MemberFiscalInput>({
+    firstName: "",
+    lastName: "",
+    cpf: "",
+    phone: "",
+    city: "",
+    state: "",
+  });
+  const [fiscalBusy, setFiscalBusy] = useState(false);
+  const [fiscalError, setFiscalError] = useState<string | null>(null);
 
   const dateLocale = i18n.language === "en" ? "en-US" : "pt-BR";
 
@@ -168,9 +207,115 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
     }
   }
 
+  // Localize edit-action errors, falling back to the generic message for any
+  // unmapped error code so the drawer never shows a raw key.
+  function editErr(code: string) {
+    return t(`members.editErrors.${code}`, { defaultValue: t("errors.generic") });
+  }
+
+  function openAccountEdit() {
+    setFormEmail(localEmail);
+    setFormName(localName ?? "");
+    setAccountError(null);
+    setEditingAccount(true);
+  }
+
+  async function saveAccount() {
+    if (!row) return;
+    setAccountBusy(true);
+    setAccountError(null);
+    const nextEmail = formEmail.trim().toLowerCase();
+    const nextName = formName.trim() || null;
+    const emailChanged = nextEmail !== localEmail.toLowerCase();
+    const nameChanged = nextName !== (localName ?? null);
+    try {
+      if (emailChanged) {
+        const r = await updateMemberEmail(row.id, formEmail);
+        if ("error" in r) {
+          setAccountError(editErr(r.error));
+          return;
+        }
+        setLocalEmail(nextEmail);
+      }
+      if (nameChanged) {
+        const r = await updateMemberDisplayName(row.id, formName);
+        if ("error" in r) {
+          setAccountError(editErr(r.error));
+          return;
+        }
+        setLocalName(nextName);
+      }
+      setEditingAccount(false);
+      // Sync the table behind the drawer (email/name columns + search).
+      router.refresh();
+    } catch {
+      setAccountError(t("errors.generic"));
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function savePassword() {
+    if (!row) return;
+    if (formPw.length < 8) {
+      setPwError(editErr("weak_password"));
+      return;
+    }
+    setPwBusy(true);
+    setPwError(null);
+    try {
+      const r = await setMemberPassword(row.id, formPw);
+      if ("error" in r) {
+        setPwError(editErr(r.error));
+        return;
+      }
+      setFormPw("");
+      setEditingPw(false);
+      setPwOk(true);
+    } catch {
+      setPwError(t("errors.generic"));
+    } finally {
+      setPwBusy(false);
+    }
+  }
+
+  function openFiscalEdit() {
+    setFormFiscal({
+      firstName: detail?.fiscal?.firstName ?? "",
+      lastName: detail?.fiscal?.lastName ?? "",
+      cpf: detail?.fiscal?.cpf ?? "",
+      phone: detail?.fiscal?.phone ?? "",
+      city: detail?.fiscal?.city ?? "",
+      state: detail?.fiscal?.state ?? "",
+    });
+    setFiscalError(null);
+    setEditingFiscal(true);
+  }
+
+  async function saveFiscal() {
+    if (!row) return;
+    setFiscalBusy(true);
+    setFiscalError(null);
+    try {
+      const r = await updateMemberFiscal(row.id, formFiscal);
+      if ("error" in r) {
+        setFiscalError(editErr(r.error));
+        return;
+      }
+      // Re-fetch so the read view reflects the saved values.
+      const fresh = await getMemberDetail(row.id);
+      setDetail(fresh);
+      setEditingFiscal(false);
+    } catch {
+      setFiscalError(t("errors.generic"));
+    } finally {
+      setFiscalBusy(false);
+    }
+  }
+
   if (!row) return null;
 
-  const name = row.display_name || row.email.split("@")[0];
+  const name = localName || localEmail.split("@")[0];
   const daysLeft =
     row.membershipEndsAt && (row.status === "active" || row.status === "expiring")
       ? Math.max(
@@ -200,7 +345,7 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
         <div className="sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-border bg-background/95 px-5 py-4 backdrop-blur">
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold">{name}</h2>
-            <p className="truncate text-sm text-muted-foreground">{row.email}</p>
+            <p className="truncate text-sm text-muted-foreground">{localEmail}</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <StatusPill status={row.status} />
               <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -220,27 +365,115 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
 
         <div className="space-y-6 px-5 py-5">
           {/* Account */}
-          <Section title={t("members.sectionAccount")}>
-            <Field label={t("members.cohort")} value={row.cohortName ?? t("members.noCohort")} />
-            <Field label={t("members.joinedAt")} value={fmtDate(row.created_at)} />
-            {row.membershipStartsAt && row.membershipEndsAt && (
-              <Field
-                label={t("members.membershipWindow")}
-                value={`${fmtDate(row.membershipStartsAt)} – ${fmtDate(row.membershipEndsAt)}`}
-              />
+          <Section
+            title={t("members.sectionAccount")}
+            action={
+              detail?.canManageAccess && !editingAccount ? (
+                <EditButton label={t("members.editAccount")} onClick={openAccountEdit} />
+              ) : null
+            }
+          >
+            {editingAccount ? (
+              <div className="space-y-3">
+                <LabeledInput
+                  label={t("members.email")}
+                  type="email"
+                  value={formEmail}
+                  onChange={setFormEmail}
+                  disabled={accountBusy}
+                />
+                <p className="-mt-1 text-xs text-muted-foreground">
+                  {t("members.emailChangeHint")}
+                </p>
+                <LabeledInput
+                  label={t("members.displayName")}
+                  value={formName}
+                  onChange={setFormName}
+                  disabled={accountBusy}
+                />
+                {accountError && <p className="text-xs text-destructive">{accountError}</p>}
+                <EditFormButtons
+                  busy={accountBusy}
+                  onSave={saveAccount}
+                  onCancel={() => setEditingAccount(false)}
+                  t={t}
+                />
+              </div>
+            ) : (
+              <>
+                <Field label={t("members.cohort")} value={row.cohortName ?? t("members.noCohort")} />
+                <Field label={t("members.joinedAt")} value={fmtDate(row.created_at)} />
+                {row.membershipStartsAt && row.membershipEndsAt && (
+                  <Field
+                    label={t("members.membershipWindow")}
+                    value={`${fmtDate(row.membershipStartsAt)} – ${fmtDate(row.membershipEndsAt)}`}
+                  />
+                )}
+                {daysLeft !== null && (
+                  <Field
+                    label={t("members.daysRemaining")}
+                    value={t(daysLeft === 1 ? "members.dayCountOne" : "members.dayCountOther", {
+                      count: daysLeft,
+                    })}
+                  />
+                )}
+                <Field
+                  label={t("members.lastActive")}
+                  value={row.lastActiveAt ? fmtDate(row.lastActiveAt, true) : t("members.never")}
+                />
+
+                {detail?.canManageAccess && (
+                  <div className="mt-3 border-t border-border/60 pt-3">
+                    {editingPw ? (
+                      <div className="space-y-3">
+                        {/* type=text: the admin is setting a temp password to relay
+                            to the member, so it should be visible (and not autofilled). */}
+                        <LabeledInput
+                          label={t("members.newPassword")}
+                          type="text"
+                          value={formPw}
+                          onChange={setFormPw}
+                          disabled={pwBusy}
+                        />
+                        <p className="-mt-1 text-xs text-muted-foreground">
+                          {t("members.passwordHint")}
+                        </p>
+                        {pwError && <p className="text-xs text-destructive">{pwError}</p>}
+                        <EditFormButtons
+                          busy={pwBusy}
+                          onSave={savePassword}
+                          onCancel={() => {
+                            setEditingPw(false);
+                            setFormPw("");
+                            setPwError(null);
+                          }}
+                          t={t}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingPw(true);
+                            setPwOk(false);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-2"
+                        >
+                          <KeyRound className="h-4 w-4 shrink-0" />
+                          {t("members.setPassword")}
+                        </button>
+                        {pwOk && (
+                          <span className="text-xs text-green-700 dark:text-green-400">
+                            {t("members.passwordSet")}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
-            {daysLeft !== null && (
-              <Field
-                label={t("members.daysRemaining")}
-                value={t(daysLeft === 1 ? "members.dayCountOne" : "members.dayCountOther", {
-                  count: daysLeft,
-                })}
-              />
-            )}
-            <Field
-              label={t("members.lastActive")}
-              value={row.lastActiveAt ? fmtDate(row.lastActiveAt, true) : t("members.never")}
-            />
           </Section>
 
           {/* Loading / error */}
@@ -326,7 +559,7 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
                           {refundOpenId === o.id && (
                             <div className="mt-2 border-t border-border/60 pt-2">
                               <p className="mb-2 text-xs text-muted-foreground">
-                                {t("billing.refundDesc", { email: row.email })}
+                                {t("billing.refundDesc", { email: localEmail })}
                               </p>
                               <textarea
                                 value={refundReason}
@@ -369,24 +602,90 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
                 </Section>
               )}
 
-              {/* Fiscal identity — gated */}
-              {detail.canSeeBilling && detail.fiscal && (
-                <Section title={t("members.sectionFiscal")}>
-                  {(detail.fiscal.firstName || detail.fiscal.lastName) && (
-                    <Field
-                      label={t("members.displayName")}
-                      value={`${detail.fiscal.firstName ?? ""} ${detail.fiscal.lastName ?? ""}`.trim()}
-                    />
-                  )}
-                  {detail.fiscal.cpf && <Field label={t("members.cpf")} value={detail.fiscal.cpf} />}
-                  {detail.fiscal.phone && (
-                    <Field label={t("members.phone")} value={detail.fiscal.phone} />
-                  )}
-                  {(detail.fiscal.city || detail.fiscal.state) && (
-                    <Field
-                      label={t("members.location")}
-                      value={[detail.fiscal.city, detail.fiscal.state].filter(Boolean).join(" / ")}
-                    />
+              {/* Fiscal identity — gated. Rendered whenever the viewer can see
+                  billing so empty fiscal data can still be filled in. */}
+              {detail.canSeeBilling && (
+                <Section
+                  title={t("members.sectionFiscal")}
+                  action={
+                    !editingFiscal ? (
+                      <EditButton label={t("members.editFiscal")} onClick={openFiscalEdit} />
+                    ) : null
+                  }
+                >
+                  {editingFiscal ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <LabeledInput
+                          label={t("members.firstName")}
+                          value={formFiscal.firstName}
+                          onChange={(v) => setFormFiscal((f) => ({ ...f, firstName: v }))}
+                          disabled={fiscalBusy}
+                        />
+                        <LabeledInput
+                          label={t("members.lastName")}
+                          value={formFiscal.lastName}
+                          onChange={(v) => setFormFiscal((f) => ({ ...f, lastName: v }))}
+                          disabled={fiscalBusy}
+                        />
+                      </div>
+                      <LabeledInput
+                        label={t("members.cpf")}
+                        value={formFiscal.cpf}
+                        onChange={(v) => setFormFiscal((f) => ({ ...f, cpf: v }))}
+                        disabled={fiscalBusy}
+                      />
+                      <LabeledInput
+                        label={t("members.phone")}
+                        value={formFiscal.phone}
+                        onChange={(v) => setFormFiscal((f) => ({ ...f, phone: v }))}
+                        disabled={fiscalBusy}
+                      />
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <LabeledInput
+                            label={t("members.cityLabel")}
+                            value={formFiscal.city}
+                            onChange={(v) => setFormFiscal((f) => ({ ...f, city: v }))}
+                            disabled={fiscalBusy}
+                          />
+                        </div>
+                        <LabeledInput
+                          label={t("members.stateLabel")}
+                          value={formFiscal.state}
+                          onChange={(v) => setFormFiscal((f) => ({ ...f, state: v }))}
+                          disabled={fiscalBusy}
+                        />
+                      </div>
+                      {fiscalError && <p className="text-xs text-destructive">{fiscalError}</p>}
+                      <EditFormButtons
+                        busy={fiscalBusy}
+                        onSave={saveFiscal}
+                        onCancel={() => setEditingFiscal(false)}
+                        t={t}
+                      />
+                    </div>
+                  ) : detail.fiscal ? (
+                    <>
+                      {(detail.fiscal.firstName || detail.fiscal.lastName) && (
+                        <Field
+                          label={t("members.displayName")}
+                          value={`${detail.fiscal.firstName ?? ""} ${detail.fiscal.lastName ?? ""}`.trim()}
+                        />
+                      )}
+                      {detail.fiscal.cpf && <Field label={t("members.cpf")} value={detail.fiscal.cpf} />}
+                      {detail.fiscal.phone && (
+                        <Field label={t("members.phone")} value={detail.fiscal.phone} />
+                      )}
+                      {(detail.fiscal.city || detail.fiscal.state) && (
+                        <Field
+                          label={t("members.location")}
+                          value={[detail.fiscal.city, detail.fiscal.state].filter(Boolean).join(" / ")}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{t("members.noFiscal")}</p>
                   )}
                 </Section>
               )}
@@ -445,14 +744,101 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section>
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {title}
-      </h3>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </h3>
+        {action}
+      </div>
       <div className="rounded-xl border border-border bg-surface-1 p-4">{children}</div>
     </section>
+  );
+}
+
+// Small "Editar" affordance shown in a Section header.
+function EditButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-brand transition-colors hover:bg-brand/10"
+    >
+      <Pencil className="h-3.5 w-3.5 shrink-0" />
+      {label}
+    </button>
+  );
+}
+
+// Labeled text input used across the inline edit forms.
+function LabeledInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-brand/50 disabled:opacity-60"
+      />
+    </label>
+  );
+}
+
+// Shared Cancel / Save button pair for the inline edit forms.
+function EditFormButtons({
+  busy,
+  onSave,
+  onCancel,
+  t,
+}: {
+  busy: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="flex gap-2 pt-1">
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={busy}
+        className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-surface-1 disabled:opacity-60"
+      >
+        {t("common.cancel")}
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={busy}
+        className="flex-1 rounded-lg bg-brand py-2.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+      >
+        {busy ? t("common.loading") : t("common.save")}
+      </button>
+    </div>
   );
 }
 

@@ -16,6 +16,9 @@ export const ADMIN_ALERT_EVENTS = [
   "refund",
   "support_ticket",
   "nfse_ready",
+  "cron_failure",
+  "module_unlock_soon",
+  "coupon_exhausted",
 ] as const;
 
 export type AdminAlertEvent = (typeof ADMIN_ALERT_EVENTS)[number];
@@ -25,11 +28,16 @@ export type AdminNotifyFrequency = "instant" | "daily" | "off";
 // Events with no real-time trigger — they describe a STANDING backlog detected by
 // the daily cron (computed live), not a one-off moment. The settings UI hides the
 // 'instant' option for these, and they are never passed to recordAdminAlert().
-export const DAILY_ONLY_EVENTS = new Set<AdminAlertEvent>(["nfse_ready"]);
+export const DAILY_ONLY_EVENTS = new Set<AdminAlertEvent>([
+  "nfse_ready",
+  "module_unlock_soon",
+  "coupon_exhausted",
+]);
 
 // Effective frequency when an admin has no saved pref row for an event.
-// Purchases / payment problems / support tickets matter immediately; refunds are
-// opt-in to avoid pinging every billing admin about a co-admin's routine refund.
+// Purchases / payment problems / support tickets / cron failures matter
+// immediately; refunds are opt-in to avoid pinging every billing admin about a
+// co-admin's routine refund.
 export const ADMIN_NOTIFY_DEFAULTS: Record<AdminAlertEvent, AdminNotifyFrequency> = {
   new_purchase: "instant",
   payment_problem: "instant",
@@ -37,6 +45,9 @@ export const ADMIN_NOTIFY_DEFAULTS: Record<AdminAlertEvent, AdminNotifyFrequency
   support_ticket: "instant",
   // A standing backlog → digest by default (no instant path exists for it).
   nfse_ready: "daily",
+  cron_failure: "instant",
+  module_unlock_soon: "daily",
+  coupon_exhausted: "daily",
 };
 
 // Roles eligible to receive each event AT ALL — gating is PER EVENT so a
@@ -49,6 +60,11 @@ export const ADMIN_NOTIFY_ELIGIBLE_ROLES: Record<AdminAlertEvent, readonly strin
   refund: ["super_admin", "billing_admin"],
   support_ticket: ["super_admin", "support_admin", "billing_admin"],
   nfse_ready: ["super_admin", "billing_admin"],
+  cron_failure: ["super_admin", "billing_admin"],
+  // Content readiness before a date-gated module opens — a content_admin's
+  // call, not a billing/support concern.
+  module_unlock_soon: ["super_admin", "content_admin"],
+  coupon_exhausted: ["super_admin", "billing_admin"],
 };
 
 // Union of every role eligible for at least one event — for the broad profiles
@@ -71,6 +87,10 @@ export const EVENT_EMAIL_KIND: Record<AdminAlertEvent, string> = {
   support_ticket: "admin-support-ticket",
   // Digest-only: no per-event instant email is ever sent for this one.
   nfse_ready: "admin-nfse-ready",
+  cron_failure: "admin-cron-failure",
+  // Digest/bell-only, same as nfse_ready — these kinds are never sent.
+  module_unlock_soon: "admin-module-unlock-soon",
+  coupon_exhausted: "admin-coupon-exhausted",
 };
 
 export const ADMIN_DIGEST_EMAIL_KIND = "admin-digest";
