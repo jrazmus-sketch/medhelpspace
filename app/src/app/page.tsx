@@ -6,6 +6,7 @@ import { StatsNumbers } from "@/components/landing/stats-numbers";
 import { SystemShowcase } from "@/components/landing/system-showcase";
 import { RevisaoSection } from "@/components/landing/revisao-section";
 import { PlanoSection } from "@/components/landing/plano-section";
+import { DesktopShowcase } from "@/components/landing/desktop-showcase";
 import { SixtyDSection } from "@/components/landing/sixty-d-section";
 import { FounderSection } from "@/components/landing/founder-section";
 import { PricingCTA } from "@/components/landing/pricing-cta";
@@ -44,6 +45,7 @@ export default async function LandingPage() {
         <SixtyDSection />
         <RevisaoSection />
         <PlanoSection />
+        <DesktopShowcase />
         <FounderSection stats={stats} />
         <PricingCTA cohorts={cohorts} />
         <FaqSection />
