@@ -307,6 +307,10 @@ const FrozenPageContext = React.createContext<string | null>(null);
 // body/list text) so a short headline can go big, or a dense card can shrink to
 // fit — layout boxes, chrome (eyebrow/chips/footer) and images stay fixed.
 const TextScaleContext = React.createContext<number>(1);
+
+// Canvas decor toggles (glow = the two ambient radial glows; grid = the faint
+// accent grid). Default both on so every existing template renders unchanged.
+const DecorContext = React.createContext<{ glow: boolean; grid: boolean }>({ glow: true, grid: true });
 function useTS(): number {
   return React.useContext(TextScaleContext);
 }
@@ -625,6 +629,7 @@ function CardShell({
 }) {
   const { canvasH, contentH } = React.useContext(CanvasContext);
   const theme = React.useContext(CardThemeContext);
+  const { glow, grid } = React.useContext(DecorContext);
   const centered = contentH < canvasH;
   // Content zone: full canvas normally; a compact, vertically-centered block in
   // "centered" layout (background decor still spans the whole canvas).
@@ -659,29 +664,35 @@ function CardShell({
       }}
     >
       {/* subtle grid */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundImage: `linear-gradient(${hexA(accent, theme.gridAlpha)} 1px, transparent 1px), linear-gradient(90deg, ${hexA(accent, theme.gridAlpha)} 1px, transparent 1px)`,
-          backgroundSize: "54px 54px",
-        }}
-      />
+      {grid ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `linear-gradient(${hexA(accent, theme.gridAlpha)} 1px, transparent 1px), linear-gradient(90deg, ${hexA(accent, theme.gridAlpha)} 1px, transparent 1px)`,
+            backgroundSize: "54px 54px",
+          }}
+        />
+      ) : null}
       {/* accent glow top-right + brand glow bottom-left */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(720px 540px at 80% -10%, ${hexA(accent, theme.glowAccent)}, transparent 62%)`,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `radial-gradient(680px 520px at 8% 110%, ${theme.brandGlow}, transparent 60%)`,
-        }}
-      />
+      {glow ? (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `radial-gradient(720px 540px at 80% -10%, ${hexA(accent, theme.glowAccent)}, transparent 62%)`,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: `radial-gradient(680px 520px at 8% 110%, ${theme.brandGlow}, transparent 60%)`,
+            }}
+          />
+        </>
+      ) : null}
       {/* top hairline */}
       <div
         style={{
@@ -2389,6 +2400,18 @@ function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
 // `labelKey`/`labelKey` on options resolve to studio.fields.* / studio.opt.* i18n
 // keys. Template names resolve to studio.templates.<id>. `defaults` are the card
 // CONTENT and stay Portuguese (the generated post is always PT).
+// ── Template — Tela livre (blank freeform canvas) ────────────────────────────
+// No template chrome: just the CardShell background/decor and the overlay layer
+// (rendered inside CardShell). The brand footer is opt-in via the global footer
+// toggle and pins itself to the bottom (marginTop:auto in BrandFooter).
+function BlankCard({ accent }: { v: Vals; accent: string }) {
+  return (
+    <CardShell accent={accent}>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
 type Field = {
   key: string;
   labelKey: string;
@@ -2397,6 +2420,7 @@ type Field = {
   showIf?: (v: Vals) => boolean;
 };
 type TemplateId =
+  | "blank"
   | "questao"
   | "dica"
   | "promo"
@@ -2434,6 +2458,12 @@ type Template = {
 };
 
 const TEMPLATES: Template[] = [
+  {
+    id: "blank",
+    Render: BlankCard,
+    fields: [],
+    defaults: {},
+  },
   {
     id: "questao",
     Render: QuestaoCard,
@@ -3055,6 +3085,8 @@ export function EstudioClient() {
   const [footerShow, setFooterShow] = useState<boolean>(true);
   const [footerText, setFooterText] = useState<string>("medhelpspace.com.br");
   const [textScale, setTextScale] = useState<string>("M");
+  const [glowOn, setGlowOn] = useState<boolean>(true);
+  const [gridOn, setGridOn] = useState<boolean>(true);
   const [overlays, setOverlays] = useState<Overlay[]>([]);
   const [selectedOverlay, setSelectedOverlay] = useState<string | null>(null);
   const [caption, setCaption] = useState<string>("");
@@ -3117,6 +3149,13 @@ export function EstudioClient() {
   const removeOverlay = useCallback((id: string) => {
     setOverlays((prev) => prev.filter((o) => o.id !== id));
     setSelectedOverlay((cur) => (cur === id ? null : cur));
+  }, []);
+
+  // Wipe every overlay in one shot (freeform "start over"). The confirm lives in
+  // the button (it has `t`); this just clears state.
+  const clearOverlays = useCallback(() => {
+    setOverlays([]);
+    setSelectedOverlay(null);
   }, []);
 
   const moveOverlay = useCallback((id: string, xPct: number, yPct: number) => {
@@ -3207,6 +3246,8 @@ export function EstudioClient() {
         if (typeof d.footerText === "string") setFooterText(d.footerText);
         if (typeof d.textScale === "string" && TEXT_SCALES.some((s) => s.id === d.textScale))
           setTextScale(d.textScale);
+        if (typeof d.glowOn === "boolean") setGlowOn(d.glowOn);
+        if (typeof d.gridOn === "boolean") setGridOn(d.gridOn);
         if (Array.isArray(d.overlays)) {
           // Drop overlays whose image is a session-bound blob: URL (dead on reload).
           const valid = (d.overlays as unknown[]).filter(
@@ -3260,13 +3301,14 @@ export function EstudioClient() {
         JSON.stringify({
           templateId, accent, accentIsCustom, accentCustom, bg, bgCustom,
           layout, footerShow, footerText, textScale, ratioId,
+          glowOn, gridOn,
           overlays: cleanOverlays, allValues: cleanValues,
         }),
       );
     } catch {
       /* storage blocked/full — drafts are best-effort */
     }
-  }, [allValues, templateId, accent, accentIsCustom, accentCustom, bg, bgCustom, layout, footerShow, footerText, textScale, ratioId, overlays]);
+  }, [allValues, templateId, accent, accentIsCustom, accentCustom, bg, bgCustom, layout, footerShow, footerText, textScale, ratioId, glowOn, gridOn, overlays]);
 
   // Rasterize #ig-card to a 2× PNG data-URL (shared by download + copy).
   const capture = useCallback(async (): Promise<string | null> => {
@@ -3360,9 +3402,9 @@ export function EstudioClient() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Arrow keys nudge the selected element (Shift = larger step); Delete removes
-  // it; Escape deselects. Ignored while a form field is focused so typing in the
-  // control panel isn't hijacked.
+  // Arrow keys nudge the selected element (Shift = larger step); Delete or
+  // Backspace removes it; Escape deselects. Ignored while a form field is focused
+  // so typing in the control panel isn't hijacked.
   useEffect(() => {
     if (!selectedOverlay) return;
     const onKey = (e: KeyboardEvent) => {
@@ -3373,7 +3415,7 @@ export function EstudioClient() {
         setSelectedOverlay(null);
         return;
       }
-      if (e.key === "Delete") {
+      if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         removeOverlay(selectedOverlay);
         return;
@@ -3396,6 +3438,7 @@ export function EstudioClient() {
   const Card = template.Render;
 
   return (
+    <DecorContext.Provider value={{ glow: glowOn, grid: gridOn }}>
     <div
       style={{
         background: "#050509",
@@ -3623,6 +3666,35 @@ export function EstudioClient() {
               </div>
             </div>
 
+            {/* Canvas decor toggles (glow + grid) */}
+            <div>
+              <Label>{t("studio.canvas")}</Label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontSize: 13, color: "#cfcfd6" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={glowOn}
+                    onChange={(e) => setGlowOn(e.target.checked)}
+                    style={{ accentColor: "#7a1d91", width: 15, height: 15, cursor: "pointer" }}
+                  />
+                  {t("studio.glow")}
+                </label>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontSize: 13, color: "#cfcfd6" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={gridOn}
+                    onChange={(e) => setGridOn(e.target.checked)}
+                    style={{ accentColor: "#7a1d91", width: 15, height: 15, cursor: "pointer" }}
+                  />
+                  {t("studio.grid")}
+                </label>
+              </div>
+            </div>
+
             {/* Brand footer controls */}
             <div>
               <Label>{t("studio.brand")}</Label>
@@ -3657,6 +3729,12 @@ export function EstudioClient() {
 
             {/* Fields */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {template.fields.length === 0 ? (
+                <p style={{ fontSize: 12, color: "#8a8a95", margin: 0, lineHeight: 1.5 }}>
+                  {t("studio.blankFieldsNote")}
+                </p>
+              ) : null}
+              {template.fields.length > 0 ? (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <Label>{t("studio.content")}</Label>
                 <button
@@ -3675,6 +3753,7 @@ export function EstudioClient() {
                   {t("studio.restore")}
                 </button>
               </div>
+              ) : null}
               {template.fields
                 .filter((f) => !f.showIf || f.showIf(values))
                 .map((f) => (
@@ -3762,6 +3841,7 @@ export function EstudioClient() {
               onRemove={removeOverlay}
               onReorder={reorderOverlay}
               onDuplicate={duplicateOverlay}
+              onClear={clearOverlays}
             />
 
             {/* Format + zoom + export */}
@@ -3972,6 +4052,7 @@ export function EstudioClient() {
           >
             <div
               style={{
+                position: "relative",
                 width: dims.w * effectiveScale,
                 height: dims.h * effectiveScale,
                 flexShrink: 0,
@@ -4009,11 +4090,74 @@ export function EstudioClient() {
                   </CardHeightContext.Provider>
                 </CanvasContext.Provider>
               </div>
+              {templateId === "blank" && overlays.length === 0 && !busy ? (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 24,
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 12,
+                      textAlign: "center",
+                      maxWidth: 300,
+                      padding: "30px 28px",
+                      borderRadius: 18,
+                      background: "rgba(8,8,15,0.62)",
+                      backdropFilter: "blur(3px)",
+                      WebkitBackdropFilter: "blur(3px)",
+                      border: "1px dashed rgba(192,132,232,0.5)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: 999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 26,
+                        color: "#c084e8",
+                        background: "rgba(122,29,145,0.22)",
+                        border: "1px solid rgba(192,132,232,0.4)",
+                      }}
+                    >
+                      ＋
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 11,
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        fontWeight: 600,
+                        color: "#c084e8",
+                      }}
+                    >
+                      {t("studio.canvasEmptyTitle")}
+                    </div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.5 }}>
+                      {t("studio.canvasEmptySub")}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </section>
         </div>
       )}
     </div>
+    </DecorContext.Provider>
   );
 }
 
@@ -4518,6 +4662,7 @@ function OverlayControls({
   onRemove,
   onReorder,
   onDuplicate,
+  onClear,
 }: {
   overlays: Overlay[];
   selectedId: string | null;
@@ -4528,6 +4673,7 @@ function OverlayControls({
   onRemove: (id: string) => void;
   onReorder: (id: string, dir: "front" | "back") => void;
   onDuplicate: (id: string) => void;
+  onClear: () => void;
 }) {
   const { t } = useTranslation();
   const logoInput = React.useRef<HTMLInputElement>(null);
@@ -4568,7 +4714,30 @@ function OverlayControls({
 
   return (
     <div>
-      <Label>{t("studio.overlays")}</Label>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <Label>{t("studio.overlays")}</Label>
+        {overlays.length > 0 ? (
+          <button
+            onClick={() => {
+              if (typeof window !== "undefined" && !window.confirm(t("studio.clearAllConfirm"))) return;
+              onClear();
+            }}
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 10.5,
+              color: "#ff9d9d",
+              background: "rgba(255,80,80,0.1)",
+              border: "1px solid rgba(255,120,120,0.28)",
+              borderRadius: 6,
+              padding: "4px 9px",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t("studio.clearAll")}
+          </button>
+        ) : null}
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
         <button onClick={() => onAdd("logo")} style={addBtn}>
           ＋ {t("studio.addLogo")}
