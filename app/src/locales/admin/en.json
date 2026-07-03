@@ -468,6 +468,8 @@
     "testDateFuture": "Test date must be in the future.",
     "testDateAfterStart": "Test date must be after the membership start date.",
     "startBeforeEnd": "Start date must be before end date.",
+    "testDateOutsideWindow": "Test date must fall between the membership start and end dates.",
+    "slugTaken": "That slug is already used by another cohort.",
     "modulesTitle": "Module access dates",
     "modulesNote": "Auto-calculated dates are derived from test_date − offset_days. Editing a date disconnects it from auto-calculation. Use 'Reset to auto' to reconnect.",
     "moduleName": "Module",

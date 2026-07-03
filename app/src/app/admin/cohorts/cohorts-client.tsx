@@ -70,6 +70,9 @@ function mapCohortError(e: unknown, t: (k: string) => string): string {
   if (msg === "INVALID_SALE_PRICE") return t("cohorts.salePriceInvalid");
   if (msg === "SALE_PRICE_NEEDS_BASE") return t("cohorts.salePriceNeedsBase");
   if (msg === "SALE_PRICE_ABOVE_BASE") return t("cohorts.salePriceAboveBase");
+  if (msg === "SLUG_TAKEN") return t("cohorts.slugTaken");
+  if (msg === "END_BEFORE_START") return t("cohorts.startBeforeEnd");
+  if (msg === "TEST_DATE_OUTSIDE_WINDOW") return t("cohorts.testDateOutsideWindow");
   if (msg === "Unauthorized") return t("errors.unauthorized");
   return t("errors.generic");
 }
@@ -217,8 +220,23 @@ export function CohortsClient({ rows, modules, access }: Props) {
     });
   }
 
+  // Mirrors validateEdit's date rules, read from the create form's raw FormData.
+  function validateCreateDates(formData: FormData): string | null {
+    const today = new Date().toISOString().split("T")[0];
+    const testDate = String(formData.get("test_date"));
+    const startsAt = String(formData.get("membership_starts_at"));
+    const endsAt = String(formData.get("membership_ends_at"));
+    if (testDate <= today) return t("cohorts.testDateFuture");
+    if (testDate <= startsAt) return t("cohorts.testDateAfterStart");
+    if (startsAt >= endsAt) return t("cohorts.startBeforeEnd");
+    if (testDate > endsAt) return t("cohorts.testDateOutsideWindow");
+    return null;
+  }
+
   function handleCreate(formData: FormData) {
     setCreateError(null);
+    const dateErr = validateCreateDates(formData);
+    if (dateErr) { setCreateError(dateErr); return; }
     startTransition(async () => {
       try {
         await createCohort(formData);
@@ -315,6 +333,14 @@ export function CohortsClient({ rows, modules, access }: Props) {
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">{t("cohorts.testDate")}</span>
                 <input name="test_date" type="date" required className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50" />
+              </label>
+              <label className="flex items-start gap-2 sm:col-span-2">
+                <input name="date_confirmed" type="checkbox" className="mt-0.5" />
+                <span className="text-xs text-muted-foreground">
+                  {t("cohorts.dateConfirmed")}
+                  <br />
+                  <span className="text-[11px] opacity-80">{t("cohorts.dateConfirmedHint")}</span>
+                </span>
               </label>
               <label className="space-y-1">
                 <span className="text-xs text-muted-foreground">{t("cohorts.startsAt")}</span>

@@ -79,6 +79,24 @@ function validateCommerce(c: CohortCommerce): string | null {
   return null;
 }
 
+// membership window must be well-formed and actually contain the exam date —
+// otherwise a member could fall outside their own cohort's access window on
+// exam day, or the window could be inverted entirely.
+function validateCohortDates(testDate: string, startsAt: string, endsAt: string): string | null {
+  if (endsAt <= startsAt) return "END_BEFORE_START";
+  if (testDate < startsAt.slice(0, 10) || testDate > endsAt.slice(0, 10)) return "TEST_DATE_OUTSIDE_WINDOW";
+  return null;
+}
+
+// test_date - offsetDays, computed on local date parts (no UTC shift) — mirrors
+// the arithmetic in resetModuleUnlockDate and the modules page's `autoDate`.
+function subtractDaysFromDate(dateStr: string, offsetDays: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() - offsetDays);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function commerceFromFormData(f: FormData): CohortCommerce {
   const priceRaw = f.get("price");
   const salePriceRaw = f.get("sale_price");
@@ -129,28 +147,37 @@ export async function createCohort(formData: FormData) {
   const cErr = validateCommerce(commerce);
   if (cErr) throw new Error(cErr);
 
-  const { error } = await admin.from("cohorts").insert({
-    slug: String(formData.get("slug")),
-    name: String(formData.get("name")),
-    test_date: String(formData.get("test_date")),
-    membership_starts_at: String(formData.get("membership_starts_at")),
-    membership_ends_at: String(formData.get("membership_ends_at")),
-    ...commerce,
-  });
-  if (error) throw new Error(error.message);
-  // Seed cohort_module_access rows for every content module
-  const { data: modules } = await admin.from("content_modules").select("id, unlock_offset_days");
-  const { data: newCohort } = await admin
+  const testDate = String(formData.get("test_date"));
+  const startsAt = String(formData.get("membership_starts_at"));
+  const endsAt = String(formData.get("membership_ends_at"));
+  const dErr = validateCohortDates(testDate, startsAt, endsAt);
+  if (dErr) throw new Error(dErr);
+
+  const { data: newCohort, error } = await admin
     .from("cohorts")
+    .insert({
+      slug: String(formData.get("slug")),
+      name: String(formData.get("name")),
+      test_date: testDate,
+      date_confirmed: formData.get("date_confirmed") === "on",
+      membership_starts_at: startsAt,
+      membership_ends_at: endsAt,
+      ...commerce,
+    })
     .select("id, test_date")
-    .eq("slug", String(formData.get("slug")))
     .single();
+  if (error) throw new Error(error.code === "23505" ? "SLUG_TAKEN" : error.message);
+
+  // Seed cohort_module_access rows for every content module, with unlock_date
+  // computed now — the cohorts_sync_unlock_dates trigger only fires on
+  // UPDATE OF test_date, so a fresh cohort never gets a recalc otherwise.
+  const { data: modules } = await admin.from("content_modules").select("id, unlock_offset_days");
   if (newCohort && modules?.length) {
     await admin.from("cohort_module_access").insert(
       modules.map((m) => ({
         cohort_id: newCohort.id,
         content_module_id: m.id,
-        unlock_date: `${newCohort.test_date}`, // trigger will recalc, this is placeholder
+        unlock_date: subtractDaysFromDate(newCohort.test_date as string, m.unlock_offset_days as number),
       }))
     );
   }
@@ -171,6 +198,8 @@ export async function updateCohort(
   await requireBillingRole();
   const cErr = validateCommerce(data);
   if (cErr) throw new Error(cErr);
+  const dErr = validateCohortDates(data.test_date, data.membership_starts_at, data.membership_ends_at);
+  if (dErr) throw new Error(dErr);
   const admin = createAdminClient();
   const { error } = await admin.from("cohorts").update(data).eq("id", cohortId);
   if (error) throw new Error(error.message);

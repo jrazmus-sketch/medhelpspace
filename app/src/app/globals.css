@@ -227,6 +227,20 @@
   .dark img:not([data-no-frame]) {
     @apply rounded-md ring-1 ring-white/5;
   }
+
+  /* Native date/time picker chrome (calendar icon, popup) follows theme —
+     without this the icon renders in light-scheme black and is nearly
+     invisible on dark inputs. */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    color-scheme: light;
+  }
+  .dark input[type="date"],
+  .dark input[type="time"],
+  .dark input[type="datetime-local"] {
+    color-scheme: dark;
+  }
 }
 
 /* ── Content protection: deter copy-paste in the member area ──────────────────

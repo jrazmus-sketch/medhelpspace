@@ -468,6 +468,8 @@
     "testDateFuture": "A data da prova deve ser no futuro.",
     "testDateAfterStart": "A data da prova deve ser após o início da matrícula.",
     "startBeforeEnd": "A data de início deve ser anterior à data de fim.",
+    "testDateOutsideWindow": "A data da prova deve estar entre o início e o fim da matrícula.",
+    "slugTaken": "Esse slug já está em uso por outra turma.",
     "modulesTitle": "Datas de acesso aos módulos",
     "modulesNote": "As datas automáticas são calculadas com base em data_da_prova − offset_dias. Editar uma data desconecta-a do cálculo automático. Use 'Restaurar automático' para reconectar.",
     "moduleName": "Módulo",
