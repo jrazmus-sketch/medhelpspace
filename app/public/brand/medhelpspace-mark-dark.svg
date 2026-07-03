@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img" aria-label="MedHelpSpace">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="78%">
+      <stop offset="0%" stop-color="#2a1240"/>
+      <stop offset="52%" stop-color="#0c0713"/>
+      <stop offset="100%" stop-color="#050509"/>
+    </radialGradient>
+    <linearGradient id="m" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="55%" stop-color="#d946ef"/>
+      <stop offset="100%" stop-color="#f5abff"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d946ef" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#d946ef" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+
+  <!-- ink field with centred violet glow -->
+  <rect width="1080" height="1080" fill="#050509"/>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+
+  <!-- halo behind the monogram -->
+  <circle cx="540" cy="540" r="320" fill="url(#halo)"/>
+
+  <!-- coin rings (sit inside Instagram's circular crop) -->
+  <circle cx="540" cy="540" r="470" fill="none" stroke="url(#m)" stroke-width="5" opacity="0.35"/>
+  <circle cx="540" cy="540" r="451" fill="none" stroke="#e879f9" stroke-width="1.5" opacity="0.16"/>
+
+  <!-- monogram M : glow copy then crisp copy -->
+  <polyline points="340,742 340,338 540,582 740,338 740,742" fill="none"
+    stroke="url(#m)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"
+    filter="url(#soft)" opacity="0.75"/>
+  <polyline points="340,742 340,338 540,582 740,338 740,742" fill="none"
+    stroke="url(#m)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- "Space" spark : 4-point star, top-right -->
+  <path d="M800,258 L810,292 L844,300 L810,308 L800,342 L790,308 L756,300 L790,292 Z"
+    fill="#f7d4ff" filter="url(#soft)" opacity="0.9"/>
+  <path d="M800,266 L808.5,291.5 L834,300 L808.5,308.5 L800,334 L791.5,308.5 L766,300 L791.5,291.5 Z"
+    fill="#f0abfc"/>
+</svg>

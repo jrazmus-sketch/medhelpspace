@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img" aria-label="MedHelpSpace">
+  <defs>
+    <radialGradient id="bgL" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f7f1fb"/>
+      <stop offset="100%" stop-color="#efe4f6"/>
+    </radialGradient>
+    <linearGradient id="mL" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7a1d91"/>
+      <stop offset="55%" stop-color="#a21caf"/>
+      <stop offset="100%" stop-color="#c026d3"/>
+    </linearGradient>
+    <radialGradient id="haloL" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a21caf" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#a21caf" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="#f7f1fb"/>
+  <rect width="1080" height="1080" fill="url(#bgL)"/>
+
+  <circle cx="540" cy="540" r="320" fill="url(#haloL)"/>
+
+  <circle cx="540" cy="540" r="470" fill="none" stroke="url(#mL)" stroke-width="5" opacity="0.4"/>
+  <circle cx="540" cy="540" r="451" fill="none" stroke="#7a1d91" stroke-width="1.5" opacity="0.14"/>
+
+  <polyline points="340,742 340,338 540,582 740,338 740,742" fill="none"
+    stroke="url(#mL)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M800,266 L808.5,291.5 L834,300 L808.5,308.5 L800,334 L791.5,308.5 L766,300 L791.5,291.5 Z"
+    fill="#c026d3"/>
+</svg>

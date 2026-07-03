@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { SiteProgressPill, SiteProgressLine } from "@/components/layout/site-progress";
+import { BrandLockup } from "@/components/brand/brand-lockup";
 import type { SiteCompletion } from "@/lib/progress/site-completion";
 import { useAuth } from "@/providers/auth-provider";
 import {
@@ -188,14 +189,11 @@ export function MemberHeader({
     <header className="relative border-b border-border/40 bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-[52px] max-w-[1400px] items-center gap-3 px-[10px] md:px-8">
 
-        {/* Logo */}
-        <Link href="/app" className="mr-3 flex items-center gap-2.5 shrink-0">
-          <div className="flex h-7 w-7 items-center justify-center rounded-[5px] bg-brand text-brand-fg text-[13px] font-bold tracking-tight">
-            M
-          </div>
-          <span className="text-[15px] font-semibold tracking-tight">
-            MedHelp <span className="text-muted-foreground font-normal">· Space</span>
-          </span>
+        {/* Logo — the canonical front-page lockup (see BrandLockup / landing-nav) */}
+        <Link href="/app" aria-label="MedHelpSpace Revalida — início" className="mr-3 flex items-center shrink-0">
+          {/* "Revalida" hides below 480px so the wordmark clears the progress
+              pill + icon cluster on phones; full lockup returns on tablet/desktop. */}
+          <BrandLockup revalidaClassName="hidden min-[480px]:flex" />
         </Link>
 
         {/* Nav — desktop only. Tablet-portrait + phones use the bottom MobileNav;

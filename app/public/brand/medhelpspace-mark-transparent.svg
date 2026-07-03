@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img" aria-label="MedHelpSpace">
+  <defs>
+    <linearGradient id="m" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="55%" stop-color="#d946ef"/>
+      <stop offset="100%" stop-color="#f5abff"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d946ef" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#d946ef" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+
+  <!-- no background: transparent, for overlaying on photos / colored surfaces -->
+  <circle cx="540" cy="540" r="320" fill="url(#halo)"/>
+  <circle cx="540" cy="540" r="470" fill="none" stroke="url(#m)" stroke-width="5" opacity="0.35"/>
+  <circle cx="540" cy="540" r="451" fill="none" stroke="#e879f9" stroke-width="1.5" opacity="0.16"/>
+
+  <polyline points="340,742 340,338 540,582 740,338 740,742" fill="none"
+    stroke="url(#m)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"
+    filter="url(#soft)" opacity="0.75"/>
+  <polyline points="340,742 340,338 540,582 740,338 740,742" fill="none"
+    stroke="url(#m)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M800,266 L808.5,291.5 L834,300 L808.5,308.5 L800,334 L791.5,308.5 L766,300 L791.5,291.5 Z" fill="#f0abfc"/>
+</svg>
