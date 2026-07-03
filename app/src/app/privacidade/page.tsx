@@ -97,11 +97,14 @@ function FallbackContent() {
           qualquer momento.
         </p>
 
-        <h2>6. Cookies</h2>
+        <h2>6. Cookies e análise de uso</h2>
         <p>
           Utilizamos cookies técnicos necessários para o funcionamento da
-          plataforma, como manutenção de sessão. Não utilizamos cookies de
-          rastreamento para publicidade.
+          plataforma, como manutenção de sessão. Também utilizamos cookies de
+          análise (Google Analytics) para entender, de forma agregada, como a
+          plataforma é acessada e melhorar a experiência. Não utilizamos cookies
+          para publicidade. Você pode recusar os cookies de análise a qualquer
+          momento pelo aviso exibido no site.
         </p>
 
         <p className="pt-4 text-xs text-muted-foreground">

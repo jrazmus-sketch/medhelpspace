@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteText } from "@/components/landing/site-text";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { trackSignUp } from "@/lib/analytics/track";
 
 function mapSignupError(msg: string): string {
   if (msg.includes("already registered")) return "Este e-mail já está cadastrado.";
@@ -41,6 +42,7 @@ export function SignupPageClient() {
 
     if (USE_MOCK_DATA) {
       await new Promise((r) => setTimeout(r, 400));
+      trackSignUp();
       router.push("/app");
       return;
     }
@@ -62,6 +64,9 @@ export function SignupPageClient() {
       setLoading(false);
       return;
     }
+
+    // Account was created (whether or not a session is returned) → sign_up conversion.
+    trackSignUp();
 
     const { sessionCreated } = await res.json();
     if (sessionCreated) {

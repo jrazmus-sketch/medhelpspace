@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Check, ChevronRight, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "lucide-react";
 import { PixDisplay } from "./pix-display";
@@ -8,6 +8,7 @@ import { CardForm } from "./card-form";
 import { BillingForm } from "./billing-form";
 import { validateBilling, formatCpf, formatCep, type BillingDetails } from "@/lib/br";
 import type { InstallmentOption } from "@/lib/pagbank/types";
+import { trackPurchase } from "@/lib/analytics/track";
 
 const EMPTY_BILLING: BillingDetails = {
   firstName: "",
@@ -201,6 +202,21 @@ export function CheckoutClient({
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fire the GA4 `purchase` conversion exactly once when payment is confirmed.
+  // Both card-approved and Pix-paid flip `paid`, so this single effect covers
+  // both methods. Value is in BRL (reais), post-coupon.
+  const purchaseTracked = useRef(false);
+  useEffect(() => {
+    if (!paid || purchaseTracked.current) return;
+    purchaseTracked.current = true;
+    trackPurchase({
+      value: effectiveAmountCents / 100,
+      transactionId: result?.orderId,
+      method,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paid]);
 
   function advanceFromAccount() {
     const err = validateGuestFields();

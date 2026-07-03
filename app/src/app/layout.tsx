@@ -12,6 +12,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { PublicEditToggle } from "@/components/layout/public-edit-toggle";
 import { SiteContentProvider } from "@/components/landing/site-text";
 import { getSiteContent } from "@/lib/queries/site-content";
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
+import { AnalyticsConsentBanner } from "@/components/analytics/consent-banner";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -82,6 +84,8 @@ export default async function RootLayout({
                 <SiteContentProvider rows={siteContent}>
                   {children}
                   <PublicEditToggle />
+                  <AnalyticsProvider />
+                  <AnalyticsConsentBanner />
                   <Toaster richColors position="top-right" />
                 </SiteContentProvider>
               </EditModeProvider>
