@@ -988,6 +988,24 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
               <iframe
                 src={v.pagePath || "/"}
                 title="preview"
+                scrolling="no"
+                onLoad={(e) => {
+                  // Same-origin: inject a style to hide the embedded page's
+                  // scrollbar so the phone shows a clean screen (and the frozen
+                  // export snapshot matches). Best-effort; ignore if blocked.
+                  try {
+                    const doc = e.currentTarget.contentDocument;
+                    if (doc && !doc.getElementById("mhs-hide-scroll")) {
+                      const s = doc.createElement("style");
+                      s.id = "mhs-hide-scroll";
+                      s.textContent =
+                        "html,body{scrollbar-width:none!important}::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}";
+                      (doc.head || doc.documentElement).appendChild(s);
+                    }
+                  } catch {
+                    /* cross-origin or not ready — leave as-is */
+                  }
+                }}
                 style={{
                   width: IFRAME_LOGICAL_W,
                   height: IFRAME_LOGICAL_H,
@@ -2909,6 +2927,18 @@ function PageField({ value, onChange }: { value: string; onChange: (v: string) =
         { value: "/app/relatorio", label: t("studio.pages.report") },
         { value: "/app/revalida-up", label: t("studio.pages.revalidaUp") },
         { value: "/app/medhelp-60d", label: t("studio.pages.medhelp60d") },
+      ],
+    },
+    {
+      // Audio content — the per-specialty MedVoice/AudioCards pages render the
+      // TextLessonRenderer transcript WITH the audio player (the hubs are just
+      // card lists, no player). Cardiologia is a safe, populated example.
+      label: t("studio.pages.group_audio"),
+      items: [
+        { value: "/app/cardiologia/cardiologia-medvoice", label: "MedVoice · Cardiologia" },
+        { value: "/app/cardiologia/cardiologia-audiocards", label: "AudioCards · Cardiologia" },
+        { value: "/app/medvoice", label: t("studio.pages.medvoiceHub") },
+        { value: "/app/audiocards", label: t("studio.pages.audiocardsHub") },
       ],
     },
     {

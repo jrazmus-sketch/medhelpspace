@@ -159,6 +159,7 @@
       "loginHint": "As páginas do painel só aparecem se você estiver logado.",
       "group_marketing": "Marketing (público)",
       "group_app": "Painel (precisa de login)",
+      "group_audio": "Áudio (com player)",
       "group_specialty": "Especialidades",
       "home": "Home",
       "store": "Loja / Planos",
@@ -170,7 +171,9 @@
       "review": "Revisão",
       "report": "Relatório",
       "revalidaUp": "Revalida Up",
-      "medhelp60d": "MedHelp 60D"
+      "medhelp60d": "MedHelp 60D",
+      "medvoiceHub": "MedVoice · início",
+      "audiocardsHub": "AudioCards · início"
     },
     "accents": {
       "brand": "Roxo MedHelp",

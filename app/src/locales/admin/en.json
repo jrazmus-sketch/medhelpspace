@@ -159,6 +159,7 @@
       "loginHint": "Dashboard pages only render if you're logged in.",
       "group_marketing": "Marketing (public)",
       "group_app": "Dashboard (needs login)",
+      "group_audio": "Audio (with player)",
       "group_specialty": "Specialties",
       "home": "Home",
       "store": "Store / Plans",
@@ -170,7 +171,9 @@
       "review": "Review",
       "report": "Report",
       "revalidaUp": "Revalida Up",
-      "medhelp60d": "MedHelp 60D"
+      "medhelp60d": "MedHelp 60D",
+      "medvoiceHub": "MedVoice · hub",
+      "audiocardsHub": "AudioCards · hub"
     },
     "accents": {
       "brand": "MedHelp Purple",
