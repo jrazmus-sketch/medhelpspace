@@ -98,6 +98,24 @@ function mix(a: string, b: string, t: number): string {
   return `#${to2(ch(0))}${to2(ch(2))}${to2(ch(4))}`;
 }
 
+// WCAG contrast ratio between two hex colors (1..21)
+function contrastRatio(a: string, b: string): number {
+  const la = relLum(a);
+  const lb = relLum(b);
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+// Nudge an arbitrary accent toward readable on `surface`: darken on light
+// surfaces, lighten on dark ones, until it clears ~2.6:1 (large-text/graphic
+// threshold). Presets never need this — it guards the custom color pickers.
+function fitAccent(accent: string, surface: string): string {
+  const towards = relLum(surface) > 0.4 ? "#000000" : "#ffffff";
+  let c = accent;
+  for (let i = 0; i < 14 && contrastRatio(c, surface) < 2.6; i++) c = mix(c, towards, 0.12);
+  return c;
+}
+
 // ── Card surface themes ───────────────────────────────────────────────────────
 // The whole point of the token layer: templates read colors from `theme` instead
 // of hardcoding #ffffff / rgba(255,255,255,…) / #050509, so the card background
@@ -166,13 +184,48 @@ function buildTheme(id: string, accent: string): CardTheme {
   }
 }
 
+// Theme for a user-picked arbitrary background color. Foreground, image well,
+// danger red and glow strengths all derive from the hex's luminance so any
+// color stays readable. `id` embeds the hex so gradient-text nodes keyed on
+// theme.id remount when only the custom color changes.
+function buildCustomTheme(hex: string): CardTheme {
+  const isLight = relLum(hex) > 0.4;
+  const fg = isLight ? "#141019" : "#ffffff";
+  return makeTheme(
+    "custom-" + hex,
+    hex,
+    fg,
+    mix(hex, fg, 0.08),
+    fitAccent(isLight ? "#dc2626" : "#ff6b6b", hex),
+    isLight ? LIGHT_OPTS : { gridAlpha: 0.05, glowAccent: 0.2, brandGlow: "rgba(122,29,145,0.16)", isLight: false },
+  );
+}
+
 const INK_THEME = buildTheme("ink", "#c084e8");
 
 const BACKGROUNDS = ["ink", "paper", "cream", "purple", "tinted"] as const;
-type BgId = (typeof BACKGROUNDS)[number];
+type BgId = (typeof BACKGROUNDS)[number] | "custom";
 // Swatch preview color for each background button (tinted follows the accent).
 function bgSwatch(id: BgId, accent: string): string {
   return buildTheme(id, accent).bg;
+}
+
+// Representative surface hex per background, for contrast math on custom
+// accents (tinted ≈ white — the wash is 88% white).
+function surfaceHexFor(bg: BgId, bgCustom: string): string {
+  switch (bg) {
+    case "custom":
+      return bgCustom;
+    case "paper":
+    case "tinted":
+      return "#ffffff";
+    case "cream":
+      return "#faf6ef";
+    case "purple":
+      return "#ece3f7";
+    default:
+      return "#050509";
+  }
 }
 
 const FONT_DISPLAY = "var(--font-bricolage), ui-sans-serif, system-ui, sans-serif";
@@ -228,14 +281,171 @@ const IFRAME_LOGICAL_H = Math.round(SCREEN_H / IFRAME_SCALE);
 
 type Vals = Record<string, string>;
 
-// Canvas height for the current aspect ratio (width is always 1080).
+// CONTENT-ZONE height templates design against (width is always 1080). On tall
+// ratios in "centered" layout this is SMALLER than the canvas: templates lay
+// out inside a compact zone and CardShell centers it, so flex-1 spacers and
+// marginTop:auto footers never smear content across a 1920px story.
 const CardHeightContext = React.createContext<number>(1080);
+// Real canvas geometry — only CardShell needs both numbers.
+const CanvasContext = React.createContext<{ canvasH: number; contentH: number }>({
+  canvasH: 1080,
+  contentH: 1080,
+});
+// Brand footer: visibility + right-side text (e.g. swap the URL for @handle).
+const FooterContext = React.createContext<{ show: boolean; right: string }>({
+  show: true,
+  right: "medhelpspace.com.br",
+});
 // Active surface theme (ink / paper / cream / purple / tinted). Templates read
 // colors from here instead of hardcoding dark-mode literals.
 const CardThemeContext = React.createContext<CardTheme>(INK_THEME);
 // During a live-page-mockup export, holds a frozen PNG data-URL of the embedded
 // page so the phone renders a static image the exporter can rasterize.
 const FrozenPageContext = React.createContext<string | null>(null);
+
+// Per-card text-size dial. Multiplies the primary COPY sizes (hero headings +
+// body/list text) so a short headline can go big, or a dense card can shrink to
+// fit — layout boxes, chrome (eyebrow/chips/footer) and images stay fixed.
+const TextScaleContext = React.createContext<number>(1);
+function useTS(): number {
+  return React.useContext(TextScaleContext);
+}
+const TEXT_SCALES: { id: string; mult: number }[] = [
+  { id: "S", mult: 0.85 },
+  { id: "M", mult: 1 },
+  { id: "L", mult: 1.16 },
+];
+
+// ── Logo / sticker overlays ──────────────────────────────────────────────────
+// A free layer on TOP of any template: brand logos or text "stickers"
+// ("APROVADA ✓"). Positions are fractions of the canvas (0..1) so they hold
+// across ratios; size/rotation are design-space (1080 canvas). Rendered inside
+// #ig-card, so they're captured on export.
+type Overlay = {
+  id: string;
+  kind: "logo" | "badge";
+  src?: string; // logo image
+  text?: string; // badge text
+  variant: "solid" | "outline" | "white" | "dark";
+  xPct: number; // center X, fraction of width
+  yPct: number; // center Y, fraction of height
+  size: number; // logo width px, OR badge font-size px (design space)
+  rot: number; // degrees
+};
+
+const BRAND_LOGOS: string[] = [
+  "/brand/medhelpspace-mark-transparent.png",
+  "/brand/medhelpspace-wordmark-transparent.png",
+  "/brand/medhelpspace-avatar-dark.png",
+  "/brand/medhelpspace-avatar-light.png",
+];
+const BADGE_PRESETS: string[] = [
+  "APROVADA ✓",
+  "NOVO",
+  "GRÁTIS",
+  "VAGAS ABERTAS",
+  "ÚLTIMAS VAGAS",
+  "AO VIVO",
+];
+
+type OverlayCtx = {
+  overlays: Overlay[];
+  accent: string;
+  editable: boolean;
+  selectedId: string | null;
+  effectiveScale: number;
+  canvasH: number;
+  onSelect: (id: string | null) => void;
+  onMove: (id: string, xPct: number, yPct: number) => void;
+};
+const OverlayContext = React.createContext<OverlayCtx | null>(null);
+
+// Badge fill/stroke/text for a variant on the current accent.
+function badgeStyle(variant: Overlay["variant"], accent: string): React.CSSProperties {
+  switch (variant) {
+    case "outline":
+      return { background: hexA(accent, 0.14), border: `2px solid ${accent}`, color: accent };
+    case "white":
+      return { background: "#ffffff", border: "2px solid #ffffff", color: "#0a0510" };
+    case "dark":
+      return { background: "#0a0510", border: "2px solid rgba(255,255,255,0.14)", color: "#ffffff" };
+    default:
+      return { background: accent, border: `2px solid ${accent}`, color: bestOn(accent) };
+  }
+}
+
+function OverlayLayer() {
+  const ctx = React.useContext(OverlayContext);
+  if (!ctx || ctx.overlays.length === 0) return null;
+  const { overlays, accent, editable, selectedId, effectiveScale, canvasH, onSelect, onMove } = ctx;
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 20, pointerEvents: "none" }}>
+      {overlays.map((o) => {
+        const selected = editable && selectedId === o.id;
+        const startDrag = (e: React.PointerEvent) => {
+          if (!editable) return;
+          e.stopPropagation();
+          onSelect(o.id);
+          (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        };
+        const onDrag = (e: React.PointerEvent) => {
+          if (!editable || !(e.buttons & 1)) return;
+          // Screen px → canvas px (undo preview transform) → fraction of canvas.
+          const nx = o.xPct + e.movementX / effectiveScale / 1080;
+          const ny = o.yPct + e.movementY / effectiveScale / canvasH;
+          onMove(o.id, Math.min(1, Math.max(0, nx)), Math.min(1, Math.max(0, ny)));
+        };
+        return (
+          <div
+            key={o.id}
+            onPointerDown={startDrag}
+            onPointerMove={onDrag}
+            style={{
+              position: "absolute",
+              left: `${o.xPct * 100}%`,
+              top: `${o.yPct * 100}%`,
+              transform: `translate(-50%, -50%) rotate(${o.rot}deg)`,
+              pointerEvents: editable ? "auto" : "none",
+              cursor: editable ? "move" : "default",
+              touchAction: "none",
+              outline: selected ? `2px dashed ${accent}` : "none",
+              outlineOffset: 8,
+            }}
+          >
+            {o.kind === "logo" ? (
+              <img
+                data-no-frame
+                src={o.src}
+                alt=""
+                draggable={false}
+                style={{ display: "block", width: o.size, height: "auto", userSelect: "none" }}
+              />
+            ) : (
+              <span
+                style={{
+                  display: "inline-block",
+                  fontFamily: FONT_DISPLAY,
+                  fontWeight: 800,
+                  fontSize: o.size,
+                  letterSpacing: "0.01em",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  padding: `${o.size * 0.42}px ${o.size * 0.72}px`,
+                  borderRadius: 999,
+                  userSelect: "none",
+                  boxShadow: o.variant === "solid" ? `0 10px 40px ${hexA(accent, 0.4)}` : "0 8px 30px rgba(0,0,0,0.3)",
+                  ...badgeStyle(o.variant, accent),
+                }}
+              >
+                {o.text}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Shared pieces ──────────────────────────────────────────────────────────
 function CardShell({
@@ -247,14 +457,34 @@ function CardShell({
   children: React.ReactNode;
   padded?: boolean;
 }) {
-  const height = React.useContext(CardHeightContext);
+  const { canvasH, contentH } = React.useContext(CanvasContext);
   const theme = React.useContext(CardThemeContext);
+  const centered = contentH < canvasH;
+  // Content zone: full canvas normally; a compact, vertically-centered block in
+  // "centered" layout (background decor still spans the whole canvas).
+  const inner = padded ? (
+    <div
+      style={{
+        position: "relative",
+        height: centered ? contentH : "100%",
+        padding: 88,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {children}
+    </div>
+  ) : centered ? (
+    <div style={{ position: "relative", height: contentH }}>{children}</div>
+  ) : (
+    <div style={{ position: "absolute", inset: 0 }}>{children}</div>
+  );
   return (
     <div
       id="ig-card"
       style={{
         width: 1080,
-        height,
+        height: canvasH,
         position: "relative",
         overflow: "hidden",
         background: theme.bg,
@@ -298,21 +528,23 @@ function CardShell({
         }}
       />
       {/* content */}
-      {padded ? (
+      {centered ? (
         <div
           style={{
             position: "relative",
             height: "100%",
-            padding: 88,
             display: "flex",
             flexDirection: "column",
+            justifyContent: "center",
           }}
         >
-          {children}
+          {inner}
         </div>
       ) : (
-        <div style={{ position: "absolute", inset: 0 }}>{children}</div>
+        inner
       )}
+      {/* logo / sticker layer — above content, captured on export */}
+      <OverlayLayer />
     </div>
   );
 }
@@ -358,6 +590,8 @@ function SpecChip({ accent, children }: { accent: string; children: React.ReactN
 
 function BrandFooter({ accent }: { accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const footer = React.useContext(FooterContext);
+  if (!footer.show) return null;
   return (
     <div
       style={{
@@ -390,7 +624,7 @@ function BrandFooter({ accent }: { accent: string }) {
           letterSpacing: "0.02em",
         }}
       >
-        medhelpspace.com.br
+        {footer.right}
       </div>
     </div>
   );
@@ -399,6 +633,7 @@ function BrandFooter({ accent }: { accent: string }) {
 // ── Template 1 — Questão do dia ──────────────────────────────────────────────
 function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const alts: [string, string][] = [
     ["A", v.a],
     ["B", v.b],
@@ -417,7 +652,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 40,
           fontFamily: FONT_SANS,
           fontWeight: 700,
-          fontSize: 42,
+          fontSize: 42 * ts,
           lineHeight: 1.28,
           color: theme.fgStrong,
           letterSpacing: "-0.01em",
@@ -458,7 +693,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
             >
               {letter}
             </span>
-            <span style={{ fontSize: 29, color: `rgba(${theme.fgRgb}, 0.9)`, lineHeight: 1.3 }}>{text}</span>
+            <span style={{ fontSize: 29 * ts, color: `rgba(${theme.fgRgb}, 0.9)`, lineHeight: 1.3 }}>{text}</span>
           </div>
         ))}
       </div>
@@ -467,7 +702,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
         style={{
           marginTop: 30,
           textAlign: "center",
-          fontSize: 27,
+          fontSize: 27 * ts,
           color: theme.fgStrong,
           background: hexA(accent, 0.12),
           border: `1px solid ${hexA(accent, 0.4)}`,
@@ -486,6 +721,7 @@ function QuestaoCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 2 — Dica clínica ────────────────────────────────────────────────
 function DicaCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   return (
     <CardShell accent={accent}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -498,7 +734,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 56,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 76,
+          fontSize: 76 * ts,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
           color: theme.fgStrong,
@@ -510,7 +746,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
       <p
         style={{
           marginTop: 36,
-          fontSize: 35,
+          fontSize: 35 * ts,
           lineHeight: 1.5,
           color: `rgba(${theme.fgRgb}, 0.72)`,
         }}
@@ -539,7 +775,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
         >
           Lembre-se
         </div>
-        <div style={{ fontSize: 33, fontWeight: 600, color: theme.fgStrong, lineHeight: 1.35 }}>
+        <div style={{ fontSize: 33 * ts, fontWeight: 600, color: theme.fgStrong, lineHeight: 1.35 }}>
           {v.pearl}
         </div>
       </div>
@@ -552,6 +788,7 @@ function DicaCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 3 — Promo / oferta ──────────────────────────────────────────────
 function PromoCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -561,7 +798,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 40,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 82,
+          fontSize: 82 * ts,
           lineHeight: 1.03,
           letterSpacing: "-0.03em",
           color: theme.fgStrong,
@@ -573,7 +810,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
       <p
         style={{
           marginTop: 30,
-          fontSize: 34,
+          fontSize: 34 * ts,
           lineHeight: 1.45,
           color: `rgba(${theme.fgRgb}, 0.7)`,
           maxWidth: "20ch",
@@ -597,7 +834,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
             style={{
               fontFamily: FONT_DISPLAY,
               fontWeight: 800,
-              fontSize: 96,
+              fontSize: 96 * ts,
               lineHeight: 0.9,
               letterSpacing: "-0.03em",
               color: theme.fgStrong,
@@ -651,6 +888,7 @@ function PromoCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 4 — Frase / motivação ───────────────────────────────────────────
 function FraseCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   return (
     <CardShell accent={accent}>
       <div
@@ -673,7 +911,7 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
             margin: 0,
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
-            fontSize: 78,
+            fontSize: 78 * ts,
             lineHeight: 1.08,
             letterSpacing: "-0.03em",
             background: `linear-gradient(135deg, ${theme.fgStrong} 45%, ${accent})`,
@@ -708,6 +946,7 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 5 — Cronograma (structured "document" layout) ───────────────────
 function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const steps: { n: string; label: string; title: string; body: string }[] = [
     { n: "1", label: v.step1label, title: v.step1title, body: v.step1body },
     { n: "2", label: v.step2label, title: v.step2title, body: v.step2body },
@@ -720,7 +959,7 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
           style={{
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
-            fontSize: 60,
+            fontSize: 60 * ts,
             lineHeight: 1.05,
             letterSpacing: "-0.03em",
             color: theme.fgStrong,
@@ -790,10 +1029,10 @@ function CronogramaCard({ v, accent }: { v: Vals; accent: string }) {
               >
                 {s.label}
               </div>
-              <div style={{ marginTop: 8, fontSize: 33, fontWeight: 700, color: theme.fgStrong }}>
+              <div style={{ marginTop: 8, fontSize: 33 * ts, fontWeight: 700, color: theme.fgStrong }}>
                 {s.title}
               </div>
-              <div style={{ marginTop: 6, fontSize: 26, color: `rgba(${theme.fgRgb}, 0.62)`, lineHeight: 1.4 }}>
+              <div style={{ marginTop: 6, fontSize: 26 * ts, color: `rgba(${theme.fgRgb}, 0.62)`, lineHeight: 1.4 }}>
                 {s.body}
               </div>
             </div>
@@ -854,6 +1093,7 @@ function ImgPlaceholder() {
 function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
   const height = React.useContext(CardHeightContext);
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const imgH = Math.round(height * 0.56);
   const fit = v.fit || "cover-center";
   const objectFit: React.CSSProperties["objectFit"] = fit === "contain" ? "contain" : "cover";
@@ -896,7 +1136,7 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
               marginTop: 16,
               fontFamily: FONT_DISPLAY,
               fontWeight: 800,
-              fontSize: 58,
+              fontSize: 58 * ts,
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
               color: theme.fgStrong,
@@ -905,7 +1145,7 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
             {v.headline}
           </h1>
           {v.caption ? (
-            <p style={{ marginTop: 14, fontSize: 30, color: `rgba(${theme.fgRgb}, 0.66)`, lineHeight: 1.4 }}>
+            <p style={{ marginTop: 14, fontSize: 30 * ts, color: `rgba(${theme.fgRgb}, 0.66)`, lineHeight: 1.4 }}>
               {v.caption}
             </p>
           ) : null}
@@ -917,8 +1157,10 @@ function ImagemCard({ v, accent }: { v: Vals; accent: string }) {
 }
 
 // ── Phone frame ──────────────────────────────────────────────────────────────
-function PhoneFrame({ accent, children }: { accent: string; children: React.ReactNode }) {
-  return (
+// `scale` grows the phone into tall content zones (4:5 / 9:16) without
+// touching its internal geometry — the iframe math stays scale-agnostic.
+function PhoneFrame({ accent, scale = 1, children }: { accent: string; scale?: number; children: React.ReactNode }) {
+  const frame = (
     <div
       style={{
         position: "relative",
@@ -955,6 +1197,12 @@ function PhoneFrame({ accent, children }: { accent: string; children: React.Reac
       </div>
     </div>
   );
+  if (scale === 1) return frame;
+  return (
+    <div style={{ width: PHONE_W * scale, height: PHONE_H * scale, flexShrink: 0 }}>
+      <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>{frame}</div>
+    </div>
+  );
 }
 
 // ── Template 7 — Mockup (celular): image or live site page ───────────────────
@@ -962,6 +1210,11 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
   const isPage = v.mode === "page";
   const frozen = React.useContext(FrozenPageContext);
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
+  const contentH = React.useContext(CardHeightContext);
+  // Grow the phone into the extra height of tall content zones (1 at 1080 —
+  // today's layout untouched; ~1.27 at 1350; capped ~2 on a full 1920 story).
+  const phoneScale = Math.min(2.05, Math.max(1, (contentH - 560) / PHONE_H));
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -970,7 +1223,7 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 14,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 52,
+          fontSize: 52 * ts,
           lineHeight: 1.08,
           letterSpacing: "-0.02em",
           color: theme.fgStrong,
@@ -980,7 +1233,7 @@ function MockupCard({ v, accent }: { v: Vals; accent: string }) {
         {v.headline}
       </h1>
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 6 }}>
-        <PhoneFrame accent={accent}>
+        <PhoneFrame accent={accent} scale={phoneScale}>
           {isPage ? (
             frozen ? (
               <img data-no-frame src={frozen} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }} />
@@ -1038,6 +1291,7 @@ function toLines(s: string): string[] {
 // ── Template 8 — Nuvem de temas (pill cloud; lines starting with * = destaque) ─
 function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const items = toLines(v.topics);
   return (
     <CardShell accent={accent}>
@@ -1051,7 +1305,7 @@ function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 40,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 64,
+          fontSize: 64 * ts,
           lineHeight: 1.06,
           letterSpacing: "-0.03em",
           color: theme.fgStrong,
@@ -1079,7 +1333,7 @@ function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
               key={i}
               style={{
                 fontFamily: FONT_SANS,
-                fontSize: 32,
+                fontSize: 32 * ts,
                 fontWeight: 600,
                 padding: "16px 30px",
                 borderRadius: 999,
@@ -1110,13 +1364,14 @@ function NuvemCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 9 — Comparação (two-column contrast) ────────────────────────────
 function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const column = (title: string, items: string[], filled: boolean) => (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
       <div
         style={{
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 34,
+          fontSize: 34 * ts,
           textAlign: "center",
           color: filled ? bestOn(accent) : accent,
           background: filled ? accent : hexA(accent, 0.1),
@@ -1132,7 +1387,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
           <div
             key={i}
             style={{
-              fontSize: 27,
+              fontSize: 27 * ts,
               color: `rgba(${theme.fgRgb}, 0.88)`,
               lineHeight: 1.35,
               padding: "14px 18px",
@@ -1156,7 +1411,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
             marginTop: 14,
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
-            fontSize: 58,
+            fontSize: 58 * ts,
             lineHeight: 1.05,
             letterSpacing: "-0.03em",
             color: theme.fgStrong,
@@ -1207,6 +1462,7 @@ function ComparacaoCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 10 — Mito × Verdade ─────────────────────────────────────────────
 function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const block = (label: string, text: string, color: string, mark: string) => (
     <div
       style={{
@@ -1252,7 +1508,7 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
           {label}
         </span>
       </div>
-      <div style={{ fontSize: 34, lineHeight: 1.4, color: theme.fgStrong, fontWeight: 500 }}>{text}</div>
+      <div style={{ fontSize: 34 * ts, lineHeight: 1.4, color: theme.fgStrong, fontWeight: 500 }}>{text}</div>
     </div>
   );
   return (
@@ -1263,7 +1519,7 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 16,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 52,
+          fontSize: 52 * ts,
           lineHeight: 1.08,
           letterSpacing: "-0.02em",
           color: theme.fgStrong,
@@ -1284,6 +1540,7 @@ function MitoVerdadeCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 11 — Checklist ──────────────────────────────────────────────────
 function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const items = toLines(v.items);
   return (
     <CardShell accent={accent}>
@@ -1297,7 +1554,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 36,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 62,
+          fontSize: 62 * ts,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
           color: theme.fgStrong,
@@ -1328,7 +1585,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
             >
               ✓
             </span>
-            <span style={{ fontSize: 33, color: `rgba(${theme.fgRgb}, 0.92)`, lineHeight: 1.3 }}>{it}</span>
+            <span style={{ fontSize: 33 * ts, color: `rgba(${theme.fgRgb}, 0.92)`, lineHeight: 1.3 }}>{it}</span>
           </div>
         ))}
       </div>
@@ -1358,6 +1615,7 @@ function ChecklistCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 12 — Mnemônico / Macete (lines: "L=Palavra=detalhe") ────────────
 function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const rows = toLines(v.items).map((l) => {
     const parts = l.split("=").map((x) => x.trim());
     return { letter: parts[0] || "", word: parts[1] || "", detail: parts[2] || "" };
@@ -1370,7 +1628,7 @@ function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 14,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 88,
+          fontSize: 88 * ts,
           lineHeight: 1,
           letterSpacing: "0.02em",
           color: accent,
@@ -1405,9 +1663,9 @@ function MnemonicoCard({ v, accent }: { v: Vals; accent: string }) {
               {r.letter}
             </span>
             <div style={{ minWidth: 0 }}>
-              <span style={{ fontSize: 32, fontWeight: 700, color: theme.fgStrong }}>{r.word}</span>
+              <span style={{ fontSize: 32 * ts, fontWeight: 700, color: theme.fgStrong }}>{r.word}</span>
               {r.detail ? (
-                <span style={{ fontSize: 26, color: `rgba(${theme.fgRgb}, 0.6)` }}>{"  ·  " + r.detail}</span>
+                <span style={{ fontSize: 26 * ts, color: `rgba(${theme.fgRgb}, 0.6)` }}>{"  ·  " + r.detail}</span>
               ) : null}
             </div>
           </div>
@@ -1429,6 +1687,7 @@ function fitProps(fit: string): { objectFit: React.CSSProperties["objectFit"]; o
 
 // ── Template 13 — Imagem em tela cheia (full-bleed + overlay) ─────────────────
 function DestaqueCard({ v, accent }: { v: Vals; accent: string }) {
+  const ts = useTS();
   const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
   return (
     <CardShell accent={accent} padded={false}>
@@ -1473,7 +1732,7 @@ function DestaqueCard({ v, accent }: { v: Vals; accent: string }) {
               marginTop: 14,
               fontFamily: FONT_DISPLAY,
               fontWeight: 800,
-              fontSize: 78,
+              fontSize: 78 * ts,
               lineHeight: 1.02,
               letterSpacing: "-0.03em",
               color: "#ffffff",
@@ -1483,7 +1742,7 @@ function DestaqueCard({ v, accent }: { v: Vals; accent: string }) {
             {v.headline}
           </h1>
           {v.caption ? (
-            <p style={{ marginTop: 18, fontSize: 30, color: "rgba(255,255,255,0.82)" }}>{v.caption}</p>
+            <p style={{ marginTop: 18, fontSize: 30 * ts, color: "rgba(255,255,255,0.82)" }}>{v.caption}</p>
           ) : null}
         </div>
       </div>
@@ -1494,6 +1753,7 @@ function DestaqueCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 14 — Meio a meio (image left, text right) ───────────────────────
 function SplitCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
   const pills = toLines(v.pills);
   return (
@@ -1516,7 +1776,7 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
               marginTop: 18,
               fontFamily: FONT_DISPLAY,
               fontWeight: 800,
-              fontSize: 56,
+              fontSize: 56 * ts,
               lineHeight: 1.04,
               letterSpacing: "-0.03em",
               color: theme.fgStrong,
@@ -1525,7 +1785,7 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
             {v.headline}
           </h1>
           {v.body ? (
-            <p style={{ marginTop: 22, fontSize: 30, lineHeight: 1.45, color: `rgba(${theme.fgRgb}, 0.72)` }}>{v.body}</p>
+            <p style={{ marginTop: 22, fontSize: 30 * ts, lineHeight: 1.45, color: `rgba(${theme.fgRgb}, 0.72)` }}>{v.body}</p>
           ) : null}
           {pills.length ? (
             <div style={{ marginTop: 28, display: "flex", flexWrap: "wrap", gap: 12 }}>
@@ -1548,12 +1808,21 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
               ))}
             </div>
           ) : null}
-          <div style={{ marginTop: "auto", paddingTop: 30, fontFamily: FONT_MONO, fontSize: 22, color: `rgba(${theme.fgRgb}, 0.5)` }}>
-            medhelpspace.com.br
-          </div>
+          <SplitFooterLine fgRgb={theme.fgRgb} />
         </div>
       </div>
     </CardShell>
+  );
+}
+
+// SplitCard's slim url-only footer (it has no room for the full BrandFooter).
+function SplitFooterLine({ fgRgb }: { fgRgb: string }) {
+  const footer = React.useContext(FooterContext);
+  if (!footer.show) return null;
+  return (
+    <div style={{ marginTop: "auto", paddingTop: 30, fontFamily: FONT_MONO, fontSize: 22, color: `rgba(${fgRgb}, 0.5)` }}>
+      {footer.right}
+    </div>
   );
 }
 
@@ -1561,6 +1830,7 @@ function SplitCard({ v, accent }: { v: Vals; accent: string }) {
 function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
   const height = React.useContext(CardHeightContext);
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const boxH = Math.round(height * 0.42);
   const { objectFit, objectPosition } = fitProps(v.fit || "cover-center");
   return (
@@ -1571,7 +1841,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 14,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 60,
+          fontSize: 60 * ts,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
           color: theme.fgStrong,
@@ -1649,6 +1919,7 @@ function ClinicaCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 16 — Depoimento (testimonial with avatar) ───────────────────────
 function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
@@ -1659,7 +1930,7 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
             margin: 0,
             fontFamily: FONT_DISPLAY,
             fontWeight: 700,
-            fontSize: 56,
+            fontSize: 56 * ts,
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
             color: theme.fgStrong,
@@ -1711,6 +1982,7 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 17 — Número gigante (big stat) ──────────────────────────────────
 function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const pills = toLines(v.pills);
   return (
     <CardShell accent={accent}>
@@ -1722,7 +1994,7 @@ function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
           style={{
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
-            fontSize: 240,
+            fontSize: 240 * ts,
             lineHeight: 0.9,
             letterSpacing: "-0.04em",
             background: `linear-gradient(135deg, ${theme.fgStrong} 40%, ${accent})`,
@@ -1734,7 +2006,7 @@ function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
         >
           {v.bignum}
         </div>
-        <p style={{ marginTop: 20, fontSize: 36, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.78)`, maxWidth: "22ch" }}>
+        <p style={{ marginTop: 20, fontSize: 36 * ts, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.78)`, maxWidth: "22ch" }}>
           {v.label}
         </p>
         {pills.length ? (
@@ -1767,6 +2039,7 @@ function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 18 — Grade de recursos (lines: "Título|descrição") ──────────────
 function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   const items = toLines(v.items).map((l) => {
     const [title, ...rest] = l.split("|");
     return { title: (title || "").trim(), desc: rest.join("|").trim() };
@@ -1779,7 +2052,7 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
           marginTop: 14,
           fontFamily: FONT_DISPLAY,
           fontWeight: 800,
-          fontSize: 60,
+          fontSize: 60 * ts,
           lineHeight: 1.05,
           letterSpacing: "-0.03em",
           color: theme.fgStrong,
@@ -1820,8 +2093,8 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
             >
               {String(i + 1)}
             </span>
-            <div style={{ fontSize: 32, fontWeight: 700, color: theme.fgStrong, lineHeight: 1.15 }}>{it.title}</div>
-            {it.desc ? <div style={{ fontSize: 25, color: `rgba(${theme.fgRgb}, 0.62)`, lineHeight: 1.35 }}>{it.desc}</div> : null}
+            <div style={{ fontSize: 32 * ts, fontWeight: 700, color: theme.fgStrong, lineHeight: 1.15 }}>{it.title}</div>
+            {it.desc ? <div style={{ fontSize: 25 * ts, color: `rgba(${theme.fgRgb}, 0.62)`, lineHeight: 1.35 }}>{it.desc}</div> : null}
           </div>
         ))}
       </div>
@@ -1833,6 +2106,7 @@ function RecursosCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 19 — Capa de carrossel (slide-1 cover) ──────────────────────────
 function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   return (
     <CardShell accent={accent}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1858,7 +2132,7 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
           style={{
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
-            fontSize: 96,
+            fontSize: 96 * ts,
             lineHeight: 1,
             letterSpacing: "-0.04em",
             color: theme.fgStrong,
@@ -1868,7 +2142,7 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
           {v.title}
         </h1>
         {v.sub ? (
-          <p style={{ marginTop: 28, fontSize: 36, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.72)`, maxWidth: "24ch" }}>
+          <p style={{ marginTop: 28, fontSize: 36 * ts, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.72)`, maxWidth: "24ch" }}>
             {v.sub}
           </p>
         ) : null}
@@ -1900,6 +2174,7 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
 // ── Template 20 — Contagem regressiva (countdown) ────────────────────────────
 function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
   const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
   return (
     <CardShell accent={accent}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1918,7 +2193,7 @@ function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
           style={{
             fontFamily: FONT_DISPLAY,
             fontWeight: 800,
-            fontSize: 320,
+            fontSize: 320 * ts,
             lineHeight: 0.85,
             letterSpacing: "-0.05em",
             background: `linear-gradient(135deg, ${theme.fgStrong} 35%, ${accent})`,
@@ -1930,11 +2205,11 @@ function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
         >
           {v.days}
         </div>
-        <div style={{ marginTop: 12, fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 48, color: theme.fgStrong }}>
+        <div style={{ marginTop: 12, fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 48 * ts, color: theme.fgStrong }}>
           {v.unit}
         </div>
         {v.sub ? (
-          <p style={{ marginTop: 26, fontSize: 34, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.72)`, maxWidth: "22ch" }}>
+          <p style={{ marginTop: 26, fontSize: 34 * ts, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.72)`, maxWidth: "22ch" }}>
             {v.sub}
           </p>
         ) : null}
@@ -2402,6 +2677,175 @@ const TEMPLATES: Template[] = [
   },
 ];
 
+// ── Caption helper ───────────────────────────────────────────────────────────
+// Drafts a ready-to-paste Instagram caption + hashtags from the current card's
+// fields. Pure client logic (no LLM): a per-template composer + a hashtag bank
+// keyed off the specialty/accent. Always Portuguese (member-facing content).
+const BASE_TAGS = [
+  "#revalida",
+  "#revalidamedicina",
+  "#revalida2026",
+  "#inep",
+  "#medicina",
+  "#residenciamedica",
+  "#estudamedicina",
+  "#medhelpspace",
+];
+// Specialty → extra tags. Keyed by accent `key` AND common spec-field words.
+const SPEC_TAGS: Record<string, string[]> = {
+  cardiologia: ["#cardiologia", "#cardio"],
+  pneumologia: ["#pneumologia"],
+  reumatologia: ["#reumatologia"],
+  clinica: ["#clinicamedica", "#clinica"],
+  gastro: ["#gastroenterologia", "#gastro"],
+  neurologia: ["#neurologia", "#neuro"],
+  obstetricia: ["#obstetricia", "#ginecologiaeobstetricia"],
+  ginecologia: ["#ginecologia"],
+  pediatria: ["#pediatria"],
+  infectologia: ["#infectologia"],
+  nefrologia: ["#nefrologia"],
+  dermatologia: ["#dermatologia"],
+  emergencia: ["#emergencia", "#medicinadeemergencia"],
+  cirurgia: ["#cirurgiageral", "#cirurgia"],
+};
+// Loose match of a free-text specialty label to a SPEC_TAGS key.
+function specTagsFor(specText: string, accentKey?: string): string[] {
+  const s = (specText || "").toLowerCase();
+  for (const key of Object.keys(SPEC_TAGS)) {
+    if (s.includes(key)) return SPEC_TAGS[key];
+  }
+  if (s.includes("emerg")) return SPEC_TAGS.emergencia;
+  if (s.includes("cirurg")) return SPEC_TAGS.cirurgia;
+  if (accentKey && accentKey !== "brand" && SPEC_TAGS[accentKey]) return SPEC_TAGS[accentKey];
+  return [];
+}
+
+function toTags(specText: string, accentKey?: string): string {
+  const extra = specTagsFor(specText, accentKey);
+  // Dedup, cap at 12, keep specialty tags first for relevance.
+  const all = [...extra, ...BASE_TAGS];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const tag of all) {
+    if (!seen.has(tag)) {
+      seen.add(tag);
+      out.push(tag);
+    }
+    if (out.length >= 12) break;
+  }
+  return out.join(" ");
+}
+
+// Compose the body of the caption per template. Each array entry is a SECTION;
+// empty sections drop out and the rest join with a blank line (paragraph break),
+// which is how Instagram captions read best. Multi-line sections use "\n".
+function captionBody(templateId: TemplateId, v: Vals): string {
+  const sec = (arr: (string | undefined)[]) => arr.map((x) => (x ?? "").trim()).filter(Boolean).join("\n\n");
+  const lines = (arr: (string | false | undefined)[]) => arr.filter(Boolean).join("\n");
+  switch (templateId) {
+    case "questao":
+      return sec([
+        `❓ Questão do dia${v.spec ? " — " + v.spec : ""}`,
+        v.stem,
+        lines([v.a && "A) " + v.a, v.b && "B) " + v.b, v.c && "C) " + v.c, v.d && "D) " + v.d]),
+        v.cta,
+      ]);
+    case "dica":
+      return sec([`💡 ${v.title}`, v.body, v.pearl ? "📌 " + v.pearl : ""]);
+    case "promo":
+      return sec([
+        `🚀 ${v.headline}`,
+        v.sub,
+        lines([
+          v.basePrice && v.salePrice
+            ? `De ${v.basePrice} por ${v.salePrice}${v.badge ? " (" + v.badge + ")" : ""}.`
+            : v.salePrice,
+          v.economize,
+        ]),
+        v.cta,
+      ]);
+    case "frase":
+      return sec([`"${v.quote}"`, v.sub ? "— " + v.sub : ""]);
+    case "cronograma":
+      return sec([
+        `🗓️ ${v.title}`,
+        lines([
+          v.step1title && "1️⃣ " + v.step1title + (v.step1body ? " — " + v.step1body : ""),
+          v.step2title && "2️⃣ " + v.step2title + (v.step2body ? " — " + v.step2body : ""),
+          v.step3title && "3️⃣ " + v.step3title + (v.step3body ? " — " + v.step3body : ""),
+        ]),
+        v.footnote,
+      ]);
+    case "imagem":
+    case "destaque":
+    case "clinica":
+      return sec([v.headline, v.caption || v.callout]);
+    case "mockup":
+      return sec([v.headline]);
+    case "nuvem":
+      return sec([
+        `📌 ${v.title}${v.spec ? " — " + v.spec : ""}`,
+        toLines(v.topics)
+          .map((tp) => "• " + (tp.startsWith("*") ? tp.slice(1).trim() : tp))
+          .join("\n"),
+        v.footnote,
+      ]);
+    case "comparacao":
+      return sec([
+        `⚖️ ${v.title}`,
+        v.leftTitle ? "✅ " + v.leftTitle + ":\n" + toLines(v.leftItems).map((x) => "• " + x).join("\n") : "",
+        v.rightTitle ? "🔄 " + v.rightTitle + ":\n" + toLines(v.rightItems).map((x) => "• " + x).join("\n") : "",
+        v.footnote,
+      ]);
+    case "mitoverdade":
+      return sec([`🤔 ${v.title}`, v.myth ? "❌ MITO: " + v.myth : "", v.truth ? "✅ VERDADE: " + v.truth : ""]);
+    case "checklist":
+      return sec([`✅ ${v.title}`, toLines(v.items).map((x) => "☑️ " + x).join("\n"), v.footnote]);
+    case "mnemonico":
+      return sec([
+        `🧠 ${v.title}${v.sub ? " — " + v.sub : ""}`,
+        toLines(v.items)
+          .map((l) => {
+            const [letter, word, detail] = l.split("=").map((x) => x.trim());
+            return `${letter} — ${word}${detail ? " (" + detail + ")" : ""}`;
+          })
+          .join("\n"),
+      ]);
+    case "split":
+      return sec([v.headline, v.body, toLines(v.pills).map((p) => "• " + p).join("\n")]);
+    case "depoimento":
+      return sec([`"${v.quote}"`, v.name ? "— " + v.name + (v.role ? ", " + v.role : "") : ""]);
+    case "numero":
+      return sec([
+        v.bignum && v.label ? `${v.bignum} ${v.label}` : v.label,
+        toLines(v.pills).map((p) => "• " + p).join("\n"),
+      ]);
+    case "recursos":
+      return sec([
+        `${v.title}`,
+        toLines(v.items)
+          .map((l) => {
+            const [title, ...rest] = l.split("|");
+            const desc = rest.join("|").trim();
+            return `• ${title.trim()}${desc ? " — " + desc : ""}`;
+          })
+          .join("\n"),
+      ]);
+    case "carrossel":
+      return sec([`${v.title}`, v.sub, "➡️ " + (v.swipe || "Arrasta pra ver")]);
+    case "contagem":
+      return sec([`⏳ ${v.pre || "Faltam"} ${v.days} ${v.unit}`, v.sub]);
+    default:
+      return sec([v.title || v.headline || v.quote, v.body || v.caption || v.sub]);
+  }
+}
+
+function buildCaption(templateId: TemplateId, v: Vals, accentKey?: string): string {
+  const body = captionBody(templateId, v).trim();
+  const tags = toTags(v.spec ?? "", accentKey);
+  return `${body}\n\n.\n.\n.\n${tags}`;
+}
+
 // ── Studio shell ─────────────────────────────────────────────────────────────
 const SCALES = [0.4, 0.5, 0.62, 1] as const;
 
@@ -2411,6 +2855,15 @@ const RATIOS = [
   { id: "9-16", label: "9:16", sub: "story", w: 1080, h: 1920 },
 ] as const;
 type RatioId = (typeof RATIOS)[number]["id"];
+
+// Vertical layout on tall ratios: "center" lays the content out in a compact
+// zone (square on 4:5; 4:5-shaped on 9:16 — the story safe area, clear of the
+// username/reply UI) centered on the canvas; "fill" stretches edge-to-edge.
+type LayoutId = "center" | "fill";
+const CENTER_CONTENT_H: Record<RatioId, number> = { "1-1": 1080, "4-5": 1080, "9-16": 1350 };
+
+// Draft persistence — survive refreshes; blob: URLs are session-bound and skipped.
+const STORAGE_KEY = "mhs-estudio-v1";
 
 // Drop dev-only overlays (Next/Tanstack devtools, edit toggle) from exports so
 // they never leak into a captured live-page mockup. In production these nodes
@@ -2428,12 +2881,24 @@ export function EstudioClient() {
   const { t } = useTranslation();
   const [templateId, setTemplateId] = useState<TemplateId>("questao");
   const [accent, setAccent] = useState<string>("#c084e8");
+  const [accentIsCustom, setAccentIsCustom] = useState<boolean>(false);
+  const [accentCustom, setAccentCustom] = useState<string>("#22d3ee");
   const [bg, setBg] = useState<BgId>("ink");
+  const [bgCustom, setBgCustom] = useState<string>("#101b33");
+  const [layout, setLayout] = useState<LayoutId>("center");
+  const [footerShow, setFooterShow] = useState<boolean>(true);
+  const [footerText, setFooterText] = useState<string>("medhelpspace.com.br");
+  const [textScale, setTextScale] = useState<string>("M");
+  const [overlays, setOverlays] = useState<Overlay[]>([]);
+  const [selectedOverlay, setSelectedOverlay] = useState<string | null>(null);
+  const [caption, setCaption] = useState<string>("");
+  const [captionCopied, setCaptionCopied] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(0.5);
   const [hideUI, setHideUI] = useState<boolean>(false);
   const [ratioId, setRatioId] = useState<RatioId>("1-1");
   const [frozen, setFrozen] = useState<string | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
   const [allValues, setAllValues] = useState<Record<TemplateId, Vals>>(() => {
     const init = {} as Record<TemplateId, Vals>;
     for (const tpl of TEMPLATES) init[tpl.id] = { ...tpl.defaults };
@@ -2444,12 +2909,47 @@ export function EstudioClient() {
   const values = allValues[templateId];
   const effectiveScale = hideUI ? 1 : scale;
   const dims = RATIOS.find((r) => r.id === ratioId)!;
+  const contentH = layout === "center" ? CENTER_CONTENT_H[ratioId] : dims.h;
   const currentAccent = ACCENTS.find((a) => a.value === accent);
-  // On a light surface, switch to the site's light-mode accent (deeper, readable
-  // on white). `accent` state always stays the dark hex the swatches use.
-  const isLightBg = bg !== "ink";
-  const renderAccent = isLightBg ? LIGHT_ACCENT[accent] ?? accent : accent;
-  const cardTheme = buildTheme(bg, renderAccent);
+  // On a light surface, presets switch to the site's light-mode accent (deeper,
+  // readable on white); custom colors get contrast-fitted against the surface.
+  // `accent` state always stays the dark hex the swatches use.
+  const surfaceIsLight = bg === "ink" ? false : bg === "custom" ? relLum(bgCustom) > 0.4 : true;
+  let renderAccent = accentIsCustom
+    ? accentCustom
+    : surfaceIsLight
+      ? LIGHT_ACCENT[accent] ?? accent
+      : accent;
+  if (accentIsCustom || bg === "custom") {
+    renderAccent = fitAccent(renderAccent, surfaceHexFor(bg, bgCustom));
+  }
+  const cardTheme = bg === "custom" ? buildCustomTheme(bgCustom) : buildTheme(bg, renderAccent);
+  const textMult = TEXT_SCALES.find((s) => s.id === textScale)?.mult ?? 1;
+
+  // ── Overlay (logo / sticker) helpers ──
+  const overlaySeq = React.useRef(0);
+  const addOverlay = useCallback((kind: Overlay["kind"]) => {
+    const id = `ov-${kind}-${overlaySeq.current++}`;
+    const ov: Overlay =
+      kind === "logo"
+        ? { id, kind: "logo", src: BRAND_LOGOS[0], variant: "solid", xPct: 0.5, yPct: 0.5, size: 260, rot: 0 }
+        : { id, kind: "badge", text: BADGE_PRESETS[0], variant: "solid", xPct: 0.72, yPct: 0.22, size: 46, rot: -8 };
+    setOverlays((prev) => [...prev, ov]);
+    setSelectedOverlay(id);
+  }, []);
+
+  const updateOverlay = useCallback((id: string, patch: Partial<Overlay>) => {
+    setOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  }, []);
+
+  const removeOverlay = useCallback((id: string) => {
+    setOverlays((prev) => prev.filter((o) => o.id !== id));
+    setSelectedOverlay((cur) => (cur === id ? null : cur));
+  }, []);
+
+  const moveOverlay = useCallback((id: string, xPct: number, yPct: number) => {
+    setOverlays((prev) => prev.map((o) => (o.id === id ? { ...o, xPct, yPct } : o)));
+  }, []);
 
   const update = useCallback(
     (key: string, val: string) => {
@@ -2465,46 +2965,154 @@ export function EstudioClient() {
     setAllValues((prev) => ({ ...prev, [templateId]: { ...template.defaults } }));
   }, [templateId, template.defaults]);
 
+  // ── Caption helper ──
+  const genCaption = useCallback(() => {
+    setCaption(buildCaption(templateId, values, currentAccent?.key));
+  }, [templateId, values, currentAccent]);
+
+  const copyCaption = useCallback(async () => {
+    const text = caption || buildCaption(templateId, values, currentAccent?.key);
+    if (!caption) setCaption(text);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCaptionCopied(true);
+      setTimeout(() => setCaptionCopied(false), 2200);
+    } catch {
+      /* clipboard blocked — the textarea is selectable as a fallback */
+    }
+  }, [caption, templateId, values, currentAccent]);
+
+  // ── Draft persistence ──
+  const draftLoaded = React.useRef(false);
+  useEffect(() => {
+    // One-time hydration from localStorage — a client-only external store, so
+    // it can't seed useState initializers (SSR mismatch). Same pattern and
+    // rationale as theme-provider.tsx.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Record<string, unknown>;
+        if (typeof d.templateId === "string" && TEMPLATES.some((tp) => tp.id === d.templateId))
+          setTemplateId(d.templateId as TemplateId);
+        if (typeof d.accent === "string" && ACCENTS.some((a) => a.value === d.accent)) setAccent(d.accent);
+        if (typeof d.accentIsCustom === "boolean") setAccentIsCustom(d.accentIsCustom);
+        if (typeof d.accentCustom === "string" && /^#[0-9a-f]{6}$/i.test(d.accentCustom)) setAccentCustom(d.accentCustom);
+        if (typeof d.bg === "string" && (d.bg === "custom" || (BACKGROUNDS as readonly string[]).includes(d.bg)))
+          setBg(d.bg as BgId);
+        if (typeof d.bgCustom === "string" && /^#[0-9a-f]{6}$/i.test(d.bgCustom)) setBgCustom(d.bgCustom);
+        if (d.layout === "center" || d.layout === "fill") setLayout(d.layout);
+        if (typeof d.footerShow === "boolean") setFooterShow(d.footerShow);
+        if (typeof d.footerText === "string") setFooterText(d.footerText);
+        if (typeof d.textScale === "string" && TEXT_SCALES.some((s) => s.id === d.textScale))
+          setTextScale(d.textScale);
+        if (Array.isArray(d.overlays)) {
+          // Drop overlays whose image is a session-bound blob: URL (dead on reload).
+          const valid = (d.overlays as unknown[]).filter(
+            (o): o is Overlay =>
+              !!o &&
+              typeof o === "object" &&
+              (o as Overlay).kind !== undefined &&
+              !((o as Overlay).src ?? "").startsWith("blob:"),
+          );
+          setOverlays(valid);
+          overlaySeq.current = valid.length;
+        }
+        if (typeof d.ratioId === "string" && RATIOS.some((r) => r.id === d.ratioId)) setRatioId(d.ratioId as RatioId);
+        if (d.allValues && typeof d.allValues === "object") {
+          const saved = d.allValues as Record<string, unknown>;
+          setAllValues((prev) => {
+            const next = { ...prev };
+            for (const tpl of TEMPLATES) {
+              const s = saved[tpl.id];
+              if (!s || typeof s !== "object") continue;
+              const merged = { ...prev[tpl.id] };
+              for (const [k, val] of Object.entries(s as Record<string, unknown>)) {
+                if (typeof val === "string" && !val.startsWith("blob:")) merged[k] = val;
+              }
+              next[tpl.id] = merged;
+            }
+            return next;
+          });
+        }
+      }
+    } catch {
+      /* corrupted draft — start fresh */
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+    draftLoaded.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded.current) return;
+    try {
+      const cleanValues: Record<string, Vals> = {};
+      for (const tpl of TEMPLATES) {
+        cleanValues[tpl.id] = Object.fromEntries(
+          Object.entries(allValues[tpl.id]).filter(([, val]) => !val.startsWith("blob:")),
+        );
+      }
+      // Skip blob: overlay images (session-bound); persist the rest.
+      const cleanOverlays = overlays.filter((o) => !(o.src ?? "").startsWith("blob:"));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          templateId, accent, accentIsCustom, accentCustom, bg, bgCustom,
+          layout, footerShow, footerText, textScale, ratioId,
+          overlays: cleanOverlays, allValues: cleanValues,
+        }),
+      );
+    } catch {
+      /* storage blocked/full — drafts are best-effort */
+    }
+  }, [allValues, templateId, accent, accentIsCustom, accentCustom, bg, bgCustom, layout, footerShow, footerText, textScale, ratioId, overlays]);
+
+  // Rasterize #ig-card to a 2× PNG data-URL (shared by download + copy).
+  const capture = useCallback(async (): Promise<string | null> => {
+    const { domToPng } = await import("modern-screenshot");
+    const card = document.getElementById("ig-card");
+    if (!card) return null;
+
+    // Live-page mockup: canvas rasterizers can't reach into an <iframe>, but
+    // ours is same-origin — so snapshot the embedded page's DOM directly and
+    // freeze it into a static <img> before capturing the whole card.
+    const iframe = card.querySelector("iframe");
+    if (iframe && iframe.contentDocument?.documentElement) {
+      let pagePng: string;
+      try {
+        pagePng = await domToPng(iframe.contentDocument.documentElement, {
+          width: IFRAME_LOGICAL_W,
+          height: IFRAME_LOGICAL_H,
+          scale: 2,
+          filter: exportFilter,
+        });
+      } catch {
+        alert(t("studio.liveCaptureFailed"));
+        return null;
+      }
+      setFrozen(pagePng);
+      // let React swap the iframe for the frozen <img> and decode it
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise((r) => setTimeout(r, 150));
+    }
+
+    // Pin the output box to the true canvas size (× 2) so resolution never
+    // depends on the preview zoom (the on-screen node is transform-scaled).
+    const d = RATIOS.find((r) => r.id === ratioId)!;
+    return domToPng(card, {
+      width: d.w,
+      height: d.h,
+      scale: 2,
+      filter: exportFilter,
+    });
+  }, [ratioId, t]);
+
   const download = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const { domToPng } = await import("modern-screenshot");
-      const card = document.getElementById("ig-card");
-      if (!card) return;
-
-      // Live-page mockup: canvas rasterizers can't reach into an <iframe>, but
-      // ours is same-origin — so snapshot the embedded page's DOM directly and
-      // freeze it into a static <img> before capturing the whole card.
-      const iframe = card.querySelector("iframe");
-      if (iframe && iframe.contentDocument?.documentElement) {
-        let pagePng: string;
-        try {
-          pagePng = await domToPng(iframe.contentDocument.documentElement, {
-            width: IFRAME_LOGICAL_W,
-            height: IFRAME_LOGICAL_H,
-            scale: 2,
-            filter: exportFilter,
-          });
-        } catch {
-          alert(t("studio.liveCaptureFailed"));
-          return;
-        }
-        setFrozen(pagePng);
-        // let React swap the iframe for the frozen <img> and decode it
-        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-        await new Promise((r) => setTimeout(r, 150));
-      }
-
-      // Pin the output box to the true canvas size (× 2) so resolution never
-      // depends on the preview zoom (the on-screen node is transform-scaled).
-      const d = RATIOS.find((r) => r.id === ratioId)!;
-      const png = await domToPng(card, {
-        width: d.w,
-        height: d.h,
-        scale: 2,
-        filter: exportFilter,
-      });
+      const png = await capture();
+      if (!png) return;
       const a = document.createElement("a");
       a.href = png;
       a.download = `medhelpspace-${templateId}-${ratioId}.png`;
@@ -2518,7 +3126,26 @@ export function EstudioClient() {
       setFrozen(null);
       setBusy(false);
     }
-  }, [busy, templateId, ratioId, t]);
+  }, [busy, capture, templateId, ratioId, t]);
+
+  const copyPng = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const png = await capture();
+      if (!png) return;
+      const blob = await (await fetch(png)).blob();
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch (err) {
+      console.error("[estudio] copy failed", err);
+      alert(t("studio.copyFailed"));
+    } finally {
+      setFrozen(null);
+      setBusy(false);
+    }
+  }, [busy, capture, t]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2548,13 +3175,32 @@ export function EstudioClient() {
       {hideUI ? (
         // ── Capture mode: card only, at true size, top-left ──
         <div style={{ padding: 24 }}>
-          <CardHeightContext.Provider value={dims.h}>
-            <CardThemeContext.Provider value={cardTheme}>
-              <FrozenPageContext.Provider value={frozen}>
-                <Card v={values} accent={renderAccent} />
-              </FrozenPageContext.Provider>
-            </CardThemeContext.Provider>
-          </CardHeightContext.Provider>
+          <CanvasContext.Provider value={{ canvasH: dims.h, contentH }}>
+            <CardHeightContext.Provider value={contentH}>
+              <CardThemeContext.Provider value={cardTheme}>
+                <TextScaleContext.Provider value={textMult}>
+                  <OverlayContext.Provider
+                    value={{
+                      overlays,
+                      accent: renderAccent,
+                      editable: false,
+                      selectedId: null,
+                      effectiveScale: 1,
+                      canvasH: dims.h,
+                      onSelect: () => {},
+                      onMove: () => {},
+                    }}
+                  >
+                    <FooterContext.Provider value={{ show: footerShow, right: footerText }}>
+                      <FrozenPageContext.Provider value={frozen}>
+                        <Card v={values} accent={renderAccent} />
+                      </FrozenPageContext.Provider>
+                    </FooterContext.Provider>
+                  </OverlayContext.Provider>
+                </TextScaleContext.Provider>
+              </CardThemeContext.Provider>
+            </CardHeightContext.Provider>
+          </CanvasContext.Provider>
           <button
             onClick={() => setHideUI(false)}
             style={{
@@ -2658,7 +3304,10 @@ export function EstudioClient() {
                 {ACCENTS.map((a) => (
                   <button
                     key={a.value}
-                    onClick={() => setAccent(a.value)}
+                    onClick={() => {
+                      setAccent(a.value);
+                      setAccentIsCustom(false);
+                    }}
                     title={t(`studio.accents.${a.key}`)}
                     style={{
                       width: 30,
@@ -2667,17 +3316,38 @@ export function EstudioClient() {
                       cursor: "pointer",
                       background: a.value,
                       border:
-                        accent === a.value
+                        !accentIsCustom && accent === a.value
                           ? "2px solid #fff"
                           : "2px solid rgba(255,255,255,0.12)",
-                      boxShadow: accent === a.value ? `0 0 0 3px ${hexA(a.value, 0.4)}` : "none",
+                      boxShadow:
+                        !accentIsCustom && accent === a.value ? `0 0 0 3px ${hexA(a.value, 0.4)}` : "none",
                     }}
                   />
                 ))}
+                <ColorSwatch
+                  title={t("studio.accents.custom")}
+                  value={accentCustom}
+                  selected={accentIsCustom}
+                  width={30}
+                  onPick={(hex) => {
+                    setAccentCustom(hex);
+                    setAccentIsCustom(true);
+                  }}
+                  onSelect={() => setAccentIsCustom(true)}
+                />
               </div>
-              <p style={{ fontSize: 11.5, color: "#8a8a95", margin: "8px 0 0" }}>
-                {currentAccent ? t(`studio.accents.${currentAccent.key}`) : ""}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 0" }}>
+                <p style={{ fontSize: 11.5, color: "#8a8a95", margin: 0 }}>
+                  {accentIsCustom
+                    ? t("studio.accents.custom")
+                    : currentAccent
+                      ? t(`studio.accents.${currentAccent.key}`)
+                      : ""}
+                </p>
+                {accentIsCustom ? (
+                  <HexInput value={accentCustom} onChange={setAccentCustom} />
+                ) : null}
+              </div>
             </div>
 
             {/* Background picker */}
@@ -2700,10 +3370,54 @@ export function EstudioClient() {
                     }}
                   />
                 ))}
+                <ColorSwatch
+                  title={t("studio.bg.custom")}
+                  value={bgCustom}
+                  selected={bg === "custom"}
+                  width={44}
+                  onPick={(hex) => {
+                    setBgCustom(hex);
+                    setBg("custom");
+                  }}
+                  onSelect={() => setBg("custom")}
+                />
               </div>
-              <p style={{ fontSize: 11.5, color: "#8a8a95", margin: "8px 0 0" }}>
-                {t(`studio.bg.${bg}`)}
-              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "8px 0 0" }}>
+                <p style={{ fontSize: 11.5, color: "#8a8a95", margin: 0 }}>{t(`studio.bg.${bg}`)}</p>
+                {bg === "custom" ? <HexInput value={bgCustom} onChange={setBgCustom} /> : null}
+              </div>
+            </div>
+
+            {/* Brand footer controls */}
+            <div>
+              <Label>{t("studio.brand")}</Label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  cursor: "pointer",
+                  fontSize: 13,
+                  color: "#cfcfd6",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={footerShow}
+                  onChange={(e) => setFooterShow(e.target.checked)}
+                  style={{ accentColor: "#7a1d91", width: 15, height: 15, cursor: "pointer" }}
+                />
+                {t("studio.footerShow")}
+              </label>
+              {footerShow ? (
+                <input
+                  type="text"
+                  value={footerText}
+                  onChange={(e) => setFooterText(e.target.value)}
+                  placeholder={t("studio.footerText")}
+                  style={{ ...inputStyle, marginTop: 8 }}
+                />
+              ) : null}
             </div>
 
             {/* Fields */}
@@ -2776,6 +3490,43 @@ export function EstudioClient() {
                 ))}
             </div>
 
+            {/* Text-size dial */}
+            <div>
+              <Label>{t("studio.textSize")}</Label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {TEXT_SCALES.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setTextScale(s.id)}
+                    style={{
+                      flex: 1,
+                      padding: "9px 0",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      color: textScale === s.id ? "#fff" : "#cfcfd6",
+                      background: textScale === s.id ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                      border: textScale === s.id ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    {t(`studio.textSize_${s.id}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Logo / sticker overlays */}
+            <OverlayControls
+              overlays={overlays}
+              selectedId={selectedOverlay}
+              accent={renderAccent}
+              onAdd={addOverlay}
+              onSelect={setSelectedOverlay}
+              onUpdate={updateOverlay}
+              onRemove={removeOverlay}
+            />
+
             {/* Format + zoom + export */}
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 16 }}>
               <Label>{t("studio.format")}</Label>
@@ -2805,6 +3556,36 @@ export function EstudioClient() {
                   </button>
                 ))}
               </div>
+
+              {ratioId !== "1-1" ? (
+                <>
+                  <Label>{t("studio.layout")}</Label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["center", "fill"] as const).map((l) => (
+                      <button
+                        key={l}
+                        onClick={() => setLayout(l)}
+                        style={{
+                          flex: 1,
+                          padding: "9px 0",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          borderRadius: 8,
+                          cursor: "pointer",
+                          color: layout === l ? "#fff" : "#cfcfd6",
+                          background: layout === l ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                          border: layout === l ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        {t(l === "center" ? "studio.layoutCenter" : "studio.layoutFill")}
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: "#8a8a95", margin: "8px 0 16px", lineHeight: 1.5 }}>
+                    {t("studio.layoutHelp")}
+                  </p>
+                </>
+              ) : null}
 
               <Label>{t("studio.zoom")}</Label>
               <div style={{ display: "flex", gap: 6 }}>
@@ -2850,6 +3631,27 @@ export function EstudioClient() {
               </button>
 
               <button
+                onClick={copyPng}
+                disabled={busy}
+                style={{
+                  marginTop: 8,
+                  width: "100%",
+                  padding: "11px 0",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  borderRadius: 10,
+                  cursor: busy ? "wait" : "pointer",
+                  color: copied ? "#0a0510" : "#e6d3f5",
+                  background: copied ? "#6ee79b" : "rgba(122,29,145,0.22)",
+                  border: copied ? "1px solid #6ee79b" : "1px solid rgba(192,132,232,0.35)",
+                  opacity: busy ? 0.7 : 1,
+                  transition: "background .2s, color .2s",
+                }}
+              >
+                {copied ? `✓  ${t("studio.copied")}` : `⧉  ${t("studio.copy")}`}
+              </button>
+
+              <button
                 onClick={() => setHideUI(true)}
                 style={{
                   marginTop: 8,
@@ -2871,6 +3673,59 @@ export function EstudioClient() {
                 {t("studio.captureHelp", { w: dims.w * 2, h: dims.h * 2 })}
               </p>
             </div>
+
+            {/* Caption helper */}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Label>{t("studio.caption")}</Label>
+                <button
+                  onClick={genCaption}
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: 10.5,
+                    color: "#c084e8",
+                    background: "rgba(122,29,145,0.14)",
+                    border: "1px solid rgba(192,132,232,0.25)",
+                    borderRadius: 6,
+                    padding: "4px 9px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {caption ? t("studio.captionRegen") : t("studio.captionGen")}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: "#8a8a95", margin: "0 0 8px", lineHeight: 1.5 }}>
+                {t("studio.captionHelp")}
+              </p>
+              {caption ? (
+                <>
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    rows={8}
+                    style={{ ...inputStyle, fontSize: 12, lineHeight: 1.5 }}
+                  />
+                  <button
+                    onClick={copyCaption}
+                    style={{
+                      marginTop: 8,
+                      width: "100%",
+                      padding: "11px 0",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      color: captionCopied ? "#0a0510" : "#e6d3f5",
+                      background: captionCopied ? "#6ee79b" : "rgba(122,29,145,0.22)",
+                      border: captionCopied ? "1px solid #6ee79b" : "1px solid rgba(192,132,232,0.35)",
+                      transition: "background .2s, color .2s",
+                    }}
+                  >
+                    {captionCopied ? `✓  ${t("studio.captionCopied")}` : `⧉  ${t("studio.captionCopy")}`}
+                  </button>
+                </>
+              ) : null}
+            </div>
           </section>
 
           {/* ── Preview (stays on screen while the builder scrolls) ── */}
@@ -2889,13 +3744,32 @@ export function EstudioClient() {
               }}
             >
               <div style={{ width: dims.w, height: dims.h, transform: `scale(${effectiveScale})`, transformOrigin: "top left" }}>
-                <CardHeightContext.Provider value={dims.h}>
-                  <CardThemeContext.Provider value={cardTheme}>
-                    <FrozenPageContext.Provider value={frozen}>
-                      <Card v={values} accent={renderAccent} />
-                    </FrozenPageContext.Provider>
-                  </CardThemeContext.Provider>
-                </CardHeightContext.Provider>
+                <CanvasContext.Provider value={{ canvasH: dims.h, contentH }}>
+                  <CardHeightContext.Provider value={contentH}>
+                    <CardThemeContext.Provider value={cardTheme}>
+                      <TextScaleContext.Provider value={textMult}>
+                        <OverlayContext.Provider
+                          value={{
+                            overlays,
+                            accent: renderAccent,
+                            editable: !busy,
+                            selectedId: selectedOverlay,
+                            effectiveScale,
+                            canvasH: dims.h,
+                            onSelect: setSelectedOverlay,
+                            onMove: moveOverlay,
+                          }}
+                        >
+                          <FooterContext.Provider value={{ show: footerShow, right: footerText }}>
+                            <FrozenPageContext.Provider value={frozen}>
+                              <Card v={values} accent={renderAccent} />
+                            </FrozenPageContext.Provider>
+                          </FooterContext.Provider>
+                        </OverlayContext.Provider>
+                      </TextScaleContext.Provider>
+                    </CardThemeContext.Provider>
+                  </CardHeightContext.Provider>
+                </CanvasContext.Provider>
               </div>
             </div>
           </section>
@@ -3134,6 +4008,88 @@ function ImageField({ value, onChange }: { value: string; onChange: (v: string) 
   );
 }
 
+// Custom-color swatch: shows the picked color with a rainbow corner-dot, opens
+// the native color picker on click. Selecting without changing also activates.
+function ColorSwatch({
+  title,
+  value,
+  selected,
+  width,
+  onPick,
+  onSelect,
+}: {
+  title: string;
+  value: string;
+  selected: boolean;
+  width: number;
+  onPick: (hex: string) => void;
+  onSelect: () => void;
+}) {
+  return (
+    <label
+      title={title}
+      style={{
+        position: "relative",
+        width,
+        height: 30,
+        borderRadius: 8,
+        cursor: "pointer",
+        background: value,
+        border: selected ? "2px solid #fff" : "2px solid rgba(255,255,255,0.12)",
+        boxShadow: selected ? `0 0 0 3px ${hexA(value, 0.4)}` : "none",
+        display: "block",
+      }}
+    >
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onPick(e.target.value)}
+        onClick={onSelect}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          right: 2,
+          bottom: 2,
+          width: 9,
+          height: 9,
+          borderRadius: "50%",
+          background: "conic-gradient(#f43f5e, #f59e0b, #22c55e, #06b6d4, #8b5cf6, #f43f5e)",
+          border: "1px solid rgba(0,0,0,0.4)",
+          pointerEvents: "none",
+        }}
+      />
+    </label>
+  );
+}
+
+// Hex text input that only commits valid #rrggbb values.
+function HexInput({ value, onChange }: { value: string; onChange: (hex: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  // Render-time adjust ("value changed externally" — e.g. the color picker):
+  // the docs-sanctioned alternative to syncing props into state via an effect.
+  const [lastValue, setLastValue] = useState(value);
+  if (value !== lastValue) {
+    setLastValue(value);
+    setDraft(value);
+  }
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => {
+        const s = e.target.value;
+        setDraft(s);
+        const m = s.trim().match(/^#?([0-9a-fA-F]{6})$/);
+        if (m) onChange("#" + m[1].toLowerCase());
+      }}
+      spellCheck={false}
+      style={{ ...inputStyle, fontFamily: FONT_MONO, width: 104, padding: "5px 9px", fontSize: 12 }}
+    />
+  );
+}
+
 function Label({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -3165,3 +4121,289 @@ const inputStyle: React.CSSProperties = {
   resize: "vertical",
   lineHeight: 1.4,
 };
+
+// ── Overlay control panel ────────────────────────────────────────────────────
+const POS_X = [0.12, 0.5, 0.88];
+const POS_Y = [0.14, 0.5, 0.86];
+
+function OvSlider({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#8a8a95", marginBottom: 4 }}>
+        <span>{label}</span>
+        <span style={{ fontFamily: FONT_MONO }}>{Math.round(value)}</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ width: "100%", accentColor: "#c084e8", cursor: "pointer" }}
+      />
+    </div>
+  );
+}
+
+// 3×3 quick-position grid — snaps an overlay to a canvas anchor.
+function PosGrid({ onPick }: { onPick: (x: number, y: number) => void }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4, width: 84 }}>
+      {POS_Y.map((y) =>
+        POS_X.map((x) => (
+          <button
+            key={`${x}-${y}`}
+            onClick={() => onPick(x, y)}
+            style={{
+              height: 22,
+              borderRadius: 5,
+              cursor: "pointer",
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+          />
+        )),
+      )}
+    </div>
+  );
+}
+
+function OverlayControls({
+  overlays,
+  selectedId,
+  accent,
+  onAdd,
+  onSelect,
+  onUpdate,
+  onRemove,
+}: {
+  overlays: Overlay[];
+  selectedId: string | null;
+  accent: string;
+  onAdd: (kind: Overlay["kind"]) => void;
+  onSelect: (id: string | null) => void;
+  onUpdate: (id: string, patch: Partial<Overlay>) => void;
+  onRemove: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  const logoInput = React.useRef<HTMLInputElement>(null);
+  const selected = overlays.find((o) => o.id === selectedId) ?? null;
+
+  const addBtn: React.CSSProperties = {
+    flex: 1,
+    padding: "9px 0",
+    fontSize: 12.5,
+    fontWeight: 600,
+    borderRadius: 8,
+    cursor: "pointer",
+    color: "#e6d3f5",
+    background: "rgba(122,29,145,0.2)",
+    border: "1px solid rgba(192,132,232,0.3)",
+  };
+
+  return (
+    <div>
+      <Label>{t("studio.overlays")}</Label>
+      <div style={{ display: "flex", gap: 6 }}>
+        <button onClick={() => onAdd("logo")} style={addBtn}>
+          ＋ {t("studio.addLogo")}
+        </button>
+        <button onClick={() => onAdd("badge")} style={addBtn}>
+          ＋ {t("studio.addBadge")}
+        </button>
+      </div>
+      <p style={{ fontSize: 11, color: "#8a8a95", margin: "8px 0 0", lineHeight: 1.5 }}>
+        {t("studio.overlaysHelp")}
+      </p>
+
+      {overlays.length > 0 ? (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {overlays.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => onSelect(o.id === selectedId ? null : o.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                maxWidth: "100%",
+                padding: "6px 10px",
+                fontSize: 11.5,
+                borderRadius: 999,
+                cursor: "pointer",
+                color: o.id === selectedId ? "#fff" : "#cfcfd6",
+                background: o.id === selectedId ? "#7a1d91" : "rgba(255,255,255,0.05)",
+                border: o.id === selectedId ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
+              }}
+            >
+              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 120 }}>
+                {o.kind === "logo" ? "🖼 " + t("studio.addLogo") : "🏷 " + (o.text || t("studio.addBadge"))}
+              </span>
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(o.id);
+                }}
+                style={{ color: "#ff9d9d", fontWeight: 700, cursor: "pointer" }}
+              >
+                ×
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {selected ? (
+        <div
+          style={{
+            marginTop: 10,
+            padding: 12,
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {selected.kind === "logo" ? (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                {BRAND_LOGOS.map((src) => (
+                  <button
+                    key={src}
+                    onClick={() => onUpdate(selected.id, { src })}
+                    style={{
+                      padding: 4,
+                      aspectRatio: "1 / 1",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      background: "rgba(255,255,255,0.06)",
+                      border: selected.src === src ? "2px solid #c084e8" : "1px solid rgba(255,255,255,0.12)",
+                    }}
+                  >
+                    <img src={src} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => logoInput.current?.click()}
+                style={{
+                  fontSize: 11.5,
+                  color: "#cfcfd6",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 8,
+                  padding: "8px 0",
+                  cursor: "pointer",
+                }}
+              >
+                {t("studio.uploadFile")}
+              </button>
+              <input
+                ref={logoInput}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f && f.type.startsWith("image/")) onUpdate(selected.id, { src: URL.createObjectURL(f) });
+                }}
+                style={{ display: "none" }}
+              />
+            </>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={selected.text ?? ""}
+                onChange={(e) => onUpdate(selected.id, { text: e.target.value })}
+                placeholder={t("studio.badgeText")}
+                style={inputStyle}
+              />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {BADGE_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => onUpdate(selected.id, { text: p })}
+                    style={{
+                      fontSize: 11,
+                      padding: "5px 10px",
+                      borderRadius: 999,
+                      cursor: "pointer",
+                      color: "#cfcfd6",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {(["solid", "outline", "white", "dark"] as const).map((variant) => {
+                  const s = badgeStyle(variant, accent);
+                  return (
+                    <button
+                      key={variant}
+                      onClick={() => onUpdate(selected.id, { variant })}
+                      title={t(`studio.badgeVariant_${variant}`)}
+                      style={{
+                        flex: 1,
+                        height: 30,
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        background: s.background,
+                        border:
+                          selected.variant === variant ? "2px solid #c084e8" : (s.border as string) ?? "1px solid rgba(255,255,255,0.12)",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <OvSlider
+            label={t("studio.overlaySize")}
+            value={selected.size}
+            min={selected.kind === "logo" ? 80 : 26}
+            max={selected.kind === "logo" ? 560 : 96}
+            onChange={(n) => onUpdate(selected.id, { size: n })}
+          />
+          <OvSlider
+            label={t("studio.overlayRotate")}
+            value={selected.rot}
+            min={-30}
+            max={30}
+            onChange={(n) => onUpdate(selected.id, { rot: n })}
+          />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 10.5, color: "#8a8a95" }}>{t("studio.overlayPos")}</span>
+            <PosGrid onPick={(x, y) => onUpdate(selected.id, { xPct: x, yPct: y })} />
+          </div>
+          <p style={{ fontSize: 10.5, color: "#7f7f8c", margin: 0, lineHeight: 1.4 }}>
+            {t("studio.overlayDragHint")}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
