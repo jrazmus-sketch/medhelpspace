@@ -114,7 +114,10 @@ Build the zone with web → Vercel but **MX still pointing at IONOS**, so email 
 ## Phase 2 — Stand up Zoho Mail (fresh, off IONOS) — no rush, within the IONOS window
 - [ ] 🧑‍💻 Sign up at zoho.com/mail, add `medhelpspace.com.br`. Plan: **Forever Free** (≤5 users, 5GB) or **Mail Lite** (~US$1/user/mo for IMAP/POP).
 - [ ] 🧑‍💻 In **registro.br**, add Zoho's **domain-verification TXT** (`zb…`) → verify in Zoho.
-- [ ] 🧑‍💻 Create mailboxes (e.g. `contato@`, `pagamentos@`, `suporte@`).
+- [ ] 🧑‍💻 Create the mailbox **`contato@`** (required — single monitored inbox). The app now
+      sends **all** email from `MedHelpSpace <contato@medhelpspace.com.br>` (no Reply-To set, so
+      every reply lands here) and points both the email footer and the legal-page contact at the
+      same address. `pagamentos@`/`suporte@` are optional extras only if you want dedicated boxes.
 - [ ] 🧑‍💻 Zoho admin → Email Configuration → **enable DKIM** (generates selector + key).
 - [ ] 🧑‍💻 In **registro.br**, swap IONOS email records for Zoho's, and **remove all IONOS MX/SPF/DKIM/autodiscover**:
       - MX: `mx.zoho.com` (10), `mx2.zoho.com` (20), `mx3.zoho.com` (50)

@@ -67,11 +67,11 @@ REVOKE ALL ON email_settings FROM anon, authenticated;
 INSERT INTO email_settings (id, from_address, app_url, company_name, cnpj, contact_email, address, footer_note)
 VALUES (
   1,
-  'MedHelpSpace <pagamentos@medhelpspace.com.br>',
+  'MedHelpSpace <contato@medhelpspace.com.br>',
   'https://medhelpspace.com.br',
   'MedHelpSpace Revalida',
   '',
-  'privacidade@medhelpspace.com.br',
+  'contato@medhelpspace.com.br',
   '',
   ''
 )

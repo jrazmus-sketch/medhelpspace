@@ -239,11 +239,11 @@ export function renderEmail(
 // ── Defaults (seed source + fallback when the DB tables are absent) ─────────────
 
 export const DEFAULT_EMAIL_SETTINGS: EmailSettingsRow = {
-  from_address: "MedHelpSpace <pagamentos@medhelpspace.com.br>",
+  from_address: "MedHelpSpace <contato@medhelpspace.com.br>",
   app_url: "https://medhelpspace.com.br",
   company_name: "MedHelpSpace Revalida",
   cnpj: "",
-  contact_email: "privacidade@medhelpspace.com.br",
+  contact_email: "contato@medhelpspace.com.br",
   address: "",
   footer_note: "",
 };
