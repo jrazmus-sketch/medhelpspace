@@ -211,8 +211,8 @@ export function renderEmail(
           <tr>
             <td style="background:#7a1d91;padding:24px 40px;">
               <img src="${settings.app_url}/brand/medhelpspace-wordmark-email.png"
-                alt="${settings.company_name}" width="397" height="36"
-                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:100%;max-width:397px;height:auto;" />
+                alt="${settings.company_name}" width="245" height="23"
+                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:245px;height:23px;" />
             </td>
           </tr>
           <tr>
