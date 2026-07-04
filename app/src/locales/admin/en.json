@@ -31,6 +31,23 @@
     "title": "Instagram post generator",
     "subtitle": "Rendered with the site's real fonts and colors. Edit the fields, pick a color and specialty, and download.",
     "model": "Template",
+    "tab": {
+      "model": "Template",
+      "content": "Content",
+      "style": "Style",
+      "layers": "Layers",
+      "export": "Export"
+    },
+    "group": {
+      "estudo": "Study",
+      "midia": "Media",
+      "destaque": "Statement",
+      "marketing": "Marketing",
+      "livre": "Freeform"
+    },
+    "editing": "Editing",
+    "singleCard": "Single card",
+    "singleCardHint": "Pick a template to build one card.",
     "color": "Color / specialty",
     "background": "Background",
     "bg": {

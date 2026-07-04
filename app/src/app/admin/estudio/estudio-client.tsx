@@ -3436,6 +3436,26 @@ function buildCaption(templateId: TemplateId, v: Vals, accentKey?: string): stri
   return `${body}\n\n.\n.\n.\n${tags}`;
 }
 
+// Template gallery grouped by intent, so the picker reads as an organized menu
+// instead of a wall of 22 buttons. Every TemplateId appears in exactly one group;
+// labels come from studio.group.* (i18n). Order = most-reached first.
+const TEMPLATE_GROUPS: { key: string; ids: TemplateId[] }[] = [
+  { key: "estudo", ids: ["questao", "flashcard", "dica", "mnemonico", "checklist", "comparacao", "mitoverdade", "cronograma"] },
+  { key: "midia", ids: ["imagem", "clinica", "mockup", "split"] },
+  { key: "destaque", ids: ["frase", "numero", "destaque", "carrossel", "nuvem"] },
+  { key: "marketing", ids: ["promo", "contagem", "depoimento", "recursos"] },
+  { key: "livre", ids: ["blank"] },
+];
+
+// Which group a template belongs to (for the header context chip).
+const GROUP_OF: Record<string, string> = Object.fromEntries(
+  TEMPLATE_GROUPS.flatMap((g) => g.ids.map((id) => [id, g.key])),
+);
+
+// The five workbenches the controls are organized into.
+type PanelTab = "model" | "content" | "style" | "layers" | "export";
+const PANEL_TABS: PanelTab[] = ["model", "content", "style", "layers", "export"];
+
 // ── Studio shell ─────────────────────────────────────────────────────────────
 const SCALES = [0.4, 0.5, 0.62, 1] as const;
 
@@ -3575,6 +3595,7 @@ export function EstudioClient() {
   const [captionCopied, setCaptionCopied] = useState<boolean>(false);
   const [scale, setScale] = useState<number>(0.5);
   const [hideUI, setHideUI] = useState<boolean>(false);
+  const [panelTab, setPanelTab] = useState<PanelTab>("content");
   const [ratioId, setRatioId] = useState<RatioId>("1-1");
   const [frozen, setFrozen] = useState<string | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
@@ -4402,22 +4423,24 @@ export function EstudioClient() {
         <div className="flex flex-col gap-6 p-6 lg:h-[calc(100dvh-7rem)] lg:flex-row">
           {/* ── Controls (scrolls independently) ── */}
           <section
-            className="scrollbar-brand w-full min-h-0 lg:w-[420px] lg:shrink-0 lg:overflow-y-auto"
+            className="w-full min-h-0 lg:w-[420px] lg:shrink-0"
             style={{
               background: "#0a0a12",
               border: "1px solid rgba(255,255,255,0.07)",
               borderRadius: 20,
-              padding: 22,
               display: "flex",
               flexDirection: "column",
-              gap: 20,
+              overflow: "hidden",
             }}
           >
-            <div>
+            <style>{`.mhs-tabbar::-webkit-scrollbar{display:none}.mhs-tabbar{scrollbar-width:none}`}</style>
+
+            {/* ── Persistent header: brand · what's being edited · output size ── */}
+            <div style={{ padding: "16px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}>
               <p
                 style={{
                   fontFamily: FONT_MONO,
-                  fontSize: 11,
+                  fontSize: 10.5,
                   letterSpacing: "0.2em",
                   textTransform: "uppercase",
                   color: "#c084e8",
@@ -4427,48 +4450,142 @@ export function EstudioClient() {
               >
                 {t("studio.eyebrow")}
               </p>
-              <h1
-                style={{
-                  fontFamily: FONT_DISPLAY,
-                  fontWeight: 800,
-                  fontSize: 26,
-                  letterSpacing: "-0.02em",
-                  margin: "6px 0 0",
-                  color: "#fff",
-                }}
-              >
-                {t("studio.title")}
-              </h1>
-              <p style={{ fontSize: 12.5, color: "#8a8a95", margin: "6px 0 0", lineHeight: 1.5 }}>
-                {t("studio.subtitle")}
-              </p>
-            </div>
-
-            {/* Template switcher */}
-            <div>
-              <Label>{t("studio.model")}</Label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {TEMPLATES.map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    onClick={() => setTemplateId(tpl.id)}
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div
                     style={{
-                      padding: "10px 12px",
-                      fontSize: 13,
-                      fontWeight: 600,
-                      borderRadius: 10,
-                      cursor: "pointer",
-                      transition: "all .15s",
-                      color: templateId === tpl.id ? "#fff" : "#cfcfd6",
-                      background: templateId === tpl.id ? "#7a1d91" : "rgba(255,255,255,0.04)",
-                      border:
-                        templateId === tpl.id
-                          ? "1px solid #c084e8"
-                          : "1px solid rgba(255,255,255,0.06)",
+                      fontFamily: FONT_MONO,
+                      fontSize: 9.5,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: "#7f7f8c",
                     }}
                   >
-                    {t(`studio.templates.${tpl.id}`)}
+                    {t("studio.editing")} · {t(`studio.group.${GROUP_OF[templateId]}`)}
+                  </div>
+                  <h1
+                    style={{
+                      fontFamily: FONT_DISPLAY,
+                      fontWeight: 800,
+                      fontSize: 19,
+                      letterSpacing: "-0.02em",
+                      margin: "3px 0 0",
+                      color: "#fff",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {t(`studio.templates.${templateId}`)}
+                  </h1>
+                </div>
+                <span
+                  style={{
+                    flexShrink: 0,
+                    fontFamily: FONT_MONO,
+                    fontSize: 10.5,
+                    color: "#c8b3e0",
+                    background: "rgba(122,29,145,0.18)",
+                    border: "1px solid rgba(192,132,232,0.3)",
+                    borderRadius: 8,
+                    padding: "5px 10px",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {dims.label} · {dims.w}×{dims.h}
+                </span>
+              </div>
+            </div>
+
+            {/* ── Persistent tab bar (scrolls horizontally on narrow panels) ── */}
+            <div
+              className="mhs-tabbar"
+              style={{ display: "flex", gap: 6, padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", overflowX: "auto", flexShrink: 0 }}
+            >
+              {PANEL_TABS.map((tab) => {
+                const active = panelTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setPanelTab(tab)}
+                    style={{
+                      flex: "1 1 auto",
+                      minWidth: 68,
+                      minHeight: 44,
+                      padding: "8px 6px",
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      transition: "all .15s",
+                      color: active ? "#fff" : "#9a9aa6",
+                      background: active ? "#7a1d91" : "transparent",
+                      border: active ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    {t(`studio.tab.${tab}`)}
+                    {tab === "layers" && overlays.length > 0 ? ` · ${overlays.length}` : ""}
                   </button>
+                );
+              })}
+            </div>
+
+            {/* ── Scrollable tab body — only the active tab's controls render ── */}
+            <div
+              className="scrollbar-brand"
+              style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 20, padding: 20 }}
+            >
+
+            {panelTab === "model" && (
+            <>
+            {/* Template gallery, grouped by intent */}
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                <Label>{t("studio.singleCard")}</Label>
+                <span style={{ fontSize: 11, color: "#8a8a95", textAlign: "right" }}>{t("studio.singleCardHint")}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {TEMPLATE_GROUPS.map((grp) => (
+                  <div key={grp.key}>
+                    <div
+                      style={{
+                        fontFamily: FONT_MONO,
+                        fontSize: 9.5,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "#7f7f8c",
+                        marginBottom: 7,
+                      }}
+                    >
+                      {t(`studio.group.${grp.key}`)}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {grp.ids.map((id) => (
+                        <button
+                          key={id}
+                          onClick={() => setTemplateId(id)}
+                          style={{
+                            padding: "10px 12px",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            borderRadius: 10,
+                            cursor: "pointer",
+                            transition: "all .15s",
+                            textAlign: "left",
+                            color: templateId === id ? "#fff" : "#cfcfd6",
+                            background: templateId === id ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                            border:
+                              templateId === id
+                                ? "1px solid #c084e8"
+                                : "1px solid rgba(255,255,255,0.06)",
+                          }}
+                        >
+                          {t(`studio.templates.${id}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -4521,7 +4638,11 @@ export function EstudioClient() {
               onCancel={cancelDeck}
               onPreviewStyle={() => setTemplateId(deckSource === "flashcard" ? "flashcard" : "questao")}
             />
+            </>
+            )}
 
+            {panelTab === "style" && (
+            <>
             {/* Accent picker */}
             <div>
               <Label>{t("studio.color")}</Label>
@@ -4673,7 +4794,11 @@ export function EstudioClient() {
                 />
               ) : null}
             </div>
+            </>
+            )}
 
+            {panelTab === "content" && (
+            <>
             {/* Fields */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {template.fields.length === 0 ? (
@@ -4777,6 +4902,11 @@ export function EstudioClient() {
               </div>
             </div>
 
+            </>
+            )}
+
+            {panelTab === "layers" && (
+            <>
             {/* Logo / sticker overlays */}
             <OverlayControls
               overlays={overlays}
@@ -4790,9 +4920,13 @@ export function EstudioClient() {
               onDuplicate={duplicateOverlay}
               onClear={clearOverlays}
             />
+            </>
+            )}
 
-            {/* Format + zoom + export */}
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 16 }}>
+            {panelTab === "export" && (
+            <>
+            {/* Format + layout + zoom */}
+            <div>
               <Label>{t("studio.format")}</Label>
               <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
                 {RATIOS.map((r) => (
@@ -4874,66 +5008,7 @@ export function EstudioClient() {
                 ))}
               </div>
 
-              <button
-                onClick={download}
-                disabled={busy}
-                style={{
-                  marginTop: 14,
-                  width: "100%",
-                  padding: "13px 0",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  borderRadius: 10,
-                  cursor: busy ? "wait" : "pointer",
-                  color: "#0a0510",
-                  background: "linear-gradient(135deg, #c084e8, #e879f9)",
-                  border: "none",
-                  opacity: busy ? 0.7 : 1,
-                }}
-              >
-                {busy ? t("studio.downloading") : `⬇  ${t("studio.download")}`}
-              </button>
-
-              <button
-                onClick={copyPng}
-                disabled={busy}
-                style={{
-                  marginTop: 8,
-                  width: "100%",
-                  padding: "11px 0",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  borderRadius: 10,
-                  cursor: busy ? "wait" : "pointer",
-                  color: copied ? "#0a0510" : "#e6d3f5",
-                  background: copied ? "#6ee79b" : "rgba(122,29,145,0.22)",
-                  border: copied ? "1px solid #6ee79b" : "1px solid rgba(192,132,232,0.35)",
-                  opacity: busy ? 0.7 : 1,
-                  transition: "background .2s, color .2s",
-                }}
-              >
-                {copied ? `✓  ${t("studio.copied")}` : `⧉  ${t("studio.copy")}`}
-              </button>
-
-              <button
-                onClick={() => setHideUI(true)}
-                style={{
-                  marginTop: 8,
-                  width: "100%",
-                  padding: "11px 0",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  borderRadius: 10,
-                  cursor: "pointer",
-                  color: "#cfcfd6",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                {t("studio.captureMode")}
-              </button>
-
-              <p style={{ fontSize: 11, color: "#8a8a95", margin: "10px 0 0", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 11, color: "#8a8a95", margin: "14px 0 0", lineHeight: 1.5 }}>
                 {t("studio.captureHelp", { w: dims.w * 2, h: dims.h * 2 })}
               </p>
             </div>
@@ -4989,6 +5064,78 @@ export function EstudioClient() {
                   </button>
                 </>
               ) : null}
+            </div>
+            </>
+            )}
+            </div>
+
+            {/* ── Persistent action bar: export is always one click away ── */}
+            <div
+              style={{
+                padding: "14px 16px",
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(6,6,12,0.55)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                flexShrink: 0,
+              }}
+            >
+              <button
+                onClick={download}
+                disabled={busy}
+                style={{
+                  width: "100%",
+                  padding: "13px 0",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  borderRadius: 10,
+                  cursor: busy ? "wait" : "pointer",
+                  color: "#0a0510",
+                  background: "linear-gradient(135deg, #c084e8, #e879f9)",
+                  border: "none",
+                  opacity: busy ? 0.7 : 1,
+                }}
+              >
+                {busy ? t("studio.downloading") : `⬇  ${t("studio.download")}`}
+              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={copyPng}
+                  disabled={busy}
+                  style={{
+                    flex: 1,
+                    padding: "11px 0",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    borderRadius: 10,
+                    cursor: busy ? "wait" : "pointer",
+                    color: copied ? "#0a0510" : "#e6d3f5",
+                    background: copied ? "#6ee79b" : "rgba(122,29,145,0.22)",
+                    border: copied ? "1px solid #6ee79b" : "1px solid rgba(192,132,232,0.35)",
+                    opacity: busy ? 0.7 : 1,
+                    transition: "background .2s, color .2s",
+                  }}
+                >
+                  {copied ? `✓  ${t("studio.copied")}` : `⧉  ${t("studio.copy")}`}
+                </button>
+                <button
+                  onClick={() => setHideUI(true)}
+                  style={{
+                    flex: 1,
+                    padding: "11px 0",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    color: "#cfcfd6",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  {t("studio.captureMode")}
+                </button>
+              </div>
             </div>
           </section>
 

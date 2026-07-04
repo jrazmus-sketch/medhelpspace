@@ -31,6 +31,23 @@
     "title": "Gerador de posts para Instagram",
     "subtitle": "Renderizado com as fontes e cores reais do site. Edite os campos, escolha a cor e a especialidade, e baixe.",
     "model": "Modelo",
+    "tab": {
+      "model": "Modelo",
+      "content": "Conteúdo",
+      "style": "Estilo",
+      "layers": "Camadas",
+      "export": "Exportar"
+    },
+    "group": {
+      "estudo": "Estudo",
+      "midia": "Mídia",
+      "destaque": "Destaque",
+      "marketing": "Marketing",
+      "livre": "Livre"
+    },
+    "editing": "Editando",
+    "singleCard": "Card individual",
+    "singleCardHint": "Escolha um modelo para montar um card.",
     "color": "Cor / especialidade",
     "background": "Fundo",
     "bg": {
