@@ -7,6 +7,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
+import { getFlashcardSubjects, buildFlashcardDeck, getQuizSubjects, buildQuizDeck } from "@/actions/studio-deck";
+import type { DeckSubject, DeckCard, QuizDeckCard, DeckSource } from "@/lib/studio/deck-types";
 
 /*
   MedHelpSpace — Instagram Studio (admin)
@@ -302,6 +304,10 @@ const CardThemeContext = React.createContext<CardTheme>(INK_THEME);
 // During a live-page-mockup export, holds a frozen PNG data-URL of the embedded
 // page so the phone renders a static image the exporter can rasterize.
 const FrozenPageContext = React.createContext<string | null>(null);
+// DOM id for the card root. Default "ig-card" (the visible preview + single-card
+// export). The offscreen deck renderer overrides this to "ig-card-batch" so the
+// batch capture loop targets its own node without colliding with the preview.
+const CardDomIdContext = React.createContext<string>("ig-card");
 
 // Per-card text-size dial. Multiplies the primary COPY sizes (hero headings +
 // body/list text) so a short headline can go big, or a dense card can shrink to
@@ -630,6 +636,7 @@ function CardShell({
   const { canvasH, contentH } = React.useContext(CanvasContext);
   const theme = React.useContext(CardThemeContext);
   const { glow, grid } = React.useContext(DecorContext);
+  const domId = React.useContext(CardDomIdContext);
   const centered = contentH < canvasH;
   // Content zone: full canvas normally; a compact, vertically-centered block in
   // "centered" layout (background decor still spans the whole canvas).
@@ -652,7 +659,7 @@ function CardShell({
   );
   return (
     <div
-      id="ig-card"
+      id={domId}
       style={{
         width: 1080,
         height: canvasH,
@@ -2419,9 +2426,358 @@ type Field = {
   options?: { value: string; labelKey: string }[];
   showIf?: (v: Vals) => boolean;
 };
+// ── Flashcard face (deck generator + manual preview) ─────────────────────────
+// Renders one side of a flashcard: the prompt (front) or the answer (back). The
+// deck generator drives this offscreen once per side; it's also a normal
+// template so a user can preview/tune the style on a sample card before
+// generating a whole deck "in this style".
+
+// Deterministic auto-fit: pick a font multiplier from the visible text length so
+// a one-liner goes big and a dense answer shrinks to fit the fixed canvas. Avoids
+// a measure→re-render loop (predictable, and fast enough for 100-card batches).
+function fitFontMult(text: string): number {
+  const n = (text || "").trim().length;
+  if (n <= 70) return 1.12;
+  if (n <= 130) return 1;
+  if (n <= 210) return 0.86;
+  if (n <= 320) return 0.72;
+  if (n <= 460) return 0.6;
+  return 0.5;
+}
+
+function FlashcardFaceCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
+  const isBack = v.face === "back";
+  const mainText = isBack ? v.answer : v.prompt;
+  const label = isBack ? v.backLabel || "Resposta" : v.frontLabel || "Pergunta";
+  const heroSize = 58 * ts * fitFontMult(mainText || "");
+  const idx = v.idx && v.total ? `${v.idx} / ${v.total}` : v.idx || "";
+  return (
+    <CardShell accent={accent}>
+      {/* face label (filled on the back = "this is the answer") + spec chip */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <span
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 20,
+            fontWeight: 700,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: isBack ? bestOn(accent) : accent,
+            background: isBack ? accent : hexA(accent, 0.12),
+            border: `1.5px solid ${isBack ? accent : hexA(accent, 0.5)}`,
+            borderRadius: 999,
+            padding: "8px 20px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </span>
+        {v.spec ? <SpecChip accent={accent}>{v.spec}</SpecChip> : <span />}
+      </div>
+
+      {/* hero: prompt (front) / answer (back), auto-fit and vertically centered */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "20px 0" }}>
+        <div style={{ width: 56, height: 5, borderRadius: 3, background: accent, marginBottom: 34 }} />
+        <p
+          style={{
+            margin: 0,
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: heroSize,
+            lineHeight: 1.16,
+            letterSpacing: "-0.02em",
+            color: theme.fgStrong,
+          }}
+        >
+          {mainText}
+        </p>
+
+        {isBack && v.tip ? (
+          <div
+            style={{
+              marginTop: 40,
+              padding: "24px 28px",
+              borderLeft: `4px solid ${accent}`,
+              background: hexA(accent, 0.08),
+              borderRadius: "0 14px 14px 0",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: FONT_MONO,
+                fontSize: 18,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: accent,
+                marginBottom: 8,
+              }}
+            >
+              Dica
+            </div>
+            <div style={{ fontSize: 30 * ts, color: `rgba(${theme.fgRgb}, 0.82)`, lineHeight: 1.4 }}>{v.tip}</div>
+          </div>
+        ) : null}
+
+        {!isBack && v.hint ? (
+          <div style={{ marginTop: 40, fontFamily: FONT_MONO, fontSize: 24, fontWeight: 600, letterSpacing: "0.04em", color: accent }}>
+            {v.hint}
+          </div>
+        ) : null}
+      </div>
+
+      {idx ? (
+        <div style={{ fontFamily: FONT_MONO, fontSize: 20, color: `rgba(${theme.fgRgb}, 0.4)`, letterSpacing: "0.1em", marginBottom: 4 }}>
+          {idx}
+        </div>
+      ) : null}
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Quiz face (question / gabarito) — deck generator only ────────────────────
+// Question face: stem + A/B/C/D. Gabarito face: correct option highlighted +
+// "why" explanation. `v.options` = newline-joined; `v.correct` = 0-based index.
+function QuizFaceCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
+  const isAns = v.face === "a";
+  const options = toLines(v.options);
+  const correct = Number(v.correct);
+  const idx = v.idx && v.total ? `${v.idx} / ${v.total}` : v.idx || "";
+  const letter = (i: number) => String.fromCharCode(65 + i);
+
+  if (!isAns) {
+    const stemSize = 40 * ts * fitFontMult(v.stem || "");
+    return (
+      <CardShell accent={accent}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <Eyebrow accent={accent}>{v.source || "Questão"}</Eyebrow>
+          {v.spec ? <SpecChip accent={accent}>{v.spec}</SpecChip> : <span />}
+        </div>
+        <p
+          style={{
+            marginTop: 34,
+            fontFamily: FONT_SANS,
+            fontWeight: 700,
+            fontSize: stemSize,
+            lineHeight: 1.28,
+            color: theme.fgStrong,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {v.stem}
+        </p>
+        <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+          {options.map((opt, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 20,
+                padding: "15px 22px",
+                border: `1px solid rgba(${theme.fgRgb}, 0.08)`,
+                background: `rgba(${theme.fgRgb}, 0.02)`,
+                borderRadius: 14,
+              }}
+            >
+              <span
+                style={{
+                  flexShrink: 0,
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  border: `1.5px solid ${hexA(accent, 0.6)}`,
+                  color: accent,
+                  fontFamily: FONT_MONO,
+                  fontWeight: 700,
+                  fontSize: 24,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {letter(i)}
+              </span>
+              <span style={{ fontSize: 26 * ts, color: `rgba(${theme.fgRgb}, 0.9)`, lineHeight: 1.3 }}>{opt}</span>
+            </div>
+          ))}
+        </div>
+        {v.hint ? (
+          <div
+            style={{
+              marginTop: 18,
+              textAlign: "center",
+              fontSize: 25 * ts,
+              color: theme.fgStrong,
+              background: hexA(accent, 0.12),
+              border: `1px solid ${hexA(accent, 0.4)}`,
+              borderRadius: 999,
+              padding: "15px 26px",
+            }}
+          >
+            {v.hint}
+          </div>
+        ) : null}
+        {idx ? (
+          <div style={{ marginTop: 14, fontFamily: FONT_MONO, fontSize: 20, color: `rgba(${theme.fgRgb}, 0.4)`, letterSpacing: "0.1em" }}>
+            {idx}
+          </div>
+        ) : null}
+        <BrandFooter accent={accent} />
+      </CardShell>
+    );
+  }
+
+  const correctText = correct >= 0 ? options[correct] ?? "" : "";
+  const explSize = 30 * ts * Math.min(1, fitFontMult(v.explanation || "") + 0.1);
+  return (
+    <CardShell accent={accent}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <span
+          style={{
+            fontFamily: FONT_MONO,
+            fontSize: 20,
+            fontWeight: 700,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: bestOn(accent),
+            background: accent,
+            border: `1.5px solid ${accent}`,
+            borderRadius: 999,
+            padding: "8px 20px",
+          }}
+        >
+          Gabarito
+        </span>
+        {v.spec ? <SpecChip accent={accent}>{v.spec}</SpecChip> : <span />}
+      </div>
+      <div
+        style={{
+          marginTop: 40,
+          display: "flex",
+          alignItems: "center",
+          gap: 22,
+          padding: "24px 26px",
+          border: `2px solid ${accent}`,
+          background: hexA(accent, 0.14),
+          borderRadius: 18,
+        }}
+      >
+        <span
+          style={{
+            flexShrink: 0,
+            width: 58,
+            height: 58,
+            borderRadius: "50%",
+            background: accent,
+            color: bestOn(accent),
+            fontFamily: FONT_MONO,
+            fontWeight: 800,
+            fontSize: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {letter(correct >= 0 ? correct : 0)}
+        </span>
+        <span style={{ fontSize: 32 * ts, fontWeight: 700, color: theme.fgStrong, lineHeight: 1.28 }}>{correctText}</span>
+      </div>
+      {v.explanation ? (
+        <div style={{ marginTop: 30, flex: 1, overflow: "hidden" }}>
+          <div style={{ fontFamily: FONT_MONO, fontSize: 18, letterSpacing: "0.16em", textTransform: "uppercase", color: accent, marginBottom: 12 }}>
+            Por quê
+          </div>
+          <p style={{ margin: 0, fontSize: explSize, lineHeight: 1.45, color: `rgba(${theme.fgRgb}, 0.82)` }}>{v.explanation}</p>
+        </div>
+      ) : (
+        <div style={{ flex: 1 }} />
+      )}
+      {idx ? (
+        <div style={{ fontFamily: FONT_MONO, fontSize: 20, color: `rgba(${theme.fgRgb}, 0.4)`, letterSpacing: "0.1em", marginBottom: 4 }}>
+          {idx}
+        </div>
+      ) : null}
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
+// ── Cover / outro slide — brackets a generated deck into a post-ready carousel ─
+function DeckCoverCard({ v, accent }: { v: Vals; accent: string }) {
+  const theme = React.useContext(CardThemeContext);
+  const ts = useTS();
+  const isOutro = v.coverKind === "outro";
+  return (
+    <CardShell accent={accent}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+        {v.eyebrow ? (
+          <div
+            style={{
+              fontFamily: FONT_MONO,
+              fontSize: 22,
+              fontWeight: 600,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: accent,
+              marginBottom: 28,
+            }}
+          >
+            {v.eyebrow}
+          </div>
+        ) : null}
+        <div style={{ width: 72, height: 5, borderRadius: 3, background: accent, marginBottom: 40 }} />
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: FONT_DISPLAY,
+            fontWeight: 800,
+            fontSize: 84 * ts * fitFontMult(v.title || ""),
+            lineHeight: 1.05,
+            letterSpacing: "-0.03em",
+            color: theme.fgStrong,
+            maxWidth: "16ch",
+          }}
+        >
+          {v.title}
+        </h1>
+        {v.sub ? (
+          <p style={{ marginTop: 30, fontSize: 34 * ts, lineHeight: 1.4, color: `rgba(${theme.fgRgb}, 0.7)`, maxWidth: "22ch" }}>{v.sub}</p>
+        ) : null}
+        {!isOutro && v.hint ? (
+          <div style={{ marginTop: 44, fontFamily: FONT_MONO, fontSize: 26, fontWeight: 600, color: accent }}>{v.hint}</div>
+        ) : null}
+        {isOutro && v.cta ? (
+          <div
+            style={{
+              marginTop: 44,
+              fontFamily: FONT_SANS,
+              fontWeight: 700,
+              fontSize: 32,
+              color: bestOn(accent),
+              background: accent,
+              borderRadius: 16,
+              padding: "20px 34px",
+              boxShadow: `0 0 60px ${hexA(accent, 0.35)}`,
+            }}
+          >
+            {v.cta}
+          </div>
+        ) : null}
+      </div>
+      <BrandFooter accent={accent} />
+    </CardShell>
+  );
+}
+
 type TemplateId =
   | "blank"
   | "questao"
+  | "flashcard"
   | "dica"
   | "promo"
   | "frase"
@@ -2486,6 +2842,38 @@ const TEMPLATES: Template[] = [
       c: "Solicitar cintilografia miocárdica",
       d: "Iniciar apenas anticoagulação plena",
       cta: "Qual a alternativa correta? Responde aí nos comentários 👇",
+    },
+  },
+  {
+    id: "flashcard",
+    Render: FlashcardFaceCard,
+    fields: [
+      {
+        key: "face",
+        labelKey: "fcFace",
+        type: "select",
+        options: [
+          { value: "front", labelKey: "fcFront" },
+          { value: "back", labelKey: "fcBack" },
+        ],
+      },
+      { key: "spec", labelKey: "spec" },
+      { key: "prompt", labelKey: "fcPrompt", type: "textarea" },
+      { key: "answer", labelKey: "fcAnswer", type: "textarea" },
+      { key: "tip", labelKey: "fcTip", type: "textarea" },
+      { key: "frontLabel", labelKey: "fcFrontLabel" },
+      { key: "backLabel", labelKey: "fcBackLabel" },
+      { key: "hint", labelKey: "fcHint" },
+    ],
+    defaults: {
+      face: "front",
+      spec: "Cardiologia",
+      prompt: "Qual é a tríade clássica da estenose aórtica sintomática?",
+      answer: "Angina, síncope e dispneia. O surgimento de sintomas indica troca valvar cirúrgica.",
+      tip: "Sintoma na estenose aórtica = indicação cirúrgica.",
+      frontLabel: "Pergunta",
+      backLabel: "Resposta",
+      hint: "Deslize para ver a resposta →",
     },
   },
   {
@@ -2946,6 +3334,12 @@ function captionBody(templateId: TemplateId, v: Vals): string {
         lines([v.a && "A) " + v.a, v.b && "B) " + v.b, v.c && "C) " + v.c, v.d && "D) " + v.d]),
         v.cta,
       ]);
+    case "flashcard":
+      return sec([
+        v.prompt ? "❓ " + v.prompt : "",
+        v.answer ? "✅ " + v.answer : "",
+        v.tip ? "📌 " + v.tip : "",
+      ]);
     case "dica":
       return sec([`💡 ${v.title}`, v.body, v.pearl ? "📌 " + v.pearl : ""]);
     case "promo":
@@ -3073,6 +3467,94 @@ function exportFilter(node: Node): boolean {
   return !(bad.test(id) || bad.test(cls) || bad.test(label));
 }
 
+// PNG data-URL → raw bytes for zipping (fflate wants Uint8Array).
+function dataUrlToBytes(dataUrl: string): Uint8Array {
+  const comma = dataUrl.indexOf(",");
+  const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+// Which offscreen card component a batch slide renders through.
+type DeckFaceKind = "flashcard" | "quiz" | "chrome";
+
+// Distinct specialty labels present in a deck, joined for the caption header.
+function deckSpecialtiesLabel(names: (string | null)[]): string {
+  const uniq = [...new Set(names.filter((n): n is string => !!n))];
+  return uniq.join(", ");
+}
+
+// A plain-text companion file bundled into the deck ZIP: a suggested Instagram
+// caption + hashtags, then every card's prompt/answer as an answer key.
+function buildDeckCaptions(cards: DeckCard[]): string {
+  const specs = deckSpecialtiesLabel(cards.map((c) => c.specialtyName));
+  const lines: string[] = [
+    "MedHelpSpace — Flashcards para Instagram",
+    specs ? `Assuntos: ${specs}` : "",
+    "",
+    "Sugestão de legenda:",
+    `Flashcards${specs ? " de " + specs : ""} pra fixar de vez 🧠 Deslize, teste você mesmo e salve pra revisar depois. 👇`,
+    toTags(cards[0]?.specialtyName ?? "", undefined),
+    "",
+    "— Cartões —",
+    "",
+  ];
+  cards.forEach((c, i) => {
+    lines.push(`${i + 1}. [${c.specialtyName ?? c.subjectTitle}]`);
+    lines.push(`   P: ${c.prompt}`);
+    lines.push(`   R: ${c.answer}`);
+    if (c.tip) lines.push(`   Dica: ${c.tip}`);
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
+// Same, for a quiz deck: caption + gabarito answer key.
+function buildQuizCaptions(cards: QuizDeckCard[]): string {
+  const specs = deckSpecialtiesLabel(cards.map((c) => c.specialtyName));
+  const lines: string[] = [
+    "MedHelpSpace — Questões para Instagram",
+    specs ? `Assuntos: ${specs}` : "",
+    "",
+    "Sugestão de legenda:",
+    `Questões${specs ? " de " + specs : ""} no estilo da prova 📝 Responde aí nos comentários e deslize pro gabarito. 👇`,
+    toTags(cards[0]?.specialtyName ?? "", undefined),
+    "",
+    "— Gabarito —",
+    "",
+  ];
+  cards.forEach((c, i) => {
+    const letter = String.fromCharCode(65 + Math.max(0, c.correctIndex));
+    lines.push(`${i + 1}. [${c.specialtyName ?? c.subjectTitle}]${c.source ? " · " + c.source : ""}`);
+    lines.push(`   ${c.stem}`);
+    lines.push(`   Gabarito: ${letter}) ${c.options[c.correctIndex] ?? ""}`);
+    if (c.explanation) lines.push(`   Por quê: ${c.explanation}`);
+    lines.push("");
+  });
+  return lines.join("\n");
+}
+
+// Cross-run dedupe: a per-source localStorage set of already-exported item ids.
+function readSeenIds(key: string): number[] {
+  try {
+    const raw = localStorage.getItem(key);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter((n): n is number => typeof n === "number") : [];
+  } catch {
+    return [];
+  }
+}
+function writeSeenIds(key: string, ids: number[]): void {
+  try {
+    // Keep the most recent ~2000 so the log doesn't grow unbounded.
+    localStorage.setItem(key, JSON.stringify([...new Set(ids)].slice(-2000)));
+  } catch {
+    /* storage blocked/full — dedupe is best-effort */
+  }
+}
+
 export function EstudioClient() {
   const { t } = useTranslation();
   const [templateId, setTemplateId] = useState<TemplateId>("questao");
@@ -3102,6 +3584,30 @@ export function EstudioClient() {
     for (const tpl of TEMPLATES) init[tpl.id] = { ...tpl.defaults };
     return init;
   });
+
+  // ── Deck generator (flashcards + quiz) ──
+  // `batchCard` drives the offscreen render node during a batch: set it to a
+  // slide (kind picks the component), wait a frame, rasterize #ig-card-batch.
+  const [batchCard, setBatchCard] = useState<{ kind: DeckFaceKind; vals: Vals } | null>(null);
+  const [deckOpen, setDeckOpen] = useState<boolean>(false);
+  const [deckSource, setDeckSource] = useState<DeckSource>("flashcard");
+  const [deckSubjects, setDeckSubjects] = useState<DeckSubject[] | null>(null);
+  const [deckLoading, setDeckLoading] = useState<boolean>(false);
+  const [deckSel, setDeckSel] = useState<Record<number, number>>({}); // subject key → count
+  const [deckPerSubject, setDeckPerSubject] = useState<number>(5);
+  const [deckShuffle, setDeckShuffle] = useState<boolean>(true);
+  const [deckInterleave, setDeckInterleave] = useState<boolean>(true);
+  const [deckNumbering, setDeckNumbering] = useState<boolean>(true);
+  const [deckIncludeTip, setDeckIncludeTip] = useState<boolean>(true);
+  const [deckSkipImages, setDeckSkipImages] = useState<boolean>(true);
+  const [deckCover, setDeckCover] = useState<boolean>(true);
+  const [deckDedupe, setDeckDedupe] = useState<boolean>(false);
+  const [deckCap, setDeckCap] = useState<number>(50);
+  const [deckBusy, setDeckBusy] = useState<boolean>(false);
+  const [deckProgress, setDeckProgress] = useState<{ done: number; total: number } | null>(null);
+  const [deckError, setDeckError] = useState<string | null>(null);
+  const [deckDone, setDeckDone] = useState<string | null>(null);
+  const deckCancel = React.useRef(false);
 
   const template = TEMPLATES.find((tpl) => tpl.id === templateId)!;
   const values = allValues[templateId];
@@ -3390,6 +3896,270 @@ export function EstudioClient() {
     }
   }, [busy, capture, t]);
 
+  // ── Deck generator ──
+  // Fetch the subject list for a given source (flashcards → deck pages; quiz →
+  // specialties). Takes the source explicitly so a source switch can fetch the
+  // new list without waiting for state to settle.
+  const fetchSubjectsFor = useCallback(
+    async (src: DeckSource) => {
+      setDeckLoading(true);
+      setDeckError(null);
+      try {
+        setDeckSubjects(src === "flashcard" ? await getFlashcardSubjects() : await getQuizSubjects());
+      } catch (err) {
+        console.error("[estudio] deck subjects failed", err);
+        setDeckError(t("studio.deck.loadFailed"));
+      } finally {
+        setDeckLoading(false);
+      }
+    },
+    [t],
+  );
+
+  // Toggle the panel; lazy-load subjects the first time it opens (in the click
+  // handler, not an effect — reads pre-toggle `deckOpen`/`deckSubjects`).
+  const toggleDeckOpen = useCallback(() => {
+    setDeckOpen((prev) => !prev);
+    if (!deckOpen && !deckSubjects) fetchSubjectsFor(deckSource);
+  }, [deckOpen, deckSubjects, deckSource, fetchSubjectsFor]);
+
+  // Switch source (flashcards ⇄ quiz): reset the picker and reload subjects.
+  const changeDeckSource = useCallback(
+    (src: DeckSource) => {
+      if (src === deckSource) return;
+      setDeckSource(src);
+      setDeckSubjects(null);
+      setDeckSel({});
+      setDeckDone(null);
+      setDeckError(null);
+      fetchSubjectsFor(src);
+    },
+    [deckSource, fetchSubjectsFor],
+  );
+
+  const toggleDeckSubject = useCallback(
+    (pageId: number, cardCount: number) => {
+      setDeckSel((prev) => {
+        const next = { ...prev };
+        if (pageId in next) delete next[pageId];
+        else next[pageId] = Math.max(1, Math.min(deckPerSubject, cardCount));
+        return next;
+      });
+    },
+    [deckPerSubject],
+  );
+
+  const setDeckCount = useCallback((pageId: number, count: number) => {
+    setDeckSel((prev) => ({ ...prev, [pageId]: Math.max(1, count) }));
+  }, []);
+
+  // Rasterize the offscreen deck node (#ig-card-batch) at true 2× resolution.
+  const rasterizeBatch = useCallback(async (): Promise<string | null> => {
+    const { domToPng } = await import("modern-screenshot");
+    const node = document.getElementById("ig-card-batch");
+    if (!node) return null;
+    const d = RATIOS.find((r) => r.id === ratioId)!;
+    return domToPng(node, { width: d.w, height: d.h, scale: 2, filter: exportFilter });
+  }, [ratioId]);
+
+  const cancelDeck = useCallback(() => {
+    deckCancel.current = true;
+  }, []);
+
+  const generateDeck = useCallback(async () => {
+    if (deckBusy) return;
+    const selections = Object.entries(deckSel)
+      .map(([key, count]) => ({ key: Number(key), count }))
+      .filter((s) => s.count > 0);
+    if (selections.length === 0) {
+      setDeckError(t("studio.deck.pickOne"));
+      return;
+    }
+    setDeckBusy(true);
+    setDeckError(null);
+    setDeckDone(null);
+    deckCancel.current = false;
+    try {
+      const seenStoreKey = `mhs-estudio-deck-seen-${deckSource}`;
+      const excludeIds = deckDedupe ? readSeenIds(seenStoreKey) : [];
+      const opts = {
+        shuffle: deckShuffle,
+        interleave: deckInterleave,
+        skipImageCards: deckSkipImages,
+        excludeIds,
+        cap: deckCap,
+      };
+
+      type Slide = { name: string; kind: DeckFaceKind; vals: Vals };
+      const queue: Slide[] = [];
+      const exportedIds: number[] = [];
+      let cardCount = 0;
+      let specLabel = "";
+      let captions = "";
+
+      if (deckSource === "flashcard") {
+        const cards = await buildFlashcardDeck(selections, opts);
+        if (cards.length === 0) {
+          setDeckError(t("studio.deck.empty"));
+          return;
+        }
+        cardCount = cards.length;
+        captions = buildDeckCaptions(cards);
+        specLabel = deckSpecialtiesLabel(cards.map((c) => c.specialtyName));
+        // Front/back labels + hint come from the flashcard template's fields so
+        // "generate in this style" honors whatever the user set up on the sample.
+        const style = allValues.flashcard ?? {};
+        const frontLabel = style.frontLabel || "Pergunta";
+        const backLabel = style.backLabel || "Resposta";
+        const hint = style.hint ?? "";
+        cards.forEach((c, i) => {
+          const no = String(i + 1).padStart(2, "0");
+          const base: Vals = {
+            spec: c.specialtyName ?? c.subjectTitle ?? "",
+            prompt: c.prompt,
+            answer: c.answer,
+            tip: deckIncludeTip ? c.tip ?? "" : "",
+            idx: deckNumbering ? String(i + 1) : "",
+            total: deckNumbering ? String(cards.length) : "",
+            frontLabel,
+            backLabel,
+            hint,
+          };
+          queue.push({ name: `${no}-frente.png`, kind: "flashcard", vals: { ...base, face: "front" } });
+          queue.push({ name: `${no}-verso.png`, kind: "flashcard", vals: { ...base, face: "back" } });
+          exportedIds.push(c.id);
+        });
+      } else {
+        const cards = await buildQuizDeck(selections, opts);
+        if (cards.length === 0) {
+          setDeckError(t("studio.deck.empty"));
+          return;
+        }
+        cardCount = cards.length;
+        captions = buildQuizCaptions(cards);
+        specLabel = deckSpecialtiesLabel(cards.map((c) => c.specialtyName));
+        cards.forEach((c, i) => {
+          const no = String(i + 1).padStart(2, "0");
+          const base: Vals = {
+            spec: c.specialtyName ?? c.subjectTitle ?? "",
+            source: c.source ?? "",
+            stem: c.stem,
+            options: c.options.join("\n"),
+            correct: String(c.correctIndex),
+            explanation: c.explanation ?? "",
+            idx: deckNumbering ? String(i + 1) : "",
+            total: deckNumbering ? String(cards.length) : "",
+            hint: "Qual a resposta? Deslize pro gabarito →",
+          };
+          queue.push({ name: `${no}-questao.png`, kind: "quiz", vals: { ...base, face: "q" } });
+          queue.push({ name: `${no}-gabarito.png`, kind: "quiz", vals: { ...base, face: "a" } });
+          exportedIds.push(c.id);
+        });
+      }
+
+      // Bracket the deck with a branded cover + CTA outro so it's post-ready.
+      if (deckCover) {
+        const label = specLabel || "Revalida";
+        queue.unshift({
+          name: "00-capa.png",
+          kind: "chrome",
+          vals: {
+            coverKind: "cover",
+            eyebrow: deckSource === "flashcard" ? "Revisão ativa" : "Treino de prova",
+            title: deckSource === "flashcard" ? `Flashcards de ${label}` : `Questões de ${label}`,
+            hint: "Deslize →",
+          },
+        });
+        queue.push({
+          name: `${String(cardCount + 1).padStart(2, "0")}-final.png`,
+          kind: "chrome",
+          vals: {
+            coverKind: "outro",
+            eyebrow: "MedHelpSpace",
+            title: "Quer estudar assim todo dia?",
+            sub: "Questões comentadas, flashcards e revisão ativa pro Revalida.",
+            cta: "medhelpspace.com.br",
+          },
+        });
+      }
+
+      setDeckProgress({ done: 0, total: queue.length });
+      // Fonts must be ready or slide #1 rasterizes in a fallback font.
+      try {
+        await document.fonts.ready;
+      } catch {
+        /* older engines — best effort */
+      }
+
+      const files: Record<string, Uint8Array> = {};
+      for (let i = 0; i < queue.length; i++) {
+        if (deckCancel.current) break;
+        setBatchCard({ kind: queue[i].kind, vals: queue[i].vals });
+        // let React commit the new content, then settle one extra frame
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await new Promise((r) => setTimeout(r, 40));
+        const png = await rasterizeBatch();
+        if (png) files[queue[i].name] = dataUrlToBytes(png);
+        setDeckProgress({ done: i + 1, total: queue.length });
+      }
+      setBatchCard(null);
+
+      const captured = Object.keys(files).length;
+      if (captured === 0) {
+        setDeckError(deckCancel.current ? t("studio.deck.canceled") : t("studio.deck.captureFailed"));
+        return;
+      }
+      files["legendas.txt"] = new TextEncoder().encode(captions);
+
+      const { zip } = await import("fflate");
+      const zipped: Uint8Array = await new Promise((resolve, reject) =>
+        zip(files, { level: 6 }, (err, data) => (err ? reject(err) : resolve(data))),
+      );
+      // Copy into a fresh ArrayBuffer-backed view so the Blob part type is
+      // concrete (fflate returns Uint8Array<ArrayBufferLike>).
+      const blob = new Blob([new Uint8Array(zipped)], { type: "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `medhelpspace-${deckSource === "flashcard" ? "flashcards" : "questoes"}-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      // Remember exported ids for cross-run dedupe (only on a full, non-canceled run).
+      if (deckDedupe && !deckCancel.current) writeSeenIds(seenStoreKey, excludeIds.concat(exportedIds));
+
+      setDeckDone(
+        deckCancel.current
+          ? t("studio.deck.doneCanceled", { n: cardCount })
+          : t("studio.deck.done", { n: cardCount, slides: captured }),
+      );
+    } catch (err) {
+      console.error("[estudio] deck generation failed", err);
+      setDeckError(t("studio.deck.failed"));
+      setBatchCard(null);
+    } finally {
+      setDeckBusy(false);
+      setDeckProgress(null);
+    }
+  }, [
+    deckBusy,
+    deckSel,
+    deckSource,
+    deckShuffle,
+    deckInterleave,
+    deckSkipImages,
+    deckCap,
+    deckIncludeTip,
+    deckNumbering,
+    deckCover,
+    deckDedupe,
+    allValues,
+    rasterizeBatch,
+    t,
+  ]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setHideUI(false);
@@ -3439,6 +4209,50 @@ export function EstudioClient() {
 
   return (
     <DecorContext.Provider value={{ glow: glowOn, grid: gridOn }}>
+    <>
+    {/* Offscreen deck renderer — mounts one flashcard face at a time during a
+        batch so the capture loop can rasterize #ig-card-batch without disturbing
+        the visible preview. Inherits the current style (accent/bg/footer/ratio/
+        overlays). */}
+    {batchCard ? (
+      <div style={{ position: "fixed", left: -20000, top: 0, zIndex: -1, pointerEvents: "none" }} aria-hidden>
+        <CanvasContext.Provider value={{ canvasH: dims.h, contentH }}>
+          <CardHeightContext.Provider value={contentH}>
+            <CardThemeContext.Provider value={cardTheme}>
+              <TextScaleContext.Provider value={textMult}>
+                <OverlayContext.Provider
+                  value={{
+                    overlays,
+                    accent: renderAccent,
+                    editable: false,
+                    selectedId: null,
+                    effectiveScale: 1,
+                    canvasH: dims.h,
+                    onSelect: () => {},
+                    onMove: () => {},
+                    onUpdate: () => {},
+                  }}
+                >
+                  <FooterContext.Provider value={{ show: footerShow, right: footerText }}>
+                    <FrozenPageContext.Provider value={null}>
+                      <CardDomIdContext.Provider value="ig-card-batch">
+                        {batchCard.kind === "quiz" ? (
+                          <QuizFaceCard v={batchCard.vals} accent={renderAccent} />
+                        ) : batchCard.kind === "chrome" ? (
+                          <DeckCoverCard v={batchCard.vals} accent={renderAccent} />
+                        ) : (
+                          <FlashcardFaceCard v={batchCard.vals} accent={renderAccent} />
+                        )}
+                      </CardDomIdContext.Provider>
+                    </FrozenPageContext.Provider>
+                  </FooterContext.Provider>
+                </OverlayContext.Provider>
+              </TextScaleContext.Provider>
+            </CardThemeContext.Provider>
+          </CardHeightContext.Provider>
+        </CanvasContext.Provider>
+      </div>
+    ) : null}
     <div
       style={{
         background: "#050509",
@@ -3574,6 +4388,45 @@ export function EstudioClient() {
                 ))}
               </div>
             </div>
+
+            {/* Flashcard deck generator */}
+            <DeckBuilderPanel
+              open={deckOpen}
+              onToggleOpen={toggleDeckOpen}
+              source={deckSource}
+              onSource={changeDeckSource}
+              subjects={deckSubjects}
+              loading={deckLoading}
+              error={deckError}
+              done={deckDone}
+              sel={deckSel}
+              perSubject={deckPerSubject}
+              onPerSubject={setDeckPerSubject}
+              onToggleSubject={toggleDeckSubject}
+              onSetCount={setDeckCount}
+              shuffle={deckShuffle}
+              onShuffle={setDeckShuffle}
+              interleave={deckInterleave}
+              onInterleave={setDeckInterleave}
+              numbering={deckNumbering}
+              onNumbering={setDeckNumbering}
+              includeTip={deckIncludeTip}
+              onIncludeTip={setDeckIncludeTip}
+              showTip={deckSource === "flashcard"}
+              skipImages={deckSkipImages}
+              onSkipImages={setDeckSkipImages}
+              cover={deckCover}
+              onCover={setDeckCover}
+              dedupe={deckDedupe}
+              onDedupe={setDeckDedupe}
+              cap={deckCap}
+              onCap={setDeckCap}
+              busy={deckBusy}
+              progress={deckProgress}
+              onGenerate={generateDeck}
+              onCancel={cancelDeck}
+              onPreviewStyle={() => setTemplateId(deckSource === "flashcard" ? "flashcard" : "questao")}
+            />
 
             {/* Accent picker */}
             <div>
@@ -4157,7 +5010,342 @@ export function EstudioClient() {
         </div>
       )}
     </div>
+    </>
     </DecorContext.Provider>
+  );
+}
+
+// ── Deck builder panel (flashcard series generator) ──────────────────────────
+function DeckStepper({
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  disabled,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (n: number) => void;
+  disabled?: boolean;
+}) {
+  const clamp = (n: number) => Math.max(min, Math.min(max, n));
+  const btn: React.CSSProperties = {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.05)",
+    color: "#e8e8ee",
+    fontSize: 15,
+    lineHeight: 1,
+    cursor: disabled ? "default" : "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <button onClick={() => !disabled && onChange(clamp(value - step))} disabled={disabled} style={btn}>
+        −
+      </button>
+      <span style={{ minWidth: 26, textAlign: "center", fontFamily: FONT_MONO, fontSize: 13, color: "#fff" }}>{value}</span>
+      <button onClick={() => !disabled && onChange(clamp(value + step))} disabled={disabled} style={btn}>
+        +
+      </button>
+    </div>
+  );
+}
+
+function DeckToggle({
+  label,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (b: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label
+      style={{ display: "flex", alignItems: "center", gap: 9, cursor: disabled ? "default" : "pointer", fontSize: 12.5, color: "#cfcfd6" }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        style={{ accentColor: "#7a1d91", width: 15, height: 15, cursor: disabled ? "default" : "pointer" }}
+      />
+      {label}
+    </label>
+  );
+}
+
+type DeckBuilderPanelProps = {
+  open: boolean;
+  onToggleOpen: () => void;
+  source: DeckSource;
+  onSource: (s: DeckSource) => void;
+  subjects: DeckSubject[] | null;
+  loading: boolean;
+  error: string | null;
+  done: string | null;
+  sel: Record<number, number>;
+  perSubject: number;
+  onPerSubject: (n: number) => void;
+  onToggleSubject: (key: number, count: number) => void;
+  onSetCount: (key: number, count: number) => void;
+  shuffle: boolean;
+  onShuffle: (b: boolean) => void;
+  interleave: boolean;
+  onInterleave: (b: boolean) => void;
+  numbering: boolean;
+  onNumbering: (b: boolean) => void;
+  includeTip: boolean;
+  onIncludeTip: (b: boolean) => void;
+  showTip: boolean;
+  skipImages: boolean;
+  onSkipImages: (b: boolean) => void;
+  cover: boolean;
+  onCover: (b: boolean) => void;
+  dedupe: boolean;
+  onDedupe: (b: boolean) => void;
+  cap: number;
+  onCap: (n: number) => void;
+  busy: boolean;
+  progress: { done: number; total: number } | null;
+  onGenerate: () => void;
+  onCancel: () => void;
+  onPreviewStyle: () => void;
+};
+
+function DeckBuilderPanel(props: DeckBuilderPanelProps) {
+  const { t } = useTranslation();
+  const {
+    open, onToggleOpen, source, onSource, subjects, loading, error, done, sel, perSubject, onPerSubject,
+    onToggleSubject, onSetCount, shuffle, onShuffle, interleave, onInterleave,
+    numbering, onNumbering, includeTip, onIncludeTip, showTip, skipImages, onSkipImages,
+    cover, onCover, dedupe, onDedupe, cap, onCap, busy, progress, onGenerate, onCancel, onPreviewStyle,
+  } = props;
+
+  const selectedIds = Object.keys(sel).map(Number);
+  const sumCards = selectedIds.reduce((n, id) => n + (sel[id] ?? 0), 0);
+  const totalCards = Math.min(cap, sumCards);
+  const slides = totalCards * 2;
+
+  const smallBtn: React.CSSProperties = {
+    width: "100%",
+    padding: "9px 0",
+    fontSize: 12,
+    fontWeight: 600,
+    borderRadius: 9,
+    cursor: "pointer",
+    color: "#e6d3f5",
+    background: "rgba(122,29,145,0.22)",
+    border: "1px solid rgba(192,132,232,0.35)",
+  };
+  const dim: React.CSSProperties = { fontSize: 12, color: "#8a8a95", margin: 0, lineHeight: 1.5 };
+
+  return (
+    <div style={{ border: "1px solid rgba(192,132,232,0.28)", background: "rgba(122,29,145,0.08)", borderRadius: 14, padding: 14 }}>
+      <button
+        onClick={onToggleOpen}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 15 }}>🃏</span>
+          <span style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 15, color: "#f0e3fb" }}>{t("studio.deck.title")}</span>
+        </span>
+        <span style={{ color: "#c084e8", fontSize: 12 }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open ? (
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Source: flashcards vs quiz questions */}
+          <div style={{ display: "flex", gap: 6 }}>
+            {(["flashcard", "quiz"] as const).map((src) => (
+              <button
+                key={src}
+                onClick={() => onSource(src)}
+                disabled={busy}
+                style={{
+                  flex: 1,
+                  padding: "9px 0",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  cursor: busy ? "default" : "pointer",
+                  color: source === src ? "#fff" : "#cfcfd6",
+                  background: source === src ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                  border: source === src ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
+                {t(src === "flashcard" ? "studio.deck.sourceFlashcards" : "studio.deck.sourceQuiz")}
+              </button>
+            ))}
+          </div>
+          <p style={{ ...dim, color: "#a99bb8" }}>{t("studio.deck.help")}</p>
+          <button onClick={onPreviewStyle} style={smallBtn}>
+            {t("studio.deck.previewStyle")}
+          </button>
+
+          {loading ? <p style={dim}>{t("studio.deck.loading")}</p> : null}
+          {error ? <p style={{ ...dim, color: "#ff9b9b" }}>{error}</p> : null}
+
+          {subjects && subjects.length > 0 ? (
+            <>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 12, color: "#cfcfd6" }}>{t("studio.deck.perSubject")}</span>
+                <DeckStepper value={perSubject} min={1} max={50} onChange={onPerSubject} disabled={busy} />
+              </div>
+
+              <div
+                className="scrollbar-brand"
+                style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, paddingRight: 4 }}
+              >
+                {subjects.map((s) => {
+                  const on = s.key in sel;
+                  const noun = t(source === "flashcard" ? "studio.deck.cards" : "studio.deck.questions");
+                  return (
+                    <div
+                      key={s.key}
+                      style={{
+                        border: `1px solid ${on ? "rgba(192,132,232,0.4)" : "rgba(255,255,255,0.06)"}`,
+                        background: on ? "rgba(192,132,232,0.08)" : "rgba(255,255,255,0.02)",
+                        borderRadius: 9,
+                        padding: "8px 10px",
+                      }}
+                    >
+                      <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: busy ? "default" : "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          disabled={busy}
+                          onChange={() => onToggleSubject(s.key, s.count)}
+                          style={{ accentColor: "#7a1d91", width: 15, height: 15, flexShrink: 0 }}
+                        />
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span
+                            style={{
+                              display: "block",
+                              fontSize: 12.5,
+                              color: "#e8e8ee",
+                              fontWeight: 600,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {s.title}
+                          </span>
+                          <span style={{ display: "block", fontFamily: FONT_MONO, fontSize: 10, color: "#8a8a95" }}>
+                            {(s.subtitle ?? "—") + " · " + s.count + " " + noun}
+                          </span>
+                        </span>
+                      </label>
+                      {on ? (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                          <span style={{ fontSize: 11, color: "#9a9aa6" }}>{t("studio.deck.take")}</span>
+                          <DeckStepper
+                            value={sel[s.key] ?? 1}
+                            min={1}
+                            max={s.count}
+                            onChange={(n) => onSetCount(s.key, n)}
+                            disabled={busy}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <DeckToggle label={t("studio.deck.shuffle")} checked={shuffle} onChange={onShuffle} disabled={busy} />
+                <DeckToggle label={t("studio.deck.interleave")} checked={interleave} onChange={onInterleave} disabled={busy} />
+                <DeckToggle label={t("studio.deck.numbering")} checked={numbering} onChange={onNumbering} disabled={busy} />
+                {showTip ? (
+                  <DeckToggle label={t("studio.deck.includeTip")} checked={includeTip} onChange={onIncludeTip} disabled={busy} />
+                ) : null}
+                <DeckToggle label={t("studio.deck.cover")} checked={cover} onChange={onCover} disabled={busy} />
+                <DeckToggle label={t("studio.deck.skipImages")} checked={skipImages} onChange={onSkipImages} disabled={busy} />
+                <DeckToggle label={t("studio.deck.dedupe")} checked={dedupe} onChange={onDedupe} disabled={busy} />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 12, color: "#cfcfd6" }}>{t("studio.deck.cap")}</span>
+                <DeckStepper value={cap} min={5} max={100} step={5} onChange={onCap} disabled={busy} />
+              </div>
+
+              <div style={{ fontFamily: FONT_MONO, fontSize: 11.5, color: "#c084e8", textAlign: "center" }}>
+                {t("studio.deck.counter", { cards: totalCards, slides })}
+              </div>
+
+              {busy && progress ? (
+                <>
+                  <div style={{ height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${progress.total ? Math.round((progress.done / progress.total) * 100) : 0}%`,
+                        background: "linear-gradient(90deg,#c084e8,#e879f9)",
+                        transition: "width .2s",
+                      }}
+                    />
+                  </div>
+                  <p style={{ fontFamily: FONT_MONO, fontSize: 11, color: "#a99bb8", textAlign: "center", margin: 0 }}>
+                    {t("studio.deck.progress", { done: progress.done, total: progress.total })}
+                  </p>
+                  <button
+                    onClick={onCancel}
+                    style={{ ...smallBtn, color: "#ff9b9b", borderColor: "rgba(255,120,120,0.4)", background: "rgba(255,80,80,0.1)" }}
+                  >
+                    {t("studio.deck.cancel")}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={onGenerate}
+                  disabled={busy || selectedIds.length === 0}
+                  style={{
+                    width: "100%",
+                    padding: "12px 0",
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    borderRadius: 10,
+                    cursor: selectedIds.length === 0 ? "not-allowed" : "pointer",
+                    color: "#0a0510",
+                    background: selectedIds.length === 0 ? "rgba(192,132,232,0.35)" : "linear-gradient(135deg,#c084e8,#e879f9)",
+                    border: "none",
+                    opacity: busy ? 0.7 : 1,
+                  }}
+                >
+                  {`🃏  ${t("studio.deck.generate")}`}
+                </button>
+              )}
+
+              {done ? <p style={{ fontSize: 11.5, color: "#6ee79b", textAlign: "center", margin: 0, lineHeight: 1.5 }}>{done}</p> : null}
+            </>
+          ) : subjects && subjects.length === 0 && !loading ? (
+            <p style={dim}>{t("studio.deck.none")}</p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

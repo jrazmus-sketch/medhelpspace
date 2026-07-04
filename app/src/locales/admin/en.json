@@ -131,6 +131,7 @@
     "templates": {
       "blank": "Blank canvas",
       "questao": "Question of the day",
+      "flashcard": "Flashcard (front/back)",
       "dica": "Clinical tip",
       "promo": "Promo / offer",
       "frase": "Quote / motivation",
@@ -154,6 +155,13 @@
     "fields": {
       "eyebrow": "Label",
       "spec": "Specialty",
+      "fcFace": "Card side",
+      "fcPrompt": "Front (question)",
+      "fcAnswer": "Back (answer)",
+      "fcTip": "Tip (back)",
+      "fcFrontLabel": "Front label",
+      "fcBackLabel": "Back label",
+      "fcHint": "Front prompt (e.g. swipe →)",
       "stem": "Question stem",
       "altA": "Option A",
       "altB": "Option B",
@@ -219,7 +227,9 @@
       "fitCoverBottom": "Fill (bottom)",
       "fitContain": "Fit (whole image)",
       "modePage": "Live site page",
-      "modeImage": "Image"
+      "modeImage": "Image",
+      "fcFront": "Front (question)",
+      "fcBack": "Back (answer)"
     },
     "pages": {
       "pick": "Pick a page",
@@ -258,6 +268,39 @@
       "nefrologia": "Nephrology",
       "dermatologia": "Dermatology",
       "custom": "Custom color"
+    },
+    "deck": {
+      "title": "Generate card series",
+      "sourceFlashcards": "Flashcards",
+      "sourceQuiz": "Questions",
+      "help": "Pulls questions and answers from the site into a carousel: one slide with the question, one with the answer. Uses the card's current colors, background, format and elements.",
+      "previewStyle": "Preview the card style (sample)",
+      "loading": "Loading subjects…",
+      "loadFailed": "Couldn't load subjects. Try again.",
+      "none": "No published subjects yet.",
+      "perSubject": "Cards per subject",
+      "cards": "cards",
+      "questions": "questions",
+      "take": "Take",
+      "shuffle": "Random sample (else the first ones)",
+      "interleave": "Interleave subjects",
+      "numbering": "Number the cards (1/N)",
+      "includeTip": "Include the tip on the back",
+      "cover": "Cover + outro slide",
+      "skipImages": "Skip image-dependent items",
+      "dedupe": "Don't repeat already-exported items",
+      "cap": "Max cards",
+      "counter": "{{cards}} cards → {{slides}} slides",
+      "progress": "Generating {{done}}/{{total}}…",
+      "cancel": "Cancel",
+      "generate": "Generate & download ZIP",
+      "pickOne": "Select at least one subject.",
+      "empty": "No cards found for the chosen subjects.",
+      "captureFailed": "Couldn't render the images. Check the console.",
+      "canceled": "Generation canceled.",
+      "failed": "Deck generation failed. Check the console.",
+      "done": "Done! {{n}} cards · {{slides}} images in the ZIP.",
+      "doneCanceled": "Canceled — {{n}} cards saved to the ZIP."
     }
   },
   "support": {

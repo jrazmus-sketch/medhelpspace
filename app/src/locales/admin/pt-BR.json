@@ -131,6 +131,7 @@
     "templates": {
       "blank": "Tela livre",
       "questao": "Questão do dia",
+      "flashcard": "Flashcard (frente/verso)",
       "dica": "Dica clínica",
       "promo": "Promo / oferta",
       "frase": "Frase / motivação",
@@ -154,6 +155,13 @@
     "fields": {
       "eyebrow": "Etiqueta",
       "spec": "Especialidade",
+      "fcFace": "Lado do card",
+      "fcPrompt": "Frente (pergunta)",
+      "fcAnswer": "Verso (resposta)",
+      "fcTip": "Dica (verso)",
+      "fcFrontLabel": "Rótulo da frente",
+      "fcBackLabel": "Rótulo do verso",
+      "fcHint": "Chamada da frente (ex.: deslize →)",
       "stem": "Enunciado",
       "altA": "Alternativa A",
       "altB": "Alternativa B",
@@ -219,7 +227,9 @@
       "fitCoverBottom": "Preencher (base)",
       "fitContain": "Ajustar (imagem inteira)",
       "modePage": "Página do site (ao vivo)",
-      "modeImage": "Imagem"
+      "modeImage": "Imagem",
+      "fcFront": "Frente (pergunta)",
+      "fcBack": "Verso (resposta)"
     },
     "pages": {
       "pick": "Escolha uma página",
@@ -258,6 +268,39 @@
       "nefrologia": "Nefrologia",
       "dermatologia": "Dermatologia",
       "custom": "Cor personalizada"
+    },
+    "deck": {
+      "title": "Gerar série de cards",
+      "sourceFlashcards": "Flashcards",
+      "sourceQuiz": "Questões",
+      "help": "Puxa perguntas e respostas do site e monta um carrossel: um slide com a pergunta, outro com a resposta. Usa as cores, o fundo, o formato e os elementos atuais do card.",
+      "previewStyle": "Ver o estilo do card (amostra)",
+      "loading": "Carregando assuntos…",
+      "loadFailed": "Não consegui carregar os assuntos. Tente de novo.",
+      "none": "Nenhum assunto publicado ainda.",
+      "perSubject": "Cards por assunto",
+      "cards": "cartões",
+      "questions": "questões",
+      "take": "Usar",
+      "shuffle": "Amostra aleatória (senão, os primeiros)",
+      "interleave": "Intercalar assuntos",
+      "numbering": "Numerar os cards (1/N)",
+      "includeTip": "Incluir a dica no verso",
+      "cover": "Capa + slide de encerramento",
+      "skipImages": "Pular itens que dependem de imagem",
+      "dedupe": "Não repetir itens já exportados",
+      "cap": "Máximo de cards",
+      "counter": "{{cards}} cartões → {{slides}} slides",
+      "progress": "Gerando {{done}}/{{total}}…",
+      "cancel": "Cancelar",
+      "generate": "Gerar e baixar ZIP",
+      "pickOne": "Selecione pelo menos um assunto.",
+      "empty": "Nenhum cartão encontrado para os assuntos escolhidos.",
+      "captureFailed": "Não consegui gerar as imagens. Veja o console.",
+      "canceled": "Geração cancelada.",
+      "failed": "Falha ao gerar o deck. Veja o console.",
+      "done": "Pronto! {{n}} cartões · {{slides}} imagens no ZIP.",
+      "doneCanceled": "Cancelado — {{n}} cartões salvos no ZIP."
     }
   },
   "support": {
