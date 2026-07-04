@@ -24,8 +24,10 @@ const statusColor: Record<string, string> = {
   bounced: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
-// "revalida-2026-2" → "2026.2" for a compact column.
-function cohortShort(slug: string): string {
+// "revalida-2026-2" → "2026.2" for a compact column. null (lead never reached the
+// post-Q15 cohort picker) → "—" instead of a misleading default turma.
+function cohortShort(slug: string | null): string {
+  if (!slug) return "—";
   const m = slug.match(/(\d{4})-(\d)$/);
   return m ? `${m[1]}.${m[2]}` : slug;
 }
@@ -218,7 +220,7 @@ export function LeadsClient({ rows, summary }: Props) {
             {t("leads.byCohort")}
           </span>
           {summary.byCohort.map((b) => (
-            <span key={b.cohort} className="text-muted-foreground">
+            <span key={b.cohort ?? "none"} className="text-muted-foreground">
               {cohortShort(b.cohort)}{" "}
               <span className="font-medium text-foreground">{b.count}</span>
             </span>

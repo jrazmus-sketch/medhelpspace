@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { safe } from "@/lib/sanitize";
 import {
   captureLeadAndUnlock,
+  saveLeadProgress,
   finalizeLeadResult,
   requestClaimCode,
   verifyClaimCode,
@@ -38,6 +39,17 @@ type AnswerRecord = {
   specialtyId: number | null;
   pageId: number;
 };
+
+// Answer map (keyed by question id, holds UI-only selectedIdx) → the server's
+// MagnetAnswer[] shape. Used by the gate capture, per-answer save, and finalize.
+function toMagnetAnswers(records: Record<number, AnswerRecord>): MagnetAnswer[] {
+  return Object.values(records).map((a) => ({
+    questionId: a.questionId,
+    specialtyId: a.specialtyId,
+    isCorrect: a.isCorrect,
+    pageId: a.pageId,
+  }));
+}
 
 const FREE_COUNT = 5;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -81,8 +93,8 @@ export function MagnetQuiz({
     if (answered || !q) return;
     const isCorrect = Boolean(q.answers[i]?.correct);
     setSelectedIdx(i);
-    setAnswers((prev) => ({
-      ...prev,
+    const nextAnswers: Record<number, AnswerRecord> = {
+      ...answers,
       [q.id]: {
         questionId: q.id,
         selectedIdx: i,
@@ -90,7 +102,18 @@ export function MagnetQuiz({
         specialtyId: q.specialtyId,
         pageId: q.pageId,
       },
-    }));
+    };
+    setAnswers(nextAnswers);
+    // Incremental persistence: best-effort, fire-and-forget — must never block the
+    // quiz UI. Only past the email gate, where we have an address + a lead row. The
+    // Q1–Q5 answers are persisted together at the gate (captureLeadAndUnlock); from
+    // Q6 on each answer advances the stored N/15, so a mid-quiz drop-off shows real
+    // progress in /admin/leads instead of the old all-or-nothing 0/15.
+    if (email) {
+      void saveLeadProgress({ email, answers: toMagnetAnswers(nextAnswers) }).catch(
+        () => {},
+      );
+    }
   }
 
   function handleNext() {
@@ -110,12 +133,7 @@ export function MagnetQuiz({
 
   function chooseCohort(slug: string) {
     setCohort(slug);
-    const allAnswers: MagnetAnswer[] = Object.values(answers).map((a) => ({
-      questionId: a.questionId,
-      specialtyId: a.specialtyId,
-      isCorrect: a.isCorrect,
-      pageId: a.pageId,
-    }));
+    const allAnswers = toMagnetAnswers(answers);
     startTransition(async () => {
       const res = await finalizeLeadResult({ email, answers: allAnswers, targetCohort: slug });
       setSummary(res.summary);
@@ -131,7 +149,14 @@ export function MagnetQuiz({
     }
     setEmailErr(null);
     startTransition(async () => {
-      const res = await captureLeadAndUnlock({ email: em, utm, honeypot: hp });
+      // Send the first 5 answers with the capture so they're persisted even if the
+      // lead never finishes the gated Q6–Q15 (partial progress in /admin/leads).
+      const res = await captureLeadAndUnlock({
+        email: em,
+        utm,
+        honeypot: hp,
+        answers: toMagnetAnswers(answers),
+      });
       if (!res.ok) {
         setEmailErr("Não foi possível continuar. Confira o e-mail e tente novamente.");
         return;

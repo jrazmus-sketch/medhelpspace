@@ -22,7 +22,9 @@ export type LeadRow = {
   createdAt: string;
   utmSource: string | null;
   utmCampaign: string | null;
-  targetCohort: string;
+  // null = the lead never reached the post-Q15 cohort picker (unfinished). The
+  // admin UI renders this as "—" rather than a misleading default turma.
+  targetCohort: string | null;
   score: number | null;
   questionsAnswered: number | null;
   completed: boolean;
@@ -42,7 +44,7 @@ export type LeadsSummary = {
   converted: number;
   unsubscribed: number;
   bySource: { source: string | null; count: number }[];
-  byCohort: { cohort: string; count: number }[];
+  byCohort: { cohort: string | null; count: number }[];
 };
 
 export type LeadsOverview = { rows: LeadRow[]; summary: LeadsSummary };
@@ -82,7 +84,12 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       createdAt: l.created_at as string,
       utmSource: (l.utm_source as string | null) ?? null,
       utmCampaign: (l.utm_campaign as string | null) ?? null,
-      targetCohort: (l.target_cohort as string) ?? "revalida-2026-2",
+      // target_cohort is NOT NULL DEFAULT 'revalida-2026-2' at the DB level, so a
+      // soft-captured lead carries the default even though they never chose. The
+      // cohort picker is only reached AFTER Q15 (chooseCohort → finalize), so
+      // completed_at is the true "they picked a turma" signal. Surface null (→ "—")
+      // for anyone who hasn't finished, rather than the misleading default.
+      targetCohort: completed ? (l.target_cohort as string) : null,
       score: (l.score as number | null) ?? null,
       questionsAnswered: (l.questions_answered as number | null) ?? null,
       completed,
@@ -99,7 +106,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
   });
 
   const bySourceMap = new Map<string | null, number>();
-  const byCohortMap = new Map<string, number>();
+  const byCohortMap = new Map<string | null, number>();
   let verified = 0;
   let completed = 0;
   let converted = 0;

@@ -104,6 +104,30 @@ function answersFromStoredResult(result: unknown): MagnetAnswer[] {
   }));
 }
 
+// The scoring/diagnostic columns derived from a (partial or full) answer set.
+// Deliberately NO completed_at / target_cohort — those belong only to the Q15
+// finalize. Used by the Q5 partial capture, the per-answer incremental save, and
+// finalize, so all three write these columns identically.
+function buildProgressPayload(answers: MagnetAnswer[]) {
+  return {
+    score: answers.filter((a) => a.isCorrect).length,
+    weak_specialty_ids: [
+      ...new Set(
+        answers
+          .filter((a) => !a.isCorrect && a.specialtyId != null)
+          .map((a) => a.specialtyId as number),
+      ),
+    ],
+    questions_answered: answers.length,
+    result: answers.map((a) => ({
+      question_id: a.questionId,
+      specialty_id: a.specialtyId,
+      page_id: a.pageId,
+      is_correct: a.isCorrect,
+    })),
+  };
+}
+
 async function clientIp(): Promise<string> {
   try {
     return getClientIp(await headers());
@@ -121,6 +145,9 @@ export async function captureLeadAndUnlock(input: {
   email: string;
   utm?: Utm;
   honeypot?: string | null;
+  // The Q1–Q5 answers (held in browser state until now). Persisted here as PARTIAL
+  // progress so a lead who bails before Q15 still shows real progress in /admin/leads.
+  answers?: MagnetAnswer[];
 }): Promise<{ ok: boolean; reason?: string; gatedQuestions: MagnetQuestion[] }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) {
@@ -141,13 +168,23 @@ export async function captureLeadAndUnlock(input: {
   // reset drip progress on a re-submit.
   const { data: existing } = await admin
     .from("leads")
-    .select("id")
+    .select("id, questions_answered")
     .eq("email", email)
     .maybeSingle();
 
+  // Partial progress from the first 5 answers. Never sets completed_at — only the
+  // Q15 finalize marks completion.
+  const answers = input.answers ?? [];
+  const progress = answers.length > 0 ? buildProgressPayload(answers) : null;
+
   if (existing) {
     // `?? undefined` omits the key from the PATCH so a later submit without a
-    // value never wipes an already-captured attribution field.
+    // value never wipes an already-captured attribution field. Progress is only
+    // ADVANCED, never regressed: a re-submit of the gate must not overwrite the
+    // deeper progress a finisher already stored.
+    const grew =
+      progress != null &&
+      answers.length > ((existing.questions_answered as number | null) ?? 0);
     await admin
       .from("leads")
       .update({
@@ -157,6 +194,7 @@ export async function captureLeadAndUnlock(input: {
         utm_term: utm.term ?? undefined,
         utm_content: utm.content ?? undefined,
         gclid: utm.gclid ?? undefined,
+        ...(grew ? progress : {}),
       })
       .eq("id", existing.id);
   } else {
@@ -168,11 +206,47 @@ export async function captureLeadAndUnlock(input: {
       utm_term: utm.term ?? null,
       utm_content: utm.content ?? null,
       gclid: utm.gclid ?? null,
+      ...(progress ?? {}),
     });
   }
 
   const gatedQuestions = await getMagnetQuestions(MAGNET_GATED_IDS);
   return { ok: true, gatedQuestions };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1b. INCREMENTAL PROGRESS — fire-and-forget from the client after each gated
+//     answer (Q6→Q15). Keeps `questions_answered`/`score`/`result` current so a
+//     lead who abandons mid-quiz still shows accurate N/15 + diagnostics, instead
+//     of the all-or-nothing 0/15-until-finish it was before. Best-effort: a failure
+//     here must never affect the quiz UI (the client never awaits the result).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function saveLeadProgress(input: {
+  email: string;
+  answers: MagnetAnswer[];
+}): Promise<{ ok: boolean }> {
+  const email = normalizeEmail(input.email);
+  if (!EMAIL_RE.test(email)) return { ok: false };
+  const answers = input.answers ?? [];
+  if (answers.length === 0) return { ok: false };
+
+  const admin = createAdminClient();
+  // Atomic monotonic guard: update only when this save ADVANCES progress
+  // (questions_answered IS NULL, or strictly less than the incoming count). This
+  // makes a late/out-of-order partial save a no-op and protects a row that finalize
+  // has already completed — without a read-then-write race. completed_at is never
+  // touched here. If the lead row doesn't exist yet, this simply matches nothing.
+  const { error } = await admin
+    .from("leads")
+    .update(buildProgressPayload(answers))
+    .eq("email", email)
+    .or(`questions_answered.is.null,questions_answered.lt.${answers.length}`);
+  if (error) {
+    console.error("saveLeadProgress failed:", error.message);
+    return { ok: false };
+  }
+  return { ok: true };
 }
 
 const VALID_COHORTS = new Set(["revalida-2026-2", "revalida-2027-1"]);
@@ -195,14 +269,8 @@ export async function finalizeLeadResult(input: {
     : "revalida-2026-2";
 
   const answers = input.answers ?? [];
-  const score = answers.filter((a) => a.isCorrect).length;
-  const weakSpecialtyIds = [
-    ...new Set(
-      answers
-        .filter((a) => !a.isCorrect && a.specialtyId != null)
-        .map((a) => a.specialtyId as number),
-    ),
-  ];
+  const progress = buildProgressPayload(answers);
+  const score = progress.score;
 
   const admin = createAdminClient();
   // Store page_id in the result JSON so verify + the durable page can rebuild the
@@ -210,18 +278,14 @@ export async function finalizeLeadResult(input: {
   // if it's missing (skipped/failed capture) an UPDATE would silently no-op and
   // leave `result` unwritten, so verify + the emailed durable link would render an
   // empty plan. Insert-if-missing guarantees the result is always persisted.
+  //
+  // finalize is authoritative: it writes the full answer set AND marks completion,
+  // so it's the one progress write that may legitimately equal a prior partial
+  // save's count — hence no monotonic guard here (unlike saveLeadProgress).
   const payload = {
-    score,
-    weak_specialty_ids: weakSpecialtyIds,
+    ...progress,
     target_cohort: targetCohort,
-    questions_answered: answers.length,
     completed_at: new Date().toISOString(),
-    result: answers.map((a) => ({
-      question_id: a.questionId,
-      specialty_id: a.specialtyId,
-      page_id: a.pageId,
-      is_correct: a.isCorrect,
-    })),
   };
   const { data: existingLead } = await admin
     .from("leads")
