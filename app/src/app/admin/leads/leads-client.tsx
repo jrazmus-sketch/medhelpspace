@@ -12,6 +12,9 @@ interface Props {
 }
 
 const tierColor: Record<LeadTier, string> = {
+  // Purple (brand-adjacent), kept distinct from the green "Converted" status pill
+  // that sits in the next column for the same rows.
+  customer: "bg-purple-500/15 text-purple-700 dark:text-purple-300",
   hot: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   nurture: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   suppressed: "bg-surface-2 text-muted-foreground",
@@ -22,7 +25,18 @@ const statusColor: Record<string, string> = {
   converted: "bg-green-500/15 text-green-700 dark:text-green-400",
   unsubscribed: "bg-surface-2 text-muted-foreground",
   bounced: "bg-red-500/15 text-red-600 dark:text-red-400",
+  unverified: "bg-surface-2 text-muted-foreground",
 };
+
+// The DB `drip_status='active'` default is carried by unverified soft-captures too,
+// but they are SUPPRESSED from the drip (lead-drip cron filters `.not(verified_at,
+// is, null)`). Surfacing them as "In drip" contradicts their Cold tier, so we derive
+// a display-only status: an active-but-unverified lead reads "unverified" instead.
+// converted/unsubscribed/bounced are verification-independent and pass through.
+function effectiveStatus(row: LeadRow): string {
+  if (row.dripStatus === "active" && !row.verified) return "unverified";
+  return row.dripStatus;
+}
 
 // "revalida-2026-2" → "2026.2" for a compact column. null (lead never reached the
 // post-Q15 cohort picker) → "—" instead of a misleading default turma.
@@ -61,7 +75,7 @@ export function LeadsClient({ rows, summary }: Props) {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
       if (tier !== "all" && r.tier !== tier) return false;
-      if (status !== "all" && r.dripStatus !== status) return false;
+      if (status !== "all" && effectiveStatus(r) !== status) return false;
       if (source !== "all" && (r.utmSource ?? "__organic__") !== source) return false;
       if (!q) return true;
       return (
@@ -72,7 +86,7 @@ export function LeadsClient({ rows, summary }: Props) {
   }, [rows, search, tier, status, source]);
 
   const statuses = useMemo(
-    () => [...new Set(rows.map((r) => r.dripStatus))],
+    () => [...new Set(rows.map(effectiveStatus))],
     [rows],
   );
 
@@ -89,13 +103,14 @@ export function LeadsClient({ rows, summary }: Props) {
   }
 
   function StatusPill({ row }: { row: LeadRow }) {
+    const st = effectiveStatus(row);
     return (
       <span
         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-          statusColor[row.dripStatus] ?? statusColor.active
+          statusColor[st] ?? statusColor.active
         }`}
       >
-        {t(`leads.status_${row.dripStatus}`, { defaultValue: row.dripStatus })}
+        {t(`leads.status_${st}`, { defaultValue: st })}
       </span>
     );
   }
@@ -243,6 +258,7 @@ export function LeadsClient({ rows, summary }: Props) {
           className="min-h-[44px] rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50 sm:min-h-0"
         >
           <option value="all">{t("leads.filterTier")}</option>
+          <option value="customer">{t("leads.tier_customer")}</option>
           <option value="hot">{t("leads.tier_hot")}</option>
           <option value="nurture">{t("leads.tier_nurture")}</option>
           <option value="suppressed">{t("leads.tier_suppressed")}</option>

@@ -10,10 +10,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // Drip targeting tier, mirroring the funnel's segmentation + the partial index
 // `leads_drip_verified_idx` (active AND verified). See FREE-FUNNEL-V2-SCOPE §6.
+//   customer   = converted (bought)          (terminal — out of the drip)
 //   hot        = verified + finished all 15  (aggressive offer)
 //   nurture    = verified but didn't finish  (light nurture)
 //   suppressed = unverified                  (NOT emailed — protects the domain)
-export type LeadTier = "hot" | "nurture" | "suppressed";
+// `customer` OUTRANKS the rest: a buyer is a customer regardless of verify/finish.
+// Without it a lead who converted via purchase (never did the 6-digit verify) would
+// read as "Cold", contradicting the green Converted status pill beside it.
+export type LeadTier = "customer" | "hot" | "nurture" | "suppressed";
 
 export type LeadRow = {
   id: string;
@@ -49,7 +53,8 @@ export type LeadsSummary = {
 
 export type LeadsOverview = { rows: LeadRow[]; summary: LeadsSummary };
 
-function tierOf(verified: boolean, completed: boolean): LeadTier {
+function tierOf(converted: boolean, verified: boolean, completed: boolean): LeadTier {
+  if (converted) return "customer";
   if (!verified) return "suppressed";
   return completed ? "hot" : "nurture";
 }
@@ -101,7 +106,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       dripStatus: (l.drip_status as string) ?? "active",
       convertedAt: (l.converted_at as string | null) ?? null,
       lastEmailedAt: (l.last_emailed_at as string | null) ?? null,
-      tier: tierOf(verified, completed),
+      tier: tierOf(Boolean(l.converted_at), verified, completed),
     };
   });
 
