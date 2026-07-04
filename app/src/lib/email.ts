@@ -113,7 +113,9 @@ export async function sendEmailRaw({
   // When set, emits one-click List-Unsubscribe headers (RFC 8058). Pass ONLY for
   // list/marketing mail (the funnel drip) — transactional + member mail omits it.
   listUnsubscribeUrl?: string;
-}): Promise<{ ok: boolean; reason?: string }> {
+  // `id` = the Resend message id (present on success) — the join key for
+  // lead_email_events, so a later delivered/opened/clicked webhook threads to this send.
+}): Promise<{ ok: boolean; reason?: string; id?: string }> {
   const resend = getResend();
   if (!resend) return { ok: false, reason: "no_api_key" };
   try {
@@ -128,7 +130,7 @@ export async function sendEmailRaw({
             "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
           }
         : undefined;
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from,
       to,
       subject,
@@ -140,9 +142,28 @@ export async function sendEmailRaw({
     // looks like success unless we inspect it. Callers that need to know (the admin
     // resend tool) rely on this; the fire-and-forget finalize path ignores it.
     if (error) return { ok: false, reason: error.message ?? "send_error" };
-    return { ok: true };
+    return { ok: true, id: data?.id };
   } catch (e) {
     return { ok: false, reason: e instanceof Error ? e.message : "send_throw" };
+  }
+}
+
+// Record the 'sent' anchor for a lead funnel email so the /admin/leads drawer can
+// name it (via `kind`) and the Resend webhook can thread delivered/opened/clicked
+// events onto it (via `resend_id`). Only lead-* kinds are logged — member/admin mail
+// engagement is intentionally never tracked. Best-effort: a logging failure must
+// never fail the send. AWAITED (serverless kills fire-and-forget after the handler).
+async function logLeadEmailSent(resendId: string, to: string, kind: string): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    await admin.from("lead_email_events").insert({
+      resend_id: resendId,
+      email: to.toLowerCase().trim(),
+      kind,
+      event_type: "sent",
+    });
+  } catch (e) {
+    console.error("logLeadEmailSent failed:", e instanceof Error ? e.message : e);
   }
 }
 
@@ -169,7 +190,12 @@ export async function sendTemplateEmail({
     : settings.from_address;
   // Funnel/list emails carry an {{unsubscribeUrl}} var → attach the one-click
   // List-Unsubscribe header. Transactional/member templates have no such var → no header.
-  return sendEmailRaw({ to, subject, html, from, listUnsubscribeUrl: vars.unsubscribeUrl });
+  const res = await sendEmailRaw({ to, subject, html, from, listUnsubscribeUrl: vars.unsubscribeUrl });
+  // Log the send for the leads engagement timeline (lead-* funnel emails only).
+  if (res.ok && res.id && kind.startsWith("lead-")) {
+    await logLeadEmailSent(res.id, to, kind);
+  }
+  return res;
 }
 
 // Render a template ONCE (settings + template fetched once) and send the same body

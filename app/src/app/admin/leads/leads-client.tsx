@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { CheckCircle2 } from "lucide-react";
 import type { LeadRow, LeadsSummary, LeadTier } from "@/lib/admin/leads";
+import { LeadDetailDrawer } from "@/components/admin/lead-detail-drawer";
 
 interface Props {
   rows: LeadRow[];
@@ -59,6 +60,7 @@ export function LeadsClient({ rows, summary }: Props) {
   const [tier, setTier] = useState<"all" | LeadTier>("all");
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
+  const [selected, setSelected] = useState<LeadRow | null>(null);
 
   function fmtDate(iso: string | null) {
     if (!iso) return "—";
@@ -316,7 +318,11 @@ export function LeadsClient({ rows, summary }: Props) {
               </tr>
             ) : (
               filtered.map((row) => (
-                <tr key={row.id} className="border-b border-border/50 hover:bg-surface-2/50">
+                <tr
+                  key={row.id}
+                  onClick={() => setSelected(row)}
+                  className="cursor-pointer border-b border-border/50 hover:bg-surface-2/50"
+                >
                   <td className="px-4 py-3"><LeadIdentity row={row} /></td>
                   <td className="px-4 py-3"><TierPill row={row} /></td>
                   <td className="px-4 py-3"><Progress row={row} /></td>
@@ -346,7 +352,19 @@ export function LeadsClient({ rows, summary }: Props) {
           </p>
         ) : (
           filtered.map((row) => (
-            <div key={row.id} className="space-y-3 rounded-xl border border-border bg-surface-1 p-4">
+            <div
+              key={row.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelected(row)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelected(row);
+                }
+              }}
+              className="w-full cursor-pointer space-y-3 rounded-xl border border-border bg-surface-1 p-4 text-left transition-colors hover:bg-surface-2/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+            >
               <div className="flex items-start justify-between gap-3">
                 <LeadIdentity row={row} />
                 <TierPill row={row} />
@@ -363,6 +381,13 @@ export function LeadsClient({ rows, summary }: Props) {
           ))
         )}
       </div>
+
+      {/* Detail drawer — remounts per lead so it always loads fresh */}
+      <LeadDetailDrawer
+        key={selected?.id ?? "none"}
+        row={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

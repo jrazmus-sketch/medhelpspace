@@ -19,6 +19,17 @@ function sessionId(): string {
   }
 }
 
+// The same mhs_fsid the landing/quiz_start beacons use, exposed so the lead capture
+// can persist it on the lead row (leads.funnel_session_id) — joining a lead ⇄ its
+// anonymous pre-capture funnel journey. Returns null if storage is blocked.
+export function getFunnelSessionId(): string | null {
+  try {
+    return sessionStorage.getItem(SID_KEY);
+  } catch {
+    return null;
+  }
+}
+
 function send(event: "landing" | "quiz_start", sid: string, utm: MagnetUtm): void {
   void fetch("/api/funnel-event", {
     method: "POST",

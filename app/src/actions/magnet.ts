@@ -136,6 +136,59 @@ async function clientIp(): Promise<string> {
   }
 }
 
+// Coarse device class from the User-Agent (mobile / tablet / desktop). Good enough
+// for a "who's landing" split in /admin/leads; we don't need full UA parsing.
+function parseDevice(ua: string): string {
+  if (!ua) return "unknown";
+  if (/iPad|Tablet|PlayBook|Silk|Android(?!.*Mobile)/i.test(ua)) return "tablet";
+  if (/Mobi|iPhone|iPod|Android.*Mobile|Windows Phone|BlackBerry/i.test(ua)) return "mobile";
+  return "desktop";
+}
+
+function clamp(v: string | null | undefined, max: number): string | null {
+  const s = (v ?? "").trim();
+  return s ? s.slice(0, max) : null;
+}
+
+// Server-derived capture context: UA/device from the request header, geo from
+// Vercel's edge headers (no external geo-IP service). Best-effort — a missing header
+// (local dev, non-Vercel host) just yields nulls / "unknown".
+async function captureContext(): Promise<{
+  user_agent: string | null;
+  device_type: string;
+  geo_country: string | null;
+  geo_region: string | null;
+  geo_city: string | null;
+}> {
+  try {
+    const h = await headers();
+    const ua = h.get("user-agent") ?? "";
+    const dec = (v: string | null) => {
+      if (!v) return null;
+      try {
+        return decodeURIComponent(v); // Vercel URL-encodes city ("Sao%20Paulo")
+      } catch {
+        return v;
+      }
+    };
+    return {
+      user_agent: clamp(ua, 400),
+      device_type: parseDevice(ua),
+      geo_country: clamp(h.get("x-vercel-ip-country"), 8),
+      geo_region: clamp(h.get("x-vercel-ip-country-region"), 16),
+      geo_city: clamp(dec(h.get("x-vercel-ip-city")), 120),
+    };
+  } catch {
+    return {
+      user_agent: null,
+      device_type: "unknown",
+      geo_country: null,
+      geo_region: null,
+      geo_city: null,
+    };
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. SOFT CAPTURE (after Q5) — store the lead unverified, unlock the 10 gated
 //    questions. NO email. Cheap checks only (format + honeypot + disposable).
@@ -148,6 +201,9 @@ export async function captureLeadAndUnlock(input: {
   // The Q1–Q5 answers (held in browser state until now). Persisted here as PARTIAL
   // progress so a lead who bails before Q15 still shows real progress in /admin/leads.
   answers?: MagnetAnswer[];
+  // Client-only context the server can't otherwise see (first-touch). `sessionId` is
+  // the mhs_fsid that links this lead ⇄ its funnel_events (landing/quiz_start).
+  context?: { referrer?: string | null; landingPath?: string | null; sessionId?: string | null };
 }): Promise<{ ok: boolean; reason?: string; gatedQuestions: MagnetQuestion[] }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) {
@@ -165,10 +221,13 @@ export async function captureLeadAndUnlock(input: {
 
   // Manual upsert on lower(email): the unique index is on an expression, so we
   // select-then-insert/update rather than rely on PostgREST onConflict. Never
-  // reset drip progress on a re-submit.
+  // reset drip progress on a re-submit. Context columns are selected too so the
+  // existing-lead path can honor first-touch (only fill what's still null).
   const { data: existing } = await admin
     .from("leads")
-    .select("id, questions_answered")
+    .select(
+      "id, questions_answered, device_type, landing_referrer, landing_path, funnel_session_id",
+    )
     .eq("email", email)
     .maybeSingle();
 
@@ -176,6 +235,11 @@ export async function captureLeadAndUnlock(input: {
   // Q15 finalize marks completion.
   const answers = input.answers ?? [];
   const progress = answers.length > 0 ? buildProgressPayload(answers) : null;
+
+  const ctx = await captureContext();
+  const referrer = clamp(input.context?.referrer, 400);
+  const landingPath = clamp(input.context?.landingPath, 300);
+  const sessionId = clamp(input.context?.sessionId, 64);
 
   if (existing) {
     // `?? undefined` omits the key from the PATCH so a later submit without a
@@ -185,6 +249,19 @@ export async function captureLeadAndUnlock(input: {
     const grew =
       progress != null &&
       answers.length > ((existing.questions_answered as number | null) ?? 0);
+    // First-touch context: only fill columns still null, so a later re-submit (or a
+    // device switch mid-funnel) never rewrites the ORIGINAL arrival context.
+    const ctxPatch: Record<string, unknown> = {};
+    if (existing.device_type == null) {
+      ctxPatch.user_agent = ctx.user_agent;
+      ctxPatch.device_type = ctx.device_type;
+      ctxPatch.geo_country = ctx.geo_country;
+      ctxPatch.geo_region = ctx.geo_region;
+      ctxPatch.geo_city = ctx.geo_city;
+    }
+    if (existing.landing_referrer == null && referrer) ctxPatch.landing_referrer = referrer;
+    if (existing.landing_path == null && landingPath) ctxPatch.landing_path = landingPath;
+    if (existing.funnel_session_id == null && sessionId) ctxPatch.funnel_session_id = sessionId;
     await admin
       .from("leads")
       .update({
@@ -194,6 +271,7 @@ export async function captureLeadAndUnlock(input: {
         utm_term: utm.term ?? undefined,
         utm_content: utm.content ?? undefined,
         gclid: utm.gclid ?? undefined,
+        ...ctxPatch,
         ...(grew ? progress : {}),
       })
       .eq("id", existing.id);
@@ -206,6 +284,14 @@ export async function captureLeadAndUnlock(input: {
       utm_term: utm.term ?? null,
       utm_content: utm.content ?? null,
       gclid: utm.gclid ?? null,
+      user_agent: ctx.user_agent,
+      device_type: ctx.device_type,
+      geo_country: ctx.geo_country,
+      geo_region: ctx.geo_region,
+      geo_city: ctx.geo_city,
+      landing_referrer: referrer,
+      landing_path: landingPath,
+      funnel_session_id: sessionId,
       ...(progress ?? {}),
     });
   }

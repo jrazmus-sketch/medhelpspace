@@ -14,7 +14,7 @@ import type { MagnetAnswer, PlanPreview, FreeResultSummary } from "@/lib/magnet/
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetReward, scoreFraming, type RewardOffer } from "@/components/magnet/magnet-reward";
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
-import { trackFunnel } from "@/lib/magnet/funnel-track";
+import { trackFunnel, getFunnelSessionId } from "@/lib/magnet/funnel-track";
 import { SiteText } from "@/components/landing/site-text";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
@@ -200,6 +200,14 @@ export function MagnetQuiz({
         utm,
         honeypot: hp,
         answers: toMagnetAnswers(answers),
+        // First-touch context the server can't see: how they arrived + the funnel
+        // session id that joins this lead to its landing/quiz_start beacons.
+        context: {
+          referrer: typeof document !== "undefined" ? document.referrer || null : null,
+          landingPath:
+            typeof window !== "undefined" ? window.location.pathname + window.location.search : null,
+          sessionId: getFunnelSessionId(),
+        },
       });
       if (!res.ok) {
         setEmailErr("Não foi possível continuar. Confira o e-mail e tente novamente.");
