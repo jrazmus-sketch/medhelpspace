@@ -16,39 +16,45 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Card = { src: string; title: string; specialty: string; grito: string };
 
-// 5 teaser cards, deliberately spanning 5 specialties to sell the
+// 6 teaser cards, deliberately spanning 6 specialties to sell the
 // "biblioteca por especialidade" promise. `grito` lines are the conclusions
 // printed on each poster (accurate, not invented).
 const CARDS: Card[] = [
   {
-    src: "/landing/memorecards/card-3.webp",
-    title: "Kawasaki",
-    specialty: "Pediatria",
-    grito: "Febre ≥ 5 dias + 5 sinais clássicos = Kawasaki.",
-  },
-  {
     src: "/landing/memorecards/card-1.webp",
-    title: "Apendicite Aguda",
-    specialty: "Cirurgia",
-    grito: "Dor que migra para a FID = apendicite até prova em contrário.",
+    title: "DRGE",
+    specialty: "Gastroenterologia",
+    grito: "Pirose + regurgitação + piora pós-prandial/ao deitar = pense em DRGE.",
   },
   {
     src: "/landing/memorecards/card-2.webp",
-    title: "Climatério",
+    title: "ITU na Gestação",
+    specialty: "Obstetrícia",
+    grito: "Gestante + urocultura positiva = não ignore; tratar protege mãe e feto.",
+  },
+  {
+    src: "/landing/memorecards/card-3.webp",
+    title: "HPV e Colo Uterino",
     specialty: "Ginecologia",
-    grito: "Mulher > 45a + ciclos irregulares + fogachos = climatério.",
+    grito: "HPV transitório é comum; persistência oncogênica = lesão precursora.",
   },
   {
     src: "/landing/memorecards/card-4.webp",
-    title: "Vacinas no Pré-Natal",
-    specialty: "Obstetrícia",
-    grito: "dTpa em toda gestação — mesmo se já vacinou antes.",
+    title: "Escarlatina",
+    specialty: "Pediatria",
+    grito: "Febre + amigdalite purulenta + exantema em lixa = escarlatina.",
   },
   {
     src: "/landing/memorecards/card-5.webp",
-    title: "Hipertimpanismo × Macicez",
-    specialty: "Pneumologia",
-    grito: "MV abolido + hipertimpanismo = pneumotórax; + macicez = hemotórax.",
+    title: "Crise Hipertensiva",
+    specialty: "Cardiologia",
+    grito: "PA muito alta + lesão aguda de órgão-alvo = emergência hipertensiva.",
+  },
+  {
+    src: "/landing/memorecards/card-6.webp",
+    title: "Obstrução de Delgado",
+    specialty: "Cirurgia",
+    grito: "Obstrução de delgado + sinais de complicação = cirurgia, não observação.",
   },
 ];
 
