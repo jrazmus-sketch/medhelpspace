@@ -7,8 +7,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { getFlashcardSubjects, buildFlashcardDeck, getQuizSubjects, buildQuizDeck } from "@/actions/studio-deck";
-import type { DeckSubject, DeckCard, QuizDeckCard, DeckSource } from "@/lib/studio/deck-types";
+import { getFlashcardSubjects, buildFlashcardDeck, getQuizSubjects, buildQuizDeck, getDeckItems } from "@/actions/studio-deck";
+import type { DeckSubject, DeckCard, QuizDeckCard, DeckSource, DeckItemPreview } from "@/lib/studio/deck-types";
 
 /*
   MedHelpSpace — Instagram Studio (admin)
@@ -3594,6 +3594,14 @@ export function EstudioClient() {
   const [deckSubjects, setDeckSubjects] = useState<DeckSubject[] | null>(null);
   const [deckLoading, setDeckLoading] = useState<boolean>(false);
   const [deckSel, setDeckSel] = useState<Record<number, number>>({}); // subject key → count
+  // Specific-question picker: per-subject hand-picked item ids (present + non-empty
+  // = manual mode), a lazy cache of each subject's item list, its loading flag,
+  // which subject's picker is expanded (one at a time), and the picker search box.
+  const [deckPicked, setDeckPicked] = useState<Record<number, number[]>>({});
+  const [deckItems, setDeckItems] = useState<Record<number, DeckItemPreview[]>>({});
+  const [deckItemsLoading, setDeckItemsLoading] = useState<Record<number, boolean>>({});
+  const [deckExpanded, setDeckExpanded] = useState<number | null>(null);
+  const [deckSearch, setDeckSearch] = useState<string>("");
   const [deckPerSubject, setDeckPerSubject] = useState<number>(5);
   const [deckShuffle, setDeckShuffle] = useState<boolean>(true);
   const [deckInterleave, setDeckInterleave] = useState<boolean>(true);
@@ -3930,6 +3938,11 @@ export function EstudioClient() {
       setDeckSource(src);
       setDeckSubjects(null);
       setDeckSel({});
+      setDeckPicked({});
+      setDeckItems({});
+      setDeckItemsLoading({});
+      setDeckExpanded(null);
+      setDeckSearch("");
       setDeckDone(null);
       setDeckError(null);
       fetchSubjectsFor(src);
@@ -3945,12 +3958,77 @@ export function EstudioClient() {
         else next[pageId] = Math.max(1, Math.min(deckPerSubject, cardCount));
         return next;
       });
+      // Deselecting a subject drops any hand-picks and collapses its picker.
+      setDeckPicked((prev) => {
+        if (!(pageId in prev)) return prev;
+        const next = { ...prev };
+        delete next[pageId];
+        return next;
+      });
+      setDeckExpanded((cur) => (cur === pageId ? null : cur));
     },
     [deckPerSubject],
   );
 
   const setDeckCount = useCallback((pageId: number, count: number) => {
     setDeckSel((prev) => ({ ...prev, [pageId]: Math.max(1, count) }));
+  }, []);
+
+  // Expand/collapse a subject's specific-question picker; lazy-fetch its items on
+  // first open. Selecting a subject that wasn't checked yet also checks it, so a
+  // pick always contributes to the deck.
+  const openDeckPicker = useCallback(
+    (key: number, cardCount: number) => {
+      setDeckSearch("");
+      setDeckExpanded((cur) => (cur === key ? null : key));
+      setDeckSel((prev) => (key in prev ? prev : { ...prev, [key]: Math.max(1, Math.min(deckPerSubject, cardCount)) }));
+      setDeckItems((prevItems) => {
+        if (prevItems[key]) return prevItems; // already cached
+        setDeckItemsLoading((l) => ({ ...l, [key]: true }));
+        getDeckItems(deckSource, key)
+          .then((items) => setDeckItems((m) => ({ ...m, [key]: items })))
+          .catch((err) => {
+            console.error("[estudio] deck items failed", err);
+            setDeckItems((m) => ({ ...m, [key]: [] }));
+          })
+          .finally(() => setDeckItemsLoading((l) => ({ ...l, [key]: false })));
+        return prevItems;
+      });
+    },
+    [deckSource, deckPerSubject],
+  );
+
+  const toggleDeckPick = useCallback((key: number, id: number) => {
+    setDeckPicked((prev) => {
+      const cur = prev[key] ?? [];
+      const has = cur.includes(id);
+      const nextIds = has ? cur.filter((x) => x !== id) : [...cur, id];
+      const next = { ...prev };
+      if (nextIds.length === 0) delete next[key];
+      else next[key] = nextIds;
+      return next;
+    });
+  }, []);
+
+  // Add every currently-filtered item id to the subject's picks (union — doesn't
+  // drop picks hidden by the search filter).
+  const selectAllDeckPicks = useCallback((key: number, ids: number[]) => {
+    if (ids.length === 0) return;
+    setDeckPicked((prev) => {
+      const cur = prev[key] ?? [];
+      const merged = [...cur];
+      for (const id of ids) if (!merged.includes(id)) merged.push(id);
+      return { ...prev, [key]: merged };
+    });
+  }, []);
+
+  const clearDeckPicks = useCallback((key: number) => {
+    setDeckPicked((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   }, []);
 
   // Rasterize the offscreen deck node (#ig-card-batch) at true 2× resolution.
@@ -3969,8 +4047,13 @@ export function EstudioClient() {
   const generateDeck = useCallback(async () => {
     if (deckBusy) return;
     const selections = Object.entries(deckSel)
-      .map(([key, count]) => ({ key: Number(key), count }))
-      .filter((s) => s.count > 0);
+      .map(([key, count]) => {
+        const k = Number(key);
+        const picked = deckPicked[k];
+        // Manual mode: exactly the hand-picked ids (count follows the pick length).
+        return picked && picked.length > 0 ? { key: k, count: picked.length, pickedIds: picked } : { key: k, count };
+      })
+      .filter((s) => s.count > 0 || (s.pickedIds?.length ?? 0) > 0);
     if (selections.length === 0) {
       setDeckError(t("studio.deck.pickOne"));
       return;
@@ -4146,6 +4229,7 @@ export function EstudioClient() {
   }, [
     deckBusy,
     deckSel,
+    deckPicked,
     deckSource,
     deckShuffle,
     deckInterleave,
@@ -4400,6 +4484,16 @@ export function EstudioClient() {
               error={deckError}
               done={deckDone}
               sel={deckSel}
+              picked={deckPicked}
+              items={deckItems}
+              itemsLoading={deckItemsLoading}
+              expanded={deckExpanded}
+              search={deckSearch}
+              onSearch={setDeckSearch}
+              onOpenPicker={openDeckPicker}
+              onTogglePick={toggleDeckPick}
+              onSelectAllPicks={selectAllDeckPicks}
+              onClearPicks={clearDeckPicks}
               perSubject={deckPerSubject}
               onPerSubject={setDeckPerSubject}
               onToggleSubject={toggleDeckSubject}
@@ -5096,6 +5190,16 @@ type DeckBuilderPanelProps = {
   error: string | null;
   done: string | null;
   sel: Record<number, number>;
+  picked: Record<number, number[]>;
+  items: Record<number, DeckItemPreview[]>;
+  itemsLoading: Record<number, boolean>;
+  expanded: number | null;
+  search: string;
+  onSearch: (q: string) => void;
+  onOpenPicker: (key: number, count: number) => void;
+  onTogglePick: (key: number, id: number) => void;
+  onSelectAllPicks: (key: number, ids: number[]) => void;
+  onClearPicks: (key: number) => void;
   perSubject: number;
   onPerSubject: (n: number) => void;
   onToggleSubject: (key: number, count: number) => void;
@@ -5128,13 +5232,15 @@ function DeckBuilderPanel(props: DeckBuilderPanelProps) {
   const { t } = useTranslation();
   const {
     open, onToggleOpen, source, onSource, subjects, loading, error, done, sel, perSubject, onPerSubject,
+    picked, items, itemsLoading, expanded, search, onSearch, onOpenPicker, onTogglePick, onSelectAllPicks, onClearPicks,
     onToggleSubject, onSetCount, shuffle, onShuffle, interleave, onInterleave,
     numbering, onNumbering, includeTip, onIncludeTip, showTip, skipImages, onSkipImages,
     cover, onCover, dedupe, onDedupe, cap, onCap, busy, progress, onGenerate, onCancel, onPreviewStyle,
   } = props;
 
   const selectedIds = Object.keys(sel).map(Number);
-  const sumCards = selectedIds.reduce((n, id) => n + (sel[id] ?? 0), 0);
+  // A manually-picked subject contributes its pick count; others their stepper count.
+  const sumCards = selectedIds.reduce((n, id) => n + (picked[id]?.length || sel[id] || 0), 0);
   const totalCards = Math.min(cap, sumCards);
   const slides = totalCards * 2;
 
@@ -5150,6 +5256,16 @@ function DeckBuilderPanel(props: DeckBuilderPanelProps) {
     border: "1px solid rgba(192,132,232,0.35)",
   };
   const dim: React.CSSProperties = { fontSize: 12, color: "#8a8a95", margin: 0, lineHeight: 1.5 };
+  const linkBtn: React.CSSProperties = {
+    background: "none",
+    border: "none",
+    padding: 0,
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#c084e8",
+    cursor: busy ? "default" : "pointer",
+    whiteSpace: "nowrap",
+  };
 
   return (
     <div style={{ border: "1px solid rgba(192,132,232,0.28)", background: "rgba(122,29,145,0.08)", borderRadius: 14, padding: 14 }}>
@@ -5215,11 +5331,25 @@ function DeckBuilderPanel(props: DeckBuilderPanelProps) {
 
               <div
                 className="scrollbar-brand"
-                style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, paddingRight: 4 }}
+                style={{ maxHeight: expanded != null ? 460 : 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, paddingRight: 4 }}
               >
                 {subjects.map((s) => {
                   const on = s.key in sel;
                   const noun = t(source === "flashcard" ? "studio.deck.cards" : "studio.deck.questions");
+                  const pickedIds = picked[s.key] ?? [];
+                  const hasPicks = pickedIds.length > 0;
+                  const isOpen = expanded === s.key;
+                  const rowItems = items[s.key];
+                  const rowLoading = itemsLoading[s.key];
+                  const q = search.trim().toLowerCase();
+                  const filtered =
+                    isOpen && rowItems
+                      ? q
+                        ? rowItems.filter(
+                            (it) => it.label.toLowerCase().includes(q) || (it.source ?? "").toLowerCase().includes(q),
+                          )
+                        : rowItems
+                      : [];
                   return (
                     <div
                       key={s.key}
@@ -5258,15 +5388,143 @@ function DeckBuilderPanel(props: DeckBuilderPanelProps) {
                         </span>
                       </label>
                       {on ? (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                          <span style={{ fontSize: 11, color: "#9a9aa6" }}>{t("studio.deck.take")}</span>
-                          <DeckStepper
-                            value={sel[s.key] ?? 1}
-                            min={1}
-                            max={s.count}
-                            onChange={(n) => onSetCount(s.key, n)}
-                            disabled={busy}
-                          />
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 8,
+                            marginTop: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {hasPicks ? (
+                            <span style={{ fontSize: 11, color: "#c084e8", fontWeight: 600 }}>
+                              {t("studio.deck.chosen", { n: pickedIds.length })}
+                            </span>
+                          ) : (
+                            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: 11, color: "#9a9aa6" }}>{t("studio.deck.take")}</span>
+                              <DeckStepper
+                                value={sel[s.key] ?? 1}
+                                min={1}
+                                max={s.count}
+                                onChange={(n) => onSetCount(s.key, n)}
+                                disabled={busy}
+                              />
+                            </span>
+                          )}
+                          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {hasPicks ? (
+                              <button onClick={() => onClearPicks(s.key)} disabled={busy} style={{ ...linkBtn, color: "#9a9aa6" }}>
+                                {t("studio.deck.clearPicks")}
+                              </button>
+                            ) : null}
+                            <button
+                              onClick={() => onOpenPicker(s.key, s.count)}
+                              disabled={busy}
+                              style={{ ...linkBtn, color: isOpen ? "#e6d3f5" : "#c084e8" }}
+                            >
+                              {t("studio.deck.choose")} {isOpen ? "▲" : "▾"}
+                            </button>
+                          </span>
+                        </div>
+                      ) : null}
+
+                      {on && isOpen ? (
+                        <div style={{ marginTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 8 }}>
+                          {rowLoading ? (
+                            <p style={{ fontSize: 11, color: "#8a8a95", margin: 0 }}>{t("studio.deck.pickerLoading")}</p>
+                          ) : !rowItems || rowItems.length === 0 ? (
+                            <p style={{ fontSize: 11, color: "#8a8a95", margin: 0 }}>{t("studio.deck.pickerEmpty")}</p>
+                          ) : (
+                            <>
+                              <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => onSearch(e.target.value)}
+                                placeholder={t("studio.deck.pickerSearch")}
+                                disabled={busy}
+                                style={{
+                                  width: "100%",
+                                  boxSizing: "border-box",
+                                  padding: "7px 10px",
+                                  fontSize: 11.5,
+                                  color: "#e8e8ee",
+                                  background: "rgba(255,255,255,0.04)",
+                                  border: "1px solid rgba(255,255,255,0.12)",
+                                  borderRadius: 8,
+                                  outline: "none",
+                                }}
+                              />
+                              <div
+                                className="scrollbar-brand"
+                                style={{ maxHeight: 190, overflowY: "auto", marginTop: 6, display: "flex", flexDirection: "column", gap: 2, paddingRight: 4 }}
+                              >
+                                {filtered.length === 0 ? (
+                                  <p style={{ fontSize: 11, color: "#8a8a95", margin: "4px 0" }}>{t("studio.deck.pickerNoMatch")}</p>
+                                ) : (
+                                  filtered.map((it) => {
+                                    const checked = pickedIds.includes(it.id);
+                                    return (
+                                      <label
+                                        key={it.id}
+                                        style={{
+                                          display: "flex",
+                                          gap: 8,
+                                          alignItems: "flex-start",
+                                          cursor: busy ? "default" : "pointer",
+                                          padding: "5px 6px",
+                                          borderRadius: 6,
+                                          background: checked ? "rgba(192,132,232,0.1)" : "transparent",
+                                        }}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          disabled={busy}
+                                          onChange={() => onTogglePick(s.key, it.id)}
+                                          style={{ accentColor: "#7a1d91", width: 14, height: 14, marginTop: 2, flexShrink: 0 }}
+                                        />
+                                        <span style={{ flex: 1, minWidth: 0 }}>
+                                          {it.source ? (
+                                            <span style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: "#c084e8", display: "block", letterSpacing: "0.04em" }}>
+                                              {it.source}
+                                            </span>
+                                          ) : null}
+                                          <span style={{ fontSize: 11.5, color: "#d8d8de", lineHeight: 1.35, display: "block" }}>{it.label}</span>
+                                        </span>
+                                        {it.hasImage ? (
+                                          <span title={t("studio.deck.hasImageHint")} style={{ fontSize: 11, flexShrink: 0, marginTop: 1 }}>
+                                            🖼️
+                                          </span>
+                                        ) : null}
+                                      </label>
+                                    );
+                                  })
+                                )}
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, rowGap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                                <span style={{ fontFamily: FONT_MONO, fontSize: 10, color: "#8a8a95" }}>
+                                  {t("studio.deck.pickCount", { picked: pickedIds.length, total: rowItems.length })}
+                                </span>
+                                <span style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                                  <button
+                                    onClick={() => onSelectAllPicks(s.key, filtered.map((it) => it.id))}
+                                    disabled={busy || filtered.length === 0}
+                                    style={linkBtn}
+                                  >
+                                    {t("studio.deck.selectAll")}
+                                  </button>
+                                  {hasPicks ? (
+                                    <button onClick={() => onClearPicks(s.key)} disabled={busy} style={{ ...linkBtn, color: "#9a9aa6" }}>
+                                      {t("studio.deck.clearPicks")}
+                                    </button>
+                                  ) : null}
+                                </span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ) : null}
                     </div>

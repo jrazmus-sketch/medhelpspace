@@ -45,8 +45,22 @@ export type QuizDeckCard = {
   subjectTitle: string;
 };
 
+// One item in a subject's browse-and-pick list (the specific-question picker).
+// `label` is already plain text (flashcard prompt / quiz stem), truncated for
+// display; `source` is the quiz exam reference (null for flashcards); `hasImage`
+// flags items that lean on an image (shown so the picker can warn).
+export type DeckItemPreview = {
+  id: number;
+  label: string;
+  source: string | null;
+  hasImage: boolean;
+};
+
 // How many items to pull from a given subject (`key` per DeckSubject above).
-export type DeckSelection = { key: number; count: number };
+// `pickedIds`, when present and non-empty, puts the subject in MANUAL mode: the
+// build uses exactly those item ids (order preserved), ignoring `count`,
+// `shuffle` and `skipImageCards` for that subject. Absent/empty = auto sampling.
+export type DeckSelection = { key: number; count: number; pickedIds?: number[] };
 
 export type DeckBuildOptions = {
   // Random sample from each subject vs. the first N in stable order.

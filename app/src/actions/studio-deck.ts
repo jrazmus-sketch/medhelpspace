@@ -16,6 +16,8 @@ import type {
   QuizDeckCard,
   DeckSelection,
   DeckBuildOptions,
+  DeckItemPreview,
+  DeckSource,
 } from "@/lib/studio/deck-types";
 
 const STUDIO_ROLES = ["super_admin", "content_admin"];
@@ -85,21 +87,57 @@ async function specMetaForIds(
   return out;
 }
 
-// De-duplicate a selection list into ordered keys (first occurrence wins) plus a
-// key→count map (last write wins, clamped).
-function normalizeSelections(selections: DeckSelection[]): { orderedKeys: number[]; countByKey: Map<number, number> } {
-  const clean = selections.filter((s) => s.key && s.count > 0);
+// De-duplicate a selection list into ordered keys (first occurrence wins), a
+// key→count map (last write wins, clamped), and a key→picked-id-set map for
+// subjects in manual mode (last write wins).
+function normalizeSelections(selections: DeckSelection[]): {
+  orderedKeys: number[];
+  countByKey: Map<number, number>;
+  pickedByKey: Map<number, Set<number>>;
+} {
+  const clean = selections.filter((s) => s.key && (s.count > 0 || (s.pickedIds?.length ?? 0) > 0));
   const orderedKeys: number[] = [];
   const seen = new Set<number>();
   const countByKey = new Map<number, number>();
+  const pickedByKey = new Map<number, Set<number>>();
   for (const s of clean) {
     if (!seen.has(s.key)) {
       seen.add(s.key);
       orderedKeys.push(s.key);
     }
     countByKey.set(s.key, Math.max(0, Math.min(500, Math.floor(s.count))));
+    if (s.pickedIds && s.pickedIds.length > 0) {
+      pickedByKey.set(s.key, new Set(s.pickedIds));
+    } else {
+      pickedByKey.delete(s.key);
+    }
   }
-  return { orderedKeys, countByKey };
+  return { orderedKeys, countByKey, pickedByKey };
+}
+
+// Per-subject item selection shared by both build functions: manual mode uses
+// exactly the picked ids (order preserved, image/exclude filters bypassed —
+// the pick is an explicit override); auto mode applies skip-image + exclude +
+// count/shuffle as before. `hasImage` lets quiz cards (which don't carry the
+// flag on the card itself) reuse the same path via a lookup set.
+function selectForSubject<T extends { id: number }>(
+  all: T[],
+  picked: Set<number> | undefined,
+  want: number,
+  o: { shuffle: boolean; skipImageCards: boolean; exclude: Set<number>; hasImage: (c: T) => boolean },
+): T[] {
+  if (picked && picked.size > 0) return all.filter((c) => picked.has(c.id));
+  let pool = all;
+  if (o.skipImageCards) pool = pool.filter((c) => !o.hasImage(c));
+  if (o.exclude.size > 0) pool = pool.filter((c) => !o.exclude.has(c.id));
+  return o.shuffle ? shuffled(pool).slice(0, want) : pool.slice(0, want);
+}
+
+// Truncate a one-line label for the picker (keeps payloads small; the full text
+// is re-fetched at build time regardless).
+function truncateLabel(s: string, max = 140): string {
+  const clean = s.trim();
+  return clean.length > max ? clean.slice(0, max - 1).trimEnd() + "…" : clean;
 }
 
 // Arrange per-subject sampled lists into one deck: round-robin (interleave) or
@@ -176,7 +214,7 @@ export async function buildFlashcardDeck(
   await requireStudioRole();
   const admin = createAdminClient();
 
-  const { orderedKeys, countByKey } = normalizeSelections(selections);
+  const { orderedKeys, countByKey, pickedByKey } = normalizeSelections(selections);
   if (orderedKeys.length === 0) return [];
   const exclude = new Set(options.excludeIds ?? []);
 
@@ -207,7 +245,6 @@ export async function buildFlashcardDeck(
   const byPage = new Map<number, DeckCard[]>();
   for (const r of rows ?? []) {
     const id = r.id as number;
-    if (exclude.has(id)) continue;
     const prompt = ((r.text as string) ?? "").trim();
     const answer = ((r.answer as string) ?? "").trim();
     if (!prompt || !answer) continue;
@@ -229,10 +266,16 @@ export async function buildFlashcardDeck(
 
   const sampled = new Map<number, DeckCard[]>();
   for (const pid of orderedKeys) {
-    let all = byPage.get(pid) ?? [];
-    if (options.skipImageCards) all = all.filter((c) => !c.imageUrl);
-    const want = countByKey.get(pid) ?? 0;
-    sampled.set(pid, options.shuffle ? shuffled(all).slice(0, want) : all.slice(0, want));
+    const all = byPage.get(pid) ?? [];
+    sampled.set(
+      pid,
+      selectForSubject(all, pickedByKey.get(pid), countByKey.get(pid) ?? 0, {
+        shuffle: options.shuffle,
+        skipImageCards: options.skipImageCards,
+        exclude,
+        hasImage: (c) => !!c.imageUrl,
+      }),
+    );
   }
 
   return arrangeDeck(orderedKeys, sampled, options.interleave, options.cap);
@@ -335,7 +378,7 @@ export async function buildQuizDeck(
   await requireStudioRole();
   const admin = createAdminClient();
 
-  const { orderedKeys, countByKey } = normalizeSelections(selections);
+  const { orderedKeys, countByKey, pickedByKey } = normalizeSelections(selections);
   if (orderedKeys.length === 0) return [];
   const exclude = new Set(options.excludeIds ?? []);
   const specById = await specMetaForIds(admin, orderedKeys);
@@ -360,10 +403,8 @@ export async function buildQuizDeck(
     .order("position");
 
   const bySpec = new Map<number, QuizDeckCard[]>();
+  const imageIds = new Set<number>(); // quiz cards backed by media_url
   for (const r of rows ?? []) {
-    const id = r.id as number;
-    if (exclude.has(id)) continue;
-    if (options.skipImageCards && (r.media_url as string | null)) continue;
     const pm = pageMeta.get(r.page_id as number);
     if (!pm) continue;
     const spec = specById.get(pm.specId);
@@ -373,6 +414,7 @@ export async function buildQuizDeck(
       subjectTitle: spec?.name ?? "Questões",
     });
     if (!card) continue;
+    if (r.media_url as string | null) imageIds.add(card.id);
     if (!bySpec.has(pm.specId)) bySpec.set(pm.specId, []);
     bySpec.get(pm.specId)!.push(card);
   }
@@ -380,9 +422,76 @@ export async function buildQuizDeck(
   const sampled = new Map<number, QuizDeckCard[]>();
   for (const sid of orderedKeys) {
     const all = bySpec.get(sid) ?? [];
-    const want = countByKey.get(sid) ?? 0;
-    sampled.set(sid, options.shuffle ? shuffled(all).slice(0, want) : all.slice(0, want));
+    sampled.set(
+      sid,
+      selectForSubject(all, pickedByKey.get(sid), countByKey.get(sid) ?? 0, {
+        shuffle: options.shuffle,
+        skipImageCards: options.skipImageCards,
+        exclude,
+        hasImage: (c) => imageIds.has(c.id),
+      }),
+    );
   }
 
   return arrangeDeck(orderedKeys, sampled, options.interleave, options.cap);
+}
+
+// ── Item picker ────────────────────────────────────────────────────────────────
+
+/**
+ * List a single subject's items for the browse-and-pick picker. `key` is a deck
+ * page id (flashcards) or a specialty id (quiz). Returns the same buildable set
+ * the deck builders would draw from — malformed rows are filtered out so a
+ * picked id can never silently vanish at build time — in stable display order.
+ */
+export async function getDeckItems(source: DeckSource, key: number): Promise<DeckItemPreview[]> {
+  await requireStudioRole();
+  const admin = createAdminClient();
+
+  if (source === "flashcard") {
+    const { data: rows } = await admin
+      .from("flashcard_items")
+      .select("id, text, answer, image_url, group_position, position")
+      .eq("page_id", key)
+      .order("group_position")
+      .order("position");
+    const out: DeckItemPreview[] = [];
+    for (const r of rows ?? []) {
+      const prompt = ((r.text as string) ?? "").trim();
+      const answer = ((r.answer as string) ?? "").trim();
+      if (!prompt || !answer) continue;
+      out.push({
+        id: r.id as number,
+        label: truncateLabel(prompt),
+        source: null,
+        hasImage: !!(r.image_url as string | null),
+      });
+    }
+    return out;
+  }
+
+  // Quiz: every question on the specialty's pages, parsed to a display stem.
+  const { data: pages } = await admin.from("pages").select("id").eq("specialty_id", key);
+  const pageIds = (pages ?? []).map((p) => p.id as number);
+  if (pageIds.length === 0) return [];
+
+  const { data: rows } = await admin
+    .from("quiz_questions")
+    .select("id, question, answers, media_url, explanation_html, page_id, position")
+    .in("page_id", pageIds)
+    .order("page_id")
+    .order("position");
+
+  const out: DeckItemPreview[] = [];
+  for (const r of rows ?? []) {
+    const card = parseQuizRow(r as QuizRow, { specName: null, specSlug: null, subjectTitle: "" });
+    if (!card) continue;
+    out.push({
+      id: card.id,
+      label: truncateLabel(card.stem),
+      source: card.source,
+      hasImage: !!(r.media_url as string | null),
+    });
+  }
+  return out;
 }
