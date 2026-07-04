@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getMagnetQuestions, MAGNET_FREE_IDS } from "@/lib/magnet/questions";
-import { MagnetQuiz, type MagnetUtm } from "@/components/magnet/magnet-quiz";
+import { getMagnetQuestions, MAGNET_FREE_IDS, MAGNET_GATED_IDS } from "@/lib/magnet/questions";
+import { getResumeByToken } from "@/lib/magnet/result";
+import { MagnetQuiz, type MagnetUtm, type MagnetResume } from "@/components/magnet/magnet-quiz";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 import { SiteText } from "@/components/landing/site-text";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
@@ -43,6 +44,19 @@ export default async function SimuladoHonestoPage({
   };
 
   const freeQuestions = await getMagnetQuestions(MAGNET_FREE_IDS);
+
+  // Segment-B resume: a "come back and finish" email link carries ?retomar=<token>.
+  // Load the lead's stored answers + the gated questions so the quiz rehydrates where
+  // they stopped. Null (unknown/verified/completed token) → normal fresh quiz.
+  const retomar = pick("retomar");
+  let resume: MagnetResume | undefined;
+  if (retomar) {
+    const r = await getResumeByToken(retomar);
+    if (r) {
+      const gatedQuestions = await getMagnetQuestions(MAGNET_GATED_IDS);
+      resume = { ...r, gatedQuestions };
+    }
+  }
 
   // Live storefront prices for both selectable turmas, so the post-verify reward
   // shows the real price + its welcome discount (never a stale/hardcoded number).
@@ -104,7 +118,7 @@ export default async function SimuladoHonestoPage({
             />
           </p>
         ) : (
-          <MagnetQuiz freeQuestions={freeQuestions} utm={utm} offers={offers} />
+          <MagnetQuiz freeQuestions={freeQuestions} utm={utm} offers={offers} resume={resume} />
         )}
       </main>
 

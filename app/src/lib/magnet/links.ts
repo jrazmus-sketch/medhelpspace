@@ -27,6 +27,17 @@ export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> 
   [REVALIDA_2027_1_SLUG]: { code: "REVALIDA10", percent: 10 },
 };
 
+// Dedicated recovery coupons shown in the Segment-B "come back and finish" nudges —
+// one per turma, mirroring WELCOME_COUPONS. Kept separate from WELCOME for clean
+// attribution (recovery vs. welcome). Turma-scoped rates: revalida-2026-2 is ALREADY
+// discounted on the storefront so it caps at 5%; revalida-2027-1 gets 10%. Single
+// source of truth for the cron (code + percent + checkout link) and the email copy
+// ({{coupon}} / {{couponPercent}}). Seeded by schema-patch-lead-recovery.sql — keep in sync.
+export const RECOVERY_COUPONS: Record<string, { code: string; percent: number }> = {
+  [REVALIDA_2026_2_SLUG]: { code: "VOLTA5", percent: 5 },
+  [REVALIDA_2027_1_SLUG]: { code: "VOLTA10", percent: 10 },
+};
+
 export function magnetUrl(): string {
   return `${SITE_URL}${MAGNET_PATH}`;
 }
@@ -48,6 +59,20 @@ export function freeDeckUrl(): string {
 
 export function unsubscribeUrl(token: string): string {
   return `${SITE_URL}/api/leads/unsubscribe?t=${encodeURIComponent(token)}`;
+}
+
+// Segment-A recovery magic link (finished the test, never verified). Clicking it
+// stamps verified_at server-side — the click IS the confirmation — then redirects to
+// the durable reward page. The token is leads.result_token (unguessable UUID).
+export function recoverUrl(token: string): string {
+  return `${SITE_URL}${MAGNET_PATH}/recuperar?t=${encodeURIComponent(token)}`;
+}
+
+// Segment-B resume link (abandoned mid-quiz). Reopens the funnel with the lead's
+// stored answers rehydrated, jumping to the next unanswered question so they finish
+// where they stopped instead of restarting at Q1.
+export function resumeUrl(token: string): string {
+  return `${SITE_URL}${MAGNET_PATH}?retomar=${encodeURIComponent(token)}`;
 }
 
 // Offer/checkout link carrying the cohort, the lead's email (prefill → powers the

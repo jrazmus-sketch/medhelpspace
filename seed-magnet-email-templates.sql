@@ -134,6 +134,55 @@ VALUES
     '{{checkoutUrl}}',
     $json$[{"tag":"greeting","description":"Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)"},{"tag":"checkoutUrl","description":"Link de checkout com cupom último + e-mail"},{"tag":"unsubscribeUrl","description":"Link de cancelamento (one-click)"}]$json$::jsonb,
     19
+  ),
+  (
+    'lead-recover-finished',
+    '[Lead] Recuperação — terminou, faltou confirmar',
+    'Segmento A: respondeu as 15 mas não confirmou o e-mail. Link mágico que confirma em 1 clique e abre o plano — sem código.',
+    'Faltou 1 clique: seu plano e seus flashcards já estão prontos',
+    '',
+    'Seu material está pronto — falta só 1 clique',
+    $body$<p style="margin:0 0 16px;">{{greeting}}Você terminou o simulado (acertou <strong>{{score}}/15</strong>) mas parou antes de desbloquear o material. Ele já está montado esperando por você.</p>
+<p style="margin:0 0 8px;">🔹 Seu resultado completo e o plano de estudos priorizando <strong>{{weakSpecialties}}</strong></p>
+<p style="margin:0 0 16px;">🔹 A demonstração de flashcards com revisão espaçada das suas matérias mais fracas</p>
+<p style="margin:0 0 8px;">Sem código para digitar desta vez — é só clicar no botão abaixo e abrir tudo.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>$body$,
+    'Abrir meu plano (1 clique) →',
+    '{{recoverUrl}}',
+    $json$[{"tag":"greeting","description":"Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)"},{"tag":"score","description":"Acertos do lead (0–15)"},{"tag":"weakSpecialties","description":"Especialidades mais fracas (nomes)"},{"tag":"recoverUrl","description":"Link mágico de confirmação em 1 clique (token)"},{"tag":"unsubscribeUrl","description":"Link de cancelamento (one-click)"}]$json$::jsonb,
+    20
+  ),
+  (
+    'lead-recover-unfinished-1',
+    '[Lead] Recuperação — não terminou (1)',
+    'Segmento B, 1º lembrete (+1 dia): começou o simulado grátis e não terminou. Link retoma de onde parou. Cupom de recuperação como incentivo.',
+    'Você parou no meio do simulado — dá pra terminar em minutos',
+    '',
+    'Seu simulado ficou pela metade',
+    $body$<p style="margin:0 0 16px;">{{greeting}}Você começou o simulado grátis da 1ª etapa mas não chegou ao fim — e é lá, no final, que liberamos <strong>seu resultado comentado, o plano de estudos e a demonstração de flashcards</strong>.</p>
+<p style="margin:0 0 16px;">Suas respostas estão salvas: o link abaixo retoma exatamente de onde você parou. São só alguns minutos para terminar.</p>
+<p style="margin:0 0 8px;">E quando você decidir entrar no método completo, use o cupom <strong>{{coupon}}</strong> para <strong>{{couponPercent}} de desconto</strong>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>$body$,
+    'Terminar meu simulado →',
+    '{{resumeUrl}}',
+    $json$[{"tag":"greeting","description":"Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)"},{"tag":"resumeUrl","description":"Link que retoma o simulado de onde parou (token)"},{"tag":"coupon","description":"Cupom de recuperação (ex.: VOLTA10)"},{"tag":"couponPercent","description":"Percentual do cupom (ex.: 10%)"},{"tag":"unsubscribeUrl","description":"Link de cancelamento (one-click)"}]$json$::jsonb,
+    21
+  ),
+  (
+    'lead-recover-unfinished-2',
+    '[Lead] Recuperação — não terminou (2)',
+    'Segmento B, 2º e último lembrete (+3 dias): ainda não terminou. Reforça o incentivo + caminho direto para o checkout com o cupom.',
+    'Último lembrete: seu resultado e {{couponPercent}} de desconto esperam',
+    '',
+    'Seu progresso ainda está salvo',
+    $body$<p style="margin:0 0 16px;">{{greeting}}Este é o último lembrete — depois dele eu paro de te escrever sobre isso. Seu simulado ainda está salvo, exatamente onde você parou.</p>
+<p style="margin:0 0 16px;">Termine para ver <strong>onde você está</strong> na 1ª etapa e receber o plano até a data da sua prova. É rápido e é de graça.</p>
+<p style="margin:0 0 8px;">Se preferir já garantir o método completo, o cupom <strong>{{coupon}}</strong> dá <strong>{{couponPercent}} de desconto</strong>: <a href="{{checkoutUrl}}" style="color:#7a1d91;">ver as turmas</a>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>$body$,
+    'Terminar meu simulado →',
+    '{{resumeUrl}}',
+    $json$[{"tag":"greeting","description":"Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)"},{"tag":"resumeUrl","description":"Link que retoma o simulado de onde parou (token)"},{"tag":"coupon","description":"Cupom de recuperação (ex.: VOLTA10)"},{"tag":"couponPercent","description":"Percentual do cupom (ex.: 10%)"},{"tag":"checkoutUrl","description":"Link de checkout com cupom + e-mail"},{"tag":"unsubscribeUrl","description":"Link de cancelamento (one-click)"}]$json$::jsonb,
+    22
   )
 ON CONFLICT (kind) DO UPDATE SET
   name        = EXCLUDED.name,

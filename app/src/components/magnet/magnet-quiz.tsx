@@ -32,6 +32,16 @@ export type MagnetUtm = {
   gclid?: string; // Google Ads click id — attribution + offline conversion import
 };
 
+// Segment-B resume payload (from ?retomar=<token>, built server-side in the page).
+// Rehydrates the quiz where the lead stopped: known email (skips the gate), their
+// already-stored answers, and the gated questions so the full 15 are available.
+export type MagnetResume = {
+  email: string;
+  firstName: string | null;
+  answered: MagnetAnswer[];
+  gatedQuestions: MagnetQuestion[];
+};
+
 type AnswerRecord = {
   questionId: number;
   selectedIdx: number;
@@ -51,6 +61,24 @@ function toMagnetAnswers(records: Record<number, AnswerRecord>): MagnetAnswer[] 
   }));
 }
 
+// Rebuild the answers map from a resume payload's stored answers. selectedIdx is -1
+// (the stored result records correctness, not which option was tapped) — harmless
+// because resumed sessions jump PAST answered questions and never re-render them; the
+// records exist only to keep the running score and the final finalize payload complete.
+function resumeAnswerMap(answered: MagnetAnswer[]): Record<number, AnswerRecord> {
+  const map: Record<number, AnswerRecord> = {};
+  for (const a of answered) {
+    map[a.questionId] = {
+      questionId: a.questionId,
+      selectedIdx: -1,
+      isCorrect: a.isCorrect,
+      specialtyId: a.specialtyId,
+      pageId: a.pageId,
+    };
+  }
+  return map;
+}
+
 const FREE_COUNT = 5;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TURNSTILE_ENABLED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
@@ -59,20 +87,36 @@ export function MagnetQuiz({
   freeQuestions,
   utm,
   offers = {},
+  resume,
 }: {
   freeQuestions: MagnetQuestion[];
   utm: MagnetUtm;
   /** Live storefront price per turma slug, for the reward offer block. */
   offers?: Record<string, RewardOffer>;
+  /** Segment-B resume payload (from ?retomar). When set, the quiz rehydrates mid-run. */
+  resume?: MagnetResume;
 }) {
-  const [questions, setQuestions] = useState<MagnetQuestion[]>(freeQuestions);
-  const [idx, setIdx] = useState(0);
+  // On resume, the full 15-question set is known up front (free + gated) and we jump
+  // to the first still-unanswered question. Otherwise the classic flow: 5 free
+  // questions, then the gate unlocks the gated 10.
+  const resumeQuestions = resume ? [...freeQuestions, ...resume.gatedQuestions] : freeQuestions;
+  const resumeStartIdx = (() => {
+    if (!resume) return 0;
+    const answeredIds = new Set(resume.answered.map((a) => a.questionId));
+    const next = resumeQuestions.findIndex((q) => !answeredIds.has(q.id));
+    return next === -1 ? Math.max(0, resumeQuestions.length - 1) : next;
+  })();
+
+  const [questions, setQuestions] = useState<MagnetQuestion[]>(resumeQuestions);
+  const [idx, setIdx] = useState(resumeStartIdx);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [answers, setAnswers] = useState<Record<number, AnswerRecord>>({});
+  const [answers, setAnswers] = useState<Record<number, AnswerRecord>>(
+    resume ? resumeAnswerMap(resume.answered) : {},
+  );
   const [phase, setPhase] = useState<
     "welcome" | "quiz" | "gate" | "cohort" | "resultsFree" | "reward"
-  >("welcome");
-  const [email, setEmail] = useState("");
+  >(resume ? "quiz" : "welcome");
+  const [email, setEmail] = useState(resume?.email ?? "");
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [hp, setHp] = useState(""); // honeypot — real users leave this blank
   const [summary, setSummary] = useState<FreeResultSummary | null>(null);

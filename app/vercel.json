@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/lead-drip",
       "schedule": "30 12 * * *"
+    },
+    {
+      "path": "/api/cron/lead-recovery",
+      "schedule": "0 13 * * *"
     }
   ]
 }

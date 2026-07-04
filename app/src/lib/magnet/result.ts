@@ -40,6 +40,36 @@ function answersFromStoredResult(result: unknown): MagnetAnswer[] {
   }));
 }
 
+// Segment-B resume loader (/questoes-revalida?retomar=<result_token>). Returns just
+// enough to rehydrate the quiz where the lead stopped: their email (so no re-gate),
+// name, and the answers already stored (from the `result` JSON). Returns null — so the
+// page falls back to a normal fresh quiz — for an unknown token or a lead who is
+// already verified/completed (they belong on the reward page, not back in the quiz).
+// A pre-column lead with no stored `result` returns answered:[] → a clean restart with
+// the email pre-filled (graceful degradation; we simply never recorded their answers).
+export type LeadResume = {
+  email: string;
+  firstName: string | null;
+  answered: MagnetAnswer[];
+};
+
+export async function getResumeByToken(token: string): Promise<LeadResume | null> {
+  if (!token) return null;
+  const admin = createAdminClient();
+  const { data: lead } = await admin
+    .from("leads")
+    .select("email, first_name, result, verified_at, completed_at")
+    .eq("result_token", token)
+    .maybeSingle();
+  if (!lead) return null;
+  if (lead.verified_at || lead.completed_at) return null;
+  return {
+    email: (lead.email as string) ?? "",
+    firstName: (lead.first_name as string | null) ?? null,
+    answered: answersFromStoredResult(lead.result),
+  };
+}
+
 export async function getRewardByToken(token: string): Promise<LeadReward | null> {
   if (!token) return null;
   const admin = createAdminClient();
