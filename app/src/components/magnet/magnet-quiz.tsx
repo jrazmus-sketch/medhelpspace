@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { safe } from "@/lib/sanitize";
 import {
   captureLeadAndUnlock,
@@ -14,8 +14,10 @@ import type { MagnetAnswer, PlanPreview, FreeResultSummary } from "@/lib/magnet/
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetReward, scoreFraming, type RewardOffer } from "@/components/magnet/magnet-reward";
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
-import { trackFunnel, getFunnelSessionId } from "@/lib/magnet/funnel-track";
+import { trackFunnel, getFunnelSessionId, markLeadCaptured } from "@/lib/magnet/funnel-track";
 import { SiteText } from "@/components/landing/site-text";
+import { PayoffPreview } from "@/components/magnet/payoff-preview";
+import { PlatformPeekModal } from "@/components/magnet/platform-peek";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
 // security hook (see components/admin/editable-text.tsx).
@@ -88,6 +90,7 @@ export function MagnetQuiz({
   utm,
   offers = {},
   resume,
+  startImmediately = false,
 }: {
   freeQuestions: MagnetQuestion[];
   utm: MagnetUtm;
@@ -95,6 +98,13 @@ export function MagnetQuiz({
   offers?: Record<string, RewardOffer>;
   /** Segment-B resume payload (from ?retomar). When set, the quiz rehydrates mid-run. */
   resume?: MagnetResume;
+  /**
+   * Skip the welcome interstitial and drop straight into Q1 (the A/B "reduce
+   * time-to-Q1" path — wired to a `?direto=1` param in the landing page). The
+   * welcome payoff-preview + peek are traded for immediacy; trust still shows in
+   * the hero above.
+   */
+  startImmediately?: boolean;
 }) {
   // On resume, the full 15-question set is known up front (free + gated) and we jump
   // to the first still-unanswered question. Otherwise the classic flow: 5 free
@@ -115,7 +125,7 @@ export function MagnetQuiz({
   );
   const [phase, setPhase] = useState<
     "welcome" | "quiz" | "gate" | "cohort" | "resultsFree" | "reward"
-  >(resume ? "quiz" : "welcome");
+  >(resume || startImmediately ? "quiz" : "welcome");
   const [email, setEmail] = useState(resume?.email ?? "");
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [hp, setHp] = useState(""); // honeypot — real users leave this blank
@@ -132,6 +142,21 @@ export function MagnetQuiz({
   const correctAnswer = q?.answers.find((a) => a.correct);
   const selectedAnswer = answered ? q?.answers[selectedIdx] : null;
   const correctCount = Object.values(answers).filter((a) => a.isCorrect).length;
+
+  // Direct-start (resume or ?direto) enters the quiz without the welcome CTA, so fire
+  // the quiz_start beacon here instead (deduped per session by trackFunnel). A resume
+  // also means the email is already known — mark the lead captured so the exit-intent
+  // "salvar para depois" modal never nags a returning finisher.
+  useEffect(() => {
+    if (resume || startImmediately) trackFunnel("quiz_start", utm);
+    if (resume?.email) markLeadCaptured();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function startQuiz() {
+    trackFunnel("quiz_start", utm); // top-of-funnel: land → START → capture
+    setPhase("quiz");
+  }
 
   function handleSelect(i: number) {
     if (answered || !q) return;
@@ -214,6 +239,8 @@ export function MagnetQuiz({
         return;
       }
       setEmail(em);
+      // Email now on file — disarm the exit-intent "salvar para depois" modal.
+      markLeadCaptured();
       setQuestions([...freeQuestions, ...res.gatedQuestions]);
       setIdx(FREE_COUNT);
       setSelectedIdx(null);
@@ -384,6 +411,14 @@ export function MagnetQuiz({
         <p className="text-xs font-semibold uppercase tracking-wide text-brand">
           <SiteText as="span" k="magnet.wel_eyebrow" fallback="Antes de começar" />
         </p>
+        <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
+          <SiteText
+            as="span"
+            multiline
+            k="magnet.wel_headline"
+            fallback="Descubra seu nível real em 15 questões comentadas"
+          />
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground sm:text-base">
           <SiteText
             as="span"
@@ -392,6 +427,27 @@ export function MagnetQuiz({
             fallback="Você resolve, vê o comentário na hora e, no final, a gente monta seu plano de estudo — focado nas matérias que você errou. Sem pegadinha."
           />
         </p>
+
+        {/* Primary CTA — hoisted above the details so it stays above the fold on
+            mobile (reduce time-to-Q1). Everything below is for scrollers. */}
+        <button
+          onClick={startQuiz}
+          className="mt-5 w-full rounded-lg bg-brand px-5 py-3.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
+        >
+          <SiteText as="span" k="magnet.wel_cta" fallback="Começar agora →" />
+        </button>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          <SiteText
+            as="span"
+            k="magnet.wel_note"
+            fallback="Grátis · sem cartão · as 5 primeiras sem cadastro"
+          />
+        </p>
+
+        {/* Payoff preview — makes the loop concrete without pushing the CTA down. */}
+        <div className="mt-6">
+          <PayoffPreview />
+        </div>
 
         <ul className="mt-5 space-y-3 text-sm">
           <li className="flex items-start gap-3">
@@ -435,22 +491,10 @@ export function MagnetQuiz({
           </li>
         </ul>
 
-        <button
-          onClick={() => {
-            trackFunnel("quiz_start", utm); // top-of-funnel: land → START → capture
-            setPhase("quiz");
-          }}
-          className="mt-6 w-full rounded-lg bg-brand px-5 py-3.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
-        >
-          <SiteText as="span" k="magnet.wel_cta" fallback="Começar agora →" />
-        </button>
-        <p className="mt-3 text-center text-xs text-muted-foreground">
-          <SiteText
-            as="span"
-            k="magnet.wel_note"
-            fallback="Grátis · sem cartão · as 5 primeiras sem cadastro"
-          />
-        </p>
+        {/* Peek inside — opens a lightbox over the funnel (never navigates away). */}
+        <div className="mt-5 border-t border-border pt-4 text-center">
+          <PlatformPeekModal />
+        </div>
       </div>
     );
   }

@@ -301,6 +301,92 @@ export async function captureLeadAndUnlock(input: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// 1a. SAVE FOR LATER (exit-intent) — capture the email of a visitor LEAVING before
+//     they finish (or even start) the quiz, so the pre-verify recovery cron (Segment
+//     B) can nudge them back with the resume link. No answers, no gated unlock, and —
+//     same domain-reputation discipline as the Q5 soft capture — NO email sent inline;
+//     the sanctioned lead-recovery drip does the follow-up. Tagged
+//     capture_source='exit_intent' so it's distinguishable in /admin/leads.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function saveLeadForLater(input: {
+  email: string;
+  utm?: Utm;
+  honeypot?: string | null;
+  context?: { referrer?: string | null; landingPath?: string | null; sessionId?: string | null };
+}): Promise<{ ok: boolean; reason?: string }> {
+  const email = normalizeEmail(input.email);
+  if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
+  if (honeypotTripped(input.honeypot)) return { ok: false, reason: "honeypot" };
+  if (isDisposableEmail(email)) return { ok: false, reason: "disposable_email" };
+
+  const admin = createAdminClient();
+  const utm = input.utm ?? {};
+
+  const { data: existing } = await admin
+    .from("leads")
+    .select("id, capture_source, device_type, landing_referrer, landing_path, funnel_session_id")
+    .eq("email", email)
+    .maybeSingle();
+
+  const ctx = await captureContext();
+  const referrer = clamp(input.context?.referrer, 400);
+  const landingPath = clamp(input.context?.landingPath, 300);
+  const sessionId = clamp(input.context?.sessionId, 64);
+
+  if (existing) {
+    // Never regress a lead who already reached the quiz: only fill still-null context,
+    // and only stamp capture_source if it was never set. Progress / drip / completed_at
+    // are deliberately untouched here — an exit-intent re-submit must not downgrade a
+    // lead who has real quiz progress.
+    const patch: Record<string, unknown> = {};
+    if (existing.device_type == null) {
+      patch.user_agent = ctx.user_agent;
+      patch.device_type = ctx.device_type;
+      patch.geo_country = ctx.geo_country;
+      patch.geo_region = ctx.geo_region;
+      patch.geo_city = ctx.geo_city;
+    }
+    if (existing.landing_referrer == null && referrer) patch.landing_referrer = referrer;
+    if (existing.landing_path == null && landingPath) patch.landing_path = landingPath;
+    if (existing.funnel_session_id == null && sessionId) patch.funnel_session_id = sessionId;
+    if (existing.capture_source == null) patch.capture_source = "exit_intent";
+    if (Object.keys(patch).length > 0) {
+      const { error } = await admin.from("leads").update(patch).eq("id", existing.id);
+      if (error) {
+        console.error("saveLeadForLater update failed:", error.message);
+        return { ok: false, reason: "server_error" };
+      }
+    }
+  } else {
+    const { error } = await admin.from("leads").insert({
+      email,
+      capture_source: "exit_intent",
+      utm_source: utm.source ?? null,
+      utm_medium: utm.medium ?? null,
+      utm_campaign: utm.campaign ?? null,
+      utm_term: utm.term ?? null,
+      utm_content: utm.content ?? null,
+      gclid: utm.gclid ?? null,
+      user_agent: ctx.user_agent,
+      device_type: ctx.device_type,
+      geo_country: ctx.geo_country,
+      geo_region: ctx.geo_region,
+      geo_city: ctx.geo_city,
+      landing_referrer: referrer,
+      landing_path: landingPath,
+      funnel_session_id: sessionId,
+    });
+    if (error) {
+      console.error("saveLeadForLater insert failed:", error.message);
+      return { ok: false, reason: "server_error" };
+    }
+  }
+
+  return { ok: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // 1b. INCREMENTAL PROGRESS — fire-and-forget from the client after each gated
 //     answer (Q6→Q15). Keeps `questions_answered`/`score`/`result` current so a
 //     lead who abandons mid-quiz still shows accurate N/15 + diagnostics, instead

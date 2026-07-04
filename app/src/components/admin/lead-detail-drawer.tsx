@@ -269,6 +269,14 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
 
               {/* Attribution */}
               <Section title={t("leads.sectionAttribution")}>
+                <Field
+                  label={t("leads.attrCapture")}
+                  value={t(
+                    detail.captureSource === "exit_intent"
+                      ? "leads.capture_exit_intent"
+                      : "leads.capture_quiz",
+                  )}
+                />
                 <Field label={t("leads.attrSource")} value={detail.utmSource ?? detail.source ?? t("leads.sourceOrganic")} />
                 {detail.utmCampaign && <Field label={t("leads.attrCampaign")} value={detail.utmCampaign} />}
                 {detail.utmMedium && <Field label={t("leads.attrMedium")} value={detail.utmMedium} />}

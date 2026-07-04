@@ -1167,6 +1167,11 @@
     "attrGclid": "Google click ID",
     "attrReferrer": "Came from",
     "attrLanding": "Landing page",
+    "attrCapture": "Capture origin",
+    "captureExitIntent": "Saved for later",
+    "capture_quiz": "Quiz",
+    "capture_exit_intent": "Saved for later (left before finishing)",
+    "filterCapture": "Capture origin",
     "sectionContext": "Context",
     "device_mobile": "Mobile",
     "device_tablet": "Tablet",
@@ -1196,6 +1201,8 @@
     "sourceOrganic": "organic",
     "empty": "No funnel data yet. Events appear as soon as someone visits the simulado.",
     "cplNote": "CPL/CAC show here once you record ad spend.",
+    "savedForLater": "Saved for later",
+    "savedForLaterNote": "Captured outside the quiz (left before finishing). Not counted as email captures.",
     "warmingUp": "“Landed” and “Started” begin counting from now — leads captured before this have no such record."
   },
   "oci": {

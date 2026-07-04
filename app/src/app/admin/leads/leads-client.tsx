@@ -60,6 +60,7 @@ export function LeadsClient({ rows, summary }: Props) {
   const [tier, setTier] = useState<"all" | LeadTier>("all");
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
+  const [capture, setCapture] = useState("all");
   const [selected, setSelected] = useState<LeadRow | null>(null);
 
   function fmtDate(iso: string | null) {
@@ -79,13 +80,23 @@ export function LeadsClient({ rows, summary }: Props) {
       if (tier !== "all" && r.tier !== tier) return false;
       if (status !== "all" && effectiveStatus(r) !== status) return false;
       if (source !== "all" && (r.utmSource ?? "__organic__") !== source) return false;
+      if (capture !== "all") {
+        const cs = r.captureSource === "exit_intent" ? "exit_intent" : "quiz";
+        if (cs !== capture) return false;
+      }
       if (!q) return true;
       return (
         r.email.toLowerCase().includes(q) ||
         (r.firstName ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, tier, status, source]);
+  }, [rows, search, tier, status, source, capture]);
+
+  // Only offer the capture filter once at least one exit-intent lead exists.
+  const hasExitIntent = useMemo(
+    () => rows.some((r) => r.captureSource === "exit_intent"),
+    [rows],
+  );
 
   const statuses = useMemo(
     () => [...new Set(rows.map(effectiveStatus))],
@@ -137,6 +148,16 @@ export function LeadsClient({ rows, summary }: Props) {
   }
 
   function Progress({ row }: { row: LeadRow }) {
+    // Exit-intent leads never entered the quiz — a "0/15" would read as a bad score
+    // rather than "different capture channel". Show the origin badge instead.
+    if (row.captureSource === "exit_intent") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-600 dark:text-indigo-300">
+          <span aria-hidden>⏳</span>
+          {t("leads.captureExitIntent")}
+        </span>
+      );
+    }
     const answered = row.questionsAnswered ?? 0;
     return (
       <div className="space-y-1">
@@ -198,7 +219,7 @@ export function LeadsClient({ rows, summary }: Props) {
           <p className="text-sm text-muted-foreground">{t("leads.subtitle")}</p>
         </div>
         <span className="text-sm text-muted-foreground">
-          {search || tier !== "all" || status !== "all" || source !== "all"
+          {search || tier !== "all" || status !== "all" || source !== "all" || capture !== "all"
             ? `${filtered.length} / `
             : ""}
           {t(rows.length === 1 ? "leads.countOne" : "leads.countOther", {
@@ -289,6 +310,17 @@ export function LeadsClient({ rows, summary }: Props) {
                 {sourceLabel(b.source)}
               </option>
             ))}
+          </select>
+        )}
+        {hasExitIntent && (
+          <select
+            value={capture}
+            onChange={(e) => setCapture(e.target.value)}
+            className="min-h-[44px] rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50 sm:min-h-0"
+          >
+            <option value="all">{t("leads.filterCapture")}</option>
+            <option value="quiz">{t("leads.capture_quiz")}</option>
+            <option value="exit_intent">{t("leads.capture_exit_intent")}</option>
           </select>
         )}
       </div>

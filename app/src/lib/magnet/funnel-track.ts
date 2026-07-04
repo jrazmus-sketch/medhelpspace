@@ -49,3 +49,34 @@ export function trackFunnel(event: "landing" | "quiz_start", utm: MagnetUtm): vo
     send(event, "nostore", utm); // storage blocked → best-effort single send
   }
 }
+
+// ── Lead-captured signal (exit-intent coordination) ─────────────────────────────
+// The exit-intent "salvar para depois" modal lives at page level, separate from the
+// quiz's React state. Once the visitor has given their email anywhere in the funnel
+// (the Q5 gate, or a known ?retomar resume), we DON'T want to nag them to "save for
+// later". The quiz calls markLeadCaptured() at that moment; the modal reads the flag
+// (isLeadCaptured) and also listens for the LEAD_CAPTURED_EVENT to disarm live.
+
+const CAPTURED_KEY = "mhs_lead_captured";
+export const LEAD_CAPTURED_EVENT = "mhs:lead-captured";
+
+export function markLeadCaptured(): void {
+  try {
+    sessionStorage.setItem(CAPTURED_KEY, "1");
+  } catch {
+    /* storage blocked — the in-page event below still disarms an open modal */
+  }
+  try {
+    window.dispatchEvent(new Event(LEAD_CAPTURED_EVENT));
+  } catch {
+    /* non-browser / SSR — no-op */
+  }
+}
+
+export function isLeadCaptured(): boolean {
+  try {
+    return sessionStorage.getItem(CAPTURED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}

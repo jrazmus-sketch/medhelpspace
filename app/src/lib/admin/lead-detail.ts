@@ -45,6 +45,7 @@ export type LeadDetail = {
 
   // Attribution
   source: string | null;
+  captureSource: string | null; // 'exit_intent' (salvou p/ depois) | null (quiz)
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;
@@ -162,7 +163,7 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
   const { data: lead } = await admin
     .from("leads")
     .select(
-      "id, email, first_name, created_at, source, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, device_type, geo_city, geo_region, geo_country, landing_referrer, landing_path, user_agent, funnel_session_id, score, questions_answered, weak_specialty_ids, result, code_sent_at, code_attempts, verified_at, completed_at, drip_step, drip_status, last_emailed_at, converted_at, unsubscribed_at, recovery_a_sent_at, recovery_b_step, recovery_sent_at, target_cohort, result_token",
+      "id, email, first_name, created_at, source, capture_source, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, device_type, geo_city, geo_region, geo_country, landing_referrer, landing_path, user_agent, funnel_session_id, score, questions_answered, weak_specialty_ids, result, code_sent_at, code_attempts, verified_at, completed_at, drip_step, drip_status, last_emailed_at, converted_at, unsubscribed_at, recovery_a_sent_at, recovery_b_step, recovery_sent_at, target_cohort, result_token",
     )
     .eq("id", id)
     .maybeSingle();
@@ -270,6 +271,7 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
     createdAt: lead.created_at as string,
 
     source: (lead.source as string | null) ?? null,
+    captureSource: (lead.capture_source as string | null) ?? null,
     utmSource: (lead.utm_source as string | null) ?? null,
     utmMedium: (lead.utm_medium as string | null) ?? null,
     utmCampaign: (lead.utm_campaign as string | null) ?? null,

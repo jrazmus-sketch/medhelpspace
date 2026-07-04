@@ -20,7 +20,8 @@ export function FunnelPanel({ funnel }: Props) {
   const hasData =
     overall.landings > 0 ||
     overall.quizStarts > 0 ||
-    overall.captures > 0;
+    overall.captures > 0 ||
+    overall.savedForLater > 0;
 
   // Top-of-funnel starts collecting the moment the beacon ships; older leads have
   // no landing/start rows, so captures can exceed landings for a while.
@@ -81,6 +82,20 @@ export function FunnelPanel({ funnel }: Props) {
               </div>
             ))}
           </div>
+
+          {/* Exit-intent captures — a side channel, broken out so it never inflates
+              the quiz-capture step above. */}
+          {overall.savedForLater > 0 && (
+            <div className="rounded-xl border border-dashed border-border bg-surface-1 p-4 sm:max-w-sm">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                {t("funnel.savedForLater")}
+              </p>
+              <p className="mt-1 text-2xl font-bold tabular-nums">{overall.savedForLater}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t("funnel.savedForLaterNote")}
+              </p>
+            </div>
+          )}
 
           {warmingUp && (
             <p className="text-xs text-muted-foreground">{t("funnel.warmingUp")}</p>

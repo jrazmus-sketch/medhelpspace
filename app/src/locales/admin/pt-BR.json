@@ -1167,6 +1167,11 @@
     "attrGclid": "Google click ID",
     "attrReferrer": "Veio de",
     "attrLanding": "Página de entrada",
+    "attrCapture": "Origem da captura",
+    "captureExitIntent": "Salvou p/ depois",
+    "capture_quiz": "Quiz",
+    "capture_exit_intent": "Salvou para depois (saiu antes de terminar)",
+    "filterCapture": "Origem da captura",
     "sectionContext": "Contexto",
     "device_mobile": "Celular",
     "device_tablet": "Tablet",
@@ -1196,6 +1201,8 @@
     "sourceOrganic": "orgânico",
     "empty": "Sem dados de funil ainda. Os eventos aparecem assim que alguém acessa o simulado.",
     "cplNote": "CPL/CAC aparecem aqui quando você registrar o investimento em anúncios.",
+    "savedForLater": "Salvos p/ depois",
+    "savedForLaterNote": "Capturados fora do quiz (saíram antes de terminar). Não contam como captura de e-mail.",
     "warmingUp": "As etapas “Chegaram” e “Iniciaram” passam a contar a partir de agora — leads captados antes disso não têm esse registro."
   },
   "oci": {

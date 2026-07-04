@@ -13,7 +13,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export type FunnelStage = {
   landings: number; // distinct sessions that hit the landing (unique index dedups)
   quizStarts: number; // distinct sessions that clicked "Começar agora"
-  captures: number; // leads created (Q5 soft capture)
+  captures: number; // leads created via the QUIZ (Q5 soft capture) — excludes exit-intent
+  savedForLater: number; // leads captured by the exit-intent modal (never did the quiz)
   verified: number; // leads that confirmed the 6-digit code
   sales: number; // leads flipped to converted by a purchase
 };
@@ -26,7 +27,7 @@ export type FunnelOverview = {
 };
 
 function emptyStage(): FunnelStage {
-  return { landings: 0, quizStarts: 0, captures: 0, verified: 0, sales: 0 };
+  return { landings: 0, quizStarts: 0, captures: 0, savedForLater: 0, verified: 0, sales: 0 };
 }
 
 export async function getFunnelOverview(): Promise<FunnelOverview> {
@@ -34,7 +35,7 @@ export async function getFunnelOverview(): Promise<FunnelOverview> {
 
   const [{ data: events }, { data: leads }] = await Promise.all([
     admin.from("funnel_events").select("event_type, utm_source").limit(100000),
-    admin.from("leads").select("utm_source, verified_at, converted_at").limit(100000),
+    admin.from("leads").select("utm_source, verified_at, converted_at, capture_source").limit(100000),
   ]);
 
   const bucket = new Map<string, FunnelStage>();
@@ -55,7 +56,11 @@ export async function getFunnelOverview(): Promise<FunnelOverview> {
   }
   for (const l of leads ?? []) {
     const b = stageFor(keyOf(l.utm_source as string | null));
-    b.captures++;
+    // Exit-intent "salvar para depois" leads never entered the quiz — count them in
+    // their own bucket so they don't inflate the quiz-capture step. verified/sales
+    // still tally ALL leads (an exit-intent lead who later verified/bought counts).
+    if ((l.capture_source as string | null) === "exit_intent") b.savedForLater++;
+    else b.captures++;
     if (l.verified_at) b.verified++;
     if (l.converted_at) b.sales++;
   }
@@ -65,6 +70,7 @@ export async function getFunnelOverview(): Promise<FunnelOverview> {
     overall.landings += b.landings;
     overall.quizStarts += b.quizStarts;
     overall.captures += b.captures;
+    overall.savedForLater += b.savedForLater;
     overall.verified += b.verified;
     overall.sales += b.sales;
   }

@@ -3,6 +3,7 @@
 import type { PlanPreview } from "@/lib/magnet/plan-preview";
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
+import { PlatformPeek } from "@/components/magnet/platform-peek";
 import { WELCOME_COUPONS } from "@/lib/magnet/links";
 
 // Live storefront pricing for the turma, threaded from the server so the offer
@@ -225,6 +226,19 @@ export function MagnetReward({
           O método completo da 1ª etapa custa <strong className="text-foreground">R$3.990</strong> —
           menos do que custa reprovar uma vez.
         </p>
+      </div>
+
+      {/* Por dentro da plataforma — the "look how cool it is" moment delivered at the
+          buying decision (ideas 2 + 3): the real desktop screens, inline, no navigation
+          away. Reuses the same slider shown in the welcome peek. */}
+      <div className="rounded-2xl border border-border bg-surface-1 p-6">
+        <h3 className="text-lg font-bold tracking-tight">Por dentro da plataforma</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          É isto que continua te esperando depois do simulado.
+        </p>
+        <div className="mt-4">
+          <PlatformPeek />
+        </div>
       </div>
 
       {/* Offer */}

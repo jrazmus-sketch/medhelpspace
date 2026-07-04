@@ -4,8 +4,11 @@ import { getMagnetQuestions, MAGNET_FREE_IDS, MAGNET_GATED_IDS } from "@/lib/mag
 import { getResumeByToken } from "@/lib/magnet/result";
 import { MagnetQuiz, type MagnetUtm, type MagnetResume } from "@/components/magnet/magnet-quiz";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
+import { ExitIntentCapture } from "@/components/magnet/exit-intent-capture";
+import { TrustStrip } from "@/components/magnet/trust-strip";
 import { SiteText } from "@/components/landing/site-text";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
+import { getLandingStats } from "@/lib/landing/stats";
 import { REVALIDA_2026_2_SLUG, REVALIDA_2027_1_SLUG } from "@/lib/magnet/links";
 import type { RewardOffer } from "@/components/magnet/magnet-reward";
 
@@ -58,11 +61,17 @@ export default async function SimuladoHonestoPage({
     }
   }
 
+  // `?direto=1` (or any truthy value) skips the welcome interstitial and drops
+  // straight into Q1 — the A/B "reduce time-to-Q1" lever, set on paid-ad URLs.
+  const direto = Boolean(pick("direto"));
+
   // Live storefront prices for both selectable turmas, so the post-verify reward
   // shows the real price + its welcome discount (never a stale/hardcoded number).
-  const [p2026, p2027] = await Promise.all([
+  // Live content counts back the hero trust strip.
+  const [p2026, p2027, stats] = await Promise.all([
     getCohortProduct(REVALIDA_2026_2_SLUG),
     getCohortProduct(REVALIDA_2027_1_SLUG),
+    getLandingStats(),
   ]);
   const offers: Record<string, RewardOffer> = {};
   for (const p of [p2026, p2027]) {
@@ -107,6 +116,7 @@ export default async function SimuladoHonestoPage({
               fallback="Sem promessa de aprovação. Resolva, veja exatamente onde você está e receba um plano de estudo até a data da sua prova. As 5 primeiras são abertas — depois é só o seu e-mail."
             />
           </p>
+          <TrustStrip stats={stats} />
         </div>
 
         {freeQuestions.length === 0 ? (
@@ -118,9 +128,19 @@ export default async function SimuladoHonestoPage({
             />
           </p>
         ) : (
-          <MagnetQuiz freeQuestions={freeQuestions} utm={utm} offers={offers} resume={resume} />
+          <MagnetQuiz
+            freeQuestions={freeQuestions}
+            utm={utm}
+            offers={offers}
+            resume={resume}
+            startImmediately={direto}
+          />
         )}
       </main>
+
+      {/* Exit-intent "salvar para depois" — captures a leaving visitor's email before
+          the Q5 gate. Skipped on a ?retomar resume (email already on file). */}
+      {!resume && <ExitIntentCapture utm={utm} />}
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-5 py-6 text-xs text-muted-foreground">
