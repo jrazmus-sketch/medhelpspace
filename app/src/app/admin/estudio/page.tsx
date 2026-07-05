@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { EstudioClient } from "./estudio-client";
+import type { SavedTemplate } from "@/lib/studio/saved-templates";
 
 export const metadata = { title: "Instagram Studio" };
 
@@ -26,5 +27,16 @@ export default async function EstudioPage() {
     redirect("/admin");
   }
 
-  return <EstudioClient />;
+  // Shared saved-template library, read server-side (browser client hangs on
+  // reads in this app). Tolerate the table not existing yet in an environment
+  // where the schema patch hasn't been applied — the studio still works, just
+  // with an empty "Saved" row.
+  let initialTemplates: SavedTemplate[] = [];
+  const { data: tpls } = await supabase
+    .from("estudio_templates")
+    .select("*")
+    .order("updated_at", { ascending: false });
+  if (tpls) initialTemplates = tpls as SavedTemplate[];
+
+  return <EstudioClient initialTemplates={initialTemplates} />;
 }

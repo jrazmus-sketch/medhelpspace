@@ -9,6 +9,9 @@ import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { getFlashcardSubjects, buildFlashcardDeck, getQuizSubjects, buildQuizDeck, getDeckItems } from "@/actions/studio-deck";
 import type { DeckSubject, DeckCard, QuizDeckCard, DeckSource, DeckItemPreview } from "@/lib/studio/deck-types";
+import { listStudioTemplates, saveStudioTemplate, renameStudioTemplate, deleteStudioTemplate } from "./actions";
+import type { SavedTemplate, SavedTemplatePayload } from "@/lib/studio/saved-templates";
+import { SAVED_TEMPLATE_NAME_MAX } from "@/lib/studio/saved-templates";
 
 /*
   MedHelpSpace — Instagram Studio (admin)
@@ -337,15 +340,19 @@ type OvColor = "accent" | "fg" | "white" | "dark" | "custom";
 
 type Overlay = {
   id: string;
-  kind: "logo" | "badge" | "text" | "box";
-  src?: string; // logo image
+  kind: "logo" | "badge" | "text" | "box" | "image";
+  src?: string; // logo / image source (site path, pasted URL, or data: URL)
   text?: string; // badge / text / box copy (may contain \n line breaks)
   variant: "solid" | "outline" | "white" | "dark"; // badge only
   xPct: number; // center X, fraction of width
   yPct: number; // center Y, fraction of height
-  size: number; // logo width px, OR badge/text/box font-size px (design space)
+  size: number; // logo/image width px, OR badge/text/box font-size px (design space)
   rot: number; // degrees
-  // text + box elements (optional; undefined on logo/badge):
+  // Stacking relative to the CARD CONTENT: "front" (over the headline/body, the
+  // default) or "back" (a background layer behind everything). Distinct from the
+  // ▲/▼ reorder, which only sorts elements within the same layer.
+  layer?: "front" | "back";
+  // text + box elements (optional; undefined on logo/badge/image):
   color?: OvColor; // text / stroke color
   customColor?: string; // hex when color === "custom"
   align?: "left" | "center" | "right"; // text alignment (default center)
@@ -421,18 +428,25 @@ function badgeStyle(variant: Overlay["variant"], accent: string): React.CSSPrope
   }
 }
 
-function OverlayLayer() {
+// Renders one stacking band of overlays. `where: "front"` (default) paints
+// ABOVE the card content at zIndex 20; `where: "back"` paints a background band
+// that CardShell mounts before the content (no explicit z-index → the content,
+// later in the DOM, stays on top). Splitting by `o.layer` is what lets an image
+// (or any element) sit "behind everything".
+function OverlayLayer({ where = "front" }: { where?: "front" | "back" }) {
   const ctx = React.useContext(OverlayContext);
   const theme = React.useContext(CardThemeContext);
   // Which center guide(s) to draw — set while a drag snaps to canvas center.
   const [guides, setGuides] = React.useState<{ v: boolean; h: boolean }>({ v: false, h: false });
-  if (!ctx || ctx.overlays.length === 0) return null;
-  const { overlays, accent, editable, selectedId, effectiveScale, canvasH, onSelect, onMove, onUpdate } = ctx;
+  if (!ctx) return null;
+  const { accent, editable, selectedId, effectiveScale, canvasH, onSelect, onMove, onUpdate } = ctx;
+  const overlays = ctx.overlays.filter((o) => (o.layer ?? "front") === where);
+  if (overlays.length === 0) return null;
 
   const clearGuides = () => setGuides((g) => (g.v || g.h ? { v: false, h: false } : g));
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 20, pointerEvents: "none" }}>
+    <div style={{ position: "absolute", inset: 0, zIndex: where === "front" ? 20 : undefined, pointerEvents: "none" }}>
       {/* center alignment guides — only visible mid-drag when snapping */}
       {editable && guides.v ? (
         <div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", width: 1, transform: "translateX(-0.5px)", background: accent, opacity: 0.75, zIndex: 40 }} />
@@ -480,8 +494,8 @@ function OverlayLayer() {
             });
           } else if (o.kind === "text") {
             onUpdate(o.id, { width: clampN((o.width ?? 640) + 2 * du, 120, 1040) });
-          } else if (o.kind === "logo") {
-            onUpdate(o.id, { size: clampN(o.size + 2 * du, 80, 640) });
+          } else if (o.kind === "logo" || o.kind === "image") {
+            onUpdate(o.id, { size: clampN(o.size + 2 * du, 80, o.kind === "image" ? 1200 : 640) });
           } else {
             onUpdate(o.id, { size: clampN(o.size + du, 26, 120) });
           }
@@ -489,8 +503,30 @@ function OverlayLayer() {
 
         const elColor = ovColorHex(o, accent, theme);
         let content: React.ReactNode;
-        if (o.kind === "logo") {
-          content = <img data-no-frame src={o.src} alt="" draggable={false} style={{ display: "block", width: o.size, height: "auto", userSelect: "none" }} />;
+        if (o.kind === "logo" || o.kind === "image") {
+          content = o.src ? (
+            <img data-no-frame src={o.src} alt="" draggable={false} style={{ display: "block", width: o.size, height: "auto", userSelect: "none" }} />
+          ) : (
+            // Empty image element (no source picked yet) — a visible placeholder
+            // so it's still selectable/positionable on the canvas.
+            <div
+              style={{
+                width: o.size,
+                height: o.size * 0.62,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: o.size * 0.3,
+                borderRadius: 12,
+                border: `2px dashed ${hexA(accent, 0.5)}`,
+                background: hexA(accent, 0.08),
+                color: hexA(accent, 0.8),
+                userSelect: "none",
+              }}
+            >
+              🖼️
+            </div>
+          );
         } else if (o.kind === "badge") {
           content = (
             <span
@@ -718,6 +754,10 @@ function CardShell({
           background: `linear-gradient(90deg, ${accent}, transparent 70%)`,
         }}
       />
+      {/* background element band — behind the content, above the decor. Mounted
+          before the content so a "behind everything" image/box paints under the
+          headline/body. Captured on export. */}
+      <OverlayLayer where="back" />
       {/* content */}
       {centered ? (
         <div
@@ -734,8 +774,8 @@ function CardShell({
       ) : (
         inner
       )}
-      {/* logo / sticker layer — above content, captured on export */}
-      <OverlayLayer />
+      {/* foreground element band — above content, captured on export */}
+      <OverlayLayer where="front" />
     </div>
   );
 }
@@ -3586,7 +3626,7 @@ function writeSeenIds(key: string, ids: number[]): void {
   }
 }
 
-export function EstudioClient() {
+export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: SavedTemplate[] }) {
   const { t } = useTranslation();
   const [templateId, setTemplateId] = useState<TemplateId>("questao");
   const [accent, setAccent] = useState<string>("#c084e8");
@@ -3616,6 +3656,14 @@ export function EstudioClient() {
     for (const tpl of TEMPLATES) init[tpl.id] = { ...tpl.defaults };
     return init;
   });
+
+  // ── Saved (custom) templates — shared team library, seeded server-side ──
+  const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>(initialTemplates);
+  const [activeSavedId, setActiveSavedId] = useState<string | null>(null);
+  const [saveOpen, setSaveOpen] = useState<boolean>(false);
+  const [saveName, setSaveName] = useState<string>("");
+  const [saveBusy, setSaveBusy] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // ── Deck generator (flashcards + quiz) ──
   // `batchCard` drives the offscreen render node during a batch: set it to a
@@ -3676,13 +3724,15 @@ export function EstudioClient() {
     const id = `ov-${kind}-${overlaySeq.current++}`;
     let ov: Overlay;
     if (kind === "logo") {
-      ov = { id, kind: "logo", src: BRAND_LOGOS[0], variant: "solid", xPct: 0.5, yPct: 0.5, size: 260, rot: 0 };
+      ov = { id, kind: "logo", src: BRAND_LOGOS[0], variant: "solid", xPct: 0.5, yPct: 0.5, size: 260, rot: 0, layer: "front" };
+    } else if (kind === "image") {
+      ov = { id, kind: "image", src: SITE_IMAGES[0], variant: "solid", xPct: 0.5, yPct: 0.5, size: 640, rot: 0, layer: "front" };
     } else if (kind === "badge") {
-      ov = { id, kind: "badge", text: BADGE_PRESETS[0], variant: "solid", xPct: 0.72, yPct: 0.22, size: 46, rot: -8 };
+      ov = { id, kind: "badge", text: BADGE_PRESETS[0], variant: "solid", xPct: 0.72, yPct: 0.22, size: 46, rot: -8, layer: "front" };
     } else if (kind === "text") {
-      ov = { id, kind: "text", text: "Escreva aqui\nmais de uma linha", variant: "solid", xPct: 0.5, yPct: 0.5, size: 54, rot: 0, color: "fg", align: "center", bold: true, width: 660 };
+      ov = { id, kind: "text", text: "Escreva aqui\nmais de uma linha", variant: "solid", xPct: 0.5, yPct: 0.5, size: 54, rot: 0, color: "fg", align: "center", bold: true, width: 660, layer: "front" };
     } else {
-      ov = { id, kind: "box", text: "", variant: "solid", xPct: 0.5, yPct: 0.5, size: 40, rot: 0, color: "accent", align: "center", bold: false, width: 540, height: 320, radius: 16, border: 2, fill: "none" };
+      ov = { id, kind: "box", text: "", variant: "solid", xPct: 0.5, yPct: 0.5, size: 40, rot: 0, color: "accent", align: "center", bold: false, width: 540, height: 320, radius: 16, border: 2, fill: "none", layer: "front" };
     }
     setOverlays((prev) => [...prev, ov]);
     setSelectedOverlay(id);
@@ -3750,6 +3800,135 @@ export function EstudioClient() {
   const resetCurrent = useCallback(() => {
     setAllValues((prev) => ({ ...prev, [templateId]: { ...template.defaults } }));
   }, [templateId, template.defaults]);
+
+  // ── Saved (custom) templates ──
+  // Uploaded images are session-bound blob: URLs that die on reload, so inline
+  // them as data: URLs before persisting. Site-library images (/public paths)
+  // and pasted CDN URLs are already durable and pass through untouched.
+  const toPersistableSrc = useCallback(async (src: string | undefined): Promise<string | undefined> => {
+    if (!src || !src.startsWith("blob:")) return src;
+    try {
+      const res = await fetch(src);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("read failed"));
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return undefined; // upload gone — drop it rather than persist a dead ref
+    }
+  }, []);
+
+  const buildTemplatePayload = useCallback(async (): Promise<SavedTemplatePayload> => {
+    const persistOverlays = await Promise.all(
+      overlays.map(async (o) => ({ ...o, src: await toPersistableSrc(o.src) })),
+    );
+    const vals = allValues[templateId] ?? {};
+    const persistVals: Vals = {};
+    for (const [k, v] of Object.entries(vals)) {
+      persistVals[k] = v.startsWith("blob:") ? (await toPersistableSrc(v)) ?? "" : v;
+    }
+    return {
+      values: persistVals,
+      overlays: persistOverlays,
+      accent, accentIsCustom, accentCustom,
+      bg, bgCustom, layout, footerShow, footerText,
+      textScale, ratioId, glowOn, gridOn,
+    };
+  }, [
+    overlays, allValues, templateId, accent, accentIsCustom, accentCustom, bg, bgCustom,
+    layout, footerShow, footerText, textScale, ratioId, glowOn, gridOn, toPersistableSrc,
+  ]);
+
+  const handleSaveTemplate = useCallback(async () => {
+    const name = saveName.trim();
+    if (!name) {
+      setSaveError(t("studio.saved.nameRequired"));
+      return;
+    }
+    setSaveBusy(true);
+    setSaveError(null);
+    try {
+      const payload = await buildTemplatePayload();
+      const row = await saveStudioTemplate({ name, baseTemplateId: templateId, payload });
+      setSavedTemplates((prev) => [row, ...prev]);
+      setActiveSavedId(row.id);
+      setSaveOpen(false);
+      setSaveName("");
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : t("studio.saved.saveFailed"));
+    } finally {
+      setSaveBusy(false);
+    }
+  }, [saveName, buildTemplatePayload, templateId, t]);
+
+  const applySavedTemplate = useCallback(
+    (saved: SavedTemplate) => {
+      const base = TEMPLATES.find((tp) => tp.id === saved.base_template_id);
+      if (!base) {
+        setSaveError(t("studio.saved.baseMissing"));
+        return;
+      }
+      const p = saved.payload ?? ({} as SavedTemplatePayload);
+      setTemplateId(base.id);
+      setAllValues((prev) => ({ ...prev, [base.id]: { ...base.defaults, ...(p.values ?? {}) } }));
+      const ovs = Array.isArray(p.overlays) ? (p.overlays as Overlay[]) : [];
+      setOverlays(ovs);
+      overlaySeq.current = ovs.length;
+      setSelectedOverlay(null);
+      if (typeof p.accent === "string") setAccent(p.accent);
+      if (typeof p.accentIsCustom === "boolean") setAccentIsCustom(p.accentIsCustom);
+      if (typeof p.accentCustom === "string") setAccentCustom(p.accentCustom);
+      if (typeof p.bg === "string") setBg(p.bg as BgId);
+      if (typeof p.bgCustom === "string") setBgCustom(p.bgCustom);
+      if (p.layout === "center" || p.layout === "fill") setLayout(p.layout);
+      if (typeof p.footerShow === "boolean") setFooterShow(p.footerShow);
+      if (typeof p.footerText === "string") setFooterText(p.footerText);
+      if (typeof p.textScale === "string") setTextScale(p.textScale);
+      if (typeof p.ratioId === "string") setRatioId(p.ratioId as RatioId);
+      if (typeof p.glowOn === "boolean") setGlowOn(p.glowOn);
+      if (typeof p.gridOn === "boolean") setGridOn(p.gridOn);
+      setActiveSavedId(saved.id);
+    },
+    [t],
+  );
+
+  const handleRenameTemplate = useCallback(
+    async (id: string, currentName: string) => {
+      const next = typeof window !== "undefined" ? window.prompt(t("studio.saved.renamePrompt"), currentName) : null;
+      if (next == null) return;
+      const clean = next.trim().slice(0, SAVED_TEMPLATE_NAME_MAX);
+      if (!clean || clean === currentName) return;
+      setSavedTemplates((prev) => prev.map((s) => (s.id === id ? { ...s, name: clean } : s)));
+      try {
+        await renameStudioTemplate(id, clean);
+      } catch {
+        try {
+          setSavedTemplates(await listStudioTemplates());
+        } catch {
+          /* leave optimistic value */
+        }
+      }
+    },
+    [t],
+  );
+
+  const handleDeleteTemplate = useCallback(
+    async (id: string, name: string) => {
+      if (typeof window !== "undefined" && !window.confirm(t("studio.saved.deleteConfirm", { name }))) return;
+      const snapshot = savedTemplates;
+      setSavedTemplates((cur) => cur.filter((s) => s.id !== id));
+      setActiveSavedId((cur) => (cur === id ? null : cur));
+      try {
+        await deleteStudioTemplate(id);
+      } catch {
+        setSavedTemplates(snapshot); // restore on failure
+      }
+    },
+    [savedTemplates, t],
+  );
 
   // ── Caption helper ──
   const genCaption = useCallback(() => {
@@ -4572,10 +4751,15 @@ export function EstudioClient() {
                       {t(`studio.group.${grp.key}`)}
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                      {grp.ids.map((id) => (
+                      {grp.ids.map((id) => {
+                        const on = templateId === id && !activeSavedId;
+                        return (
                         <button
                           key={id}
-                          onClick={() => setTemplateId(id)}
+                          onClick={() => {
+                            setTemplateId(id);
+                            setActiveSavedId(null);
+                          }}
                           style={{
                             padding: "10px 12px",
                             fontSize: 13,
@@ -4584,21 +4768,179 @@ export function EstudioClient() {
                             cursor: "pointer",
                             transition: "all .15s",
                             textAlign: "left",
-                            color: templateId === id ? "#fff" : "#cfcfd6",
-                            background: templateId === id ? "#7a1d91" : "rgba(255,255,255,0.04)",
-                            border:
-                              templateId === id
-                                ? "1px solid #c084e8"
-                                : "1px solid rgba(255,255,255,0.06)",
+                            color: on ? "#fff" : "#cfcfd6",
+                            background: on ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                            border: on ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.06)",
                           }}
                         >
                           {t(`studio.templates.${id}`)}
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* ── Saved (custom) templates — your reusable, hand-built layouts ── */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                <Label>{t("studio.saved.title")}</Label>
+                <button
+                  onClick={() => {
+                    setSaveOpen((v) => !v);
+                    setSaveError(null);
+                    setSaveName("");
+                  }}
+                  style={{
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: "#e6d3f5",
+                    background: "rgba(122,29,145,0.2)",
+                    border: "1px solid rgba(192,132,232,0.3)",
+                    borderRadius: 8,
+                    padding: "6px 11px",
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ＋ {t("studio.saved.saveAction")}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: "#8a8a95", margin: "0 0 8px", lineHeight: 1.5 }}>
+                {t("studio.saved.help")}
+              </p>
+
+              {saveOpen ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    marginBottom: 10,
+                    padding: 12,
+                    borderRadius: 12,
+                    background: "rgba(122,29,145,0.08)",
+                    border: "1px solid rgba(192,132,232,0.22)",
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !saveBusy) handleSaveTemplate();
+                    }}
+                    placeholder={t("studio.saved.namePlaceholder")}
+                    maxLength={SAVED_TEMPLATE_NAME_MAX}
+                    autoFocus
+                    style={inputStyle}
+                  />
+                  {saveError ? <div style={{ fontSize: 11, color: "#ff9d9d" }}>{saveError}</div> : null}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      onClick={handleSaveTemplate}
+                      disabled={saveBusy}
+                      style={{
+                        flex: 1,
+                        padding: "8px 0",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        cursor: saveBusy ? "default" : "pointer",
+                        color: "#fff",
+                        background: "#7a1d91",
+                        border: "1px solid #c084e8",
+                        opacity: saveBusy ? 0.6 : 1,
+                      }}
+                    >
+                      {saveBusy ? t("studio.saved.saving") : t("studio.saved.confirm")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSaveOpen(false);
+                        setSaveError(null);
+                      }}
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        color: "#cfcfd6",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      {t("studio.saved.cancel")}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {savedTemplates.length === 0 ? (
+                <p style={{ fontSize: 11.5, color: "#7f7f8c", margin: 0, fontStyle: "italic" }}>{t("studio.saved.empty")}</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {savedTemplates.map((s) => {
+                    const on = activeSavedId === s.id;
+                    const iconBtn: React.CSSProperties = {
+                      flexShrink: 0,
+                      width: 30,
+                      height: 30,
+                      fontSize: 13,
+                      borderRadius: 7,
+                      cursor: "pointer",
+                      color: on ? "#fff" : "#cfcfd6",
+                      background: on ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                    };
+                    return (
+                      <div
+                        key={s.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "7px 8px 7px 11px",
+                          borderRadius: 10,
+                          background: on ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                          border: on ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.06)",
+                        }}
+                      >
+                        <button
+                          onClick={() => applySavedTemplate(s)}
+                          title={t("studio.saved.applyTitle")}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            textAlign: "left",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 0,
+                            color: on ? "#fff" : "#e8e8ea",
+                          }}
+                        >
+                          <div style={{ fontSize: 12.5, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {s.name}
+                          </div>
+                          <div style={{ fontFamily: FONT_MONO, fontSize: 9.5, color: on ? "rgba(255,255,255,0.7)" : "#7f7f8c" }}>
+                            {t(`studio.templates.${s.base_template_id}`, { defaultValue: s.base_template_id })}
+                          </div>
+                        </button>
+                        <button onClick={() => handleRenameTemplate(s.id, s.name)} title={t("studio.saved.rename")} style={iconBtn}>
+                          ✎
+                        </button>
+                        <button onClick={() => handleDeleteTemplate(s.id, s.name)} title={t("studio.saved.delete")} style={{ ...iconBtn, color: "#ff9d9d" }}>
+                          🗑
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Flashcard deck generator */}
@@ -6308,6 +6650,7 @@ function OverlayControls({
 
   const chipLabel = (o: Overlay): string => {
     if (o.kind === "logo") return "🖼 " + t("studio.addLogo");
+    if (o.kind === "image") return "🌄 " + t("studio.imageEl");
     if (o.kind === "badge") return "🏷 " + (o.text || t("studio.addBadge"));
     const first = (o.text || "").split("\n")[0].trim();
     if (o.kind === "text") return "✏ " + (first || t("studio.addText"));
@@ -6343,6 +6686,9 @@ function OverlayControls({
         ) : null}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        <button onClick={() => onAdd("image")} style={addBtn}>
+          ＋ {t("studio.imageEl")}
+        </button>
         <button onClick={() => onAdd("logo")} style={addBtn}>
           ＋ {t("studio.addLogo")}
         </button>
@@ -6458,6 +6804,8 @@ function OverlayControls({
                 style={{ display: "none" }}
               />
             </>
+          ) : selected.kind === "image" ? (
+            <ImageField value={selected.src ?? ""} onChange={(v) => onUpdate(selected.id, { src: v })} />
           ) : selected.kind === "badge" ? (
             <>
               <input
@@ -6596,17 +6944,46 @@ function OverlayControls({
             </>
           )}
 
-          {selected.kind === "logo" || selected.kind === "badge" ? (
+          {selected.kind === "logo" || selected.kind === "image" || selected.kind === "badge" ? (
             <OvSlider
               label={t("studio.overlaySize")}
               value={selected.size}
-              min={selected.kind === "logo" ? 80 : 26}
-              max={selected.kind === "logo" ? 560 : 110}
+              min={selected.kind === "badge" ? 26 : 80}
+              max={selected.kind === "logo" ? 560 : selected.kind === "image" ? 1200 : 110}
               onChange={(n) => onUpdate(selected.id, { size: n })}
             />
           ) : null}
 
           <OvSlider label={t("studio.overlayRotate")} value={selected.rot} min={-30} max={30} onChange={(n) => onUpdate(selected.id, { rot: n })} />
+
+          {/* Depth: over the content, or behind everything (background layer). */}
+          <div>
+            <div style={mini}>{t("studio.elementLayer")}</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {(["front", "back"] as const).map((lyr) => {
+                const on = (selected.layer ?? "front") === lyr;
+                return (
+                  <button
+                    key={lyr}
+                    onClick={() => onUpdate(selected.id, { layer: lyr })}
+                    style={{
+                      flex: 1,
+                      padding: "8px 0",
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      color: on ? "#fff" : "#cfcfd6",
+                      background: on ? "#7a1d91" : "rgba(255,255,255,0.04)",
+                      border: on ? "1px solid #c084e8" : "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    {lyr === "front" ? t("studio.layerFront") : t("studio.layerBack")}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {/* order + duplicate actions */}
           <div style={{ display: "flex", gap: 6 }}>
