@@ -52,24 +52,54 @@ export default async function FlashcardsRevalidaPage({
   );
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background text-foreground">
+    <div
+      className="relative flex min-h-screen flex-col overflow-hidden text-foreground"
+      style={{ background: "radial-gradient(ellipse 140% 85% at 50% -8%, #160a34 0%, #0a0620 44%, #030109 100%)" }}
+    >
       <FunnelBeacon utm={utm} />
-      {/* Ambient brand glow + faint grid texture (atmosphere, not noise). */}
+
+      {/* ── "ECG-world" backdrop (matches the front page) ──────────────────────
+          A perspective-tilted glowing purple grid receding behind the hero,
+          faded out before the content sections. CSS-only (no canvas) so the page
+          stays a fast server component. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[120vh] overflow-hidden"
+        style={{
+          maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 92%)",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 92%)",
+        }}
+      >
+        <div
+          className="absolute"
+          style={{
+            inset: "-25% -12%",
+            backgroundImage:
+              "linear-gradient(rgba(140,100,240,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(140,100,240,0.16) 1px, transparent 1px), linear-gradient(rgba(110,80,210,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(110,80,210,0.07) 1px, transparent 1px)",
+            backgroundSize: "84px 84px, 84px 84px, 21px 21px, 21px 21px",
+            transform: "perspective(1100px) rotateX(24deg)",
+            transformOrigin: "50% 40%",
+          }}
+        />
+      </div>
+
+      {/* Layered ambient glows + edge vignette. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(60% 40% at 78% 6%, rgba(192,132,232,0.16), transparent 60%), radial-gradient(50% 40% at 8% 30%, rgba(122,29,145,0.12), transparent 55%)",
+            "radial-gradient(44% 32% at 82% 0%, rgba(192,132,232,0.20), transparent 60%), radial-gradient(42% 34% at 6% 14%, rgba(122,29,145,0.20), transparent 58%), radial-gradient(ellipse 90% 42% at 50% 110%, rgba(122,29,145,0.10), transparent 72%), linear-gradient(to right, rgba(3,1,9,0.5), transparent 15%, transparent 85%, rgba(3,1,9,0.5))",
         }}
       />
+
+      {/* Subtle film grain for texture. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.07] mix-blend-soft-light"
         style={{
           backgroundImage:
-            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-          backgroundSize: "44px 44px",
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
 
@@ -86,8 +116,9 @@ export default async function FlashcardsRevalidaPage({
       </header>
 
       <main className="flex-1">
-        {/* ── Hero: copy + gate ────────────────────────────────────────────────── */}
-        <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-12 sm:py-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-14">
+        {/* ── Hero: pitch (left) + gate (right), vertically centered so neither
+               column looks lopsided above the fold. ─────────────────────────── */}
+        <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-14 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-muted/30 px-3 py-1 text-xs font-semibold text-brand">
               <span className="h-1.5 w-1.5 rounded-full bg-brand" /> Grátis · sem cartão
@@ -106,7 +137,7 @@ export default async function FlashcardsRevalidaPage({
             </p>
 
             {/* The one bold stat — the credibility hook. */}
-            <div className="mt-6 flex items-center gap-4 rounded-2xl border border-border bg-surface-1/60 p-4">
+            <div className="mt-6 flex items-center gap-4 rounded-2xl border border-border/80 bg-surface-1/50 p-4 backdrop-blur-sm">
               <div className="shrink-0 text-center">
                 <div className="font-display text-3xl font-extrabold tabular-nums text-brand sm:text-4xl">
                   {WEIGHTED_DECK_STATS.sixSubjectSharePct}%
@@ -122,22 +153,47 @@ export default async function FlashcardsRevalidaPage({
                 6 assuntos. Seus 50 flashcards vêm exatamente deles.
               </p>
             </div>
-
-            {/* Desktop teaser sits under the stat; on mobile it moves below the gate. */}
-            <div className="mt-8 hidden lg:block">
-              <FlashcardTeaser cards={teaserCards} />
-            </div>
           </div>
 
-          {/* The gate — the focal point. Sticky on desktop so it stays in view. */}
-          <div className="lg:sticky lg:top-8">
+          {/* The gate — the focal point — with a compact "what you get" strip
+              beneath it so the right column carries real weight (no more void). */}
+          <div>
             <FlashcardsGate utm={utm} />
-            {/* Mobile teaser: right under the gate to reinforce before scrolling. */}
-            <div className="mt-8 lg:hidden">
-              <FlashcardTeaser cards={teaserCards} />
-            </div>
+            <ul className="mt-5 space-y-2.5 px-1">
+              {[
+                <>
+                  <strong className="text-foreground">50 flashcards</strong> dos 6 assuntos que mais caem
+                </>,
+                <>
+                  <strong className="text-foreground">Revisão espaçada</strong> de verdade — não é PDF
+                </>,
+                <>
+                  O link chega <strong className="text-foreground">na hora</strong>, no seu e-mail
+                </>,
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                  <span
+                    aria-hidden
+                    className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-muted/60 text-[10px] font-bold text-brand"
+                  >
+                    ✓
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
+
+        {/* ── Card teaser (instant proof) — its own centered moment ───────────── */}
+        {teaserCards.length > 0 && (
+          <section className="mx-auto max-w-xl px-5 pb-8 sm:pb-12">
+            <p className="mb-4 text-center font-mono text-xs uppercase tracking-wider text-brand">
+              Veja um card de verdade
+            </p>
+            <FlashcardTeaser cards={teaserCards} />
+          </section>
+        )}
 
         {/* ── Why these 6 subjects (the "explain that" section) ────────────────── */}
         <section className="border-y border-border/60 bg-surface-1/30">
