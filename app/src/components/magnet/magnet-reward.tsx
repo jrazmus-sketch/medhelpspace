@@ -211,23 +211,6 @@ export function MagnetReward({
         </div>
       </div>
 
-      {/* Cost-of-failing receipt */}
-      <div className="rounded-2xl border border-border bg-surface-1 p-6 text-sm">
-        <h3 className="font-bold">A conta que ninguém te mostra</h3>
-        <ul className="mt-3 space-y-1.5 text-muted-foreground">
-          <li>• A taxa da 1ª etapa já custou <strong className="text-foreground">R$410</strong>.</li>
-          <li>• A prova custa <strong className="text-foreground">R$4.516</strong> em taxas.</li>
-          <li>
-            • Reprovar e refazer a 2ª fase: <strong className="text-foreground">+~R$4.106</strong> —
-            e mais um ano sem poder exercer.
-          </li>
-        </ul>
-        <p className="mt-3">
-          O método completo da 1ª etapa custa <strong className="text-foreground">R$3.990</strong> —
-          menos do que custa reprovar uma vez.
-        </p>
-      </div>
-
       {/* Por dentro da plataforma — the "look how cool it is" moment delivered at the
           buying decision (ideas 2 + 3): the real desktop screens, inline, no navigation
           away. Reuses the same slider shown in the welcome peek. */}
