@@ -12,19 +12,50 @@ export const SITE_URL = (
 export const MAGNET_PATH = "/questoes-revalida";
 export const RESULTADO_PATH = "/questoes-revalida/resultado";
 export const FREE_DECK_PATH = "/flashcards-gratis";
+// Gift-first flashcards magnet (A/B variant vs. /questoes-revalida). Email gate up
+// front; the 50-card deck is delivered by a magic link to /flashcards-revalida/acesso.
+export const FLASHCARDS_REVALIDA_PATH = "/flashcards-revalida";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
+// NOTE: the 2027.2 turma slug has NO hyphen before the final 2 ('revalida-20272') —
+// that's how the cohort row was created in the admin panel. A placeholder hint
+// elsewhere says 'revalida-2027-2'; that is wrong. Verified against prod.
+export const REVALIDA_20272_SLUG = "revalida-20272";
+
+// leads.source value for the gift-first flashcards funnel — the discriminator that
+// separates it from the quiz funnel ('simulado-honesto') in the drip/recovery crons
+// and /admin/leads. Set on capture (captureFlashcardsLead).
+export const FLASHCARDS_SOURCE = "flashcards-50";
+
+// "Ainda não decidi" — the lead hasn't chosen a turma. NOT a real cohort: its
+// welcome coupon is the all-turma FLASH5 and its checkout points at /loja (pick a
+// turma there). Allowed by leads_target_cohort_check (schema-patch-flashcards-undecided.sql).
+export const UNDECIDED_COHORT = "undecided";
+
+// The turmas a lead may declare as their target exam (+ the 'undecided' sentinel).
+// Single source of truth for both magnet funnels' server-side validation; mirrors
+// the leads_target_cohort_check DB constraint.
+export const VALID_TARGET_COHORTS: ReadonlySet<string> = new Set([
+  REVALIDA_2026_2_SLUG,
+  REVALIDA_2027_1_SLUG,
+  REVALIDA_20272_SLUG,
+  UNDECIDED_COHORT,
+]);
 
 // Per-turma WELCOME coupon: a small discount auto-applied at the end of the free
 // test and delivered in ONE follow-up drip email (D2). This REPLACED the old large
 // RETA2026/ULTIMA2026 stack for 2026-2 (deactivated 2026-07-02) — that turma is
 // already marked down on the storefront, so the promo only adds a light 5% nudge.
-// Each code is locked to its own turma in the DB (coupons.applies_to_cohort_slugs),
-// so 5% never redeems on 2027.1 and 10% never redeems on 2026.2. Keep this in sync
-// with schema-patch-revalida5-welcome-coupon.sql.
+// Each code is locked to its turma(s) in the DB (coupons.applies_to_cohort_slugs):
+// REVALIDA5 (5%) only redeems on 2026-2; REVALIDA10 (10%) redeems on the two future
+// turmas (2027.1 + 2027.2, which carry no storefront markdown yet). Keep in sync with
+// schema-patch-revalida5-welcome-coupon.sql + schema-patch-target-cohort-add-20272.sql.
 export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> = {
   [REVALIDA_2026_2_SLUG]: { code: "REVALIDA5", percent: 5 },
   [REVALIDA_2027_1_SLUG]: { code: "REVALIDA10", percent: 10 },
+  [REVALIDA_20272_SLUG]: { code: "REVALIDA10", percent: 10 },
+  // Undecided leads: the all-turma FLASH5 (5%), applied at checkout after they pick.
+  [UNDECIDED_COHORT]: { code: "FLASH5", percent: 5 },
 };
 
 // Dedicated recovery coupons shown in the Segment-B "come back and finish" nudges —
@@ -36,6 +67,7 @@ export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> 
 export const RECOVERY_COUPONS: Record<string, { code: string; percent: number }> = {
   [REVALIDA_2026_2_SLUG]: { code: "VOLTA5", percent: 5 },
   [REVALIDA_2027_1_SLUG]: { code: "VOLTA10", percent: 10 },
+  [REVALIDA_20272_SLUG]: { code: "VOLTA10", percent: 10 },
 };
 
 export function magnetUrl(): string {
@@ -55,6 +87,13 @@ export function resultUrl(token: string): string {
 // to in the D0 email) and an SEO landing for the "flashcards revalida" long-tail.
 export function freeDeckUrl(): string {
   return `${SITE_URL}${FREE_DECK_PATH}`;
+}
+
+// Magic link that unlocks the 50-card flashcards deck. Sent to the lead's inbox as
+// the D0 delivery of the gift-first funnel; clicking it stamps verified_at (the click
+// IS the confirmation) and renders the study session. Token = leads.result_token.
+export function flashcardsAccessUrl(token: string): string {
+  return `${SITE_URL}${FLASHCARDS_REVALIDA_PATH}/acesso?t=${encodeURIComponent(token)}`;
 }
 
 export function unsubscribeUrl(token: string): string {
@@ -85,6 +124,17 @@ export function offerCheckoutUrl(opts: {
   cohort?: string;
   utmCampaign?: string;
 }): string {
+  // Undecided leads have no turma yet → send them to the store to choose. The
+  // all-turma coupon (FLASH5) can't prefill on the static /loja, so it's surfaced in
+  // the reward/email copy and applied manually at checkout.
+  if ((opts.cohort ?? "") === UNDECIDED_COHORT) {
+    const p = new URLSearchParams({
+      utm_source: "email",
+      utm_medium: "drip",
+      utm_campaign: opts.utmCampaign ?? "lead-drip",
+    });
+    return `${SITE_URL}/loja?${p.toString()}`;
+  }
   const params = new URLSearchParams({
     cohort: opts.cohort ?? REVALIDA_2026_2_SLUG,
     email: opts.email,

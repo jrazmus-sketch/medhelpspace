@@ -39,11 +39,13 @@ function effectiveStatus(row: LeadRow): string {
   return row.dripStatus;
 }
 
-// "revalida-2026-2" → "2026.2" for a compact column. null (lead never reached the
-// post-Q15 cohort picker) → "—" instead of a misleading default turma.
+// "revalida-2026-2" → "2026.2" for a compact column. Also handles the hyphen-less
+// 2027.2 slug ("revalida-20272" → "2027.2"). null (lead never reached the cohort
+// picker) → "—" instead of a misleading default turma.
 function cohortShort(slug: string | null): string {
   if (!slug) return "—";
-  const m = slug.match(/(\d{4})-(\d)$/);
+  if (slug === "undecided") return "Indeciso";
+  const m = slug.match(/(\d{4})-?(\d)$/);
   return m ? `${m[1]}.${m[2]}` : slug;
 }
 
@@ -61,6 +63,7 @@ export function LeadsClient({ rows, summary }: Props) {
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
   const [capture, setCapture] = useState("all");
+  const [funnel, setFunnel] = useState("all");
   const [selected, setSelected] = useState<LeadRow | null>(null);
 
   function fmtDate(iso: string | null) {
@@ -84,17 +87,24 @@ export function LeadsClient({ rows, summary }: Props) {
         const cs = r.captureSource === "exit_intent" ? "exit_intent" : "quiz";
         if (cs !== capture) return false;
       }
+      if (funnel !== "all" && r.source !== funnel) return false;
       if (!q) return true;
       return (
         r.email.toLowerCase().includes(q) ||
         (r.firstName ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, tier, status, source, capture]);
+  }, [rows, search, tier, status, source, capture, funnel]);
 
   // Only offer the capture filter once at least one exit-intent lead exists.
   const hasExitIntent = useMemo(
     () => rows.some((r) => r.captureSource === "exit_intent"),
+    [rows],
+  );
+
+  // Only offer the funnel filter once a second funnel (flashcards) has leads.
+  const hasFlashcards = useMemo(
+    () => rows.some((r) => r.source === "flashcards-50"),
     [rows],
   );
 
@@ -148,6 +158,16 @@ export function LeadsClient({ rows, summary }: Props) {
   }
 
   function Progress({ row }: { row: LeadRow }) {
+    // Flashcards-funnel leads never took the quiz — a "0/15" would misread as a bad
+    // score. Show the funnel badge instead (their engagement is the deck, not Q1–15).
+    if (row.source === "flashcards-50") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-xs font-medium text-fuchsia-600 dark:text-fuchsia-300">
+          <span aria-hidden>🎴</span>
+          {t("leads.funnel_flashcards")}
+        </span>
+      );
+    }
     // Exit-intent leads never entered the quiz — a "0/15" would read as a bad score
     // rather than "different capture channel". Show the origin badge instead.
     if (row.captureSource === "exit_intent") {
@@ -219,7 +239,7 @@ export function LeadsClient({ rows, summary }: Props) {
           <p className="text-sm text-muted-foreground">{t("leads.subtitle")}</p>
         </div>
         <span className="text-sm text-muted-foreground">
-          {search || tier !== "all" || status !== "all" || source !== "all" || capture !== "all"
+          {search || tier !== "all" || status !== "all" || source !== "all" || capture !== "all" || funnel !== "all"
             ? `${filtered.length} / `
             : ""}
           {t(rows.length === 1 ? "leads.countOne" : "leads.countOther", {
@@ -321,6 +341,17 @@ export function LeadsClient({ rows, summary }: Props) {
             <option value="all">{t("leads.filterCapture")}</option>
             <option value="quiz">{t("leads.capture_quiz")}</option>
             <option value="exit_intent">{t("leads.capture_exit_intent")}</option>
+          </select>
+        )}
+        {hasFlashcards && (
+          <select
+            value={funnel}
+            onChange={(e) => setFunnel(e.target.value)}
+            className="min-h-[44px] rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50 sm:min-h-0"
+          >
+            <option value="all">{t("leads.filterFunnel")}</option>
+            <option value="simulado-honesto">{t("leads.funnel_quiz")}</option>
+            <option value="flashcards-50">{t("leads.funnel_flashcards")}</option>
           </select>
         )}
       </div>

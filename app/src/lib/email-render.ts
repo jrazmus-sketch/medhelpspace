@@ -675,6 +675,129 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
   // Delivery, fired on CONFIRM (verify). Present tense — nothing was locked, the
   // material IS here now. Personalized greeting; plan link points at the durable
   // /resultado page (never the bare quiz URL). FREE-FUNNEL-V2-SCOPE.md item 9.
+  // ── Flashcards funnel (gift-first, /flashcards-revalida) ──────────────────────
+  // D0 delivery: the magic access link to the 50-card deck, sent the moment the lead
+  // picks their turma. The click on this link (acesso route) is the verification.
+  "lead-fc-access": {
+    kind: "lead-fc-access",
+    name: "[Lead] Flashcards — link de acesso",
+    description: "Funil de flashcards (gift-first): entrega o link mágico dos 50 flashcards ao escolher a turma.",
+    subject: "Seus 50 flashcards do Revalida estão prontos 🎯",
+    kicker: "",
+    headline: "Seu acesso está pronto",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Aqui está o seu baralho com <strong>50 flashcards</strong> dos 6 assuntos que mais caem na 1ª etapa do Revalida — escolhidos pela incidência real nas provas de 2020 a 2025.</p>
+<p style="margin:0 0 20px;">É só clicar no botão abaixo para começar a estudar agora, com revisão espaçada e correção na hora:</p>
+<p style="margin:0 0 16px;">Cada card vem dos temas de maior incidência de <strong>Pediatria, Cirurgia, Ginecologia, Obstetrícia, Saúde Coletiva e Infectologia</strong>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Você recebeu este e-mail porque pediu os flashcards em medhelpspace.com.br. Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Abrir meus 50 flashcards →",
+    cta_href: "{{accessUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "accessUrl", description: "Link mágico de acesso aos flashcards (token)" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 13,
+  },
+  // D2 of the flashcards funnel: the welcome coupon (5% 2026.2 / 10% 2027.1 & 2027.2).
+  "lead-fc-d2": {
+    kind: "lead-fc-d2",
+    name: "[Lead] Flashcards D2 — cupom de boas-vindas",
+    description: "2 dias após pegar os flashcards: o cupom de desconto para a plataforma completa.",
+    subject: "Seu cupom de {{couponPercent}} para estudar com tudo",
+    kicker: "",
+    headline: "Os 50 flashcards foram só uma amostra",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Que bom que você começou pelos assuntos que mais caem. Aqueles 50 flashcards são uma fração do que tem dentro da plataforma: milhares de cards, questões comentadas de provas anteriores, resumos, MedVoice e um plano que se ajusta até a data da sua prova.</p>
+<p style="margin:0 0 16px;">Pra te ajudar a dar o próximo passo, separei um cupom de boas-vindas: <strong>{{coupon}}</strong> — {{couponPercent}} de desconto.</p>
+<p style="margin:0 0 8px;">Quer revisar os flashcards de novo antes? <a href="{{accessUrl}}" style="color:#7a1d91;">Reabrir meu baralho</a>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Usar meu cupom de {{couponPercent}} →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "coupon", description: "Código do cupom de boas-vindas da turma" },
+      { tag: "couponPercent", description: "Percentual do cupom (ex.: '10%')" },
+      { tag: "checkoutUrl", description: "Link de checkout com o cupom aplicado" },
+      { tag: "accessUrl", description: "Link para reabrir o baralho de flashcards" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 13.1,
+  },
+  // D5 of the flashcards funnel: last-call nudge (same coupon, gentle urgency).
+  "lead-fc-d5": {
+    kind: "lead-fc-d5",
+    name: "[Lead] Flashcards D5 — última chamada",
+    description: "5 dias após pegar os flashcards: último lembrete do cupom de boas-vindas.",
+    subject: "Ainda dá tempo — {{couponPercent}} na plataforma completa",
+    kicker: "",
+    headline: "Estudar sozinho é mais difícil do que precisa ser",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Flashcard solto ajuda — mas o que aprova é constância: revisar as matérias certas, na ordem certa, todo dia, com o sistema lembrando você do que está prestes a esquecer.</p>
+<p style="margin:0 0 16px;">É exatamente isso que a plataforma faz por você. Seu cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) ainda está de pé.</p>
+<p style="margin:0 0 8px;">Quer estudar os flashcards mais uma vez? <a href="{{accessUrl}}" style="color:#7a1d91;">Reabrir meu baralho</a>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Garantir minha vaga com {{couponPercent}} →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "coupon", description: "Código do cupom de boas-vindas da turma" },
+      { tag: "couponPercent", description: "Percentual do cupom (ex.: '10%')" },
+      { tag: "checkoutUrl", description: "Link de checkout com o cupom aplicado" },
+      { tag: "accessUrl", description: "Link para reabrir o baralho de flashcards" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 13.2,
+  },
+  // Finish-reminder 1 — sent to a NON-finisher (didn't complete the deck) at +1 day.
+  // Come back and finish; NO coupon (free value first). Magic link resumes progress.
+  "lead-fc-finish-1": {
+    kind: "lead-fc-finish-1",
+    name: "[Lead] Flashcards — continue (lembrete 1)",
+    description: "Enviado a quem não terminou o baralho (+1 dia): volte e continue de onde parou.",
+    subject: "Seus flashcards do Revalida estão te esperando",
+    kicker: "",
+    headline: "Continue de onde você parou",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você pegou seus 50 flashcards mas ainda não terminou o baralho — e ele está guardadinho, com o seu progresso salvo.</p>
+<p style="margin:0 0 16px;">É só continuar de onde parou pelo <strong>mesmo link</strong>. Leva poucos minutos e cobre os assuntos que mais caem na 1ª etapa.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Continuar meus flashcards →",
+    cta_href: "{{accessUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "accessUrl", description: "Link mágico para retomar o baralho (resume o progresso)" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 13.3,
+  },
+  // Finish-reminder 2 — sent to a NON-finisher at +3 days: come back + the welcome
+  // coupon (folded in, so a never-finisher still gets the discount exactly once).
+  "lead-fc-finish-2": {
+    kind: "lead-fc-finish-2",
+    name: "[Lead] Flashcards — continue + cupom (lembrete 2)",
+    description: "Enviado a quem não terminou o baralho (+3 dias): termine + cupom de boas-vindas.",
+    subject: "Faltam poucos flashcards — e um cupom pra você",
+    kicker: "",
+    headline: "Termine seu baralho (e leve um desconto)",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Seus flashcards continuam te esperando — faltam <strong>{{cardsLeft}}</strong> para terminar. É rápido, e o seu progresso está salvo.</p>
+<p style="margin:0 0 16px;">E um empurrãozinho pra ir além da amostra: o cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) na plataforma completa — milhares de cards, questões comentadas e revisão espaçada.</p>
+<p style="margin:0 0 8px;">Ver a plataforma com desconto: <a href="{{checkoutUrl}}" style="color:#7a1d91;">aproveitar {{couponPercent}}</a>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Terminar meus flashcards →",
+    cta_href: "{{accessUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "cardsLeft", description: "Quantos flashcards faltam para terminar" },
+      { tag: "coupon", description: "Código do cupom de boas-vindas (ou FLASH5 p/ indecisos)" },
+      { tag: "couponPercent", description: "Percentual do cupom (ex.: '5%')" },
+      { tag: "accessUrl", description: "Link mágico para retomar o baralho" },
+      { tag: "checkoutUrl", description: "Link de checkout/loja com o cupom" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 13.4,
+  },
   "lead-d0": {
     kind: "lead-d0",
     name: "[Lead] Entrega — plano + flashcards",

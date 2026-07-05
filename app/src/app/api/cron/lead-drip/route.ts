@@ -4,7 +4,13 @@ import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmail } from "@/lib/email";
 import { FUNNEL_SENDER_NAME } from "@/lib/email-render";
-import { offerCheckoutUrl, resultUrl, unsubscribeUrl, WELCOME_COUPONS } from "@/lib/magnet/links";
+import {
+  offerCheckoutUrl,
+  resultUrl,
+  unsubscribeUrl,
+  WELCOME_COUPONS,
+  FLASHCARDS_SOURCE,
+} from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
 // Lead-magnet email drip (FREE-FUNNEL-V2-SCOPE.md Group 6). Advances each lead by
@@ -64,6 +70,7 @@ export async function GET(request: NextRequest) {
       "id, email, score, weak_specialty_ids, drip_step, verified_at, target_cohort, first_name, result_token",
     )
     .eq("drip_status", "active")
+    .neq("source", FLASHCARDS_SOURCE) // the flashcards funnel runs its own drip
     .not("verified_at", "is", null)
     .lt("drip_step", STEPS[STEPS.length - 1].step)
     .order("verified_at", { ascending: true })
@@ -99,6 +106,7 @@ export async function GET(request: NextRequest) {
   const examLabelByCohort: Record<string, string> = {
     "revalida-2026-2": "13 de setembro",
     "revalida-2027-1": "início de 2027",
+    "revalida-20272": "setembro de 2027",
   };
 
   let sent = 0;

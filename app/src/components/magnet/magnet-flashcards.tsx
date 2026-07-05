@@ -206,9 +206,15 @@ export function MagnetFlashcards({
         >
           {/* Front */}
           <div
-            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-border bg-surface-1 p-6 text-center transition-colors hover:border-brand/40 hover:bg-surface-2"
+            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-border bg-surface-1 p-6 pt-9 text-center transition-colors hover:border-brand/40 hover:bg-surface-2"
             style={{ backfaceVisibility: "hidden" }}
           >
+            {/* Subject label — always on the card so a card never reads out of context. */}
+            {card.specialtyName && (
+              <span className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-muted/60 px-2.5 py-0.5 text-[11px] font-semibold text-brand">
+                {card.specialtyName}
+              </span>
+            )}
             {card.image_url && (
               <div className="w-full overflow-hidden rounded border border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -230,9 +236,14 @@ export function MagnetFlashcards({
 
           {/* Back */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-y-auto rounded-xl border border-brand/30 bg-surface-1 p-6 text-center"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 overflow-y-auto rounded-xl border border-brand/30 bg-surface-1 p-6 pt-9 text-center"
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
+            {card.specialtyName && (
+              <span className="absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-muted/60 px-2.5 py-0.5 text-[11px] font-semibold text-brand">
+                {card.specialtyName}
+              </span>
+            )}
             <div
               className="prose-content text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
               {...htmlProps(safe(card.answer))}

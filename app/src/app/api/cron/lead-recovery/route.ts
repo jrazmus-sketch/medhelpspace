@@ -11,6 +11,7 @@ import {
   offerCheckoutUrl,
   RECOVERY_COUPONS,
   REVALIDA_2026_2_SLUG,
+  FLASHCARDS_SOURCE,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
@@ -97,6 +98,7 @@ export async function GET(request: NextRequest) {
         "id, email, first_name, score, weak_specialty_ids, result_token, unsubscribe_token, completed_at",
       )
       .eq("drip_status", "active")
+      .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
       .is("verified_at", null)
       .not("completed_at", "is", null)
       .is("recovery_a_sent_at", null)
@@ -164,6 +166,7 @@ export async function GET(request: NextRequest) {
         "id, email, first_name, result_token, unsubscribe_token, target_cohort, created_at, recovery_b_step, recovery_sent_at",
       )
       .eq("drip_status", "active")
+      .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
       .is("verified_at", null)
       .is("completed_at", null)
       .lt("recovery_b_step", 2)

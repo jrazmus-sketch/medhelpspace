@@ -42,6 +42,9 @@ export type LeadRow = {
   // 'exit_intent' = captured by the "salvar para depois" modal (never did the quiz);
   // null = normal quiz-gate capture. Drives the list badge + capture filter.
   captureSource: string | null;
+  // Which funnel the lead entered through: 'simulado-honesto' (quiz, the default) or
+  // 'flashcards-50' (gift-first flashcards magnet). Drives the Funil badge + filter.
+  source: string;
 };
 
 export type LeadsSummary = {
@@ -69,7 +72,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
     admin
       .from("leads")
       .select(
-        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source",
+        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source",
       )
       .order("created_at", { ascending: false })
       .limit(1000),
@@ -111,6 +114,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       lastEmailedAt: (l.last_emailed_at as string | null) ?? null,
       tier: tierOf(Boolean(l.converted_at), verified, completed),
       captureSource: (l.capture_source as string | null) ?? null,
+      source: (l.source as string | null) ?? "simulado-honesto",
     };
   });
 
