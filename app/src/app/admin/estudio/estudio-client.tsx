@@ -638,6 +638,13 @@ function CardShell({
   const { glow, grid } = React.useContext(DecorContext);
   const domId = React.useContext(CardDomIdContext);
   const centered = contentH < canvasH;
+  // Fill mode stretches to the full canvas, and a flat 88px top/bottom reads as
+  // cramped on a tall story (88 is 8% of a 1080 square but only 4.6% of a 1920
+  // story). Grow vertical padding with the canvas so the header/footer keep the
+  // square's breathing room — gently, and capped, so dense templates don't lose
+  // much room. Horizontal padding stays 88 (the canvas is always 1080 wide).
+  // Centered mode already sits in a proportioned zone, so it keeps 88.
+  const vpad = centered ? 88 : Math.min(150, Math.round(88 + Math.max(0, canvasH - 1080) * 0.05));
   // Content zone: full canvas normally; a compact, vertically-centered block in
   // "centered" layout (background decor still spans the whole canvas).
   const inner = padded ? (
@@ -645,7 +652,7 @@ function CardShell({
       style={{
         position: "relative",
         height: centered ? contentH : "100%",
-        padding: 88,
+        padding: `${vpad}px 88px`,
         display: "flex",
         flexDirection: "column",
       }}
@@ -1080,7 +1087,7 @@ function FraseCard({ v, accent }: { v: Vals; accent: string }) {
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: "safe center",
           alignItems: "center",
           textAlign: "center",
         }}
@@ -2107,7 +2114,7 @@ function DepoimentoCard({ v, accent }: { v: Vals; accent: string }) {
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 36 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "safe center", gap: 36 }}>
         <div style={{ fontFamily: FONT_DISPLAY, fontWeight: 800, fontSize: 150, lineHeight: 0.55, color: hexA(accent, 0.5) }}>“</div>
         <blockquote
           style={{
@@ -2171,7 +2178,7 @@ function NumeroCard({ v, accent }: { v: Vals; accent: string }) {
   return (
     <CardShell accent={accent}>
       <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "safe center", alignItems: "center", textAlign: "center" }}>
         {/* key — see FraseCard: WebKit won't re-run background-clip:text in place */}
         <div
           key={accent + theme.id}
@@ -2311,7 +2318,7 @@ function CarrosselCard({ v, accent }: { v: Vals; accent: string }) {
           </span>
         ) : null}
       </div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "safe center" }}>
         <h1
           style={{
             fontFamily: FONT_DISPLAY,
@@ -2365,7 +2372,7 @@ function ContagemCard({ v, accent }: { v: Vals; accent: string }) {
         <Eyebrow accent={accent}>{v.eyebrow}</Eyebrow>
         {v.dateBadge ? <SpecChip accent={accent}>{v.dateBadge}</SpecChip> : null}
       </div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "safe center", alignItems: "center", textAlign: "center" }}>
         {v.pre ? (
           <div style={{ fontFamily: FONT_MONO, fontSize: 30, letterSpacing: "0.18em", textTransform: "uppercase", color: `rgba(${theme.fgRgb}, 0.6)` }}>
             {v.pre}
@@ -2478,7 +2485,7 @@ function FlashcardFaceCard({ v, accent }: { v: Vals; accent: string }) {
       </div>
 
       {/* hero: prompt (front) / answer (back), auto-fit and vertically centered */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "20px 0" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "safe center", padding: "20px 0" }}>
         <div style={{ width: 56, height: 5, borderRadius: 3, background: accent, marginBottom: 34 }} />
         <p
           style={{
@@ -2551,6 +2558,10 @@ function QuizFaceCard({ v, accent }: { v: Vals; accent: string }) {
 
   if (!isAns) {
     const stemSize = 40 * ts * fitFontMult(v.stem || "");
+    // Options aren't auto-fit like the stem, so a set of long alternatives can
+    // spill past the card bottom. Shrink option type/spacing by their combined
+    // length (same length→scale curve the stem uses) so dense questions fit.
+    const optFit = fitFontMult(options.join("  "));
     return (
       <CardShell accent={accent}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -2570,15 +2581,15 @@ function QuizFaceCard({ v, accent }: { v: Vals; accent: string }) {
         >
           {v.stem}
         </p>
-        <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
+        <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: Math.round(12 * optFit), flex: 1 }}>
           {options.map((opt, i) => (
             <div
               key={i}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 20,
-                padding: "15px 22px",
+                gap: Math.round(20 * optFit),
+                padding: `${Math.round(15 * optFit)}px 22px`,
                 border: `1px solid rgba(${theme.fgRgb}, 0.08)`,
                 background: `rgba(${theme.fgRgb}, 0.02)`,
                 borderRadius: 14,
@@ -2587,14 +2598,14 @@ function QuizFaceCard({ v, accent }: { v: Vals; accent: string }) {
               <span
                 style={{
                   flexShrink: 0,
-                  width: 48,
-                  height: 48,
+                  width: 48 * optFit,
+                  height: 48 * optFit,
                   borderRadius: "50%",
                   border: `1.5px solid ${hexA(accent, 0.6)}`,
                   color: accent,
                   fontFamily: FONT_MONO,
                   fontWeight: 700,
-                  fontSize: 24,
+                  fontSize: 24 * optFit,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -2602,7 +2613,7 @@ function QuizFaceCard({ v, accent }: { v: Vals; accent: string }) {
               >
                 {letter(i)}
               </span>
-              <span style={{ fontSize: 26 * ts, color: `rgba(${theme.fgRgb}, 0.9)`, lineHeight: 1.3 }}>{opt}</span>
+              <span style={{ fontSize: 26 * ts * optFit, color: `rgba(${theme.fgRgb}, 0.9)`, lineHeight: 1.3 }}>{opt}</span>
             </div>
           ))}
         </div>
@@ -2714,7 +2725,7 @@ function DeckCoverCard({ v, accent }: { v: Vals; accent: string }) {
   const isOutro = v.coverKind === "outro";
   return (
     <CardShell accent={accent}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "safe center", alignItems: "center", textAlign: "center" }}>
         {v.eyebrow ? (
           <div
             style={{
@@ -5142,7 +5153,7 @@ export function EstudioClient() {
           {/* ── Preview (stays on screen while the builder scrolls) ── */}
           <section
             className="min-h-0 flex-1 lg:overflow-auto"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 4 }}
+            style={{ display: "flex", alignItems: "safe center", justifyContent: "center", padding: 4 }}
           >
             <div
               style={{
