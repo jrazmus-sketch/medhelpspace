@@ -3517,6 +3517,12 @@ const RATIOS = [
 ] as const;
 type RatioId = (typeof RATIOS)[number]["id"];
 
+// File exports go out as JPEG, not PNG: Instagram re-encodes every upload to
+// JPEG anyway, and on these gradient/photo designs JPEG is ~5× smaller with no
+// visible loss. We keep the 2× supersample (crisper text after IG's downscale)
+// and only change the encoder. Clipboard copy stays PNG (see capture()).
+const EXPORT_JPEG_QUALITY = 0.9;
+
 // Vertical layout on tall ratios: "center" lays the content out in a compact
 // zone (square on 4:5; 4:5-shaped on 9:16 — the story safe area, clear of the
 // username/reply UI) centered on the canvas; "fill" stretches edge-to-edge.
@@ -3538,7 +3544,7 @@ function exportFilter(node: Node): boolean {
   return !(bad.test(id) || bad.test(cls) || bad.test(label));
 }
 
-// PNG data-URL → raw bytes for zipping (fflate wants Uint8Array).
+// Image data-URL (PNG or JPEG) → raw bytes for zipping (fflate wants Uint8Array).
 function dataUrlToBytes(dataUrl: string): Uint8Array {
   const comma = dataUrl.indexOf(",");
   const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
@@ -4035,9 +4041,11 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
     }
   }, [allValues, templateId, accent, accentIsCustom, accentCustom, bg, bgCustom, layout, footerShow, footerText, textScale, ratioId, glowOn, gridOn, overlays]);
 
-  // Rasterize #ig-card to a 2× PNG data-URL (shared by download + copy).
-  const capture = useCallback(async (): Promise<string | null> => {
-    const { domToPng } = await import("modern-screenshot");
+  // Rasterize #ig-card to a 2× data-URL (shared by download + copy). `format`
+  // picks the encoder: "jpeg" for file export (small; IG re-encodes anyway),
+  // "png" for clipboard copy (the async clipboard API only accepts image/png).
+  const capture = useCallback(async (format: "png" | "jpeg" = "png"): Promise<string | null> => {
+    const { domToPng, domToJpeg } = await import("modern-screenshot");
     const card = document.getElementById("ig-card");
     if (!card) return null;
 
@@ -4067,23 +4075,21 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
     // Pin the output box to the true canvas size (× 2) so resolution never
     // depends on the preview zoom (the on-screen node is transform-scaled).
     const d = RATIOS.find((r) => r.id === ratioId)!;
-    return domToPng(card, {
-      width: d.w,
-      height: d.h,
-      scale: 2,
-      filter: exportFilter,
-    });
+    const opts = { width: d.w, height: d.h, scale: 2, filter: exportFilter } as const;
+    return format === "jpeg"
+      ? domToJpeg(card, { ...opts, quality: EXPORT_JPEG_QUALITY })
+      : domToPng(card, opts);
   }, [ratioId, t]);
 
   const download = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const png = await capture();
-      if (!png) return;
+      const jpg = await capture("jpeg");
+      if (!jpg) return;
       const a = document.createElement("a");
-      a.href = png;
-      a.download = `medhelpspace-${templateId}-${ratioId}.png`;
+      a.href = jpg;
+      a.download = `medhelpspace-${templateId}-${ratioId}.jpg`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -4100,7 +4106,7 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
     if (busy) return;
     setBusy(true);
     try {
-      const png = await capture();
+      const png = await capture("png");
       if (!png) return;
       const blob = await (await fetch(png)).blob();
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
@@ -4243,12 +4249,13 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
   }, []);
 
   // Rasterize the offscreen deck node (#ig-card-batch) at true 2× resolution.
+  // JPEG (not PNG) keeps each slide small enough to fit dozens in one ZIP.
   const rasterizeBatch = useCallback(async (): Promise<string | null> => {
-    const { domToPng } = await import("modern-screenshot");
+    const { domToJpeg } = await import("modern-screenshot");
     const node = document.getElementById("ig-card-batch");
     if (!node) return null;
     const d = RATIOS.find((r) => r.id === ratioId)!;
-    return domToPng(node, { width: d.w, height: d.h, scale: 2, filter: exportFilter });
+    return domToJpeg(node, { width: d.w, height: d.h, scale: 2, quality: EXPORT_JPEG_QUALITY, filter: exportFilter });
   }, [ratioId]);
 
   const cancelDeck = useCallback(() => {
@@ -4319,8 +4326,8 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
             backLabel,
             hint,
           };
-          queue.push({ name: `${no}-frente.png`, kind: "flashcard", vals: { ...base, face: "front" } });
-          queue.push({ name: `${no}-verso.png`, kind: "flashcard", vals: { ...base, face: "back" } });
+          queue.push({ name: `${no}-frente.jpg`, kind: "flashcard", vals: { ...base, face: "front" } });
+          queue.push({ name: `${no}-verso.jpg`, kind: "flashcard", vals: { ...base, face: "back" } });
           exportedIds.push(c.id);
         });
       } else {
@@ -4345,8 +4352,8 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
             total: deckNumbering ? String(cards.length) : "",
             hint: "Qual a resposta? Deslize pro gabarito →",
           };
-          queue.push({ name: `${no}-questao.png`, kind: "quiz", vals: { ...base, face: "q" } });
-          queue.push({ name: `${no}-gabarito.png`, kind: "quiz", vals: { ...base, face: "a" } });
+          queue.push({ name: `${no}-questao.jpg`, kind: "quiz", vals: { ...base, face: "q" } });
+          queue.push({ name: `${no}-gabarito.jpg`, kind: "quiz", vals: { ...base, face: "a" } });
           exportedIds.push(c.id);
         });
       }
@@ -4355,7 +4362,7 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
       if (deckCover) {
         const label = specLabel || "Revalida";
         queue.unshift({
-          name: "00-capa.png",
+          name: "00-capa.jpg",
           kind: "chrome",
           vals: {
             coverKind: "cover",
@@ -4365,7 +4372,7 @@ export function EstudioClient({ initialTemplates = [] }: { initialTemplates?: Sa
           },
         });
         queue.push({
-          name: `${String(cardCount + 1).padStart(2, "0")}-final.png`,
+          name: `${String(cardCount + 1).padStart(2, "0")}-final.jpg`,
           kind: "chrome",
           vals: {
             coverKind: "outro",
