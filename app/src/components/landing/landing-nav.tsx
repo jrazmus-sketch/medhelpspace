@@ -102,9 +102,12 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
             </>
           ) : (
             <>
+              {/* Visible on every breakpoint — a not-logged-in visitor on mobile
+                  must always have a way in. To keep "Entrar" + the CTA inside a
+                  ~360px bar, the CTA label collapses to "Comprar" below `sm`. */}
               <Link
                 href="/login"
-                className="hidden text-sm font-medium transition-colors sm:block"
+                className="-my-3 py-3 text-sm font-medium transition-colors"
                 style={{ color: solid ? "var(--lp-fg-40)" : "rgba(255,255,255,0.55)" }}
               >
                 Entrar
@@ -112,10 +115,11 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
 
               <Link
                 href="/loja"
-                className="rounded-lg px-4 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95"
+                className="rounded-lg px-3.5 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95 sm:px-4"
                 style={{ background: "var(--brand)" }}
               >
-                Comprar Agora
+                <span className="sm:hidden">Comprar</span>
+                <span className="hidden sm:inline">Comprar Agora</span>
               </Link>
             </>
           )}
