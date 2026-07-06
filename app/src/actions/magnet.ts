@@ -715,7 +715,16 @@ export async function verifyClaimCode(input: {
         },
         fromName: FUNNEL_SENDER_NAME,
       });
-      if (!res.ok && res.reason !== "no_api_key") {
+      if (res.ok) {
+        // The drip cron stamps last_emailed_at on every send it makes; this is the
+        // one send that happens outside the cron, so stamp it here too — otherwise
+        // /admin/leads "Last activity" falls back to created_at (the capture date)
+        // and looks stale even though the welcome email just went out.
+        await admin
+          .from("leads")
+          .update({ last_emailed_at: new Date().toISOString() })
+          .eq("id", lead.id);
+      } else if (res.reason !== "no_api_key") {
         console.error("lead-d0 delivery send failed:", res.reason);
       }
     } catch (e) {

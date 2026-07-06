@@ -22,7 +22,11 @@ export type OciReadyCounts = { verified: number; purchase: number };
 export async function getOciReadyCounts(): Promise<OciReadyCounts> {
   const admin = createAdminClient();
   const base = () =>
-    admin.from("leads").select("*", { count: "exact", head: true }).not("gclid", "is", null);
+    admin
+      .from("leads")
+      .select("*", { count: "exact", head: true })
+      .not("gclid", "is", null)
+      .eq("is_test", false);
   const [{ count: verified }, { count: purchase }] = await Promise.all([
     base().not("verified_at", "is", null).is("oci_verified_uploaded_at", null),
     base().not("converted_at", "is", null).is("oci_purchase_uploaded_at", null),
@@ -69,13 +73,15 @@ export async function buildOciExport(): Promise<OciExport> {
       .select("id, gclid, verified_at")
       .not("gclid", "is", null)
       .not("verified_at", "is", null)
-      .is("oci_verified_uploaded_at", null),
+      .is("oci_verified_uploaded_at", null)
+      .eq("is_test", false),
     admin
       .from("leads")
       .select("id, email, gclid, converted_at")
       .not("gclid", "is", null)
       .not("converted_at", "is", null)
-      .is("oci_purchase_uploaded_at", null),
+      .is("oci_purchase_uploaded_at", null)
+      .eq("is_test", false),
   ]);
 
   // Purchase value: lead.email → profiles.email → orders(user_id, status='paid').

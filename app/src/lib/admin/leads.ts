@@ -124,6 +124,9 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
     };
   });
 
+  // Summary stats represent real acquisition-funnel performance, so QA/test leads
+  // (is_test) are excluded here — they still appear in `rows` (the table) and stay
+  // togglable there via "Mostrar testes", but must never inflate these headline counts.
   const bySourceMap = new Map<string | null, number>();
   const byCohortMap = new Map<string | null, number>();
   let verified = 0;
@@ -131,6 +134,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
   let converted = 0;
   let unsubscribed = 0;
   for (const r of rows) {
+    if (r.isTest) continue;
     if (r.verified) verified++;
     if (r.completed) completed++;
     if (r.convertedAt) converted++;
@@ -149,7 +153,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
   return {
     rows,
     summary: {
-      total: rows.length,
+      total: rows.filter((r) => !r.isTest).length,
       verified,
       completed,
       converted,

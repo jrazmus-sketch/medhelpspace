@@ -1199,7 +1199,7 @@
     "colStatus": "Status",
     "colCreated": "Captado em",
     "colDrip": "E-mail",
-    "colDripFormat": "E-mail {{step}}/{{total}}",
+    "colDripFormat": "{{step}}/{{total}}",
     "colEmailEngagement": "Engajamento",
     "engagementOpens": "~{{count}} aberturas",
     "tier_customer": "Cliente",

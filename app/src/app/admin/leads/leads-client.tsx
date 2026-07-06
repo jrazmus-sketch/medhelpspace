@@ -732,7 +732,7 @@ export function LeadsClient({ rows, summary }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <th className="px-4 py-3 w-10">
+              <th className="px-2 py-3 w-10">
                 <input
                   type="checkbox"
                   checked={allFilteredSelected}
@@ -741,15 +741,17 @@ export function LeadsClient({ rows, summary }: Props) {
                   title={t("leads.selectAllCheckboxLabel")}
                 />
               </th>
-              <th className="px-4 py-3">{renderSortableHeader(t("leads.colLead"), "email")}</th>
-              <th className="px-4 py-3">{renderSortableHeader(t("leads.colTier"), "tier")}</th>
-              <th className="px-4 py-3">{t("leads.colProgress")}</th>
-              <th className="px-4 py-3">{renderSortableHeader(t("leads.colDrip"), "dripStep")}</th>
-              <th className="px-4 py-3">{t("leads.colEmailEngagement")}</th>
-              <th className="px-4 py-3">{t("leads.colCohort")}</th>
-              <th className="px-4 py-3">{t("leads.colSource")}</th>
-              <th className="px-4 py-3">{t("leads.colStatus")}</th>
-              <th className="px-4 py-3">
+              <th className="px-3 py-3">{renderSortableHeader(t("leads.colLead"), "email")}</th>
+              <th className="px-3 py-3">{renderSortableHeader(t("leads.colTier"), "tier")}</th>
+              <th className="px-3 py-3">{t("leads.colProgress")}</th>
+              <th className="hidden lg:table-cell px-3 py-3">
+                {renderSortableHeader(t("leads.colDrip"), "dripStep")}
+              </th>
+              <th className="hidden xl:table-cell px-3 py-3">{t("leads.colEmailEngagement")}</th>
+              <th className="hidden xl:table-cell px-3 py-3">{t("leads.colCohort")}</th>
+              <th className="hidden 2xl:table-cell px-3 py-3">{t("leads.colSource")}</th>
+              <th className="px-3 py-3">{t("leads.colStatus")}</th>
+              <th className="px-3 py-3">
                 {renderSortableHeader(t("leads.colLastActivity"), "lastActivity")}
               </th>
             </tr>
@@ -764,7 +766,7 @@ export function LeadsClient({ rows, summary }: Props) {
             ) : (
               filtered.map((row) => (
                 <tr key={row.id} className="cursor-pointer border-b border-border/50 hover:bg-surface-2/50">
-                  <td className="px-4 py-3 w-10">
+                  <td className="px-2 py-3 w-10">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(row.id)}
@@ -773,34 +775,34 @@ export function LeadsClient({ rows, summary }: Props) {
                       onClick={(e) => e.stopPropagation()}
                     />
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <LeadIdentity row={row} />
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <TierPill row={row} />
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <Progress row={row} />
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="hidden lg:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <DripStep row={row} />
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="hidden xl:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <EmailEngagement row={row} />
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="hidden xl:table-cell px-3 py-3 whitespace-nowrap cursor-pointer" onClick={() => setSelected(row)}>
                     {cohortShort(row.targetCohort)}
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="hidden 2xl:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <span className="whitespace-nowrap text-sm">
                       {sourceLabel(row.utmSource)}
                       {row.utmCampaign && <span className="text-muted-foreground"> · {row.utmCampaign}</span>}
                     </span>
                   </td>
-                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <StatusPill row={row} />
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="px-3 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
                     {fmtDate(row.lastEmailedAt ?? row.createdAt)}
                   </td>
                 </tr>
