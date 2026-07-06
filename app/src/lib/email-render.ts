@@ -685,7 +685,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Seus 50 flashcards do Revalida estão prontos 🎯",
     kicker: "",
     headline: "Seu acesso está pronto",
-    body_html: `<p style="margin:0 0 16px;">{{greeting}}Aqui está o seu baralho com <strong>50 flashcards</strong> dos 6 assuntos que mais caem na 1ª etapa do Revalida — escolhidos pela incidência real nas provas de 2020 a 2025.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Aqui está o seu baralho com <strong>50 flashcards</strong> dos 6 assuntos de altíssima incidência na 1ª etapa do Revalida — escolhidos por dados reais das provas de 2020 a 2025.</p>
 <p style="margin:0 0 20px;">É só clicar no botão abaixo para começar a estudar agora, com revisão espaçada e correção na hora:</p>
 <p style="margin:0 0 16px;">Cada card vem dos temas de maior incidência de <strong>Pediatria, Cirurgia, Ginecologia, Obstetrícia, Saúde Coletiva e Infectologia</strong>.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Você recebeu este e-mail porque pediu os flashcards em medhelpspace.com.br. Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
