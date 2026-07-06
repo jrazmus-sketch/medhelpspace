@@ -32,6 +32,9 @@ Thumbs.db
 # Next.js build output (also ignored in app/.gitignore)
 app/.next/
 app/out/
+# Stray root-level build dir (created if a next/tsc command runs from the repo root)
+/.next/
+/out/
 
 # Vercel
 .vercel
