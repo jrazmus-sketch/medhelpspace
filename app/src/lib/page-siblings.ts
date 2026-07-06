@@ -5,10 +5,23 @@ export interface PageSiblingsResult {
   nextTitle: string | null;
   specialtyHref: string;
   specialtyName: string;
+  // The hub page this page is listed under (nav_items source) — e.g. the
+  // per-specialty Fórmula hub for a fórmula topic. Null when the page isn't
+  // reachable from any hub (orphans); callers fall back to specialtyHref.
+  hubHref: string | null;
+  hubName: string | null;
 }
 
 type SpecialtyJoin = { slug: string; name: string } | null;
-type NavLookupRow = { source_page_id: number; position: number };
+type NavLookupRow = {
+  source_page_id: number;
+  position: number;
+  source_page: {
+    slug: string;
+    title: string;
+    specialty: { slug: string } | null;
+  } | null;
+};
 type NextNavRow = {
   target_page: {
     slug: string;
@@ -31,7 +44,9 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
       .single(),
     admin
       .from("nav_items")
-      .select("source_page_id, position")
+      .select(
+        "source_page_id, position, source_page:pages!source_page_id(slug, title, specialty:specialties!specialty_id(slug))",
+      )
       .eq("target_page_id", pageId)
       .order("source_page_id")
       .limit(1)
@@ -42,10 +57,18 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
   const specialtyHref = specialty?.slug ? `/app/${specialty.slug}` : "/app";
   const specialtyName = specialty?.name ?? "Início";
 
-  const navLookup = navRes.data as NavLookupRow | null;
+  const navLookup = navRes.data as unknown as NavLookupRow | null;
   if (!navLookup) {
-    return { nextHref: null, nextTitle: null, specialtyHref, specialtyName };
+    return { nextHref: null, nextTitle: null, specialtyHref, specialtyName, hubHref: null, hubName: null };
   }
+
+  const hub = navLookup.source_page;
+  const hubHref = hub?.slug
+    ? hub.specialty?.slug
+      ? `/app/${hub.specialty.slug}/${hub.slug}`
+      : `/app/${hub.slug}`
+    : null;
+  const hubName = hub?.title ?? null;
 
   const { data: nextRow } = await admin
     .from("nav_items")
@@ -61,11 +84,11 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
 
   const target = nextRow?.target_page ?? null;
   if (!target?.slug) {
-    return { nextHref: null, nextTitle: null, specialtyHref, specialtyName };
+    return { nextHref: null, nextTitle: null, specialtyHref, specialtyName, hubHref, hubName };
   }
 
   const nextHref = target.specialty?.slug
     ? `/app/${target.specialty.slug}/${target.slug}`
     : `/app/${target.slug}`;
-  return { nextHref, nextTitle: target.title, specialtyHref, specialtyName };
+  return { nextHref, nextTitle: target.title, specialtyHref, specialtyName, hubHref, hubName };
 }

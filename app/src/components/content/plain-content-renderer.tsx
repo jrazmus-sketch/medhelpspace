@@ -145,8 +145,10 @@ export async function PlainContentRenderer({
         lessonId={lesson.id}
         pageId={pageId}
         initialDone={done}
-        specialtyHref={siblings.specialtyHref}
-        specialtyName={siblings.specialtyName}
+        backHref={siblings.hubHref ?? siblings.specialtyHref}
+        backName={siblings.hubName ?? siblings.specialtyName}
+        nextHref={siblings.nextHref}
+        nextTitle={siblings.nextTitle}
       />
     </>
   );
