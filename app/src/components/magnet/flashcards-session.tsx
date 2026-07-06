@@ -189,7 +189,7 @@ export function FlashcardsSession({
           {bySubject.length > 0 && (
             <div className="mt-8 rounded-2xl border border-border bg-surface-1/50 p-5">
               <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                Seu desempenho por assunto
+                Seu desempenho por área
               </p>
               <div className="mt-3 space-y-2.5">
                 {bySubject.map((s) => {

@@ -129,23 +129,22 @@ async function firstCardsFromPages(
 ): Promise<ItemRow[]> {
   if (pageIds.length === 0) return [];
   const admin = createAdminClient();
-  const { data } = await admin
-    .from("flashcard_items")
-    .select("id, text, answer, image_url, tip, page_id, group_position, position")
-    .in("page_id", pageIds)
-    .order("page_id")
-    .order("group_position")
-    .order("position");
-  const takenByPage = new Map<number, number>();
-  const out: ItemRow[] = [];
-  for (const r of data ?? []) {
-    const pid = r.page_id as number;
-    const taken = takenByPage.get(pid) ?? 0;
-    if (taken >= perPage) continue;
-    takenByPage.set(pid, taken + 1);
-    out.push(r as ItemRow);
-  }
-  return out;
+  // Per-page fetch (not one .in(pageIds) query): a combined query hits PostgREST's
+  // 1000-row cap and drops the highest-id pages entirely. Each page only needs its
+  // first `perPage` cards, so limit right in the query. Parallel; keep pageIds order.
+  const perPage2d = await Promise.all(
+    pageIds.map((pid) =>
+      admin
+        .from("flashcard_items")
+        .select("id, text, answer, image_url, tip, page_id, group_position, position")
+        .eq("page_id", pid)
+        .order("group_position")
+        .order("position")
+        .limit(perPage)
+        .then(({ data }) => (data ?? []) as ItemRow[]),
+    ),
+  );
+  return perPage2d.flat();
 }
 
 /**
@@ -298,18 +297,27 @@ export async function getWeightedRevalidaDeck(): Promise<MagnetFlashcard[]> {
     incidenceBySpecTheme.set(`${sid}::${normThemeName(t.name as string)}`, (t.incidence_count as number) ?? 0);
   }
 
-  // 3) Lightweight rows for all six decks, in deck order.
-  const { data: rows } = await admin
-    .from("flashcard_items")
-    .select("id, page_id, group_label, group_position, position")
-    .in("page_id", pageIds)
-    .order("page_id")
-    .order("group_position")
-    .order("position");
+  // 3) Lightweight rows for all six decks. Fetch PER PAGE — NOT one .in(pageIds)
+  //    query: a combined query hits PostgREST's 1000-row default cap and, because
+  //    rows sort by page_id, the highest-id decks return ZERO cards, so the deck
+  //    silently shrinks (this shipped as a 24-of-50 bug). Each deck holds < 1000
+  //    cards, so a per-page fetch returns every card. Parallel; concat in deck order.
+  const perPageRows = await Promise.all(
+    pageIds.map((pid) =>
+      admin
+        .from("flashcard_items")
+        .select("id, page_id, group_label, group_position, position")
+        .eq("page_id", pid)
+        .order("group_position")
+        .order("position")
+        .then(({ data }) => (data ?? []) as LightItem[]),
+    ),
+  );
+  const rows: LightItem[] = perPageRows.flat();
 
   // Group by (specialty → theme → ordered cards).
   const bySpecTheme = new Map<number, Map<string, LightItem[]>>();
-  for (const r of (rows ?? []) as LightItem[]) {
+  for (const r of rows) {
     const sid = specByPage.get(r.page_id);
     if (sid == null) continue;
     if (!bySpecTheme.has(sid)) bySpecTheme.set(sid, new Map());
