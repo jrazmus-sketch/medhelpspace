@@ -8,6 +8,7 @@ import {
   type Signals,
 } from "@/lib/study-plan/derive";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllSpecialtyPages } from "@/lib/study-plan/fetch";
 
 // Builds a PERSONALIZED study-plan preview from the magnet quiz result, reusing
 // the exact same pure engine the member dashboard uses (lib/study-plan/derive).
@@ -59,12 +60,13 @@ export async function buildPlanPreview(
     COHORT_EXAM_DATE[cohort ?? DEFAULT_TARGET_COHORT] ??
     COHORT_EXAM_DATE[DEFAULT_TARGET_COHORT];
   const admin = createAdminClient();
-  const [{ data: specialties }, { data: pages }, { data: topics }, { data: topicContent }] =
+  const [{ data: specialties }, pages, { data: topics }, { data: topicContent }] =
     await Promise.all([
       admin.from("specialties").select("id, name, slug"),
-      admin
-        .from("pages")
-        .select("id, slug, title, type, specialty_id, track_id, content_module_id, view"),
+      // Same paginated, published+specialty page universe the member plan uses —
+      // NOT a bare .from("pages") (that truncates at PostgREST's 1000-row cap; the
+      // table has ~1337 rows, so the preview would silently drop content).
+      fetchAllSpecialtyPages(admin),
       admin
         .from("topics")
         .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier, is_pinned"),
@@ -103,7 +105,7 @@ export async function buildPlanPreview(
     prefs: { ...defaultPrefs(), focus_specialty_ids: wrongSpecIds, include_60d: false },
     cohort: { test_date: examDate },
     specialties: (specialties ?? []) as SpecialtyRow[],
-    pages: (pages ?? []) as PageRow[],
+    pages: (pages ?? []) as unknown as PageRow[],
     topics: (topics ?? []) as TopicRow[],
     topicContent: (topicContent ?? []) as TopicContentRow[],
     signals,

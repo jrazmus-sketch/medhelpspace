@@ -11,6 +11,34 @@ import {
 } from "./derive";
 
 /**
+ * Fetch ALL published pages that carry a specialty, paginating past PostgREST's
+ * 1000-row default cap. There are already > 1000 (~1052 and growing); a single
+ * `.order("id")` query silently drops the highest-id rows (the newest content), so
+ * `pageById` would be incomplete and any topic whose content lives on a dropped
+ * page would vanish from the plan. Paging keeps the universe complete.
+ */
+export async function fetchAllSpecialtyPages(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<Record<string, unknown>[]> {
+  const SIZE = 1000;
+  const out: Record<string, unknown>[] = [];
+  for (let from = 0; ; from += SIZE) {
+    const { data, error } = await admin
+      .from("pages")
+      .select("id, slug, title, type, specialty_id, track_id, content_module_id, view")
+      .eq("status", "publish")
+      .not("specialty_id", "is", null)
+      .order("id")
+      .range(from, from + SIZE - 1);
+    if (error) throw error;
+    const batch = data ?? [];
+    out.push(...batch);
+    if (batch.length < SIZE) break;
+  }
+  return out;
+}
+
+/**
  * Server-side helper: fetches all V2 signals + preferences for a user, derives today's plan.
  */
 export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan | null> {
@@ -25,7 +53,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     excludedRes,
     membershipRes,
     specialtiesRes,
-    pagesRes,
+    pagesArr,
     quizAttemptsRes,
     completionsRes,
     topicsRes,
@@ -61,12 +89,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
       .select("cohort:cohorts(test_date)")
       .eq("user_id", userId),
     admin.from("specialties").select("id, name, slug").order("display_order"),
-    admin
-      .from("pages")
-      .select("id, slug, title, type, specialty_id, track_id, content_module_id, view")
-      .eq("status", "publish")
-      .not("specialty_id", "is", null)
-      .order("id"),
+    fetchAllSpecialtyPages(admin),
     admin
       .from("quiz_attempts")
       .select("specialty_id, is_correct, created_at, page_id, error_category")
@@ -152,7 +175,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     cohort,
     specialties: (specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pages: (pagesRes.data ?? []) as any,
+    pages: pagesArr as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     topics: (topicsRes.data ?? []) as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
