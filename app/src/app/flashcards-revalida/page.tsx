@@ -17,7 +17,7 @@ import {
 export const metadata: Metadata = {
   title: "50 Flashcards Grátis do Revalida — Os Assuntos que Mais Caem",
   description:
-    "Baixe grátis 50 flashcards da 1ª etapa do Revalida, dos 6 assuntos de maior incidência das provas de 2020 a 2025. Com revisão espaçada e correção na hora. Sem cartão.",
+    "Baixe grátis 50 flashcards da 1ª etapa do Revalida, dos 6 assuntos de altíssima incidência das provas de 2020 a 2025. Com revisão espaçada e correção na hora. Sem cartão.",
   alternates: { canonical: "/flashcards-revalida" },
 };
 
@@ -147,10 +147,10 @@ export default async function FlashcardsRevalidaPage({
                 </div>
               </div>
               <p className="text-sm leading-snug text-muted-foreground">
-                Analisamos <strong className="text-foreground">{WEIGHTED_DECK_STATS.examQuestionsAnalyzed} questões</strong>{" "}
-                das provas de {WEIGHTED_DECK_STATS.examYears}.{" "}
-                <strong className="text-foreground">{WEIGHTED_DECK_STATS.sixSubjectQuestions}</strong> delas estão em
-                6 assuntos. Seus 50 flashcards vêm exatamente deles.
+                Organizamos <strong className="text-foreground">{WEIGHTED_DECK_STATS.examQuestionsAnalyzed} questões</strong>{" "}
+                das provas de {WEIGHTED_DECK_STATS.examYears} por tema.{" "}
+                <strong className="text-foreground">{WEIGHTED_DECK_STATS.sixSubjectQuestions}</strong> delas se concentram em
+                6 assuntos de altíssima incidência. Seus 50 flashcards saem dos temas mais relevantes deles.
               </p>
             </div>
           </div>
@@ -206,8 +206,9 @@ export default async function FlashcardsRevalidaPage({
               <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
                 Contamos quantas questões de cada assunto apareceram nas provas do Revalida de{" "}
                 {WEIGHTED_DECK_STATS.examYears} ({WEIGHTED_DECK_STATS.topicsAnalyzed} temas,{" "}
-                {WEIGHTED_DECK_STATS.examQuestionsAnalyzed} questões). Estes seis lideram — e o seu baralho é
-                proporcional a isso: mais cards nos assuntos que mais caem.
+                {WEIGHTED_DECK_STATS.examQuestionsAnalyzed} questões). Juntos, estes seis concentram{" "}
+                {WEIGHTED_DECK_STATS.sixSubjectSharePct}% delas — e o seu baralho é proporcional a isso:
+                mais cards nos assuntos que mais caem.
               </p>
             </div>
 

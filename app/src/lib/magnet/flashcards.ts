@@ -205,6 +205,14 @@ export async function getSampleFlashcardsForSpecialties(
 // 2020–2025). Verified against prod: 881 total across 211 topics; the six subjects
 // below hold 553 of them (~63% of the exam). Surfaced in the landing "por que esses
 // assuntos?" section — keep in sync with the numbers below.
+//
+// CLAIM GUARDRAIL: these six are the 5 standalone exam areas (Cirurgia, Ginecologia,
+// Obstetrícia, Pediatria, Saúde Coletiva) + Infectologia, which is just ONE of the 12
+// sub-specialties grouped under Clínica Médica (schema-patch-003). Clínica Médica AS A
+// WHOLE is the exam's largest area, so do NOT phrase the copy as "the 6 highest-incidence
+// areas / os 6 que mais caem por ranking" — that invites the "cadê a Clínica Médica?"
+// objection. Frame it as concentration ("juntos concentram 63%"), which is true
+// regardless of how the areas are aggregated. The landing copy is worded accordingly.
 export const WEIGHTED_DECK_STATS = {
   totalCards: 50,
   examQuestionsAnalyzed: 881,
