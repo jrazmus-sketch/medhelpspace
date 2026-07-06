@@ -1,8 +1,7 @@
 # /admin/leads Build Phases — Handoff Document
 
-**Last updated:** 2026-07-06  
-**Commit:** c7770d9 (Phase 2A/B/C complete + pushed)  
-**Build status:** ✅ Clean (6.0s, 0 errors)
+**Last updated:** 2026-07-06 (Phase 3 build)  
+**Build status:** ✅ Clean (0 TS errors, changed files lint-clean)
 
 ---
 
@@ -11,9 +10,15 @@
 The `/admin/leads` page is being built incrementally across phases:
 - **Phase 1** ✅ DONE: Test lead filtering (is_test column + toggle)
 - **Phase 2A** ✅ DONE: Quick wins (drip visibility, engagement badges, sortable columns)
+  — NB: the 2A renderers existed but were NOT wired into the table until the Phase 3
+  session (2026-07-06); drip/engagement columns + clickable sort headers are live now.
 - **Phase 2B** ✅ DONE: Bulk selection + mark-as-test toolbar
 - **Phase 2C** ✅ DONE: Advanced bulk actions (resend email, assign cohort, export CSV)
-- **Phase 3+** 🔄 DEFERRED: Additional bulk actions + refinements
+- **Phase 3** ✅ DONE (2026-07-06): bulk unsubscribe/reactivate, resend-to-specific-step,
+  bulk archive/unarchive (`is_archived` column), drip-step distribution readout,
+  "Mais ações" overflow menu, `router.refresh()` after bulk ops — see *Phase 3:
+  What Shipped* below. Items NOT built are listed with reasons under *Deliberately
+  deferred*.
 
 ---
 
@@ -385,50 +390,71 @@ t("leads.bulkSelectedCountOther", { count: 3 }) // "3 leads selecionados"
 
 ---
 
-## Phase 3+ Roadmap (Deferred)
+## Phase 3: What Shipped (2026-07-06)
 
-### Phase 3A: Email & Messaging
-- [ ] **Bulk capture method change** (e.g., mark exit-intent captures as quiz-gate)
-- [ ] **Bulk unsubscribe/reactivate** (set dripStatus, clear last_emailed_at for reactivation)
-- [ ] **Email bounce/complaint handling** (manual override for bounced leads)
-- [ ] **Resend to specific drip step** (not just next step; pick any 1–6)
+### 3A — Email & Messaging
+- [x] **Bulk unsubscribe / reactivate** — `bulkSetDripStatus(leadIds, action)` in
+  actions/leads.ts. Unsubscribe mirrors the one-click route's write (`drip_status`
+  + `unsubscribed_at`); reactivate flips unsubscribed/**bounced** leads back to
+  active and clears `unsubscribed_at` — this IS the manual bounce override.
+  `'converted'` is terminal and never touched (same `.neq` guard as the Resend
+  webhook). `last_emailed_at` is KEPT (Q1 answered: the drip clock runs from
+  `verified_at`, so clearing it only destroys history). Both confirm via
+  ConfirmModal; result toast reports skipped rows.
+- [x] **Resend to specific drip step** — `bulkResendDripEmail(leadIds, step?)` +
+  new `bulk-resend-modal.tsx` (radio picker: "próximo passo de cada lead" default,
+  or a specific template D0/D1/D2/D4/D7). `drip_step` is written as
+  `max(current, step)` so resending an old email never rewinds the cron sequence.
+  **lead-final (step 5) is deliberately not offered** — retired 2026-07-02.
+- Bug fixes shipped with this: the old step→template map was **off by one vs. the
+  lead-drip cron** (sent lead-d0 as "step 1", making the cron skip a step after any
+  manual resend); the unsubscribe link was email-based but the route auths by
+  `unsubscribe_token` (**every manual resend had a dead unsubscribe link**); manual
+  sends were missing `resultUrl`/`checkoutUrl` vars (dead buttons in the emails).
+  All three fixed — `buildDripVars` now mirrors the cron's var set exactly, coupon
+  on the D2 step only.
+- Flashcards-funnel leads (`source='flashcards-50'`) are refused by the resend
+  action (client disables the button too): their sequence is `lead-fc-*`, owned by
+  /api/cron/flashcards-drip.
 
-**Implementation notes:**
-- `dripStatus` enum: 'active' | 'unsubscribed' | 'bounced' | 'pending'
-- Bounce/complaint handled by Resend webhooks (admin sees status, can override)
-- Button: "Marcar como inativo" / "Reativar" with confirmation
+### 3C — Data Management
+- [x] **Bulk archive/unarchive** — `is_archived` column
+  (schema-patch-leads-archive.sql, applied to prod + local 2026-07-06),
+  `bulkSetArchived(leadIds, archived)`, "Mostrar arquivados" filter toggle
+  (appears once any lead is archived), "Arquivado" pill next to the status pill.
+  Archiving does NOT touch drip_status (list hygiene ≠ email suppression).
 
-### Phase 3B: Lead Scoring & Segmentation
-- [ ] **Bulk score adjustment** (add/subtract points for manual corrections)
-- [ ] **Bulk weak specialty tagging** (override AI-detected specialties)
-- [ ] **Bulk tier reclassification** (manually override tier logic: customer → hot, etc.)
+### 3D — Analytics (lite)
+- [x] **Drip-step distribution** — "No fluxo" chip row next to Por origem/Por turma:
+  counts of active+verified quiz-funnel leads per drip step (tests/archived excluded).
 
-**Implementation notes:**
-- Score is numeric; allow +/−N adjustment
-- weakSpecialties is array; modal to add/remove specialties
-- Tier is derived (readonly display), but could add override_tier nullable column
+### Also in this session
+- [x] **Phase 2A actually wired in** — drip + engagement columns added to the desktop
+  table, sortable headers (Lead/Nível/E-mail/Última atividade) via
+  `renderSortableHeader()` (plain helper, NOT an inline component —
+  react-hooks/static-components errors otherwise), drip step shown on mobile cards.
+- [x] **"Mais ações" overflow menu** in the toolbar (unsubscribe/reactivate/
+  archive/unarchive) — keeps the fixed bottom bar usable at 375px; buttons are
+  min-h-44px on mobile and the bar wraps; feedback messages moved to their own row.
+- [x] **`router.refresh()` after every successful bulk action** — previously the
+  table silently kept stale rows until a manual reload.
+- [x] **2027.2 cohort slug bug fixed** — bulk assign wrote `revalida-2027-2`, but the
+  real slug is `revalida-20272` (no hyphen; see lib/magnet/links.ts). Server now
+  validates against `VALID_TARGET_COHORTS`; the modal slug is corrected. Assigning
+  2027.2 NEVER worked before this.
 
-### Phase 3C: Data Management
-- [ ] **Bulk archive/delete** (soft-delete with is_archived flag)
-- [ ] **Bulk duplicate detection** (same email → merge or flag)
-- [ ] **Bulk field corrections** (fix firstName, cohort, etc. in bulk)
-- [ ] **Export + import** (bulk upload CSV to update leads)
+### Deliberately deferred (with reasons — not just "later")
 
-**Implementation notes:**
-- Add `is_archived` boolean to leads table
-- Archive button in toolbar (secondary)
-- Duplicate detection via email uniqueness; show conflicts before merge
-
-### Phase 3D: Analytics & Reporting
-- [ ] **Export filtered leads to Sheets** (one-click integration)
-- [ ] **Lead cohort report** (per-cohort conversion metrics)
-- [ ] **Drip funnel analysis** (step-by-step dropout)
-- [ ] **Smart segments** (save filter combinations as reusable segments)
-
-**Implementation notes:**
-- Sheets integration: OAuth + append rows to sheet
-- Segments table: `{ id, name, filter_json, created_by, created_at }`
-- Report generation: async job, email results when ready
+- **Bulk capture method change** (3A): rewrites acquisition attribution history that
+  the funnel panel reports on; no concrete need articulated. Revisit only with a use case.
+- **All of 3B (score/weak-specialty/tier overrides)**: score + weakSpecialties + tier
+  are derived from real quiz answers; manual overrides break provenance (drip emails
+  interpolate {{score}}). Tier override is open team question Q4.
+- **Duplicate detection** (3C): impossible by construction — `leads_email_lower_uniq`
+  unique index (schema-patch-leads.sql) means one row per email.
+- **CSV import / bulk field corrections** (3C): unscoped bulk writes; needs a spec.
+- **Sheets export, async reports, smart segments** (3D): external OAuth/integration
+  work; CSV export covers today's need. Segments blocked on team question Q6.
 
 ---
 
@@ -490,6 +516,7 @@ app/src/
 ├── components/admin/
 │   ├── lead-detail-drawer.tsx             # Read-only detail pane
 │   ├── bulk-assign-cohort-modal.tsx       # Phase 2C: cohort picker modal
+│   ├── bulk-resend-modal.tsx              # Phase 3A: drip-step picker modal
 │   └── confirm-modal.tsx                  # Generic confirmation modal (reusable)
 ├── lib/admin/
 │   └── leads.ts                           # LeadRow type, getLeadsOverview() query
@@ -519,14 +546,15 @@ Before committing Phase 3+:
 
 ## Questions for Future Dev
 
-If you're picking up this work, clarify these with the team:
+Status after the 2026-07-06 Phase 3 build:
 
-1. **Bulk unsubscribe** — Should we set `last_emailed_at = NULL` to reset, or keep it?
-2. **Archive vs. delete** — Soft delete (is_archived flag) or hard delete?
-3. **Duplicate merging** — If email appears twice, which record wins (earlier date? higher score?)?
-4. **Tier override** — Should admins be able to manually override tier, or always computed?
-5. **Export integration** — Google Sheets? Slack? CSV only?
-6. **Smart segments** — Should saved filters be shareable across admins?
+1. **Bulk unsubscribe** — ANSWERED: keep `last_emailed_at`. The drip clock runs from
+   `verified_at`, so clearing it changes nothing and destroys send history.
+2. **Archive vs. delete** — ANSWERED: soft delete (`is_archived`), reversible from the UI.
+3. **Duplicate merging** — MOOT: `leads_email_lower_uniq` makes duplicates impossible.
+4. **Tier override** — OPEN (not built): tier stays computed. Decide before building 3B.
+5. **Export integration** — CSV only for now; Sheets/Slack deferred.
+6. **Smart segments** — OPEN (not built): decide per-admin vs shared before building.
 
 ---
 

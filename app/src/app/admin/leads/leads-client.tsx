@@ -1,14 +1,32 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { CheckCircle2, Loader2, Download, Mail } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  CheckCircle2,
+  Download,
+  Loader2,
+  Mail,
+  MailCheck,
+  MailX,
+  MoreHorizontal,
+} from "lucide-react";
 import type { LeadRow, LeadsSummary, LeadTier } from "@/lib/admin/leads";
 import { LeadDetailDrawer } from "@/components/admin/lead-detail-drawer";
 import { BulkAssignCohortModal } from "@/components/admin/bulk-assign-cohort-modal";
+import { BulkResendModal } from "@/components/admin/bulk-resend-modal";
 import { ConfirmModal } from "@/components/admin/confirm-modal";
-import { bulkMarkAsTest, bulkAssignCohort, bulkResendDripEmail } from "@/actions/leads";
+import {
+  bulkMarkAsTest,
+  bulkAssignCohort,
+  bulkResendDripEmail,
+  bulkSetDripStatus,
+  bulkSetArchived,
+} from "@/actions/leads";
 
 interface Props {
   rows: LeadRow[];
@@ -133,6 +151,7 @@ function downloadCSV(csv: string, filename: string): void {
 
 export function LeadsClient({ rows, summary }: Props) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const dateLocale = i18n.language === "en" ? "en-US" : "pt-BR";
 
   const [search, setSearch] = useState("");
@@ -142,6 +161,7 @@ export function LeadsClient({ rows, summary }: Props) {
   const [capture, setCapture] = useState("all");
   const [funnel, setFunnel] = useState("all");
   const [showTests, setShowTests] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<LeadRow | null>(null);
   const [sort, setSort] = useState<SortState>({ sortBy: "created", sortAsc: false });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -150,6 +170,10 @@ export function LeadsClient({ rows, summary }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCohortModal, setShowCohortModal] = useState(false);
   const [showResendModal, setShowResendModal] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  // Which drip-status change is awaiting confirmation (both have email-flow
+  // consequences, so both confirm before firing).
+  const [confirmAction, setConfirmAction] = useState<"unsubscribe" | "reactivate" | null>(null);
 
   function fmtDate(iso: string | null) {
     if (!iso) return "—";
@@ -166,6 +190,7 @@ export function LeadsClient({ rows, summary }: Props) {
     const q = search.trim().toLowerCase();
     const results = rows.filter((r) => {
       if (!showTests && r.isTest) return false;
+      if (!showArchived && r.isArchived) return false;
       if (tier !== "all" && r.tier !== tier) return false;
       if (status !== "all" && effectiveStatus(r) !== status) return false;
       if (source !== "all" && (r.utmSource ?? "__organic__") !== source) return false;
@@ -211,7 +236,7 @@ export function LeadsClient({ rows, summary }: Props) {
       });
     }
     return results;
-  }, [rows, search, tier, status, source, capture, funnel, showTests, sort]);
+  }, [rows, search, tier, status, source, capture, funnel, showTests, showArchived, sort]);
 
   const hasExitIntent = useMemo(
     () => rows.some((r) => r.captureSource === "exit_intent"),
@@ -223,19 +248,56 @@ export function LeadsClient({ rows, summary }: Props) {
     [rows],
   );
 
+  const hasArchived = useMemo(() => rows.some((r) => r.isArchived), [rows]);
+
   const statuses = useMemo(
     () => [...new Set(rows.map(effectiveStatus))],
     [rows],
   );
 
+  // Drip-step distribution among leads actually IN the drip (active + verified,
+  // quiz funnel — mirrors the lead-drip cron's target set). Tests/archived out.
+  const dripDist = useMemo(() => {
+    const counts = new Map<number, number>();
+    let total = 0;
+    for (const r of rows) {
+      if (r.isTest || r.isArchived) continue;
+      if (r.dripStatus !== "active" || !r.verified) continue;
+      if (r.source === "flashcards-50") continue;
+      counts.set(r.dripStep, (counts.get(r.dripStep) ?? 0) + 1);
+      total++;
+    }
+    const steps = [...counts.entries()]
+      .map(([step, count]) => ({ step, count }))
+      .sort((a, b) => a.step - b.step);
+    return { steps, total };
+  }, [rows]);
+
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id));
 
+  const selectedRows = useMemo(
+    () => filtered.filter((r) => selectedIds.has(r.id)),
+    [filtered, selectedIds],
+  );
+
   const canResendEmail = useMemo(() => {
-    if (selectedIds.size === 0) return false;
-    const selected = filtered.filter((r) => selectedIds.has(r.id));
-    return selected.every((r) => r.dripStatus === "active");
-  }, [selectedIds, filtered]);
+    if (selectedRows.length === 0) return false;
+    // Flashcards-funnel leads have their own sequence (lead-fc-*) — the quiz
+    // templates would be wrong, and the server action refuses them.
+    return selectedRows.every(
+      (r) => r.dripStatus === "active" && r.source !== "flashcards-50",
+    );
+  }, [selectedRows]);
+
+  const canUnsubscribe = selectedRows.some(
+    (r) => r.dripStatus === "active" || r.dripStatus === "bounced",
+  );
+  const canReactivate = selectedRows.some(
+    (r) => r.dripStatus === "unsubscribed" || r.dripStatus === "bounced",
+  );
+  const canArchive = selectedRows.some((r) => !r.isArchived);
+  const canUnarchive = selectedRows.some((r) => r.isArchived);
 
   const handleSelectAll = () => {
     if (allFilteredSelected) {
@@ -255,23 +317,32 @@ export function LeadsClient({ rows, summary }: Props) {
     setSelectedIds(newSelected);
   };
 
+  // Shared success epilogue: toast, clear selection, and re-fetch the server
+  // rows so the table reflects the write (the rows prop is server-component data).
+  const finishBulk = (msg: string) => {
+    setSuccessMessage(msg);
+    setSelectedIds(new Set());
+    router.refresh();
+    setTimeout(() => setSuccessMessage(null), 4000);
+  };
+
   const handleBulkMarkAsTest = async () => {
     if (selectedIds.size === 0) return;
     setIsProcessing(true);
     setSuccessMessage(null);
+    setErrorMessage(null);
     try {
       const leadIds = Array.from(selectedIds);
       await bulkMarkAsTest(leadIds);
-      const count = selectedIds.size;
-      const msg = t(count === 1 ? "leads.bulkActionSuccessOne" : "leads.bulkActionSuccessOther", {
-        count,
-      });
-      setSuccessMessage(msg);
-      setSelectedIds(new Set());
-      setTimeout(() => setSuccessMessage(null), 3000);
+      const count = leadIds.length;
+      finishBulk(
+        t(count === 1 ? "leads.bulkActionSuccessOne" : "leads.bulkActionSuccessOther", {
+          count,
+        }),
+      );
     } catch (error) {
       console.error("Bulk action error:", error);
-      setSuccessMessage(t("leads.bulkActionError"));
+      setErrorMessage(t("leads.bulkActionError"));
     } finally {
       setIsProcessing(false);
     }
@@ -281,51 +352,92 @@ export function LeadsClient({ rows, summary }: Props) {
     if (selectedIds.size === 0) return;
     setIsProcessing(true);
     setSuccessMessage(null);
+    setErrorMessage(null);
     try {
       const leadIds = Array.from(selectedIds);
       await bulkAssignCohort(leadIds, cohort);
-      const count = selectedIds.size;
-      const msg = t(
-        count === 1 ? "leads.bulkAssignCohortSuccessOne" : "leads.bulkAssignCohortSuccessOther",
-        { count },
+      const count = leadIds.length;
+      finishBulk(
+        t(
+          count === 1 ? "leads.bulkAssignCohortSuccessOne" : "leads.bulkAssignCohortSuccessOther",
+          { count },
+        ),
       );
-      setSuccessMessage(msg);
-      setSelectedIds(new Set());
-      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
       console.error("Bulk assign cohort error:", error);
-      setSuccessMessage(t("leads.bulkActionError"));
+      setErrorMessage(t("leads.bulkActionError"));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleBulkResendEmail = async () => {
+  const handleBulkResendEmail = async (step: number | null) => {
     if (selectedIds.size === 0) return;
-    setShowResendModal(false);
     setIsProcessing(true);
     setSuccessMessage(null);
     setErrorMessage(null);
     try {
       const leadIds = Array.from(selectedIds);
-      const result = await bulkResendDripEmail(leadIds);
+      const result = await bulkResendDripEmail(leadIds, step);
       if (result.success) {
-        const msg = t("leads.bulkResendSuccess", { count: result.sent });
-        setSuccessMessage(msg);
-        setSelectedIds(new Set());
-        setTimeout(() => setSuccessMessage(null), 5000);
+        finishBulk(
+          t(result.sent === 1 ? "leads.bulkResendSuccess" : "leads.bulkResendSuccessOther", {
+            count: result.sent,
+          }),
+        );
       } else if (result.failed.length > 0) {
         const failedEmails = result.failed.map((f) => f.email).join(", ");
         const errorMsg = t("leads.bulkResendPartialError", {
           count: result.sent,
+          total: leadIds.length,
           failedCount: result.failed.length,
         });
         setErrorMessage(`${errorMsg} — ${failedEmails}`);
+        router.refresh();
       }
     } catch (error) {
       console.error("Bulk resend error:", error);
       const msg = error instanceof Error ? error.message : t("leads.bulkActionError");
       setErrorMessage(msg);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkDripStatus = async (action: "unsubscribe" | "reactivate") => {
+    if (selectedIds.size === 0) return;
+    setConfirmAction(null);
+    setIsProcessing(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    try {
+      const result = await bulkSetDripStatus(Array.from(selectedIds), action);
+      const base = action === "unsubscribe" ? "leads.bulkUnsubscribeSuccess" : "leads.bulkReactivateSuccess";
+      let msg = t(result.count === 1 ? `${base}One` : `${base}Other`, { count: result.count });
+      if (result.skipped > 0) {
+        msg += ` ${t("leads.bulkSkippedNote", { count: result.skipped })}`;
+      }
+      finishBulk(msg);
+    } catch (error) {
+      console.error("Bulk drip-status error:", error);
+      setErrorMessage(t("leads.bulkActionError"));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkArchive = async (archived: boolean) => {
+    if (selectedIds.size === 0) return;
+    setIsProcessing(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    try {
+      const result = await bulkSetArchived(Array.from(selectedIds), archived);
+      const base = archived ? "leads.bulkArchiveSuccess" : "leads.bulkUnarchiveSuccess";
+      finishBulk(t(result.count === 1 ? `${base}One` : `${base}Other`, { count: result.count }));
+    } catch (error) {
+      console.error("Bulk archive error:", error);
+      setErrorMessage(t("leads.bulkActionError"));
     } finally {
       setIsProcessing(false);
     }
@@ -342,8 +454,16 @@ export function LeadsClient({ rows, summary }: Props) {
   function StatusPill({ row }: { row: LeadRow }) {
     const st = effectiveStatus(row);
     return (
-      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[st] ?? statusColor.active}`}>
-        {t(`leads.status_${st}`, { defaultValue: st })}
+      <span className="inline-flex flex-wrap items-center gap-1">
+        <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[st] ?? statusColor.active}`}>
+          {t(`leads.status_${st}`, { defaultValue: st })}
+        </span>
+        {row.isArchived && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <Archive className="h-3 w-3" />
+            {t("leads.isArchived")}
+          </span>
+        )}
       </span>
     );
   }
@@ -411,7 +531,9 @@ export function LeadsClient({ rows, summary }: Props) {
     );
   }
 
-  function SortableHeader({ label, field }: { label: string; field: SortState["sortBy"] }) {
+  // Plain render helper (NOT a component) — an inline component here would be
+  // recreated every render and trips react-hooks/static-components.
+  function renderSortableHeader(label: string, field: SortState["sortBy"]) {
     const isActive = sort.sortBy === field;
     const handleClick = () => {
       if (isActive) {
@@ -482,6 +604,17 @@ export function LeadsClient({ rows, summary }: Props) {
             </span>
           ))}
         </div>
+        {dripDist.total > 0 && (
+          <div className="flex flex-wrap items-center gap-2" title={t("leads.byDripStepHint")}>
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.byDripStep")}</span>
+            {dripDist.steps.map((s) => (
+              <span key={s.step} className="text-muted-foreground">
+                {t("leads.dripStepShort", { step: s.step })}{" "}
+                <span className="font-medium text-foreground">{s.count}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -560,6 +693,17 @@ export function LeadsClient({ rows, summary }: Props) {
           />
           <span>{t("leads.filterShowTests")}</span>
         </label>
+        {hasArchived && (
+          <label className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm cursor-pointer hover:bg-surface-2/50 min-h-[44px] sm:min-h-0">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span>{t("leads.filterShowArchived")}</span>
+          </label>
+        )}
         <button
           onClick={() => {
             const csv = generateLeadsCSV(filtered);
@@ -597,19 +741,23 @@ export function LeadsClient({ rows, summary }: Props) {
                   title={t("leads.selectAllCheckboxLabel")}
                 />
               </th>
-              <th className="px-4 py-3">{t("leads.colLead")}</th>
-              <th className="px-4 py-3">{t("leads.colTier")}</th>
+              <th className="px-4 py-3">{renderSortableHeader(t("leads.colLead"), "email")}</th>
+              <th className="px-4 py-3">{renderSortableHeader(t("leads.colTier"), "tier")}</th>
               <th className="px-4 py-3">{t("leads.colProgress")}</th>
+              <th className="px-4 py-3">{renderSortableHeader(t("leads.colDrip"), "dripStep")}</th>
+              <th className="px-4 py-3">{t("leads.colEmailEngagement")}</th>
               <th className="px-4 py-3">{t("leads.colCohort")}</th>
               <th className="px-4 py-3">{t("leads.colSource")}</th>
               <th className="px-4 py-3">{t("leads.colStatus")}</th>
-              <th className="px-4 py-3">{t("leads.colLastActivity")}</th>
+              <th className="px-4 py-3">
+                {renderSortableHeader(t("leads.colLastActivity"), "lastActivity")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                   {t("leads.noResults")}
                 </td>
               </tr>
@@ -633,6 +781,12 @@ export function LeadsClient({ rows, summary }: Props) {
                   </td>
                   <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <Progress row={row} />
+                  </td>
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                    <DripStep row={row} />
+                  </td>
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                    <EmailEngagement row={row} />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap cursor-pointer" onClick={() => setSelected(row)}>
                     {cohortShort(row.targetCohort)}
@@ -686,7 +840,10 @@ export function LeadsClient({ rows, summary }: Props) {
                 onClick={() => setSelected(row)}
                 className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground cursor-pointer"
               >
-                <span>{cohortShort(row.targetCohort)} · {sourceLabel(row.utmSource)}</span>
+                <span>
+                  {cohortShort(row.targetCohort)} · {sourceLabel(row.utmSource)} ·{" "}
+                  {t("leads.colDripFormat", { step: row.dripStep, total: 6 })}
+                </span>
                 <div className="flex items-center gap-2">
                   <StatusPill row={row} />
                   <span>{fmtDate(row.createdAt)}</span>
@@ -710,68 +867,169 @@ export function LeadsClient({ rows, summary }: Props) {
         onConfirm={handleBulkAssignCohort}
       />
 
+      <BulkResendModal
+        isOpen={showResendModal}
+        onClose={() => setShowResendModal(false)}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkResendEmail}
+      />
+
       <ConfirmModal
-        open={showResendModal}
-        title={t("leads.bulkResendTitle")}
+        open={confirmAction !== null}
+        title={t(
+          confirmAction === "reactivate" ? "leads.bulkReactivateTitle" : "leads.bulkUnsubscribeTitle",
+        )}
         description={
           <p>
-            {t("leads.bulkResendDescription", { count: selectedIds.size })}
+            {t(
+              confirmAction === "reactivate"
+                ? selectedIds.size === 1
+                  ? "leads.bulkReactivateDescriptionOne"
+                  : "leads.bulkReactivateDescriptionOther"
+                : selectedIds.size === 1
+                  ? "leads.bulkUnsubscribeDescriptionOne"
+                  : "leads.bulkUnsubscribeDescriptionOther",
+              { count: selectedIds.size },
+            )}
           </p>
         }
-        confirmLabel={t("leads.bulkResendConfirm")}
+        confirmLabel={t(
+          confirmAction === "reactivate" ? "leads.bulkReactivateConfirm" : "leads.bulkUnsubscribeConfirm",
+        )}
+        destructive={confirmAction === "unsubscribe"}
         isPending={isProcessing}
-        onConfirm={handleBulkResendEmail}
-        onCancel={() => setShowResendModal(false)}
+        onConfirm={() => confirmAction && handleBulkDripStatus(confirmAction)}
+        onCancel={() => setConfirmAction(null)}
       />
 
       {selectedIds.size > 0 && (
         <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-surface-1 px-4 py-3 shadow-lg z-40">
-          <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
-            <span className="text-sm font-medium">
-              {t(
-                selectedIds.size === 1
-                  ? "leads.bulkSelectedCount"
-                  : "leads.bulkSelectedCountOther",
-                { count: selectedIds.size },
-              )}
-            </span>
-            <div className="flex items-center gap-2">
-              {successMessage && (
-                <span className="text-sm text-green-600 dark:text-green-400">{successMessage}</span>
-              )}
-              {errorMessage && (
-                <span className="text-sm text-red-600 dark:text-red-400">{errorMessage}</span>
-              )}
-              <button
-                onClick={() => setShowCohortModal(true)}
-                disabled={isProcessing}
-                className="inline-flex items-center gap-2 rounded-lg border border-brand/30 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {t("leads.bulkAssignCohort")}
-              </button>
-              <button
-                onClick={() => setShowResendModal(true)}
-                disabled={isProcessing || !canResendEmail}
-                className="inline-flex items-center gap-2 rounded-lg border border-brand/30 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title={!canResendEmail ? t("leads.bulkResendDisabledTooltip") : ""}
-              >
-                <Mail className="h-4 w-4" />
-                {t("leads.bulkResend")}
-              </button>
-              <button
-                onClick={handleBulkMarkAsTest}
-                disabled={isProcessing}
-                className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("common.loading")}
-                  </>
-                ) : (
-                  t("leads.bulkMarkAsTest")
+          <div className="mx-auto max-w-6xl space-y-2">
+            {(successMessage || errorMessage) && (
+              <p className="text-sm">
+                {successMessage && (
+                  <span className="text-green-600 dark:text-green-400">{successMessage}</span>
                 )}
-              </button>
+                {errorMessage && (
+                  <span className="text-red-600 dark:text-red-400">{errorMessage}</span>
+                )}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <span className="text-sm font-medium">
+                {t(
+                  selectedIds.size === 1
+                    ? "leads.bulkSelectedCount"
+                    : "leads.bulkSelectedCountOther",
+                  { count: selectedIds.size },
+                )}
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <button
+                    onClick={() => setMoreMenuOpen((v) => !v)}
+                    disabled={isProcessing}
+                    aria-haspopup="menu"
+                    aria-expanded={moreMenuOpen}
+                    aria-label={t("leads.bulkMore")}
+                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 min-h-[44px] sm:min-h-0 text-sm font-medium hover:bg-surface-2/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t("leads.bulkMore")}</span>
+                  </button>
+                  {moreMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setMoreMenuOpen(false)}
+                      />
+                      <div
+                        role="menu"
+                        className="absolute bottom-full left-0 z-50 mb-2 w-60 rounded-xl border border-border bg-surface-1 p-1 shadow-lg"
+                      >
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            setMoreMenuOpen(false);
+                            setConfirmAction("unsubscribe");
+                          }}
+                          disabled={!canUnsubscribe}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-surface-2/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <MailX className="h-4 w-4 text-muted-foreground" />
+                          {t("leads.bulkUnsubscribe")}
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            setMoreMenuOpen(false);
+                            setConfirmAction("reactivate");
+                          }}
+                          disabled={!canReactivate}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-surface-2/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <MailCheck className="h-4 w-4 text-muted-foreground" />
+                          {t("leads.bulkReactivate")}
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            setMoreMenuOpen(false);
+                            handleBulkArchive(true);
+                          }}
+                          disabled={!canArchive}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-surface-2/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Archive className="h-4 w-4 text-muted-foreground" />
+                          {t("leads.bulkArchive")}
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            setMoreMenuOpen(false);
+                            handleBulkArchive(false);
+                          }}
+                          disabled={!canUnarchive}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm hover:bg-surface-2/60 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ArchiveRestore className="h-4 w-4 text-muted-foreground" />
+                          {t("leads.bulkUnarchive")}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowCohortModal(true)}
+                  disabled={isProcessing}
+                  className="inline-flex items-center gap-2 rounded-lg border border-brand/30 px-4 py-2 min-h-[44px] sm:min-h-0 text-sm font-medium text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {t("leads.bulkAssignCohort")}
+                </button>
+                <button
+                  onClick={() => setShowResendModal(true)}
+                  disabled={isProcessing || !canResendEmail}
+                  className="inline-flex items-center gap-2 rounded-lg border border-brand/30 px-4 py-2 min-h-[44px] sm:min-h-0 text-sm font-medium text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title={!canResendEmail ? t("leads.bulkResendDisabledTooltip") : ""}
+                >
+                  <Mail className="h-4 w-4" />
+                  {t("leads.bulkResend")}
+                </button>
+                <button
+                  onClick={handleBulkMarkAsTest}
+                  disabled={isProcessing}
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 min-h-[44px] sm:min-h-0 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("common.loading")}
+                    </>
+                  ) : (
+                    t("leads.bulkMarkAsTest")
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

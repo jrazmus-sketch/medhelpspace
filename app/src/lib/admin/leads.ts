@@ -46,6 +46,9 @@ export type LeadRow = {
   // 'flashcards-50' (gift-first flashcards magnet). Drives the Funil badge + filter.
   source: string;
   isTest: boolean;
+  // Soft-archive (schema-patch-leads-archive.sql). Hidden by default in the list;
+  // "Mostrar arquivados" reveals. Independent of drip_status.
+  isArchived: boolean;
 };
 
 export type LeadsSummary = {
@@ -73,7 +76,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
     admin
       .from("leads")
       .select(
-        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source, is_test",
+        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source, is_test, is_archived",
       )
       .order("created_at", { ascending: false })
       .limit(1000),
@@ -117,6 +120,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       captureSource: (l.capture_source as string | null) ?? null,
       source: (l.source as string | null) ?? "simulado-honesto",
       isTest: Boolean(l.is_test),
+      isArchived: Boolean(l.is_archived),
     };
   });
 
