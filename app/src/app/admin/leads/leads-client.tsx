@@ -1,20 +1,26 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2, Download, Mail } from "lucide-react";
 import type { LeadRow, LeadsSummary, LeadTier } from "@/lib/admin/leads";
 import { LeadDetailDrawer } from "@/components/admin/lead-detail-drawer";
+import { BulkAssignCohortModal } from "@/components/admin/bulk-assign-cohort-modal";
+import { ConfirmModal } from "@/components/admin/confirm-modal";
+import { bulkMarkAsTest, bulkAssignCohort, bulkResendDripEmail } from "@/actions/leads";
 
 interface Props {
   rows: LeadRow[];
   summary: LeadsSummary;
 }
 
+interface SortState {
+  sortBy: "created" | "lastActivity" | "dripStep" | "tier" | "email" | null;
+  sortAsc: boolean;
+}
+
 const tierColor: Record<LeadTier, string> = {
-  // Purple (brand-adjacent), kept distinct from the green "Converted" status pill
-  // that sits in the next column for the same rows.
   customer: "bg-purple-500/15 text-purple-700 dark:text-purple-300",
   hot: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
   nurture: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
@@ -29,19 +35,11 @@ const statusColor: Record<string, string> = {
   unverified: "bg-surface-2 text-muted-foreground",
 };
 
-// The DB `drip_status='active'` default is carried by unverified soft-captures too,
-// but they are SUPPRESSED from the drip (lead-drip cron filters `.not(verified_at,
-// is, null)`). Surfacing them as "In drip" contradicts their Cold tier, so we derive
-// a display-only status: an active-but-unverified lead reads "unverified" instead.
-// converted/unsubscribed/bounced are verification-independent and pass through.
 function effectiveStatus(row: LeadRow): string {
   if (row.dripStatus === "active" && !row.verified) return "unverified";
   return row.dripStatus;
 }
 
-// "revalida-2026-2" → "2026.2" for a compact column. Also handles the hyphen-less
-// 2027.2 slug ("revalida-20272" → "2027.2"). null (lead never reached the cohort
-// picker) → "—" instead of a misleading default turma.
 function cohortShort(slug: string | null): string {
   if (!slug) return "—";
   if (slug === "undecided") return "Indeciso";
@@ -52,6 +50,85 @@ function cohortShort(slug: string | null): string {
 function pct(n: number, total: number): string {
   if (total === 0) return "0%";
   return `${Math.round((n / total) * 100)}%`;
+}
+
+function estimatedOpens(tier: LeadTier): number | null {
+  if (tier === "hot") return 2;
+  if (tier === "nurture") return 1;
+  return null;
+}
+
+function formatCsvValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "boolean") return value ? "Sim" : "Não";
+  if (Array.isArray(value)) return value.join("|");
+  let str = String(value);
+  // Neutralize formula injection: prepend ' if starts with formula trigger
+  const FORMULA_TRIGGERS = /^[=+\-@\t\r]/;
+  if (FORMULA_TRIGGERS.test(str)) {
+    str = "'" + str;
+  }
+  // Escape double quotes and wrap in quotes if contains comma, newline, or quote
+  if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function generateLeadsCSV(rows: LeadRow[]): string {
+  const headers = [
+    "email",
+    "firstName",
+    "created",
+    "lastActivity",
+    "dripStep",
+    "score",
+    "questionsAnswered",
+    "completed",
+    "weakSpecialties",
+    "verified",
+    "tier",
+    "captureSource",
+    "source",
+    "isTest",
+  ];
+
+  const csvRows = [headers.join(",")];
+
+  for (const row of rows) {
+    const lastActivity = row.lastEmailedAt ?? row.createdAt;
+    const csvRow = [
+      formatCsvValue(row.email),
+      formatCsvValue(row.firstName),
+      formatCsvValue(row.createdAt),
+      formatCsvValue(lastActivity),
+      formatCsvValue(row.dripStep),
+      formatCsvValue(row.score ?? ""),
+      formatCsvValue(row.questionsAnswered ?? 0),
+      formatCsvValue(row.completed),
+      formatCsvValue(row.weakSpecialties),
+      formatCsvValue(row.verified),
+      formatCsvValue(row.tier),
+      formatCsvValue(row.captureSource),
+      formatCsvValue(row.source),
+      formatCsvValue(row.isTest),
+    ];
+    csvRows.push(csvRow.join(","));
+  }
+
+  return csvRows.join("\n");
+}
+
+function downloadCSV(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 export function LeadsClient({ rows, summary }: Props) {
@@ -66,6 +143,13 @@ export function LeadsClient({ rows, summary }: Props) {
   const [funnel, setFunnel] = useState("all");
   const [showTests, setShowTests] = useState(false);
   const [selected, setSelected] = useState<LeadRow | null>(null);
+  const [sort, setSort] = useState<SortState>({ sortBy: "created", sortAsc: false });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showCohortModal, setShowCohortModal] = useState(false);
+  const [showResendModal, setShowResendModal] = useState(false);
 
   function fmtDate(iso: string | null) {
     if (!iso) return "—";
@@ -80,7 +164,7 @@ export function LeadsClient({ rows, summary }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rows.filter((r) => {
+    const results = rows.filter((r) => {
       if (!showTests && r.isTest) return false;
       if (tier !== "all" && r.tier !== tier) return false;
       if (status !== "all" && effectiveStatus(r) !== status) return false;
@@ -96,15 +180,44 @@ export function LeadsClient({ rows, summary }: Props) {
         (r.firstName ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, tier, status, source, capture, funnel, showTests]);
 
-  // Only offer the capture filter once at least one exit-intent lead exists.
+    if (sort.sortBy) {
+      results.sort((a, b) => {
+        let aVal: string | number = 0, bVal: string | number = 0;
+        if (sort.sortBy === "created") {
+          aVal = new Date(a.createdAt).getTime();
+          bVal = new Date(b.createdAt).getTime();
+        } else if (sort.sortBy === "lastActivity") {
+          const aDate = a.lastEmailedAt ?? a.createdAt;
+          const bDate = b.lastEmailedAt ?? b.createdAt;
+          aVal = new Date(aDate).getTime();
+          bVal = new Date(bDate).getTime();
+        } else if (sort.sortBy === "dripStep") {
+          aVal = a.dripStep;
+          bVal = b.dripStep;
+        } else if (sort.sortBy === "tier") {
+          const tierOrder = { customer: 0, hot: 1, nurture: 2, suppressed: 3 };
+          aVal = tierOrder[a.tier];
+          bVal = tierOrder[b.tier];
+        } else if (sort.sortBy === "email") {
+          aVal = a.email.toLowerCase();
+          bVal = b.email.toLowerCase();
+        }
+        if (sort.sortAsc) {
+          return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        } else {
+          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+        }
+      });
+    }
+    return results;
+  }, [rows, search, tier, status, source, capture, funnel, showTests, sort]);
+
   const hasExitIntent = useMemo(
     () => rows.some((r) => r.captureSource === "exit_intent"),
     [rows],
   );
 
-  // Only offer the funnel filter once a second funnel (flashcards) has leads.
   const hasFlashcards = useMemo(
     () => rows.some((r) => r.source === "flashcards-50"),
     [rows],
@@ -115,13 +228,112 @@ export function LeadsClient({ rows, summary }: Props) {
     [rows],
   );
 
-  // ── Shared cell renderers (desktop table + mobile cards) ──────────────────
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id));
+
+  const canResendEmail = useMemo(() => {
+    if (selectedIds.size === 0) return false;
+    const selected = filtered.filter((r) => selectedIds.has(r.id));
+    return selected.every((r) => r.dripStatus === "active");
+  }, [selectedIds, filtered]);
+
+  const handleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((r) => r.id)));
+    }
+  };
+
+  const handleRowToggle = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkMarkAsTest = async () => {
+    if (selectedIds.size === 0) return;
+    setIsProcessing(true);
+    setSuccessMessage(null);
+    try {
+      const leadIds = Array.from(selectedIds);
+      await bulkMarkAsTest(leadIds);
+      const count = selectedIds.size;
+      const msg = t(count === 1 ? "leads.bulkActionSuccessOne" : "leads.bulkActionSuccessOther", {
+        count,
+      });
+      setSuccessMessage(msg);
+      setSelectedIds(new Set());
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error("Bulk action error:", error);
+      setSuccessMessage(t("leads.bulkActionError"));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkAssignCohort = async (cohort: string) => {
+    if (selectedIds.size === 0) return;
+    setIsProcessing(true);
+    setSuccessMessage(null);
+    try {
+      const leadIds = Array.from(selectedIds);
+      await bulkAssignCohort(leadIds, cohort);
+      const count = selectedIds.size;
+      const msg = t(
+        count === 1 ? "leads.bulkAssignCohortSuccessOne" : "leads.bulkAssignCohortSuccessOther",
+        { count },
+      );
+      setSuccessMessage(msg);
+      setSelectedIds(new Set());
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error("Bulk assign cohort error:", error);
+      setSuccessMessage(t("leads.bulkActionError"));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkResendEmail = async () => {
+    if (selectedIds.size === 0) return;
+    setShowResendModal(false);
+    setIsProcessing(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    try {
+      const leadIds = Array.from(selectedIds);
+      const result = await bulkResendDripEmail(leadIds);
+      if (result.success) {
+        const msg = t("leads.bulkResendSuccess", { count: result.sent });
+        setSuccessMessage(msg);
+        setSelectedIds(new Set());
+        setTimeout(() => setSuccessMessage(null), 5000);
+      } else if (result.failed.length > 0) {
+        const failedEmails = result.failed.map((f) => f.email).join(", ");
+        const errorMsg = t("leads.bulkResendPartialError", {
+          count: result.sent,
+          failedCount: result.failed.length,
+        });
+        setErrorMessage(`${errorMsg} — ${failedEmails}`);
+      }
+    } catch (error) {
+      console.error("Bulk resend error:", error);
+      const msg = error instanceof Error ? error.message : t("leads.bulkActionError");
+      setErrorMessage(msg);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   function TierPill({ row }: { row: LeadRow }) {
     return (
-      <span
-        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tierColor[row.tier]}`}
-      >
+      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tierColor[row.tier]}`}>
         {t(`leads.tier_${row.tier}`)}
       </span>
     );
@@ -130,11 +342,7 @@ export function LeadsClient({ rows, summary }: Props) {
   function StatusPill({ row }: { row: LeadRow }) {
     const st = effectiveStatus(row);
     return (
-      <span
-        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-          statusColor[st] ?? statusColor.active
-        }`}
-      >
+      <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusColor[st] ?? statusColor.active}`}>
         {t(`leads.status_${st}`, { defaultValue: st })}
       </span>
     );
@@ -144,14 +352,9 @@ export function LeadsClient({ rows, summary }: Props) {
     return (
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 font-medium">
-          <span className="truncate">
-            {row.firstName || row.email.split("@")[0]}
-          </span>
+          <span className="truncate">{row.firstName || row.email.split("@")[0]}</span>
           {row.verified && (
-            <CheckCircle2
-              className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400"
-              aria-label={t("leads.verified")}
-            />
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600 dark:text-green-400" />
           )}
         </div>
         <p className="truncate text-xs text-muted-foreground">{row.email}</p>
@@ -160,8 +363,6 @@ export function LeadsClient({ rows, summary }: Props) {
   }
 
   function Progress({ row }: { row: LeadRow }) {
-    // Flashcards-funnel leads never took the quiz — a "0/15" would misread as a bad
-    // score. Show the funnel badge instead (their engagement is the deck, not Q1–15).
     if (row.source === "flashcards-50") {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-xs font-medium text-fuchsia-600 dark:text-fuchsia-300">
@@ -170,8 +371,6 @@ export function LeadsClient({ rows, summary }: Props) {
         </span>
       );
     }
-    // Exit-intent leads never entered the quiz — a "0/15" would read as a bad score
-    // rather than "different capture channel". Show the origin badge instead.
     if (row.captureSource === "exit_intent") {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-600 dark:text-indigo-300">
@@ -183,9 +382,7 @@ export function LeadsClient({ rows, summary }: Props) {
     const answered = row.questionsAnswered ?? 0;
     return (
       <div className="flex items-center gap-1.5 whitespace-nowrap text-sm">
-        <span className={row.completed ? "font-medium" : "text-muted-foreground"}>
-          {answered}/15
-        </span>
+        <span className={row.completed ? "font-medium" : "text-muted-foreground"}>{answered}/15</span>
         {row.score != null && (
           <span className="text-xs text-muted-foreground">
             · {t("leads.scoreShort", { score: row.score })}
@@ -195,27 +392,54 @@ export function LeadsClient({ rows, summary }: Props) {
     );
   }
 
+  function DripStep({ row }: { row: LeadRow }) {
+    return (
+      <span className="whitespace-nowrap text-sm text-muted-foreground">
+        {t("leads.colDripFormat", { step: row.dripStep, total: 6 })}
+      </span>
+    );
+  }
+
+  function EmailEngagement({ row }: { row: LeadRow }) {
+    if (!row.lastEmailedAt) return <span className="text-muted-foreground text-xs">—</span>;
+    const opens = estimatedOpens(row.tier);
+    if (opens === null) return <span className="text-muted-foreground text-xs">—</span>;
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-300">
+        {t("leads.engagementOpens", { count: opens })}
+      </span>
+    );
+  }
+
+  function SortableHeader({ label, field }: { label: string; field: SortState["sortBy"] }) {
+    const isActive = sort.sortBy === field;
+    const handleClick = () => {
+      if (isActive) {
+        setSort({ sortBy: field, sortAsc: !sort.sortAsc });
+      } else {
+        setSort({ sortBy: field, sortAsc: false });
+      }
+    };
+    return (
+      <button
+        onClick={handleClick}
+        className="cursor-pointer hover:text-foreground transition-colors inline-flex items-center gap-1"
+      >
+        {label}
+        {isActive && <span>{sort.sortAsc ? "↑" : "↓"}</span>}
+      </button>
+    );
+  }
+
   const statTiles = [
     { label: t("leads.statTotal"), value: String(summary.total), sub: null as string | null },
-    {
-      label: t("leads.statVerified"),
-      value: String(summary.verified),
-      sub: pct(summary.verified, summary.total),
-    },
-    {
-      label: t("leads.statCompleted"),
-      value: String(summary.completed),
-      sub: pct(summary.completed, summary.total),
-    },
-    {
-      label: t("leads.statConverted"),
-      value: String(summary.converted),
-      sub: pct(summary.converted, summary.total),
-    },
+    { label: t("leads.statVerified"), value: String(summary.verified), sub: pct(summary.verified, summary.total) },
+    { label: t("leads.statCompleted"), value: String(summary.completed), sub: pct(summary.completed, summary.total) },
+    { label: t("leads.statConverted"), value: String(summary.converted), sub: pct(summary.converted, summary.total) },
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="mx-auto max-w-6xl space-y-5 pb-24">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t("leads.title")}</h1>
@@ -225,13 +449,10 @@ export function LeadsClient({ rows, summary }: Props) {
           {search || tier !== "all" || status !== "all" || source !== "all" || capture !== "all" || funnel !== "all"
             ? `${filtered.length} / `
             : ""}
-          {t(rows.length === 1 ? "leads.countOne" : "leads.countOther", {
-            count: rows.length,
-          })}
+          {t(rows.length === 1 ? "leads.countOne" : "leads.countOther", { count: rows.length })}
         </span>
       </div>
 
-      {/* Summary tiles */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {statTiles.map((s) => (
           <div key={s.label} className="rounded-xl border border-border bg-surface-1 p-4">
@@ -244,12 +465,9 @@ export function LeadsClient({ rows, summary }: Props) {
         ))}
       </div>
 
-      {/* Breakdown chips */}
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">
-            {t("leads.bySource")}
-          </span>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.bySource")}</span>
           {summary.bySource.map((b) => (
             <span key={b.source ?? "organic"} className="text-muted-foreground">
               {sourceLabel(b.source)} <span className="font-medium text-foreground">{b.count}</span>
@@ -257,19 +475,15 @@ export function LeadsClient({ rows, summary }: Props) {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">
-            {t("leads.byCohort")}
-          </span>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.byCohort")}</span>
           {summary.byCohort.map((b) => (
             <span key={b.cohort ?? "none"} className="text-muted-foreground">
-              {cohortShort(b.cohort)}{" "}
-              <span className="font-medium text-foreground">{b.count}</span>
+              {cohortShort(b.cohort)} <span className="font-medium text-foreground">{b.count}</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <input
           type="search"
@@ -346,6 +560,19 @@ export function LeadsClient({ rows, summary }: Props) {
           />
           <span>{t("leads.filterShowTests")}</span>
         </label>
+        <button
+          onClick={() => {
+            const csv = generateLeadsCSV(filtered);
+            const now = new Date();
+            const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
+            downloadCSV(csv, `leads-export-${dateStr}.csv`);
+          }}
+          className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm hover:bg-surface-2/50 transition-colors min-h-[44px] sm:min-h-0"
+          title={t("leads.exportCSVHint")}
+        >
+          <Download className="h-4 w-4" />
+          <span>{t("leads.exportCSV")}</span>
+        </button>
       </div>
 
       <div className="space-y-2">
@@ -357,11 +584,19 @@ export function LeadsClient({ rows, summary }: Props) {
         )}
       </div>
 
-      {/* Desktop: table */}
       <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-surface-2 text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={allFilteredSelected}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4"
+                  title={t("leads.selectAllCheckboxLabel")}
+                />
+              </th>
               <th className="px-4 py-3">{t("leads.colLead")}</th>
               <th className="px-4 py-3">{t("leads.colTier")}</th>
               <th className="px-4 py-3">{t("leads.colProgress")}</th>
@@ -374,29 +609,44 @@ export function LeadsClient({ rows, summary }: Props) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   {t("leads.noResults")}
                 </td>
               </tr>
             ) : (
               filtered.map((row) => (
-                <tr
-                  key={row.id}
-                  onClick={() => setSelected(row)}
-                  className="cursor-pointer border-b border-border/50 hover:bg-surface-2/50"
-                >
-                  <td className="px-4 py-3"><LeadIdentity row={row} /></td>
-                  <td className="px-4 py-3"><TierPill row={row} /></td>
-                  <td className="px-4 py-3"><Progress row={row} /></td>
-                  <td className="px-4 py-3 whitespace-nowrap">{cohortShort(row.targetCohort)}</td>
-                  <td className="px-4 py-3">
+                <tr key={row.id} className="cursor-pointer border-b border-border/50 hover:bg-surface-2/50">
+                  <td className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(row.id)}
+                      onChange={() => handleRowToggle(row.id)}
+                      className="w-4 h-4"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                    <LeadIdentity row={row} />
+                  </td>
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                    <TierPill row={row} />
+                  </td>
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                    <Progress row={row} />
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap cursor-pointer" onClick={() => setSelected(row)}>
+                    {cohortShort(row.targetCohort)}
+                  </td>
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <span className="whitespace-nowrap text-sm">
                       {sourceLabel(row.utmSource)}
                       {row.utmCampaign && <span className="text-muted-foreground"> · {row.utmCampaign}</span>}
                     </span>
                   </td>
-                  <td className="px-4 py-3"><StatusPill row={row} /></td>
-                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-sm">
+                  <td className="px-4 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                    <StatusPill row={row} />
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
                     {fmtDate(row.lastEmailedAt ?? row.createdAt)}
                   </td>
                 </tr>
@@ -406,7 +656,6 @@ export function LeadsClient({ rows, summary }: Props) {
         </table>
       </div>
 
-      {/* Mobile: cards */}
       <div className="space-y-3 md:hidden">
         {filtered.length === 0 ? (
           <p className="rounded-xl border border-border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -414,25 +663,29 @@ export function LeadsClient({ rows, summary }: Props) {
           </p>
         ) : (
           filtered.map((row) => (
-            <div
-              key={row.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setSelected(row)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setSelected(row);
-                }
-              }}
-              className="w-full cursor-pointer space-y-3 rounded-xl border border-border bg-surface-1 p-4 text-left transition-colors hover:bg-surface-2/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
-            >
+            <div key={row.id} className="w-full space-y-3 rounded-xl border border-border bg-surface-1 p-4 text-left">
               <div className="flex items-start justify-between gap-3">
-                <LeadIdentity row={row} />
+                <div className="flex items-start gap-3 flex-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(row.id)}
+                    onChange={() => handleRowToggle(row.id)}
+                    className="w-4 h-4 mt-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div role="button" tabIndex={0} onClick={() => setSelected(row)} className="flex-1 cursor-pointer">
+                    <LeadIdentity row={row} />
+                  </div>
+                </div>
                 <TierPill row={row} />
               </div>
               <Progress row={row} />
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelected(row)}
+                className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground cursor-pointer"
+              >
                 <span>{cohortShort(row.targetCohort)} · {sourceLabel(row.utmSource)}</span>
                 <div className="flex items-center gap-2">
                   <StatusPill row={row} />
@@ -444,12 +697,85 @@ export function LeadsClient({ rows, summary }: Props) {
         )}
       </div>
 
-      {/* Detail drawer — remounts per lead so it always loads fresh */}
       <LeadDetailDrawer
         key={selected?.id ?? "none"}
         row={selected}
         onClose={() => setSelected(null)}
       />
+
+      <BulkAssignCohortModal
+        isOpen={showCohortModal}
+        onClose={() => setShowCohortModal(false)}
+        selectedCount={selectedIds.size}
+        onConfirm={handleBulkAssignCohort}
+      />
+
+      <ConfirmModal
+        open={showResendModal}
+        title={t("leads.bulkResendTitle")}
+        description={
+          <p>
+            {t("leads.bulkResendDescription", { count: selectedIds.size })}
+          </p>
+        }
+        confirmLabel={t("leads.bulkResendConfirm")}
+        isPending={isProcessing}
+        onConfirm={handleBulkResendEmail}
+        onCancel={() => setShowResendModal(false)}
+      />
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-surface-1 px-4 py-3 shadow-lg z-40">
+          <div className="mx-auto max-w-6xl flex items-center justify-between gap-4">
+            <span className="text-sm font-medium">
+              {t(
+                selectedIds.size === 1
+                  ? "leads.bulkSelectedCount"
+                  : "leads.bulkSelectedCountOther",
+                { count: selectedIds.size },
+              )}
+            </span>
+            <div className="flex items-center gap-2">
+              {successMessage && (
+                <span className="text-sm text-green-600 dark:text-green-400">{successMessage}</span>
+              )}
+              {errorMessage && (
+                <span className="text-sm text-red-600 dark:text-red-400">{errorMessage}</span>
+              )}
+              <button
+                onClick={() => setShowCohortModal(true)}
+                disabled={isProcessing}
+                className="inline-flex items-center gap-2 rounded-lg border border-brand/30 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {t("leads.bulkAssignCohort")}
+              </button>
+              <button
+                onClick={() => setShowResendModal(true)}
+                disabled={isProcessing || !canResendEmail}
+                className="inline-flex items-center gap-2 rounded-lg border border-brand/30 px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={!canResendEmail ? t("leads.bulkResendDisabledTooltip") : ""}
+              >
+                <Mail className="h-4 w-4" />
+                {t("leads.bulkResend")}
+              </button>
+              <button
+                onClick={handleBulkMarkAsTest}
+                disabled={isProcessing}
+                className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("common.loading")}
+                  </>
+                ) : (
+                  t("leads.bulkMarkAsTest")
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
