@@ -104,6 +104,7 @@ Tables and their purpose:
 | `presentation_slides` | H5P CoursePresentation+AdvancedText/Image → one row per slide; for memorecards pages |
 | `nav_items` | Blurb cards and link lists from hub pages; `target_page_id` null = incomplete |
 | `review_schedule` | Unified SM-2 spaced-repetition state for the Revisão feature; one row per `(user, item_type, item_id)`, `item_type` ∈ flashcard/quiz_question/memorecard. Backfilled from `flashcard_progress`. Patch: `schema-patch-review-schedule.sql` |
+| `flashcard_theme_topics` | Maps each flashcard theme `(specialty_id, group_label)` → `topics.id`, so `getWeightedRevalidaDeck` ranks themes by real incidence via a FK instead of fuzzy name-matching at query time (that silently dropped ~1 in 4 high-yield themes). Resolved offline by `scripts/backfill-flashcard-theme-topics.js` (exact + curated alias map); keyed by label (not card id) so it survives the full-replace flashcard regeneration — re-run the backfill after a regen. Patch: `schema-patch-flashcard-theme-topics.sql` |
 
 **Access control** (RLS): pages with `content_module_id IS NULL` require active cohort
 membership. Pages with a module set also require `cohort_module_access.unlock_date <= today`
