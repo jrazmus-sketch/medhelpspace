@@ -1274,7 +1274,11 @@
     "device_unknown": "Desconhecido",
     "sectionJourney": "Jornada",
     "noJourney": "Sem eventos de navegação registrados.",
-    "viewResultPage": "Ver página de resultado"
+    "viewResultPage": "Ver página de resultado",
+    "filterShowTests": "Mostrar testes",
+    "isTest": "Teste interno",
+    "colLastActivity": "Última atividade",
+    "paginationWarning": "Exibindo os últimos {{count}} leads. Use os filtros para refinar a busca."
   },
   "funnel": {
     "title": "Funil de aquisição",

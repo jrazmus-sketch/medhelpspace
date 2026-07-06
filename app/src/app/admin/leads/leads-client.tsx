@@ -64,6 +64,7 @@ export function LeadsClient({ rows, summary }: Props) {
   const [source, setSource] = useState("all");
   const [capture, setCapture] = useState("all");
   const [funnel, setFunnel] = useState("all");
+  const [showTests, setShowTests] = useState(false);
   const [selected, setSelected] = useState<LeadRow | null>(null);
 
   function fmtDate(iso: string | null) {
@@ -80,6 +81,7 @@ export function LeadsClient({ rows, summary }: Props) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
+      if (!showTests && r.isTest) return false;
       if (tier !== "all" && r.tier !== tier) return false;
       if (status !== "all" && effectiveStatus(r) !== status) return false;
       if (source !== "all" && (r.utmSource ?? "__organic__") !== source) return false;
@@ -94,7 +96,7 @@ export function LeadsClient({ rows, summary }: Props) {
         (r.firstName ?? "").toLowerCase().includes(q)
       );
     });
-  }, [rows, search, tier, status, source, capture, funnel]);
+  }, [rows, search, tier, status, source, capture, funnel, showTests]);
 
   // Only offer the capture filter once at least one exit-intent lead exists.
   const hasExitIntent = useMemo(
@@ -180,33 +182,14 @@ export function LeadsClient({ rows, summary }: Props) {
     }
     const answered = row.questionsAnswered ?? 0;
     return (
-      <div className="space-y-1">
-        <div className="flex items-center gap-1.5 whitespace-nowrap text-sm">
-          <span className={row.completed ? "font-medium" : "text-muted-foreground"}>
-            {answered}/15
+      <div className="flex items-center gap-1.5 whitespace-nowrap text-sm">
+        <span className={row.completed ? "font-medium" : "text-muted-foreground"}>
+          {answered}/15
+        </span>
+        {row.score != null && (
+          <span className="text-xs text-muted-foreground">
+            · {t("leads.scoreShort", { score: row.score })}
           </span>
-          {row.score != null && (
-            <span className="text-xs text-muted-foreground">
-              · {t("leads.scoreShort", { score: row.score })}
-            </span>
-          )}
-        </div>
-        {row.weakSpecialties.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {row.weakSpecialties.slice(0, 3).map((s) => (
-              <span
-                key={s}
-                className="rounded bg-surface-2 px-1.5 py-0.5 text-xs text-muted-foreground"
-              >
-                {s}
-              </span>
-            ))}
-            {row.weakSpecialties.length > 3 && (
-              <span className="px-1 py-0.5 text-xs text-muted-foreground">
-                +{row.weakSpecialties.length - 3}
-              </span>
-            )}
-          </div>
         )}
       </div>
     );
@@ -354,9 +337,25 @@ export function LeadsClient({ rows, summary }: Props) {
             <option value="flashcards-50">{t("leads.funnel_flashcards")}</option>
           </select>
         )}
+        <label className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm cursor-pointer hover:bg-surface-2/50 min-h-[44px] sm:min-h-0">
+          <input
+            type="checkbox"
+            checked={showTests}
+            onChange={(e) => setShowTests(e.target.checked)}
+            className="w-4 h-4"
+          />
+          <span>{t("leads.filterShowTests")}</span>
+        </label>
       </div>
 
-      <p className="text-xs text-muted-foreground">{t("leads.tierLegend")}</p>
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">{t("leads.tierLegend")}</p>
+        {rows.length >= 1000 && (
+          <p className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+            {t("leads.paginationWarning", { count: rows.length })}
+          </p>
+        )}
+      </div>
 
       {/* Desktop: table */}
       <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
@@ -369,7 +368,7 @@ export function LeadsClient({ rows, summary }: Props) {
               <th className="px-4 py-3">{t("leads.colCohort")}</th>
               <th className="px-4 py-3">{t("leads.colSource")}</th>
               <th className="px-4 py-3">{t("leads.colStatus")}</th>
-              <th className="px-4 py-3">{t("leads.colCreated")}</th>
+              <th className="px-4 py-3">{t("leads.colLastActivity")}</th>
             </tr>
           </thead>
           <tbody>
@@ -391,14 +390,14 @@ export function LeadsClient({ rows, summary }: Props) {
                   <td className="px-4 py-3"><Progress row={row} /></td>
                   <td className="px-4 py-3 whitespace-nowrap">{cohortShort(row.targetCohort)}</td>
                   <td className="px-4 py-3">
-                    <span className="whitespace-nowrap">{sourceLabel(row.utmSource)}</span>
-                    {row.utmCampaign && (
-                      <p className="truncate text-xs text-muted-foreground">{row.utmCampaign}</p>
-                    )}
+                    <span className="whitespace-nowrap text-sm">
+                      {sourceLabel(row.utmSource)}
+                      {row.utmCampaign && <span className="text-muted-foreground"> · {row.utmCampaign}</span>}
+                    </span>
                   </td>
                   <td className="px-4 py-3"><StatusPill row={row} /></td>
-                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                    {fmtDate(row.createdAt)}
+                  <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-sm">
+                    {fmtDate(row.lastEmailedAt ?? row.createdAt)}
                   </td>
                 </tr>
               ))

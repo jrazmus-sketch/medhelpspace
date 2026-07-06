@@ -1274,7 +1274,11 @@
     "device_unknown": "Unknown",
     "sectionJourney": "Journey",
     "noJourney": "No navigation events recorded.",
-    "viewResultPage": "View result page"
+    "viewResultPage": "View result page",
+    "filterShowTests": "Show tests",
+    "isTest": "Test lead",
+    "colLastActivity": "Last activity",
+    "paginationWarning": "Showing last {{count}} leads. Use filters to narrow results."
   },
   "funnel": {
     "title": "Acquisition funnel",

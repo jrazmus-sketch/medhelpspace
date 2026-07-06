@@ -241,23 +241,17 @@ export const WEIGHTED_DECK_PLAN: {
 // Within each subject, draw cards round-robin from the N highest-incidence themes.
 const WEIGHTED_TOP_THEMES = 5;
 
-function normThemeName(s: string): string {
-  return String(s || "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
 type LightItem = { id: number; page_id: number; group_label: string | null; group_position: number; position: number };
 
 /**
  * The 50-card weighted high-yield deck. Deterministic (same 50 cards every load, so
  * the deck matches the marketing claim and the magic-link deck is stable):
  *   • subject mix + counts are incidence-weighted (WEIGHTED_DECK_PLAN);
- *   • within a subject, cards come round-robin from the top themes by incidence
- *     (topics.incidence_count matched to flashcard group_label by normalized name);
+ *   • within a subject, cards come round-robin from the top themes by incidence —
+ *     ranked via the flashcard_theme_topics FK map (theme → topics.incidence_count),
+ *     resolved offline by scripts/backfill-flashcard-theme-topics.js. The runtime
+ *     does an exact FK lookup, NOT fuzzy name matching (that silently dropped ~1 in
+ *     4 high-yield themes when deck labels and topic names were worded differently);
  *   • subjects are interleaved round-robin so the first cards span all six subjects.
  * Two-step fetch: rank on lightweight (id, label) rows, hydrate full text for the 50.
  */
@@ -285,16 +279,27 @@ export async function getWeightedRevalidaDeck(): Promise<MagnetFlashcard[]> {
   const pageIds = [...pageBySpecialty.values()];
   if (pageIds.length === 0) return [];
 
-  // 2) Topic incidence per specialty → theme ranking key `${specId}::${normName}`.
-  const { data: topics } = await admin
-    .from("topics")
-    .select("specialty_id, name, incidence_count")
-    .in("specialty_id", specialtyIds);
+  // 2) Theme → incidence via the flashcard_theme_topics FK map (resolved offline in
+  //    scripts/backfill-flashcard-theme-topics.js), keyed `${specialtyId}::${group_label}`.
+  //    Exact FK lookup — no fuzzy name matching at query time.
+  const [themeTopicsRes, topicsRes] = await Promise.all([
+    admin
+      .from("flashcard_theme_topics")
+      .select("specialty_id, group_label, topic_id")
+      .in("specialty_id", specialtyIds),
+    admin
+      .from("topics")
+      .select("id, incidence_count")
+      .in("specialty_id", specialtyIds),
+  ]);
+  const incidenceByTopic = new Map<number, number>();
+  for (const t of topicsRes.data ?? []) {
+    incidenceByTopic.set(t.id as number, (t.incidence_count as number) ?? 0);
+  }
   const incidenceBySpecTheme = new Map<string, number>();
-  for (const t of topics ?? []) {
-    const sid = t.specialty_id as number | null;
-    if (sid == null) continue;
-    incidenceBySpecTheme.set(`${sid}::${normThemeName(t.name as string)}`, (t.incidence_count as number) ?? 0);
+  for (const m of themeTopicsRes.data ?? []) {
+    const inc = incidenceByTopic.get(m.topic_id as number);
+    if (inc != null) incidenceBySpecTheme.set(`${m.specialty_id}::${m.group_label}`, inc);
   }
 
   // 3) Lightweight rows for all six decks. Fetch PER PAGE — NOT one .in(pageIds)
@@ -338,7 +343,7 @@ export async function getWeightedRevalidaDeck(): Promise<MagnetFlashcard[]> {
     const themes = [...themeMap.entries()]
       .map(([label, cards]) => ({
         cards,
-        incidence: incidenceBySpecTheme.get(`${plan.specialtyId}::${normThemeName(label)}`) ?? -1,
+        incidence: incidenceBySpecTheme.get(`${plan.specialtyId}::${label}`) ?? -1,
       }))
       .sort((a, b) => b.incidence - a.incidence);
     const topThemes = themes.slice(0, WEIGHTED_TOP_THEMES);
