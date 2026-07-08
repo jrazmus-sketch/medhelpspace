@@ -62,6 +62,7 @@ export default async function ResultadoPage({
               utm={{ source: "email", medium: "result-page", campaign: "resultado" }}
               cohort={reward.cohort}
               offer={offer}
+              token={token}
             />
           </>
         ) : (

@@ -5,6 +5,7 @@ import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
 import { PlatformPeek } from "@/components/magnet/platform-peek";
 import { WELCOME_COUPONS } from "@/lib/magnet/links";
+import { trackLeadEvent } from "@/actions/magnet";
 
 // Live storefront pricing for the turma, threaded from the server so the offer
 // block never shows a stale/hardcoded number (or, worse, a promo price ABOVE the
@@ -58,6 +59,7 @@ export function MagnetReward({
   cohort,
   offer = null,
   showDeliveredNote = false,
+  token = null,
 }: {
   score: number;
   plan: PlanPreview | null;
@@ -69,6 +71,8 @@ export function MagnetReward({
   offer?: RewardOffer | null;
   /** Inline (post-verify) shows "enviamos para seu e-mail"; the durable page hides it. */
   showDeliveredNote?: boolean;
+  /** Lead's result_token — enables per-lead tracking of the "ver recursos" click. */
+  token?: string | null;
 }) {
   const pct = Math.round((score / 15) * 100);
   const weak = plan?.weakSpecialties ?? [];
@@ -220,7 +224,7 @@ export function MagnetReward({
           É isto que continua te esperando depois do simulado.
         </p>
         <div className="mt-4">
-          <PlatformPeek />
+          <PlatformPeek showDeviceToggle />
         </div>
       </div>
 
@@ -228,9 +232,11 @@ export function MagnetReward({
       <div className="rounded-2xl border border-brand/30 bg-brand-muted p-6">
         <h3 className="text-lg font-bold tracking-tight">Continue sua revisão até a prova</h3>
         <ul className="mt-3 space-y-1.5 text-sm">
-          <li>✓ Questões reais comentadas das 12 especialidades</li>
-          <li>✓ Flashcards com revisão espaçada nos seus pontos fracos</li>
-          <li>✓ Áudio-aulas MedVoice + plano de estudo personalizado</li>
+          <li>✓ Questões Revalida comentadas + Simulados no padrão da banca</li>
+          <li>✓ Flashcards e AudioCards com revisão espaçada</li>
+          <li>✓ Resumos Narrativos + Fórmula MedHelp (condutas e macetes)</li>
+          <li>✓ Áudio-aulas MedVoice + Revalida Up</li>
+          <li>✓ Plano de estudos personalizado até a sua prova</li>
         </ul>
         {finalCents != null ? (
           <div className="mt-4 flex flex-wrap items-baseline gap-2">
@@ -264,6 +270,21 @@ export function MagnetReward({
         <p className="mt-3 text-center text-xs text-muted-foreground">
           7 dias de garantia incondicional. Sem pegadinha.
         </p>
+        {/* Secondary, de-emphasized info path for the not-yet-ready half (mirrors the
+            flashcards reward). New tab keeps the offer + coupon alive; homepage top per
+            Karina. Per-lead tracking fires only when the token is known (durable page +
+            inline post-verify). Distinct utm_source so GA4 splits quiz vs flashcards. */}
+        <a
+          href="/?utm_source=quiz-reward&utm_medium=funnel&utm_campaign=ver-todos-recursos"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            if (token) void trackLeadEvent({ token, event: "clicked_ver_recursos" });
+          }}
+          className="mt-3 flex min-h-[44px] items-center justify-center text-center text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+        >
+          Ainda com dúvidas? Ver todos os recursos da plataforma →
+        </a>
       </div>
     </div>
   );

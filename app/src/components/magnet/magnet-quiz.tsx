@@ -134,6 +134,9 @@ export function MagnetQuiz({
   // Reward (post-verify)
   const [plan, setPlan] = useState<PlanPreview | null>(null);
   const [sampleCards, setSampleCards] = useState<MagnetFlashcard[]>([]);
+  // Durable result_token from verify — threads into the reward so the "ver recursos"
+  // link can track the click per-lead (same as the flashcards funnel).
+  const [resultToken, setResultToken] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const total = questions.length === FREE_COUNT ? 15 : questions.length;
@@ -251,9 +254,11 @@ export function MagnetQuiz({
   function onVerified(res: {
     plan: PlanPreview | null;
     sampleCards: MagnetFlashcard[];
+    resultToken: string | null;
   }) {
     setPlan(res.plan);
     setSampleCards(res.sampleCards);
+    setResultToken(res.resultToken);
     setPhase("reward");
   }
 
@@ -268,6 +273,7 @@ export function MagnetQuiz({
         utm={utm}
         cohort={cohort}
         offer={offers[cohort] ?? null}
+        token={resultToken}
         showDeliveredNote
       />
     );
@@ -493,7 +499,7 @@ export function MagnetQuiz({
 
         {/* Peek inside — opens a lightbox over the funnel (never navigates away). */}
         <div className="mt-5 border-t border-border pt-4 text-center">
-          <PlatformPeekModal />
+          <PlatformPeekModal showDeviceToggle />
         </div>
       </div>
     );
@@ -672,7 +678,7 @@ function MagnetResultsFree({
   honeypot: string;
   setHoneypot: (v: string) => void;
   onEmailCorrected: (email: string) => void;
-  onVerified: (res: { plan: PlanPreview | null; sampleCards: MagnetFlashcard[] }) => void;
+  onVerified: (res: { plan: PlanPreview | null; sampleCards: MagnetFlashcard[]; resultToken: string | null }) => void;
 }) {
   const score = summary?.score ?? fallbackScore;
   const pct = Math.round((score / 15) * 100);
@@ -725,7 +731,7 @@ function MagnetResultsFree({
         if (res.reason === "invalid_code") setCode("");
         return;
       }
-      onVerified({ plan: res.plan ?? null, sampleCards: res.sampleCards ?? [] });
+      onVerified({ plan: res.plan ?? null, sampleCards: res.sampleCards ?? [], resultToken: res.resultToken ?? null });
     });
   }
 

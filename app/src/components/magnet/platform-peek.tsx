@@ -285,7 +285,13 @@ export function PlatformPeek({
 
 // Trigger + overlay wrapper for the welcome step. Keeps the visitor ON the funnel
 // (idea 3 done safely): the lightbox opens over the quiz and closes right back to it.
-export function PlatformPeekModal({ label = "Ver o que tem dentro →" }: { label?: string }) {
+export function PlatformPeekModal({
+  label = "Ver o que tem dentro →",
+  showDeviceToggle = false,
+}: {
+  label?: string;
+  showDeviceToggle?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -343,7 +349,7 @@ export function PlatformPeekModal({ label = "Ver o que tem dentro →" }: { labe
               </button>
             </div>
 
-            <PlatformPeek />
+            <PlatformPeek showDeviceToggle={showDeviceToggle} />
 
             <button
               onClick={() => setOpen(false)}
