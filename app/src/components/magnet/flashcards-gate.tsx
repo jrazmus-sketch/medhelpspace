@@ -10,6 +10,7 @@ import {
   UNDECIDED_COHORT,
 } from "@/lib/magnet/links";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
+import { SiteText } from "@/components/landing/site-text";
 
 // Gift-first email gate for /flashcards-revalida. Two steps up front, then a
 // "check your inbox" confirmation — the 50-card deck is delivered by a magic link
@@ -197,10 +198,10 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
   return (
     <div className="rounded-2xl border border-brand/30 bg-surface-1/80 p-6 shadow-[0_0_60px_-15px] shadow-brand/40 sm:p-7">
       <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-        Grátis · sem cartão
+        <SiteText as="span" k="fc.gate.eyebrow" fallback="Grátis · sem cartão" />
       </p>
       <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight sm:text-2xl">
-        Para onde enviamos seus 50 flashcards?
+        <SiteText as="span" k="fc.gate.headline" fallback="Para onde enviamos seus 50 flashcards?" />
       </h2>
       <div className="mt-5 space-y-3">
         {/* Honeypot — visually hidden; real users never fill it. */}
@@ -235,11 +236,20 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
           disabled={pending}
           className="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-brand px-5 text-base font-semibold text-brand-fg shadow-lg shadow-brand/25 transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
         >
-          {pending ? "Um instante…" : "Quero meus 50 flashcards →"}
+          {pending ? (
+            "Um instante…"
+          ) : (
+            <SiteText as="span" k="fc.gate.cta" fallback="Quero meus 50 flashcards →" />
+          )}
         </button>
       </div>
       <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-        <span aria-hidden>🔒</span> Sem spam. Você recebe o baralho e pode cancelar quando quiser.
+        <span aria-hidden>🔒</span>
+        <SiteText
+          as="span"
+          k="fc.gate.reassurance"
+          fallback="Sem spam. Você recebe o baralho e pode cancelar quando quiser."
+        />
       </p>
     </div>
   );

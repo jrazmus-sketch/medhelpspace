@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 import { FlashcardsGate } from "@/components/magnet/flashcards-gate";
 import { FlashcardTeaser } from "@/components/magnet/flashcard-teaser";
+import { SiteText } from "@/components/landing/site-text";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 import {
   getSampleFlashcardsForSpecialties,
@@ -110,7 +111,7 @@ export default async function FlashcardsRevalidaPage({
             MedHelp<span className="text-brand">Space</span>
           </Link>
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Revalida · 1ª etapa
+            <SiteText as="span" k="fc.topbar.label" fallback="Revalida · 1ª etapa" />
           </span>
         </div>
       </header>
@@ -121,19 +122,24 @@ export default async function FlashcardsRevalidaPage({
         <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-14 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-muted/30 px-3 py-1 text-xs font-semibold text-brand">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand" /> Grátis · sem cartão
+              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+              <SiteText as="span" k="fc.hero.badge" fallback="Grátis · sem cartão" />
             </span>
             <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-              50 flashcards dos assuntos que{" "}
+              <SiteText as="span" k="fc.hero.title_1" fallback="50 flashcards dos assuntos que" />{" "}
               <span className="bg-gradient-to-r from-brand to-[#c084e8] bg-clip-text text-transparent">
-                mais caem
+                <SiteText as="span" k="fc.hero.title_accent" fallback="mais caem" />
               </span>{" "}
-              no Revalida.
+              <SiteText as="span" k="fc.hero.title_2" fallback="no Revalida." />
             </h1>
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-              Um baralho pronto com os temas de <strong className="text-foreground">maior incidência</strong>{" "}
-              da 1ª etapa — com revisão espaçada e correção na hora. Escolhidos por dados reais das provas
-              de {WEIGHTED_DECK_STATS.examYears}.
+              <SiteText
+                as="span"
+                multiline
+                k="fc.hero.subhead"
+                fallback="Um baralho pronto com os temas de maior incidência da 1ª etapa — com revisão espaçada e correção na hora. Escolhidos por dados reais das provas de {anos}."
+                vars={{ anos: WEIGHTED_DECK_STATS.examYears }}
+              />
             </p>
 
             {/* The one bold stat — the credibility hook. */}
@@ -143,14 +149,21 @@ export default async function FlashcardsRevalidaPage({
                   {WEIGHTED_DECK_STATS.sixSubjectSharePct}%
                 </div>
                 <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  da prova
+                  <SiteText as="span" k="fc.hero.stat_label" fallback="da prova" />
                 </div>
               </div>
               <p className="text-sm leading-snug text-muted-foreground">
-                Organizamos <strong className="text-foreground">{WEIGHTED_DECK_STATS.examQuestionsAnalyzed} questões</strong>{" "}
-                das provas de {WEIGHTED_DECK_STATS.examYears} por tema.{" "}
-                <strong className="text-foreground">{WEIGHTED_DECK_STATS.sixSubjectQuestions}</strong> delas se concentram em
-                6 assuntos de altíssima incidência. Seus 50 flashcards saem dos temas mais relevantes deles.
+                <SiteText
+                  as="span"
+                  multiline
+                  k="fc.hero.stat"
+                  fallback="Organizamos {questoes} questões das provas de {anos} por tema. {concentradas} delas se concentram em 6 assuntos de altíssima incidência. Seus 50 flashcards saem dos temas mais relevantes deles."
+                  vars={{
+                    questoes: WEIGHTED_DECK_STATS.examQuestionsAnalyzed,
+                    anos: WEIGHTED_DECK_STATS.examYears,
+                    concentradas: WEIGHTED_DECK_STATS.sixSubjectQuestions,
+                  }}
+                />
               </p>
             </div>
           </div>
@@ -161,24 +174,18 @@ export default async function FlashcardsRevalidaPage({
             <FlashcardsGate utm={utm} />
             <ul className="mt-5 space-y-2.5 px-1">
               {[
-                <>
-                  <strong className="text-foreground">50 flashcards</strong> dos 6 assuntos que mais caem
-                </>,
-                <>
-                  <strong className="text-foreground">Revisão espaçada</strong> de verdade — não é PDF
-                </>,
-                <>
-                  O link chega <strong className="text-foreground">na hora</strong>, no seu e-mail
-                </>,
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                { k: "fc.get.0", fallback: "50 flashcards dos 6 assuntos que mais caem" },
+                { k: "fc.get.1", fallback: "Revisão espaçada de verdade — não é PDF" },
+                { k: "fc.get.2", fallback: "O link chega na hora, no seu e-mail" },
+              ].map((item) => (
+                <li key={item.k} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                   <span
                     aria-hidden
                     className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-muted/60 text-[10px] font-bold text-brand"
                   >
                     ✓
                   </span>
-                  <span>{item}</span>
+                  <SiteText as="span" k={item.k} fallback={item.fallback} />
                 </li>
               ))}
             </ul>
@@ -189,7 +196,7 @@ export default async function FlashcardsRevalidaPage({
         {teaserCards.length > 0 && (
           <section className="mx-auto max-w-xl px-5 pb-8 sm:pb-12">
             <p className="mb-4 text-center font-mono text-xs uppercase tracking-wider text-brand">
-              Veja um card de verdade
+              <SiteText as="span" k="fc.teaser.eyebrow" fallback="Veja um card de verdade" />
             </p>
             <FlashcardTeaser cards={teaserCards} />
           </section>
@@ -199,16 +206,25 @@ export default async function FlashcardsRevalidaPage({
         <section className="border-y border-border/60 bg-surface-1/30">
           <div className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
             <div className="text-center">
-              <p className="font-mono text-xs uppercase tracking-wider text-brand">Por que esses 6 assuntos?</p>
+              <p className="font-mono text-xs uppercase tracking-wider text-brand">
+                <SiteText as="span" k="fc.why.eyebrow" fallback="Por que esses 6 assuntos?" />
+              </p>
               <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                Escolhidos pela incidência real na prova
+                <SiteText as="span" k="fc.why.title" fallback="Escolhidos pela incidência real na prova" />
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                Contamos quantas questões de cada assunto apareceram nas provas do Revalida de{" "}
-                {WEIGHTED_DECK_STATS.examYears} ({WEIGHTED_DECK_STATS.topicsAnalyzed} temas,{" "}
-                {WEIGHTED_DECK_STATS.examQuestionsAnalyzed} questões). Juntos, estes seis concentram{" "}
-                {WEIGHTED_DECK_STATS.sixSubjectSharePct}% delas — e o seu baralho é proporcional a isso:
-                mais cards nos assuntos que mais caem.
+                <SiteText
+                  as="span"
+                  multiline
+                  k="fc.why.body"
+                  fallback="Contamos quantas questões de cada assunto apareceram nas provas do Revalida de {anos} ({temas} temas, {questoes} questões). Juntos, estes seis concentram {pct}% delas — e o seu baralho é proporcional a isso: mais cards nos assuntos que mais caem."
+                  vars={{
+                    anos: WEIGHTED_DECK_STATS.examYears,
+                    temas: WEIGHTED_DECK_STATS.topicsAnalyzed,
+                    questoes: WEIGHTED_DECK_STATS.examQuestionsAnalyzed,
+                    pct: WEIGHTED_DECK_STATS.sixSubjectSharePct,
+                  }}
+                />
               </p>
             </div>
 
@@ -236,7 +252,12 @@ export default async function FlashcardsRevalidaPage({
               ))}
             </div>
             <p className="mt-5 text-center font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-              barra = nº de questões nas provas de {WEIGHTED_DECK_STATS.examYears}
+              <SiteText
+                as="span"
+                k="fc.why.caption"
+                fallback="barra = nº de questões nas provas de {anos}"
+                vars={{ anos: WEIGHTED_DECK_STATS.examYears }}
+              />
             </p>
           </div>
         </section>
@@ -245,18 +266,24 @@ export default async function FlashcardsRevalidaPage({
         <section className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
           <div className="grid items-center gap-8 sm:grid-cols-2">
             <div>
-              <p className="font-mono text-xs uppercase tracking-wider text-brand">Não é só um PDF</p>
+              <p className="font-mono text-xs uppercase tracking-wider text-brand">
+                <SiteText as="span" k="fc.sr.eyebrow" fallback="Não é só um PDF" />
+              </p>
               <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                Revisão espaçada de verdade
+                <SiteText as="span" k="fc.sr.title" fallback="Revisão espaçada de verdade" />
               </h2>
               <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-                Cada card que você acerta volta em intervalos cada vez maiores — e some do caminho. Errou?
-                Ele volta amanhã e recomeça. É o sistema que garante que você não esquece na hora da prova.
+                <SiteText
+                  as="span"
+                  multiline
+                  k="fc.sr.body"
+                  fallback="Cada card que você acerta volta em intervalos cada vez maiores — e some do caminho. Errou? Ele volta amanhã e recomeça. É o sistema que garante que você não esquece na hora da prova."
+                />
               </p>
             </div>
             <div className="rounded-2xl border border-brand/20 bg-brand-muted/10 p-5">
               <p className="font-mono text-[10px] uppercase tracking-wider text-brand">
-                O intervalo cresce a cada acerto
+                <SiteText as="span" k="fc.sr.card_label" fallback="O intervalo cresce a cada acerto" />
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 {[1, 6, 15, 38].map((d, i, arr) => (
@@ -268,7 +295,9 @@ export default async function FlashcardsRevalidaPage({
                   </span>
                 ))}
                 <span aria-hidden className="text-muted-foreground">→</span>
-                <span className="text-xs text-muted-foreground">…e some do caminho</span>
+                <span className="text-xs text-muted-foreground">
+                  <SiteText as="span" k="fc.sr.card_note" fallback="…e some do caminho" />
+                </span>
               </div>
             </div>
           </div>
@@ -278,10 +307,15 @@ export default async function FlashcardsRevalidaPage({
         <section className="border-t border-border/60 bg-gradient-to-b from-brand-muted/10 to-transparent">
           <div className="mx-auto max-w-2xl px-5 py-14 text-center sm:py-20">
             <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-              Comece pelos assuntos que mais caem — de graça.
+              <SiteText as="span" k="fc.final.title" fallback="Comece pelos assuntos que mais caem — de graça." />
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground sm:text-base">
-              Deixe seu e-mail e mandamos o link do baralho na hora. Sem cartão, sem pegadinha.
+              <SiteText
+                as="span"
+                multiline
+                k="fc.final.body"
+                fallback="Deixe seu e-mail e mandamos o link do baralho na hora. Sem cartão, sem pegadinha."
+              />
             </p>
             <div className="mx-auto mt-7 max-w-md text-left">
               <FlashcardsGate utm={utm} />
@@ -292,7 +326,9 @@ export default async function FlashcardsRevalidaPage({
 
       <footer className="border-t border-border/60">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-6 text-xs text-muted-foreground">
-          <span>© MedHelpSpace</span>
+          <span>
+            <SiteText as="span" k="fc.footer.copyright" fallback="© MedHelpSpace" />
+          </span>
           <span className="flex gap-4">
             <Link href="/privacidade" className="hover:text-foreground">Privacidade</Link>
             <Link href="/termos" className="hover:text-foreground">Termos</Link>
