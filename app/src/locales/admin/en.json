@@ -1279,6 +1279,10 @@
     "sectionJourney": "Journey",
     "noJourney": "No navigation events recorded.",
     "viewResultPage": "View result page",
+    "sectionSiteActivity": "Platform activity",
+    "siteEvent": {
+      "clicked_ver_recursos": "Clicked \"See all features\" (home)"
+    },
     "filterShowTests": "Show tests",
     "isTest": "Test lead",
     "colLastActivity": "Last activity",

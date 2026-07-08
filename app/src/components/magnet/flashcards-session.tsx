@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { safe } from "@/lib/sanitize";
-import { saveFlashcardsProgress } from "@/actions/magnet";
+import { saveFlashcardsProgress, trackLeadEvent } from "@/actions/magnet";
+import { PlatformPeek } from "@/components/magnet/platform-peek";
 import type { MagnetFlashcard } from "@/lib/magnet/flashcards";
 
 // The post-magic-link study session for /flashcards-revalida/acesso. Flip + self-
@@ -251,17 +252,23 @@ export function FlashcardsSession({
                 A plataforma completa do Revalida
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                Milhares de flashcards, questões comentadas de provas anteriores, resumos, MedVoice e um
-                plano de estudos que se ajusta até a data da sua prova — tudo com revisão espaçada.
+                São milhares de <strong className="font-semibold text-foreground">Flashcards</strong> e{" "}
+                <strong className="font-semibold text-foreground">AudioCards</strong> com repetição
+                espaçada, <strong className="font-semibold text-foreground">Questões Revalida</strong>{" "}
+                comentadas e <strong className="font-semibold text-foreground">Simulados</strong> no
+                padrão da banca, <strong className="font-semibold text-foreground">Resumos Narrativos</strong>,
+                áudios do <strong className="font-semibold text-foreground">MedVoice</strong>, a{" "}
+                <strong className="font-semibold text-foreground">Fórmula MedHelp</strong> e o{" "}
+                <strong className="font-semibold text-foreground">Revalida Up</strong> — organizados por
+                um plano de estudos que se ajusta até a data da sua prova.
               </p>
             </div>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/landing/desktop/painel.webp"
-              alt="Painel da plataforma MedHelpSpace"
-              className="w-full border-b border-border/60 bg-surface-2 object-cover"
-              loading="lazy"
-            />
+            {/* Device-toggle slider (Computador/Celular) — shows the real platform on
+                both devices right at the buy decision, without leaving for the homepage.
+                Leads are ~50/50 desktop/mobile, so it defaults to the viewer's device. */}
+            <div className="border-b border-border/60 p-5">
+              <PlatformPeek showDeviceToggle />
+            </div>
             <div className="p-5">
               {offer ? (
                 <>
@@ -317,6 +324,27 @@ export function FlashcardsSession({
                   Conhecer a plataforma completa →
                 </Link>
               )}
+
+              {/* Secondary, de-emphasized escape valve for the info-seeker half. At
+                  R$3.990 there's little true impulse to protect; the people this
+                  serves would otherwise leave to research uncontrolled. New tab keeps
+                  the offer (and its welcome coupon) alive behind them so they never
+                  lose the discount. Goes to the top of the homepage per Karina.
+                  UTM-tagged so GA4 can prove whether it converts or just leaks. */}
+              <a
+                href="/?utm_source=fc-reward&utm_medium=funnel&utm_campaign=ver-todos-recursos"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  // Fire-and-forget per-lead tracking (auth = token). New tab keeps this
+                  // page mounted, so the action request completes. GA4 gets the aggregate
+                  // via the UTM; this feeds the /admin/leads "Atividade na plataforma".
+                  void trackLeadEvent({ token, event: "clicked_ver_recursos" });
+                }}
+                className="mt-2 flex min-h-[44px] items-center justify-center text-center text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+              >
+                Ainda com dúvidas? Ver todos os recursos da plataforma →
+              </a>
             </div>
           </div>
 

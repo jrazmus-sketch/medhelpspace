@@ -967,3 +967,38 @@ export async function saveFlashcardsProgress(input: {
   }
   return { ok: true };
 }
+
+// Allowlisted ON-SITE events tracked per known lead (auth = result_token). Keep in
+// sync with schema-patch-lead-events.sql and the drawer's leads.siteEvent.* i18n keys.
+// Free-text at the DB level; this Set is the guard against arbitrary client inserts.
+const LEAD_SITE_EVENTS = new Set(["clicked_ver_recursos"]);
+
+// Record one on-site lead action (e.g. the flashcards reward → homepage link). Fired
+// fire-and-forget from the client; best-effort — a failure must never affect the click.
+// Auth = result_token (the magic-link secret), same trust model as saveFlashcardsProgress.
+// Not deduped: a repeat click is genuine signal (the drawer aggregates count + last time).
+export async function trackLeadEvent(input: {
+  token: string;
+  event: string;
+}): Promise<{ ok: boolean }> {
+  const token = (input.token ?? "").trim();
+  const event = (input.event ?? "").trim();
+  if (!token || !LEAD_SITE_EVENTS.has(event)) return { ok: false };
+
+  const admin = createAdminClient();
+  const { data: lead } = await admin
+    .from("leads")
+    .select("id")
+    .eq("result_token", token)
+    .maybeSingle();
+  if (!lead) return { ok: false };
+
+  const { error } = await admin
+    .from("lead_events")
+    .insert({ lead_id: lead.id, event_type: event });
+  if (error) {
+    console.error("trackLeadEvent failed:", error.message);
+    return { ok: false };
+  }
+  return { ok: true };
+}

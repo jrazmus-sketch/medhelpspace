@@ -37,6 +37,10 @@ export type LeadQuizAnswer = {
 // One pre-capture funnel beacon (landing / quiz_start) linked via funnel_session_id.
 export type LeadFunnelEvent = { type: string; at: string };
 
+// One post-capture on-site action, aggregated by type (lead_events). `count` = how
+// many times this lead did it; `lastAt` = most recent occurrence.
+export type LeadSiteEvent = { type: string; count: number; lastAt: string };
+
 export type LeadDetail = {
   id: string;
   email: string;
@@ -91,6 +95,9 @@ export type LeadDetail = {
   // Journey
   funnelSessionId: string | null;
   funnelEvents: LeadFunnelEvent[];
+
+  // On-site actions after capture (lead_events), aggregated by type
+  siteEvents: LeadSiteEvent[];
 
   // Emails (merged inferred + tracked)
   emails: LeadEmail[];
@@ -172,14 +179,34 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
 
   const email = (lead.email as string).toLowerCase();
 
-  const [{ data: specialties }, { data: eventRows }] = await Promise.all([
+  const [{ data: specialties }, { data: eventRows }, { data: siteEventRows }] = await Promise.all([
     admin.from("specialties").select("id, name"),
     admin
       .from("lead_email_events")
       .select("resend_id, kind, event_type, url, created_at")
       .eq("email", email)
       .order("created_at", { ascending: true }),
+    admin
+      .from("lead_events")
+      .select("event_type, created_at")
+      .eq("lead_id", lead.id)
+      .order("created_at", { ascending: false }),
   ]);
+
+  // Aggregate on-site actions by type → count + most-recent timestamp.
+  const siteEventMap = new Map<string, { count: number; lastAt: string }>();
+  for (const r of (siteEventRows ?? []) as { event_type: string; created_at: string }[]) {
+    const cur = siteEventMap.get(r.event_type);
+    if (cur) {
+      cur.count += 1;
+      if (r.created_at > cur.lastAt) cur.lastAt = r.created_at;
+    } else {
+      siteEventMap.set(r.event_type, { count: 1, lastAt: r.created_at });
+    }
+  }
+  const siteEvents: LeadSiteEvent[] = [...siteEventMap.entries()]
+    .map(([type, v]) => ({ type, ...v }))
+    .sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
 
   const specialtyName = new Map<number, string>(
     (specialties ?? []).map((s) => [s.id as number, s.name as string]),
@@ -311,6 +338,7 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
 
     funnelSessionId,
     funnelEvents,
+    siteEvents,
 
     emails,
   };

@@ -1279,6 +1279,10 @@
     "sectionJourney": "Jornada",
     "noJourney": "Sem eventos de navegação registrados.",
     "viewResultPage": "Ver página de resultado",
+    "sectionSiteActivity": "Atividade na plataforma",
+    "siteEvent": {
+      "clicked_ver_recursos": "Clicou em \"Ver todos os recursos\" (home)"
+    },
     "filterShowTests": "Mostrar testes",
     "isTest": "Teste interno",
     "colLastActivity": "Última atividade",

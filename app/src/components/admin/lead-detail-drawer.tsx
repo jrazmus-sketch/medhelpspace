@@ -345,6 +345,33 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
                   )}
                 </Section>
               )}
+
+              {/* On-site actions after capture (lead_events) — e.g. clicked the
+                  reward's "Ver todos os recursos" homepage link. Only when present. */}
+              {detail.siteEvents.length > 0 && (
+                <Section title={t("leads.sectionSiteActivity")}>
+                  <ul className="space-y-1.5">
+                    {detail.siteEvents.map((s, i) => (
+                      <li key={i} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <MousePointerClick className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 truncate">
+                            {t(`leads.siteEvent.${s.type}`, { defaultValue: s.type })}
+                          </span>
+                          {s.count > 1 && (
+                            <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                              · {s.count}×
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {fmt(s.lastAt, true)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
             </>
           )}
         </div>
