@@ -15,7 +15,19 @@ import { useIsMounted } from "@/hooks/use-is-mounted";
 //   • PlatformPeekModal               — a subtle trigger + overlay wrapping the slider, used
 //                                       from the welcome step ("Ver o que tem dentro →").
 
-type Shot = { src: string; title: string; caption: string };
+// `card: true` = a 4:5 MemoreCard poster (not an app screenshot) → rendered
+// contained + centred on the surface stage in both device modes, so it reads as a
+// card rather than a cropped screen.
+type Shot = { src: string; title: string; caption: string; card?: boolean };
+
+// MemoreCards has no desktop/phone app screenshot — the product IS the visual card,
+// so we show a real poster (contained) in both sets. Same object in both arrays.
+const MEMORECARDS_SHOT: Shot = {
+  src: "/landing/memorecards/card-3.webp",
+  title: "MemoreCards",
+  caption: "Mapas visuais de alta fixação — o padrão da prova numa imagem só.",
+  card: true,
+};
 
 // Desktop screenshots (landscape 1731×1083) — the marketing landing's desktop set.
 const DESKTOP_SHOTS: Shot[] = [
@@ -34,6 +46,7 @@ const DESKTOP_SHOTS: Shot[] = [
     title: "Resumos narrativos",
     caption: "A clínica contada como história — para fixar de verdade.",
   },
+  MEMORECARDS_SHOT,
   {
     src: "/landing/desktop/medvoice.webp",
     title: "MedVoice — a clínica fala",
@@ -74,6 +87,7 @@ const PHONE_SHOTS: Shot[] = [
     title: "Flashcards",
     caption: "Revisão ativa com repetição espaçada.",
   },
+  MEMORECARDS_SHOT,
   {
     src: "/landing/shot-audiocards.webp",
     title: "AudioCards",
@@ -87,6 +101,46 @@ const PHONE_SHOTS: Shot[] = [
 ];
 
 type Device = "desktop" | "phone";
+
+// Static phone-mockup of a MemoreCard — mirrors the front-page MemorecardsScreen look
+// (a 4:5 card behind slim app chrome in a device frame) but non-interactive and using
+// the funnel's semantic tokens, so it drops into the slider without nesting a carousel
+// or pulling in landing (--lp-*) styles. Content = card-3 (system-showcase's MemoreCards
+// hero). `h-full` makes it fill whichever stage (phone or desktop) it sits in.
+function MemorecardMockup() {
+  return (
+    <div className="flex h-full aspect-[232/408] max-w-full flex-col overflow-hidden rounded-[22px] border border-border bg-surface-1 shadow-lg">
+      <div className="flex items-center gap-1.5 px-3 pb-2 pt-3">
+        <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
+        <span className="text-[9px] font-semibold uppercase tracking-wider text-brand">
+          Ginecologia
+        </span>
+        <span className="ml-auto rounded-full bg-brand-muted/60 px-1.5 py-0.5 text-[8px] font-bold text-brand">
+          MemoreCard
+        </span>
+      </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/landing/memorecards/card-3.webp"
+        alt="MemoreCard — HPV e Colo Uterino (Ginecologia)"
+        width={640}
+        height={800}
+        draggable={false}
+        loading="lazy"
+        className="min-h-0 w-full flex-1 object-cover object-top"
+      />
+      <div className="flex items-start gap-1.5 border-t border-border px-3 py-2">
+        <span className="mt-px text-[9px] text-brand" aria-hidden>
+          ✦
+        </span>
+        <p className="text-[8px] leading-snug text-muted-foreground">
+          <span className="font-bold text-foreground">Grito da prova: </span>
+          HPV transitório é comum; persistência oncogênica = lesão precursora.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export function PlatformPeek({
   desktopShots = DESKTOP_SHOTS,
@@ -208,35 +262,50 @@ export function PlatformPeek({
         >
           {shots.map((shot) =>
             isPhone ? (
-              // Portrait screenshot framed as a device, centred on a surface stage.
-              // Fixed stage height → same size for every phone slide (no jitter).
+              // Portrait screenshot (or the MemoreCard mockup) centred on a fixed-height
+              // surface stage → same size for every phone slide (no jitter).
               <div
                 key={shot.src}
                 className="flex h-[440px] w-full flex-shrink-0 snap-center items-center justify-center bg-surface-2 p-4 sm:h-[500px]"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={shot.src}
-                  alt={`MedHelpSpace no celular — ${shot.title}`}
-                  width={1170}
-                  height={2532}
-                  draggable={false}
-                  loading="lazy"
-                  className="h-full w-auto rounded-[22px] border border-border object-contain shadow-lg"
-                />
+                {shot.card ? (
+                  <MemorecardMockup />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={shot.src}
+                    alt={`MedHelpSpace no celular — ${shot.title}`}
+                    width={1170}
+                    height={2532}
+                    draggable={false}
+                    loading="lazy"
+                    className="h-full w-auto rounded-[22px] border border-border object-contain shadow-lg"
+                  />
+                )}
               </div>
             ) : (
-              <div key={shot.src} className="w-full flex-shrink-0 snap-center bg-surface-2">
+              // Desktop landscape stage. Screenshots fill it (cover); the MemoreCard (a
+              // 4:5 poster) shows contained + centred on the surface. We use the poster
+              // img here (not the flex mockup) because the mockup's `h-full` can't resolve
+              // against the aspect-ratio stage — an img (replaced element) can.
+              <div
+                key={shot.src}
+                className={`flex w-full flex-shrink-0 snap-center items-center justify-center bg-surface-2 ${shot.card ? "p-4" : ""}`}
+                style={{ aspectRatio: "1731 / 1083" }}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={shot.src}
-                  alt={`MedHelpSpace — ${shot.title}`}
-                  width={1731}
-                  height={1083}
+                  alt={shot.card ? `MemoreCard — ${shot.title}` : `MedHelpSpace — ${shot.title}`}
+                  width={shot.card ? 640 : 1731}
+                  height={shot.card ? 800 : 1083}
                   draggable={false}
                   loading="lazy"
-                  className="block w-full"
-                  style={{ aspectRatio: "1731 / 1083", objectFit: "cover", objectPosition: "top" }}
+                  className={
+                    shot.card
+                      ? "h-full w-auto rounded-xl border border-border object-contain shadow-lg"
+                      : "h-full w-full object-cover object-top"
+                  }
                 />
               </div>
             ),

@@ -234,8 +234,8 @@ export function MagnetReward({
         <ul className="mt-3 space-y-1.5 text-sm">
           <li>✓ Questões Revalida comentadas + Simulados no padrão da banca</li>
           <li>✓ Flashcards e AudioCards com revisão espaçada</li>
-          <li>✓ Resumos Narrativos + Fórmula MedHelp (condutas e macetes)</li>
-          <li>✓ Áudio-aulas MedVoice + Revalida Up</li>
+          <li>✓ MemoreCards + Resumos Narrativos por especialidade</li>
+          <li>✓ Fórmula MedHelp + Revalida Up + áudio-aulas MedVoice</li>
           <li>✓ Plano de estudos personalizado até a sua prova</li>
         </ul>
         {finalCents != null ? (
@@ -281,9 +281,9 @@ export function MagnetReward({
           onClick={() => {
             if (token) void trackLeadEvent({ token, event: "clicked_ver_recursos" });
           }}
-          className="mt-3 flex min-h-[44px] items-center justify-center text-center text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+          className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-1 px-5 text-sm font-semibold text-foreground transition-colors hover:border-brand hover:bg-surface-2"
         >
-          Ainda com dúvidas? Ver todos os recursos da plataforma →
+          Ver todos os recursos da plataforma →
         </a>
       </div>
     </div>

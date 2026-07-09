@@ -256,8 +256,9 @@ export function FlashcardsSession({
                 <strong className="font-semibold text-foreground">AudioCards</strong> com repetição
                 espaçada, <strong className="font-semibold text-foreground">Questões Revalida</strong>{" "}
                 comentadas e <strong className="font-semibold text-foreground">Simulados</strong> no
-                padrão da banca, <strong className="font-semibold text-foreground">Resumos Narrativos</strong>,
-                áudios do <strong className="font-semibold text-foreground">MedVoice</strong>, a{" "}
+                padrão da banca, <strong className="font-semibold text-foreground">Resumos Narrativos</strong>,{" "}
+                <strong className="font-semibold text-foreground">MemoreCards</strong>, áudios do{" "}
+                <strong className="font-semibold text-foreground">MedVoice</strong>, a{" "}
                 <strong className="font-semibold text-foreground">Fórmula MedHelp</strong> e o{" "}
                 <strong className="font-semibold text-foreground">Revalida Up</strong> — organizados por
                 um plano de estudos que se ajusta até a data da sua prova.
@@ -341,9 +342,9 @@ export function FlashcardsSession({
                   // via the UTM; this feeds the /admin/leads "Atividade na plataforma".
                   void trackLeadEvent({ token, event: "clicked_ver_recursos" });
                 }}
-                className="mt-2 flex min-h-[44px] items-center justify-center text-center text-xs text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+                className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-1 px-5 text-sm font-semibold text-foreground transition-colors hover:border-brand hover:bg-surface-2"
               >
-                Ainda com dúvidas? Ver todos os recursos da plataforma →
+                Ver todos os recursos da plataforma →
               </a>
             </div>
           </div>
