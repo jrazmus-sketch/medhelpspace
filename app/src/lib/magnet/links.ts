@@ -15,6 +15,10 @@ export const FREE_DECK_PATH = "/flashcards-gratis";
 // Gift-first flashcards magnet (A/B variant vs. /questoes-revalida). Email gate up
 // front; the 50-card deck is delivered by a magic link to /flashcards-revalida/acesso.
 export const FLASHCARDS_REVALIDA_PATH = "/flashcards-revalida";
+// Free 100-question simulado (third funnel): 100 REAL past-Revalida (INEP) questions,
+// 5 blocos of 20 by grande área. Email-first like the flashcards funnel — the test is
+// multi-hour, so the magic link doubles as the resume link from question 1.
+export const SIMULADO_PATH = "/simulado-revalida";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
 // NOTE: the 2027.2 turma slug has NO hyphen before the final 2 ('revalida-20272') —
@@ -26,6 +30,9 @@ export const REVALIDA_20272_SLUG = "revalida-20272";
 // separates it from the quiz funnel ('simulado-honesto') in the drip/recovery crons
 // and /admin/leads. Set on capture (captureFlashcardsLead).
 export const FLASHCARDS_SOURCE = "flashcards-50";
+// leads.source for the 100-question simulado funnel. Excluded from lead-drip and
+// lead-recovery (it runs its own simulado-drip); set on capture (captureSimuladoLead).
+export const SIMULADO_SOURCE = "simulado-100";
 
 // "Ainda não decidi" — the lead hasn't chosen a turma. NOT a real cohort: its
 // welcome coupon is the all-turma FLASH5 and its checkout points at /loja (pick a
@@ -94,6 +101,13 @@ export function freeDeckUrl(): string {
 // IS the confirmation) and renders the study session. Token = leads.result_token.
 export function flashcardsAccessUrl(token: string): string {
   return `${SITE_URL}${FLASHCARDS_REVALIDA_PATH}/acesso?t=${encodeURIComponent(token)}`;
+}
+
+// Magic link that opens the 100-question simulado. Sent as the D0 delivery of the
+// simulado funnel; the click stamps verified_at (the click IS the confirmation) and
+// the SAME link resumes at the next unanswered question. Token = leads.result_token.
+export function simuladoAccessUrl(token: string): string {
+  return `${SITE_URL}${SIMULADO_PATH}/acesso?t=${encodeURIComponent(token)}`;
 }
 
 export function unsubscribeUrl(token: string): string {

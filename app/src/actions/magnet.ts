@@ -22,10 +22,17 @@ import {
   resultUrl,
   unsubscribeUrl,
   flashcardsAccessUrl,
+  simuladoAccessUrl,
   VALID_TARGET_COHORTS,
   REVALIDA_2026_2_SLUG,
   FLASHCARDS_SOURCE,
+  SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
+import {
+  computeSimuladoAreaScores,
+  computeSimuladoScore,
+  type SimuladoProgress,
+} from "@/lib/magnet/simulado";
 import {
   guardCodeRequest,
   honeypotTripped,
@@ -963,6 +970,235 @@ export async function saveFlashcardsProgress(input: {
   const { error } = await admin.from("leads").update(patch).eq("id", lead.id);
   if (error) {
     console.error("saveFlashcardsProgress failed:", error.message);
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIMULADO-100 FUNNEL (/simulado-revalida) — email-first, mirrors the flashcards
+// funnel: soft capture → turma → magic link (lead-sim-access). The 100-question
+// session persists per-answer so the SAME link resumes; simulado-drip nudges.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function captureSimuladoLead(input: {
+  email: string;
+  utm?: Utm;
+  honeypot?: string | null;
+  context?: { referrer?: string | null; landingPath?: string | null; sessionId?: string | null };
+}): Promise<{ ok: boolean; reason?: string }> {
+  const email = normalizeEmail(input.email);
+  if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
+  if (honeypotTripped(input.honeypot)) return { ok: false, reason: "honeypot" };
+  if (isDisposableEmail(email)) return { ok: false, reason: "disposable_email" };
+
+  const admin = createAdminClient();
+  const utm = input.utm ?? {};
+  const ctx = await captureContext();
+  const referrer = clamp(input.context?.referrer, 400);
+  const landingPath = clamp(input.context?.landingPath, 300);
+  const sessionId = clamp(input.context?.sessionId, 64);
+
+  const { data: existing } = await admin
+    .from("leads")
+    .select("id, device_type, landing_referrer, landing_path, funnel_session_id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existing) {
+    // First-touch: only fill still-null attribution. `source` is NEVER overwritten —
+    // a returning lead keeps their original funnel attribution.
+    const ctxPatch: Record<string, unknown> = {};
+    if (existing.device_type == null) {
+      ctxPatch.user_agent = ctx.user_agent;
+      ctxPatch.device_type = ctx.device_type;
+      ctxPatch.geo_country = ctx.geo_country;
+      ctxPatch.geo_region = ctx.geo_region;
+      ctxPatch.geo_city = ctx.geo_city;
+    }
+    if (existing.landing_referrer == null && referrer) ctxPatch.landing_referrer = referrer;
+    if (existing.landing_path == null && landingPath) ctxPatch.landing_path = landingPath;
+    if (existing.funnel_session_id == null && sessionId) ctxPatch.funnel_session_id = sessionId;
+    await admin
+      .from("leads")
+      .update({
+        utm_source: utm.source ?? undefined,
+        utm_medium: utm.medium ?? undefined,
+        utm_campaign: utm.campaign ?? undefined,
+        utm_term: utm.term ?? undefined,
+        utm_content: utm.content ?? undefined,
+        gclid: utm.gclid ?? undefined,
+        ...ctxPatch,
+      })
+      .eq("id", existing.id);
+  } else {
+    await admin.from("leads").insert({
+      email,
+      source: SIMULADO_SOURCE,
+      utm_source: utm.source ?? null,
+      utm_medium: utm.medium ?? null,
+      utm_campaign: utm.campaign ?? null,
+      utm_term: utm.term ?? null,
+      utm_content: utm.content ?? null,
+      gclid: utm.gclid ?? null,
+      user_agent: ctx.user_agent,
+      device_type: ctx.device_type,
+      geo_country: ctx.geo_country,
+      geo_region: ctx.geo_region,
+      geo_city: ctx.geo_city,
+      landing_referrer: referrer,
+      landing_path: landingPath,
+      funnel_session_id: sessionId,
+    });
+  }
+  return { ok: true };
+}
+
+export async function chooseSimuladoCohortAndSend(input: {
+  email: string;
+  targetCohort: string;
+  firstName?: string | null;
+  utm?: Utm;
+}): Promise<{ ok: boolean; reason?: string; maskedEmail?: string; emailed?: boolean; devLink?: string }> {
+  const email = normalizeEmail(input.email);
+  if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
+  const targetCohort = VALID_TARGET_COHORTS.has(input.targetCohort)
+    ? input.targetCohort
+    : REVALIDA_2026_2_SLUG;
+  const firstName = cleanFirstName(input.firstName);
+
+  const admin = createAdminClient();
+
+  // Step 1 SHOULD have created the row; insert-if-missing defends against a
+  // skipped/failed step 1 so we never lose the lead or leave the turma unset.
+  const { data: existing } = await admin
+    .from("leads")
+    .select("id, result_token, unsubscribe_token")
+    .eq("email", email)
+    .maybeSingle();
+
+  let resultToken: string;
+  let unsubscribeToken: string;
+  const completedAt = new Date().toISOString();
+  if (existing) {
+    resultToken = existing.result_token as string;
+    unsubscribeToken = existing.unsubscribe_token as string;
+    await admin
+      .from("leads")
+      .update({
+        target_cohort: targetCohort,
+        completed_at: completedAt,
+        ...(firstName ? { first_name: firstName } : {}),
+      })
+      .eq("id", existing.id);
+  } else {
+    const ctx = await captureContext();
+    const { data: inserted } = await admin
+      .from("leads")
+      .insert({
+        email,
+        source: SIMULADO_SOURCE,
+        target_cohort: targetCohort,
+        completed_at: completedAt,
+        first_name: firstName,
+        utm_source: input.utm?.source ?? null,
+        utm_campaign: input.utm?.campaign ?? null,
+        gclid: input.utm?.gclid ?? null,
+        user_agent: ctx.user_agent,
+        device_type: ctx.device_type,
+        geo_country: ctx.geo_country,
+        geo_region: ctx.geo_region,
+        geo_city: ctx.geo_city,
+      })
+      .select("id, result_token, unsubscribe_token")
+      .single();
+    if (!inserted) return { ok: false, reason: "insert_failed" };
+    resultToken = inserted.result_token as string;
+    unsubscribeToken = inserted.unsubscribe_token as string;
+  }
+
+  // Deliver the magic access link (D0). Awaited (serverless kills fire-and-forget);
+  // non-fatal — a send failure still shows the "check your inbox" state. In dev
+  // (no RESEND_API_KEY) we return the link so the flow is testable.
+  let emailed = true;
+  let devLink: string | undefined;
+  const accessUrl = simuladoAccessUrl(resultToken);
+  try {
+    const res = await sendTemplateEmail({
+      kind: "lead-sim-access",
+      to: email,
+      vars: {
+        greeting: greetingFor(firstName),
+        accessUrl,
+        unsubscribeUrl: unsubscribeUrl(unsubscribeToken),
+      },
+      fromName: FUNNEL_SENDER_NAME,
+    });
+    if (res.reason === "no_api_key") devLink = accessUrl;
+    else if (!res.ok) {
+      emailed = false;
+      console.error("lead-sim-access send failed:", res.reason);
+    }
+  } catch (e) {
+    emailed = false;
+    console.error("lead-sim-access send threw:", e);
+  }
+
+  return { ok: true, maskedEmail: maskEmail(email), emailed, devLink };
+}
+
+// Persist the anonymous simulado session so the SAME magic link resumes at the next
+// unanswered question (and so simulado-drip can nudge non-finishers). Auth =
+// result_token. Idempotent — writes the full answered map each call; the client
+// debounces. Bounded + sanitized against a malformed/oversized payload. On `done`,
+// the final score + per-área breakdown are computed server-side from the sanitized
+// map (same trust model as the quiz funnel's client-reported correctness).
+export async function saveSimuladoProgress(input: {
+  token: string;
+  answered: SimuladoProgress;
+  done: boolean;
+}): Promise<{ ok: boolean }> {
+  const token = (input.token ?? "").trim();
+  if (!token) return { ok: false };
+
+  // Sanitize: numeric-string question ids, answer index 0..5, boolean correctness,
+  // capped at 150 entries (the set is 100).
+  const clean: SimuladoProgress = {};
+  let n = 0;
+  for (const [k, v] of Object.entries(input.answered ?? {})) {
+    if (n >= 150) break;
+    if (!/^\d+$/.test(k)) continue;
+    const a = Number((v as { a?: unknown })?.a);
+    const c = (v as { c?: unknown })?.c;
+    if (!Number.isInteger(a) || a < 0 || a > 5) continue;
+    if (typeof c !== "boolean") continue;
+    clean[k] = { a, c };
+    n++;
+  }
+
+  const admin = createAdminClient();
+  const { data: lead } = await admin
+    .from("leads")
+    .select("id, sim_started_at, sim_completed_at")
+    .eq("result_token", token)
+    .maybeSingle();
+  if (!lead) return { ok: false };
+
+  const nowIso = new Date().toISOString();
+  const patch: Record<string, unknown> = {
+    sim_progress: clean,
+    sim_last_activity_at: nowIso,
+  };
+  if (lead.sim_started_at == null && n > 0) patch.sim_started_at = nowIso;
+  if (input.done && lead.sim_completed_at == null) {
+    patch.sim_completed_at = nowIso;
+    patch.sim_score = computeSimuladoScore(clean);
+    patch.sim_area_scores = computeSimuladoAreaScores(clean);
+  }
+
+  const { error } = await admin.from("leads").update(patch).eq("id", lead.id);
+  if (error) {
+    console.error("saveSimuladoProgress failed:", error.message);
     return { ok: false };
   }
   return { ok: true };

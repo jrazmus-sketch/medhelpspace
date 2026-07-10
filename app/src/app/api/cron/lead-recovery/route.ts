@@ -12,6 +12,7 @@ import {
   RECOVERY_COUPONS,
   REVALIDA_2026_2_SLUG,
   FLASHCARDS_SOURCE,
+  SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
       )
       .eq("drip_status", "active")
       .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
+      .neq("source", SIMULADO_SOURCE) // simulado funnel has its own sequence
       .is("verified_at", null)
       .not("completed_at", "is", null)
       .is("recovery_a_sent_at", null)
@@ -167,6 +169,7 @@ export async function GET(request: NextRequest) {
       )
       .eq("drip_status", "active")
       .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
+      .neq("source", SIMULADO_SOURCE) // simulado funnel has its own sequence
       .is("verified_at", null)
       .is("completed_at", null)
       .lt("recovery_b_step", 2)

@@ -244,7 +244,7 @@ export function LeadsClient({ rows, summary }: Props) {
   );
 
   const hasFlashcards = useMemo(
-    () => rows.some((r) => r.source === "flashcards-50"),
+    () => rows.some((r) => r.source === "flashcards-50" || r.source === "simulado-100"),
     [rows],
   );
 
@@ -263,7 +263,7 @@ export function LeadsClient({ rows, summary }: Props) {
     for (const r of rows) {
       if (r.isTest || r.isArchived) continue;
       if (r.dripStatus !== "active" || !r.verified) continue;
-      if (r.source === "flashcards-50") continue;
+      if (r.source === "flashcards-50" || r.source === "simulado-100") continue;
       counts.set(r.dripStep, (counts.get(r.dripStep) ?? 0) + 1);
       total++;
     }
@@ -283,10 +283,13 @@ export function LeadsClient({ rows, summary }: Props) {
 
   const canResendEmail = useMemo(() => {
     if (selectedRows.length === 0) return false;
-    // Flashcards-funnel leads have their own sequence (lead-fc-*) — the quiz
-    // templates would be wrong, and the server action refuses them.
+    // Flashcards/simulado-funnel leads have their own sequences (lead-fc-* /
+    // lead-sim-*) — the quiz templates would be wrong for them.
     return selectedRows.every(
-      (r) => r.dripStatus === "active" && r.source !== "flashcards-50",
+      (r) =>
+        r.dripStatus === "active" &&
+        r.source !== "flashcards-50" &&
+        r.source !== "simulado-100",
     );
   }, [selectedRows]);
 
@@ -491,6 +494,14 @@ export function LeadsClient({ rows, summary }: Props) {
         </span>
       );
     }
+    if (row.source === "simulado-100") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-xs font-medium text-sky-600 dark:text-sky-300">
+          <span aria-hidden>📝</span>
+          {t("leads.funnel_simulado")}
+        </span>
+      );
+    }
     if (row.captureSource === "exit_intent") {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-600 dark:text-indigo-300">
@@ -682,6 +693,7 @@ export function LeadsClient({ rows, summary }: Props) {
             <option value="all">{t("leads.filterFunnel")}</option>
             <option value="simulado-honesto">{t("leads.funnel_quiz")}</option>
             <option value="flashcards-50">{t("leads.funnel_flashcards")}</option>
+            <option value="simulado-100">{t("leads.funnel_simulado")}</option>
           </select>
         )}
         <label className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm cursor-pointer hover:bg-surface-2/50 min-h-[44px] sm:min-h-0">

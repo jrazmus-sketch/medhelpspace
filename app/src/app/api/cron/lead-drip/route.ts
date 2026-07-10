@@ -10,6 +10,7 @@ import {
   unsubscribeUrl,
   WELCOME_COUPONS,
   FLASHCARDS_SOURCE,
+  SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
     )
     .eq("drip_status", "active")
     .neq("source", FLASHCARDS_SOURCE) // the flashcards funnel runs its own drip
+    .neq("source", SIMULADO_SOURCE) // the simulado funnel runs its own drip too
     .not("verified_at", "is", null)
     .lt("drip_step", STEPS[STEPS.length - 1].step)
     .order("verified_at", { ascending: true })
