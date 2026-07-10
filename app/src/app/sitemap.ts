@@ -29,6 +29,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      // Free 100-question simulado — indexable SEO landing for "simulado revalida".
+      url: "https://medhelpspace.com.br/simulado-revalida",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
       url: "https://medhelpspace.com.br/termos",
       lastModified: new Date(),
       changeFrequency: "yearly",
