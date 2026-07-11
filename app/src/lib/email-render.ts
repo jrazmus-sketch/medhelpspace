@@ -80,6 +80,12 @@ export function isKnownTag(tag: string, template: EmailTemplateRow): boolean {
 // landing-page team-anonymity decision. FREE-FUNNEL-V2-SCOPE.md "Resolved decisions".
 export const FUNNEL_SENDER_NAME = "Equipe MedHelpSpace";
 
+// Public Instagram profile — the same handle the marketing site footer links to
+// (landing-footer.tsx). Hardcoded (not an email_settings column) so the email
+// footer stays in lockstep with the site; change both together if the handle moves.
+export const INSTAGRAM_URL = "https://www.instagram.com/medhelpspace/";
+export const INSTAGRAM_HANDLE = "@medhelpspace";
+
 // Swap the display name on a "Name <addr>" From header while KEEPING the verified
 // sending address. Lets funnel emails go out as `Equipe MedHelpSpace <addr>`
 // without touching the shared global from_address that other transactional emails
@@ -139,12 +145,30 @@ function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): stri
       <a href="${settings.app_url}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
     </p>`;
 
+  // Instagram follow row. The glyph is a hosted PNG served from /public/brand —
+  // email clients (Gmail, Outlook) strip inline SVG and reject data: URIs, so the
+  // logo must be a real image at an absolute URL. Both icon and handle link out.
+  const socialLine = `<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 12px;">
+      <tr>
+        <td style="padding-right:7px;vertical-align:middle;line-height:0;">
+          <a href="${INSTAGRAM_URL}" style="text-decoration:none;">
+            <img src="${settings.app_url}/brand/instagram-icon-email.png" alt="Instagram" width="20" height="20"
+              style="display:block;border:0;outline:none;text-decoration:none;width:20px;height:20px;" />
+          </a>
+        </td>
+        <td style="vertical-align:middle;">
+          <a href="${INSTAGRAM_URL}" style="font-size:12px;color:#7a1d91;text-decoration:none;font-weight:600;">${INSTAGRAM_HANDLE}</a>
+        </td>
+      </tr>
+    </table>`;
+
   return `<tr>
   <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
     <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
       ${settings.company_name} &nbsp;·&nbsp;
       <a href="${settings.app_url}" style="color:#7a1d91;text-decoration:none;">${site}</a>
     </p>
+    ${socialLine}
     ${idLine}
     ${addressLine}
     ${noteLine}
