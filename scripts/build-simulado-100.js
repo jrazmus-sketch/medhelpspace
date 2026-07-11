@@ -94,6 +94,21 @@ function stripHtml(s) {
   try {
     // LATERAL keeps this one-row-per-question even when >1 topics row points at
     // the same source page (highest-incidence topic wins).
+    // Karina's review flags (/admin/simulado-100): flagged questions are excluded
+    // and their slots filled from the same área/topic pool. Tolerate the table
+    // not existing yet (first run predates the review-flags patch).
+    let flaggedIds = new Set();
+    try {
+      const flagged = await db`SELECT question_id, note FROM simulado_review_flags`;
+      flaggedIds = new Set(flagged.map((r) => Number(r.question_id)));
+      if (flaggedIds.size) {
+        console.log(`review flags: excluding ${flaggedIds.size} question(s):`);
+        for (const r of flagged) console.log(`  - ${r.question_id}${r.note ? `  (${r.note})` : ''}`);
+      }
+    } catch {
+      console.log('review flags: table not found, skipping');
+    }
+
     const rows = await db`
       SELECT q.id, q.page_id, q.question, q.media_url,
              length(trim(coalesce(q.explanation_html,''))) expl_len,
@@ -116,9 +131,10 @@ function stripHtml(s) {
     const excluded = new Set(MAGNET_ALL_IDS);
     // 1) Filter + tag
     const candidates = [];
-    let noTag = 0, outros = 0, magnetHit = 0;
+    let noTag = 0, outros = 0, magnetHit = 0, flaggedHit = 0;
     for (const r of rows) {
       if (excluded.has(Number(r.id))) { magnetHit++; continue; }
+      if (flaggedIds.has(Number(r.id))) { flaggedHit++; continue; }
       const area = areaOf(r.spec_slug, r.group_label);
       if (!area) { outros++; continue; }
       const tag = editionTag(r.question);
@@ -141,7 +157,7 @@ function stripHtml(s) {
         preview: stripHtml(r.question).slice(0, 150),
       });
     }
-    console.log(`filtered: -${magnetHit} magnet ids, -${outros} outros, ${noTag} untagged kept; candidates=${candidates.length}`);
+    console.log(`filtered: -${magnetHit} magnet ids, -${flaggedHit} review-flagged, -${outros} outros, ${noTag} untagged skipped; candidates=${candidates.length}`);
 
     // Also drop the DUPLICATE copies of the magnet 15 (same INEP question under
     // another page) so the funnels never show the same question twice.

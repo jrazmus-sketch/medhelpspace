@@ -18,6 +18,7 @@
     "leads": "Leads",
     "support": "Suporte",
     "studio": "Estúdio",
+    "simuladoReview": "Simulado 100Q",
     "menu": "Menu",
     "group": {
       "content": "Conteúdo",
@@ -25,6 +26,26 @@
       "commerce": "Comercial",
       "system": "Sistema"
     }
+  },
+  "simReview": {
+    "title": "Revisão do Simulado 100Q",
+    "subtitle": "{{total}} questões reais do Revalida (INEP, 2020–2025), em 5 blocos por grande área — a lista exata do simulado gratuito em /simulado-revalida.",
+    "howTitle": "Como revisar",
+    "how1": "Leia a questão e as alternativas — o gabarito está marcado em verde. Se quiser, abra o comentário.",
+    "how2": "Encontrou um problema (questão anulada pelo INEP, enunciado com erro, tema repetido)? Toque em “Marcar para trocar” e escreva o motivo.",
+    "how3": "Quando terminar a revisão, avise o Justin — as questões marcadas serão trocadas por outras do mesmo tema e da mesma área.",
+    "questionN": "Questão {{n}}",
+    "showExplanation": "Ver comentário",
+    "flagAction": "Marcar para trocar",
+    "flagged": "Marcada para trocar",
+    "noteLabel": "Motivo (opcional)",
+    "notePlaceholder": "Ex.: anulada pelo INEP em 2022.2, enunciado incompleto…",
+    "saveNote": "Salvar motivo",
+    "saveError": "Não foi possível salvar. Tente novamente.",
+    "flaggedCount": "{{count}} questão(ões) marcada(s) para troca",
+    "noneFlagged": "Nenhuma questão marcada até agora",
+    "blocoHeading": "Bloco {{n}} — {{label}}",
+    "blocoFlagged": "{{count}} marcada(s)"
   },
   "studio": {
     "eyebrow": "MedHelpSpace · Instagram Studio",

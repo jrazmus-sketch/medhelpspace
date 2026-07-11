@@ -18,6 +18,7 @@
     "leads": "Leads",
     "support": "Support",
     "studio": "Studio",
+    "simuladoReview": "Simulado 100Q",
     "menu": "Menu",
     "group": {
       "content": "Content",
@@ -25,6 +26,26 @@
       "commerce": "Commerce",
       "system": "System"
     }
+  },
+  "simReview": {
+    "title": "Simulado 100Q review",
+    "subtitle": "{{total}} real Revalida (INEP, 2020–2025) questions in 5 blocks by grande área — the exact set served by the free simulado at /simulado-revalida.",
+    "howTitle": "How to review",
+    "how1": "Read the question and alternatives — the answer key is highlighted in green. Open the commentary if needed.",
+    "how2": "Found a problem (question annulled by INEP, broken stem, duplicate theme)? Tap “Flag for swap” and note the reason.",
+    "how3": "When you finish the review, tell Justin — flagged questions get swapped for others from the same topic and área.",
+    "questionN": "Question {{n}}",
+    "showExplanation": "Show commentary",
+    "flagAction": "Flag for swap",
+    "flagged": "Flagged for swap",
+    "noteLabel": "Reason (optional)",
+    "notePlaceholder": "E.g.: annulled by INEP in 2022.2, incomplete stem…",
+    "saveNote": "Save reason",
+    "saveError": "Could not save. Try again.",
+    "flaggedCount": "{{count}} question(s) flagged for swap",
+    "noneFlagged": "No questions flagged yet",
+    "blocoHeading": "Block {{n}} — {{label}}",
+    "blocoFlagged": "{{count}} flagged"
   },
   "studio": {
     "eyebrow": "MedHelpSpace · Instagram Studio",

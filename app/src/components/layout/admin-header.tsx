@@ -90,6 +90,7 @@ export function AdminHeader() {
         { href: "/admin/notifications", label: t("nav.notifications") },
         { href: "/admin/email-templates", label: t("nav.emailTemplates"), show: isContentAdmin() },
         { href: "/admin/estudio", label: t("nav.studio"), show: isSuperAdmin() || isContentAdmin() },
+        { href: "/admin/simulado-100", label: t("nav.simuladoReview"), show: isSuperAdmin() || isContentAdmin() },
       ],
     },
     {
