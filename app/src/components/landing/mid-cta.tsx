@@ -25,7 +25,7 @@ export function MidCta() {
           <span aria-hidden>→</span>
         </Link>
         <p className="mt-4 text-xs text-white/50">
-          Acesso imediato · Garantia incondicional de 7 dias · Revalida 2026.2 e 2027.1
+          Acesso imediato · Garantia incondicional de 7 dias · Revalida 2027.1 e 2027.2
         </p>
       </div>
     </section>

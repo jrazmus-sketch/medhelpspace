@@ -10,7 +10,7 @@ import {
   unsubscribeUrl,
   WELCOME_COUPONS,
   SIMULADO_SOURCE,
-  REVALIDA_2026_2_SLUG,
+  REVALIDA_2027_1_SLUG,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
       );
       if (elapsedDays < nextStep.offsetDays) continue; // not due yet
 
-      const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2026_2_SLUG;
-      const welcome = WELCOME_COUPONS[cohort] ?? WELCOME_COUPONS[REVALIDA_2026_2_SLUG];
+      const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2027_1_SLUG;
+      const welcome = WELCOME_COUPONS[cohort] ?? WELCOME_COUPONS[REVALIDA_2027_1_SLUG];
 
       // Template branches on whether they finished the 100 questions (at send time).
       const finished = lead.sim_completed_at != null;

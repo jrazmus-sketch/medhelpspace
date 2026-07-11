@@ -130,7 +130,7 @@ export function MagnetQuiz({
   const [emailErr, setEmailErr] = useState<string | null>(null);
   const [hp, setHp] = useState(""); // honeypot — real users leave this blank
   const [summary, setSummary] = useState<FreeResultSummary | null>(null);
-  const [cohort, setCohort] = useState("revalida-2026-2");
+  const [cohort, setCohort] = useState("revalida-2027-1");
   // Reward (post-verify)
   const [plan, setPlan] = useState<PlanPreview | null>(null);
   const [sampleCards, setSampleCards] = useState<MagnetFlashcard[]>([]);
@@ -320,23 +320,23 @@ export function MagnetQuiz({
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <button
-            onClick={() => chooseCohort("revalida-2026-2")}
-            disabled={pending}
-            className="rounded-xl border border-border p-4 text-left transition-colors hover:border-brand disabled:opacity-60"
-          >
-            <div className="text-sm font-semibold">Revalida 2026.2</div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              Prova em 13/09/2026 · reta final
-            </div>
-          </button>
-          <button
             onClick={() => chooseCohort("revalida-2027-1")}
             disabled={pending}
             className="rounded-xl border border-border p-4 text-left transition-colors hover:border-brand disabled:opacity-60"
           >
             <div className="text-sm font-semibold">Revalida 2027.1</div>
             <div className="mt-0.5 text-xs text-muted-foreground">
-              Prova no início de 2027 · mais tempo
+              Prova no início de 2027 · próxima prova
+            </div>
+          </button>
+          <button
+            onClick={() => chooseCohort("revalida-20272")}
+            disabled={pending}
+            className="rounded-xl border border-border p-4 text-left transition-colors hover:border-brand disabled:opacity-60"
+          >
+            <div className="text-sm font-semibold">Revalida 2027.2</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              Prova em setembro de 2027 · mais tempo
             </div>
           </button>
         </div>

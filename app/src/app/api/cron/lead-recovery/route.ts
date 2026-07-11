@@ -10,7 +10,7 @@ import {
   unsubscribeUrl,
   offerCheckoutUrl,
   RECOVERY_COUPONS,
-  REVALIDA_2026_2_SLUG,
+  REVALIDA_2027_1_SLUG,
   FLASHCARDS_SOURCE,
   SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
@@ -212,10 +212,10 @@ export async function GET(request: NextRequest) {
       }
 
       // Segment-B leads never completed the cohort picker, so target_cohort is the DB
-      // default (revalida-2026-2) → the turma-scoped recovery coupon (VOLTA5, 5%). The
-      // fallback keeps an unknown/future cohort on the 2026-2 code rather than crashing.
-      const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2026_2_SLUG;
-      const recovery = RECOVERY_COUPONS[cohort] ?? RECOVERY_COUPONS[REVALIDA_2026_2_SLUG];
+      // default (revalida-2027-1) → the turma-scoped recovery coupon (VOLTA10, 10%). The
+      // fallback keeps an unknown/future cohort on the 2027-1 code rather than crashing.
+      const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2027_1_SLUG;
+      const recovery = RECOVERY_COUPONS[cohort] ?? RECOVERY_COUPONS[REVALIDA_2027_1_SLUG];
       const vars: Record<string, string> = {
         greeting: greetingFor(lead.first_name as string | null),
         resumeUrl: resumeUrl((lead.result_token as string) ?? ""),

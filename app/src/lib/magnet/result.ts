@@ -80,7 +80,7 @@ export async function getRewardByToken(token: string): Promise<LeadReward | null
     .maybeSingle();
   if (!lead) return null;
 
-  const cohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
+  const cohort = (lead.target_cohort as string | null) ?? "revalida-2027-1";
   const answers = answersFromStoredResult(lead.result);
   const weakIds = (lead.weak_specialty_ids as number[] | null) ?? [];
 

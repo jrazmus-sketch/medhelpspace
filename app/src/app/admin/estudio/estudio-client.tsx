@@ -2959,7 +2959,7 @@ const TEMPLATES: Template[] = [
       { key: "cta", labelKey: "ctaButton" },
     ],
     defaults: {
-      eyebrow: "Turma Revalida 2026.2 · vagas abertas",
+      eyebrow: "Turma Revalida 2027.1 · vagas abertas",
       headline: "Estude pelo padrão da prova do INEP.",
       sub: "Questões comentadas, revisão ativa e um plano que se ajusta a você.",
       basePrice: "R$ 1.200",
@@ -3176,7 +3176,7 @@ const TEMPLATES: Template[] = [
     defaults: {
       image: "/images/students.webp",
       fit: "cover-center",
-      eyebrow: "Turma Revalida 2026.2",
+      eyebrow: "Turma Revalida 2027.1",
       headline: "Sua aprovação começa com o próximo estudo.",
       caption: "medhelpspace.com.br",
     },
@@ -3302,10 +3302,10 @@ const TEMPLATES: Template[] = [
       { key: "sub", labelKey: "sub", type: "textarea" },
     ],
     defaults: {
-      eyebrow: "Revalida 2026.2",
-      dateBadge: "Prova · 20/10/2026",
+      eyebrow: "Revalida 2027.1",
+      dateBadge: "Prova · 15/01/2027",
       pre: "Faltam",
-      days: "47",
+      days: "188",
       unit: "dias para a prova",
       sub: "Cada dia de revisão ativa conta. Bora?",
     },

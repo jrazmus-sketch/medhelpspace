@@ -99,7 +99,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       createdAt: l.created_at as string,
       utmSource: (l.utm_source as string | null) ?? null,
       utmCampaign: (l.utm_campaign as string | null) ?? null,
-      // target_cohort is NOT NULL DEFAULT 'revalida-2026-2' at the DB level, so a
+      // target_cohort is NOT NULL DEFAULT 'revalida-2027-1' at the DB level, so a
       // soft-captured lead carries the default even though they never chose. The
       // cohort picker is only reached AFTER Q15 (chooseCohort → finalize), so
       // completed_at is the true "they picked a turma" signal. Surface null (→ "—")

@@ -84,6 +84,15 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   reached from the 60D accordion at `/app/formula-medhelp`. So the set of pages with
   `content_module_id = 1` is now Fórmula + the legacy MemoreCards/Simulados subtree, NOT
   Revalida Up. Patch: `schema-patch-swap-revalida-formula-gating.sql` (reversible).
+- **Cohort 2026.2 retired from sale (2026-07-11)**: `cohorts.is_for_sale = false` for
+  `revalida-2026-2` — the row stays `active = true`, so existing members keep full access
+  (membership gating checks only the membership window, never sale flags). Sales focus is
+  `revalida-2027-1` (+ `revalida-20272`): all funnel pickers/defaults/fallbacks now lead
+  with 2027-1, `leads.target_cohort` default flipped, coupons REVALIDA5/VOLTA5 deactivated,
+  and the 15 active 2026-2 leads were reassigned to 2027-1 (the 1 converted buyer kept
+  2026-2). `leads_target_cohort_check` still allows the old slug for historical rows.
+  Soft delete (`active = false`) is reserved for after the 13/09/2026 exam.
+  Patch: `schema-patch-retire-cohort-2026-2.sql`.
 
 ## Schema (see schema.sql for full DDL)
 

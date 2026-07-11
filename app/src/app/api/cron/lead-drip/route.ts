@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
+    const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2027-1";
 
     const currentStep = lead.drip_step as number;
     const nextStep = STEPS.find((s) => s.step === currentStep + 1);

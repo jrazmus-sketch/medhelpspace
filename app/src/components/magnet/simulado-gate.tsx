@@ -4,7 +4,6 @@ import { useId, useState, useTransition } from "react";
 import { captureSimuladoLead, chooseSimuladoCohortAndSend } from "@/actions/magnet";
 import { getFunnelSessionId } from "@/lib/magnet/funnel-track";
 import {
-  REVALIDA_2026_2_SLUG,
   REVALIDA_2027_1_SLUG,
   REVALIDA_20272_SLUG,
   UNDECIDED_COHORT,
@@ -22,9 +21,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type CohortOption = { slug: string; label: string; when: string; note?: string };
 const COHORTS: CohortOption[] = [
-  { slug: REVALIDA_2026_2_SLUG, label: "Revalida 2026.2", when: "Prova em 13/09/2026", note: "Reta final" },
-  { slug: REVALIDA_2027_1_SLUG, label: "Revalida 2027.1", when: "Início de 2027", note: "Mais tempo" },
-  { slug: REVALIDA_20272_SLUG, label: "Revalida 2027.2", when: "Setembro de 2027", note: "Começando agora" },
+  { slug: REVALIDA_2027_1_SLUG, label: "Revalida 2027.1", when: "Início de 2027", note: "Próxima prova" },
+  { slug: REVALIDA_20272_SLUG, label: "Revalida 2027.2", when: "Setembro de 2027", note: "Mais tempo" },
   { slug: UNDECIDED_COHORT, label: "Ainda não decidi", when: "Escolho a turma depois" },
 ];
 

@@ -110,7 +110,7 @@ function DashboardMockup() {
             <div className="h-1.5 w-32 rounded-full bg-foreground/10" />
           </div>
           <div className="rounded-full bg-brand/10 px-2 py-1 text-[8px] font-bold text-brand">
-            Revalida 2026.2
+            Revalida 2027.1
           </div>
         </div>
         {/* Specialty grid */}

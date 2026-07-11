@@ -16,15 +16,19 @@ import { fetchAllSpecialtyPages } from "@/lib/study-plan/fetch";
 // and pin the lead's weak specialties as focus. FREE-FUNNEL-BUILD-SPEC.md §4.
 
 // Exam dates per cohort — drive daysToExam + the foundation/intensification phase.
+// Dates mirror cohorts.test_date in prod; 2026-2 stays for legacy leads' durable
+// result links (turma went off sale 2026-07-11).
 export const COHORT_EXAM_DATE: Record<string, string> = {
   "revalida-2026-2": "2026-09-13",
   "revalida-2027-1": "2027-01-15",
+  "revalida-20272": "2027-09-15",
 };
 export const COHORT_EXAM_LABEL: Record<string, string> = {
   "revalida-2026-2": "13 de setembro",
   "revalida-2027-1": "janeiro de 2027",
+  "revalida-20272": "setembro de 2027",
 };
-export const DEFAULT_TARGET_COHORT = "revalida-2026-2";
+export const DEFAULT_TARGET_COHORT = "revalida-2027-1";
 
 export type MagnetAnswer = {
   questionId: number;

@@ -15,8 +15,8 @@ interface Props {
 // Slugs must match leads_target_cohort_check / VALID_TARGET_COHORTS. NB: the
 // 2027.2 turma has NO hyphen before the final 2 ('revalida-20272') — the prior
 // 'revalida-2027-2' here failed the DB constraint, so assigning 2027.2 never worked.
+// 2026.2 was removed as an assign target when that turma went off sale (2026-07-11).
 const COHORTS = [
-  { slug: "revalida-2026-2", label: "2026.2" },
   { slug: "revalida-2027-1", label: "2027.1" },
   { slug: "revalida-20272", label: "2027.2" },
 ];

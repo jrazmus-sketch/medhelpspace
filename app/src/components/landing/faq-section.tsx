@@ -23,7 +23,7 @@ const FAQS = [
   },
   {
     q: "Serve para qual edição do Revalida?",
-    a: "Você escolhe a turma e estuda com o sistema organizado para a sua janela de prova. Disponíveis: Revalida 2026.2 e 2027.1.",
+    a: "Você escolhe a turma e estuda com o sistema organizado para a sua janela de prova. Disponíveis: Revalida 2027.1 e 2027.2.",
   },
   {
     q: "Preciso ter muito tempo livre?",

@@ -24,7 +24,7 @@ import {
   flashcardsAccessUrl,
   simuladoAccessUrl,
   VALID_TARGET_COHORTS,
-  REVALIDA_2026_2_SLUG,
+  REVALIDA_2027_1_SLUG,
   FLASHCARDS_SOURCE,
   SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
@@ -436,8 +436,8 @@ export async function saveLeadProgress(input: {
 }
 
 // Canonical valid-turma set lives in lib/magnet/links.ts (mirrors the DB CHECK).
-// NOTE: this quiz funnel's picker still only offers 2026.2 / 2027.1 — kept as the
-// stable A/B control. The new /flashcards-revalida funnel is what surfaces 2027.2.
+// 2026.2 went off sale 2026-07-11: no picker offers it anymore, but it stays in the
+// valid set so legacy leads' stored value keeps passing validation on re-submits.
 const VALID_COHORTS = VALID_TARGET_COHORTS;
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -455,7 +455,7 @@ export async function finalizeLeadResult(input: {
 
   const targetCohort = VALID_COHORTS.has(input.targetCohort ?? "")
     ? (input.targetCohort as string)
-    : REVALIDA_2026_2_SLUG;
+    : REVALIDA_2027_1_SLUG;
 
   const answers = input.answers ?? [];
   const progress = buildProgressPayload(answers);
@@ -565,7 +565,7 @@ export async function requestClaimCode(input: {
             score: prev.score ?? null,
             weak_specialty_ids: prev.weak_specialty_ids ?? [],
             result: prev.result ?? null,
-            target_cohort: prev.target_cohort ?? "revalida-2026-2",
+            target_cohort: prev.target_cohort ?? "revalida-2027-1",
             questions_answered: prev.questions_answered ?? null,
             completed_at: prev.completed_at ?? null,
             // Fresh entry: verify happens next; drip starts only once verified.
@@ -703,7 +703,7 @@ export async function verifyClaimCode(input: {
     .eq("id", lead.id);
 
   const resultToken = lead.result_token as string;
-  const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
+  const targetCohort = (lead.target_cohort as string | null) ?? "revalida-2027-1";
   const answers = answersFromStoredResult(lead.result);
   const weakIds = (lead.weak_specialty_ids as number[] | null) ?? [];
 
@@ -845,7 +845,7 @@ export async function chooseFlashcardsCohortAndSend(input: {
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
   const targetCohort = VALID_TARGET_COHORTS.has(input.targetCohort)
     ? input.targetCohort
-    : REVALIDA_2026_2_SLUG;
+    : REVALIDA_2027_1_SLUG;
   const firstName = cleanFirstName(input.firstName);
 
   const admin = createAdminClient();
@@ -1064,7 +1064,7 @@ export async function chooseSimuladoCohortAndSend(input: {
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
   const targetCohort = VALID_TARGET_COHORTS.has(input.targetCohort)
     ? input.targetCohort
-    : REVALIDA_2026_2_SLUG;
+    : REVALIDA_2027_1_SLUG;
   const firstName = cleanFirstName(input.firstName);
 
   const admin = createAdminClient();

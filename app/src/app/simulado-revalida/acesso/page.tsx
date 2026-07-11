@@ -80,7 +80,7 @@ export default async function SimuladoAcessoPage({
       .eq("id", lead.id);
   }
 
-  const cohort = (lead.target_cohort as string | null) ?? "revalida-2026-2";
+  const cohort = (lead.target_cohort as string | null) ?? "revalida-2027-1";
   const email = lead.email as string;
   const firstName = (lead.first_name as string | null) ?? null;
 

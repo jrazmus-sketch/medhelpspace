@@ -98,7 +98,7 @@ export function SixtyDSection() {
               { label: "Compra", sub: "Acesso imediato" },
               { label: "Estudo", sub: "Questões · Resumos · Revalida Up · MedVoice · Flashcards · Audiocards" },
               { label: "60D antes", sub: "MedHelp 60D liberado" },
-              { label: "Prova", sub: "Revalida 2026.2 / 2027.1" },
+              { label: "Prova", sub: "Revalida 2027.1 / 2027.2" },
             ].map((step, i) => (
               <div key={step.label} className="flex flex-1 flex-col items-center">
                 <div

@@ -9,7 +9,7 @@ import { TrustStrip } from "@/components/magnet/trust-strip";
 import { SiteText } from "@/components/landing/site-text";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getLandingStats } from "@/lib/landing/stats";
-import { REVALIDA_2026_2_SLUG, REVALIDA_2027_1_SLUG } from "@/lib/magnet/links";
+import { REVALIDA_2027_1_SLUG, REVALIDA_20272_SLUG } from "@/lib/magnet/links";
 import type { RewardOffer } from "@/components/magnet/magnet-reward";
 
 // PUBLIC, indexable landing page — lives OUTSIDE the /app gate, so it never hits
@@ -68,13 +68,13 @@ export default async function SimuladoHonestoPage({
   // Live storefront prices for both selectable turmas, so the post-verify reward
   // shows the real price + its welcome discount (never a stale/hardcoded number).
   // Live content counts back the hero trust strip.
-  const [p2026, p2027, stats] = await Promise.all([
-    getCohortProduct(REVALIDA_2026_2_SLUG),
+  const [p2027, p20272, stats] = await Promise.all([
     getCohortProduct(REVALIDA_2027_1_SLUG),
+    getCohortProduct(REVALIDA_20272_SLUG),
     getLandingStats(),
   ]);
   const offers: Record<string, RewardOffer> = {};
-  for (const p of [p2026, p2027]) {
+  for (const p of [p2027, p20272]) {
     if (p) offers[p.slug] = { priceCents: p.priceCents, compareAtPriceCents: p.compareAtPriceCents };
   }
 

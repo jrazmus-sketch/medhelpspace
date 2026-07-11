@@ -272,7 +272,7 @@ async function specialtyNames(ids: number[]): Promise<string[]> {
 async function buildDripVars(lead: LeadForDrip, kind: string, step: number): Promise<Record<string, string>> {
   const firstName = (lead.firstName ?? "").trim();
   const weakSpecs = await specialtyNames(lead.weakSpecialties ?? []);
-  const cohort = lead.targetCohort ?? "revalida-2026-2";
+  const cohort = lead.targetCohort ?? "revalida-2027-1";
 
   let examLabel = "a sua prova";
   if (lead.targetCohort) {

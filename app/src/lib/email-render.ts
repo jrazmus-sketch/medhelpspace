@@ -1153,7 +1153,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
 // known variable so previews look realistic. Shared so preview === test send.
 export const SAMPLE_VARS: Record<string, string> = {
   displayName: "Maria",
-  cohortName: "Revalida 2026.2",
+  cohortName: "Revalida 2027.1",
   testDate: " (15 de novembro de 2026)",
   endsAt: "30 de novembro de 2026",
   summaryBody:
@@ -1185,7 +1185,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   // Lead-magnet funnel samples
   score: "7",
   weakSpecialties: "Cardiologia, Nefrologia",
-  examLabel: "13 de setembro",
+  examLabel: "15 de janeiro",
   code: "483920",
   greeting: "Oi, Maria! ",
   magnetUrl: "https://medhelpspace.com.br/questoes-revalida",
@@ -1193,7 +1193,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   resultUrl:
     "https://medhelpspace.com.br/questoes-revalida/resultado?lead=00000000-0000-0000-0000-000000000000",
   checkoutUrl:
-    "https://medhelpspace.com.br/checkout?cohort=revalida-2026-2&cupom=REVALIDA5",
+    "https://medhelpspace.com.br/checkout?cohort=revalida-2027-1&cupom=REVALIDA10",
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",
   // Recovery-funnel samples
   recoverUrl:

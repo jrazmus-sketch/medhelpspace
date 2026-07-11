@@ -50,13 +50,12 @@ export const VALID_TARGET_COHORTS: ReadonlySet<string> = new Set([
 ]);
 
 // Per-turma WELCOME coupon: a small discount auto-applied at the end of the free
-// test and delivered in ONE follow-up drip email (D2). This REPLACED the old large
-// RETA2026/ULTIMA2026 stack for 2026-2 (deactivated 2026-07-02) — that turma is
-// already marked down on the storefront, so the promo only adds a light 5% nudge.
-// Each code is locked to its turma(s) in the DB (coupons.applies_to_cohort_slugs):
-// REVALIDA5 (5%) only redeems on 2026-2; REVALIDA10 (10%) redeems on the two future
-// turmas (2027.1 + 2027.2, which carry no storefront markdown yet). Keep in sync with
-// schema-patch-revalida5-welcome-coupon.sql + schema-patch-target-cohort-add-20272.sql.
+// test and delivered in ONE follow-up drip email (D2). Each code is locked to its
+// turma(s) in the DB (coupons.applies_to_cohort_slugs): REVALIDA10 (10%) redeems on
+// the two live turmas (2027.1 + 2027.2). The 2026-2 entry is legacy — that turma
+// went off sale 2026-07-11 and its REVALIDA5 coupon was deactivated; the entry stays
+// so a not-yet-reassigned 2026-2 lead renders a stable (if unredeemable) code instead
+// of crashing. Keep in sync with schema-patch-retire-cohort-2026-2.sql.
 export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> = {
   [REVALIDA_2026_2_SLUG]: { code: "REVALIDA5", percent: 5 },
   [REVALIDA_2027_1_SLUG]: { code: "REVALIDA10", percent: 10 },
@@ -67,8 +66,8 @@ export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> 
 
 // Dedicated recovery coupons shown in the Segment-B "come back and finish" nudges —
 // one per turma, mirroring WELCOME_COUPONS. Kept separate from WELCOME for clean
-// attribution (recovery vs. welcome). Turma-scoped rates: revalida-2026-2 is ALREADY
-// discounted on the storefront so it caps at 5%; revalida-2027-1 gets 10%. Single
+// attribution (recovery vs. welcome). The 2026-2 entry is legacy (turma off sale,
+// VOLTA5 deactivated 2026-07-11) — kept only for not-yet-reassigned leads. Single
 // source of truth for the cron (code + percent + checkout link) and the email copy
 // ({{coupon}} / {{couponPercent}}). Seeded by schema-patch-lead-recovery.sql — keep in sync.
 export const RECOVERY_COUPONS: Record<string, { code: string; percent: number }> = {
@@ -150,7 +149,7 @@ export function offerCheckoutUrl(opts: {
     return `${SITE_URL}/loja?${p.toString()}`;
   }
   const params = new URLSearchParams({
-    cohort: opts.cohort ?? REVALIDA_2026_2_SLUG,
+    cohort: opts.cohort ?? REVALIDA_2027_1_SLUG,
     email: opts.email,
     utm_source: "email",
     utm_medium: "drip",
