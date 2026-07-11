@@ -15,9 +15,13 @@ import Link from "next/link";
 import { Check, AlertCircle, ChevronDown, ChevronUp, ChevronRight, ArrowUp, ArrowDown, Trash2, Plus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Must mirror the `page_view` Postgres enum exactly (schema.sql +
+// schema-patch-revalida-up-view.sql). Offering a value the enum doesn't have
+// (previously flashcards/audiocards/memorecards) makes the save throw an
+// "invalid input value for enum" DB error; omitting real values (quiz,
+// revalida-up) makes those pages' dropdown fall back to "— sem visualização".
 const PAGE_VIEWS = [
-  "hub", "resumos", "formula", "simulados",
-  "flashcards", "audiocards", "memorecards",
+  "hub", "quiz", "formula", "resumos", "simulados", "revalida-up",
 ] as const;
 
 const TYPE_COLORS: Record<string, string> = {
@@ -94,9 +98,15 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   const { t } = useTranslation();
 
   const [title, setTitle] = useState(page.title);
-  const [slugOverride, setSlugOverride] = useState(page.slug);
-  const [slugManual, setSlugManual] = useState(false);
-  const slug = slugManual ? slugOverride : slugify(title);
+  // The slug is seeded from the stored value and stays stable across saves.
+  // Editing an existing page must NOT silently rewrite its slug just because the
+  // title no longer re-slugifies to the same value — many pages carry a
+  // disambiguated slug (e.g. "…-revalida-up") that slugify(title) would drop,
+  // which either collides with another page (save fails) or breaks the page's
+  // public URL. Retitling no longer touches the slug; the "auto-generate"
+  // affordance next to the field opts in when the admin actually wants it.
+  const [slug, setSlug] = useState(page.slug);
+  const suggestedSlug = slugify(title);
   const originalStatus: "publish" | "draft" = page.status === "publish" ? "publish" : "draft";
   const [status, setStatus] = useState<"publish" | "draft">(originalStatus);
   const [specialtyId, setSpecialtyId] = useState<number | "">(page.specialty_id ?? "");
@@ -140,9 +150,11 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
     setSaved(false);
     setSaving(true);
     try {
-      // 1) Page metadata
+      // 1) Page metadata. updatePageMetadata returns { ok: false, error } for the
+      // expected "slug taken" case (a thrown message would be redacted in prod);
+      // genuine failures still throw and land in the generic catch below.
       try {
-        await updatePageMetadata(page.id, {
+        const res = await updatePageMetadata(page.id, {
           title,
           slug,
           status,
@@ -152,9 +164,12 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
           content_module_id: moduleId === "" ? null : Number(moduleId),
           notes: notes || null,
         });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "";
-        setError(msg === "SLUG_TAKEN" ? t("pageEdit.slugTaken") : t("errors.generic"));
+        if (res && !res.ok) {
+          setError(res.error === "SLUG_TAKEN" ? t("pageEdit.slugTaken") : t("errors.generic"));
+          return;
+        }
+      } catch {
+        setError(t("errors.generic"));
         return;
       }
 
@@ -337,9 +352,10 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
           <div className="space-y-1.5">
             <label className="flex items-center gap-2 text-sm font-medium">
               {t("pageEdit.slugLabel")}
-              {slugManual && (
+              {slug !== suggestedSlug && (
                 <button
-                  onClick={() => { setSlugManual(false); setSlugOverride(slugify(title)); }}
+                  type="button"
+                  onClick={() => setSlug(suggestedSlug)}
                   className="text-xs text-brand hover:underline"
                 >
                   {t("pageEdit.slugReset")}
@@ -349,7 +365,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
             <input
               type="text"
               value={slug}
-              onChange={(e) => { setSlugManual(true); setSlugOverride(e.target.value); }}
+              onChange={(e) => setSlug(e.target.value)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30"
             />
           </div>

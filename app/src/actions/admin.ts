@@ -805,6 +805,12 @@ export type PageMetadataInput = {
   notes: string | null;
 };
 
+// Returns a discriminated result rather than throwing on the expected
+// "slug taken" case: Next.js redacts thrown Server Action error messages in
+// production (the client only ever sees a generic string + digest), so a
+// `throw new Error("SLUG_TAKEN")` can't be distinguished client-side and the
+// UI falls back to the generic error. A returned value crosses the boundary
+// intact. Genuine DB errors still throw → the client shows the generic error.
 export async function updatePageMetadata(pageId: number, data: PageMetadataInput) {
   await requireAdmin();
   const admin = createAdminClient();
@@ -817,7 +823,7 @@ export async function updatePageMetadata(pageId: number, data: PageMetadataInput
     .neq("id", pageId);
 
   if ((count ?? 0) > 0) {
-    throw new Error("SLUG_TAKEN");
+    return { ok: false as const, error: "SLUG_TAKEN" as const };
   }
 
   const { error } = await admin
@@ -838,6 +844,7 @@ export async function updatePageMetadata(pageId: number, data: PageMetadataInput
 
   revalidatePath("/admin/pages");
   revalidatePath(`/admin/pages/${pageId}/edit`);
+  return { ok: true as const };
 }
 
 // ── Lessons ───────────────────────────────────────────────────────────────────
