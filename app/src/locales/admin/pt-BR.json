@@ -1221,6 +1221,7 @@
     "colCreated": "Captado em",
     "colDrip": "E-mail",
     "colDripFormat": "{{step}}/{{total}}",
+    "cohortReassigned": "Escolheu {{from}}; reatribuído para {{to}}",
     "colEmailEngagement": "Engajamento",
     "engagementOpens": "~{{count}} aberturas",
     "tier_customer": "Cliente",

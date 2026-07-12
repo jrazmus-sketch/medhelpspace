@@ -29,6 +29,12 @@ export type LeadRow = {
   // null = the lead never reached the post-Q15 cohort picker (unfinished). The
   // admin UI renders this as "—" rather than a misleading default turma.
   targetCohort: string | null;
+  // The turma the lead ORIGINALLY chose, when a reassignment (retired turma /
+  // admin bulk-assign) later overwrote targetCohort. The list renders
+  // "2026.2 → 2027.1" so the panel never misreports the lead's actual pick.
+  // Gated on `completed` like targetCohort: an uncompleted lead's stored value
+  // was only ever the column default, not a choice.
+  previousTargetCohort: string | null;
   score: number | null;
   questionsAnswered: number | null;
   completed: boolean;
@@ -76,7 +82,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
     admin
       .from("leads")
       .select(
-        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source, is_test, is_archived",
+        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, previous_target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source, is_test, is_archived",
       )
       .order("created_at", { ascending: false })
       .limit(1000),
@@ -105,6 +111,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       // completed_at is the true "they picked a turma" signal. Surface null (→ "—")
       // for anyone who hasn't finished, rather than the misleading default.
       targetCohort: completed ? (l.target_cohort as string) : null,
+      previousTargetCohort: completed ? ((l.previous_target_cohort as string | null) ?? null) : null,
       score: (l.score as number | null) ?? null,
       questionsAnswered: (l.questions_answered as number | null) ?? null,
       completed,

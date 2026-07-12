@@ -84,17 +84,59 @@ export async function bulkAssignCohort(
   }
 
   const admin = createAdminClient();
-  const { error, count } = await admin
+
+  // Preserve each lead's ORIGINAL turma the first time a reassignment overwrites
+  // it (previous_target_cohort), so /admin/leads keeps showing what the lead
+  // actually chose ("2026.2 → 2027.1"). Only the first change is recorded — later
+  // reassignments keep the original. Read-then-write because PostgREST updates
+  // can't reference the row's own current value.
+  const { data: current, error: readError } = await admin
     .from("leads")
-    .update({ target_cohort: cohort })
+    .select("id, target_cohort, previous_target_cohort")
     .in("id", leadIds);
 
-  if (error) {
-    console.error("Bulk assign cohort error:", error);
+  if (readError) {
+    console.error("Bulk assign cohort read error:", readError);
     throw new Error("Failed to update leads");
   }
 
-  return { success: true, count: count ?? 0 };
+  // Batch by current turma: each group writes its own previous_target_cohort.
+  const byPrev = new Map<string, string[]>();
+  const plain: string[] = [];
+  for (const r of current ?? []) {
+    const cur = r.target_cohort as string | null;
+    if (!r.previous_target_cohort && cur && cur !== cohort) {
+      byPrev.set(cur, [...(byPrev.get(cur) ?? []), r.id as string]);
+    } else {
+      plain.push(r.id as string);
+    }
+  }
+
+  let total = 0;
+  for (const [prev, ids] of byPrev) {
+    const { error } = await admin
+      .from("leads")
+      .update({ target_cohort: cohort, previous_target_cohort: prev })
+      .in("id", ids);
+    if (error) {
+      console.error("Bulk assign cohort error:", error);
+      throw new Error("Failed to update leads");
+    }
+    total += ids.length;
+  }
+  if (plain.length) {
+    const { error } = await admin
+      .from("leads")
+      .update({ target_cohort: cohort })
+      .in("id", plain);
+    if (error) {
+      console.error("Bulk assign cohort error:", error);
+      throw new Error("Failed to update leads");
+    }
+    total += plain.length;
+  }
+
+  return { success: true, count: total };
 }
 
 // ── Bulk Unsubscribe / Reactivate ─────────────────────────────────────────────

@@ -92,7 +92,10 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   and the 15 active 2026-2 leads were reassigned to 2027-1 (the 1 converted buyer kept
   2026-2). `leads_target_cohort_check` still allows the old slug for historical rows.
   Soft delete (`active = false`) is reserved for after the 13/09/2026 exam.
-  Patch: `schema-patch-retire-cohort-2026-2.sql`.
+  Patch: `schema-patch-retire-cohort-2026-2.sql`. Reassigned leads keep their original
+  pick in `leads.previous_target_cohort` (backfilled; `bulkAssignCohort` records it on
+  first change), and /admin/leads renders "2026.2 → 2027.1" so history is never
+  misreported. Patch: `schema-patch-leads-previous-cohort.sql`.
 
 ## Schema (see schema.sql for full DDL)
 

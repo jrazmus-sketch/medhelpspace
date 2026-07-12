@@ -454,6 +454,27 @@ export function LeadsClient({ rows, summary }: Props) {
     );
   }
 
+  // Turma cell. A reassigned lead (retired turma / bulk-assign) keeps its ORIGINAL
+  // choice visible — "2026.2 → 2027.1" — so the panel never misreports what the
+  // lead actually picked. previousTargetCohort is null when never reassigned.
+  function CohortCell({ row }: { row: LeadRow }) {
+    if (!row.previousTargetCohort || row.previousTargetCohort === row.targetCohort) {
+      return <>{cohortShort(row.targetCohort)}</>;
+    }
+    return (
+      <span
+        className="whitespace-nowrap"
+        title={t("leads.cohortReassigned", {
+          from: cohortShort(row.previousTargetCohort),
+          to: cohortShort(row.targetCohort),
+        })}
+      >
+        <span className="text-muted-foreground">{cohortShort(row.previousTargetCohort)} →</span>{" "}
+        {cohortShort(row.targetCohort)}
+      </span>
+    );
+  }
+
   function StatusPill({ row }: { row: LeadRow }) {
     const st = effectiveStatus(row);
     return (
@@ -803,7 +824,7 @@ export function LeadsClient({ rows, summary }: Props) {
                     <EmailEngagement row={row} />
                   </td>
                   <td className="hidden xl:table-cell px-3 py-3 whitespace-nowrap cursor-pointer" onClick={() => setSelected(row)}>
-                    {cohortShort(row.targetCohort)}
+                    <CohortCell row={row} />
                   </td>
                   <td className="hidden 2xl:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <span className="whitespace-nowrap text-sm">
@@ -855,7 +876,7 @@ export function LeadsClient({ rows, summary }: Props) {
                 className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-muted-foreground cursor-pointer"
               >
                 <span>
-                  {cohortShort(row.targetCohort)} · {sourceLabel(row.utmSource)} ·{" "}
+                  <CohortCell row={row} /> · {sourceLabel(row.utmSource)} ·{" "}
                   {t("leads.colDripFormat", { step: row.dripStep, total: 6 })}
                 </span>
                 <div className="flex items-center gap-2">
