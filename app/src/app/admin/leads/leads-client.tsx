@@ -1240,6 +1240,9 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
               <th className="hidden 2xl:table-cell px-3 py-3">{t("leads.colSource")}</th>
               <th className="px-3 py-3">{t("leads.colStatus")}</th>
               <th className="px-3 py-3">
+                {renderSortableHeader(t("leads.colSignedUp"), "created")}
+              </th>
+              <th className="px-3 py-3">
                 {renderSortableHeader(t("leads.colLastActivity"), "lastActivity")}
               </th>
             </tr>
@@ -1247,7 +1250,7 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                   {t("leads.noResults")}
                 </td>
               </tr>
@@ -1289,6 +1292,9 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
                   </td>
                   <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
                     <StatusPill row={row} />
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
+                    {fmtDate(row.createdAt)}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
                     {fmtDate(row.lastEmailedAt ?? row.createdAt)}

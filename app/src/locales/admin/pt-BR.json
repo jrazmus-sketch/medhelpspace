@@ -1359,6 +1359,7 @@
     },
     "filterShowTests": "Mostrar testes",
     "isTest": "Teste interno",
+    "colSignedUp": "Cadastro",
     "colLastActivity": "Última atividade",
     "paginationWarning": "Exibindo os últimos {{count}} leads. Use os filtros para refinar a busca.",
     "selectAllCheckboxLabel": "Selecionar todos",

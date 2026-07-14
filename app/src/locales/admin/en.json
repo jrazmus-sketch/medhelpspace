@@ -1359,6 +1359,7 @@
     },
     "filterShowTests": "Show tests",
     "isTest": "Test lead",
+    "colSignedUp": "Signed up",
     "colLastActivity": "Last activity",
     "paginationWarning": "Showing last {{count}} leads. Use filters to narrow results.",
     "selectAllCheckboxLabel": "Select all",
