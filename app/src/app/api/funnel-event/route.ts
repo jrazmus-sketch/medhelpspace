@@ -40,6 +40,13 @@ export async function POST(request: Request) {
   const { event, sessionId, utm } = parsed.data;
   const admin = createAdminClient();
 
+  // Team browsers carry the httpOnly mhs_internal cookie (set by the proxy the
+  // first time an admin-role user opens /admin). Their beacons are stamped
+  // is_internal so /admin/leads can keep the team's own visits out of the
+  // Landed/Started stats. Real visitors never have the cookie.
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  const isInternal = /(?:^|;\s*)mhs_internal=1(?:;|\s|$)/.test(cookieHeader);
+
   // ignoreDuplicates → a repeat beacon on the (session_id, event_type) unique index
   // is a silent no-op instead of a 23505. Best-effort: never surface a failure to
   // the funnel, analytics must not break the user flow.
@@ -49,6 +56,7 @@ export async function POST(request: Request) {
       {
         event_type: event,
         session_id: sessionId,
+        is_internal: isInternal,
         utm_source: utm?.source ?? null,
         utm_medium: utm?.medium ?? null,
         utm_campaign: utm?.campaign ?? null,

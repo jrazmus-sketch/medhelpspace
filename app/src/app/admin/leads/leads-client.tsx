@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import {
+  AlertTriangle,
   Archive,
   ArchiveRestore,
   CheckCircle2,
@@ -14,8 +15,11 @@ import {
   MailCheck,
   MailX,
   MoreHorizontal,
+  X,
 } from "lucide-react";
-import type { LeadRow, LeadsSummary, LeadTier } from "@/lib/admin/leads";
+import type { LeadRow, LeadTier } from "@/lib/admin/leads";
+import type { FunnelEventDay } from "@/lib/admin/funnel";
+import { FunnelPanel, type FunnelStageDatum, type FunnelBySourceRow } from "./funnel-panel";
 import { LeadDetailDrawer } from "@/components/admin/lead-detail-drawer";
 import { BulkAssignCohortModal } from "@/components/admin/bulk-assign-cohort-modal";
 import { BulkResendModal } from "@/components/admin/bulk-resend-modal";
@@ -30,12 +34,64 @@ import {
 
 interface Props {
   rows: LeadRow[];
-  summary: LeadsSummary;
+  funnelEvents: FunnelEventDay[];
 }
 
 interface SortState {
   sortBy: "created" | "lastActivity" | "dripStep" | "tier" | "email" | null;
   sortAsc: boolean;
+}
+
+// A funnel-stage / attention chip the table is currently narrowed to. Stage
+// keys match FunnelPanel's stage keys so one click handler serves both.
+type FocusKey =
+  | "email"
+  | "completed"
+  | "verified"
+  | "purchased"
+  | "saved"
+  | "unverified48"
+  | "bounced"
+  | "drip_done";
+
+type RangeKey = "7d" | "30d" | "all";
+const RANGE_MS: Record<Exclude<RangeKey, "all">, number> = {
+  "7d": 7 * 86_400_000,
+  "30d": 30 * 86_400_000,
+};
+
+const KNOWN_FUNNELS = ["simulado-honesto", "flashcards-50", "simulado-100"] as const;
+
+// Local YYYY-MM-DD (sparkline buckets by the admin's wall-clock day).
+function localDayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function matchesFocus(r: LeadRow, focus: FocusKey, now: number): boolean {
+  switch (focus) {
+    case "email":
+      return r.captureSource !== "exit_intent";
+    case "completed":
+      return r.completed;
+    case "verified":
+      return r.verified;
+    case "purchased":
+      return Boolean(r.convertedAt);
+    case "saved":
+      return r.captureSource === "exit_intent";
+    case "unverified48":
+      return (
+        effectiveStatus(r) === "unverified" &&
+        !r.convertedAt &&
+        now - new Date(r.createdAt).getTime() > 48 * 3_600_000
+      );
+    case "bounced":
+      return r.dripStatus === "bounced";
+    case "drip_done":
+      return r.dripStatus === "active" && r.verified && r.dripStep >= 6 && !r.convertedAt;
+  }
 }
 
 const tierColor: Record<LeadTier, string> = {
@@ -149,7 +205,7 @@ function downloadCSV(csv: string, filename: string): void {
   document.body.removeChild(link);
 }
 
-export function LeadsClient({ rows, summary }: Props) {
+export function LeadsClient({ rows, funnelEvents }: Props) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const dateLocale = i18n.language === "en" ? "en-US" : "pt-BR";
@@ -159,8 +215,12 @@ export function LeadsClient({ rows, summary }: Props) {
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
   const [capture, setCapture] = useState("all");
-  const [funnel, setFunnel] = useState("all");
-  const [showTests, setShowTests] = useState(false);
+  // Page-level scopes — these narrow EVERY number on the page (funnel bars,
+  // tiles, chips, table) identically, so nothing can disagree.
+  const [qaMode, setQaMode] = useState(false); // include is_test rows everywhere
+  const [range, setRange] = useState<RangeKey>("all");
+  const [tab, setTab] = useState<string>("all"); // funnel tab ('all' | lead.source)
+  const [focus, setFocus] = useState<FocusKey | null>(null); // stage/attention table filter
   const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<LeadRow | null>(null);
   const [sort, setSort] = useState<SortState>({ sortBy: "created", sortAsc: false });
@@ -186,11 +246,32 @@ export function LeadsClient({ rows, summary }: Props) {
 
   const sourceLabel = (s: string | null) => s ?? t("leads.sourceOrganic");
 
+  // Funnels that actually have leads (drives the tab row; hidden when only one).
+  const funnelsPresent = useMemo(() => {
+    const present = new Set(rows.filter((r) => qaMode || !r.isTest).map((r) => r.source));
+    return KNOWN_FUNNELS.filter((f) => present.has(f));
+  }, [rows, qaMode]);
+
+  // If the selected tab's funnel vanishes (e.g. QA off hides its only leads),
+  // fall back to 'all' without needing an effect.
+  const effectiveTab =
+    tab === "all" || (funnelsPresent as readonly string[]).includes(tab) ? tab : "all";
+
+  // Render must not call the impure Date.now(); day/hour granularity makes a
+  // mount-time stamp fine (same pattern as member-detail-drawer).
+  const [mountedAt] = useState(() => Date.now());
+
+  const rangeCutoff = range === "all" ? null : mountedAt - RANGE_MS[range];
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const now = mountedAt;
     const results = rows.filter((r) => {
-      if (!showTests && r.isTest) return false;
+      if (!qaMode && r.isTest) return false;
       if (!showArchived && r.isArchived) return false;
+      if (effectiveTab !== "all" && r.source !== effectiveTab) return false;
+      if (rangeCutoff !== null && new Date(r.createdAt).getTime() < rangeCutoff) return false;
+      if (focus && !matchesFocus(r, focus, now)) return false;
       if (tier !== "all" && r.tier !== tier) return false;
       if (status !== "all" && effectiveStatus(r) !== status) return false;
       if (source !== "all" && (r.utmSource ?? "__organic__") !== source) return false;
@@ -198,7 +279,6 @@ export function LeadsClient({ rows, summary }: Props) {
         const cs = r.captureSource === "exit_intent" ? "exit_intent" : "quiz";
         if (cs !== capture) return false;
       }
-      if (funnel !== "all" && r.source !== funnel) return false;
       if (!q) return true;
       return (
         r.email.toLowerCase().includes(q) ||
@@ -236,15 +316,10 @@ export function LeadsClient({ rows, summary }: Props) {
       });
     }
     return results;
-  }, [rows, search, tier, status, source, capture, funnel, showTests, showArchived, sort]);
+  }, [rows, search, tier, status, source, capture, qaMode, showArchived, effectiveTab, rangeCutoff, focus, sort, mountedAt]);
 
   const hasExitIntent = useMemo(
     () => rows.some((r) => r.captureSource === "exit_intent"),
-    [rows],
-  );
-
-  const hasFlashcards = useMemo(
-    () => rows.some((r) => r.source === "flashcards-50" || r.source === "simulado-100"),
     [rows],
   );
 
@@ -272,6 +347,227 @@ export function LeadsClient({ rows, summary }: Props) {
       .sort((a, b) => a.step - b.step);
     return { steps, total };
   }, [rows]);
+
+  // ── The one shared stat scope ────────────────────────────────────────────
+  // Every headline number (funnel bars, tiles, chips) derives from statRows:
+  // real leads (archived always out, tests out unless QA mode) within the
+  // current funnel tab and date range. The table applies the SAME scope plus
+  // its own narrowing filters, so stats and table can never disagree.
+  const statRows = useMemo(
+    () =>
+      rows.filter(
+        (r) =>
+          (qaMode || !r.isTest) &&
+          !r.isArchived &&
+          (effectiveTab === "all" || r.source === effectiveTab) &&
+          (rangeCutoff === null || new Date(r.createdAt).getTime() >= rangeCutoff),
+      ),
+    [rows, qaMode, effectiveTab, rangeCutoff],
+  );
+
+  const funnelStats = useMemo(() => {
+    // 'landing'/'quiz_start' beacons only exist for the quiz funnel — on other
+    // tabs they're simply not tracked (null). Internal events (team browsers,
+    // test-lead sessions) follow the same rule as test leads: QA mode only.
+    const eventsVisible = effectiveTab === "all" || effectiveTab === "simulado-honesto";
+    let landed: number | null = null;
+    let started: number | null = null;
+    if (eventsVisible) {
+      landed = 0;
+      started = 0;
+      const cutoffDay =
+        rangeCutoff === null ? null : new Date(rangeCutoff).toISOString().slice(0, 10);
+      for (const e of funnelEvents) {
+        if (!qaMode && e.internal) continue;
+        if (cutoffDay !== null && e.day < cutoffDay) continue;
+        if (e.eventType === "landing") landed += e.count;
+        else started += e.count;
+      }
+    }
+    let email = 0;
+    let saved = 0;
+    let completed = 0;
+    let verified = 0;
+    let purchased = 0;
+    for (const r of statRows) {
+      if (r.captureSource === "exit_intent") saved++;
+      else email++;
+      if (r.completed) completed++;
+      if (r.verified) verified++;
+      if (r.convertedAt) purchased++;
+    }
+    return { landed, started, email, saved, completed, verified, purchased };
+  }, [statRows, funnelEvents, effectiveTab, rangeCutoff, qaMode]);
+
+  const funnelStages: FunnelStageDatum[] = useMemo(() => {
+    const f = funnelStats;
+    const defs: {
+      key: string;
+      count: number | null;
+      prev: number | null;
+      prevKey: string | null;
+      clickable: boolean;
+    }[] = [
+      { key: "landed", count: f.landed, prev: null, prevKey: null, clickable: false },
+      { key: "started", count: f.started, prev: f.landed, prevKey: "landed", clickable: false },
+      { key: "email", count: f.email, prev: f.started, prevKey: "started", clickable: true },
+      { key: "completed", count: f.completed, prev: f.email, prevKey: "email", clickable: true },
+      { key: "verified", count: f.verified, prev: f.completed, prevKey: "completed", clickable: true },
+      { key: "purchased", count: f.purchased, prev: f.verified, prevKey: "verified", clickable: true },
+    ];
+    return defs.map((d) => {
+      const showPct = d.count !== null && d.prev !== null && d.prev > 0 && d.prevKey !== null;
+      return {
+        key: d.key,
+        label: t(`funnel.stage_${d.key}`),
+        count: d.count,
+        sub: showPct
+          ? t("funnel.ofPrev", {
+              pct: `${Math.round(((d.count as number) / (d.prev as number)) * 100)}%`,
+              prev: t(`funnel.stage_${d.prevKey}`),
+            })
+          : null,
+        clickable: d.clickable,
+        active: focus === d.key,
+      };
+    });
+  }, [funnelStats, focus, t]);
+
+  // Overall visit→sale. "—" until there's a real sale (0% reads as broken).
+  const overallValue = useMemo(() => {
+    const { landed, purchased } = funnelStats;
+    if (!landed || !purchased) return "—";
+    const p = (purchased / landed) * 100;
+    return p >= 1 ? `${Math.round(p)}%` : `${p.toFixed(1)}%`;
+  }, [funnelStats]);
+
+  const funnelBySource: FunnelBySourceRow[] = useMemo(() => {
+    const eventsVisible = effectiveTab === "all" || effectiveTab === "simulado-honesto";
+    const cutoffDay =
+      rangeCutoff === null ? null : new Date(rangeCutoff).toISOString().slice(0, 10);
+    const map = new Map<string, FunnelBySourceRow>();
+    const rowFor = (src: string | null): FunnelBySourceRow => {
+      const k = src ?? "";
+      let r = map.get(k);
+      if (!r) {
+        r = {
+          source: src,
+          landed: eventsVisible ? 0 : null,
+          started: eventsVisible ? 0 : null,
+          email: 0,
+          completed: 0,
+          verified: 0,
+          purchased: 0,
+        };
+        map.set(k, r);
+      }
+      return r;
+    };
+    if (eventsVisible) {
+      for (const e of funnelEvents) {
+        if (!qaMode && e.internal) continue;
+        if (cutoffDay !== null && e.day < cutoffDay) continue;
+        const r = rowFor(e.source);
+        if (e.eventType === "landing") r.landed = (r.landed ?? 0) + e.count;
+        else r.started = (r.started ?? 0) + e.count;
+      }
+    }
+    for (const l of statRows) {
+      const r = rowFor(l.utmSource);
+      if (l.captureSource !== "exit_intent") r.email++;
+      if (l.completed) r.completed++;
+      if (l.verified) r.verified++;
+      if (l.convertedAt) r.purchased++;
+    }
+    return [...map.values()].sort(
+      (a, b) => Math.max(b.landed ?? 0, b.email) - Math.max(a.landed ?? 0, a.email),
+    );
+  }, [statRows, funnelEvents, effectiveTab, rangeCutoff, qaMode]);
+
+  const funnelIsEmpty =
+    (funnelStats.landed ?? 0) === 0 &&
+    (funnelStats.started ?? 0) === 0 &&
+    funnelStats.email === 0 &&
+    funnelStats.saved === 0;
+
+  const byCohortCounts = useMemo(() => {
+    const m = new Map<string | null, number>();
+    for (const r of statRows) m.set(r.targetCohort, (m.get(r.targetCohort) ?? 0) + 1);
+    return [...m.entries()]
+      .map(([cohort, count]) => ({ cohort, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [statRows]);
+
+  const bySourceCounts = useMemo(() => {
+    const m = new Map<string | null, number>();
+    for (const r of statRows) m.set(r.utmSource, (m.get(r.utmSource) ?? 0) + 1);
+    return [...m.entries()]
+      .map(([src, count]) => ({ source: src, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [statRows]);
+
+  // New real leads per local day, fixed last-14-days window (ignores the range
+  // switcher — it IS a time view; respects QA mode and the funnel tab).
+  const spark = useMemo(() => {
+    const days: { key: string; label: string; count: number }[] = [];
+    const now = new Date(mountedAt);
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+      days.push({
+        key: localDayKey(d),
+        label: d.toLocaleDateString(dateLocale, { day: "2-digit", month: "short" }),
+        count: 0,
+      });
+    }
+    const idx = new Map(days.map((d, i) => [d.key, i]));
+    for (const r of rows) {
+      if (!(qaMode || !r.isTest) || r.isArchived) continue;
+      if (effectiveTab !== "all" && r.source !== effectiveTab) continue;
+      const i = idx.get(localDayKey(new Date(r.createdAt)));
+      if (i !== undefined) days[i].count++;
+    }
+    return days;
+  }, [rows, qaMode, effectiveTab, dateLocale, mountedAt]);
+
+  // Actionable to-dos — always REAL leads only (a QA signup is never a to-do),
+  // and always all-time/all-funnels: clicking one resets range+tab so the
+  // table shows exactly the counted leads.
+  const attention = useMemo(() => {
+    const now = mountedAt;
+    let unverified48 = 0;
+    let bounced = 0;
+    let dripDone = 0;
+    for (const r of rows) {
+      if (r.isTest || r.isArchived) continue;
+      if (matchesFocus(r, "unverified48", now)) unverified48++;
+      if (matchesFocus(r, "bounced", now)) bounced++;
+      if (matchesFocus(r, "drip_done", now)) dripDone++;
+    }
+    return { unverified48, bounced, dripDone };
+  }, [rows, mountedAt]);
+
+  const focusLabel =
+    focus === null
+      ? null
+      : focus === "saved"
+        ? t("leads.focusSaved")
+        : focus === "unverified48"
+          ? t("leads.focusUnverified48")
+          : focus === "bounced"
+            ? t("leads.focusBounced")
+            : focus === "drip_done"
+              ? t("leads.focusDripDone")
+              : t(`funnel.stage_${focus}`);
+
+  const toggleFocus = (key: string) =>
+    setFocus((f) => (f === key ? null : (key as FocusKey)));
+
+  const focusAttention = (key: FocusKey) => {
+    setFocus((f) => (f === key ? null : key));
+    // The strip counts globally — widen the page scope so counts match the table.
+    setRange("all");
+    setTab("all");
+  };
 
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((r) => selectedIds.has(r.id));
@@ -585,12 +881,44 @@ export function LeadsClient({ rows, summary }: Props) {
     );
   }
 
-  const statTiles = [
-    { label: t("leads.statTotal"), value: String(summary.total), sub: null as string | null },
-    { label: t("leads.statVerified"), value: String(summary.verified), sub: pct(summary.verified, summary.total) },
-    { label: t("leads.statCompleted"), value: String(summary.completed), sub: pct(summary.completed, summary.total) },
-    { label: t("leads.statConverted"), value: String(summary.converted), sub: pct(summary.converted, summary.total) },
-  ];
+  const headlineTotal = funnelStats.email + funnelStats.saved;
+  const sparkTotal = spark.reduce((s, d) => s + d.count, 0);
+  const sparkMax = Math.max(1, ...spark.map((d) => d.count));
+  const anyNarrowing =
+    Boolean(search) ||
+    tier !== "all" ||
+    status !== "all" ||
+    source !== "all" ||
+    capture !== "all" ||
+    focus !== null;
+  // What the table shows with no narrowing filters — the corner count must
+  // match it exactly (the old raw-row count was the "29 leads" confusion).
+  const baseCount = rows.filter(
+    (r) =>
+      (qaMode || !r.isTest) &&
+      (showArchived || !r.isArchived) &&
+      (effectiveTab === "all" || r.source === effectiveTab) &&
+      (rangeCutoff === null || new Date(r.createdAt).getTime() >= rangeCutoff),
+  ).length;
+
+  const funnelTabLabel = (f: string) =>
+    f === "simulado-honesto"
+      ? t("leads.funnel_quiz")
+      : f === "flashcards-50"
+        ? t("leads.funnel_flashcards")
+        : t("leads.funnel_simulado");
+
+  const scopeBtn = (active: boolean) =>
+    `min-h-[44px] rounded-md px-3 py-1.5 text-sm transition-colors sm:min-h-0 ${
+      active ? "bg-brand font-medium text-brand-fg" : "text-muted-foreground hover:text-foreground"
+    }`;
+
+  const attnChip = (active: boolean) =>
+    `inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors sm:min-h-0 ${
+      active
+        ? "border-amber-500/40 bg-amber-500/20 text-amber-800 dark:text-amber-200"
+        : "border-amber-500/20 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-300"
+    }`;
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-24">
@@ -599,30 +927,178 @@ export function LeadsClient({ rows, summary }: Props) {
           <h1 className="text-2xl font-bold">{t("leads.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("leads.subtitle")}</p>
         </div>
-        <span className="text-sm text-muted-foreground">
-          {search || tier !== "all" || status !== "all" || source !== "all" || capture !== "all" || funnel !== "all"
-            ? `${filtered.length} / `
-            : ""}
-          {t(rows.length === 1 ? "leads.countOne" : "leads.countOther", { count: rows.length })}
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-muted-foreground">
+            {anyNarrowing ? `${filtered.length} / ` : ""}
+            {t(baseCount === 1 ? "leads.countOne" : "leads.countOther", { count: baseCount })}
+          </span>
+          <label
+            className="flex min-h-[44px] cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm hover:bg-surface-2/50 sm:min-h-0"
+            title={t("leads.qaModeHint")}
+          >
+            <input
+              type="checkbox"
+              checked={qaMode}
+              onChange={(e) => setQaMode(e.target.checked)}
+              className="h-4 w-4"
+            />
+            <span>{t("leads.qaMode")}</span>
+          </label>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {statTiles.map((s) => (
-          <div key={s.label} className="rounded-xl border border-border bg-surface-1 p-4">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">{s.label}</p>
-            <p className="mt-1 flex items-baseline gap-1.5">
-              <span className="text-2xl font-bold">{s.value}</span>
-              {s.sub && <span className="text-sm text-muted-foreground">{s.sub}</span>}
-            </p>
+      {qaMode && (
+        <p className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          {t("leads.qaModeBanner")}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {funnelsPresent.length > 1 ? (
+          <div className="inline-flex flex-wrap gap-0.5 rounded-lg border border-border bg-surface-1 p-0.5">
+            {["all", ...funnelsPresent].map((f) => (
+              <button key={f} type="button" onClick={() => setTab(f)} className={scopeBtn(effectiveTab === f)}>
+                {f === "all" ? t("leads.tabAll") : funnelTabLabel(f)}
+              </button>
+            ))}
           </div>
-        ))}
+        ) : (
+          <span />
+        )}
+        <div className="inline-flex gap-0.5 rounded-lg border border-border bg-surface-1 p-0.5">
+          {(["7d", "30d", "all"] as const).map((rk) => (
+            <button key={rk} type="button" onClick={() => setRange(rk)} className={scopeBtn(range === rk)}>
+              {t(`leads.range_${rk}`)}
+            </button>
+          ))}
+        </div>
       </div>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-xl border border-border bg-surface-1 p-4" title={t("leads.statTotalHint")}>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.statTotal")}</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums">{headlineTotal}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-1 p-4" title={t("leads.statVerifiedHint")}>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.statVerified")}</p>
+          <p className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold tabular-nums">{funnelStats.verified}</span>
+            <span className="text-sm text-muted-foreground">{pct(funnelStats.verified, headlineTotal)}</span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-1 p-4" title={t("leads.statConvertedHint")}>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.statConverted")}</p>
+          <p className="mt-1 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold tabular-nums">{funnelStats.purchased}</span>
+            <span className="text-sm text-muted-foreground">{pct(funnelStats.purchased, headlineTotal)}</span>
+          </p>
+        </div>
+        <div className="col-span-2 rounded-xl border border-border bg-surface-1 p-4 lg:col-span-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.headlineTrend")}</p>
+            <span className="text-sm font-semibold tabular-nums">{sparkTotal}</span>
+          </div>
+          <div
+            className="mt-2 flex h-10 items-end gap-[2px]"
+            role="img"
+            aria-label={spark.map((d) => `${d.label}: ${d.count}`).join(", ")}
+          >
+            {spark.map((d) => (
+              <div
+                key={d.key}
+                title={`${d.label}: ${d.count}`}
+                className={`flex-1 rounded-sm ${d.count > 0 ? "bg-brand" : "bg-surface-2"}`}
+                style={{ height: d.count > 0 ? `${Math.max(15, (d.count / sparkMax) * 100)}%` : "3px" }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <FunnelPanel
+        stages={funnelStages}
+        savedForLater={funnelStats.saved}
+        savedNote={t(funnelStats.saved === 1 ? "funnel.savedNoteOne" : "funnel.savedNoteOther", {
+          count: funnelStats.saved,
+        })}
+        savedActive={focus === "saved"}
+        overallValue={overallValue}
+        onStageClick={toggleFocus}
+        bySource={funnelBySource}
+        showNotTrackedNote={effectiveTab !== "all" && effectiveTab !== "simulado-honesto"}
+        isEmpty={funnelIsEmpty}
+      />
+
+      {(attention.unverified48 > 0 || attention.bounced > 0 || attention.dripDone > 0) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">
+            {t("leads.attentionTitle")}
+          </span>
+          {attention.unverified48 > 0 && (
+            <button
+              type="button"
+              onClick={() => focusAttention("unverified48")}
+              aria-pressed={focus === "unverified48"}
+              className={attnChip(focus === "unverified48")}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              {t(
+                attention.unverified48 === 1
+                  ? "leads.attentionUnverifiedOne"
+                  : "leads.attentionUnverifiedOther",
+                { count: attention.unverified48 },
+              )}
+            </button>
+          )}
+          {attention.bounced > 0 && (
+            <button
+              type="button"
+              onClick={() => focusAttention("bounced")}
+              aria-pressed={focus === "bounced"}
+              className={attnChip(focus === "bounced")}
+            >
+              <MailX className="h-3.5 w-3.5" />
+              {t(attention.bounced === 1 ? "leads.attentionBouncedOne" : "leads.attentionBouncedOther", {
+                count: attention.bounced,
+              })}
+            </button>
+          )}
+          {attention.dripDone > 0 && (
+            <button
+              type="button"
+              onClick={() => focusAttention("drip_done")}
+              aria-pressed={focus === "drip_done"}
+              className={attnChip(focus === "drip_done")}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              {t(
+                attention.dripDone === 1 ? "leads.attentionDripDoneOne" : "leads.attentionDripDoneOther",
+                { count: attention.dripDone },
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
+      {focus && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">{t("leads.focusShowing")}</span>
+          <span className="font-medium">{focusLabel}</span>
+          <button
+            type="button"
+            onClick={() => setFocus(null)}
+            className="ml-auto inline-flex min-h-[44px] items-center gap-1 font-medium text-brand hover:underline sm:min-h-0"
+          >
+            <X className="h-3.5 w-3.5" />
+            {t("leads.focusClear")}
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.bySource")}</span>
-          {summary.bySource.map((b) => (
+          {bySourceCounts.map((b) => (
             <span key={b.source ?? "organic"} className="text-muted-foreground">
               {sourceLabel(b.source)} <span className="font-medium text-foreground">{b.count}</span>
             </span>
@@ -630,7 +1106,7 @@ export function LeadsClient({ rows, summary }: Props) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.byCohort")}</span>
-          {summary.byCohort.map((b) => (
+          {byCohortCounts.map((b) => (
             <span key={b.cohort ?? "none"} className="text-muted-foreground">
               {cohortShort(b.cohort)} <span className="font-medium text-foreground">{b.count}</span>
             </span>
@@ -680,14 +1156,14 @@ export function LeadsClient({ rows, summary }: Props) {
             </option>
           ))}
         </select>
-        {summary.bySource.length > 1 && (
+        {bySourceCounts.length > 1 && (
           <select
             value={source}
             onChange={(e) => setSource(e.target.value)}
             className="min-h-[44px] rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50 sm:min-h-0"
           >
             <option value="all">{t("leads.filterSource")}</option>
-            {summary.bySource.map((b) => (
+            {bySourceCounts.map((b) => (
               <option key={b.source ?? "organic"} value={b.source ?? "__organic__"}>
                 {sourceLabel(b.source)}
               </option>
@@ -705,27 +1181,6 @@ export function LeadsClient({ rows, summary }: Props) {
             <option value="exit_intent">{t("leads.capture_exit_intent")}</option>
           </select>
         )}
-        {hasFlashcards && (
-          <select
-            value={funnel}
-            onChange={(e) => setFunnel(e.target.value)}
-            className="min-h-[44px] rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50 sm:min-h-0"
-          >
-            <option value="all">{t("leads.filterFunnel")}</option>
-            <option value="simulado-honesto">{t("leads.funnel_quiz")}</option>
-            <option value="flashcards-50">{t("leads.funnel_flashcards")}</option>
-            <option value="simulado-100">{t("leads.funnel_simulado")}</option>
-          </select>
-        )}
-        <label className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm cursor-pointer hover:bg-surface-2/50 min-h-[44px] sm:min-h-0">
-          <input
-            type="checkbox"
-            checked={showTests}
-            onChange={(e) => setShowTests(e.target.checked)}
-            className="w-4 h-4"
-          />
-          <span>{t("leads.filterShowTests")}</span>
-        </label>
         {hasArchived && (
           <label className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm cursor-pointer hover:bg-surface-2/50 min-h-[44px] sm:min-h-0">
             <input

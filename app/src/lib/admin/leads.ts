@@ -57,25 +57,17 @@ export type LeadRow = {
   isArchived: boolean;
 };
 
-export type LeadsSummary = {
-  total: number;
-  verified: number;
-  completed: number;
-  converted: number;
-  unsubscribed: number;
-  bySource: { source: string | null; count: number }[];
-  byCohort: { cohort: string | null; count: number }[];
-};
-
-export type LeadsOverview = { rows: LeadRow[]; summary: LeadsSummary };
-
 function tierOf(converted: boolean, verified: boolean, completed: boolean): LeadTier {
   if (converted) return "customer";
   if (!verified) return "suppressed";
   return completed ? "hot" : "nurture";
 }
 
-export async function getLeadsOverview(): Promise<LeadsOverview> {
+// Rows only — every headline stat (funnel stages, tiles, chips) is derived
+// CLIENT-side in leads-client.tsx from this one array, so the table and the
+// stats can never disagree. Tests/archived are excluded there by one shared
+// predicate (QA mode re-includes tests everywhere at once).
+export async function getLeadsRows(): Promise<LeadRow[]> {
   const admin = createAdminClient();
 
   const [{ data: leads }, { data: specialties }] = await Promise.all([
@@ -94,7 +86,7 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
     (specialties ?? []).map((s) => [s.id as number, s.name as string]),
   );
 
-  const rows: LeadRow[] = (leads ?? []).map((l) => {
+  return (leads ?? []).map((l) => {
     const verified = Boolean(l.verified_at);
     const completed = Boolean(l.completed_at);
     const weakIds = (l.weak_specialty_ids as number[] | null) ?? [];
@@ -130,43 +122,4 @@ export async function getLeadsOverview(): Promise<LeadsOverview> {
       isArchived: Boolean(l.is_archived),
     };
   });
-
-  // Summary stats represent real acquisition-funnel performance, so QA/test leads
-  // (is_test) are excluded here — they still appear in `rows` (the table) and stay
-  // togglable there via "Mostrar testes", but must never inflate these headline counts.
-  const bySourceMap = new Map<string | null, number>();
-  const byCohortMap = new Map<string | null, number>();
-  let verified = 0;
-  let completed = 0;
-  let converted = 0;
-  let unsubscribed = 0;
-  for (const r of rows) {
-    if (r.isTest) continue;
-    if (r.verified) verified++;
-    if (r.completed) completed++;
-    if (r.convertedAt) converted++;
-    if (r.dripStatus === "unsubscribed") unsubscribed++;
-    bySourceMap.set(r.utmSource, (bySourceMap.get(r.utmSource) ?? 0) + 1);
-    byCohortMap.set(r.targetCohort, (byCohortMap.get(r.targetCohort) ?? 0) + 1);
-  }
-
-  const bySource = [...bySourceMap.entries()]
-    .map(([source, count]) => ({ source, count }))
-    .sort((a, b) => b.count - a.count);
-  const byCohort = [...byCohortMap.entries()]
-    .map(([cohort, count]) => ({ cohort, count }))
-    .sort((a, b) => b.count - a.count);
-
-  return {
-    rows,
-    summary: {
-      total: rows.filter((r) => !r.isTest).length,
-      verified,
-      completed,
-      converted,
-      unsubscribed,
-      bySource,
-      byCohort,
-    },
-  };
 }

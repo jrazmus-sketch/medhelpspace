@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getLeadsOverview } from "@/lib/admin/leads";
-import { getFunnelOverview } from "@/lib/admin/funnel";
+import { getLeadsRows } from "@/lib/admin/leads";
+import { getFunnelEventDays } from "@/lib/admin/funnel";
 import { getOciReadyCounts } from "@/lib/admin/oci";
 import { LeadsClient } from "./leads-client";
-import { FunnelPanel } from "./funnel-panel";
 import { OciPanel } from "./oci-panel";
 
 export const metadata = { title: "Leads" };
@@ -34,16 +33,18 @@ export default async function LeadsPage() {
     redirect("/admin");
   }
 
-  const [{ rows, summary }, funnel, ociCounts] = await Promise.all([
-    getLeadsOverview(),
-    getFunnelOverview(),
+  const [rows, funnelEvents, ociCounts] = await Promise.all([
+    getLeadsRows(),
+    getFunnelEventDays(),
     getOciReadyCounts(),
   ]);
+  // The funnel panel renders INSIDE LeadsClient so clicking a stage can filter
+  // the table, and so both share one client-side filter definition. The OCI
+  // exporter is a weekly chore, not a stat — collapsed, at the bottom.
   return (
     <div className="space-y-8">
-      <FunnelPanel funnel={funnel} />
+      <LeadsClient rows={rows} funnelEvents={funnelEvents} />
       <OciPanel counts={ociCounts} />
-      <LeadsClient rows={rows} summary={summary} />
     </div>
   );
 }

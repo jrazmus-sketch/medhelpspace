@@ -19,6 +19,13 @@ const MOCK_MODE =
   process.env.NODE_ENV !== "production" &&
   (!SUPABASE_URL || process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true");
 
+// Marks a browser as belonging to the team: set (1 year) the first time an
+// admin-role user opens /admin in it. /api/funnel-event stamps beacons from
+// cookie-carrying browsers is_internal so the team's own visits to the public
+// funnel never inflate the Landed/Started stages on /admin/leads.
+const INTERNAL_COOKIE = "mhs_internal";
+const ADMIN_ROLES = ["super_admin", "content_admin", "support_admin", "billing_admin"];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -74,6 +81,26 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/app";
     return NextResponse.redirect(url);
+  }
+
+  // ── Internal-traffic marker ─────────────────────────────────────────────
+  // One profiles query per admin browser, and only while the cookie is absent
+  // — anonymous visitors and members never trigger it.
+  if (user && pathname.startsWith("/admin") && !request.cookies.has(INTERNAL_COOKIE)) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (ADMIN_ROLES.includes((profile?.role as string) ?? "member")) {
+      response.cookies.set(INTERNAL_COOKIE, "1", {
+        maxAge: 60 * 60 * 24 * 365,
+        path: "/",
+        sameSite: "lax",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
   }
 
   return response;

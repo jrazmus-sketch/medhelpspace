@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { exportOciConversions, markOciUploaded } from "@/actions/oci";
@@ -27,6 +28,7 @@ export function OciPanel({ counts }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
   const [downloaded, setDownloaded] = useState<{
     verifiedIds: string[];
     purchaseIds: string[];
@@ -76,47 +78,71 @@ export function OciPanel({ counts }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="rounded-2xl border border-border bg-surface-1 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold">{t("oci.title")}</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">{t("oci.subtitle")}</p>
-          </div>
-          {totalReady > 0 && !downloaded && (
-            <button
-              onClick={onDownload}
-              disabled={pending}
-              className="min-h-[44px] rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {pending ? t("oci.building") : t("oci.download")}
-            </button>
+      <div className="rounded-2xl border border-border bg-surface-1 p-4 sm:p-5">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="flex w-full items-center gap-2 text-left min-h-[44px]"
+        >
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+          <span className="font-semibold text-sm">{t("oci.title")}</span>
+          <span className="text-sm text-muted-foreground truncate">
+            {totalReady > 0
+              ? t("oci.collapsedSummary", { count: totalReady })
+              : t("oci.collapsedNone")}
+          </span>
+          {totalReady > 0 && (
+            <span className="ml-auto inline-flex items-center rounded-full bg-brand/15 px-2 py-0.5 text-xs font-semibold text-brand tabular-nums">
+              {totalReady}
+            </span>
           )}
-        </div>
+        </button>
 
-        {totalReady === 0 && !downloaded ? (
-          <p className="mt-3 text-sm text-muted-foreground">{t("oci.readyNone")}</p>
-        ) : !downloaded ? (
-          <p className="mt-3 text-sm">
-            {t("oci.ready", { verified: counts.verified, purchase: counts.purchase })}
-          </p>
-        ) : (
-          <div className="mt-4 space-y-3 rounded-xl border border-brand/20 bg-brand-muted p-4">
-            <p className="text-sm font-medium">
-              {t("oci.rowsIncluded", { count: downloaded.rowCount })}
-            </p>
-            <p className="text-sm text-muted-foreground">{t("oci.afterDownload")}</p>
-            <button
-              onClick={onMark}
-              disabled={pending}
-              className="min-h-[44px] rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {pending ? t("oci.marking") : t("oci.markUploaded")}
-            </button>
+        {open && (
+          <div className="mt-4 space-y-3">
+            <p className="text-sm text-muted-foreground">{t("oci.subtitle")}</p>
+
+            {totalReady > 0 && !downloaded && (
+              <button
+                onClick={onDownload}
+                disabled={pending}
+                className="min-h-[44px] rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {pending ? t("oci.building") : t("oci.download")}
+              </button>
+            )}
+
+            {totalReady === 0 && !downloaded ? (
+              <p className="text-sm text-muted-foreground">{t("oci.readyNone")}</p>
+            ) : !downloaded ? (
+              <p className="text-sm">
+                {t("oci.ready", { verified: counts.verified, purchase: counts.purchase })}
+              </p>
+            ) : (
+              <div className="space-y-3 rounded-xl border border-brand/20 bg-brand-muted p-4">
+                <p className="text-sm font-medium">
+                  {t("oci.rowsIncluded", { count: downloaded.rowCount })}
+                </p>
+                <p className="text-sm text-muted-foreground">{t("oci.afterDownload")}</p>
+                <button
+                  onClick={onMark}
+                  disabled={pending}
+                  className="min-h-[44px] rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {pending ? t("oci.marking") : t("oci.markUploaded")}
+                </button>
+              </div>
+            )}
+
+            {err && <p className="text-sm text-red-500">{err}</p>}
+            <p className="text-xs text-muted-foreground">{t("oci.help")}</p>
           </div>
         )}
-
-        {err && <p className="mt-3 text-sm text-red-500">{err}</p>}
-        <p className="mt-3 text-xs text-muted-foreground">{t("oci.help")}</p>
       </div>
     </div>
   );
