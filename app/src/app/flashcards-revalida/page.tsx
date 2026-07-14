@@ -57,7 +57,7 @@ export default async function FlashcardsRevalidaPage({
       className="relative flex min-h-screen flex-col overflow-hidden text-foreground"
       style={{ background: "radial-gradient(ellipse 140% 85% at 50% -8%, #160a34 0%, #0a0620 44%, #030109 100%)" }}
     >
-      <FunnelBeacon utm={utm} />
+      <FunnelBeacon utm={utm} funnel="flashcards-50" />
 
       {/* ── "ECG-world" backdrop (matches the front page) ──────────────────────
           A perspective-tilted glowing purple grid receding behind the hero,

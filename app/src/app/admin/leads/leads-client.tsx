@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
@@ -235,12 +235,30 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
   // consequences, so both confirm before firing).
   const [confirmAction, setConfirmAction] = useState<"unsubscribe" | "reactivate" | null>(null);
 
+  // Render must not call the impure Date.now(); day/hour granularity makes a
+  // mount-time stamp fine (same pattern as member-detail-drawer). Declared with
+  // the other hooks, above every helper/memo that reads it.
+  const [mountedAt] = useState(() => Date.now());
+
   function fmtDate(iso: string | null) {
     if (!iso) return "—";
     return new Date(iso).toLocaleDateString(dateLocale, {
       day: "2-digit",
       month: "short",
       year: "numeric",
+    });
+  }
+
+  // Compact date for the desktop table's two slim date columns: drop the year
+  // when it's the current year (the common case), so "13 de jul. de 2026" → "13 jul".
+  function fmtDateShort(iso: string | null) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const currentYear = new Date(mountedAt).getFullYear();
+    return d.toLocaleDateString(dateLocale, {
+      day: "2-digit",
+      month: "short",
+      ...(d.getFullYear() === currentYear ? {} : { year: "numeric" }),
     });
   }
 
@@ -256,10 +274,6 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
   // fall back to 'all' without needing an effect.
   const effectiveTab =
     tab === "all" || (funnelsPresent as readonly string[]).includes(tab) ? tab : "all";
-
-  // Render must not call the impure Date.now(); day/hour granularity makes a
-  // mount-time stamp fine (same pattern as member-detail-drawer).
-  const [mountedAt] = useState(() => Date.now());
 
   const rangeCutoff = range === "all" ? null : mountedAt - RANGE_MS[range];
 
@@ -366,23 +380,20 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
   );
 
   const funnelStats = useMemo(() => {
-    // 'landing'/'quiz_start' beacons only exist for the quiz funnel — on other
-    // tabs they're simply not tracked (null). Internal events (team browsers,
-    // test-lead sessions) follow the same rule as test leads: QA mode only.
-    const eventsVisible = effectiveTab === "all" || effectiveTab === "simulado-honesto";
-    let landed: number | null = null;
-    let started: number | null = null;
-    if (eventsVisible) {
-      landed = 0;
-      started = 0;
-      const cutoffDay =
-        rangeCutoff === null ? null : new Date(rangeCutoff).toISOString().slice(0, 10);
-      for (const e of funnelEvents) {
-        if (!qaMode && e.internal) continue;
-        if (cutoffDay !== null && e.day < cutoffDay) continue;
-        if (e.eventType === "landing") landed += e.count;
-        else started += e.count;
-      }
+    // Every funnel now has landing/started beacons (schema-patch-funnel-events-
+    // per-funnel). On a specific tab, count only that funnel's events; on 'all',
+    // sum across funnels. Internal events (team browsers, test-lead sessions)
+    // follow the same rule as test leads: QA mode only.
+    let landed = 0;
+    let started = 0;
+    const cutoffDay =
+      rangeCutoff === null ? null : new Date(rangeCutoff).toISOString().slice(0, 10);
+    for (const e of funnelEvents) {
+      if (!qaMode && e.internal) continue;
+      if (effectiveTab !== "all" && e.funnel !== effectiveTab) continue;
+      if (cutoffDay !== null && e.day < cutoffDay) continue;
+      if (e.eventType === "landing") landed += e.count;
+      else started += e.count;
     }
     let email = 0;
     let saved = 0;
@@ -398,6 +409,20 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
     }
     return { landed, started, email, saved, completed, verified, purchased };
   }, [statRows, funnelEvents, effectiveTab, rangeCutoff, qaMode]);
+
+  // "Started" means something different per funnel (entered the quiz vs. began
+  // the signup form), so its label is tab-aware. Every other stage is universal.
+  const stageLabel = useCallback(
+    (key: string): string => {
+      if (key === "started") {
+        if (effectiveTab === "simulado-honesto") return t("funnel.stage_started");
+        if (effectiveTab === "all") return t("funnel.stage_started_any");
+        return t("funnel.stage_started_form");
+      }
+      return t(`funnel.stage_${key}`);
+    },
+    [effectiveTab, t],
+  );
 
   const funnelStages: FunnelStageDatum[] = useMemo(() => {
     const f = funnelStats;
@@ -419,19 +444,19 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
       const showPct = d.count !== null && d.prev !== null && d.prev > 0 && d.prevKey !== null;
       return {
         key: d.key,
-        label: t(`funnel.stage_${d.key}`),
+        label: stageLabel(d.key),
         count: d.count,
         sub: showPct
           ? t("funnel.ofPrev", {
               pct: `${Math.round(((d.count as number) / (d.prev as number)) * 100)}%`,
-              prev: t(`funnel.stage_${d.prevKey}`),
+              prev: stageLabel(d.prevKey as string),
             })
           : null,
         clickable: d.clickable,
         active: focus === d.key,
       };
     });
-  }, [funnelStats, focus, t]);
+  }, [funnelStats, focus, t, stageLabel]);
 
   // Overall visit→sale. "—" until there's a real sale (0% reads as broken).
   const overallValue = useMemo(() => {
@@ -442,7 +467,6 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
   }, [funnelStats]);
 
   const funnelBySource: FunnelBySourceRow[] = useMemo(() => {
-    const eventsVisible = effectiveTab === "all" || effectiveTab === "simulado-honesto";
     const cutoffDay =
       rangeCutoff === null ? null : new Date(rangeCutoff).toISOString().slice(0, 10);
     const map = new Map<string, FunnelBySourceRow>();
@@ -452,8 +476,8 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
       if (!r) {
         r = {
           source: src,
-          landed: eventsVisible ? 0 : null,
-          started: eventsVisible ? 0 : null,
+          landed: 0,
+          started: 0,
           email: 0,
           completed: 0,
           verified: 0,
@@ -463,14 +487,13 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
       }
       return r;
     };
-    if (eventsVisible) {
-      for (const e of funnelEvents) {
-        if (!qaMode && e.internal) continue;
-        if (cutoffDay !== null && e.day < cutoffDay) continue;
-        const r = rowFor(e.source);
-        if (e.eventType === "landing") r.landed = (r.landed ?? 0) + e.count;
-        else r.started = (r.started ?? 0) + e.count;
-      }
+    for (const e of funnelEvents) {
+      if (!qaMode && e.internal) continue;
+      if (effectiveTab !== "all" && e.funnel !== effectiveTab) continue;
+      if (cutoffDay !== null && e.day < cutoffDay) continue;
+      const r = rowFor(e.source);
+      if (e.eventType === "landing") r.landed = (r.landed ?? 0) + e.count;
+      else r.started = (r.started ?? 0) + e.count;
     }
     for (const l of statRows) {
       const r = rowFor(l.utmSource);
@@ -848,17 +871,6 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
     );
   }
 
-  function EmailEngagement({ row }: { row: LeadRow }) {
-    if (!row.lastEmailedAt) return <span className="text-muted-foreground text-xs">—</span>;
-    const opens = estimatedOpens(row.tier);
-    if (opens === null) return <span className="text-muted-foreground text-xs">—</span>;
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-300">
-        {t("leads.engagementOpens", { count: opens })}
-      </span>
-    );
-  }
-
   // Plain render helper (NOT a component) — an inline component here would be
   // recreated every render and trips react-hooks/static-components.
   function renderSortableHeader(label: string, field: SortState["sortBy"]) {
@@ -1025,7 +1037,7 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
         overallValue={overallValue}
         onStageClick={toggleFocus}
         bySource={funnelBySource}
-        showNotTrackedNote={effectiveTab !== "all" && effectiveTab !== "simulado-honesto"}
+        showNotTrackedNote={false}
         isEmpty={funnelIsEmpty}
       />
 
@@ -1230,15 +1242,10 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
                 />
               </th>
               <th className="px-3 py-3">{renderSortableHeader(t("leads.colLead"), "email")}</th>
-              <th className="px-3 py-3">{renderSortableHeader(t("leads.colTier"), "tier")}</th>
+              <th className="px-3 py-3">{renderSortableHeader(t("leads.colTierStatus"), "tier")}</th>
               <th className="px-3 py-3">{t("leads.colProgress")}</th>
-              <th className="hidden lg:table-cell px-3 py-3">
-                {renderSortableHeader(t("leads.colDrip"), "dripStep")}
-              </th>
-              <th className="hidden xl:table-cell px-3 py-3">{t("leads.colEmailEngagement")}</th>
-              <th className="hidden xl:table-cell px-3 py-3">{t("leads.colCohort")}</th>
-              <th className="hidden 2xl:table-cell px-3 py-3">{t("leads.colSource")}</th>
-              <th className="px-3 py-3">{t("leads.colStatus")}</th>
+              <th className="px-3 py-3">{renderSortableHeader(t("leads.colDrip"), "dripStep")}</th>
+              <th className="px-3 py-3">{t("leads.colSource")}</th>
               <th className="px-3 py-3">
                 {renderSortableHeader(t("leads.colSignedUp"), "created")}
               </th>
@@ -1250,57 +1257,79 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   {t("leads.noResults")}
                 </td>
               </tr>
             ) : (
-              filtered.map((row) => (
-                <tr key={row.id} className="cursor-pointer border-b border-border/50 hover:bg-surface-2/50">
-                  <td className="px-2 py-3 w-10">
+              filtered.map((row) => {
+                const hasCohortSub = Boolean(row.targetCohort || row.previousTargetCohort);
+                const opens = row.lastEmailedAt ? estimatedOpens(row.tier) : null;
+                return (
+                <tr
+                  key={row.id}
+                  className="cursor-pointer border-b border-border/50 hover:bg-surface-2/50"
+                  onClick={() => setSelected(row)}
+                >
+                  <td className="w-10 px-2 py-3 align-top">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(row.id)}
                       onChange={() => handleRowToggle(row.id)}
-                      className="w-4 h-4"
+                      className="mt-0.5 h-4 w-4"
                       onClick={(e) => e.stopPropagation()}
                     />
                   </td>
-                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  <td className="px-3 py-3 align-top">
                     <LeadIdentity row={row} />
                   </td>
-                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
-                    <TierPill row={row} />
+                  {/* Tier + Status stacked — both are lifecycle chips. */}
+                  <td className="px-3 py-3 align-top">
+                    <div className="flex flex-col items-start gap-1">
+                      <TierPill row={row} />
+                      <StatusPill row={row} />
+                    </div>
                   </td>
-                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  {/* Progress + Turma — cohort is chosen at quiz end, so it reads
+                      as the sub-line of the quiz result. */}
+                  <td className="px-3 py-3 align-top">
                     <Progress row={row} />
+                    {hasCohortSub && (
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        <CohortCell row={row} />
+                      </div>
+                    )}
                   </td>
-                  <td className="hidden lg:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
+                  {/* Drip step + engagement — both email-sequence facts. */}
+                  <td className="px-3 py-3 align-top">
                     <DripStep row={row} />
+                    {opens !== null && (
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {t("leads.engagementOpens", { count: opens })}
+                      </div>
+                    )}
                   </td>
-                  <td className="hidden xl:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
-                    <EmailEngagement row={row} />
-                  </td>
-                  <td className="hidden xl:table-cell px-3 py-3 whitespace-nowrap cursor-pointer" onClick={() => setSelected(row)}>
-                    <CohortCell row={row} />
-                  </td>
-                  <td className="hidden 2xl:table-cell px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
-                    <span className="whitespace-nowrap text-sm">
+                  {/* Source · campaign — truncated so a long campaign can't blow
+                      out the layout; full text on hover. */}
+                  <td className="max-w-[13rem] px-3 py-3 align-top">
+                    <div className="truncate text-sm" title={`${sourceLabel(row.utmSource)}${row.utmCampaign ? ` · ${row.utmCampaign}` : ""}`}>
                       {sourceLabel(row.utmSource)}
-                      {row.utmCampaign && <span className="text-muted-foreground"> · {row.utmCampaign}</span>}
-                    </span>
+                    </div>
+                    {row.utmCampaign && (
+                      <div className="truncate text-xs text-muted-foreground" title={row.utmCampaign}>
+                        {row.utmCampaign}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-3 py-3 cursor-pointer" onClick={() => setSelected(row)}>
-                    <StatusPill row={row} />
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-sm text-muted-foreground">
+                    {fmtDateShort(row.createdAt)}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
-                    {fmtDate(row.createdAt)}
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap text-muted-foreground text-sm cursor-pointer" onClick={() => setSelected(row)}>
-                    {fmtDate(row.lastEmailedAt ?? row.createdAt)}
+                  <td className="whitespace-nowrap px-3 py-3 align-top text-sm text-muted-foreground">
+                    {fmtDateShort(row.lastEmailedAt ?? row.createdAt)}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

@@ -48,7 +48,7 @@ export default async function SimuladoRevalidaPage({
       className="relative flex min-h-screen flex-col overflow-hidden text-foreground"
       style={{ background: "radial-gradient(ellipse 140% 85% at 50% -8%, #160a34 0%, #0a0620 44%, #030109 100%)" }}
     >
-      <FunnelBeacon utm={utm} />
+      <FunnelBeacon utm={utm} funnel="simulado-100" />
 
       {/* ── "ECG-world" backdrop (matches the front page + flashcards funnel) ── */}
       <div

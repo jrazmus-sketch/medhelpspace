@@ -2,7 +2,7 @@
 
 import { useId, useState, useTransition } from "react";
 import { captureSimuladoLead, chooseSimuladoCohortAndSend } from "@/actions/magnet";
-import { getFunnelSessionId } from "@/lib/magnet/funnel-track";
+import { getFunnelSessionId, trackFunnel } from "@/lib/magnet/funnel-track";
 import {
   REVALIDA_2027_1_SLUG,
   REVALIDA_20272_SLUG,
@@ -243,6 +243,7 @@ export function SimuladoGate({ utm }: { utm: MagnetUtm }) {
           placeholder="seu@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onFocus={() => trackFunnel("quiz_start", utm, "simulado-100")}
           onKeyDown={(e) => e.key === "Enter" && submitEmail()}
           className="min-h-[52px] w-full rounded-xl border border-border bg-background px-4 text-base outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/30"
         />

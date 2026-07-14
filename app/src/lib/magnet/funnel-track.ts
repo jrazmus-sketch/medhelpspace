@@ -4,6 +4,11 @@
 // effort: analytics must never break the funnel, so every failure is swallowed.
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 
+// Which lead funnel a beacon belongs to — matches leads.source so the admin
+// dashboard can join events↔leads per funnel. Defaults to the quiz funnel (the
+// original, and the only one with beacons before the per-funnel patch).
+export type FunnelName = "simulado-honesto" | "flashcards-50" | "simulado-100";
+
 const SID_KEY = "mhs_fsid";
 
 function sessionId(): string {
@@ -30,23 +35,35 @@ export function getFunnelSessionId(): string | null {
   }
 }
 
-function send(event: "landing" | "quiz_start", sid: string, utm: MagnetUtm): void {
+function send(
+  event: "landing" | "quiz_start",
+  sid: string,
+  utm: MagnetUtm,
+  funnel: FunnelName,
+): void {
   void fetch("/api/funnel-event", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event, sessionId: sid, utm }),
+    body: JSON.stringify({ event, sessionId: sid, utm, funnel }),
     keepalive: true, // survive the tab navigating away right after the click
   }).catch(() => {});
 }
 
-export function trackFunnel(event: "landing" | "quiz_start", utm: MagnetUtm): void {
+// `funnel` defaults to the quiz funnel so the existing quiz call sites need no
+// change. The per-session guard is keyed by funnel too: a session that visits
+// two funnels must fire one landing per funnel (mirrors the DB's 3-col dedup).
+export function trackFunnel(
+  event: "landing" | "quiz_start",
+  utm: MagnetUtm,
+  funnel: FunnelName = "simulado-honesto",
+): void {
   try {
-    const guard = `mhs_fe_${event}`;
+    const guard = `mhs_fe_${funnel}_${event}`;
     if (sessionStorage.getItem(guard)) return; // already fired this session
     sessionStorage.setItem(guard, "1");
-    send(event, sessionId(), utm);
+    send(event, sessionId(), utm, funnel);
   } catch {
-    send(event, "nostore", utm); // storage blocked → best-effort single send
+    send(event, "nostore", utm, funnel); // storage blocked → best-effort single send
   }
 }
 

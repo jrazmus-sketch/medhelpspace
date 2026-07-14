@@ -15,6 +15,11 @@ const attr = (max: number) => z.string().trim().max(max).nullish();
 const bodySchema = z.object({
   event: z.enum(["landing", "quiz_start"]),
   sessionId: z.string().trim().min(8).max(64),
+  // Which lead funnel this beacon belongs to (matches leads.source). Older
+  // clients omit it → default to the quiz funnel, where beacons originated.
+  funnel: z
+    .enum(["simulado-honesto", "flashcards-50", "simulado-100"])
+    .default("simulado-honesto"),
   utm: z
     .object({
       source: attr(120),
@@ -37,7 +42,7 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
 
-  const { event, sessionId, utm } = parsed.data;
+  const { event, sessionId, funnel, utm } = parsed.data;
   const admin = createAdminClient();
 
   // Team browsers carry the httpOnly mhs_internal cookie (set by the proxy the
@@ -56,6 +61,7 @@ export async function POST(request: Request) {
       {
         event_type: event,
         session_id: sessionId,
+        funnel,
         is_internal: isInternal,
         utm_source: utm?.source ?? null,
         utm_medium: utm?.medium ?? null,
@@ -64,7 +70,7 @@ export async function POST(request: Request) {
         utm_content: utm?.content ?? null,
         gclid: utm?.gclid ?? null,
       },
-      { onConflict: "session_id,event_type", ignoreDuplicates: true },
+      { onConflict: "session_id,event_type,funnel", ignoreDuplicates: true },
     );
 
   return NextResponse.json({ ok: true });
