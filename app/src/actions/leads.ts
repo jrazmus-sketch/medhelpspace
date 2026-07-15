@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchLeadDetail, type LeadDetail } from "@/lib/admin/lead-detail";
+import type { BroadcastSpec, BroadcastRecipient } from "@/lib/email-render";
 import {
   offerCheckoutUrl,
   resultUrl,
@@ -477,4 +478,164 @@ export async function bulkResendDripEmail(
   }
 
   return { success: failed.length === 0, sent, failed };
+}
+
+// ── Custom broadcast (compose + send a one-off email to leads) ────────────────────
+
+// Wall-clock/rate-limit backstop: a single broadcast fans out to at most this many
+// recipients. At concurrency 2 (~250ms/send) 300 finishes in ~40s — inside the
+// leads page's maxDuration=60. Over the cap we REFUSE (never silently truncate) and
+// tell the admin to narrow the audience with the page filters.
+const BROADCAST_MAX = 300;
+
+// Which audience bucket a lead falls in. Unsubscribed/bounced ALWAYS win (a hard
+// compliance skip — someone who opted out or whose address bounces is never emailed,
+// no matter what the admin picked). Otherwise a buyer (converted_at, the same signal
+// the "customer" tier pill uses) is `converted`; the rest split on whether they ever
+// confirmed their inbox. `active` (verified, not converted) is the core list.
+type AudienceBucket = "active" | "unverified" | "converted" | "unsubscribed" | "bounced";
+function audienceBucket(
+  dripStatus: string,
+  verifiedAt: string | null,
+  convertedAt: string | null,
+): AudienceBucket {
+  if (dripStatus === "unsubscribed") return "unsubscribed";
+  if (dripStatus === "bounced") return "bounced";
+  if (convertedAt || dripStatus === "converted") return "converted";
+  return verifiedAt ? "active" : "unverified";
+}
+
+// Discriminated result (NOT exported — "use server" files may only export async
+// functions; the client reads the inferred return type). `ok:false` carries the
+// expected failure so nothing relies on a thrown message reaching the UI (Vercel
+// redacts Server Action errors in prod).
+type BroadcastResult =
+  | { ok: true; sent: number; skipped: number; failed: { email: string; reason: string }[] }
+  | { ok: false; error: "empty" | "no_recipients" | "too_many"; cap?: number; requested?: number };
+
+function normalizeSpec(spec: BroadcastSpec): BroadcastSpec {
+  const clean = (s: string | undefined) => (s ?? "").trim() || undefined;
+  return {
+    subject: (spec?.subject ?? "").trim(),
+    bodyText: (spec?.bodyText ?? "").trim(),
+    headline: clean(spec?.headline),
+    ctaLabel: clean(spec?.ctaLabel),
+    ctaHref: clean(spec?.ctaHref),
+    withGreeting: spec?.withGreeting !== false,
+  };
+}
+
+/**
+ * Send an admin-composed custom email to the given leads (the selected rows, or the
+ * whole filtered view — the client resolves the scope to an id list). The admin picks
+ * the audience per send via `audience`: converted customers and unverified leads are
+ * opt-out (default IN, uncheck to exclude); unsubscribed/bounced are ALWAYS skipped
+ * (compliance, not a choice). Everything not sent is counted in `skipped`. Renders
+ * through the branded shell + list-mail footer and stamps last_emailed_at on the
+ * successes so "Última atividade" stays honest. Does NOT touch drip_step — a
+ * broadcast is not a step in the automated sequence.
+ */
+export async function broadcastToLeads(
+  leadIds: string[],
+  spec: BroadcastSpec,
+  audience?: { includeConverted?: boolean; includeUnverified?: boolean },
+): Promise<BroadcastResult> {
+  await requireLeadsRole();
+
+  if (!leadIds || leadIds.length === 0) return { ok: false, error: "no_recipients" };
+  const clean = normalizeSpec(spec);
+  if (!clean.subject || !clean.bodyText) return { ok: false, error: "empty" };
+
+  // Default IN for both optional groups (omitted → include): a caller that doesn't
+  // specify gets everyone eligible, matching "what you selected is what you send".
+  const includeConverted = audience?.includeConverted !== false;
+  const includeUnverified = audience?.includeUnverified !== false;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("leads")
+    .select("id, email, first_name, drip_status, verified_at, converted_at, unsubscribe_token")
+    .in("id", leadIds);
+  if (error) {
+    console.error("broadcastToLeads fetch error:", error);
+    throw new Error("Failed to fetch leads");
+  }
+
+  const recipients: BroadcastRecipient[] = [];
+  let skipped = 0;
+  for (const row of data ?? []) {
+    const bucket = audienceBucket(
+      (row.drip_status as string) ?? "active",
+      (row.verified_at as string | null) ?? null,
+      (row.converted_at as string | null) ?? null,
+    );
+    const included =
+      bucket === "active" ||
+      (bucket === "converted" && includeConverted) ||
+      (bucket === "unverified" && includeUnverified);
+    // unsubscribed/bounced fall through here → always skipped.
+    if (!included) {
+      skipped++;
+      continue;
+    }
+    recipients.push({
+      id: row.id as string,
+      email: row.email as string,
+      firstName: (row.first_name as string | null) ?? null,
+      unsubscribeToken: (row.unsubscribe_token as string | null) ?? null,
+    });
+  }
+
+  if (recipients.length === 0) return { ok: false, error: "no_recipients" };
+  if (recipients.length > BROADCAST_MAX) {
+    return { ok: false, error: "too_many", cap: BROADCAST_MAX, requested: recipients.length };
+  }
+
+  const { sendCustomBroadcast } = await import("@/lib/email");
+  const results = await sendCustomBroadcast(recipients, clean);
+
+  const okIds = results.filter((r) => r.ok).map((r) => r.id);
+  const failed = results
+    .filter((r) => !r.ok)
+    .map((r) => ({ email: r.email, reason: r.reason ?? "unknown" }));
+
+  if (okIds.length > 0) {
+    const { error: upErr } = await admin
+      .from("leads")
+      .update({ last_emailed_at: new Date().toISOString() })
+      .in("id", okIds);
+    if (upErr) console.error("broadcastToLeads last_emailed_at update failed:", upErr);
+  }
+
+  return { ok: true, sent: okIds.length, skipped, failed };
+}
+
+/**
+ * Send the composed email to the acting admin's own inbox — the "send a test to
+ * myself" safety check before a real blast. Never logged (kept out of the engagement
+ * feed) and never carries a real unsubscribe token.
+ */
+export async function sendBroadcastTestToSelf(
+  spec: BroadcastSpec,
+): Promise<{ ok: boolean; email: string | null; reason?: string }> {
+  await requireLeadsRole();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const email = user?.email ?? null;
+  if (!email) return { ok: false, email: null, reason: "no_email" };
+
+  const clean = normalizeSpec(spec);
+  if (!clean.subject || !clean.bodyText) return { ok: false, email, reason: "empty" };
+
+  const { sendCustomBroadcast } = await import("@/lib/email");
+  const results = await sendCustomBroadcast(
+    [{ id: "test", email, firstName: null, unsubscribeToken: null }],
+    clean,
+    { log: false },
+  );
+  const r = results[0];
+  return { ok: Boolean(r?.ok), email, reason: r?.ok ? undefined : r?.reason ?? "send_failed" };
 }

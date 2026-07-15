@@ -96,6 +96,117 @@ export function withSenderName(fromAddress: string, name: string): string {
   return `${name} <${addr}>`;
 }
 
+// ── Custom broadcast (admin-composed one-off email) ─────────────────────────────
+//
+// The /admin/leads "Enviar e-mail" tool lets an admin write a subject + message and
+// send it to selected/filtered leads on demand. Content is admin-typed, so it is
+// HTML-ESCAPED before it reaches the email (no injection even from a trusted admin),
+// then rendered through the SAME branded shell (renderEmail) + list-mail footer as
+// the funnel drip. This block is pure so the compose modal can render an exact live
+// preview client-side using the identical builder the server sends with.
+
+// `kind` for the sent-event log — one bucket for every custom broadcast so the
+// /admin/email-clicks feed + lead drawer can name a later open/click to its email.
+export const BROADCAST_KIND = "lead-broadcast";
+
+export type BroadcastSpec = {
+  subject: string;
+  headline?: string;
+  bodyText: string; // plain text the admin typed (escaped + auto-linked at build time)
+  ctaLabel?: string;
+  ctaHref?: string;
+  withGreeting?: boolean; // prepend "Oi, {firstName}! " to the first paragraph (default true)
+};
+
+export type BroadcastRecipient = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  unsubscribeToken: string | null;
+};
+
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Auto-link bare http(s) URLs in ALREADY-ESCAPED text. A '&' inside a query string
+// is already "&amp;" post-escape, which is the correct form inside an href, so the
+// link works and the visible text renders the literal '&'.
+function autolink(escaped: string): string {
+  return escaped.replace(
+    /(https?:\/\/[^\s<]+)/g,
+    (url) => `<a href="${url}" style="color:#7a1d91;text-decoration:underline;">${url}</a>`,
+  );
+}
+
+// Admin-typed plain text → safe email paragraphs. Blank line = new paragraph; a lone
+// newline = <br>. Escaped first (no HTML injection), then bare URLs linked. Returns
+// each paragraph's INNER html (no <p> wrapper) so a greeting can lead the first one.
+export function textToEmailParagraphs(text: string): string[] {
+  return text
+    .replace(/\r\n/g, "\n")
+    .split(/\n{2,}/)
+    .map((b) => b.trim())
+    .filter(Boolean)
+    .map((b) => autolink(escapeHtml(b)).replace(/\n/g, "<br />"));
+}
+
+// A bare "google.com/x" the admin pasted as a button target is a relative URL to an
+// email client — force an absolute https:// so the CTA leaves the message. Real
+// absolute URLs and app-relative "/paths" pass through untouched (resolveHref adds appUrl).
+function normalizeCtaHref(href: string): string {
+  const h = href.trim();
+  if (!h) return "";
+  if (/^https?:\/\//i.test(h) || h.startsWith("/")) return h;
+  return `https://${h}`;
+}
+
+// Assemble an ephemeral EmailTemplateRow from the admin's compose fields. Not stored
+// anywhere — built per-send (and per-preview) so the branded renderEmail() can format
+// it identically to a real template. {{greeting}} + {{unsubscribeUrl}} are filled
+// per-recipient by the caller.
+export function buildBroadcastTemplate(input: BroadcastSpec): EmailTemplateRow {
+  const paras = textToEmailParagraphs(input.bodyText ?? "");
+  const pStyle = 'style="margin:0 0 16px;"';
+  const bodyHtml =
+    paras.length === 0
+      ? `<p ${pStyle}>{{greeting}}</p>`
+      : paras
+          .map((inner, i) => `<p ${pStyle}>${i === 0 ? "{{greeting}}" : ""}${inner}</p>`)
+          .join("\n");
+  return {
+    kind: BROADCAST_KIND,
+    name: "Broadcast",
+    description: "",
+    subject: (input.subject ?? "").trim(),
+    kicker: "",
+    // headline + CTA label are admin-typed and land in the HTML raw via renderEmail,
+    // so escape them here (subject is an email header, not HTML — left as-is).
+    headline: input.headline ? escapeHtml(input.headline.trim()) : "",
+    body_html: bodyHtml,
+    cta_label: input.ctaLabel ? escapeHtml(input.ctaLabel.trim()) : "",
+    cta_href: normalizeCtaHref(input.ctaHref ?? ""),
+    variables: [
+      { tag: "greeting", description: "Saudação personalizada" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento" },
+    ],
+    active: true,
+    sort_order: 999,
+  };
+}
+
+// "Oi, Maria! " / "Oi! " — the warm, first-name greeting the funnel uses, reused so a
+// broadcast opens the same way. Pure, so the preview and the send agree.
+export function broadcastGreeting(firstName: string | null): string {
+  const n = (firstName ?? "").trim();
+  return n ? `Oi, ${n}! ` : "Oi! ";
+}
+
 // ── Rendering ──────────────────────────────────────────────────────────────────
 
 function resolveHref(href: string, appUrl: string): string {

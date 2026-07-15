@@ -4,10 +4,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getLeadsRows } from "@/lib/admin/leads";
 import { getFunnelEventDays } from "@/lib/admin/funnel";
 import { getOciReadyCounts } from "@/lib/admin/oci";
+import { getEmailSettings } from "@/lib/email";
 import { LeadsClient } from "./leads-client";
 import { OciPanel } from "./oci-panel";
 
 export const metadata = { title: "Leads" };
+
+// A custom-email broadcast fans out sends inside the Server Action invoked from this
+// route, so give it the same 60s budget the drip cron uses (default is far shorter).
+export const maxDuration = 60;
 
 // Leads carry PII (email, first name) and are commercial data, so gate to the
 // same roles as the sibling Comercial pages (billing/notas/coupons). The nav
@@ -33,17 +38,19 @@ export default async function LeadsPage() {
     redirect("/admin");
   }
 
-  const [rows, funnelEvents, ociCounts] = await Promise.all([
+  const [rows, funnelEvents, ociCounts, emailSettings] = await Promise.all([
     getLeadsRows(),
     getFunnelEventDays(),
     getOciReadyCounts(),
+    getEmailSettings(),
   ]);
   // The funnel panel renders INSIDE LeadsClient so clicking a stage can filter
   // the table, and so both share one client-side filter definition. The OCI
-  // exporter is a weekly chore, not a stat — collapsed, at the bottom.
+  // exporter is a weekly chore, not a stat — collapsed, at the bottom. emailSettings
+  // feeds the broadcast modal's live preview (accurate footer/CNPJ/from address).
   return (
     <div className="space-y-8">
-      <LeadsClient rows={rows} funnelEvents={funnelEvents} />
+      <LeadsClient rows={rows} funnelEvents={funnelEvents} emailSettings={emailSettings} />
       <OciPanel counts={ociCounts} />
     </div>
   );

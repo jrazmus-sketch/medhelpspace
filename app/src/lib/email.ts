@@ -7,10 +7,16 @@ import {
   EMAIL_TEMPLATE_DEFAULTS,
   DEFAULT_EMAIL_SETTINGS,
   sampleVarsFor,
+  buildBroadcastTemplate,
+  broadcastGreeting,
+  BROADCAST_KIND,
   type EmailTemplateRow,
   type EmailSettingsRow,
   type EmailVariable,
+  type BroadcastSpec,
+  type BroadcastRecipient,
 } from "@/lib/email-render";
+import { unsubscribeUrl as buildUnsubscribeUrl } from "@/lib/magnet/links";
 
 // Transactional-email SEND path. The actual content lives in the DB
 // (email_templates / email_settings, admin-editable) and is rendered by the pure
@@ -148,12 +154,13 @@ export async function sendEmailRaw({
   }
 }
 
-// Record the 'sent' anchor for a lead funnel email so the /admin/leads drawer can
-// name it (via `kind`) and the Resend webhook can thread delivered/opened/clicked
-// events onto it (via `resend_id`). Only lead-* kinds are logged — member/admin mail
-// engagement is intentionally never tracked. Best-effort: a logging failure must
-// never fail the send. AWAITED (serverless kills fire-and-forget after the handler).
-async function logLeadEmailSent(resendId: string, to: string, kind: string): Promise<void> {
+// Record the 'sent' anchor for ANY email so the /admin/email-clicks feed + /admin/leads
+// drawer can name a tracked click to its email (via `kind`), and the Resend webhook can
+// thread delivered/opened/clicked events onto it (via `resend_id`). Logged for every
+// kind — lead funnel, member transactional, and admin mail alike — since we now track
+// engagement for everyone. Best-effort: a logging failure must never fail the send.
+// AWAITED (serverless kills fire-and-forget after the handler).
+async function logEmailSent(resendId: string, to: string, kind: string): Promise<void> {
   try {
     const admin = createAdminClient();
     await admin.from("lead_email_events").insert({
@@ -163,7 +170,7 @@ async function logLeadEmailSent(resendId: string, to: string, kind: string): Pro
       event_type: "sent",
     });
   } catch (e) {
-    console.error("logLeadEmailSent failed:", e instanceof Error ? e.message : e);
+    console.error("logEmailSent failed:", e instanceof Error ? e.message : e);
   }
 }
 
@@ -191,9 +198,10 @@ export async function sendTemplateEmail({
   // Funnel/list emails carry an {{unsubscribeUrl}} var → attach the one-click
   // List-Unsubscribe header. Transactional/member templates have no such var → no header.
   const res = await sendEmailRaw({ to, subject, html, from, listUnsubscribeUrl: vars.unsubscribeUrl });
-  // Log the send for the leads engagement timeline (lead-* funnel emails only).
-  if (res.ok && res.id && kind.startsWith("lead-")) {
-    await logLeadEmailSent(res.id, to, kind);
+  // Log the 'sent' anchor for every kind so any later tracked click can be named to
+  // its email in the engagement feed/drawer. Best-effort — never blocks the send.
+  if (res.ok && res.id) {
+    await logEmailSent(res.id, to, kind);
   }
   return res;
 }
@@ -218,9 +226,64 @@ export async function sendTemplateEmailToMany({
   return Promise.all(
     recipients.map(async (to) => {
       const r = await sendEmailRaw({ to, subject, html, from: settings.from_address });
+      // Anchor the send so a later click by any admin recipient is nameable in the feed.
+      if (r.ok && r.id) await logEmailSent(r.id, to, kind);
       return { to, ok: r.ok, reason: r.reason };
     }),
   );
+}
+
+// ── Custom broadcast (admin /admin/leads "Enviar e-mail") ────────────────────────
+
+// Render an admin-composed email ONCE (settings fetched + branded template built a
+// single time) and send it per-recipient with a personalized greeting and a working
+// one-click List-Unsubscribe. Bounded concurrency keeps us under Resend's rate limit
+// AND the serverless wall-clock budget; every send is AWAITED (fire-and-forget is
+// killed when the handler returns). Returns one result per recipient — `id` is echoed
+// back so the caller can stamp last_emailed_at on exactly the successes.
+export async function sendCustomBroadcast(
+  recipients: BroadcastRecipient[],
+  spec: BroadcastSpec,
+  opts?: { kind?: string; log?: boolean; concurrency?: number },
+): Promise<{ id: string; email: string; ok: boolean; reason?: string }[]> {
+  if (recipients.length === 0) return [];
+  const kind = opts?.kind ?? BROADCAST_KIND;
+  const doLog = opts?.log ?? true;
+  const concurrency = Math.max(1, opts?.concurrency ?? 2);
+
+  const settings = await getEmailSettings();
+  const template = buildBroadcastTemplate(spec);
+  const from = withSenderName(settings.from_address, FUNNEL_SENDER_NAME);
+  const withGreeting = spec.withGreeting !== false;
+
+  const results: { id: string; email: string; ok: boolean; reason?: string }[] = new Array(
+    recipients.length,
+  );
+
+  // Simple worker-pool: `cursor` hands each worker the next index. `concurrency`
+  // in-flight sends at a time — no external throttle lib in the codebase.
+  let cursor = 0;
+  async function worker() {
+    while (cursor < recipients.length) {
+      const i = cursor++;
+      const r = recipients[i];
+      const unsub = buildUnsubscribeUrl(r.unsubscribeToken ?? "");
+      const vars: Record<string, string> = {
+        greeting: withGreeting ? broadcastGreeting(r.firstName) : "",
+        unsubscribeUrl: unsub,
+      };
+      const { subject, html } = renderEmail(template, settings, vars);
+      const res = await sendEmailRaw({ to: r.email, subject, html, from, listUnsubscribeUrl: unsub });
+      if (res.ok && res.id && doLog) {
+        await logEmailSent(res.id, r.email, kind);
+      }
+      results[i] = { id: r.id, email: r.email, ok: res.ok, reason: res.reason };
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, recipients.length) }, () => worker()),
+  );
+  return results;
 }
 
 // ── Public, named send helpers (signatures preserved for existing callers) ───────

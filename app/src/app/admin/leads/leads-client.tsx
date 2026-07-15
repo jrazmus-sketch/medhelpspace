@@ -15,14 +15,21 @@ import {
   MailCheck,
   MailX,
   MoreHorizontal,
+  Send,
   X,
 } from "lucide-react";
 import type { LeadRow, LeadTier } from "@/lib/admin/leads";
 import type { FunnelEventDay } from "@/lib/admin/funnel";
+import type { BroadcastSpec, EmailSettingsRow } from "@/lib/email-render";
 import { FunnelPanel, type FunnelStageDatum, type FunnelBySourceRow } from "./funnel-panel";
 import { LeadDetailDrawer } from "@/components/admin/lead-detail-drawer";
 import { BulkAssignCohortModal } from "@/components/admin/bulk-assign-cohort-modal";
 import { BulkResendModal } from "@/components/admin/bulk-resend-modal";
+import {
+  BulkBroadcastModal,
+  type AudienceCounts,
+  type AudienceChoice,
+} from "@/components/admin/bulk-broadcast-modal";
 import { ConfirmModal } from "@/components/admin/confirm-modal";
 import {
   bulkMarkAsTest,
@@ -30,11 +37,14 @@ import {
   bulkResendDripEmail,
   bulkSetDripStatus,
   bulkSetArchived,
+  broadcastToLeads,
+  sendBroadcastTestToSelf,
 } from "@/actions/leads";
 
 interface Props {
   rows: LeadRow[];
   funnelEvents: FunnelEventDay[];
+  emailSettings: EmailSettingsRow;
 }
 
 interface SortState {
@@ -112,6 +122,23 @@ const statusColor: Record<string, string> = {
 function effectiveStatus(row: LeadRow): string {
   if (row.dripStatus === "active" && !row.verified) return "unverified";
   return row.dripStatus;
+}
+
+// Audience bucket for the broadcast tool. Mirrors audienceBucket() in
+// actions/leads.ts EXACTLY (the server re-enforces it): unsub/bounce always win
+// (compliance), then a buyer (convertedAt — same signal as the "customer" tier),
+// then verified vs. never-confirmed. Keep the two in sync.
+function audienceBucketOf(r: LeadRow): keyof AudienceCounts {
+  if (r.dripStatus === "unsubscribed") return "unsubscribed";
+  if (r.dripStatus === "bounced") return "bounced";
+  if (r.convertedAt || r.dripStatus === "converted") return "converted";
+  return r.verified ? "active" : "unverified";
+}
+
+function countAudience(list: LeadRow[]): AudienceCounts {
+  const c: AudienceCounts = { active: 0, unverified: 0, converted: 0, unsubscribed: 0, bounced: 0 };
+  for (const r of list) c[audienceBucketOf(r)]++;
+  return c;
 }
 
 function cohortShort(slug: string | null): string {
@@ -205,7 +232,7 @@ function downloadCSV(csv: string, filename: string): void {
   document.body.removeChild(link);
 }
 
-export function LeadsClient({ rows, funnelEvents }: Props) {
+export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const dateLocale = i18n.language === "en" ? "en-US" : "pt-BR";
@@ -230,6 +257,13 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCohortModal, setShowCohortModal] = useState(false);
   const [showResendModal, setShowResendModal] = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  // Default scope when the compose modal opens: the current selection if any,
+  // else the whole filtered view. The modal lets the admin switch either way.
+  const [broadcastScope, setBroadcastScope] = useState<"selected" | "filtered">("filtered");
+  // Broadcast result banner — a fixed toast so it shows with OR without a row
+  // selection (the bulk-bar toast only exists while rows are selected).
+  const [flash, setFlash] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   // Which drip-status change is awaiting confirmation (both have email-flow
   // consequences, so both confirm before firing).
@@ -600,6 +634,15 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
     [filtered, selectedIds],
   );
 
+  // Audience breakdown per broadcast scope, for the compose modal's live recipient
+  // count. "Selected" = every checked lead (regardless of the current filter,
+  // matching the other bulk actions); "filtered" = the visible view.
+  const selectedBroadcastAudience = useMemo(
+    () => countAudience(rows.filter((r) => selectedIds.has(r.id))),
+    [rows, selectedIds],
+  );
+  const filteredBroadcastAudience = useMemo(() => countAudience(filtered), [filtered]);
+
   const canResendEmail = useMemo(() => {
     if (selectedRows.length === 0) return false;
     // Flashcards/simulado-funnel leads have their own sequences (lead-fc-* /
@@ -762,6 +805,72 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
       setErrorMessage(t("leads.bulkActionError"));
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Open the compose modal, defaulting the audience to the current selection when
+  // there is one (else the whole filtered view).
+  const openBroadcast = () => {
+    setBroadcastScope(selectedIds.size > 0 ? "selected" : "filtered");
+    setShowBroadcastModal(true);
+  };
+
+  // Resolve the chosen scope to an id list and fire the broadcast. On success the
+  // modal closes and a fixed toast reports sent / skipped / failed; on an expected
+  // refusal (empty, no recipients, too many) we hand a translated message back to
+  // the modal to show inline. Throws are redacted in prod, so we never read
+  // error.message — the action returns discriminated outcomes.
+  const handleBroadcastSend = async (
+    scope: "selected" | "filtered",
+    spec: BroadcastSpec,
+    audience: AudienceChoice,
+  ): Promise<{ ok: boolean; error?: string }> => {
+    const ids = scope === "selected" ? Array.from(selectedIds) : filtered.map((r) => r.id);
+    if (ids.length === 0) return { ok: false, error: t("leads.broadcastNoRecipients") };
+    try {
+      const result = await broadcastToLeads(ids, spec, audience);
+      if (result.ok) {
+        setShowBroadcastModal(false);
+        const parts = [
+          t(result.sent === 1 ? "leads.broadcastSuccessOne" : "leads.broadcastSuccessOther", {
+            count: result.sent,
+          }),
+        ];
+        if (result.skipped > 0) parts.push(t("leads.broadcastSkippedNote", { count: result.skipped }));
+        if (result.failed.length > 0) {
+          parts.push(
+            t("leads.broadcastPartialError", {
+              sent: result.sent,
+              total: result.sent + result.failed.length,
+              failed: result.failed.length,
+            }),
+          );
+        }
+        setFlash({ tone: result.failed.length > 0 ? "warn" : "ok", text: parts.join(" · ") });
+        setTimeout(() => setFlash(null), 6000);
+        router.refresh();
+        return { ok: true };
+      }
+      const msg =
+        result.error === "empty"
+          ? t("leads.broadcastEmptyFields")
+          : result.error === "too_many"
+            ? t("leads.broadcastTooMany", { cap: result.cap ?? 0, requested: result.requested ?? 0 })
+            : t("leads.broadcastNoRecipients");
+      return { ok: false, error: msg };
+    } catch (error) {
+      console.error("Broadcast error:", error);
+      return { ok: false, error: t("leads.broadcastError") };
+    }
+  };
+
+  const handleBroadcastTest = async (spec: BroadcastSpec) => {
+    try {
+      const res = await sendBroadcastTestToSelf(spec);
+      return { ok: res.ok, email: res.email };
+    } catch (error) {
+      console.error("Broadcast test error:", error);
+      return { ok: false, email: null };
     }
   };
 
@@ -934,6 +1043,28 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5 pb-24">
+      {flash && (
+        <div className="fixed left-1/2 top-4 z-[60] w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
+          <div
+            role="status"
+            className={`flex items-start gap-2 rounded-lg border px-4 py-3 text-sm shadow-lg ${
+              flash.tone === "ok"
+                ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300"
+                : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+            }`}
+          >
+            <span className="flex-1">{flash.text}</span>
+            <button
+              onClick={() => setFlash(null)}
+              className="shrink-0 rounded p-0.5 hover:opacity-70"
+              aria-label={t("common.close")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{t("leads.title")}</h1>
@@ -1205,6 +1336,15 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
           </label>
         )}
         <button
+          onClick={openBroadcast}
+          disabled={filtered.length === 0}
+          className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-brand/30 bg-surface-1 px-3 py-2 text-sm font-medium text-brand hover:bg-brand/10 transition-colors min-h-[44px] sm:min-h-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={t("leads.broadcastButtonHint")}
+        >
+          <Send className="h-4 w-4" />
+          <span>{t("leads.broadcastButton")}</span>
+        </button>
+        <button
           onClick={() => {
             const csv = generateLeadsCSV(filtered);
             const now = new Date();
@@ -1398,6 +1538,21 @@ export function LeadsClient({ rows, funnelEvents }: Props) {
         selectedCount={selectedIds.size}
         onConfirm={handleBulkResendEmail}
       />
+
+      {/* Conditionally mounted so each open starts from a clean draft and reads the
+          current default scope (the component keeps its own field state). */}
+      {showBroadcastModal && (
+        <BulkBroadcastModal
+          isOpen
+          onClose={() => setShowBroadcastModal(false)}
+          selectedAudience={selectedBroadcastAudience}
+          filteredAudience={filteredBroadcastAudience}
+          defaultScope={broadcastScope}
+          emailSettings={emailSettings}
+          onSend={handleBroadcastSend}
+          onSendTest={handleBroadcastTest}
+        />
+      )}
 
       <ConfirmModal
         open={confirmAction !== null}
