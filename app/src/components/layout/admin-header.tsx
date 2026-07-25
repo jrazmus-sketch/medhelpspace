@@ -106,6 +106,7 @@ export function AdminHeader() {
       label: t("nav.group.commerce"),
       items: [
         { href: "/admin/leads", label: t("nav.leads"), show: isSuperAdmin() || isBillingAdmin() },
+        { href: "/admin/email-clicks", label: t("nav.emailClicks"), show: isSuperAdmin() || isBillingAdmin() },
         { href: "/admin/cohorts", label: t("nav.cohorts") },
         { href: "/admin/billing", label: t("nav.billing"), show: isSuperAdmin() || isBillingAdmin() },
         { href: "/admin/notas-fiscais", label: t("nav.notasFiscais"), show: isSuperAdmin() || isBillingAdmin() },

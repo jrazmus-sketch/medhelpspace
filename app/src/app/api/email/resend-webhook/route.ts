@@ -14,12 +14,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 //     mailbox would wrongly kill a recoverable address).
 //
 //  2) ENGAGEMENT LOG — record delivered/opened/clicked/bounced/complained into
-//     `lead_email_events`, keyed by the Resend message id, so the /admin/leads detail
-//     drawer can show a per-email "delivered → opened → clicked" timeline. Only events
-//     whose recipient matches a KNOWN LEAD are logged (member/admin mail is never
-//     tracked). 'sent' is recorded at send time (lib/email.ts), so we ignore
-//     email.sent here to avoid a duplicate anchor. Requires Open+Click tracking to be
-//     enabled in the Resend dashboard + those events subscribed on the webhook.
+//     `lead_email_events` (a now-general email-events log despite its legacy name),
+//     keyed by the Resend message id. Logged for EVERY recipient — lead, member, or
+//     neither (e.g. an admin/test address) — so the /admin/email-clicks feed can show
+//     every click by anyone, and the /admin/leads drawer can still show a per-lead
+//     "delivered → opened → clicked" timeline. Identity ("who clicked") is resolved at
+//     READ time (email → profiles / leads), so we store only the raw recipient here.
+//     'sent' is recorded at send time (lib/email.ts), so we ignore email.sent here to
+//     avoid a duplicate anchor. Requires Open+Click tracking to be enabled in the
+//     Resend dashboard + those events subscribed on the webhook.
 //
 // Security: Resend signs webhooks with Svix. We verify the signature manually
 // (no svix dep) over the RAW body and FAIL-CLOSED — an unconfigured secret or a
@@ -128,28 +131,21 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  // Only ever touch addresses that are actually leads — never log member/admin mail.
-  const { data: matchedLeads } = await admin
-    .from("leads")
-    .select("id, email, drip_status")
-    .in("email", recipients);
-  if (!matchedLeads || matchedLeads.length === 0) {
-    return NextResponse.json({ ok: true, matched: 0 });
-  }
-
-  // 1) ENGAGEMENT LOG — one row per matched lead. The partial unique index dedups
-  // Svix retries of the once-per-email events (delivered/bounced/complained); a
-  // 23505 there is expected and swallowed. supabase-js reports it on `error`, not
-  // by throwing, so we inspect the code rather than try/catch.
+  // 1) ENGAGEMENT LOG — one row per recipient, logged UNCONDITIONALLY (lead, member,
+  // or neither). Identity is resolved at read time by the feed, so we store only the
+  // raw address. The partial unique index dedups Svix retries of the once-per-email
+  // events (delivered/bounced/complained); a 23505 there is expected and swallowed.
+  // supabase-js reports it on `error`, not by throwing, so we inspect the code rather
+  // than try/catch.
   const resendId = event.data?.email_id ?? null;
   const clickUrl =
     eventType === "clicked"
       ? (event.data?.click?.link ?? event.data?.click?.url ?? null)
       : null;
-  for (const lead of matchedLeads) {
+  for (const email of recipients) {
     const { error } = await admin.from("lead_email_events").insert({
       resend_id: resendId,
-      email: lead.email as string,
+      email,
       event_type: eventType,
       url: clickUrl,
     });
@@ -158,8 +154,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // 2) SUPPRESSION — complaint / permanent bounce stops the drip. Never resurrect a
-  // converted buyer's status.
+  // 2) SUPPRESSION — complaint / permanent bounce stops the funnel drip. This is
+  // lead-only (members/admins have no drip), so we only touch `leads` for these two
+  // events. Never resurrect a converted buyer's status.
   const suppressStatus =
     eventType === "complained"
       ? "unsubscribed"
@@ -182,7 +179,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     event: type,
-    logged: matchedLeads.length,
+    logged: recipients.length,
     suppressed,
   });
 }
