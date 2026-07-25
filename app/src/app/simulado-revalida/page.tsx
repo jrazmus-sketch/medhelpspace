@@ -4,25 +4,27 @@ import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 import { SimuladoGate } from "@/components/magnet/simulado-gate";
 import { SiteText } from "@/components/landing/site-text";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
-import { SIMULADO_BLOCOS, SIMULADO_TOTAL } from "@/lib/magnet/simulado-questions";
+import {
+  getActiveCohortOptions,
+  getSimuladoAreaCounts,
+  SIMULADO_TOTAL,
+} from "@/lib/magnet/simulado";
 
 // PUBLIC, indexable, dark-only landing for the free 100-question simulado — the
-// third lead funnel. Email-first (like /flashcards-revalida): the simulado is
-// delivered by a magic link (see /simulado-revalida/acesso) that doubles as the
-// resume link. Every question is a REAL past-Revalida (INEP) item, editions
-// 2020–2025.2. Lives OUTSIDE the /app gate. All copy is SiteText-wired (sim.*).
+// third lead funnel. The questions are 100 QUESTÕES INÉDITAS written in the style
+// of the INEP 1ª etapa (not recycled past exams), delivered with a fully commented
+// gabarito. The exam starts immediately after the form — no inbox round-trip — and
+// the emailed link is for resuming. Lives OUTSIDE the /app gate. All copy is
+// SiteText-wired (sim.*) so Karina can edit it in the visual editor.
 
 export const metadata: Metadata = {
-  title: "Simulado Revalida Grátis — 100 Questões Reais do INEP",
+  title: "Simulado Revalida Grátis | 100 Questões Estilo INEP | Gabarito Comentado",
   description:
-    "Faça grátis um simulado completo do Revalida: 100 questões reais das provas de 2020 a 2025, divididas em 5 blocos por grande área, com correção na hora e relatório de desempenho. Sem cartão.",
+    "Faça grátis um simulado com 100 questões inéditas no estilo INEP e gabarito comentado. Teste seu nível, identifique lacunas e descubra o que revisar. Sem cartão.",
   alternates: { canonical: "/simulado-revalida" },
 };
 
 export const dynamic = "force-dynamic"; // reads UTM from the query string
-
-// Static composition facts derived from the curated set (scripts/build-simulado-100.js).
-const EDITION_CHIPS = ["2020", "2021", "2022.1", "2022.2", "2023.1", "2023.2", "2024.1", "2024.2", "2025.1", "2025.2"];
 
 export default async function SimuladoRevalidaPage({
   searchParams,
@@ -30,6 +32,10 @@ export default async function SimuladoRevalidaPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
+  const [cohorts, areaCounts] = await Promise.all([
+    getActiveCohortOptions(),
+    getSimuladoAreaCounts(),
+  ]);
   const pick = (k: string) => {
     const v = sp[k];
     return Array.isArray(v) ? v[0] : v;
@@ -110,32 +116,32 @@ export default async function SimuladoRevalidaPage({
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-muted/30 px-3 py-1 text-xs font-semibold text-brand">
               <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              <SiteText as="span" k="sim.hero.badge" fallback="Grátis · 100 questões reais · sem cartão" />
+              <SiteText as="span" k="sim.hero.badge" fallback="Grátis · 100 questões inéditas · sem cartão" />
             </span>
             <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-              <SiteText as="span" k="sim.hero.title_1" fallback="Um simulado completo do Revalida, com" />{" "}
+              <SiteText as="span" k="sim.hero.title_1" fallback="Simulado Revalida gratuito com" />{" "}
               <span className="bg-gradient-to-r from-brand to-[#c084e8] bg-clip-text text-transparent">
-                <SiteText as="span" k="sim.hero.title_accent" fallback="100 questões reais" />
-              </span>{" "}
-              <SiteText as="span" k="sim.hero.title_2" fallback="da prova." />
+                <SiteText as="span" k="sim.hero.title_accent" fallback="100 questões inéditas" />
+              </span>
+              <SiteText as="span" k="sim.hero.title_2" fallback="." />
             </h1>
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
               <SiteText
                 as="span"
                 multiline
                 k="sim.hero.subhead"
-                fallback="Todas retiradas das provas oficiais do INEP de 2020 a 2025 — nada inventado. 5 blocos de 20 questões por grande área, correção na hora e um relatório que mostra exatamente onde você está perdendo pontos."
+                fallback="Treine com questões no estilo da prova do INEP, revise as cinco grandes áreas e use o gabarito comentado para compreender seus erros e direcionar melhor seus estudos."
               />
             </p>
 
-            {/* The bold stat strip — authenticity is the hook. */}
+            {/* The bold stat strip. */}
             <div className="mt-6 flex items-center gap-4 rounded-2xl border border-border/80 bg-surface-1/50 p-4 backdrop-blur-sm">
               <div className="shrink-0 text-center">
                 <div className="font-display text-3xl font-extrabold tabular-nums text-brand sm:text-4xl">
                   {SIMULADO_TOTAL}
                 </div>
                 <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <SiteText as="span" k="sim.hero.stat_label" fallback="questões INEP" />
+                  <SiteText as="span" k="sim.hero.stat_label" fallback="questões inéditas" />
                 </div>
               </div>
               <p className="text-sm leading-snug text-muted-foreground">
@@ -143,32 +149,21 @@ export default async function SimuladoRevalidaPage({
                   as="span"
                   multiline
                   k="sim.hero.stat"
-                  fallback="Cada questão traz a identificação da prova de origem (ex.: “Questão 38 · Revalida 2020”). Você treina no nível e no estilo exatos da banca — porque É a banca."
+                  fallback="Questões elaboradas para avaliar raciocínio clínico, interpretação e escolha da conduta mais adequada — no nível e no formato da 1ª etapa."
                 />
               </p>
-            </div>
-
-            {/* Edition chips — visual proof of the 2020–2025 spread. */}
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {EDITION_CHIPS.map((e) => (
-                <span
-                  key={e}
-                  className="rounded-md bg-surface-1/70 px-2 py-1 font-mono text-[11px] tabular-nums text-muted-foreground ring-1 ring-border"
-                >
-                  {e}
-                </span>
-              ))}
             </div>
           </div>
 
           {/* The gate + a compact "what you get" strip. */}
           <div>
-            <SimuladoGate utm={utm} />
+            <SimuladoGate utm={utm} cohorts={cohorts} />
             <ul className="mt-5 space-y-2.5 px-1">
               {[
-                { k: "sim.get.0", fallback: "100 questões reais do Revalida (2020–2025)" },
-                { k: "sim.get.1", fallback: "Correção na hora + relatório por grande área" },
-                { k: "sim.get.2", fallback: "Faça em blocos de 20 — seu progresso fica salvo" },
+                { k: "sim.get.0", fallback: "100 questões inéditas no estilo da 1ª etapa" },
+                { k: "sim.get.1", fallback: "Clínica Médica, Cirurgia, Pediatria, GO e Saúde Coletiva" },
+                { k: "sim.get.2", fallback: "Gabarito com comentários sobre todas as alternativas" },
+                { k: "sim.get.3", fallback: "Sem limite de tempo — seu progresso fica salvo" },
               ].map((item) => (
                 <li key={item.k} className="flex items-start gap-2.5 text-sm text-muted-foreground">
                   <span
@@ -192,32 +187,29 @@ export default async function SimuladoRevalidaPage({
                 <SiteText as="span" k="sim.blocos.eyebrow" fallback="No formato da prova" />
               </p>
               <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                <SiteText as="span" k="sim.blocos.title" fallback="5 blocos de 20 questões, um por grande área" />
+                <SiteText as="span" k="sim.blocos.title" fallback="As cinco grandes áreas da 1ª etapa" />
               </h2>
               <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
                 <SiteText
                   as="span"
                   multiline
                   k="sim.blocos.body"
-                  fallback="A 1ª etapa do Revalida cobra as 5 grandes áreas — e o simulado espelha isso. Dentro de cada bloco, as questões cobrem os temas de maior incidência real nas provas, misturando todas as edições de 2020 a 2025."
+                  fallback="As questões vêm misturadas, como no caderno oficial — você não sabe de antemão a área de cada uma, e reconhecer isso faz parte da prova. O peso de cada área acompanha o da 1ª etapa."
                 />
               </p>
             </div>
 
-            <div className="mt-9 grid gap-3 sm:grid-cols-5">
-              {SIMULADO_BLOCOS.map((b, i) => (
+            <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {areaCounts.map((a) => (
                 <div
-                  key={b.key}
+                  key={a.key}
                   className="rounded-2xl border border-border/80 bg-surface-1/50 p-4 text-center"
                 >
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Bloco {i + 1}
-                  </div>
-                  <div className="mt-1 min-h-[2.5rem] text-sm font-semibold leading-tight text-foreground">
-                    {b.label}
+                  <div className="min-h-[2.5rem] text-sm font-semibold leading-tight text-foreground">
+                    {a.label}
                   </div>
                   <div className="mt-2 font-display text-2xl font-extrabold tabular-nums text-brand">
-                    {b.questionIds.length}
+                    {a.count}
                   </div>
                   <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                     questões
@@ -235,7 +227,7 @@ export default async function SimuladoRevalidaPage({
               <SiteText as="span" k="sim.how.eyebrow" fallback="Como funciona" />
             </p>
             <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-              <SiteText as="span" k="sim.how.title" fallback="Do e-mail ao diagnóstico em 3 passos" />
+              <SiteText as="span" k="sim.how.title" fallback="Cadastre-se, resolva, revise" />
             </h2>
           </div>
           <div className="mt-9 grid gap-4 sm:grid-cols-3">
@@ -243,23 +235,23 @@ export default async function SimuladoRevalidaPage({
               {
                 n: "1",
                 k: "sim.how.step1",
-                fallback: "Deixe seu e-mail e escolha sua prova. O link de acesso chega na hora — e é o mesmo link que salva seu progresso.",
+                fallback: "Informe nome, e-mail e para qual Revalida você estuda. A prova começa na hora, sem espera — e o link de retorno vai para o seu e-mail.",
                 titleK: "sim.how.step1_title",
-                titleFallback: "Receba seu acesso",
+                titleFallback: "Cadastre-se",
               },
               {
                 n: "2",
                 k: "sim.how.step2",
-                fallback: "Responda os 5 blocos no seu ritmo, com correção na hora. Pode parar quando quiser: o simulado continua de onde você parou.",
+                fallback: "Responda as 100 questões sem limite de tempo, como na prova real: sem ver acertos e erros durante o simulado. Pode parar e voltar quando quiser.",
                 titleK: "sim.how.step2_title",
-                titleFallback: "Faça no seu ritmo",
+                titleFallback: "Resolva",
               },
               {
                 n: "3",
                 k: "sim.how.step3",
-                fallback: "Ao final, veja seu desempenho por grande área e descubra exatamente quais áreas priorizar até a prova.",
+                fallback: "Ao entregar, veja seu desempenho nas cinco grandes áreas e o gabarito comentado de todas as questões — por que a certa está certa e onde cada alternativa erra.",
                 titleK: "sim.how.step3_title",
-                titleFallback: "Receba o relatório",
+                titleFallback: "Revise",
               },
             ].map((s) => (
               <div key={s.n} className="rounded-2xl border border-border/80 bg-surface-1/50 p-5">
@@ -292,11 +284,11 @@ export default async function SimuladoRevalidaPage({
                 as="span"
                 multiline
                 k="sim.final.body"
-                fallback="100 questões reais, correção na hora e relatório por área. Deixe seu e-mail e o link chega em segundos — sem cartão, sem pegadinha."
+                fallback="100 questões inéditas, desempenho por grande área e gabarito comentado. Grátis, sem cartão — e você começa agora mesmo."
               />
             </p>
             <div className="mx-auto mt-7 max-w-md text-left">
-              <SimuladoGate utm={utm} />
+              <SimuladoGate utm={utm} cohorts={cohorts} />
             </div>
           </div>
         </section>

@@ -1,32 +1,24 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import { captureSimuladoLead, chooseSimuladoCohortAndSend } from "@/actions/magnet";
+import { useRouter } from "next/navigation";
+import { startSimulado } from "@/actions/simulado";
 import { getFunnelSessionId, trackFunnel } from "@/lib/magnet/funnel-track";
-import {
-  REVALIDA_2027_1_SLUG,
-  REVALIDA_20272_SLUG,
-  UNDECIDED_COHORT,
-} from "@/lib/magnet/links";
+import { UNDECIDED_COHORT } from "@/lib/magnet/links";
+import type { CohortOption } from "@/lib/magnet/simulado";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 import { SiteText } from "@/components/landing/site-text";
 
-// Email-first gate for /simulado-revalida (mirrors FlashcardsGate): email → turma →
-// "check your inbox". The 100-question simulado is delivered by a magic link
-// (chooseSimuladoCohortAndSend), never inline — the link doubles as the resume
-// link, which a multi-hour test needs from question 1. All copy is SiteText-wired
-// (sim.gate.*) so Karina can edit it in the visual editor.
+// Single-screen entry for /simulado-revalida. Nome + e-mail + turma, then the exam
+// starts IMMEDIATELY — no "check your inbox" step. The expensive drop-off is the
+// app-switch to the inbox, not the number of fields, so all three are collected
+// here and the resume link is emailed in the background.
+//
+// The turma list comes from the DB (every ACTIVE turma, not just the ones for
+// sale): its job is segmentation, so someone sitting the nearest exam can say so
+// even when that turma is closed. Copy is SiteText-wired (sim.gate.*) for Karina.
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type CohortOption = { slug: string; label: string; when: string; note?: string };
-const COHORTS: CohortOption[] = [
-  { slug: REVALIDA_2027_1_SLUG, label: "Revalida 2027.1", when: "Início de 2027", note: "Próxima prova" },
-  { slug: REVALIDA_20272_SLUG, label: "Revalida 2027.2", when: "Setembro de 2027", note: "Mais tempo" },
-  { slug: UNDECIDED_COHORT, label: "Ainda não decidi", when: "Escolho a turma depois" },
-];
-
-type Phase = "email" | "cohort" | "sent";
 
 function clientContext() {
   return {
@@ -37,238 +29,229 @@ function clientContext() {
   };
 }
 
-export function SimuladoGate({ utm }: { utm: MagnetUtm }) {
-  const [phase, setPhase] = useState<Phase>("email");
+export function SimuladoGate({ utm, cohorts }: { utm: MagnetUtm; cohorts: CohortOption[] }) {
+  const router = useRouter();
+  const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [cohort, setCohort] = useState<string>(cohorts[0]?.slug ?? UNDECIDED_COHORT);
   const [hp, setHp] = useState(""); // honeypot
   const [err, setErr] = useState<string | null>(null);
-  const [masked, setMasked] = useState("");
-  const [emailed, setEmailed] = useState(true);
-  const [devLink, setDevLink] = useState<string | null>(null);
+  const [resumeSentTo, setResumeSentTo] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [selecting, setSelecting] = useState<string | null>(null);
+
+  const nameId = useId();
   const emailId = useId();
 
-  function submitEmail() {
+  function submit() {
+    const name = firstName.trim();
     const em = email.trim().toLowerCase();
+
+    if (name.length < 2) {
+      setErr("Digite seu nome para começarmos.");
+      return;
+    }
     if (!EMAIL_RE.test(em)) {
-      setErr("Digite um e-mail válido para receber o seu simulado.");
+      setErr("Digite um e-mail válido — é para lá que vai o seu link de retorno.");
       return;
     }
     setErr(null);
+
     startTransition(async () => {
-      const res = await captureSimuladoLead({
+      const res = await startSimulado({
+        firstName: name,
         email: em,
-        utm,
+        targetCohort: cohort,
         honeypot: hp,
+        utm,
         context: clientContext(),
       });
-      if (!res.ok) {
-        setErr(
-          res.reason === "disposable_email"
-            ? "Use um e-mail permanente — é pra onde vai o seu acesso."
-            : "Não foi possível continuar. Confira o e-mail e tente de novo.",
-        );
+
+      if (res.status === "started") {
+        trackFunnel("quiz_start", utm, "simulado-100");
+        router.push("/simulado-revalida/prova");
         return;
       }
-      setPhase("cohort");
+      if (res.status === "resume_emailed") {
+        setResumeSentTo(res.maskedEmail);
+        return;
+      }
+      setErr(
+        res.reason === "disposable_email"
+          ? "Use um e-mail permanente para conseguir voltar ao seu simulado depois."
+          : "Não conseguimos começar agora. Confira os dados e tente de novo.",
+      );
     });
   }
 
-  function chooseCohort(slug: string) {
-    if (pending) return;
-    setSelecting(slug);
-    setErr(null);
-    startTransition(async () => {
-      const res = await chooseSimuladoCohortAndSend({
-        email: email.trim().toLowerCase(),
-        targetCohort: slug,
-        utm,
-      });
-      if (!res.ok) {
-        setSelecting(null);
-        setErr("Não foi possível enviar o seu acesso. Tente novamente.");
-        return;
-      }
-      setMasked(res.maskedEmail ?? email.trim().toLowerCase());
-      setEmailed(res.emailed ?? true);
-      setDevLink(res.devLink ?? null);
-      setPhase("sent");
-    });
-  }
-
-  // ── Confirmation ────────────────────────────────────────────────────────────
-  if (phase === "sent") {
+  // Returning candidate with an exam already in progress: we never hand out a
+  // session from a form post, so they resume through the e-mail link.
+  if (resumeSentTo) {
     return (
-      <div className="rounded-2xl border border-brand/30 bg-surface-1/80 p-6 text-center shadow-[0_0_60px_-15px] shadow-brand/40 sm:p-8">
-        <div
-          aria-hidden
-          className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-muted text-3xl"
-        >
-          📩
+      <div className="rounded-2xl border border-brand/25 bg-brand-muted/10 p-6 text-center">
+        <div aria-hidden className="mx-auto mb-3 text-3xl">
+          📬
         </div>
-        <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-          <SiteText as="span" k="sim.gate.sent_title" fallback="Enviamos seu acesso!" />
+        <h2 className="font-display text-xl font-bold tracking-tight text-foreground">
+          <SiteText as="span" k="sim.gate.resume_title" fallback="Você já tem um simulado em andamento" />
         </h2>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           <SiteText
             as="span"
             multiline
-            k="sim.gate.sent_body"
-            fallback="O link do seu simulado de 100 questões foi para {email}. Abra o e-mail e toque em “Começar meu simulado” para iniciar."
-            vars={{ email: masked }}
+            k="sim.gate.resume_body"
+            fallback="Enviamos o link de retorno para {email}. Abra o e-mail para continuar exatamente de onde você parou — seu progresso está salvo."
+            vars={{ email: resumeSentTo }}
           />
         </p>
-        {!emailed && (
-          <p className="mx-auto mt-3 max-w-sm text-xs text-amber-400">
-            Tivemos um problema para enviar agora. Aguarde um instante e tente reenviar.
-          </p>
-        )}
-        <p className="mx-auto mt-3 max-w-sm text-xs text-muted-foreground">
-          <SiteText
-            as="span"
-            multiline
-            k="sim.gate.sent_resume"
-            fallback="💾 Guarde esse e-mail: você pode fazer o simulado em blocos de 20 e voltar de onde parou pelo mesmo link, quando quiser."
-          />
-        </p>
-        <div className="mt-5 rounded-xl border border-border bg-background/60 p-3 text-xs text-muted-foreground">
-          <SiteText
-            as="span"
-            multiline
-            k="sim.gate.sent_spam"
-            fallback="Não chegou em 2 minutos? Verifique a caixa de spam ou promoções — e marque como “não é spam” para receber os próximos."
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => setPhase("email")}
-          className="mt-4 min-h-[44px] text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-        >
-          Usar outro e-mail
-        </button>
-        {devLink && (
-          <a
-            href={devLink}
-            className="mt-3 block break-all rounded-lg border border-dashed border-brand/40 bg-brand-muted/30 p-2 text-xs text-brand"
-          >
-            [dev] abrir acesso: {devLink}
-          </a>
-        )}
       </div>
     );
   }
 
-  // ── Step 2: exam picker ───────────────────────────────────────────────────────
-  if (phase === "cohort") {
-    return (
-      <div className="rounded-2xl border border-brand/30 bg-surface-1/80 p-6 shadow-[0_0_60px_-15px] shadow-brand/40 sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-          <SiteText as="span" k="sim.gate.cohort_eyebrow" fallback="Última etapa" />
-        </p>
-        <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight sm:text-2xl">
-          <SiteText as="span" k="sim.gate.cohort_title" fallback="Para qual prova você está estudando?" />
-        </h2>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          <SiteText
-            as="span"
-            multiline
-            k="sim.gate.cohort_body"
-            fallback="Assim personalizamos o seu relatório de desempenho e os lembretes."
-          />
-        </p>
-        <div className="mt-5 space-y-2.5">
-          {COHORTS.map((c) => {
-            const loading = pending && selecting === c.slug;
-            return (
-              <button
-                key={c.slug}
-                type="button"
-                disabled={pending}
-                onClick={() => chooseCohort(c.slug)}
-                className="group flex min-h-[56px] w-full items-center justify-between gap-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-left transition-colors hover:border-brand hover:bg-brand-muted/30 disabled:opacity-60"
-              >
-                <span>
-                  <span className="block font-semibold text-foreground">{c.label}</span>
-                  <span className="block text-xs text-muted-foreground">{c.when}</span>
-                </span>
-                <span className="flex items-center gap-2">
-                  {c.note && (
-                    <span className="hidden rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
-                      {c.note}
-                    </span>
-                  )}
-                  <span aria-hidden className="text-brand transition-transform group-hover:translate-x-0.5">
-                    {loading ? "…" : "→"}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {err && <p className="mt-3 text-sm text-red-400">{err}</p>}
-      </div>
-    );
-  }
-
-  // ── Step 1: email ─────────────────────────────────────────────────────────────
   return (
-    <div className="rounded-2xl border border-brand/30 bg-surface-1/80 p-6 shadow-[0_0_60px_-15px] shadow-brand/40 sm:p-7">
-      <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-        <SiteText as="span" k="sim.gate.eyebrow" fallback="Grátis · sem cartão" />
+    <div className="rounded-2xl border border-border bg-surface-1 p-5 sm:p-6">
+      <p className="font-mono text-[11px] uppercase tracking-wider text-brand">
+        <SiteText as="span" k="sim.gate.eyebrow" fallback="Prepare-se para começar" />
       </p>
-      <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight sm:text-2xl">
-        <SiteText as="span" k="sim.gate.headline" fallback="Para onde enviamos o seu simulado?" />
+      <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        <SiteText as="span" k="sim.gate.title" fallback="Receba gratuitamente o simulado completo" />
       </h2>
-      <div className="mt-5 space-y-3">
-        {/* Honeypot — visually hidden; real users never fill it. */}
+      <p className="mt-2 text-sm text-muted-foreground">
+        <SiteText
+          as="span"
+          multiline
+          k="sim.gate.body"
+          fallback="Informe seus dados para começar agora o simulado com 100 questões inéditas e gabarito comentado."
+        />
+      </p>
+
+      <form
+        className="mt-5 space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        {/* honeypot — hidden from humans, catches naive bots */}
         <input
           type="text"
           name="company"
-          tabIndex={-1}
-          autoComplete="off"
-          aria-hidden="true"
           value={hp}
           onChange={(e) => setHp(e.target.value)}
-          className="absolute left-[-9999px] h-0 w-0 opacity-0"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden
+          className="absolute left-[-9999px] h-px w-px opacity-0"
         />
-        <label htmlFor={emailId} className="sr-only">
-          Seu e-mail
-        </label>
-        <input
-          id={emailId}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="seu@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onFocus={() => trackFunnel("quiz_start", utm, "simulado-100")}
-          onKeyDown={(e) => e.key === "Enter" && submitEmail()}
-          className="min-h-[52px] w-full rounded-xl border border-border bg-background px-4 text-base outline-none transition-colors focus:border-brand focus:ring-2 focus:ring-brand/30"
-        />
-        {err && <p className="text-sm text-red-400">{err}</p>}
+
+        <div>
+          <label htmlFor={nameId} className="mb-1.5 block text-sm font-medium text-foreground">
+            <SiteText as="span" k="sim.gate.name_label" fallback="Nome" />
+          </label>
+          <input
+            id={nameId}
+            type="text"
+            autoComplete="given-name"
+            placeholder="Como podemos te chamar?"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="min-h-[52px] w-full rounded-xl border border-border bg-background px-4 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-brand"
+          />
+        </div>
+
+        <div>
+          <label htmlFor={emailId} className="mb-1.5 block text-sm font-medium text-foreground">
+            <SiteText as="span" k="sim.gate.email_label" fallback="Seu melhor e-mail" />
+          </label>
+          <input
+            id={emailId}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="min-h-[52px] w-full rounded-xl border border-border bg-background px-4 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-brand"
+          />
+        </div>
+
+        <fieldset>
+          <legend className="mb-1.5 block text-sm font-medium text-foreground">
+            <SiteText as="span" k="sim.gate.cohort_label" fallback="Para qual Revalida você está estudando?" />
+          </legend>
+          <div className="space-y-2">
+            {cohorts.map((c) => (
+              <label
+                key={c.slug}
+                className={`flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors ${
+                  cohort === c.slug
+                    ? "border-brand bg-brand-muted/20"
+                    : "border-border bg-background hover:border-brand/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="cohort"
+                  value={c.slug}
+                  checked={cohort === c.slug}
+                  onChange={() => setCohort(c.slug)}
+                  className="h-4 w-4 shrink-0 accent-brand"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-foreground">{c.label}</span>
+                  <span className="block text-xs text-muted-foreground">{c.when}</span>
+                </span>
+              </label>
+            ))}
+            <label
+              className={`flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors ${
+                cohort === UNDECIDED_COHORT
+                  ? "border-brand bg-brand-muted/20"
+                  : "border-border bg-background hover:border-brand/50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="cohort"
+                value={UNDECIDED_COHORT}
+                checked={cohort === UNDECIDED_COHORT}
+                onChange={() => setCohort(UNDECIDED_COHORT)}
+                className="h-4 w-4 shrink-0 accent-brand"
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-foreground">Ainda não decidi</span>
+                <span className="block text-xs text-muted-foreground">Escolho a turma depois</span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        {err && (
+          <p role="alert" className="text-sm text-red-400">
+            {err}
+          </p>
+        )}
+
         <button
-          type="button"
-          onClick={submitEmail}
+          type="submit"
           disabled={pending}
-          className="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-brand px-5 text-base font-semibold text-brand-fg shadow-lg shadow-brand/25 transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
+          className="flex min-h-[52px] w-full items-center justify-center rounded-xl bg-brand px-6 text-base font-semibold text-brand-fg shadow-lg shadow-brand/25 transition-all hover:opacity-95 active:scale-[0.99] disabled:opacity-60"
         >
           {pending ? (
-            "Um instante…"
+            "Preparando seu simulado…"
           ) : (
             <SiteText as="span" k="sim.gate.cta" fallback="Começar meu simulado grátis →" />
           )}
         </button>
-      </div>
-      <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-        <span aria-hidden>🔒</span>
-        <SiteText
-          as="span"
-          k="sim.gate.reassurance"
-          fallback="Sem spam. Você recebe o simulado e pode cancelar quando quiser."
-        />
-      </p>
+
+        <p className="text-center text-xs text-muted-foreground">
+          <SiteText
+            as="span"
+            multiline
+            k="sim.gate.reassurance"
+            fallback="Começa agora, direto no navegador. Também enviamos um link para você continuar depois. Seus dados estão seguros e não enviamos spam."
+          />
+        </p>
+      </form>
     </div>
   );
 }

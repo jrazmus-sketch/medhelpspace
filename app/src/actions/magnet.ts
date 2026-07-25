@@ -29,11 +29,6 @@ import {
   SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
 import {
-  computeSimuladoAreaScores,
-  computeSimuladoScore,
-  type SimuladoProgress,
-} from "@/lib/magnet/simulado";
-import {
   guardCodeRequest,
   honeypotTripped,
   isDisposableEmail,
@@ -1145,63 +1140,6 @@ export async function chooseSimuladoCohortAndSend(input: {
   }
 
   return { ok: true, maskedEmail: maskEmail(email), emailed, devLink };
-}
-
-// Persist the anonymous simulado session so the SAME magic link resumes at the next
-// unanswered question (and so simulado-drip can nudge non-finishers). Auth =
-// result_token. Idempotent — writes the full answered map each call; the client
-// debounces. Bounded + sanitized against a malformed/oversized payload. On `done`,
-// the final score + per-área breakdown are computed server-side from the sanitized
-// map (same trust model as the quiz funnel's client-reported correctness).
-export async function saveSimuladoProgress(input: {
-  token: string;
-  answered: SimuladoProgress;
-  done: boolean;
-}): Promise<{ ok: boolean }> {
-  const token = (input.token ?? "").trim();
-  if (!token) return { ok: false };
-
-  // Sanitize: numeric-string question ids, answer index 0..5, boolean correctness,
-  // capped at 150 entries (the set is 100).
-  const clean: SimuladoProgress = {};
-  let n = 0;
-  for (const [k, v] of Object.entries(input.answered ?? {})) {
-    if (n >= 150) break;
-    if (!/^\d+$/.test(k)) continue;
-    const a = Number((v as { a?: unknown })?.a);
-    const c = (v as { c?: unknown })?.c;
-    if (!Number.isInteger(a) || a < 0 || a > 5) continue;
-    if (typeof c !== "boolean") continue;
-    clean[k] = { a, c };
-    n++;
-  }
-
-  const admin = createAdminClient();
-  const { data: lead } = await admin
-    .from("leads")
-    .select("id, sim_started_at, sim_completed_at")
-    .eq("result_token", token)
-    .maybeSingle();
-  if (!lead) return { ok: false };
-
-  const nowIso = new Date().toISOString();
-  const patch: Record<string, unknown> = {
-    sim_progress: clean,
-    sim_last_activity_at: nowIso,
-  };
-  if (lead.sim_started_at == null && n > 0) patch.sim_started_at = nowIso;
-  if (input.done && lead.sim_completed_at == null) {
-    patch.sim_completed_at = nowIso;
-    patch.sim_score = computeSimuladoScore(clean);
-    patch.sim_area_scores = computeSimuladoAreaScores(clean);
-  }
-
-  const { error } = await admin.from("leads").update(patch).eq("id", lead.id);
-  if (error) {
-    console.error("saveSimuladoProgress failed:", error.message);
-    return { ok: false };
-  }
-  return { ok: true };
 }
 
 // Allowlisted ON-SITE events tracked per known lead (auth = result_token). Keep in
