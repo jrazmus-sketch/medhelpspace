@@ -85,6 +85,10 @@ export const FUNNEL_SENDER_NAME = "Equipe MedHelpSpace";
 // footer stays in lockstep with the site; change both together if the handle moves.
 export const INSTAGRAM_URL = "https://www.instagram.com/medhelpspace/";
 export const INSTAGRAM_HANDLE = "@medhelpspace";
+// Karina, 2026-07-26: the handle alone gave the reader no reason to tap it. This
+// says what is on the other side. Email footer only — the site footer's Instagram
+// link sits in a row of social icons where a tagline would not fit.
+export const INSTAGRAM_TAGLINE = "dicas de Revalida";
 
 // Swap the display name on a "Name <addr>" From header while KEEPING the verified
 // sending address. Lets funnel emails go out as `Equipe MedHelpSpace <addr>`
@@ -246,9 +250,17 @@ function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): stri
 
   // List mail: why-you-got-this + one-click unsubscribe. Member mail: account link
   // (a lead has no /app account, so that link would be dead for them).
+  //
+  // The permission reminder is deliberately GENERIC. It used to name the "Simulado
+  // Honesto" — a product that no longer exists (the quiz magnet became
+  // /questoes-revalida in 6bf8e8a, and the 100-question exam is a different thing
+  // entirely), so it was reaching flashcards and simulado leads as a claim about
+  // something they never asked for. Each funnel's templates already carry their
+  // own accurate, specific line in the BODY ("porque começou o simulado…",
+  // "porque pediu os flashcards…"); this one only has to be true for all of them.
   const manageLine = isListEmail
     ? `<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
-      Você recebeu este e-mail porque pediu o Simulado Honesto no MedHelpSpace.
+      Você recebeu este e-mail porque se cadastrou em ${site}.
       <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.
     </p>`
     : `<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
@@ -268,7 +280,7 @@ function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): stri
           </a>
         </td>
         <td style="vertical-align:middle;">
-          <a href="${INSTAGRAM_URL}" style="font-size:12px;color:#7a1d91;text-decoration:none;font-weight:600;">${INSTAGRAM_HANDLE}</a>
+          <a href="${INSTAGRAM_URL}" style="font-size:12px;color:#7a1d91;text-decoration:none;font-weight:600;">${INSTAGRAM_HANDLE}</a><span style="font-size:12px;color:#9ca3af;">&nbsp;—&nbsp;${INSTAGRAM_TAGLINE}</span>
         </td>
       </tr>
     </table>`;

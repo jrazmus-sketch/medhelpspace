@@ -31,7 +31,6 @@ export function SimuladoReport({
   blank,
   wrong,
   total,
-  cutScore,
   areaScores,
   temasToReview,
   items,
@@ -45,6 +44,10 @@ export function SimuladoReport({
   blank: number;
   wrong: number;
   total: number;
+  /** Still passed by the page and still admin-editable (site_content
+   *  `sim.report.cut_score`), but not rendered since 2026-07-26 — deliberately
+   *  kept so the verdict box can be restored without rebuilding the feature.
+   *  Not destructured above only because an unused binding fails lint. */
   cutScore: number;
   areaScores: SimuladoAreaScore[];
   temasToReview: string[];
@@ -61,8 +64,6 @@ export function SimuladoReport({
   const [open, setOpen] = useState<Set<number>>(() => new Set());
 
   const pct = Math.round((score / total) * 100);
-  const aboveCut = score >= cutScore;
-  const gap = Math.abs(cutScore - score);
 
   const rated = useMemo(
     () =>
@@ -145,34 +146,15 @@ export function SimuladoReport({
             <strong className="tabular-nums text-foreground">{blank}</strong> não respondidas
           </p>
 
-          {/* Cut-score benchmark — the number that turns a score into a verdict. */}
-          <div
-            className={`mx-auto mt-5 max-w-md rounded-2xl border px-5 py-4 text-sm ${
-              aboveCut
-                ? "border-emerald-500/40 bg-emerald-500/10"
-                : "border-amber-500/40 bg-amber-500/10"
-            }`}
-          >
-            <p className="text-foreground">
-              {aboveCut ? (
-                <SiteText
-                  as="span"
-                  multiline
-                  k="sim.report.cut_above"
-                  fallback="Você ficou {gap} ponto(s) acima da nota de corte de referência do Revalida ({cut}/100). Bom sinal — agora o trabalho é sustentar isso em todas as áreas."
-                  vars={{ gap, cut: cutScore }}
-                />
-              ) : (
-                <SiteText
-                  as="span"
-                  multiline
-                  k="sim.report.cut_below"
-                  fallback="Faltaram {gap} ponto(s) para a nota de corte de referência do Revalida ({cut}/100). Essa distância é totalmente recuperável — e o seu desempenho por área mostra exatamente onde ela está."
-                  vars={{ gap, cut: cutScore }}
-                />
-              )}
-            </p>
-          </div>
+          {/* The cut-score verdict box was removed 2026-07-26 (Karina): the report
+              states the score and the per-área breakdown, and does not compare the
+              candidate to a reference nota de corte.
+
+              The PLUMBING IS DELIBERATELY LEFT INTACT — the `cutScore` prop, the
+              page's parseCutScore() read, and the site_content rows
+              sim.report.cut_score / cut_above / cut_below all still exist, so
+              restoring this is re-adding the block below, not rebuilding the
+              feature. See RESTORE at the bottom of this file. */}
         </div>
 
         {/* Per-área */}
@@ -578,3 +560,30 @@ export function SimuladoReport({
     </div>
   );
 }
+
+// ── RESTORE: the cut-score verdict box (removed 2026-07-26, Karina) ───────────
+//
+// Everything it needs still exists — the `cutScore` prop, the page's
+// parseCutScore() read, and the site_content rows sim.report.cut_score /
+// cut_above / cut_below. To bring it back: add `cutScore` to the destructuring
+// at the top, re-add the two derived values, and drop the block back in
+// immediately after the "certas · erradas · não respondidas" line.
+//
+//   const aboveCut = score >= cutScore;
+//   const gap = Math.abs(cutScore - score);
+//
+//   <div className={`mx-auto mt-5 max-w-md rounded-2xl border px-5 py-4 text-sm ${
+//       aboveCut ? "border-emerald-500/40 bg-emerald-500/10"
+//                : "border-amber-500/40 bg-amber-500/10"}`}>
+//     <p className="text-foreground">
+//       {aboveCut ? (
+//         <SiteText as="span" multiline k="sim.report.cut_above"
+//           fallback="Você ficou {gap} ponto(s) acima da nota de corte de referência do Revalida ({cut}/100). Bom sinal — agora o trabalho é sustentar isso em todas as áreas."
+//           vars={{ gap, cut: cutScore }} />
+//       ) : (
+//         <SiteText as="span" multiline k="sim.report.cut_below"
+//           fallback="Faltaram {gap} ponto(s) para a nota de corte de referência do Revalida ({cut}/100). Essa distância é totalmente recuperável — e o seu desempenho por área mostra exatamente onde ela está."
+//           vars={{ gap, cut: cutScore }} />
+//       )}
+//     </p>
+//   </div>
