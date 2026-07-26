@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 import { SimuladoGate } from "@/components/magnet/simulado-gate";
-import { SimuladoReportPreview } from "@/components/magnet/simulado-report-preview";
+import { SimuladoPeek } from "@/components/magnet/simulado-peek";
 import { SimuladoFaq } from "@/components/magnet/simulado-faq";
 import { SiteText } from "@/components/landing/site-text";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
@@ -213,7 +213,7 @@ export default async function SimuladoRevalidaPage({
           </div>
         </section>
 
-        <SimuladoReportPreview />
+        <SimuladoPeek />
 
         {/* ── Composition: the five grandes áreas ───────────────────────────── */}
         <section className="border-y border-border/60 bg-surface-1/30">
