@@ -101,6 +101,10 @@ export async function GET(request: NextRequest) {
       .eq("drip_status", "active")
       .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
       .neq("source", SIMULADO_SOURCE) // simulado funnel has its own sequence
+      // …and source alone is not enough: it is FIRST-TOUCH and never overwritten,
+      // so a lead captured here who later did the simulado still reads the old
+      // source. Anyone who entered the simulado belongs to simulado-drip.
+      .is("sim_entered_at", null)
       .is("verified_at", null)
       .not("completed_at", "is", null)
       .is("recovery_a_sent_at", null)
@@ -170,6 +174,10 @@ export async function GET(request: NextRequest) {
       .eq("drip_status", "active")
       .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
       .neq("source", SIMULADO_SOURCE) // simulado funnel has its own sequence
+      // …and source alone is not enough: it is FIRST-TOUCH and never overwritten,
+      // so a lead captured here who later did the simulado still reads the old
+      // source. Anyone who entered the simulado belongs to simulado-drip.
+      .is("sim_entered_at", null)
       .is("verified_at", null)
       .is("completed_at", null)
       .lt("recovery_b_step", 2)

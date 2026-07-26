@@ -73,6 +73,12 @@ export async function GET(request: NextRequest) {
     .eq("drip_status", "active")
     .neq("source", FLASHCARDS_SOURCE) // the flashcards funnel runs its own drip
     .neq("source", SIMULADO_SOURCE) // the simulado funnel runs its own drip too
+    // …and `source` alone is not enough. It is FIRST-TOUCH and never overwritten,
+    // so a lead this funnel captured in July who then did the 100-question
+    // simulado still reads source='simulado-honesto' — and both crons would claim
+    // the same drip_step, interleaving two sequences in one inbox. Anyone who has
+    // entered the simulado belongs to simulado-drip, whatever captured them first.
+    .is("sim_entered_at", null)
     .not("verified_at", "is", null)
     .lt("drip_step", STEPS[STEPS.length - 1].step)
     .order("verified_at", { ascending: true })

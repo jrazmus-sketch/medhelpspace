@@ -10,7 +10,6 @@ import {
   turmaPickUrl,
   unsubscribeUrl,
   WELCOME_COUPONS,
-  SIMULADO_SOURCE,
   UNDECIDED_COHORT,
   REVALIDA_2027_1_SLUG,
 } from "@/lib/magnet/links";
@@ -32,7 +31,10 @@ import {
 } from "@/lib/magnet/cohort-rollover";
 import { EXAM_PHASE_LABELS, getExamPhase } from "@/lib/cohort-timing";
 
-// Follow-up sequence for the 100-question simulado funnel (source='simulado-100').
+// Follow-up sequence for the 100-question simulado funnel.
+//
+// Membership is `leads.sim_entered_at IS NOT NULL` — NOT source='simulado-100'.
+// See the scan query below for why.
 //
 // The D0 delivery (resume link, lead-sim-access) is sent inline when the exam
 // starts. This cron owns everything after it: finish nudges, the pivot into the
@@ -109,9 +111,15 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const today = now.toLocaleDateString("en-CA", { timeZone: TZ });
 
-    // Active simulado-funnel leads who started the exam, oldest first, with rungs
-    // left. drip_step is exclusively owned by this cron for these leads —
-    // lead-drip and lead-recovery both exclude source='simulado-100'.
+    // Active simulado-funnel leads, oldest first, with rungs left.
+    //
+    // MEMBERSHIP IS `sim_entered_at`, NOT `source`. `leads.source` is first-touch
+    // and is never overwritten, so an address captured by another funnel months
+    // ago keeps that source even after doing the whole 100-question exam. Selecting
+    // on source meant those leads — including one who answered 99 and submitted —
+    // were invisible to this cron and got zero follow-up. lead-drip and
+    // lead-recovery exclude on the same column, which is what keeps drip_step
+    // exclusively owned here.
     //
     // The verified-or-started filter is the deliverability guardrail applied in
     // SQL rather than in the loop: an address that has never clicked anything and
@@ -120,14 +128,13 @@ export async function GET(request: NextRequest) {
     const { data: leads } = await admin
       .from("leads")
       .select(
-        "id, email, drip_step, completed_at, target_cohort, previous_target_cohort, first_name, result_token, unsubscribe_token, verified_at, sim_started_at, sim_completed_at, sim_progress, sim_answered, sim_score, sim_reminder_step, sim_sales_step",
+        "id, email, drip_step, sim_entered_at, target_cohort, previous_target_cohort, first_name, result_token, unsubscribe_token, verified_at, sim_started_at, sim_completed_at, sim_progress, sim_answered, sim_score, sim_reminder_step, sim_sales_step",
       )
       .eq("drip_status", "active")
-      .eq("source", SIMULADO_SOURCE)
-      .not("completed_at", "is", null)
+      .not("sim_entered_at", "is", null)
       .lt("drip_step", LAST_LADDER_STEP)
       .or("verified_at.not.is.null,sim_started_at.not.is.null")
-      .order("completed_at", { ascending: true })
+      .order("sim_entered_at", { ascending: true })
       .limit(300);
 
     if (!leads || leads.length === 0) {
@@ -236,8 +243,10 @@ export async function GET(request: NextRequest) {
         (lead.sim_progress ? Object.keys(lead.sim_progress as Record<string, unknown>).length : 0);
       const submitted = lead.sim_completed_at != null;
 
+      // Clocked from sim_entered_at, not completed_at: completed_at belongs to
+      // whichever funnel first captured the address and may be months older.
       const elapsedDays = Math.floor(
-        (now.getTime() - new Date(lead.completed_at as string).getTime()) / 86_400_000,
+        (now.getTime() - new Date(lead.sim_entered_at as string).getTime()) / 86_400_000,
       );
 
       const plan = planSimuladoSend({

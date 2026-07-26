@@ -170,7 +170,7 @@ export async function startSimulado(input: {
   const { data: existing } = await admin
     .from("leads")
     .select(
-      "id, result_token, unsubscribe_token, sim_started_at, first_name, device_type, landing_referrer, landing_path, funnel_session_id",
+      "id, result_token, unsubscribe_token, sim_started_at, sim_entered_at, completed_at, first_name, device_type, landing_referrer, landing_path, funnel_session_id",
     )
     .eq("email", email)
     .maybeSingle();
@@ -186,11 +186,29 @@ export async function startSimulado(input: {
 
     // First-touch attribution only: `source` is never overwritten, and context
     // fields are filled only while still null.
+    //
+    // THE ADDRESS MAY ALREADY BELONG TO ANOTHER FUNNEL. That is common — someone
+    // who did the 15-question quiz in July comes back and does the simulado. The
+    // row keeps its original `source` (that is what first-touch means), so the
+    // simulado's membership test is `sim_entered_at`, not `source`.
+    const firstSimuladoEntry = existing.sim_entered_at == null;
     const patch: Record<string, unknown> = {
       target_cohort: targetCohort,
-      completed_at: now,
       sim_set_version: SIMULADO_SET_VERSION,
     };
+    if (firstSimuladoEntry) patch.sim_entered_at = now;
+    // NEVER overwrite completed_at. It is the OTHER funnel's drip clock, and
+    // stamping it here silently reset a sequence the lead was already in.
+    if (existing.completed_at == null) patch.completed_at = now;
+    // Taking ownership of the shared step counter. Without this a cross-funnel
+    // lead arrives carrying the other sequence's drip_step and the simulado
+    // ladder resumes at that rung — skipping every finish nudge and dropping
+    // them straight into the sales spine.
+    if (firstSimuladoEntry) {
+      patch.drip_step = 0;
+      patch.sim_reminder_step = 0;
+      patch.sim_sales_step = 0;
+    }
     if (firstName && !existing.first_name) patch.first_name = firstName;
     if (existing.device_type == null) {
       patch.user_agent = ctx.user_agent;
@@ -213,6 +231,7 @@ export async function startSimulado(input: {
         target_cohort: targetCohort,
         first_name: firstName,
         completed_at: now,
+        sim_entered_at: now,
         sim_set_version: SIMULADO_SET_VERSION,
         utm_source: utm.source ?? null,
         utm_medium: utm.medium ?? null,
