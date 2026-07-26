@@ -133,6 +133,80 @@ export async function getSimuladoAreaCounts(): Promise<
   }));
 }
 
+// ── Commented review (server-only, post-submission) ──────────────────────────
+
+// Reference pass mark for the 1ª etapa, out of 100. Read from site_content
+// (`sim.report.cut_score`) so Karina can correct it without a deploy — it is a
+// claim about the exam, not about us, and it must be easy to keep accurate.
+export const SIMULADO_DEFAULT_CUT_SCORE = 60;
+
+export function parseCutScore(raw: string | undefined): number {
+  const n = Number.parseInt((raw ?? "").trim(), 10);
+  return Number.isInteger(n) && n > 0 && n <= 100 ? n : SIMULADO_DEFAULT_CUT_SCORE;
+}
+
+export type SimuladoReviewItem = {
+  id: number;
+  position: number;
+  enunciado: string;
+  alternatives: string[];
+  correctIndex: number;
+  chosenIndex: number | null; // null = deixou em branco
+  flagged: boolean;
+  comentario: string;
+  distratores: string;
+  conceitoChave: string;
+  mediaUrl: string | null;
+  area: SimuladoArea;
+  areaLabel: string;
+  tema: string;
+};
+
+// The full commented gabarito, joined to what the candidate actually answered.
+//
+// ONLY the result page may call this, and only after sim_completed_at is set: it
+// carries every correct answer and every comentário. It must never be reachable
+// from the exam surface — that is the whole basis of the no-feedback design.
+export async function getSimuladoReviewItems(
+  progress: SimuladoProgress,
+  flagged: number[],
+): Promise<SimuladoReviewItem[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("simulado_questions")
+    .select(
+      "id, position, enunciado, alternatives, correct_index, comentario, distratores, conceito_chave, media_url, area, tema",
+    )
+    .eq("set_version", SIMULADO_SET_VERSION)
+    .order("position", { ascending: true });
+
+  if (error || !data) return [];
+
+  const flaggedSet = new Set(flagged.map((n) => Number(n)));
+
+  return data.map((q) => {
+    const id = q.id as number;
+    const pick = progress[String(id)];
+    const area = q.area as SimuladoArea;
+    return {
+      id,
+      position: q.position as number,
+      enunciado: q.enunciado as string,
+      alternatives: (q.alternatives as string[]) ?? [],
+      correctIndex: q.correct_index as number,
+      chosenIndex: typeof pick?.a === "number" ? pick.a : null,
+      flagged: flaggedSet.has(id),
+      comentario: q.comentario as string,
+      distratores: q.distratores as string,
+      conceitoChave: q.conceito_chave as string,
+      mediaUrl: (q.media_url as string | null) ?? null,
+      area,
+      areaLabel: SIMULADO_AREA_LABELS[area] ?? "",
+      tema: q.tema as string,
+    };
+  });
+}
+
 // ── Grading (server-only) ────────────────────────────────────────────────────
 
 type GradingRow = {
