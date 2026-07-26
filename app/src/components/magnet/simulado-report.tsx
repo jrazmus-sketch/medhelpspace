@@ -192,8 +192,14 @@ export function SimuladoReport({
                     style={{ width: `${a.rate}%` }}
                   />
                 </div>
-                <span className="w-16 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                  {a.correct}/{a.total}
+                {/* Percentage leads, raw count follows — Karina asked for the
+                    percentual por área, but the fraction is what makes it
+                    interpretable when an área has 10 questions and another 39. */}
+                <span className="w-[4.5rem] shrink-0 text-right tabular-nums">
+                  <span className="text-sm font-semibold text-foreground">{a.rate}%</span>
+                  <span className="ml-1 font-mono text-[11px] text-muted-foreground">
+                    {a.correct}/{a.total}
+                  </span>
                 </span>
               </div>
             ))}

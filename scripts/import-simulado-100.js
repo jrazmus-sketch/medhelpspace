@@ -12,9 +12,14 @@
  *   classification.json 100 entries: area (one of 5 slugs) + tema
  *   figure-urls.json   { "<question number>": "<Bunny CDN url>" } for the 7 figures
  *
- * The whole set is replaced atomically for its set_version: a re-import after a
- * question swap deletes and reinserts in one transaction, so the exam is never
+ * The whole set is written atomically for its set_version, so the exam is never
  * served a half-written set.
+ *
+ * IDs ARE STABLE ACROSS RE-IMPORTS. Rows are upserted on (set_version, position)
+ * rather than deleted and reinserted, because leads.sim_progress is keyed by
+ * simulado_questions.id: a delete/insert cycle would hand every question a new id
+ * and silently wipe the answers of everyone with an exam in progress. A correction
+ * to a tema or an área must never cost a candidate their work.
  *
  * Usage:
  *   node scripts/import-simulado-100.js --dir <folder>           # dry run
@@ -28,7 +33,7 @@ const SET_VERSION = 2;
 const AREAS = ['clinica-medica', 'cirurgia', 'go', 'pediatria', 'saude-coletiva'];
 const AREA_LABELS = {
   'clinica-medica': 'Clínica Médica',
-  cirurgia: 'Cirurgia',
+  cirurgia: 'Cirurgia Geral',
   go: 'Ginecologia e Obstetrícia',
   pediatria: 'Pediatria',
   'saude-coletiva': 'Saúde Coletiva',
@@ -181,7 +186,6 @@ async function main() {
       const [{ count: before }] = await tx`
         SELECT count(*)::int AS count FROM simulado_questions WHERE set_version = ${SET_VERSION}
       `;
-      await tx`DELETE FROM simulado_questions WHERE set_version = ${SET_VERSION}`;
 
       for (const r of rows) {
         await tx`
@@ -192,9 +196,28 @@ async function main() {
             (${r.set_version}, ${r.position}, ${r.enunciado}, ${db.json(r.alternatives)},
              ${r.correct_index}, ${r.comentario}, ${r.distratores}, ${r.conceito_chave},
              ${r.area}, ${r.tema}, ${r.media_url})
+          ON CONFLICT (set_version, position) DO UPDATE SET
+            enunciado      = EXCLUDED.enunciado,
+            alternatives   = EXCLUDED.alternatives,
+            correct_index  = EXCLUDED.correct_index,
+            comentario     = EXCLUDED.comentario,
+            distratores    = EXCLUDED.distratores,
+            conceito_chave = EXCLUDED.conceito_chave,
+            area           = EXCLUDED.area,
+            tema           = EXCLUDED.tema,
+            media_url      = EXCLUDED.media_url
         `;
       }
-      console.log(`\n  replaced ${before} row(s) with ${rows.length}`);
+
+      // A shorter set would otherwise leave orphans behind.
+      const removed = await tx`
+        DELETE FROM simulado_questions
+        WHERE set_version = ${SET_VERSION} AND position > ${rows.length}
+      `;
+      console.log(
+        `\n  upserted ${rows.length} row(s) (was ${before})` +
+          (removed.count ? `, removed ${removed.count} orphan(s)` : ""),
+      );
     });
 
     const [{ count }] = await db`

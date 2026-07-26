@@ -39,9 +39,13 @@ export const SIMULADO_AREAS = [
 
 export type SimuladoArea = (typeof SIMULADO_AREAS)[number];
 
+// The five grandes áreas the report breaks performance down by, named as Karina
+// specified. Note `go`: she classifies Ginecologia and Obstetrícia separately in
+// her source sheet (8 + 10) but reports them as one área of 18 — the candidate
+// sees the combined figure.
 export const SIMULADO_AREA_LABELS: Record<SimuladoArea, string> = {
   "clinica-medica": "Clínica Médica",
-  cirurgia: "Cirurgia",
+  cirurgia: "Cirurgia Geral",
   go: "Ginecologia e Obstetrícia",
   pediatria: "Pediatria",
   "saude-coletiva": "Saúde Coletiva",
