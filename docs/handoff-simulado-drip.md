@@ -174,8 +174,11 @@ the new build, with a cache-buster.
 
 ## Open
 
-- **Not deployed.** The DB patch is applied to prod and local; the code is
-  committed but the Vercel deploy has not been verified.
+- **Deployed 2026-07-26** (`bf76171`), DB patch applied to prod and local.
+  Verified live: `/simulado-revalida/turma` returns 200 with its own copy and
+  `/api/cron/simulado-drip` 401s without the Bearer secret. The **first
+  scheduled run** (14:30 UTC, `app/vercel.json`) has not happened yet — with zero
+  `source='simulado-100'` leads in production it should report `sent: 0`.
 - **`bulk-assign-cohort-modal.tsx` still lists turmas by hand.** The server
   action behind it now validates against `cohorts`, so a new turma is *accepted* —
   it just isn't *offered* in that admin modal until someone edits the array.
