@@ -86,6 +86,9 @@ async function countSimulados(): Promise<number> {
     .select("id", { count: "exact", head: true })
     .eq("view", "simulados")
     .eq("type", "h5p-quiz")
-    .eq("status", "publish");
+    .eq("status", "publish")
+    // Excludes the MedHelp 60D "Simulados 100Q" — they live behind the 60D gate,
+    // so counting them here would advertise content this page can't reach.
+    .is("content_module_id", null);
   return count ?? 0;
 }

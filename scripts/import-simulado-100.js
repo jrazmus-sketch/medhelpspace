@@ -21,9 +21,19 @@
  * and silently wipe the answers of everyone with an exam in progress. A correction
  * to a tema or an área must never cost a candidate their work.
  *
+ * MEMBER MIRROR (--member-page <slug>): the same 100 questions also ship inside
+ * MedHelp 60D as one of the "Simulados 100Q". Members read from `quiz_questions`
+ * (that's what the simulado player, progress stats, Revisão and the admin editor
+ * all expect), so the set exists in two tables. Rather than let those drift, this
+ * script writes BOTH from the one source: a fix to a comentário lands in the funnel
+ * and in 60D from a single command. Member rows are matched on (page_id, position),
+ * so quiz_questions ids are stable and member progress survives a re-import.
+ *
  * Usage:
  *   node scripts/import-simulado-100.js --dir <folder>           # dry run
  *   node scripts/import-simulado-100.js --dir <folder> --apply   # write to DB
+ *   node scripts/import-simulado-100.js --dir <folder> --apply \
+ *        --member-page simulado-100q-3                           # + sync 60D copy
  */
 
 const fs = require('fs');
@@ -115,6 +125,13 @@ async function main() {
     process.exit(1);
   }
   const dir = path.resolve(process.argv[dirIdx + 1]);
+
+  const memberIdx = process.argv.indexOf('--member-page');
+  const memberPage = memberIdx === -1 ? null : process.argv[memberIdx + 1] ?? null;
+  if (memberIdx !== -1 && !memberPage) {
+    console.error('--member-page requires a page slug (e.g. simulado-100q-3)');
+    process.exit(1);
+  }
 
   const read = (name) => {
     const p = path.join(dir, name);
@@ -224,9 +241,87 @@ async function main() {
       SELECT count(*)::int AS count FROM simulado_questions WHERE set_version = ${SET_VERSION}
     `;
     console.log(`  verified in DB: ${count} rows at set_version ${SET_VERSION}`);
+
+    if (memberPage) await syncMemberCopy(db, rows, memberPage);
   } finally {
     await db.end();
   }
+}
+
+// ── Member mirror (MedHelp 60D → Simulados 100Q) ──────────────────────────────
+
+// The member quiz renderer expects HTML, and answers as [{text, correct, feedback}].
+// The commented gabarito is folded into explanation_html in the same order the
+// result page shows it: why the answer is right, where the distractors mislead,
+// then the conceito-chave.
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function buildExplanation(r) {
+  return (
+    `<p><strong>Comentário.</strong> ${esc(r.comentario)}</p>` +
+    `<p><strong>Por que as outras estão erradas.</strong> ${esc(r.distratores)}</p>` +
+    `<p><strong>Conceito-chave:</strong> ${esc(r.conceito_chave)}</p>`
+  );
+}
+
+async function syncMemberCopy(db, rows, slug) {
+  const [page] = await db`
+    SELECT id, title, content_module_id FROM pages WHERE slug = ${slug}
+  `;
+  if (!page) {
+    throw new Error(
+      `--member-page: no page with slug "${slug}". Run schema-patch-simulados-100q-60d.sql first.`,
+    );
+  }
+
+  console.log(`\n  syncing member copy → ${slug} (page ${page.id}, "${page.title}")`);
+  if (page.content_module_id !== 1) {
+    console.log(
+      `  WARNING: page is not tagged into MedHelp 60D (content_module_id=${page.content_module_id}) — it will be visible outside the 60D gate.`,
+    );
+  }
+
+  await db.begin(async (tx) => {
+    const [{ count: before }] = await tx`
+      SELECT count(*)::int AS count FROM quiz_questions WHERE page_id = ${page.id}
+    `;
+
+    for (const r of rows) {
+      const answers = r.alternatives.map((text, i) => ({
+        text,
+        correct: i === r.correct_index,
+        feedback: '',
+      }));
+      await tx`
+        INSERT INTO quiz_questions (page_id, position, question, answers, media_url, explanation_html)
+        VALUES (${page.id}, ${r.position}, ${`<p>${esc(r.enunciado)}</p>`},
+                ${db.json(answers)}, ${r.media_url}, ${buildExplanation(r)})
+        ON CONFLICT (page_id, position) DO UPDATE SET
+          question         = EXCLUDED.question,
+          answers          = EXCLUDED.answers,
+          media_url        = EXCLUDED.media_url,
+          explanation_html = EXCLUDED.explanation_html
+      `;
+    }
+
+    const removed = await tx`
+      DELETE FROM quiz_questions WHERE page_id = ${page.id} AND position > ${rows.length}
+    `;
+    console.log(
+      `  upserted ${rows.length} member question(s) (was ${before})` +
+        (removed.count ? `, removed ${removed.count} orphan(s)` : ''),
+    );
+  });
+
+  const [{ count }] = await db`
+    SELECT count(*)::int AS count FROM quiz_questions WHERE page_id = ${page.id}
+  `;
+  console.log(`  verified in DB: ${count} questions on ${slug}`);
 }
 
 main().catch((err) => {

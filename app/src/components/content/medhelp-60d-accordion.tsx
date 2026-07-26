@@ -23,7 +23,7 @@ type Medhelp60Section = {
 const SECTIONS: Medhelp60Section[] = [
   { id: "formula",        title: "Fórmula MedHelp", subtitle: "Condutas Clínicas",  Icon: FlaskConical, href: "/app/formula-medhelp" },
   { id: "memorecards",    title: "MemoreCards",    subtitle: "Alta Fixação",        Icon: Brain },
-  { id: "simulados-100q", title: "Simulados 100Q", subtitle: "Performance INEP",    Icon: ClipboardCheck },
+  { id: "simulados-100q", title: "Simulados 100Q", subtitle: "Performance INEP",    Icon: ClipboardCheck, href: "/app/simulados-100q" },
 ];
 
 /**

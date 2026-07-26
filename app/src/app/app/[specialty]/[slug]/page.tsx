@@ -258,7 +258,13 @@ function PageBody({
             grupo={grupo}
           />
         );
-      if (page.content_module_id === MEDHELP_60D_MODULE_ID) return <MemorecardsRenderer pageId={page.id} />;
+      // MemoreCards are the 60D module's OTHER h5p-quiz content and carry
+      // view='quiz'. The 60D "Simulados 100Q" are also h5p-quiz + module 1, so
+      // this branch must not claim them — check the simulado view first or every
+      // 60D simulado renders as an empty memorecard deck.
+      if (page.content_module_id === MEDHELP_60D_MODULE_ID && !isSimulado(page)) {
+        return <MemorecardsRenderer pageId={page.id} />;
+      }
       return <QuizRenderer pageId={page.id} />;
     case "blurb-nav-hub":
       return <BlurbNavHubRenderer pageId={page.id} />;

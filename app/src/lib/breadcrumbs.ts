@@ -20,6 +20,12 @@ function typeRootFor(input: {
   const { view, track_id, content_module_id } = input;
   if (track_id === FLASHCARDS_TRACK_ID) return { label: "Flashcards", href: "/app/flashcards" };
   if (view === "quiz")      return { label: "Questões",  href: "/app/estudo-por-questoes" };
+  // The 60D "Simulados 100Q" share view='simulados' with the public catalogue and
+  // are told apart by the module, so this must be checked BEFORE the generic rule —
+  // otherwise their breadcrumb sends members to a tab that doesn't list them.
+  if (view === "simulados" && content_module_id === MEDHELP_60D_MODULE_ID) {
+    return { label: "Simulados 100Q", href: "/app/simulados-100q" };
+  }
   if (view === "simulados") return { label: "Simulados", href: "/app/estudo-por-questoes?tab=simulados" };
   if (view === "resumos")   return { label: "Resumos",   href: "/app/resumos" };
   if (view === "formula")   return { label: "Fórmula",   href: "/app/formula-medhelp" };

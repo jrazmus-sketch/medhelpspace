@@ -17,7 +17,10 @@ export async function GeralSimuladosGrid() {
     .eq("view", "simulados")
     .eq("type", "h5p-quiz")
     .eq("status", "publish")
-    .is("specialty_id", null);
+    .is("specialty_id", null)
+    // The MedHelp 60D "Simulados 100Q" are stored the same way and differ only by
+    // content_module_id. Without this they'd show up here too, outside the 60D gate.
+    .is("content_module_id", null);
 
   const rows = (pages ?? []).slice().sort((a, b) => numFromSlug(a.slug) - numFromSlug(b.slug));
   if (rows.length === 0) {
