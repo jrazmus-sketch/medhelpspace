@@ -1593,5 +1593,21 @@
     "forgotPassword": "Esqueceu a senha?",
     "signInButton": "Entrar",
     "adminPanel": "Painel admin"
+  },
+  "emailReview": {
+    "title": "Revisão de e-mails",
+    "subtitle": "Todos os e-mails do funil renderizados com dados de exemplo, na ordem de envio. Somente leitura — para alterar, use o editor.",
+    "editLink": "Editar textos →",
+    "reviewLink": "Revisar todos →",
+    "empty": "Nenhum e-mail neste grupo.",
+    "subjectLabel": "Assunto:",
+    "inactiveBadge": "desativado",
+    "previewTitle": "Pré-visualização — {{name}}",
+    "sampleNote": "Os valores entre chaves são substituídos por dados de exemplo (nome, nota, cupom, links). No envio real, cada pessoa recebe os próprios dados.",
+    "group.simulado": "Simulado 100 questões",
+    "group.flashcards": "Flashcards",
+    "group.leads": "Outros funis de leads",
+    "group.membros": "Membros e ciclo de vida",
+    "group.admin": "Alertas internos"
   }
 }

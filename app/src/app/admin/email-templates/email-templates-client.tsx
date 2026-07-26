@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
@@ -105,7 +106,15 @@ export function EmailTemplatesClient({ templates, settings, adminEmail }: Props)
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-bold">{t("emailTemplates.title")}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">{t("emailTemplates.title")}</h1>
+          <Link
+            href="/admin/email-templates/revisao"
+            className="text-sm font-medium text-brand hover:underline"
+          >
+            {t("emailReview.reviewLink")}
+          </Link>
+        </div>
         <p className="text-sm text-muted-foreground">{t("emailTemplates.subtitle")}</p>
       </header>
 

@@ -1593,5 +1593,21 @@
     "forgotPassword": "Forgot password?",
     "signInButton": "Sign in",
     "adminPanel": "Admin panel"
+  },
+  "emailReview": {
+    "title": "Email review",
+    "subtitle": "Every funnel email rendered with sample data, in send order. Read-only — use the editor to change anything.",
+    "editLink": "Edit copy →",
+    "reviewLink": "Review all →",
+    "empty": "No emails in this group.",
+    "subjectLabel": "Subject:",
+    "inactiveBadge": "disabled",
+    "previewTitle": "Preview — {{name}}",
+    "sampleNote": "Values in braces are replaced with sample data (name, score, coupon, links). On a real send, each person receives their own.",
+    "group.simulado": "Simulado 100 questions",
+    "group.flashcards": "Flashcards",
+    "group.leads": "Other lead funnels",
+    "group.membros": "Members and lifecycle",
+    "group.admin": "Internal alerts"
   }
 }

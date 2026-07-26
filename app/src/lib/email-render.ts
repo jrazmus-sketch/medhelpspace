@@ -933,26 +933,27 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     active: true,
     sort_order: 13.4,
   },
-  // ── Simulado funnel (100 questões reais, /simulado-revalida) ──────────────────
-  // D0 delivery: the magic access link to the 100-question simulado, sent the moment
-  // the lead picks their turma. The click on this link (acesso route) is the
-  // verification, and the SAME link resumes the test at the next unanswered question.
+  // ── Simulado funnel (100 questões inéditas, /simulado-revalida) ───────────────
+  // D0: sent the MOMENT the candidate starts. The exam begins on-site immediately —
+  // this email is not a delivery, it's the resume link, and the copy has to say so
+  // or it reads as "click here to start something you already started".
   "lead-sim-access": {
     kind: "lead-sim-access",
-    name: "[Lead] Simulado — link de acesso",
-    description: "Funil do simulado (100 questões reais): entrega o link mágico ao escolher a turma.",
-    subject: "Seu simulado com 100 questões reais do Revalida está pronto 📝",
+    name: "[Lead] Simulado — link para retomar",
+    description:
+      "Funil do simulado (100 questões inéditas): enviado ao iniciar a prova. É o link de retorno, não a entrega — a prova já começou no site.",
+    subject: "Seu link para voltar ao simulado Revalida 📝",
     kicker: "",
-    headline: "Seu simulado está pronto",
-    body_html: `<p style="margin:0 0 16px;">{{greeting}}Aqui está o seu simulado com <strong>100 questões reais</strong> das provas do Revalida (INEP, 2020 a 2025) — 5 blocos de 20 questões, um por grande área, com correção na hora.</p>
-<p style="margin:0 0 16px;">Não precisa fazer tudo de uma vez: seu progresso fica salvo a cada resposta, e <strong>este mesmo link</strong> te traz de volta exatamente de onde você parou.</p>
-<p style="margin:0 0 20px;">Ao final, você recebe um relatório de desempenho por grande área — o retrato mais honesto da sua distância até a aprovação.</p>
-<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Você recebeu este e-mail porque pediu o simulado em medhelpspace.com.br. Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
-    cta_label: "Começar meu simulado →",
+    headline: "Guarde este e-mail",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você começou o simulado com <strong>100 questões inéditas</strong> no estilo da 1ª etapa do Revalida. Este é o seu <strong>link de retorno</strong>: guarde este e-mail.</p>
+<p style="margin:0 0 16px;">Não precisa fazer tudo de uma vez. <strong>Não há limite de tempo</strong>, seu progresso é salvo automaticamente e este mesmo link te traz de volta exatamente de onde você parou.</p>
+<p style="margin:0 0 20px;">Quando entregar a prova, você recebe o seu <strong>desempenho nas cinco grandes áreas</strong> e o <strong>gabarito comentado das 100 questões</strong> — com o porquê da alternativa correta e onde cada alternativa errada engana.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Você recebeu este e-mail porque começou o simulado em medhelpspace.com.br. Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Voltar ao meu simulado →",
     cta_href: "{{accessUrl}}",
     variables: [
       { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
-      { tag: "accessUrl", description: "Link mágico de acesso ao simulado (token; retoma o progresso)" },
+      { tag: "accessUrl", description: "Link mágico de retorno ao simulado (token; retoma o progresso)" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
     active: true,
@@ -963,19 +964,19 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     kind: "lead-sim-d2",
     name: "[Lead] Simulado D2 — cupom de boas-vindas",
     description: "1 dia após terminar o simulado: recapitula o resultado + cupom para a plataforma.",
-    subject: "Seus {{score}}/100 no simulado — e o próximo passo",
+    subject: "Seus {{simScore}}/100 — e o que fazer com esse resultado",
     kicker: "",
     headline: "Do diagnóstico à aprovação",
-    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você fez <strong>{{score}}/100</strong> no simulado com questões reais do Revalida. Agora você sabe exatamente onde está perdendo pontos — e é aí que a plataforma entra.</p>
-<p style="margin:0 0 16px;">Lá dentro, cada uma daquelas 100 questões tem <strong>comentário completo</strong> (por que a certa está certa e por que cada alternativa erra), além de milhares de outras questões comentadas, simulados no padrão da banca, flashcards com revisão espaçada e um plano de estudos que prioriza as áreas onde você mais errou.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você fez <strong>{{simScore}}/100</strong> no simulado e já viu o gabarito comentado das 100 questões. Agora você sabe onde está perdendo pontos — a pergunta é o que fazer com isso nas semanas que faltam.</p>
+<p style="margin:0 0 16px;">É o que a plataforma resolve: <strong>milhares de questões comentadas no mesmo padrão</strong>, simulados da banca, revisão espaçada que devolve na hora certa o que você errou, resumos, MedVoice — e um plano de estudos que ataca primeiro as áreas em que você foi pior neste simulado.</p>
 <p style="margin:0 0 16px;">Pra dar o próximo passo, separei um cupom de boas-vindas: <strong>{{coupon}}</strong> — {{couponPercent}} de desconto.</p>
-<p style="margin:0 0 8px;">Quer rever seu relatório? <a href="{{accessUrl}}" style="color:#7a1d91;">Reabrir meu simulado</a>.</p>
+<p style="margin:0 0 8px;">Quer rever seu relatório e o gabarito? <a href="{{accessUrl}}" style="color:#7a1d91;">Reabrir meu resultado</a>.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Usar meu cupom de {{couponPercent}} →",
     cta_href: "{{checkoutUrl}}",
     variables: [
       { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
-      { tag: "score", description: "Nota final no simulado (0–100)" },
+      { tag: "simScore", description: "Nota final no simulado (0–100)" },
       { tag: "coupon", description: "Código do cupom de boas-vindas da turma" },
       { tag: "couponPercent", description: "Percentual do cupom (ex.: '10%')" },
       { tag: "checkoutUrl", description: "Link de checkout com o cupom aplicado" },
@@ -993,9 +994,9 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Ainda dá tempo — {{couponPercent}} na plataforma completa",
     kicker: "",
     headline: "Um simulado mostra o problema. A plataforma resolve.",
-    body_html: `<p style="margin:0 0 16px;">{{greeting}}Fazer simulado é o primeiro passo — mas o que aprova é o que você faz com o resultado: revisar as áreas certas, com questões comentadas e constância até a prova.</p>
-<p style="margin:0 0 16px;">É exatamente isso que a plataforma faz por você. Seu cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) ainda está de pé.</p>
-<p style="margin:0 0 8px;">Quer rever seu desempenho? <a href="{{accessUrl}}" style="color:#7a1d91;">Reabrir meu relatório</a>.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Fazer o simulado foi o primeiro passo — mas o que aprova é o que vem depois: revisar as áreas certas, com constância, até a prova.</p>
+<p style="margin:0 0 16px;">É exatamente isso que a plataforma faz por você, começando pelas grandes áreas em que você teve mais dificuldade. Seu cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) ainda está de pé.</p>
+<p style="margin:0 0 8px;">Quer rever seu desempenho e o gabarito comentado? <a href="{{accessUrl}}" style="color:#7a1d91;">Reabrir meu resultado</a>.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Garantir minha vaga com {{couponPercent}} →",
     cta_href: "{{checkoutUrl}}",
@@ -1019,14 +1020,19 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Seu simulado do Revalida está te esperando",
     kicker: "",
     headline: "Continue de onde você parou",
-    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você começou seu simulado com questões reais do Revalida, mas ainda faltam <strong>{{questionsLeft}} questões</strong> — e o seu progresso está salvo, esperando você voltar.</p>
-<p style="margin:0 0 16px;">É só continuar pelo <strong>mesmo link</strong>. Cada bloco tem 20 questões — dá pra avançar um bloco por dia e terminar com o relatório completo por grande área.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}{{progressLine}} Seu progresso está salvo, e o mesmo link te leva de volta exatamente ao ponto em que você parou.</p>
+<p style="margin:0 0 16px;">Sem pressa: <strong>não há limite de tempo</strong>. Dá para responder um punhado de questões por dia, quando der.</p>
+<p style="margin:0 0 20px;">Ao entregar a prova, você libera o <strong>desempenho nas cinco grandes áreas</strong> e o <strong>gabarito comentado das 100 questões</strong>.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Continuar meu simulado →",
     cta_href: "{{accessUrl}}",
     variables: [
       { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
-      { tag: "questionsLeft", description: "Quantas questões faltam para terminar" },
+      {
+        tag: "progressLine",
+        description:
+          "Frase de progresso montada pelo sistema (ex.: 'Você respondeu 68 de 100 questões.'). NUNCA traz nota nem desempenho por área — o diagnóstico só é liberado ao entregar a prova.",
+      },
       { tag: "accessUrl", description: "Link mágico para retomar o simulado (resume o progresso)" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
@@ -1039,18 +1045,22 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     kind: "lead-sim-finish-2",
     name: "[Lead] Simulado — continue + cupom (lembrete 2)",
     description: "Enviado a quem não terminou o simulado (+3 dias): termine + cupom de boas-vindas.",
-    subject: "Faltam {{questionsLeft}} questões — e um cupom pra você",
+    subject: "Termine seu simulado — e leve um cupom",
     kicker: "",
     headline: "Termine seu simulado (e leve um desconto)",
-    body_html: `<p style="margin:0 0 16px;">{{greeting}}Seu simulado continua salvo — faltam <strong>{{questionsLeft}} questões</strong> para você ter o relatório completo por grande área. Vale a pena: é o diagnóstico mais honesto de onde você está.</p>
-<p style="margin:0 0 16px;">E um empurrãozinho pra ir além do diagnóstico: o cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) na plataforma completa — questões comentadas, simulados da banca, flashcards e plano de estudos até a sua prova.</p>
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}{{progressLine}} Continua tudo salvo, sem limite de tempo — e ao entregar você libera o desempenho nas cinco grandes áreas e o <strong>gabarito comentado das 100 questões</strong>.</p>
+<p style="margin:0 0 16px;">E um empurrãozinho para ir além do diagnóstico: o cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) na plataforma completa — questões comentadas, simulados no padrão da banca, flashcards com revisão espaçada e plano de estudos até a sua prova.</p>
 <p style="margin:0 0 8px;">Ver a plataforma com desconto: <a href="{{checkoutUrl}}" style="color:#7a1d91;">aproveitar {{couponPercent}}</a>.</p>
 <p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
     cta_label: "Terminar meu simulado →",
     cta_href: "{{accessUrl}}",
     variables: [
       { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
-      { tag: "questionsLeft", description: "Quantas questões faltam para terminar" },
+      {
+        tag: "progressLine",
+        description:
+          "Frase de progresso montada pelo sistema (ex.: 'Você respondeu 68 de 100 questões.'). NUNCA traz nota nem desempenho por área.",
+      },
       { tag: "coupon", description: "Código do cupom de boas-vindas (ou FLASH5 p/ indecisos)" },
       { tag: "couponPercent", description: "Percentual do cupom (ex.: '5%')" },
       { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
@@ -1330,6 +1340,12 @@ export const SAMPLE_VARS: Record<string, string> = {
   checkoutUrl:
     "https://medhelpspace.com.br/checkout?cohort=revalida-2027-1&cupom=REVALIDA10",
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",
+  // Simulado-funnel samples. `simScore` is deliberately NOT `score`: the quiz
+  // funnel's score is out of 15 and this one is out of 100, and sharing a tag made
+  // the preview render "7/100".
+  simScore: "62",
+  progressLine: "Você respondeu 68 de 100 questões.",
+  questionsLeft: "32",
   // Recovery-funnel samples
   recoverUrl:
     "https://medhelpspace.com.br/questoes-revalida/recuperar?t=00000000-0000-0000-0000-000000000000",

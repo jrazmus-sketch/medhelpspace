@@ -13,6 +13,9 @@ import {
   REVALIDA_2027_1_SLUG,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
+// Shared with the exam + report so the reminder copy can never drift from the
+// rules actually enforced on the site.
+import { SIMULADO_MIN_ANSWERS, SIMULADO_TOTAL } from "@/lib/magnet/simulado";
 
 // Welcome + finish drip for the 100-question simulado funnel (source='simulado-100').
 // The D0 delivery (magic access link, lead-sim-access) is sent inline at capture
@@ -33,10 +36,27 @@ function greetingFor(firstName?: string | null): string {
   return n ? `Oi, ${n}! ` : "Oi! ";
 }
 
+// The ONLY thing a non-finisher reminder may say about their performance: how far
+// they got. No score, no per-área breakdown, no comentários — the diagnosis is
+// released strictly on submission. Built here rather than in the template so the
+// three cases stay correct without conditional logic in editable copy.
+function progressLineFor(answered: number): string {
+  if (answered >= SIMULADO_TOTAL) {
+    return `Você respondeu todas as ${SIMULADO_TOTAL} questões — falta só entregar a prova.`;
+  }
+  if (answered === 0) {
+    return `Você ainda não respondeu nenhuma das ${SIMULADO_TOTAL} questões.`;
+  }
+  if (answered < SIMULADO_MIN_ANSWERS) {
+    const toUnlock = SIMULADO_MIN_ANSWERS - answered;
+    return `Você respondeu ${answered} de ${SIMULADO_TOTAL} questões — faltam ${toUnlock} para poder entregar a prova.`;
+  }
+  return `Você respondeu ${answered} de ${SIMULADO_TOTAL} questões.`;
+}
+
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SIMULADO_SIZE = 100;
 
 const STEPS = [
   { step: 1, offsetDays: 1, finished: "lead-sim-d2", unfinished: "lead-sim-finish-1" },
@@ -118,14 +138,15 @@ export async function GET(request: NextRequest) {
       const answered = lead.sim_progress
         ? Object.keys(lead.sim_progress as Record<string, unknown>).length
         : 0;
-      const questionsLeft = Math.max(1, SIMULADO_SIZE - answered);
+      const questionsLeft = Math.max(1, SIMULADO_TOTAL - answered);
 
       const vars: Record<string, string> = {
         greeting: greetingFor(lead.first_name as string | null),
         coupon: welcome.code,
         couponPercent: `${welcome.percent}%`,
         questionsLeft: String(questionsLeft),
-        score: String((lead.sim_score as number | null) ?? 0),
+        progressLine: progressLineFor(answered),
+        simScore: String((lead.sim_score as number | null) ?? 0),
         checkoutUrl: offerCheckoutUrl({
           email,
           coupon: welcome.code,
