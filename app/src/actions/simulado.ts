@@ -4,7 +4,8 @@ import { cookies, headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendTemplateEmail } from "@/lib/email";
 import { FUNNEL_SENDER_NAME } from "@/lib/email-render";
-import { honeypotTripped, isDisposableEmail } from "@/lib/magnet/anti-abuse";
+import { honeypotTripped, isDisposableEmail, guardCodeRequest } from "@/lib/magnet/anti-abuse";
+import { getClientIp } from "@/lib/pagbank/rate-limit";
 import {
   simuladoAccessUrl,
   unsubscribeUrl,
@@ -57,6 +58,14 @@ function cleanFirstName(name?: string | null): string | null {
 function greetingFor(firstName?: string | null): string {
   const n = (firstName ?? "").trim();
   return n ? `Oi, ${n}! ` : "Oi! ";
+}
+
+async function clientIp(): Promise<string> {
+  try {
+    return getClientIp(await headers());
+  } catch {
+    return "unknown";
+  }
 }
 
 function maskEmail(email: string): string {
@@ -367,89 +376,116 @@ export async function confirmSimuladoEmail(): Promise<{ status: "ok" | "no_sessi
   return { status: "ok" };
 }
 
+// NOTE the deliberately coarse result type. There is no "that address already
+// belongs to someone else" variant, because answering that question for an
+// arbitrary address turns this action into a lead-existence oracle: anyone can mint
+// a session by submitting the landing form, so an enumeration answer here is
+// effectively unauthenticated. Both outcomes return `sent` with identical copy.
 export type CorrectEmailResult =
-  | { status: "corrected"; maskedEmail: string }
-  | { status: "already_registered"; maskedEmail: string }
+  | { status: "sent"; maskedEmail: string }
   | { status: "unchanged" }
   | { status: "invalid" }
-  | { status: "disposable" }
+  | { status: "blocked"; reason: string }
   | { status: "too_many" }
   | { status: "no_session" };
 
 export async function correctSimuladoEmail(input: {
   email: string;
+  turnstileToken?: string | null;
+  honeypot?: string | null;
 }): Promise<CorrectEmailResult> {
   const lead = await leadFromSession();
   if (!lead) return { status: "no_session" };
 
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { status: "invalid" };
-  if (isDisposableEmail(email)) return { status: "disposable" };
   if (email === normalizeEmail(lead.email as string)) return { status: "unchanged" };
+
+  // THIS ACTION SENDS MAIL TO A CALLER-SUPPLIED ADDRESS, so it runs the same full
+  // ladder as requestClaimCode — honeypot, disposable, per-IP rate limit,
+  // Turnstile, MX/A. A session cookie is NOT a meaningful gate here: anyone can
+  // mint one by submitting the landing form, so without this the action is an
+  // open relay for branded mail to arbitrary third parties, which is exactly the
+  // spam-cannon failure lib/magnet/anti-abuse.ts exists to prevent. The per-lead
+  // cap below does not bound it either — leads are free to create.
+  const verdict = await guardCodeRequest({
+    email,
+    ip: await clientIp(),
+    honeypot: input.honeypot,
+    turnstileToken: input.turnstileToken,
+  });
+  if (!verdict.ok) {
+    return verdict.reason === "rate_limited"
+      ? { status: "too_many" }
+      : { status: "blocked", reason: verdict.reason };
+  }
 
   const admin = createAdminClient();
 
+  // Claim the correction BEFORE sending, atomically. Read-then-write let two
+  // concurrent requests both observe the same count and both send; the RPC does
+  // `UPDATE … WHERE sim_email_corrections < $2` in one statement and returns 0
+  // rows when the ceiling is already reached.
+  const { data: claimed, error: claimErr } = await admin.rpc("claim_sim_email_correction", {
+    p_lead_id: lead.id,
+    p_max: MAX_EMAIL_CORRECTIONS,
+  });
+  if (claimErr) {
+    console.error("claim_sim_email_correction failed:", claimErr);
+    return { status: "invalid" };
+  }
+  if (!claimed) return { status: "too_many" };
+
   const { data: self } = await admin
     .from("leads")
-    .select("sim_email_corrections, unsubscribe_token, result_token, first_name")
+    .select("unsubscribe_token, result_token, first_name")
     .eq("id", lead.id)
     .single();
 
-  // A valid session is not an unbounded licence to mail arbitrary addresses.
-  if (((self?.sim_email_corrections as number | null) ?? 0) >= MAX_EMAIL_CORRECTIONS) {
-    return { status: "too_many" };
-  }
-
-  const firstName = cleanFirstName((self?.first_name as string | null) ?? null);
-
   // The corrected address may already be a lead of its own — `leads.email` is
   // unique, so we must never blind-update into a collision. We also do NOT merge
-  // the two rows or move this session onto the other one: that would hand whoever
-  // holds this cookie the other lead's exam. Instead, re-send that lead its OWN
-  // access link. If they really do own the address, it is waiting in their inbox.
+  // the rows or move this session onto the other one: that would hand whoever
+  // holds this cookie the other lead's exam. That lead gets its OWN access link,
+  // so the mail only ever reaches the inbox that already owned the address.
   const { data: other } = await admin
     .from("leads")
     .select("id, result_token, unsubscribe_token, first_name")
     .eq("email", email)
     .maybeSingle();
 
-  if (other) {
-    try {
-      await sendTemplateEmail({
-        kind: "lead-sim-access",
-        to: email,
-        vars: {
-          greeting: greetingFor(cleanFirstName(other.first_name as string | null)),
-          accessUrl: simuladoAccessUrl(other.result_token as string),
-          unsubscribeUrl: unsubscribeUrl(other.unsubscribe_token as string),
-        },
-        fromName: FUNNEL_SENDER_NAME,
-      });
-    } catch (e) {
-      console.error("lead-sim-access resend (collision) threw:", e);
+  const target = other
+    ? {
+        token: other.result_token as string,
+        unsub: other.unsubscribe_token as string,
+        name: cleanFirstName(other.first_name as string | null),
+      }
+    : {
+        token: self?.result_token as string,
+        unsub: self?.unsubscribe_token as string,
+        name: cleanFirstName((self?.first_name as string | null) ?? null),
+      };
+
+  if (!other) {
+    // Move the address. drip_status resets to 'active' because the suppression was
+    // about the OLD mailbox — carrying 'bounced' across would keep the lead excluded
+    // from every drip despite a now-deliverable address. verified_at clears because
+    // nothing has been proven about this new address yet; simulado-drip treats a
+    // corrected-but-unverified lead as unverified, so a redirected address cannot
+    // pull the sequence along behind it.
+    const { error: updErr } = await admin
+      .from("leads")
+      .update({
+        email,
+        drip_status: "active",
+        verified_at: null,
+        sim_email_confirmed_at: null,
+      })
+      .eq("id", lead.id);
+
+    if (updErr) {
+      console.error("correctSimuladoEmail update failed:", updErr);
+      return { status: "invalid" };
     }
-    return { status: "already_registered", maskedEmail: maskEmail(email) };
-  }
-
-  // Move the address. drip_status resets to 'active' because the suppression was
-  // about the OLD mailbox — carrying 'bounced' across would silently keep the lead
-  // excluded from every drip despite a now-deliverable address. verified_at clears
-  // for the same reason: nothing has been proven about this new address yet, and
-  // the drip's own guard requires a real verification signal before it engages.
-  const { error: updErr } = await admin
-    .from("leads")
-    .update({
-      email,
-      drip_status: "active",
-      verified_at: null,
-      sim_email_confirmed_at: null,
-      sim_email_corrections: ((self?.sim_email_corrections as number | null) ?? 0) + 1,
-    })
-    .eq("id", lead.id);
-
-  if (updErr) {
-    console.error("correctSimuladoEmail update failed:", updErr);
-    return { status: "invalid" };
   }
 
   try {
@@ -457,9 +493,9 @@ export async function correctSimuladoEmail(input: {
       kind: "lead-sim-access",
       to: email,
       vars: {
-        greeting: greetingFor(firstName),
-        accessUrl: simuladoAccessUrl(self?.result_token as string),
-        unsubscribeUrl: unsubscribeUrl(self?.unsubscribe_token as string),
+        greeting: greetingFor(target.name),
+        accessUrl: simuladoAccessUrl(target.token),
+        unsubscribeUrl: unsubscribeUrl(target.unsub),
       },
       fromName: FUNNEL_SENDER_NAME,
     });
@@ -468,7 +504,7 @@ export async function correctSimuladoEmail(input: {
     console.error("lead-sim-access resend threw:", e);
   }
 
-  return { status: "corrected", maskedEmail: maskEmail(email) };
+  return { status: "sent", maskedEmail: maskEmail(email) };
 }
 
 // ── Progress ─────────────────────────────────────────────────────────────────

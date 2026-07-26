@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { confirmSimuladoEmail, correctSimuladoEmail } from "@/actions/simulado";
+import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
+
+// This form makes the server send mail to whatever address is typed here, so it
+// carries the same challenge as the other send surfaces. Both-or-neither: with no
+// site key the widget renders nothing and the server-side verifier skips too.
+const TURNSTILE_ENABLED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 // The in-exam address check — docs/simulado-drip-design.md §2, steps 4 and 5.
 //
@@ -37,6 +43,11 @@ export function SimuladoEmailCheck({
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // A visually-hidden field humans leave blank; bots fill it.
+  const [honeypot, setHoneypot] = useState("");
+
+  const needsTurnstile = TURNSTILE_ENABLED && !turnstileToken;
 
   const isBounce = mode === "bounce";
 
@@ -53,21 +64,17 @@ export function SimuladoEmailCheck({
     setBusy(true);
     setMsg(null);
 
-    const res = await correctSimuladoEmail({ email });
+    const res = await correctSimuladoEmail({ email, turnstileToken, honeypot });
     setBusy(false);
 
     switch (res.status) {
-      case "corrected":
+      // ONE success message, whether or not that address already had a lead. The
+      // server deliberately does not distinguish them, so we cannot either — the
+      // difference is exactly the enumeration signal we are refusing to emit.
+      case "sent":
         setMsg({
           tone: "ok",
-          text: `Pronto! Reenviamos o seu link para ${res.maskedEmail}. Pode continuar a prova — seu progresso está salvo.`,
-        });
-        setEditing(false);
-        return;
-      case "already_registered":
-        setMsg({
-          tone: "ok",
-          text: `Esse e-mail já tem um simulado por aqui. Reenviamos o link de acesso para ${res.maskedEmail} — é por ele que você entra.`,
+          text: `Pronto! Enviamos o link de acesso para ${res.maskedEmail}. Pode continuar a prova — seu progresso está salvo aqui.`,
         });
         setEditing(false);
         return;
@@ -77,8 +84,16 @@ export function SimuladoEmailCheck({
       case "invalid":
         setMsg({ tone: "err", text: "Confira o e-mail — parece que falta alguma coisa." });
         return;
-      case "disposable":
-        setMsg({ tone: "err", text: "Use um e-mail permanente, para o link não se perder." });
+      case "blocked":
+        setMsg({
+          tone: "err",
+          text:
+            res.reason === "undeliverable_domain"
+              ? "Esse domínio não parece receber e-mails. Confira e tente de novo."
+              : res.reason === "disposable_email"
+                ? "Use um e-mail permanente, para o link não se perder."
+                : "Não conseguimos confirmar o envio. Recarregue a página e tente de novo.",
+        });
         return;
       case "too_many":
         setMsg({
@@ -132,27 +147,46 @@ export function SimuladoEmailCheck({
           {editing ? (
             // Stacked on phones, inline from sm up. type=email + inputMode bring up
             // the right keyboard; 16px font avoids iOS zoom-on-focus.
-            <form onSubmit={submit} className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <form onSubmit={submit} className="relative mt-3">
+              {/* Field + action stack on phones, sit inline from sm up. type=email
+                  raises the right keyboard; text-base is 16px so iOS never zooms. */}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu e-mail correto"
+                  aria-label="Corrigir o e-mail"
+                  className="min-h-[48px] w-full flex-1 rounded-lg border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={busy || needsTurnstile}
+                  className="min-h-[48px] shrink-0 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {busy ? "Enviando…" : needsTurnstile ? "Verificando…" : "Reenviar link"}
+                </button>
+              </div>
+
+              {/* Honeypot — visually hidden; real users never fill it. Same markup
+                  as the other magnet forms (flashcards-gate, magnet-quiz). */}
               <input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                autoCapitalize="off"
-                spellCheck={false}
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu e-mail correto"
-                aria-label="Corrigir o e-mail"
-                className="min-h-[48px] w-full flex-1 rounded-lg border border-border bg-background px-3 text-base text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none"
+                type="text"
+                name="company"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+                className="absolute left-[-9999px] h-0 w-0 opacity-0"
               />
-              <button
-                type="submit"
-                disabled={busy}
-                className="min-h-[48px] shrink-0 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {busy ? "Enviando…" : "Reenviar link"}
-              </button>
+              {/* Renders nothing when NEXT_PUBLIC_TURNSTILE_SITE_KEY is unset. */}
+              <TurnstileWidget onVerify={setTurnstileToken} />
             </form>
           ) : (
             !msg && (

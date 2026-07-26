@@ -138,7 +138,14 @@ export async function GET(request: NextRequest) {
       .eq("drip_funnel", DRIP_FUNNEL.simulado)
       .not("sim_entered_at", "is", null)
       .lt("drip_step", LAST_LADDER_STEP)
-      .or("verified_at.not.is.null,sim_started_at.not.is.null")
+      // A verification signal is required before the sequence engages. `sim_started_at`
+      // normally counts as one — but ONLY while the address is the one they started
+      // on. After an in-exam correction it says nothing about the new inbox, so a
+      // corrected lead must re-verify (click) first. Without this, changing the
+      // address to a third party's would redirect the whole 8-rung spine to them.
+      .or(
+        "verified_at.not.is.null,and(sim_started_at.not.is.null,sim_email_corrections.eq.0)",
+      )
       .order("sim_entered_at", { ascending: true })
       .limit(300);
 

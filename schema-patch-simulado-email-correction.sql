@@ -65,6 +65,40 @@ WHERE sim_email_confirmed_at IS NULL
   AND verified_at IS NOT NULL
   AND sim_entered_at IS NOT NULL;
 
+-- ── Atomic correction claim ───────────────────────────────────────────────────
+--
+-- correctSimuladoEmail sends mail to a CALLER-SUPPLIED address, so the ceiling on
+-- it has to actually hold. Read-then-write in the action was a TOCTOU: two
+-- concurrent requests both read the same count, both pass the check, both send,
+-- and the counter lands one higher than the sends it authorised.
+--
+-- This does the test and the increment in ONE statement. It returns true only when
+-- a row was actually updated, so the caller sends only after the slot is reserved.
+CREATE OR REPLACE FUNCTION claim_sim_email_correction(p_lead_id UUID, p_max INT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_updated INT;
+BEGIN
+  UPDATE leads
+  SET sim_email_corrections = sim_email_corrections + 1
+  WHERE id = p_lead_id
+    AND sim_email_corrections < p_max;
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  RETURN v_updated > 0;
+END $$;
+
+COMMENT ON FUNCTION claim_sim_email_correction(UUID, INT) IS
+  'Atomically reserve one in-exam email-correction slot for a lead. Returns false when the ceiling is reached. Server-only: called with the service-role key from correctSimuladoEmail.';
+
+-- Server-only. `leads` is deny-all RLS and this is SECURITY DEFINER, so leaving the
+-- default grant in place would hand any anon caller a way to bump the counter on an
+-- arbitrary lead id. See the default-grants invariant in CLAUDE.md.
+REVOKE EXECUTE ON FUNCTION claim_sim_email_correction(UUID, INT) FROM PUBLIC, anon, authenticated;
+
 -- Post-apply sanity check (read-only):
 --   SELECT count(*) FILTER (WHERE sim_email_confirmed_at IS NOT NULL) AS confirmed,
 --          count(*) FILTER (WHERE drip_status = 'bounced')            AS bounced,
