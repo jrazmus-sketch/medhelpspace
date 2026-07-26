@@ -26,13 +26,30 @@ export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
 // elsewhere says 'revalida-2027-2'; that is wrong. Verified against prod.
 export const REVALIDA_20272_SLUG = "revalida-20272";
 
-// leads.source value for the gift-first flashcards funnel — the discriminator that
-// separates it from the quiz funnel ('simulado-honesto') in the drip/recovery crons
-// and /admin/leads. Set on capture (captureFlashcardsLead).
+// leads.source value for the gift-first flashcards funnel. FIRST-TOUCH attribution
+// only — it records which magnet captured the address and is never overwritten.
+// Set on capture (captureFlashcardsLead); read by /admin/leads.
 export const FLASHCARDS_SOURCE = "flashcards-50";
-// leads.source for the 100-question simulado funnel. Excluded from lead-drip and
-// lead-recovery (it runs its own simulado-drip); set on capture (captureSimuladoLead).
+// leads.source for the 100-question simulado funnel. Same first-touch semantics.
 export const SIMULADO_SOURCE = "simulado-100";
+
+// ── Which sequence owns leads.drip_step ───────────────────────────────────────
+// `source` must NOT be used to route the drips. It is first-touch, so a lead the
+// quiz funnel captured in July who later does the simulado still reads
+// source='simulado-honesto' — the simulado cron never saw them and the quiz cron
+// kept mailing them. That bug shipped twice (simulado 2026-07-26, flashcards the
+// same day) before the routing moved onto its own column.
+//
+// leads.drip_funnel holds exactly one value. The most recently entered funnel wins,
+// and the entry point resets drip_step + the per-funnel counters when it changes, so
+// the new ladder starts at rung 0. Each cron filters `.eq("drip_funnel", …)`.
+// Patch: schema-patch-leads-fc-entered-at.sql.
+export const DRIP_FUNNEL = {
+  quiz: "quiz",
+  simulado: "simulado",
+  flashcards: "flashcards",
+} as const;
+export type DripFunnel = (typeof DRIP_FUNNEL)[keyof typeof DRIP_FUNNEL];
 
 // "Ainda não decidi" — the lead hasn't chosen a turma. NOT a real cohort: its
 // welcome coupon is the all-turma FLASH5 and its checkout points at /loja (pick a

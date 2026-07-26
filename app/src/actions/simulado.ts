@@ -10,6 +10,7 @@ import {
   unsubscribeUrl,
   SIMULADO_SOURCE,
   REVALIDA_2027_1_SLUG,
+  DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { isValidTargetCohort, resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
 import {
@@ -51,6 +52,11 @@ function normalizeEmail(email: string): string {
 function cleanFirstName(name?: string | null): string | null {
   const n = (name ?? "").trim().slice(0, 60);
   return n.length > 0 ? n : null;
+}
+
+function greetingFor(firstName?: string | null): string {
+  const n = (firstName ?? "").trim();
+  return n ? `Oi, ${n}! ` : "Oi! ";
 }
 
 function maskEmail(email: string): string {
@@ -170,7 +176,7 @@ export async function startSimulado(input: {
   const { data: existing } = await admin
     .from("leads")
     .select(
-      "id, result_token, unsubscribe_token, sim_started_at, sim_entered_at, completed_at, first_name, device_type, landing_referrer, landing_path, funnel_session_id",
+      "id, result_token, unsubscribe_token, sim_started_at, sim_entered_at, completed_at, drip_funnel, first_name, device_type, landing_referrer, landing_path, funnel_session_id",
     )
     .eq("email", email)
     .maybeSingle();
@@ -191,20 +197,28 @@ export async function startSimulado(input: {
     // who did the 15-question quiz in July comes back and does the simulado. The
     // row keeps its original `source` (that is what first-touch means), so the
     // simulado's membership test is `sim_entered_at`, not `source`.
-    const firstSimuladoEntry = existing.sim_entered_at == null;
     const patch: Record<string, unknown> = {
       target_cohort: targetCohort,
       sim_set_version: SIMULADO_SET_VERSION,
     };
-    if (firstSimuladoEntry) patch.sim_entered_at = now;
     // NEVER overwrite completed_at. It is the OTHER funnel's drip clock, and
     // stamping it here silently reset a sequence the lead was already in.
     if (existing.completed_at == null) patch.completed_at = now;
+
     // Taking ownership of the shared step counter. Without this a cross-funnel
     // lead arrives carrying the other sequence's drip_step and the simulado
     // ladder resumes at that rung — skipping every finish nudge and dropping
     // them straight into the sales spine.
-    if (firstSimuladoEntry) {
+    //
+    // Gated on OWNERSHIP CHANGING, not on first-ever entry: a lead can go
+    // simulado → flashcards → simulado, and on the way back `sim_entered_at` is
+    // already set, so a first-entry test would hand them to this ladder without
+    // resetting it. The clock moves with the ladder — pacing an 8-rung sequence
+    // from a three-week-old timestamp makes every rung instantly due and fires
+    // the whole spine on consecutive days.
+    if (existing.drip_funnel !== DRIP_FUNNEL.simulado) {
+      patch.drip_funnel = DRIP_FUNNEL.simulado;
+      patch.sim_entered_at = now;
       patch.drip_step = 0;
       patch.sim_reminder_step = 0;
       patch.sim_sales_step = 0;
@@ -228,6 +242,7 @@ export async function startSimulado(input: {
       .insert({
         email,
         source: SIMULADO_SOURCE,
+        drip_funnel: DRIP_FUNNEL.simulado,
         target_cohort: targetCohort,
         first_name: firstName,
         completed_at: now,
@@ -322,6 +337,138 @@ export async function setSimuladoTargetCohort(
     .eq("id", lead.id);
 
   return { status: "saved", cohort: clean };
+}
+
+// ── Email correction (design §2) ─────────────────────────────────────────────
+
+// The exam is the last surface that can rescue a mistyped address. Once the
+// resume-link email hard-bounces, the webhook sets drip_status='bounced' and every
+// drip correctly excludes the lead for good — but the mhs_sim cookie lives 120 days,
+// so the candidate is still identifiable HERE. Under an email gate a typo is
+// otherwise a silent, total loss.
+//
+// Both actions act on the session lead only. Like setSimuladoTargetCohort they
+// return discriminated values instead of throwing: Server Action errors are
+// redacted in production, so a thrown reason reaches the client as an opaque digest.
+
+const MAX_EMAIL_CORRECTIONS = 3;
+
+export async function confirmSimuladoEmail(): Promise<{ status: "ok" | "no_session" }> {
+  const lead = await leadFromSession();
+  if (!lead) return { status: "no_session" };
+
+  const admin = createAdminClient();
+  await admin
+    .from("leads")
+    .update({ sim_email_confirmed_at: new Date().toISOString() })
+    .eq("id", lead.id)
+    .is("sim_email_confirmed_at", null);
+
+  return { status: "ok" };
+}
+
+export type CorrectEmailResult =
+  | { status: "corrected"; maskedEmail: string }
+  | { status: "already_registered"; maskedEmail: string }
+  | { status: "unchanged" }
+  | { status: "invalid" }
+  | { status: "disposable" }
+  | { status: "too_many" }
+  | { status: "no_session" };
+
+export async function correctSimuladoEmail(input: {
+  email: string;
+}): Promise<CorrectEmailResult> {
+  const lead = await leadFromSession();
+  if (!lead) return { status: "no_session" };
+
+  const email = normalizeEmail(input.email);
+  if (!EMAIL_RE.test(email)) return { status: "invalid" };
+  if (isDisposableEmail(email)) return { status: "disposable" };
+  if (email === normalizeEmail(lead.email as string)) return { status: "unchanged" };
+
+  const admin = createAdminClient();
+
+  const { data: self } = await admin
+    .from("leads")
+    .select("sim_email_corrections, unsubscribe_token, result_token, first_name")
+    .eq("id", lead.id)
+    .single();
+
+  // A valid session is not an unbounded licence to mail arbitrary addresses.
+  if (((self?.sim_email_corrections as number | null) ?? 0) >= MAX_EMAIL_CORRECTIONS) {
+    return { status: "too_many" };
+  }
+
+  const firstName = cleanFirstName((self?.first_name as string | null) ?? null);
+
+  // The corrected address may already be a lead of its own — `leads.email` is
+  // unique, so we must never blind-update into a collision. We also do NOT merge
+  // the two rows or move this session onto the other one: that would hand whoever
+  // holds this cookie the other lead's exam. Instead, re-send that lead its OWN
+  // access link. If they really do own the address, it is waiting in their inbox.
+  const { data: other } = await admin
+    .from("leads")
+    .select("id, result_token, unsubscribe_token, first_name")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (other) {
+    try {
+      await sendTemplateEmail({
+        kind: "lead-sim-access",
+        to: email,
+        vars: {
+          greeting: greetingFor(cleanFirstName(other.first_name as string | null)),
+          accessUrl: simuladoAccessUrl(other.result_token as string),
+          unsubscribeUrl: unsubscribeUrl(other.unsubscribe_token as string),
+        },
+        fromName: FUNNEL_SENDER_NAME,
+      });
+    } catch (e) {
+      console.error("lead-sim-access resend (collision) threw:", e);
+    }
+    return { status: "already_registered", maskedEmail: maskEmail(email) };
+  }
+
+  // Move the address. drip_status resets to 'active' because the suppression was
+  // about the OLD mailbox — carrying 'bounced' across would silently keep the lead
+  // excluded from every drip despite a now-deliverable address. verified_at clears
+  // for the same reason: nothing has been proven about this new address yet, and
+  // the drip's own guard requires a real verification signal before it engages.
+  const { error: updErr } = await admin
+    .from("leads")
+    .update({
+      email,
+      drip_status: "active",
+      verified_at: null,
+      sim_email_confirmed_at: null,
+      sim_email_corrections: ((self?.sim_email_corrections as number | null) ?? 0) + 1,
+    })
+    .eq("id", lead.id);
+
+  if (updErr) {
+    console.error("correctSimuladoEmail update failed:", updErr);
+    return { status: "invalid" };
+  }
+
+  try {
+    await sendTemplateEmail({
+      kind: "lead-sim-access",
+      to: email,
+      vars: {
+        greeting: greetingFor(firstName),
+        accessUrl: simuladoAccessUrl(self?.result_token as string),
+        unsubscribeUrl: unsubscribeUrl(self?.unsubscribe_token as string),
+      },
+      fromName: FUNNEL_SENDER_NAME,
+    });
+  } catch (e) {
+    // Non-fatal: the address is already corrected, and the drip will reach it.
+    console.error("lead-sim-access resend threw:", e);
+  }
+
+  return { status: "corrected", maskedEmail: maskEmail(email) };
 }
 
 // ── Progress ─────────────────────────────────────────────────────────────────

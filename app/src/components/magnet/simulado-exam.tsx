@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveSimuladoAnswers, submitSimulado } from "@/actions/simulado";
 import type { SimuladoExamQuestion, SimuladoProgress } from "@/lib/magnet/simulado";
 import { SiteText } from "@/components/landing/site-text";
+import { SimuladoEmailCheck } from "@/components/magnet/simulado-email-check";
 
 // The exam surface for /simulado-revalida/prova.
 //
@@ -27,6 +28,8 @@ export function SimuladoExam({
   questions,
   firstName,
   maskedEmail,
+  emailBounced,
+  emailConfirmed,
   initialAnswers,
   initialFlagged,
   minAnswers,
@@ -35,6 +38,10 @@ export function SimuladoExam({
   questions: SimuladoExamQuestion[];
   firstName: string | null;
   maskedEmail: string;
+  /** The resume-link email hard-bounced — this address is dead. */
+  emailBounced: boolean;
+  /** They already told us the link arrived (leads.sim_email_confirmed_at). */
+  emailConfirmed: boolean;
   initialAnswers: SimuladoProgress;
   initialFlagged: number[];
   minAnswers: number;
@@ -109,8 +116,16 @@ export function SimuladoExam({
   );
 
   const flaggedCount = flagged.size;
+  // A known-dead address is shown IMMEDIATELY — waiting for 10 answers to tell
+  // someone their exam link never arrived wastes the window we still have them in.
+  // Everyone else gets the routine nudge once they are invested enough to care.
+  // `emailConfirmed` is server state (leads.sim_email_confirmed_at), so confirming
+  // once silences it for good rather than until the next page load.
   const showVerifyPrompt =
-    !verifyDismissed && answeredCount >= VERIFY_PROMPT_AFTER && view === "exam";
+    !verifyDismissed &&
+    !emailConfirmed &&
+    view === "exam" &&
+    (emailBounced || answeredCount >= VERIFY_PROMPT_AFTER);
 
   async function doSubmit() {
     setSubmitting(true);
@@ -351,23 +366,11 @@ export function SimuladoExam({
         </div>
 
         {showVerifyPrompt && (
-          <div className="mb-4 flex items-start gap-3 rounded-xl border border-border bg-surface-1 px-4 py-3 text-sm">
-            <span aria-hidden className="mt-0.5">
-              📬
-            </span>
-            <p className="flex-1 text-muted-foreground">
-              Seu link de retorno foi para <strong className="text-foreground">{maskedEmail}</strong>.
-              Confirme que chegou — é por ele que você volta a esta prova.
-            </p>
-            <button
-              type="button"
-              onClick={() => setVerifyDismissed(true)}
-              aria-label="Dispensar aviso"
-              className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
-            >
-              ✕
-            </button>
-          </div>
+          <SimuladoEmailCheck
+            mode={emailBounced ? "bounce" : "check"}
+            maskedEmail={maskedEmail}
+            onResolved={() => setVerifyDismissed(true)}
+          />
         )}
 
         {/* Enunciado — no área label anywhere, by design */}

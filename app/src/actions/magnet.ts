@@ -26,6 +26,7 @@ import {
   REVALIDA_2027_1_SLUG,
   FLASHCARDS_SOURCE,
   SIMULADO_SOURCE,
+  DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
 import {
@@ -846,7 +847,7 @@ export async function chooseFlashcardsCohortAndSend(input: {
   // skipped/failed step 1 so we never lose the lead or leave the turma unset.
   const { data: existing } = await admin
     .from("leads")
-    .select("id, result_token, unsubscribe_token")
+    .select("id, result_token, unsubscribe_token, fc_entered_at, completed_at, drip_funnel")
     .eq("email", email)
     .maybeSingle();
 
@@ -856,14 +857,31 @@ export async function chooseFlashcardsCohortAndSend(input: {
   if (existing) {
     resultToken = existing.result_token as string;
     unsubscribeToken = existing.unsubscribe_token as string;
-    await admin
-      .from("leads")
-      .update({
-        target_cohort: targetCohort,
-        completed_at: completedAt,
-        ...(firstName ? { first_name: firstName } : {}),
-      })
-      .eq("id", existing.id);
+
+    // The row may belong to a DIFFERENT funnel — `source` is first-touch and stays
+    // put, so this funnel's membership test is `fc_entered_at`, not `source`.
+    const firstFlashcardsEntry = existing.fc_entered_at == null;
+    const patch: Record<string, unknown> = {
+      target_cohort: targetCohort,
+      ...(firstName ? { first_name: firstName } : {}),
+    };
+    if (firstFlashcardsEntry) patch.fc_entered_at = completedAt;
+
+    // NEVER overwrite completed_at. On a cross-funnel lead it is the OTHER
+    // sequence's drip clock, and stamping it here silently restarts that drip.
+    // (Prod evidence: nynabrandao's 2026-07-08 flashcards clock was destroyed when
+    // the simulado did exactly this on 2026-07-26.)
+    if (existing.completed_at == null) patch.completed_at = completedAt;
+
+    // Take ownership of drip_step. A lead arriving from another funnel carries that
+    // ladder's step — one prod row sits at step 5 — and this ladder has 2 rungs, so
+    // without the reset `drip_step < 2` would exclude them from it forever.
+    if (existing.drip_funnel !== DRIP_FUNNEL.flashcards) {
+      patch.drip_funnel = DRIP_FUNNEL.flashcards;
+      patch.drip_step = 0;
+    }
+
+    await admin.from("leads").update(patch).eq("id", existing.id);
   } else {
     const ctx = await captureContext();
     const { data: inserted } = await admin
@@ -871,8 +889,10 @@ export async function chooseFlashcardsCohortAndSend(input: {
       .insert({
         email,
         source: FLASHCARDS_SOURCE,
+        drip_funnel: DRIP_FUNNEL.flashcards,
         target_cohort: targetCohort,
         completed_at: completedAt,
+        fc_entered_at: completedAt,
         first_name: firstName,
         utm_source: input.utm?.source ?? null,
         utm_campaign: input.utm?.campaign ?? null,
@@ -968,9 +988,18 @@ export async function saveFlashcardsProgress(input: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SIMULADO-100 FUNNEL (/simulado-revalida) — email-first, mirrors the flashcards
-// funnel: soft capture → turma → magic link (lead-sim-access). The 100-question
-// session persists per-answer so the SAME link resumes; simulado-drip nudges.
+// SIMULADO-100 FUNNEL v1 — DEAD CODE. DO NOT REWIRE AS-IS.
+//
+// This was the email-first flow: soft capture → turma → magic link, exam gated
+// behind the inbox round-trip. The v2 rebuild (2026-07-25) replaced it with an
+// immediate on-site start; the live entry point is `startSimulado` in
+// actions/simulado.ts and nothing in the UI imports the two functions below.
+//
+// They are kept only as reference for the capture//send shape. Both still carry the
+// pre-2026-07-26 write bugs — they stamp `completed_at` unconditionally (clobbering
+// another funnel's drip clock) and never set `sim_entered_at` or `drip_funnel`, so a
+// cross-funnel lead lands in no sequence at all. If this flow is ever revived, port
+// the corrected patch logic from `startSimulado` first.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export async function captureSimuladoLead(input: {

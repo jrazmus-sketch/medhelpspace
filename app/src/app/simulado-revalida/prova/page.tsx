@@ -67,7 +67,9 @@ export default async function SimuladoProvaPage() {
   const admin = createAdminClient();
   const { data: lead } = await admin
     .from("leads")
-    .select("id, email, first_name, sim_progress, sim_flagged, sim_completed_at, sim_started_at")
+    .select(
+      "id, email, first_name, sim_progress, sim_flagged, sim_completed_at, sim_started_at, drip_status, sim_email_confirmed_at",
+    )
     .eq("result_token", token)
     .maybeSingle();
 
@@ -95,6 +97,11 @@ export default async function SimuladoProvaPage() {
       questions={questions}
       firstName={(lead.first_name as string | null) ?? null}
       maskedEmail={maskEmail(lead.email as string)}
+      // The resume-link email hard-bounced (set by the Resend webhook). This page
+      // is the only surface left that can reach them — the drips have already
+      // excluded a bounced lead permanently. See simulado-email-check.tsx.
+      emailBounced={lead.drip_status === "bounced"}
+      emailConfirmed={lead.sim_email_confirmed_at != null}
       initialAnswers={initialAnswers}
       initialFlagged={initialFlagged}
       minAnswers={SIMULADO_MIN_ANSWERS}

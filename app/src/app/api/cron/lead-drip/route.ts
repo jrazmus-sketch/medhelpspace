@@ -9,8 +9,7 @@ import {
   resultUrl,
   unsubscribeUrl,
   WELCOME_COUPONS,
-  FLASHCARDS_SOURCE,
-  SIMULADO_SOURCE,
+  DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
@@ -71,14 +70,13 @@ export async function GET(request: NextRequest) {
       "id, email, score, weak_specialty_ids, drip_step, verified_at, target_cohort, first_name, result_token",
     )
     .eq("drip_status", "active")
-    .neq("source", FLASHCARDS_SOURCE) // the flashcards funnel runs its own drip
-    .neq("source", SIMULADO_SOURCE) // the simulado funnel runs its own drip too
-    // …and `source` alone is not enough. It is FIRST-TOUCH and never overwritten,
-    // so a lead this funnel captured in July who then did the 100-question
-    // simulado still reads source='simulado-honesto' — and both crons would claim
-    // the same drip_step, interleaving two sequences in one inbox. Anyone who has
-    // entered the simulado belongs to simulado-drip, whatever captured them first.
-    .is("sim_entered_at", null)
+    // Ownership of drip_step is single-valued and explicit. `source` must NOT be
+    // used here: it is FIRST-TOUCH and never overwritten, so a lead this funnel
+    // captured in July who later did the simulado still reads
+    // source='simulado-honesto' — under the old `.neq(source, …)` guards both
+    // crons claimed the same drip_step and interleaved two sequences in one inbox.
+    // See DRIP_FUNNEL in lib/magnet/links.ts.
+    .eq("drip_funnel", DRIP_FUNNEL.quiz)
     .not("verified_at", "is", null)
     .lt("drip_step", STEPS[STEPS.length - 1].step)
     .order("verified_at", { ascending: true })

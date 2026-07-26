@@ -9,15 +9,15 @@ import {
   flashcardsAccessUrl,
   unsubscribeUrl,
   WELCOME_COUPONS,
-  FLASHCARDS_SOURCE,
+  DRIP_FUNNEL,
   REVALIDA_2027_1_SLUG,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
-// Welcome + finish drip for the gift-first flashcards funnel (source='flashcards-50').
+// Welcome + finish drip for the gift-first flashcards funnel (drip_funnel='flashcards').
 // The D0 delivery (magic access link, lead-fc-access) is sent inline at capture
 // (chooseFlashcardsCohortAndSend); this cron sends two nurture touches, clock from
-// completed_at (finished step 2 → got the deck link).
+// fc_entered_at (turma chosen → got the deck link).
 //
 // Each step's TEMPLATE is chosen by whether the lead finished the 50-card deck
 // (fc_completed_at), evaluated at send time:
@@ -59,17 +59,21 @@ export async function GET(request: NextRequest) {
   try {
     const now = Date.now();
 
-    // Active flashcards-funnel leads who completed step 2 (got the deck link), oldest
-    // first, with more steps to send. drip_step is exclusively owned by this cron for
-    // these leads — the quiz lead-drip excludes source='flashcards-50'.
+    // Active leads this sequence owns, oldest entry first, with more steps to send.
+    //
+    // Selected by `drip_funnel`, NOT by `source`. source is first-touch and never
+    // overwritten, so a lead another magnet captured who later claimed the deck kept
+    // their original source and this cron never saw them — two prod rows finished the
+    // 50 cards and received nothing. Clock is fc_entered_at for the same reason:
+    // completed_at is shared with the other funnels and gets overwritten by them.
     const { data: leads } = await admin
       .from("leads")
-      .select("id, email, drip_step, completed_at, target_cohort, first_name, result_token, unsubscribe_token, fc_completed_at, fc_progress")
+      .select("id, email, drip_step, fc_entered_at, target_cohort, first_name, result_token, unsubscribe_token, fc_completed_at, fc_progress")
       .eq("drip_status", "active")
-      .eq("source", FLASHCARDS_SOURCE)
-      .not("completed_at", "is", null)
+      .eq("drip_funnel", DRIP_FUNNEL.flashcards)
+      .not("fc_entered_at", "is", null)
       .lt("drip_step", STEPS[STEPS.length - 1].step)
-      .order("completed_at", { ascending: true })
+      .order("fc_entered_at", { ascending: true })
       .limit(300);
 
     if (!leads || leads.length === 0) {
@@ -106,7 +110,7 @@ export async function GET(request: NextRequest) {
       if (!nextStep) continue;
 
       const elapsedDays = Math.floor(
-        (now - new Date(lead.completed_at as string).getTime()) / 86_400_000,
+        (now - new Date(lead.fc_entered_at as string).getTime()) / 86_400_000,
       );
       if (elapsedDays < nextStep.offsetDays) continue; // not due yet
 

@@ -11,8 +11,7 @@ import {
   offerCheckoutUrl,
   RECOVERY_COUPONS,
   REVALIDA_2027_1_SLUG,
-  FLASHCARDS_SOURCE,
-  SIMULADO_SOURCE,
+  DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
@@ -99,12 +98,11 @@ export async function GET(request: NextRequest) {
         "id, email, first_name, score, weak_specialty_ids, result_token, unsubscribe_token, completed_at",
       )
       .eq("drip_status", "active")
-      .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
-      .neq("source", SIMULADO_SOURCE) // simulado funnel has its own sequence
-      // …and source alone is not enough: it is FIRST-TOUCH and never overwritten,
-      // so a lead captured here who later did the simulado still reads the old
-      // source. Anyone who entered the simulado belongs to simulado-drip.
-      .is("sim_entered_at", null)
+      // Only leads this sequence owns. NOT `source` — it is first-touch and never
+      // overwritten, so a lead captured here who later did the simulado or claimed
+      // the flashcards deck still reads the old source and the negative filters
+      // silently failed. See DRIP_FUNNEL in lib/magnet/links.ts.
+      .eq("drip_funnel", DRIP_FUNNEL.quiz)
       .is("verified_at", null)
       .not("completed_at", "is", null)
       .is("recovery_a_sent_at", null)
@@ -172,12 +170,11 @@ export async function GET(request: NextRequest) {
         "id, email, first_name, result_token, unsubscribe_token, target_cohort, created_at, recovery_b_step, recovery_sent_at",
       )
       .eq("drip_status", "active")
-      .neq("source", FLASHCARDS_SOURCE) // flashcards funnel has its own sequence
-      .neq("source", SIMULADO_SOURCE) // simulado funnel has its own sequence
-      // …and source alone is not enough: it is FIRST-TOUCH and never overwritten,
-      // so a lead captured here who later did the simulado still reads the old
-      // source. Anyone who entered the simulado belongs to simulado-drip.
-      .is("sim_entered_at", null)
+      // Only leads this sequence owns. NOT `source` — it is first-touch and never
+      // overwritten, so a lead captured here who later did the simulado or claimed
+      // the flashcards deck still reads the old source and the negative filters
+      // silently failed. See DRIP_FUNNEL in lib/magnet/links.ts.
+      .eq("drip_funnel", DRIP_FUNNEL.quiz)
       .is("verified_at", null)
       .is("completed_at", null)
       .lt("recovery_b_step", 2)

@@ -12,6 +12,7 @@ import {
   WELCOME_COUPONS,
   UNDECIDED_COHORT,
   REVALIDA_2027_1_SLUG,
+  DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 // Shared with the exam + report so the reminder copy can never drift from the
@@ -131,6 +132,10 @@ export async function GET(request: NextRequest) {
         "id, email, drip_step, sim_entered_at, target_cohort, previous_target_cohort, first_name, result_token, unsubscribe_token, verified_at, sim_started_at, sim_completed_at, sim_progress, sim_answered, sim_score, sim_reminder_step, sim_sales_step",
       )
       .eq("drip_status", "active")
+      // Ownership is single-valued (see DRIP_FUNNEL in lib/magnet/links.ts). A lead
+      // can hold both sim_entered_at and fc_entered_at; without this filter both
+      // crons would claim the same drip_step and interleave two sequences.
+      .eq("drip_funnel", DRIP_FUNNEL.simulado)
       .not("sim_entered_at", "is", null)
       .lt("drip_step", LAST_LADDER_STEP)
       .or("verified_at.not.is.null,sim_started_at.not.is.null")
