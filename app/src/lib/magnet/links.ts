@@ -39,15 +39,14 @@ export const SIMULADO_SOURCE = "simulado-100";
 // turma there). Allowed by leads_target_cohort_check (schema-patch-flashcards-undecided.sql).
 export const UNDECIDED_COHORT = "undecided";
 
-// The turmas a lead may declare as their target exam (+ the 'undecided' sentinel).
-// Single source of truth for both magnet funnels' server-side validation; mirrors
-// the leads_target_cohort_check DB constraint.
-export const VALID_TARGET_COHORTS: ReadonlySet<string> = new Set([
-  REVALIDA_2026_2_SLUG,
-  REVALIDA_2027_1_SLUG,
-  REVALIDA_20272_SLUG,
-  UNDECIDED_COHORT,
-]);
+// NOTE: the hardcoded VALID_TARGET_COHORTS allowlist that used to live here is
+// GONE (2026-07-26). It mirrored a CHECK constraint that listed four slugs, which
+// meant a turma created in the admin panel was rejected by every funnel until
+// somebody remembered to edit both — and the rejection was silent, filing the
+// lead under the fallback turma instead. Validation now reads the live `cohorts`
+// table: isValidTargetCohort / resolveTargetCohort in lib/magnet/cohort-rollover
+// (server-only), enforced in the DB by the leads_target_cohort_valid trigger.
+// The slug constants above are still the right way to REFER to a specific turma.
 
 // Per-turma WELCOME coupon: a small discount auto-applied at the end of the free
 // test and delivered in ONE follow-up drip email (D2). Each code is locked to its
@@ -107,6 +106,21 @@ export function flashcardsAccessUrl(token: string): string {
 // the SAME link resumes at the next unanswered question. Token = leads.result_token.
 export function simuladoAccessUrl(token: string): string {
   return `${SITE_URL}${SIMULADO_PATH}/acesso?t=${encodeURIComponent(token)}`;
+}
+
+// One-click turma answer. Used by the undecided track ("Para qual prova você
+// está estudando?") and by the post-exam rollover notice, where it doubles as
+// "not the right turma? fix it here".
+//
+// Like /simulado-revalida/acesso this is a magic link: the click is the
+// confirmation, and the route exchanges the token for the httpOnly session cookie
+// and redirects, so the token never sits in the address bar of a page the
+// candidate might screenshot or share. Passing an empty `cohortSlug` links to the
+// picker without pre-answering.
+export function turmaPickUrl(token: string, cohortSlug: string): string {
+  const p = new URLSearchParams({ t: token });
+  if (cohortSlug) p.set("c", cohortSlug);
+  return `${SITE_URL}/api/leads/turma?${p.toString()}`;
 }
 
 export function unsubscribeUrl(token: string): string {

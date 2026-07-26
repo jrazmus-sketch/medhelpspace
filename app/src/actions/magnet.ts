@@ -23,11 +23,11 @@ import {
   unsubscribeUrl,
   flashcardsAccessUrl,
   simuladoAccessUrl,
-  VALID_TARGET_COHORTS,
   REVALIDA_2027_1_SLUG,
   FLASHCARDS_SOURCE,
   SIMULADO_SOURCE,
 } from "@/lib/magnet/links";
+import { resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
 import {
   guardCodeRequest,
   honeypotTripped,
@@ -430,10 +430,11 @@ export async function saveLeadProgress(input: {
   return { ok: true };
 }
 
-// Canonical valid-turma set lives in lib/magnet/links.ts (mirrors the DB CHECK).
-// 2026.2 went off sale 2026-07-11: no picker offers it anymore, but it stays in the
-// valid set so legacy leads' stored value keeps passing validation on re-submits.
-const VALID_COHORTS = VALID_TARGET_COHORTS;
+// Turma validation reads the live `cohorts` table (resolveTargetCohort) instead
+// of a hardcoded allowlist, so a turma added in the admin panel is accepted the
+// same day rather than silently falling back. 2026.2 went off sale 2026-07-11 —
+// no picker offers it anymore, but its row is still `active`, so legacy leads'
+// stored value keeps passing validation on re-submits.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 2. FINALIZE (after Q15) — persist score/result + completion signal + cohort.
@@ -448,9 +449,7 @@ export async function finalizeLeadResult(input: {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { ok: false, summary: null };
 
-  const targetCohort = VALID_COHORTS.has(input.targetCohort ?? "")
-    ? (input.targetCohort as string)
-    : REVALIDA_2027_1_SLUG;
+  const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
 
   const answers = input.answers ?? [];
   const progress = buildProgressPayload(answers);
@@ -838,9 +837,7 @@ export async function chooseFlashcardsCohortAndSend(input: {
 }): Promise<{ ok: boolean; reason?: string; maskedEmail?: string; emailed?: boolean; devLink?: string }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
-  const targetCohort = VALID_TARGET_COHORTS.has(input.targetCohort)
-    ? input.targetCohort
-    : REVALIDA_2027_1_SLUG;
+  const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
   const firstName = cleanFirstName(input.firstName);
 
   const admin = createAdminClient();
@@ -1057,9 +1054,7 @@ export async function chooseSimuladoCohortAndSend(input: {
 }): Promise<{ ok: boolean; reason?: string; maskedEmail?: string; emailed?: boolean; devLink?: string }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
-  const targetCohort = VALID_TARGET_COHORTS.has(input.targetCohort)
-    ? input.targetCohort
-    : REVALIDA_2027_1_SLUG;
+  const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
   const firstName = cleanFirstName(input.firstName);
 
   const admin = createAdminClient();

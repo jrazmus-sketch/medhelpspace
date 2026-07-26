@@ -9,9 +9,9 @@ import {
   simuladoAccessUrl,
   unsubscribeUrl,
   SIMULADO_SOURCE,
-  VALID_TARGET_COHORTS,
   REVALIDA_2027_1_SLUG,
 } from "@/lib/magnet/links";
+import { isValidTargetCohort, resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
 import {
   gradeSimulado,
   SIM_SESSION_COOKIE,
@@ -158,9 +158,9 @@ export async function startSimulado(input: {
   if (honeypotTripped(input.honeypot)) return { status: "error", reason: "honeypot" };
   if (isDisposableEmail(email)) return { status: "error", reason: "disposable_email" };
 
-  const targetCohort = VALID_TARGET_COHORTS.has(input.targetCohort)
-    ? input.targetCohort
-    : REVALIDA_2027_1_SLUG;
+  // Validated against the live `cohorts` table, not a hardcoded list: a turma
+  // added in the admin panel must be selectable the same day.
+  const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
 
   const admin = createAdminClient();
   const utm = input.utm ?? {};
@@ -262,6 +262,47 @@ export async function startSimulado(input: {
 
   await setSessionCookie(resultToken);
   return { status: "started" };
+}
+
+// ── Target turma ─────────────────────────────────────────────────────────────
+
+// "Para qual prova você está estudando?" answered from the confirmation page.
+// The one-click path (an emailed link) goes through /api/leads/turma instead —
+// it has to write before a page renders, which only a route handler can do.
+//
+// Acts on the session lead, never on a client-supplied id, so this cannot be used
+// to re-file somebody else's lead. Returns a discriminated value rather than
+// throwing: Server Action error messages are redacted in production, so a thrown
+// "INVALID_COHORT" would reach the client as an opaque digest.
+export async function setSimuladoTargetCohort(
+  slug: string,
+): Promise<{ status: "saved"; cohort: string } | { status: "invalid" } | { status: "no_session" }> {
+  const lead = await leadFromSession();
+  if (!lead) return { status: "no_session" };
+
+  const clean = (slug ?? "").trim();
+  if (!(await isValidTargetCohort(clean))) return { status: "invalid" };
+
+  const admin = createAdminClient();
+  const { data: row } = await admin
+    .from("leads")
+    .select("target_cohort, previous_target_cohort")
+    .eq("id", lead.id)
+    .maybeSingle();
+
+  const current = (row?.target_cohort as string | null) ?? null;
+  if (current === clean) return { status: "saved", cohort: clean };
+
+  await admin
+    .from("leads")
+    .update({
+      target_cohort: clean,
+      // First change only — keeps the lead's ORIGINAL pick visible in /admin/leads.
+      previous_target_cohort: (row?.previous_target_cohort as string | null) ?? current,
+    })
+    .eq("id", lead.id);
+
+  return { status: "saved", cohort: clean };
 }
 
 // ── Progress ─────────────────────────────────────────────────────────────────

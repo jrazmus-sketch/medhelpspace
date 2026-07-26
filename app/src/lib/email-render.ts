@@ -1070,6 +1070,287 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     active: true,
     sort_order: 14.4,
   },
+  // Finish-reminder 3 — the LAST time we ask them to finish. After this the
+  // sequence pivots to selling and never nudges again; the attempt itself stays
+  // open forever, which is the whole point of the message.
+  "lead-sim-finish-3": {
+    kind: "lead-sim-finish-3",
+    name: "[Lead] Simulado — última chamada para terminar",
+    description:
+      "Terceiro e último lembrete de conclusão. Sem cupom: o argumento é que nada expira.",
+    subject: "Seu simulado não expira (mas eu paro de lembrar)",
+    kicker: "",
+    headline: "Seu simulado continua aberto",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}{{progressLine}} Este é o último lembrete que vou mandar sobre terminar — não quero ocupar sua caixa de entrada com isso.</p>
+<p style="margin:0 0 16px;">Nada expira. Seu progresso fica salvo e este mesmo link funciona daqui a uma semana ou daqui a três meses, sempre exatamente de onde você parou.</p>
+<p style="margin:0 0 20px;">Quando entregar, você recebe o <strong>desempenho nas cinco grandes áreas</strong> e o <strong>gabarito comentado das 100 questões</strong> — inteiro, de graça.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Continuar meu simulado →",
+    cta_href: "{{accessUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      {
+        tag: "progressLine",
+        description:
+          "Frase de progresso montada pelo sistema. NUNCA traz nota nem desempenho por área.",
+      },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.5,
+  },
+  // ── Sales spine, on-ramp for NON-FINISHERS ───────────────────────────────────
+  // A finisher enters the spine through lead-sim-d2 / lead-sim-d5, which recap the
+  // report. These two are the same rungs for someone who has no report yet, so
+  // they may reference progress and NOTHING else about performance.
+  "lead-sim-sales-1": {
+    kind: "lead-sim-sales-1",
+    name: "[Lead] Simulado — venda 1 (sem diagnóstico)",
+    description:
+      "Primeira mensagem de venda para quem NÃO entregou a prova. Sem cupom: constrói valor antes de pedir. Nunca cita nota nem desempenho.",
+    subject: "O que separa quem passa de quem quase passa",
+    kicker: "",
+    headline: "O simulado é o diagnóstico. O resto é o tratamento.",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Você já viu de perto como a banca escreve: o nível das questões, o tipo de pegadinha, o tamanho do enunciado. {{progressLine}} Seu simulado continua aberto, sem prazo.</p>
+<p style="margin:0 0 16px;">Só que fazer questão solta não muda nota. O que muda é revisar o que mais cai, na ordem certa, e voltar no que você errou <em>antes</em> de esquecer. {{urgencyLine}}</p>
+<p style="margin:0 0 20px;">É exatamente isso que a plataforma faz: milhares de <strong>questões comentadas</strong> no mesmo padrão, simulados da banca, <strong>flashcards com revisão espaçada</strong>, resumos, MedVoice para estudar no trânsito — e um plano de estudos que decide por você o que estudar hoje.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Conhecer a plataforma →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      {
+        tag: "progressLine",
+        description:
+          "Frase de progresso montada pelo sistema. NUNCA traz nota nem desempenho por área.",
+      },
+      {
+        tag: "urgencyLine",
+        description:
+          "Frase de urgência montada a partir da data da prova da turma do lead. Vazia quando não há data confirmada — sempre use no fim de um parágrafo.",
+      },
+      { tag: "cohortName", description: "Nome da turma do lead (ex.: 'Revalida 2027.1')" },
+      { tag: "examDate", description: "Data da prova (ex.: '15/01/2027'). Vazia enquanto a banca não confirma." },
+      { tag: "daysUntilTest", description: "Dias até a prova. Vazio se a data não está confirmada." },
+      { tag: "checkoutUrl", description: "Link de checkout/loja" },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.6,
+  },
+  "lead-sim-sales-2": {
+    kind: "lead-sim-sales-2",
+    name: "[Lead] Simulado — venda 2 (cupom, sem diagnóstico)",
+    description:
+      "Segunda mensagem de venda para quem NÃO entregou a prova: entrega o cupom de boas-vindas. Nunca cita nota nem desempenho.",
+    subject: "Separei um cupom de {{couponPercent}} pra você",
+    kicker: "",
+    headline: "Seu desconto de boas-vindas",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Quem começa um simulado de 100 questões inéditas num sábado à noite não está brincando. {{urgencyLine}}</p>
+<p style="margin:0 0 16px;">Separei um cupom de boas-vindas: <strong>{{coupon}}</strong> — {{couponPercent}} de desconto na plataforma completa.</p>
+<p style="margin:0 0 20px;">Dentro tem questões comentadas por área e por tema, simulados no padrão da banca, flashcards com revisão espaçada, resumos, MedVoice e um plano de estudos que vai até o dia da sua prova.</p>
+<p style="margin:0 0 8px;">Seu simulado continua salvo: <a href="{{accessUrl}}" style="color:#7a1d91;">voltar de onde parei</a>.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Aproveitar {{couponPercent}} →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "coupon", description: "Código do cupom de boas-vindas da turma" },
+      { tag: "couponPercent", description: "Percentual do cupom (ex.: '10%')" },
+      {
+        tag: "urgencyLine",
+        description:
+          "Frase de urgência montada a partir da data da prova da turma. Vazia quando não há data confirmada.",
+      },
+      { tag: "cohortName", description: "Nome da turma do lead" },
+      { tag: "examDate", description: "Data da prova. Vazia enquanto a banca não confirma." },
+      { tag: "daysUntilTest", description: "Dias até a prova. Vazio se a data não está confirmada." },
+      { tag: "checkoutUrl", description: "Link de checkout com o cupom aplicado" },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.7,
+  },
+  // ── Sales spine, CONVERGED ───────────────────────────────────────────────────
+  // Rungs 3 and 4 go to the whole list — finishers and non-finishers alike — so
+  // they must not reference a score, a per-área figure or the gabarito as
+  // something the reader has already seen.
+  "lead-sim-sales-3": {
+    kind: "lead-sim-sales-3",
+    name: "[Lead] Simulado — venda 3 (plano até a prova)",
+    description:
+      "Terceira mensagem de venda, enviada a TODOS (entregaram ou não). Foco no plano de estudos e na data da prova.",
+    subject: "O plano até o dia da sua prova",
+    kicker: "",
+    headline: "A parte difícil não é querer estudar",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}A parte difícil nunca é querer estudar. É decidir <em>o que</em> estudar hoje, com o tempo que sobrou do plantão. {{urgencyLine}}</p>
+<p style="margin:0 0 16px;">O plano de estudos da plataforma existe para tirar essa decisão de você: ele parte do que mais cai no Revalida, cruza com o que você errou, e entrega a tarefa do dia. Você abre e estuda.</p>
+<p style="margin:0 0 20px;">Seu cupom <strong>{{coupon}}</strong> ({{couponPercent}} de desconto) continua valendo.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Ver a plataforma com {{couponPercent}} →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "coupon", description: "Código do cupom de boas-vindas da turma" },
+      { tag: "couponPercent", description: "Percentual do cupom (ex.: '10%')" },
+      {
+        tag: "urgencyLine",
+        description:
+          "Frase de urgência montada a partir da data da prova da turma. Vazia quando não há data confirmada.",
+      },
+      { tag: "cohortName", description: "Nome da turma do lead" },
+      { tag: "examDate", description: "Data da prova. Vazia enquanto a banca não confirma." },
+      { tag: "daysUntilTest", description: "Dias até a prova. Vazio se a data não está confirmada." },
+      { tag: "phase", description: "Fase da preparação (distante / preparacao / reta-final / vespera)" },
+      { tag: "checkoutUrl", description: "Link de checkout com o cupom aplicado" },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.8,
+  },
+  "lead-sim-sales-4": {
+    kind: "lead-sim-sales-4",
+    name: "[Lead] Simulado — venda 4 (última)",
+    description:
+      "Última mensagem da sequência, enviada a TODOS. Encerra o assunto sem drama e sem prazo falso.",
+    subject: "Último e-mail sobre isso",
+    kicker: "",
+    headline: "Fico por aqui",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Este é o último e-mail que mando sobre a plataforma. Se não for a hora, tudo bem — de verdade. {{urgencyLine}}</p>
+<p style="margin:0 0 16px;">Seu simulado continua aberto e o <strong>gabarito comentado das 100 questões</strong> é seu quando você entregar. Sem pegadinha, sem prazo.</p>
+<p style="margin:0 0 20px;">Se quiser seguir com a gente até a prova, seu cupom <strong>{{coupon}}</strong> ({{couponPercent}}) ainda está de pé.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Garantir minha vaga →",
+    cta_href: "{{checkoutUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "coupon", description: "Código do cupom de boas-vindas da turma" },
+      { tag: "couponPercent", description: "Percentual do cupom (ex.: '10%')" },
+      {
+        tag: "urgencyLine",
+        description:
+          "Frase de urgência montada a partir da data da prova da turma. Vazia quando não há data confirmada.",
+      },
+      { tag: "cohortName", description: "Nome da turma do lead" },
+      { tag: "examDate", description: "Data da prova. Vazia enquanto a banca não confirma." },
+      { tag: "daysUntilTest", description: "Dias até a prova. Vazio se a data não está confirmada." },
+      { tag: "checkoutUrl", description: "Link de checkout com o cupom aplicado" },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.9,
+  },
+  // Content-only. Sent INSTEAD of a sales message when the lead's turma is closed
+  // for sale, or when their exam is under 30 days away. Both cases get value and
+  // no offer: selling a closed turma is impossible, and pitching someone three
+  // weeks from the exam is the fastest way to be remembered badly. Carries NO
+  // coupon and NO checkout link — that is the whole point of the template.
+  "lead-sim-valor": {
+    kind: "lead-sim-valor",
+    name: "[Lead] Simulado — conteúdo, sem oferta",
+    description:
+      "Enviado quando a venda está suspensa (turma fora de venda, ou prova em menos de 30 dias). Só conteúdo: nunca cupom, nunca checkout.",
+    subject: "O que fazer com o tempo que falta",
+    kicker: "",
+    headline: "Reta final é revisar, não começar",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}{{urgencyLine}}</p>
+<p style="margin:0 0 16px;">Uma coisa que a gente vê todo ciclo: nas últimas semanas muita gente tenta abrir assunto novo — e é justamente aí que a nota cai. O que rende agora é revisar o que já passou pelos seus olhos e treinar questão no formato da banca.</p>
+<p style="margin:0 0 16px;">Três coisas que valem mais do que qualquer matéria nova neste momento: <strong>refazer o que você errou</strong>; <strong>revisar as cinco grandes áreas na proporção em que elas caem</strong>; e dormir. Sério — prova de múltipla escolha é lida com o cérebro descansado.</p>
+<p style="margin:0 0 20px;">Seu simulado continua aberto, sem prazo, e o gabarito comentado das 100 questões é seu quando entregar.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Voltar ao meu simulado →",
+    cta_href: "{{accessUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      {
+        tag: "urgencyLine",
+        description:
+          "Frase de urgência montada a partir da data da prova da turma. Vazia quando não há data confirmada.",
+      },
+      { tag: "cohortName", description: "Nome da turma do lead" },
+      { tag: "examDate", description: "Data da prova. Vazia enquanto a banca não confirma." },
+      { tag: "daysUntilTest", description: "Dias até a prova. Vazio se a data não está confirmada." },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.91,
+  },
+  // The "Ainda não decidi" track. Its only job is to obtain the turma — without a
+  // date there is no timing logic to apply, so these leads would otherwise get
+  // generic mail forever. {{turmaOptions}} is a block of one-click buttons built
+  // by the cron from the live cohorts table.
+  "lead-sim-turma": {
+    kind: "lead-sim-turma",
+    name: "[Lead] Simulado — qual é a sua prova?",
+    description:
+      "Enviado a quem marcou 'Ainda não decidi'. Um toque responde e o lead entra na sequência com data.",
+    subject: "Rápido: para qual prova você está estudando?",
+    kicker: "",
+    headline: "Uma pergunta só",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}Quando você começou o simulado, marcou que ainda não tinha decidido a prova. Faz diferença: não quero te mandar conteúdo de reta final se a sua prova é ano que vem — nem o contrário.</p>
+<p style="margin:0 0 16px;">Qual é a sua próxima prova? É um toque:</p>
+{{turmaOptions}}
+<p style="margin:16px 0 20px;">{{progressLine}} Seu simulado continua salvo, sem limite de tempo.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Continuar meu simulado →",
+    cta_href: "{{accessUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      {
+        tag: "turmaOptions",
+        description:
+          "Bloco de botões de turma (um clique responde). Montado pelo sistema a partir das turmas ativas.",
+      },
+      {
+        tag: "progressLine",
+        description:
+          "Frase de progresso montada pelo sistema. NUNCA traz nota nem desempenho por área.",
+      },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.92,
+  },
+  // Post-exam rollover. Their exam has happened; the drip moves them to the next
+  // turma rather than continuing to prepare them for a date in the past, and this
+  // is the message that says so — with a one-click way to correct it.
+  "lead-sim-rollover": {
+    kind: "lead-sim-rollover",
+    name: "[Lead] Simulado — prova passou, turma ajustada",
+    description:
+      "Enviado quando a data da prova da turma do lead já passou. Informa a nova turma e oferece a correção em um clique.",
+    subject: "Ajustei a sua turma (a prova já passou)",
+    kicker: "",
+    headline: "E agora, qual é a próxima?",
+    body_html: `<p style="margin:0 0 16px;">{{greeting}}A data da <strong>{{previousCohortName}}</strong> já passou. Como não faz sentido continuar te mandando preparação para uma prova que já aconteceu, movi você para a <strong>{{cohortName}}</strong>. {{urgencyLine}}</p>
+<p style="margin:0 0 16px;">Se essa não for a sua próxima prova, me diga qual é — leva um toque: <a href="{{turmaUrl}}" style="color:#7a1d91;">escolher outra turma</a>.</p>
+<p style="margin:0 0 20px;">E se você prestou a prova: torcemos muito por você. Seu simulado continua aberto do jeito que estava.</p>
+<p style="margin:24px 0 0;font-size:11px;color:#9ca3af;">Não quer mais receber? <a href="{{unsubscribeUrl}}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.</p>`,
+    cta_label: "Escolher minha turma →",
+    cta_href: "{{turmaUrl}}",
+    variables: [
+      { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
+      { tag: "previousCohortName", description: "Turma anterior, cuja prova já passou" },
+      { tag: "cohortName", description: "Nova turma para a qual o lead foi movido" },
+      { tag: "examDate", description: "Data da nova prova. Vazia enquanto a banca não confirma." },
+      {
+        tag: "urgencyLine",
+        description: "Frase de urgência da NOVA turma. Vazia quando não há data confirmada.",
+      },
+      { tag: "turmaUrl", description: "Link de um clique para escolher outra turma" },
+      { tag: "accessUrl", description: "Link mágico para retomar o simulado" },
+      { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
+    ],
+    active: true,
+    sort_order: 14.93,
+  },
   "lead-d0": {
     kind: "lead-d0",
     name: "[Lead] Entrega — plano + flashcards",
@@ -1299,6 +1580,12 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
 export const SAMPLE_VARS: Record<string, string> = {
   displayName: "Maria",
   cohortName: "Revalida 2027.1",
+  // NOTE the leading space and the parens: the MedHelp 60D template reads
+  // "para sua prova{{testDate}}." and supplies "" when the board has not
+  // confirmed the date, so the punctuation has to travel with the value. The
+  // simulado funnel deliberately uses a DIFFERENT tag (`examDate`, bare) rather
+  // than inheriting this convention — a shared tag with two formats is how a
+  // template ends up rendering "para sua prova15/09/2026".
   testDate: " (15 de novembro de 2026)",
   endsAt: "30 de novembro de 2026",
   summaryBody:
@@ -1343,9 +1630,24 @@ export const SAMPLE_VARS: Record<string, string> = {
   // Simulado-funnel samples. `simScore` is deliberately NOT `score`: the quiz
   // funnel's score is out of 15 and this one is out of 100, and sharing a tag made
   // the preview render "7/100".
+  accessUrl:
+    "https://medhelpspace.com.br/simulado-revalida/acesso?t=00000000-0000-0000-0000-000000000000",
   simScore: "62",
   progressLine: "Você respondeu 68 de 100 questões.",
   questionsLeft: "32",
+  // Cohort intelligence (simulado drip). `urgencyLine` is a whole sentence built
+  // by the cron and is EMPTY when the turma has no confirmed date — always place
+  // it at the end of a paragraph so an empty value leaves grammatical copy.
+  examDate: "15/09/2026",
+  daysUntilTest: "51",
+  phase: "reta-final",
+  phaseLabel: "Reta final",
+  urgencyLine:
+    "Faltam 51 dias para a sua prova (15/09/2026). É reta final: o que decide agora é revisar o que mais cai, não começar do zero.",
+  previousCohortName: "Revalida 2026.2",
+  turmaUrl: "https://medhelpspace.com.br/api/leads/turma?t=sample",
+  turmaOptions:
+    '<p style="margin:0 0 10px;"><a href="#" style="display:inline-block;padding:11px 18px;background:#f3e8ff;color:#7a1d91;font-weight:700;text-decoration:none;border-radius:8px;">Revalida 2027.1</a><span style="color:#6b7280;font-size:13px;"> — prova em 15/01/2027</span></p>',
   // Recovery-funnel samples
   recoverUrl:
     "https://medhelpspace.com.br/questoes-revalida/recuperar?t=00000000-0000-0000-0000-000000000000",

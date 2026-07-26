@@ -4,8 +4,33 @@ Design doc for the rebuilt `/simulado-revalida` funnel (question set v2: 100 que
 inéditas no estilo INEP, from Karina's two PDFs). Supersedes the original
 finisher/non-finisher drip shipped in `3f917b4`.
 
-Status: **design agreed, not yet built.** Decisions here were made with Justin
-2026-07-25.
+Status: **built** (2026-07-26, Phases 3 + 4). Decisions here were made with Justin
+2026-07-25 and the sequence now implements all of them.
+
+Where it lives:
+
+| Piece | File |
+|---|---|
+| Decision layer (pure, no I/O) | `app/src/lib/magnet/simulado-drip.ts` |
+| Exam-date phase engine | `getExamPhase` in `app/src/lib/cohort-timing.ts` |
+| Cohort directory + rollover + turma validation | `app/src/lib/magnet/cohort-rollover.ts` |
+| The cron (all I/O) | `app/src/app/api/cron/simulado-drip/route.ts` |
+| Turma answer, one click from an email | `app/src/app/api/leads/turma/route.ts` → `/simulado-revalida/turma` |
+| Copy (13 templates) | `EMAIL_TEMPLATE_DEFAULTS` + `email_templates`; seeded by `schema-patch-simulado-drip-phases-3-4.sql` |
+| Checks | `node scripts/test-simulado-drip.mjs` (25 assertions, no DB needed) |
+
+Two deviations from what is written below, both deliberate:
+
+- **Template selection is by funnel step, with the phase injected as copy**
+  (`{{urgencyLine}}`, `{{phase}}`, `{{examDate}}`, `{{daysUntilTest}}`) rather than
+  one template per (step × phase) — 4 rungs × 5 phases is 20 bodies to keep
+  factually correct. The cron still *prefers* a `{kind}--{phase}` row if one
+  exists, so a phase-specific variant can be written in /admin/email-templates
+  later without a deploy.
+- **The exam-date tag is `{{examDate}}`, not `{{testDate}}`.** `testDate` was
+  already taken by the MedHelp 60D lifecycle email, where the value carries its
+  own surrounding parens; one tag with two formats is how a template ends up
+  rendering "para sua prova15/09/2026".
 
 ---
 

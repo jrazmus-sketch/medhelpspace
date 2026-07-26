@@ -9,9 +9,9 @@ import {
   resultUrl,
   unsubscribeUrl,
   WELCOME_COUPONS,
-  VALID_TARGET_COHORTS,
   FLASHCARDS_SOURCE,
 } from "@/lib/magnet/links";
+import { isValidTargetCohort } from "@/lib/magnet/cohort-rollover";
 
 // Server action backing the /admin/leads detail drawer. Leads carry PII + are
 // commercial data, so this is gated to the SAME roles as the Leads page + OCI panel
@@ -78,9 +78,11 @@ export async function bulkAssignCohort(
     throw new Error("Invalid cohort");
   }
 
-  // Canonical whitelist (mirrors the leads_target_cohort_check DB constraint).
-  // NB: the 2027.2 slug is 'revalida-20272' — no hyphen before the final 2.
-  if (!VALID_TARGET_COHORTS.has(cohort)) {
+  // Validated against the live `cohorts` table (plus the 'undecided' sentinel) —
+  // the same rule the DB trigger enforces, so a turma added in the admin panel is
+  // assignable immediately. NB: the 2027.2 slug is 'revalida-20272' — no hyphen
+  // before the final 2.
+  if (!(await isValidTargetCohort(cohort))) {
     throw new Error("Invalid cohort");
   }
 

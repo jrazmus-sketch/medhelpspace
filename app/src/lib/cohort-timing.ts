@@ -112,3 +112,84 @@ export function getCohortTiming(
 
   return { daysToTest, examDateLabel, isNearExam, examChip, is60dUnlocked, days60d, unlock60dLabel };
 }
+
+// ── Exam-date phase engine ───────────────────────────────────────────────────
+//
+// The coarse "where in the preparation are they" bucket the lead funnels segment
+// on (docs/simulado-drip-design.md §5). Same day arithmetic and same timezone as
+// getCohortTiming above — deliberately reusing them rather than starting fresh,
+// so a lead's phase can never disagree with the countdown chip they see on site.
+//
+// `passada` and `indefinida` are not in the design table but every caller needs
+// them: a lead whose exam has already happened must stop receiving prep mail
+// (they get rolled to the next turma), and an "Ainda não decidi" lead has no
+// date at all, so no timing logic applies to them.
+
+export type ExamPhase =
+  | "distante"
+  | "preparacao"
+  | "reta-final"
+  | "vespera"
+  | "passada"
+  | "indefinida";
+
+export const EXAM_PHASE_LABELS: Record<ExamPhase, string> = {
+  distante: "Distante",
+  preparacao: "Preparação",
+  "reta-final": "Reta final",
+  vespera: "Véspera",
+  passada: "Prova já realizada",
+  indefinida: "Sem data definida",
+};
+
+export interface ExamPhaseInfo {
+  phase: ExamPhase;
+  /** Days from today to the exam. Negative once it has passed; null with no date. */
+  daysUntilTest: number | null;
+  /** "15/09/2026" — null when there is no date. Present even if unconfirmed. */
+  examDateLabel: string | null;
+  /**
+   * Whether the exam board has actually announced this date. Revalida dates are
+   * notoriously unreliable, so an unconfirmed date drives CADENCE (the phase)
+   * but must never be quoted as fact in copy. See getCohortTiming.
+   */
+  dateConfirmed: boolean;
+  isPast: boolean;
+}
+
+// Boundaries from the design table: >180 distante · 180–90 preparação ·
+// 90–30 reta final · <30 véspera.
+const PHASE_DISTANTE_DAYS = 180;
+const PHASE_PREPARACAO_DAYS = 90;
+const PHASE_RETA_FINAL_DAYS = 30;
+
+export function getExamPhase(
+  testDate: string | null | undefined,
+  opts: { dateConfirmed?: boolean } = {},
+  now: Date = new Date(),
+): ExamPhaseInfo {
+  const dateConfirmed = opts.dateConfirmed ?? false;
+
+  if (!testDate) {
+    return {
+      phase: "indefinida",
+      daysUntilTest: null,
+      examDateLabel: null,
+      dateConfirmed,
+      isPast: false,
+    };
+  }
+
+  const t = dateOnly(testDate);
+  const daysUntilTest = daysBetween(todayInTZ(now), t);
+  const examDateLabel = fmtFull(t);
+
+  let phase: ExamPhase;
+  if (daysUntilTest < 0) phase = "passada";
+  else if (daysUntilTest < PHASE_RETA_FINAL_DAYS) phase = "vespera";
+  else if (daysUntilTest <= PHASE_PREPARACAO_DAYS) phase = "reta-final";
+  else if (daysUntilTest <= PHASE_DISTANTE_DAYS) phase = "preparacao";
+  else phase = "distante";
+
+  return { phase, daysUntilTest, examDateLabel, dateConfirmed, isPast: daysUntilTest < 0 };
+}
