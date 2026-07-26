@@ -1,0 +1,702 @@
+[
+ {
+  "number": 1,
+  "area": "clinica-medica",
+  "tema": "Hipertensão arterial",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 2,
+  "area": "pediatria",
+  "tema": "Bronquiolite",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 3,
+  "area": "go",
+  "tema": "Sífilis na gestação",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 4,
+  "area": "cirurgia",
+  "tema": "Apendicite aguda não complicada",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 5,
+  "area": "clinica-medica",
+  "tema": "Cetoacidose diabética",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 6,
+  "area": "pediatria",
+  "tema": "Imunização contra o HPV",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 7,
+  "area": "clinica-medica",
+  "tema": "Anemia ferropriva",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 8,
+  "area": "pediatria",
+  "tema": "Crescimento e desenvolvimento: baixo peso e desaceleração ponderal",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 9,
+  "area": "cirurgia",
+  "tema": "Trauma com choque hemorrágico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 10,
+  "area": "go",
+  "tema": "Anticoncepção na adolescência e sigilo",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 11,
+  "area": "clinica-medica",
+  "tema": "Dengue com sinais de alarme",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 12,
+  "area": "clinica-medica",
+  "tema": "Migrânea sem aura",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 13,
+  "area": "go",
+  "tema": "Depressão pós-parto",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 14,
+  "area": "clinica-medica",
+  "tema": "Pneumonia adquirida na comunidade",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 15,
+  "area": "clinica-medica",
+  "tema": "Infecção latente por tuberculose",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 16,
+  "area": "cirurgia",
+  "tema": "Colecistite aguda",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 17,
+  "area": "clinica-medica",
+  "tema": "Acidente vascular cerebral isquêmico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 18,
+  "area": "go",
+  "tema": "Doença inflamatória pélvica",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 19,
+  "area": "clinica-medica",
+  "tema": "Meningite bacteriana",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 20,
+  "area": "clinica-medica",
+  "tema": "Diabetes mellitus tipo 1 e vulnerabilidade social",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 21,
+  "area": "clinica-medica",
+  "tema": "Bradiarritmia instável",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 22,
+  "area": "clinica-medica",
+  "tema": "Endocardite infecciosa com insuficiência valvar aguda",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 23,
+  "area": "clinica-medica",
+  "tema": "Litíase ureteral",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 24,
+  "area": "go",
+  "tema": "Pré-eclâmpsia sobreposta com sinais de gravidade",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 25,
+  "area": "clinica-medica",
+  "tema": "Esporotricose cutâneo-linfática",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 26,
+  "area": "saude-coletiva",
+  "tema": "Acidente de trabalho: notificação e emissão da CAT",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 27,
+  "area": "pediatria",
+  "tema": "Icterícia neonatal por incompatibilidade ABO",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 28,
+  "area": "cirurgia",
+  "tema": "Hemorragia digestiva por varizes esofágicas",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 29,
+  "area": "clinica-medica",
+  "tema": "Hiperparatireoidismo primário",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 30,
+  "area": "clinica-medica",
+  "tema": "Apneia obstrutiva do sono por hipertrofia adenotonsilar",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 31,
+  "area": "go",
+  "tema": "Anticoncepção no pós-parto",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 32,
+  "area": "cirurgia",
+  "tema": "Fratura exposta contaminada",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 33,
+  "area": "saude-coletiva",
+  "tema": "Canal endêmico e situação epidemiológica da dengue",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 34,
+  "area": "saude-coletiva",
+  "tema": "Estudo de coorte, risco relativo e fração atribuível",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 35,
+  "area": "go",
+  "tema": "Mastite puerperal",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 36,
+  "area": "clinica-medica",
+  "tema": "Infecção aguda pelo HIV",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 37,
+  "area": "go",
+  "tema": "Rastreamento e seguimento do câncer do colo do útero",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 38,
+  "area": "cirurgia",
+  "tema": "Diverticulite aguda não complicada",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 39,
+  "area": "cirurgia",
+  "tema": "Fístula anal",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 40,
+  "area": "go",
+  "tema": "Bacteriúria assintomática na gestação",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 41,
+  "area": "clinica-medica",
+  "tema": "Retinopatia diabética proliferativa",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 42,
+  "area": "clinica-medica",
+  "tema": "Anafilaxia",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 43,
+  "area": "pediatria",
+  "tema": "Imunização de paciente imunossuprimido",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 44,
+  "area": "go",
+  "tema": "Endometriose",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 45,
+  "area": "clinica-medica",
+  "tema": "Delirium",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 46,
+  "area": "clinica-medica",
+  "tema": "Trombose venosa profunda",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 47,
+  "area": "saude-coletiva",
+  "tema": "Triagem de acuidade visual no ambiente escolar",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 48,
+  "area": "go",
+  "tema": "Placenta prévia",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 49,
+  "area": "cirurgia",
+  "tema": "Reposição volêmica no paciente queimado",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 50,
+  "area": "clinica-medica",
+  "tema": "Rastreamento do transtorno do espectro autista",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 51,
+  "area": "saude-coletiva",
+  "tema": "Atendimento à violência sexual e profilaxias",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 52,
+  "area": "clinica-medica",
+  "tema": "Exacerbação de DPOC e ventilação não invasiva",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 53,
+  "area": "clinica-medica",
+  "tema": "Hipertensão arterial com albuminúria no diabetes",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 54,
+  "area": "go",
+  "tema": "Tromboflebite pélvica séptica no puerpério",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 55,
+  "area": "pediatria",
+  "tema": "Laringite viral aguda — crupe",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 56,
+  "area": "cirurgia",
+  "tema": "Pancreatite aguda biliar",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 57,
+  "area": "saude-coletiva",
+  "tema": "Autonomia do paciente e recusa de transfusão",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 58,
+  "area": "go",
+  "tema": "BI-RADS e investigação de lesão mamária suspeita",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 59,
+  "area": "saude-coletiva",
+  "tema": "Razão de verossimilhança e probabilidade pós-teste",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 60,
+  "area": "pediatria",
+  "tema": "Diarreia aguda com desidratação",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 61,
+  "area": "clinica-medica",
+  "tema": "Edema agudo de pulmão hipertensivo",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 62,
+  "area": "clinica-medica",
+  "tema": "Artrite crônica pós-chikungunya",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 63,
+  "area": "go",
+  "tema": "Amenorreia hipotalâmica funcional",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 64,
+  "area": "clinica-medica",
+  "tema": "Trauma uretral",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 65,
+  "area": "pediatria",
+  "tema": "Convulsão febril complexa",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 66,
+  "area": "clinica-medica",
+  "tema": "Hanseníase multibacilar",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 67,
+  "area": "clinica-medica",
+  "tema": "Hiponatremia sintomática grave",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 68,
+  "area": "go",
+  "tema": "Hemorragia pós-parto por atonia uterina",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 69,
+  "area": "clinica-medica",
+  "tema": "Profilaxia pós-exposição à raiva",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 70,
+  "area": "cirurgia",
+  "tema": "Megacólon tóxico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 71,
+  "area": "clinica-medica",
+  "tema": "Síndrome coronariana aguda sem supradesnivelamento do segmento ST",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 72,
+  "area": "pediatria",
+  "tema": "Maus-tratos e violência contra a criança",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 73,
+  "area": "pediatria",
+  "tema": "Sífilis congênita e adequação do tratamento materno",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 74,
+  "area": "pediatria",
+  "tema": "Comunicação interventricular",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 75,
+  "area": "cirurgia",
+  "tema": "Colangite aguda grave",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 76,
+  "area": "clinica-medica",
+  "tema": "Transtorno depressivo com resposta parcial ao antidepressivo",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 77,
+  "area": "pediatria",
+  "tema": "Reanimação neonatal: ventilação com pressão positiva ineficaz",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 78,
+  "area": "cirurgia",
+  "tema": "Hemotórax traumático",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 79,
+  "area": "go",
+  "tema": "Sangramento pós-menopausa e investigação endometrial",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 80,
+  "area": "pediatria",
+  "tema": "Obesidade na adolescência e risco cardiometabólico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 81,
+  "area": "clinica-medica",
+  "tema": "Tromboembolismo pulmonar de alto risco",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 82,
+  "area": "clinica-medica",
+  "tema": "Pé diabético infectado e isquêmico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 83,
+  "area": "go",
+  "tema": "Perfil biofísico fetal alterado",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 84,
+  "area": "clinica-medica",
+  "tema": "Emergência hipertensiva",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 85,
+  "area": "pediatria",
+  "tema": "Profilaxia pós-exposição ao sarampo",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 86,
+  "area": "cirurgia",
+  "tema": "Abscesso intra-abdominal pós-operatório",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 87,
+  "area": "cirurgia",
+  "tema": "Apendicite perfurada com choque séptico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 88,
+  "area": "pediatria",
+  "tema": "Hérnia inguinal encarcerada no lactente",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 89,
+  "area": "cirurgia",
+  "tema": "Traumatismo cranioencefálico leve",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 90,
+  "area": "clinica-medica",
+  "tema": "Bulimia nervosa",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 91,
+  "area": "pediatria",
+  "tema": "Epiglotite aguda",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 92,
+  "area": "go",
+  "tema": "Pielonefrite na gestação",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 93,
+  "area": "saude-coletiva",
+  "tema": "Atenção domiciliar ao idoso frágil e polifarmácia",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 94,
+  "area": "pediatria",
+  "tema": "Taquipneia transitória do recém-nascido",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 95,
+  "area": "cirurgia",
+  "tema": "Rastreamento do câncer colorretal",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 96,
+  "area": "clinica-medica",
+  "tema": "Estado de mal epiléptico",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 97,
+  "area": "clinica-medica",
+  "tema": "Tempestade tireotóxica",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 98,
+  "area": "clinica-medica",
+  "tema": "Intoxicação por organofosforado",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 99,
+  "area": "saude-coletiva",
+  "tema": "Incidência, letalidade e mortalidade",
+  "confidence": "alta",
+  "note": ""
+ },
+ {
+  "number": 100,
+  "area": "saude-coletiva",
+  "tema": "Saúde do trabalhador e lombalgia ocupacional",
+  "confidence": "alta",
+  "note": ""
+ }
+]

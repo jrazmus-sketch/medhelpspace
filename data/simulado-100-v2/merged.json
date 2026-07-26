@@ -1,0 +1,1602 @@
+[
+ {
+  "number": 1,
+  "enunciado": "Mulher de 56 anos comparece à Unidade Básica de Saúde para acompanhamento. Tem diabetes mellitus tipo 2 há oito anos, fuma 15 cigarros por dia e é sedentária. Há três semanas, apresentou pressão arterial de 166 × 100 mmHg. Hoje, após repouso e técnica adequada, são obtidas medidas de 168 × 102 mmHg e 164 × 100 mmHg. A creatinina e o potássio séricos são normais, e a relação albumina/creatinina urinária não está aumentada. Não há sinais de lesão aguda de órgão-alvo, e o risco cardiovascular global é elevado. A conduta inicial mais adequada é:",
+  "alternatives": [
+   "Iniciar IECA ou BRA em monoterapia, titulando a dose antes de associar outro anti-hipertensivo.",
+   "Iniciar IECA ou BRA associado a BCC ou tiazídico, em baixas doses, além de mudanças no estilo de vida.",
+   "Iniciar BCC associado a betabloqueador, introduzindo IECA ou BRA se houver albuminúria.",
+   "Realizar MAPA ou MRPA e adiar a terapia combinada até confirmar hipertensão sustentada."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A paciente tem hipertensão estágio 2 confirmada em medidas repetidas e risco cardiovascular elevado. Nesse cenário, a terapia inicial combinada em baixas doses aumenta a chance de controle precoce; IECA ou BRA é uma boa base, associado a bloqueador do canal de cálcio ou diurético tiazídico, além das mudanças de estilo de vida.",
+  "distratores": "A propõe monoterapia para uma pressão muito acima da meta; C escolhe betabloqueador sem indicação preferencial e posterga o bloqueio do sistema renina-angiotensina; D atrasa tratamento necessário, embora MAPA/MRPA possa complementar a avaliação.",
+  "conceito_chave": "Hipertensão estágio 2 e alto risco: iniciar combinação de dois fármacos de primeira linha.",
+  "has_figure": false
+ },
+ {
+  "number": 2,
+  "enunciado": "Lactente de 4 meses, nascido a termo e sem comorbidades, apresenta coriza e tosse há três dias. Nas últimas 12 horas, ingeriu cerca de 40% do volume habitual. Após higiene nasal, mantém frequência respiratória de 66 irpm, tiragem subcostal moderada e saturação de oxigênio entre 88% e 89% em ar ambiente. Está responsivo, sem apneias ou sinais de exaustão. A conduta inicial mais adequada é:",
+  "alternatives": [
+   "iniciar oxigênio de baixo fluxo e realizar teste com broncodilatador, mantendo-o se houver melhora objetiva do esforço respiratório.",
+   "iniciar oxigênio de baixo fluxo, solicitar radiografia de tórax e administrar antibiótico até excluir pneumonia bacteriana.",
+   "iniciar oxigênio de baixo fluxo, higiene nasal e suporte de hidratação, com internação e reavaliação clínica seriada.",
+   "iniciar cânula nasal de alto fluxo, higiene nasal e suporte de hidratação, devido à hipoxemia associada à tiragem moderada."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "O quadro é compatível com bronquiolite com hipoxemia persistente, redução importante da ingesta e esforço respiratório moderado. A prioridade é oxigênio de baixo fluxo, higiene nasal, hidratação e internação para observação e reavaliação seriada.",
+  "distratores": "A inclui broncodilatador de rotina, que não é recomendado; B solicita radiografia e antibiótico sem sinais de pneumonia bacteriana; D antecipa alto fluxo antes de testar suporte convencional em criança sem exaustão ou apneia.",
+  "conceito_chave": "Bronquiolite: tratamento é suporte; oxigênio e internação quando há hipoxemia ou dificuldade alimentar relevante.",
+  "has_figure": false
+ },
+ {
+  "number": 3,
+  "enunciado": "Gestante de 16 semanas realiza a primeira consulta de pré-natal. Encontra-se assintomática e não há elementos clínicos ou epidemiológicos que permitam documentar a aquisição da infecção no último ano. O VDRL é reagente em título de 1:32, e o teste treponêmico também é reagente. Não há tratamento anterior documentado. Refere urticária generalizada, dispneia e atendimento de urgência imediatamente após receber penicilina na infância, sem exposição posterior conhecida ao medicamento. A conduta mais adequada é",
+  "alternatives": [
+   "realizar investigação alergológica e, se confirmada sensibilização, dessensibilizar e administrar benzilpenicilina benzatina 2,4 milhões UI em dose única, considerando o título de 1:32 indicativo de infecção recente.",
+   "realizar dessensibilização hospitalar e administrar benzilpenicilina benzatina 2,4 milhões UI semanalmente por três semanas, reiniciando o esquema se o intervalo entre as doses ultrapassar 14 dias.",
+   "realizar dessensibilização em ambiente hospitalar e administrar benzilpenicilina benzatina 2,4 milhões UI semanalmente por três semanas, idealmente a cada sete dias e sem ultrapassar nove dias.",
+   "substituir a penicilina por ceftriaxona 2 g ao dia durante 10 a 14 dias e monitorar mensalmente o VDRL, indicando a dessensibilização para ausência de resposta sorológica."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Sem documentação de infecção recente ou tratamento prévio, a gestante deve ser tratada como sífilis de duração ignorada. Como a história sugere anafilaxia à penicilina, é necessária dessensibilização hospitalar, seguida de três doses semanais de benzilpenicilina benzatina, mantendo intervalos rigorosos.",
+  "distratores": "A interpreta o título alto como prova de infecção recente; B aceita intervalo excessivo entre as doses na gestação; D substitui a penicilina, único tratamento comprovadamente eficaz para prevenir sífilis congênita.",
+  "conceito_chave": "Sífilis na gestação com alergia verdadeira: dessensibilizar e tratar com penicilina.",
+  "has_figure": false
+ },
+ {
+  "number": 4,
+  "enunciado": "Homem de 24 anos, previamente hígido, apresenta dor migratória para fossa ilíaca direita, febre baixa e defesa localizada. A tomografia mostra apêndice com 11 mm, densificação da gordura adjacente e apendicolito, sem abscesso, pneumoperitônio ou massa inflamatória. Após analgesia e hidratação, permanece estável. A conduta definitiva preferencial é:",
+  "alternatives": [
+   "realizar apendicectomia laparoscópica nesta internação, com antibioticoprofilaxia; se o achado confirmar apendicite não complicada, não manter antimicrobiano no pós-operatório.",
+   "iniciar ceftriaxona e metronidazol por 24 a 48 horas e realizar a apendicectomia após desaparecimento da febre e redução dos marcadores inflamatórios.",
+   "iniciar tratamento antimicrobiano e observação, propondo apendicectomia se houver piora clínica ou recorrência, apesar da presença do apendicolito.",
+   "controlar o episódio com antimicrobianos e programar apendicectomia intervalar pelo risco de recorrência associado ao apendicolito."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A tomografia mostra apendicite aguda não complicada, mas a presença de apendicolito aumenta a chance de falha e recorrência do tratamento não operatório. A apendicectomia laparoscópica na mesma internação é a estratégia definitiva preferencial; se não houver perfuração, não se mantém antibiótico no pós-operatório.",
+  "distratores": "B posterga desnecessariamente a cirurgia; C oferece tratamento conservador em cenário menos favorável pela presença do apendicolito; D indica apendicectomia intervalar, conduta reservada a contextos específicos, como massa ou abscesso tratados inicialmente sem operação.",
+  "conceito_chave": "Apendicite não complicada com apendicolito: preferir apendicectomia na internação.",
+  "has_figure": false
+ },
+ {
+  "number": 5,
+  "enunciado": "Adolescente de 15 anos com diabetes mellitus tipo 1 é atendido por vômitos, dor abdominal e sonolência após omitir aplicações de insulina. Apresenta desidratação moderada, glicemia de 420 mg/dL, pH venoso de 7,12, bicarbonato de 9 mEq/L e potássio sérico de 2,8 mEq/L. Mantém diurese e não apresenta choque, arritmias ou sinais neurológicos focais. A sequência terapêutica mais adequada é:",
+  "alternatives": [
+   "iniciar solução isotônica e reposição de potássio e, após uma hora de hidratação, começar insulina intravenosa independentemente da nova concentração de potássio.",
+   "iniciar solução isotônica e reposição de potássio, adiando a insulina até que o potássio ultrapasse 4,0 mEq/L e o bicarbonato seja superior a 12 mEq/L.",
+   "iniciar solução isotônica e reposição de potássio, com monitorização cardíaca, começando insulina intravenosa após pelo menos uma hora e quando o potássio superar 3,0 mEq/L.",
+   "iniciar solução isotônica, reposição de potássio e insulina intravenosa em baixa dose simultaneamente, pois a manutenção da diurese permite reposição segura do eletrólito."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Na cetoacidose diabética com potássio abaixo de 3,0 mEq/L, a insulina deve ser temporariamente adiada porque agravaria a hipocalemia e aumentaria o risco de arritmia. Inicia-se solução isotônica, reposição de potássio e monitorização cardíaca; a insulina entra após hidratação inicial e correção do potássio para nível seguro.",
+  "distratores": "A inicia insulina sem confirmar correção da hipocalemia; B exige potássio e bicarbonato desnecessariamente altos; D associa insulina desde o início apesar do potássio crítico.",
+  "conceito_chave": "CAD com K baixo: corrigir potássio antes de iniciar insulina.",
+  "has_figure": false
+ },
+ {
+  "number": 6,
+  "enunciado": "Adolescente de 16 anos, imunocompetente, comparece à Unidade Básica de Saúde sem caderneta de vacinação. Não foram encontrados registros de vacina contra o HPV nos sistemas de informação disponíveis. Considerando a estratégia nacional de resgate do Programa Nacional de Imunizações vigente em 2026 para pessoas de 15 a 19 anos não vacinadas, a conduta mais adequada é:",
+  "alternatives": [
+   "Aplicar uma dose hoje e considerá-lo vacinado, enquanto permanecer imunocompetente.",
+   "Aplicar duas doses, hoje e em seis meses, porque o resgate foi iniciado após os 15 anos.",
+   "Aplicar três doses, nos meses 0, 2 e 6, devido à ausência de qualquer registro vacinal.",
+   "Aplicar uma dose hoje e repeti-la em seis meses se o registro anterior continuar indisponível."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Na estratégia nacional de resgate para adolescentes e jovens de 15 a 19 anos sem histórico vacinal contra HPV, o esquema para imunocompetentes é de dose única. Na ausência de registro confiável, considera-se não vacinado e aplica-se a dose na oportunidade.",
+  "distratores": "B e C usam esquemas multidose que não correspondem ao resgate do imunocompetente; D cria uma repetição condicionada à falta de registro, sem indicação.",
+  "conceito_chave": "Resgate HPV de 15 a 19 anos, imunocompetente e sem registro: uma dose.",
+  "has_figure": false
+ },
+ {
+  "number": 7,
+  "enunciado": "Mulher de 56 anos, pós-menopausa há cinco anos, apresenta fadiga e redução da tolerância aos esforços há quatro meses, sem sangramento aparente ou sintomas gastrointestinais. Está hemodinamicamente estável e apresenta palidez cutaneomucosa. Exames: hemoglobina 9,2 g/dL; VCM 68 fL; RDW 18,5%; reticulócitos 0,8%; ferritina 8 ng/mL; saturação da transferrina 7%; PCR normal. A conduta mais adequada é:",
+  "alternatives": [
+   "iniciar reposição de ferro e solicitar colonoscopia, programando a endoscopia digestiva alta para resultado normal do exame colônico.",
+   "iniciar reposição de ferro e encaminhar para colonoscopia e endoscopia digestiva alta, sem aguardar a resposta hematológica ao tratamento.",
+   "iniciar reposição de ferro e solicitar teste imunoquímico fecal, realizando colonoscopia se positivo e endoscopia se surgirem sintomas altos.",
+   "iniciar reposição de ferro e reavaliar o hemograma em oito semanas, indicando investigação endoscópica se não houver resposta adequada."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A combinação de microcitose, ferritina baixa e saturação da transferrina reduzida confirma anemia ferropriva. Em mulher pós-menopausa, é necessário investigar perda gastrointestinal com colonoscopia e endoscopia digestiva alta, sem esperar a resposta à reposição de ferro.",
+  "distratores": "A condiciona a endoscopia alta ao resultado da colonoscopia; C usa FIT como triagem em uma paciente que já tem anemia ferropriva; D posterga investigação etiológica potencialmente importante.",
+  "conceito_chave": "Anemia ferropriva em homem ou mulher pós-menopausa: investigar trato gastrointestinal alto e baixo.",
+  "has_figure": false
+ },
+ {
+  "number": 8,
+  "enunciado": "Menina de 2 anos é acompanhada regularmente em consulta de puericultura. Apresenta desenvolvimento neuropsicomotor adequado e não possui história de diarreia crônica, vômitos persistentes, disfagia, infecções recorrentes ou edema. Ao exame físico, encontra-se ativa, hidratada e sem alterações relevantes. As medidas seriadas de peso foram registradas no gráfico de peso por idade para meninas, baseado nos padrões de crescimento da Organização Mundial da Saúde. Considerando a trajetória apresentada no gráfico, qual é a interpretação e a conduta inicial mais adequadas?",
+  "alternatives": [
+   "Interpretar a evolução como variante constitucional, considerando o desenvolvimento adequado e a ausência de sintomas; orientar manutenção da alimentação habitual, completar a avaliação com estatura e IMC para a idade e programar nova consulta de puericultura em seis meses.",
+   "Reconhecer baixo peso para a idade, com queda progressiva do escore-z; avaliar alimentação, interação cuidador-criança, estatura, IMC e condições sociais, instituindo intervenção nutricional e acompanhamento próximo.",
+   "Reconhecer baixo peso para a idade e iniciar suplementação oral hipercalórica; solicitar hemograma, dosagem de ferritina e exame parasitológico de fezes, mantendo a alimentação habitual até a reavaliação da resposta ponderal em aproximadamente três meses.",
+   "Considerar provável doença orgânica associada à desaceleração ponderal; solicitar hemograma, TSH, sorologia para doença celíaca e exame parasitológico de fezes, além de encaminhar a criança para avaliação especializada antes de realizar intervenções nutricionais específicas."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "O gráfico mostra peso abaixo do esperado com cruzamento descendente de curvas, caracterizando queda progressiva do escore-z. A abordagem inicial deve ser ampla: avaliar alimentação, interação cuidador-criança, crescimento linear, IMC, condições sociais e instituir intervenção nutricional com seguimento próximo.",
+  "distratores": "A chama de variante constitucional apesar da desaceleração; C inicia suplemento e exames padronizados sem avaliação etiológica inicial adequada; D presume doença orgânica e encaminha antes de investigar causas alimentares e psicossociais mais comuns.",
+  "conceito_chave": "Queda de escore-z é sinal de alerta: avaliar crescimento global e contexto alimentar e social.",
+  "has_figure": true
+ },
+ {
+  "number": 9,
+  "enunciado": "Homem de 32 anos é trazido pelo SAMU cerca de 40 minutos após colisão entre automóvel e poste. Apresenta extenso ferimento em coxa direita, com sangramento volumoso que diminui, mas não cessa com compressão manual. Está consciente, com via aérea e ventilação preservadas, pele fria, frequência cardíaca de 132 bpm, pressão arterial de 82/48 mmHg e enchimento capilar de 4 segundos. A pelve é estável e não há outro foco externo evidente de hemorragia. A conduta imediata mais adequada é",
+  "alternatives": [
+   "aplicar torniquete proximal, obter acessos venosos calibrosos e infundir inicialmente 1.000 mL de cristaloide aquecido, acionando o protocolo de transfusão maciça se a hipotensão persistir após essa reposição.",
+   "aplicar torniquete proximal, administrar ácido tranexâmico e iniciar transfusão balanceada, encaminhando o paciente para tomografia de corpo inteiro caso apresente elevação transitória da pressão arterial.",
+   "aplicar torniquete proximal, iniciar concentrado de hemácias e ácido tranexâmico e aguardar os resultados do coagulograma, do fibrinogênio e da contagem de plaquetas para definir os demais hemocomponentes.",
+   "aplicar torniquete proximal, obter acessos calibrosos, administrar precocemente ácido tranexâmico, acionar o protocolo de transfusão maciça com reposição hemostática aquecida e providenciar controle definitivo imediato da hemorragia."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Há hemorragia externa ameaçadora à vida com choque hemorrágico. O controle deve ser simultâneo: torniquete, acessos calibrosos, ácido tranexâmico precoce, protocolo de transfusão maciça com hemocomponentes aquecidos e encaminhamento imediato para hemostasia definitiva.",
+  "distratores": "A prioriza grande volume de cristaloide e atrasa hemoderivados; B propõe tomografia em paciente que necessita controle imediato do foco; C aguarda exames antes de completar a reposição balanceada.",
+  "conceito_chave": "Choque hemorrágico: controlar a fonte e iniciar ressuscitação hemostática sem atrasos.",
+  "has_figure": false
+ },
+ {
+  "number": 10,
+  "enunciado": "Adolescente de 15 anos procura desacompanhada uma Unidade Básica de Saúde. Relata atividade sexual consensual, solicita contracepção e pede que o atendimento seja mantido em sigilo. Demonstra compreender riscos, benefícios e alternativas, sem indícios de violência, coerção, incapacidade decisória ou risco relevante à sua segurança. A conduta mais adequada é:",
+  "alternatives": [
+   "Preservar o sigilo e ofertar LARC, priorizando o implante em razão da nuliparidade.",
+   "Preservar o sigilo e ofertar método elegível, inclusive LARC, por decisão compartilhada.",
+   "Preservar o sigilo e ofertar LARC após resultado negativo do rastreamento de IST.",
+   "Preservar o sigilo e ofertar LARC, condicionando a inserção ao uso concomitante de preservativo."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Adolescente com capacidade de compreensão, relação consensual e ausência de risco pode receber atendimento confidencial. Deve-se ofertar qualquer método elegível, inclusive DIU ou implante, por decisão compartilhada e sem impor método específico ou exames desnecessários.",
+  "distratores": "A privilegia o implante apenas pela nuliparidade; C condiciona LARC a rastreamento de IST negativo; D transforma o preservativo em requisito para inserção, embora deva ser recomendado para prevenção de IST, não imposto como condição.",
+  "conceito_chave": "Planejamento reprodutivo do adolescente: sigilo, autonomia e escolha compartilhada.",
+  "has_figure": false
+ },
+ {
+  "number": 11,
+  "enunciado": "Mulher de 28 anos, no quarto dia de dengue, evolui com dor abdominal intensa e contínua, vômitos persistentes e elevação progressiva do hematócrito. A contagem de plaquetas é de 78.000/mm³. Apresenta pressão arterial de 110/70 mmHg, pulsos amplos, extremidades aquecidas e diurese preservada, sem sangramento grave, choque ou disfunção de órgãos. Conforme o manual de manejo clínico da dengue do Ministério da Saúde, a conduta mais adequada é:",
+  "alternatives": [
+   "Classificar no Grupo C, internar e administrar solução salina 10 mL/kg na primeira e na segunda hora, com reavaliações seriadas.",
+   "Classificar no Grupo C, internar e administrar solução salina 20 mL/kg em duas horas, reavaliando ao final da expansão.",
+   "Classificar no Grupo D, internar e administrar solução salina 20 mL/kg em 20 minutos, com reavaliação imediata.",
+   "Classificar no Grupo C, internar e administrar solução salina 10 mL/kg na primeira hora, passando à manutenção se permanecer estável."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Dor abdominal intensa, vômitos persistentes e elevação do hematócrito são sinais de alarme, sem choque ou disfunção orgânica; portanto, trata-se de dengue Grupo C. Deve-se iniciar solução isotônica 10 mL/kg na primeira hora, reavaliar o quadro clínico e o hematócrito e manter 10 mL/kg/h na segunda hora, ajustando as etapas seguintes conforme a resposta.",
+  "distratores": "B dilui 20 mL/kg em duas horas sem a reavaliação intermediária prevista; C classifica como Grupo D apesar da ausência de choque; D passa precocemente à manutenção sem completar a avaliação da resposta.",
+  "conceito_chave": "Dengue com sinais de alarme: Grupo C, expansão de 10 mL/kg e reavaliações frequentes.",
+  "has_figure": false
+ },
+ {
+  "number": 12,
+  "enunciado": "Menina de 10 anos apresenta seis episódios de cefaleia em quatro meses, pulsátil, frontal e bilateral, moderada, com duração de duas a três horas, piora com atividade e associação a náuseas e fotofobia. As crises ocorrem após jejum prolongado ou privação de sono, sem aura, sinais de alarme ou alterações nos exames neurológico e fundoscópico. A abordagem inicial mais adequada é:",
+  "alternatives": [
+   "diagnosticar migrânea sem aura, orientar regularidade do sono e das refeições, hidratação e diário de cefaleia e usar ibuprofeno no início das crises.",
+   "diagnosticar migrânea sem aura e iniciar topiramato, mantendo ibuprofeno como resgate, pois a limitação das atividades indica profilaxia.",
+   "diagnosticar migrânea sem aura, usar sumatriptano nasal como primeira opção e solicitar ressonância se não houver resposta nas próximas duas crises.",
+   "classificar como provável migrânea sem aura e solicitar ressonância antes de confirmar o diagnóstico, pela localização bilateral e duração inferior a quatro horas."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "O padrão é típico de migrânea sem aura na infância, sem sinais de alarme e com exame neurológico normal. A primeira abordagem inclui medidas de rotina de sono, alimentação e hidratação, diário de cefaleia e analgésico precoce, como ibuprofeno, no início da crise.",
+  "distratores": "B inicia profilaxia sem frequência ou incapacidade que a justifique; C coloca triptano como primeira escolha e condiciona imagem à resposta; D solicita ressonância por características que são compatíveis com migrânea pediátrica.",
+  "conceito_chave": "Migrânea infantil típica e sem alarme: manejo clínico; neuroimagem não é rotina.",
+  "has_figure": false
+ },
+ {
+  "number": 13,
+  "enunciado": "Puérpera de 24 anos, três semanas após parto vaginal, apresenta há 18 dias humor deprimido, anedonia, sentimentos de culpa, fadiga e insônia mesmo quando o recém-nascido dorme. A avaliação clínica confirma episódio depressivo de intensidade moderada, com prejuízo importante das atividades habituais. Mantém os cuidados básicos com o bebê e nega ideação suicida, sintomas psicóticos ou episódios prévios de mania ou hipomania. Está em aleitamento materno exclusivo, tem acesso à psicoterapia e, após ser informada sobre os riscos e benefícios das opções terapêuticas, manifesta preferência pelo tratamento combinado. A conduta mais adequada é",
+  "alternatives": [
+   "iniciar psicoterapia estruturada e medidas de apoio, considerando o antidepressivo para ausência de melhora clinicamente relevante após quatro a seis semanas de tratamento.",
+   "iniciar psicoterapia e antidepressivo compatível com a lactação, suspendendo temporariamente a amamentação até que seja avaliada a tolerabilidade materna ao medicamento.",
+   "iniciar antidepressivo compatível com a lactação e medidas de apoio, acrescentando psicoterapia caso a resposta farmacológica seja insuficiente após quatro a seis semanas.",
+   "iniciar psicoterapia e antidepressivo compatível com a lactação, mantendo a amamentação e realizando reavaliação precoce da resposta, dos efeitos adversos e do risco materno."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Sintomas persistentes por mais de duas semanas, anedonia e prejuízo funcional caracterizam depressão pós-parto, não tristeza puerperal. Em episódio moderado, sem psicose ou risco suicida, e com preferência informada, é adequado combinar psicoterapia e antidepressivo compatível com a lactação, mantendo amamentação e seguimento precoce.",
+  "distratores": "A posterga o antidepressivo apesar da gravidade moderada e da preferência pelo tratamento combinado; B suspende a amamentação sem necessidade; C posterga a psicoterapia, embora a paciente tenha acesso e deseje a combinação.",
+  "conceito_chave": "Depressão pós-parto moderada: tratamento combinado e monitorização; psicose ou suicídio mudam a urgência.",
+  "has_figure": false
+ },
+ {
+  "number": 14,
+  "enunciado": "Homem de 47 anos, tabagista, sem outras comorbidades relevantes e sem uso recente de antimicrobianos, apresenta febre, tosse produtiva e dor torácica ventilatório-dependente há cinco dias. Está lúcido, com pressão arterial de 122/76 mmHg, frequência respiratória de 22 irpm e saturação de oxigênio de 95% em ar ambiente. A radiografia de tórax é apresentada abaixo. Qual combinação entre diagnóstico e conduta é a mais adequada?",
+  "alternatives": [
+   "pneumonia adquirida na comunidade não grave; iniciar amoxicilina com clavulanato associada a azitromicina por via oral e programar reavaliação clínica em 48 a 72 horas.",
+   "pneumonia adquirida na comunidade não grave; iniciar amoxicilina por via oral, manter tratamento ambulatorial e programar reavaliação clínica em 48 a 72 horas.",
+   "pneumonia adquirida na comunidade não grave; manter o paciente em observação hospitalar e iniciar ceftriaxona intravenosa, considerando a consolidação lobar e o tabagismo.",
+   "pneumonia adquirida na comunidade não grave; iniciar amoxicilina por via oral associada a corticosteroide sistêmico, considerando a dor pleurítica e a consolidação radiológica."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A radiografia mostra consolidação lobar compatível com pneumonia adquirida na comunidade, e o paciente não apresenta critérios de gravidade ou comorbidades que exijam esquema ampliado. A amoxicilina oral, com reavaliação em 48 a 72 horas, é opção ambulatorial adequada.",
+  "distratores": "A amplia desnecessariamente a cobertura; C interna e usa ceftriaxona sem critérios clínicos; D acrescenta corticosteroide sistêmico, que não é indicado rotineiramente na pneumonia não grave.",
+  "conceito_chave": "PAC não grave em adulto sem comorbidades: tratamento oral ambulatorial e reavaliação.",
+  "has_figure": true
+ },
+ {
+  "number": 15,
+  "enunciado": "Menino de 6 anos, com 20 kg, vacinação BCG registrada ao nascimento, é avaliado por ser contato domiciliar do pai com tuberculose pulmonar confirmada, sensível à rifampicina e à isoniazida. A criança está assintomática, sem comorbidades ou imunossupressão, com exame físico e radiografia de tórax normais. A prova tuberculínica apresenta enduração de 7 mm, considerada reagente para contatos. Após excluir tuberculose ativa, a conduta mais adequada é:",
+  "alternatives": [
+   "Diagnosticar ILTB e iniciar rifampicina associada à isoniazida por três meses.",
+   "Diagnosticar ILTB e iniciar rifampicina por três meses, considerando a idade e o contato domiciliar.",
+   "Diagnosticar ILTB e iniciar isoniazida por três meses, diante da prova tuberculínica reagente.",
+   "Diagnosticar ILTB e iniciar rifapentina associada à isoniazida diariamente por três meses."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Contato domiciliar com prova tuberculínica reagente, radiografia normal e ausência de sintomas caracteriza infecção latente pelo Mycobacterium tuberculosis. Para criança com cepa sensível, o esquema de rifampicina associada à isoniazida por três meses é uma opção curta e eficaz.",
+  "distratores": "B usa rifampicina isolada por duração inadequada; C prescreve isoniazida por apenas três meses; D descreve rifapentina e isoniazida diariamente, enquanto o esquema 3HP é semanal e depende de critérios de uso.",
+  "conceito_chave": "ILTB: excluir doença ativa antes de iniciar esquema preventivo.",
+  "has_figure": false
+ },
+ {
+  "number": 16,
+  "enunciado": "Mulher de 42 anos apresenta dor contínua em hipocôndrio direito há 12 horas, associada a náuseas, inapetência e temperatura de 38,1 °C. Ao exame, apresenta dor à palpação do hipocôndrio direito e sinal de Murphy positivo. Está hemodinamicamente estável e não apresenta disfunção orgânica. A ultrassonografia evidencia cálculos na vesícula, espessamento da parede vesicular e Murphy ultrassonográfico positivo. Bilirrubinas e enzimas canaliculares estão normais, o colédoco mede 4 mm e não há imagem de cálculo na via biliar. A paciente apresenta baixo risco cirúrgico. A conduta mais adequada é:",
+  "alternatives": [
+   "Suporte clínico e colecistectomia laparoscópica precoce na mesma internação.",
+   "Suporte clínico e colecistectomia eletiva em seis a oito semanas após melhora.",
+   "Colangiorressonância antes da cirurgia, pelo risco de coledocolitíase.",
+   "Colecistectomia na mesma internação, após resolução clínica e laboratorial."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "O quadro clínico e ultrassonográfico é de colecistite aguda calculosa não complicada, sem evidência de coledocolitíase e em paciente de baixo risco cirúrgico. A conduta é suporte clínico e colecistectomia laparoscópica precoce na mesma internação.",
+  "distratores": "B aumenta recorrência e novas complicações ao adiar a cirurgia; C solicita colangiorressonância sem sinais de cálculo na via biliar; D espera resolução completa, quando a cirurgia precoce é preferível.",
+  "conceito_chave": "Colecistite aguda não complicada: colecistectomia precoce na mesma internação.",
+  "has_figure": false
+ },
+ {
+  "number": 17,
+  "enunciado": "Homem de 68 anos apresenta afasia global, desvio conjugado do olhar e hemiplegia direita iniciados há 90 minutos. Na admissão, apresenta NIHSS 18, PA 178/104 mmHg e glicemia 118 mg/dL. A tomografia de crânio não mostra hemorragia e evidencia ASPECTS 9. Não usa anticoagulantes e não há contraindicações à trombólise. O hospital dispõe de angiotomografia, mas não realiza trombectomia mecânica. A conduta mais adequada é:",
+  "alternatives": [
+   "iniciar trombólise, avaliar a resposta neurológica ao término da infusão e solicitar angiotomografia se persistir déficit incapacitante.",
+   "realizar angiotomografia antes da trombólise e, confirmada oclusão de grande vaso, transferir diretamente para trombectomia sem trombolítico intravenoso.",
+   "reduzir a pressão arterial para menos de 160/90 mmHg, iniciar trombólise e solicitar angiotomografia após estabilização pressórica.",
+   "iniciar trombólise intravenosa, obter angiotomografia sem atrasar o tratamento e transferir para trombectomia se houver oclusão de grande vaso."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "O paciente é elegível para trombólise intravenosa e tem sinais de oclusão de grande vaso. A angiotomografia deve ser obtida em paralelo, sem atrasar o trombolítico, e a transferência para centro com trombectomia deve ocorrer se a oclusão for confirmada.",
+  "distratores": "A espera a resposta à trombólise antes de investigar grande vaso; B omite trombólise de ponte sem contraindicação; C propõe alvo pressórico mais baixo que o necessário e posterga a angiografia.",
+  "conceito_chave": "AVC isquêmico com possível grande vaso: trombólise sem atraso e avaliação imediata para trombectomia.",
+  "has_figure": false
+ },
+ {
+  "number": 18,
+  "enunciado": "Mulher de 23 anos apresenta dor pélvica bilateral, febre baixa, corrimento vaginal e dispareunia. Ao exame, há dor à mobilização do colo uterino e à palpação dos anexos, sem massa pélvica, sinais de peritonite ou comprometimento sistêmico. O teste de gravidez é negativo, e a paciente tolera medicamentos por via oral. O esquema ambulatorial mais adequado é:",
+  "alternatives": [
+   "Ceftriaxona 500 mg IM, dose única, e doxiciclina por 14 dias; associar metronidazol se houver vaginose.",
+   "Ceftriaxona 500 mg IM, dose única, azitromicina em dose única e metronidazol por 14 dias.",
+   "Ceftriaxona 500 mg IM, dose única, doxiciclina e metronidazol por 7 dias.",
+   "Ceftriaxona 500 mg IM, dose única, doxiciclina e metronidazol por 14 dias."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Dor à mobilização do colo e anexos, sem abscesso, gravidez ou gravidade sistêmica, permite tratamento ambulatorial de doença inflamatória pélvica. O esquema deve cobrir gonococo, clamídia e anaeróbios: ceftriaxona em dose única, doxiciclina e metronidazol por 14 dias.",
+  "distratores": "A torna o metronidazol opcional; B usa azitromicina em dose única como substituição inadequada da doxiciclina; C reduz a duração para sete dias.",
+  "conceito_chave": "DIP ambulatorial: ceftriaxona + doxiciclina + metronidazol por 14 dias.",
+  "has_figure": false
+ },
+ {
+  "number": 19,
+  "enunciado": "Criança de 6 anos apresenta febre alta, cefaleia, vômitos e rigidez de nuca. O líquor é turvo, com 1.600 células/mm³, predomínio de neutrófilos, proteína elevada e relação glicose liquórica/glicemia de 0,25. A bacterioscopia e as culturas estão em processamento. Não recebeu antimicrobianos, não apresenta contraindicação a cefalosporinas ou corticosteroides e o serviço segue o esquema empírico do Guia de Vigilância em Saúde, sem evidência epidemiológica local de resistência relevante do pneumococo às cefalosporinas de terceira geração. A conduta inicial mais adequada é:",
+  "alternatives": [
+   "Obter hemoculturas sem atrasar a ceftriaxona e iniciar dexametasona se a bacterioscopia sugerir pneumococo ou Haemophilus influenzae.",
+   "Obter hemoculturas e iniciar ceftriaxona, vancomicina e dexametasona concomitantemente, mantendo a associação até o resultado das culturas.",
+   "Obter hemoculturas, iniciar ceftriaxona imediatamente e acrescentar dexametasona após a confirmação etiológica, desde que nas primeiras 24 horas.",
+   "Obter hemoculturas sem retardar o tratamento e iniciar ceftriaxona e dexametasona imediatamente antes ou concomitantemente à primeira dose, reavaliando o esquema após os resultados."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "O líquor é compatível com meningite bacteriana. Devem-se colher hemoculturas sem atrasar o tratamento, iniciar ceftriaxona imediatamente e administrar dexametasona antes ou junto da primeira dose; o esquema é reavaliado após bacterioscopia, cultura e sensibilidade.",
+  "distratores": "A condiciona a dexametasona ao resultado inicial; B acrescenta vancomicina apesar de o enunciado excluir resistência pneumocócica relevante local; C inicia o corticosteroide tarde, após confirmação etiológica.",
+  "conceito_chave": "Meningite bacteriana: antibiótico imediato; dexametasona antes ou com a primeira dose.",
+  "has_figure": false
+ },
+ {
+  "number": 20,
+  "enunciado": "Homem de 28 anos com diabetes mellitus tipo 1 perdeu o emprego e passou a reduzir as doses de insulina para prolongar a duração dos frascos. Apresenta poliúria, perda ponderal e glicemias acima de 350 mg/dL. Está hemodinamicamente estável, sem vômitos ou alteração da consciência, com pH venoso de 7,38, bicarbonato de 22 mEq/L e cetonemia negativa. A Unidade Básica de Saúde dispõe de insulinas NPH e regular, tiras para monitorização, assistência farmacêutica e serviço social. O plano terapêutico mais seguro é:",
+  "alternatives": [
+   "reinstituir NPH em duas doses e utilizar insulina regular antes das refeições conforme escala de correção, garantindo os insumos e retorno precoce.",
+   "retomar as doses anteriores de NPH e regular, sem ajustes iniciais, considerando que a hiperglicemia decorre da redução voluntária da insulina.",
+   "instituir esquema basal-bolus individualizado com NPH e regular, incluindo doses prandiais e correções, assegurando insumos, educação e seguimento próximo.",
+   "reiniciar NPH e utilizar insulina regular para correções até a glicemia ficar abaixo de 250 mg/dL, retomando depois as doses prandiais."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Não há cetoacidose, mas existe hiperglicemia importante por subutilização de insulina e vulnerabilidade social. O plano mais seguro é reconstruir um esquema basal-bolus individualizado com NPH e regular, incluindo doses prandiais e correções, garantir insumos, educação e retorno próximo.",
+  "distratores": "A usa predominantemente escala de correção, sem esquema prandial estruturado; B simplesmente retoma doses antigas sem reavaliação; D posterga insulina prandial e mantém manejo reativo.",
+  "conceito_chave": "DM1 exige insulina basal e prandial; barreiras de acesso devem ser tratadas como parte do plano.",
+  "has_figure": false
+ },
+ {
+  "number": 21,
+  "enunciado": "Homem de 72 anos é levado ao pronto-socorro após episódio de síncope. Na admissão, apresenta dispneia, rebaixamento do nível de consciência, pressão arterial de 80/50 mmHg, extremidades frias e saturação de oxigênio de 94% em ar ambiente. O eletrocardiograma é apresentado abaixo. Diante desse quadro, a conduta inicial mais adequada é:",
+  "alternatives": [
+   "realizar suporte inicial, monitorização e acesso venoso, administrar atropina intravenosa e preparar estimulação transcutânea ou infusão vasoativa se a instabilidade persistir.",
+   "iniciar estimulação transcutânea imediatamente, mantendo atropina para situações em que não seja possível obter captura elétrica adequada.",
+   "iniciar infusão de dopamina ou epinefrina para restaurar a perfusão, administrando atropina se a frequência cardíaca permanecer baixa apesar do vasopressor.",
+   "administrar expansão volêmica em alíquotas e reavaliar a pressão arterial antes de iniciar tratamento cronotrópico ou estimulação cardíaca."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "O eletrocardiograma mostra bradicardia importante em paciente com hipotensão, alteração do nível de consciência e sinais de má perfusão. A abordagem inicial inclui suporte, monitorização, acesso venoso e atropina; se não houver resposta rápida, prepara-se estimulação transcutânea ou infusão de dopamina/epinefrina.",
+  "distratores": "B coloca a estimulação antes da tentativa inicial com atropina; C inverte a sequência ao começar pelo vasopressor; D atribui a instabilidade à hipovolemia e atrasa tratamento específico da bradicardia.",
+  "conceito_chave": "Bradicardia sintomática instável: atropina e preparo imediato para marcapasso ou infusão vasoativa.",
+  "has_figure": true
+ },
+ {
+  "number": 22,
+  "enunciado": "Homem de 62 anos está internado por endocardite infecciosa de válvula aórtica nativa, com hemoculturas positivas e antibioticoterapia direcionada há quatro dias. Evolui com edema pulmonar persistente apesar do uso de diurético e vasodilatador, necessidade crescente de oxigênio e insuficiência aórtica aguda importante ao ecocardiograma. A conduta mais adequada é",
+  "alternatives": [
+   "indicar cirurgia nas próximas 24 a 48 horas, antecipando-a para intervenção de emergência se ocorrer hipotensão, choque cardiogênico ou necessidade de ventilação invasiva.",
+   "intensificar o tratamento da congestão e programar cirurgia urgente nos próximos três a cinco dias, desde que seja obtida estabilização respiratória e hemodinâmica sustentada.",
+   "indicar cirurgia cardíaca de emergência, idealmente em até 24 horas, mantendo antibioticoterapia direcionada e suporte hemodinâmico durante o preparo.",
+   "manter antibioticoterapia direcionada e suporte intensivo até o controle da bacteremia, realizando a cirurgia após melhora da infecção sistêmica e da congestão pulmonar."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Insuficiência aórtica aguda importante com edema pulmonar persistente representa insuficiência cardíaca grave por destruição valvar. A indicação é cirurgia de emergência, idealmente em até 24 horas, mantendo antibiótico direcionado e suporte durante o preparo.",
+  "distratores": "A permite espera de 24 a 48 horas apesar da congestão refratária; B posterga cirurgia em quadro de deterioração; D aguarda controle da bacteremia, o que pode ser fatal diante da falência valvar.",
+  "conceito_chave": "Endocardite com regurgitação aguda e edema pulmonar refratário: cirurgia de emergência.",
+  "has_figure": false
+ },
+ {
+  "number": 23,
+  "enunciado": "Homem de 36 anos apresenta dor lombar súbita irradiada para a virilha, intensa e em cólicas, associada a náuseas. Após analgesia, evolui com controle da dor. Está afebril, com função renal preservada e diurese mantida. A urina tipo 1 mostra hematúria microscópica, sem sinais de infecção. A tomografia evidencia cálculo de 6 mm no ureter distal, com discreta dilatação a montante. A conduta mais adequada é:",
+  "alternatives": [
+   "oferecer analgesia e alfabloqueador, com acompanhamento e intervenção se houver complicação ou ausência de eliminação após período razoável.",
+   "oferecer analgesia e observação, indicando alfabloqueador para cálculos proximais ou maiores que 10 mm.",
+   "indicar ureteroscopia precoce, pois cálculo distal com dilatação a montante apresenta baixa probabilidade de eliminação espontânea.",
+   "iniciar alfabloqueador e indicar ureteroscopia se o cálculo não for eliminado nas primeiras duas semanas."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Cálculo distal de 6 mm, dor controlada, ausência de infecção e função renal preservada permitem tratamento expulsivo. Analgesia, alfabloqueador, orientação de retorno e acompanhamento são adequados, com intervenção se houver complicação ou ausência de eliminação em prazo razoável.",
+  "distratores": "B restringe inadequadamente o alfabloqueador a cálculos proximais ou maiores; C indica ureteroscopia imediata apesar da chance de eliminação; D fixa prazo curto de duas semanas como indicação automática de intervenção.",
+  "conceito_chave": "Cálculo ureteral distal pequeno e sem complicação: manejo expectante com terapia expulsiva.",
+  "has_figure": false
+ },
+ {
+  "number": 24,
+  "enunciado": "Gestante de 35 semanas, com hipertensão arterial crônica, apresenta cefaleia intensa, escotomas e dor persistente em hipocôndrio direito. A pressão arterial é de 170/112 mmHg. Os exames laboratoriais mostram plaquetas de 98.000/mm³, AST de 96 U/L e proteinúria. O feto está vivo, e a cardiotocografia é tranquilizadora. Após obtenção de acesso venoso e início da monitorização materno-fetal, a conduta mais adequada é",
+  "alternatives": [
+   "administrar sulfato de magnésio e anti-hipertensivo de ação rápida e iniciar imediatamente a indução do parto, de forma simultânea à estabilização pressórica, direcionando a cesariana para deterioração fetal.",
+   "administrar sulfato de magnésio, tratar imediatamente a hipertensão grave com fármaco de ação rápida e resolver a gestação após estabilização materna, definindo a via de parto pelas condições obstétricas.",
+   "administrar sulfato de magnésio e anti-hipertensivo, iniciar corticosteroide antenatal e postergar a resolução da gestação por aproximadamente 24 horas, caso a avaliação materno-fetal permaneça estável.",
+   "administrar sulfato de magnésio e anti-hipertensivo de ação rápida e realizar cesariana após estabilização materna, considerando a trombocitopenia, a elevação das transaminases e a idade gestacional."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Há pré-eclâmpsia com sinais de gravidade e provável síndrome HELLP parcial em 35 semanas. Deve-se prevenir eclâmpsia com sulfato de magnésio, tratar imediatamente a hipertensão grave e resolver a gestação após estabilização materna; a via de parto depende das condições obstétricas.",
+  "distratores": "A inicia indução simultaneamente à estabilização; C propõe conduta expectante apesar da gravidade e idade gestacional; D transforma trombocitopenia e transaminases elevadas em indicação automática de cesariana.",
+  "conceito_chave": "Pré-eclâmpsia grave após 34 semanas: estabilizar a mãe e interromper a gestação.",
+  "has_figure": false
+ },
+ {
+  "number": 25,
+  "enunciado": "Mulher de 34 anos, previamente hígida, procura uma Unidade Básica de Saúde por lesões no membro superior direito com seis semanas de evolução. A primeira surgiu no dorso da mão como pápulo-nódulo indolor que posteriormente ulcerou; nas semanas seguintes, apareceram novos nódulos em trajeto ascendente pelo antebraço, conforme mostra a imagem. Trabalha na manutenção de áreas externas de um condomínio e relata pequenas escoriações ao manipular solo úmido, madeira, ferramentas e vegetação, sem recordar inoculação específica. Está afebril, em bom estado geral e não apresenta manifestações pulmonares, osteoarticulares ou lesões em outras regiões. Hemograma, creatinina e transaminases estão normais. Foi coletado material para cultura fúngica e bacteriana, ainda em processamento. O diagnóstico e a conduta inicial mais adequados são:",
+  "alternatives": [
+   "Nocardiose cutâneo-linfática; iniciar sulfametoxazol-trimetoprima e ajustar o esquema após a identificação microbiológica.",
+   "Micobacteriose cutâneo-linfática; iniciar claritromicina associada a etambutol enquanto se aguarda a cultura específica.",
+   "Esporotricose cutâneo-linfática; iniciar itraconazol oral e mantê-lo por duas a quatro semanas após a resolução clínica completa.",
+   "Leishmaniose cutânea com disseminação esporotricoide; aguardar confirmação parasitológica antes de iniciar tratamento sistêmico."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "A distribuição ascendente de nódulos e úlceras ao longo dos vasos linfáticos, após contato com solo e vegetação, é típica de esporotricose cutâneo-linfática. Em paciente imunocompetente e sem doença disseminada, o itraconazol oral é o tratamento de escolha, mantido por algumas semanas após a resolução clínica.",
+  "distratores": "A e B sugerem agentes possíveis no padrão esporotricoide, mas menos compatíveis com o conjunto clínico; D indica leishmaniose e posterga tratamento apesar da apresentação clássica e da cultura já coletada.",
+  "conceito_chave": "Nódulos em cadeia linfática após inoculação ambiental: pensar em esporotricose.",
+  "has_figure": true
+ },
+ {
+  "number": 26,
+  "enunciado": "Trabalhador da construção civil sofre queda de altura durante o expediente e apresenta fratura de rádio, com necessidade de redução e afastamento das atividades. O empregador solicita que o evento seja registrado como acidente doméstico e afirma que providenciará posteriormente a documentação. Considerando a Lista Nacional de Notificação Compulsória vigente e as regras da Comunicação de Acidente de Trabalho, a conduta mais adequada do médico e do serviço de saúde é:",
+  "alternatives": [
+   "Registrar o nexo ocupacional e notificar o acidente, aguardando o prazo da empresa antes de viabilizar a CAT por outra pessoa legitimada.",
+   "Registrar o nexo ocupacional e viabilizar a CAT, notificando o acidente se o afastamento ultrapassar 15 dias ou resultar em sequela.",
+   "Registrar as circunstâncias e o nexo ocupacional, realizar a notificação no Sinan e emitir ou viabilizar a CAT sem aguardar a atuação da empresa.",
+   "Registrar o acidente, condicionando a notificação e a CAT à confirmação posterior do nexo pelo INSS ou pela perícia trabalhista."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "O acidente ocorreu durante o trabalho, com lesão e afastamento, devendo ser registrado com nexo ocupacional. O serviço deve realizar a notificação compulsória no Sinan e emitir ou viabilizar a CAT sem depender da iniciativa ou do prazo do empregador.",
+  "distratores": "A posterga indevidamente a CAT; B condiciona notificação ao tempo de afastamento ou sequela; D subordina medidas assistenciais e de vigilância à confirmação posterior pelo INSS ou perícia.",
+  "conceito_chave": "Acidente de trabalho: notificação e CAT não dependem da concordância da empresa.",
+  "has_figure": false
+ },
+ {
+  "number": 27,
+  "enunciado": "Recém-nascido a termo, com 36 horas de vida, apresenta icterícia em face, tronco e membros proximais. A mãe é O positivo, o recém-nascido é A positivo e o teste de Coombs direto é positivo. Está em aleitamento materno, com sucção eficaz, diurese e evacuações presentes, sem sinais de encefalopatia bilirrubínica. A bilirrubina total encontra-se acima do limiar de fototerapia intensiva para a idade e os fatores de risco. Nas últimas oito horas, apresentou elevação de 0,25 mg/dL por hora, mas permanece 4 mg/dL abaixo do limiar de exsanguineotransfusão. O recém-nascido ainda não recebeu fototerapia. A conduta inicial mais adequada é",
+  "alternatives": [
+   "iniciar fototerapia intensiva, manter o aleitamento materno e monitorar seriadamente a bilirrubina, a resposta ao tratamento e os sinais de progressão da hemólise.",
+   "iniciar fototerapia intensiva e suspender temporariamente o aleitamento materno, oferecendo fórmula até que a bilirrubina retorne para abaixo do limiar terapêutico.",
+   "iniciar fototerapia convencional e repetir a bilirrubina após seis horas, indicando a fototerapia intensiva para elevação persistente durante o tratamento.",
+   "iniciar fototerapia intensiva e imunoglobulina intravenosa, pois a elevação rápida da bilirrubina associada ao Coombs direto positivo já caracteriza indicação de terapia combinada."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "O recém-nascido tem hiperbilirrubinemia hemolítica acima do limiar de fototerapia, mas ainda distante do limiar de exsanguineotransfusão. A medida inicial é fototerapia intensiva, manutenção do aleitamento e monitorização estreita da bilirrubina e da hemólise.",
+  "distratores": "B suspende o aleitamento sem indicação; C usa fototerapia convencional apesar do nível terapêutico e dos fatores de risco; D antecipa imunoglobulina, reservada a hemólise isoimune com elevação apesar de fototerapia intensiva e proximidade do limiar de troca.",
+  "conceito_chave": "Doença hemolítica com bilirrubina acima do limiar: fototerapia intensiva primeiro.",
+  "has_figure": false
+ },
+ {
+  "number": 28,
+  "enunciado": "Homem de 54 anos com cirrose apresenta hematêmese volumosa e instabilidade hemodinâmica. Após ressuscitação, inicia droga vasoativa e ceftriaxona. A endoscopia realizada precocemente identifica sangramento ativo por varizes esofágicas, controlado com ligadura elástica. Após estabilização, é classificado como Child-Pugh C, com 11 pontos, sem contraindicação cardiopulmonar ao procedimento. A conduta adicional mais adequada é:",
+  "alternatives": [
+   "avaliar TIPS preemptivo em até 72 horas, apesar do controle endoscópico inicial, devido ao alto risco de falha e ressangramento.",
+   "manter tratamento farmacológico e endoscópico, programando o TIPS para falha do controle inicial ou ressangramento precoce.",
+   "repetir a ligadura durante a internação e indicar TIPS se persistirem varizes com sinais endoscópicos de alto risco.",
+   "concluir o tratamento vasoativo e programar TIPS eletivo após a estabilização da função hepática e o controle completo da ascite."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Paciente Child-Pugh C com 11 pontos, após sangramento varicoso controlado, permanece em alto risco de falha e ressangramento. Deve ser avaliado para TIPS preemptivo, preferencialmente nas primeiras 72 horas, além da terapia vasoativa e endoscópica.",
+  "distratores": "B reserva TIPS apenas para falha, perdendo a janela de prevenção; C usa persistência de varizes como critério; D adia para momento eletivo, quando o benefício depende da realização precoce.",
+  "conceito_chave": "Hemorragia varicosa de alto risco: considerar TIPS preemptivo em até 72 horas.",
+  "has_figure": false
+ },
+ {
+  "number": 29,
+  "enunciado": "Mulher de 44 anos apresenta o terceiro episódio de nefrolitíase por oxalato de cálcio em dois anos. Após a resolução do quadro agudo, duas dosagens mostram cálcio corrigido de 11,7 e 11,6 mg/dL, fósforo de 2,2 mg/dL, PTH de 61 pg/mL (referência: 15 a 65) e taxa de filtração glomerular superior a 90 mL/min/1,73 m². A conduta mais adequada é:",
+  "alternatives": [
+   "Solicitar ultrassonografia e cintilografia cervical e, se concordantes, confirmar o diagnóstico e encaminhar diretamente para paratireoidectomia.",
+   "Quantificar a calciúria e, se elevada, iniciar tiazídico e citrato, mantendo seguimento clínico sem indicação cirúrgica.",
+   "Considerar hipercalcemia hipocalciúrica familiar pelo PTH normal e solicitar teste genético antes de definir a necessidade de cirurgia.",
+   "Reconhecer PTH inadequadamente não suprimido, avaliar calciúria e depuração cálcio/creatinina e, confirmado hiperparatireoidismo primário, indicar cirurgia."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A hipercalcemia repetida com PTH no limite alto é inadequadamente não suprimida e sugere hiperparatireoidismo primário. Antes da cirurgia, deve-se excluir hipercalcemia hipocalciúrica familiar com calciúria e relação de depuração cálcio/creatinina; nefrolitíase é critério para paratireoidectomia quando o diagnóstico é confirmado.",
+  "distratores": "A usa exames de localização para confirmar diagnóstico bioquímico; B trata apenas hipercalciúria e ignora provável hiperparatireoidismo; C presume forma familiar apenas porque o PTH está na faixa de referência.",
+  "conceito_chave": "Na hipercalcemia, PTH normal-alto é anormal; localização vem depois do diagnóstico.",
+  "has_figure": false
+ },
+ {
+  "number": 30,
+  "enunciado": "Menina de 7 anos apresenta roncos intensos, pausas respiratórias observadas pelos familiares, cefaleia matinal, sonolência diurna e queda do rendimento escolar. A nasofibroscopia mostra hipertrofia adenoideana moderada, e as tonsilas são grau II. Não apresenta obesidade nem outras comorbidades. Diante da discordância entre a intensidade dos sintomas e os achados anatômicos, a conduta diagnóstica mais adequada é:",
+  "alternatives": [
+   "indicar adenotonsilectomia com base no quadro clínico, indicando a polissonografia para persistência dos sintomas após a cirurgia.",
+   "solicitar polissonografia noturna completa antes de definir o tratamento, para confirmar e graduar a apneia obstrutiva do sono.",
+   "realizar poligrafia cardiorrespiratória domiciliar como exame inicial equivalente, solicitando polissonografia se o resultado for inconclusivo.",
+   "realizar endoscopia do sono induzido para localizar a obstrução, deixando a polissonografia para ausência de alteração anatômica relevante."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Os sintomas sugerem apneia obstrutiva do sono, mas os achados anatômicos são apenas moderados e não explicam claramente a gravidade clínica. A polissonografia noturna completa deve confirmar e graduar o distúrbio antes da decisão terapêutica.",
+  "distratores": "A indica cirurgia sem confirmação em cenário discordante; C trata poligrafia domiciliar como equivalente na criança; D usa endoscopia do sono como exame inicial, embora não substitua a polissonografia.",
+  "conceito_chave": "Criança com suspeita de AOS e discordância clínico-anatômica: solicitar polissonografia.",
+  "has_figure": false
+ },
+ {
+  "number": 31,
+  "enunciado": "Puérpera de 45 dias, amenorreica e em aleitamento materno exclusivo, procura a Unidade Básica de Saúde porque deseja um método contraceptivo reversível de longa duração. Nega relações sexuais desde o parto e não apresenta infecção genital ou outra contraindicação conhecida. A conduta e o aconselhamento mais adequados são:",
+  "alternatives": [
+   "Inserir DIU ou implante hoje; orientar preservativo por sete dias e informar o baixo risco de perfuração.",
+   "Inserir o implante hoje; adiar o DIU durante o aleitamento pelo maior risco de perfuração.",
+   "Inserir DIU ou implante hoje; dispensar proteção adicional se a escolha for pelo DIU.",
+   "Inserir DIU ou implante hoje; dispensar proteção adicional e informar o baixo risco de perfuração."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A puérpera está amenorreica, em aleitamento exclusivo, com menos de seis meses pós-parto e sem relações desde o parto, permitindo afastar gestação com segurança clínica. DIU ou implante podem ser inseridos nessa consulta, sem método adicional, explicando-se que o risco absoluto de perfuração do DIU é baixo.",
+  "distratores": "A recomenda proteção adicional sem necessidade; B contraindica o DIU durante a lactação; C dispensa proteção apenas para o DIU, embora também não seja necessária para o implante nas condições descritas.",
+  "conceito_chave": "Critérios clínicos podem excluir gestação; LARC pode ser iniciado no puerpério tardio.",
+  "has_figure": false
+ },
+ {
+  "number": 32,
+  "enunciado": "Homem de 27 anos sofre acidente motociclístico e apresenta fratura exposta da diáfise da tíbia, com ferimento de 8 cm, exposição óssea e contaminação por terra. Está hemodinamicamente estável, com pulsos distais, sensibilidade e motricidade preservados. Após a avaliação inicial do trauma, a conduta mais adequada é:",
+  "alternatives": [
+   "Administrar antibiótico e antitetânica, irrigar amplamente a ferida na emergência e solicitar avaliação ortopédica após o desbridamento local.",
+   "Administrar antibiótico precoce, avaliar profilaxia antitetânica, cobrir a ferida, alinhar e imobilizar o membro e indicar desbridamento cirúrgico urgente.",
+   "Cobrir e imobilizar o membro, coletar culturas profundas e iniciar antibiótico após a identificação microbiológica.",
+   "Administrar antibiótico e antitetânica, imobilizar o membro e realizar tomografia antes do desbridamento e da estabilização."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Fratura exposta contaminada exige antibiótico o mais cedo possível, avaliação da profilaxia antitetânica, cobertura estéril, alinhamento e imobilização, seguida de desbridamento cirúrgico urgente. Culturas e exames de imagem não devem atrasar o controle inicial.",
+  "distratores": "A propõe irrigação e desbridamento local na emergência como substituto da cirurgia; C atrasa antibiótico até cultura; D condiciona o desbridamento à tomografia.",
+  "conceito_chave": "Fratura exposta: antibiótico precoce, antitetânica, imobilização e desbridamento cirúrgico.",
+  "has_figure": false
+ },
+ {
+  "number": 33,
+  "enunciado": "O gráfico abaixo apresenta o canal endêmico de dengue de um município e a incidência observada ao longo de 12 semanas epidemiológicas. Com base exclusivamente na relação entre a curva observada e os limites do canal, qual interpretação é a mais adequada?",
+  "alternatives": [
+   "a incidência ultrapassou o limite superior entre as semanas 7 e 9, retornando à zona de alerta a partir da semana 10.",
+   "a curva ultrapassou de forma sustentada o limite superior entre aproximadamente as semanas 6 e 11, indicando excesso epidêmico.",
+   "o excesso epidêmico ficou restrito ao pico da semana 7, pois a redução subsequente representa retorno gradual ao canal esperado.",
+   "a incidência ultrapassou o limite superior a partir da semana 5 e permaneceu em excesso até a última semana apresentada."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "No gráfico, a curva observada já supera o limite superior aproximadamente na semana 5 e permanece acima dele até a semana 12. Isso caracteriza excesso epidêmico durante todo esse intervalo, mesmo com queda progressiva após o pico.",
+  "distratores": "A antecipa retorno à zona de alerta; B inicia o excesso apenas na semana 6 e afirma término na 11; C confunde redução da incidência com retorno ao canal esperado.",
+  "conceito_chave": "Canal endêmico: incidência acima do limite superior indica situação epidêmica.",
+  "has_figure": true
+ },
+ {
+  "number": 34,
+  "enunciado": "Para investigar a associação entre levantamento manual de cargas e lombalgia, foram acompanhados durante quatro anos 300 trabalhadores expostos e 300 trabalhadores administrativos não expostos. Todos estavam sem lombalgia no início do acompanhamento. Ao final do período, 90 trabalhadores expostos e 30 não expostos desenvolveram o desfecho. A alternativa que apresenta corretamente o desenho do estudo, o risco relativo e a fração atribuível percentual entre os expostos é",
+  "alternatives": [
+   "coorte prospectiva; risco relativo de 3,0 e fração atribuível percentual de 20,0%.",
+   "coorte prospectiva; risco relativo de 3,0 e fração atribuível percentual de aproximadamente 66,7%.",
+   "coorte prospectiva; razão de chances de aproximadamente 3,9 e fração atribuível percentual de aproximadamente 74,1%.",
+   "caso-controle; razão de chances de 3,0 e fração atribuível percentual de 20,0%."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Os participantes foram classificados pela exposição e acompanhados sem o desfecho, caracterizando coorte prospectiva. O risco foi 90/300 nos expostos e 30/300 nos não expostos, resultando em RR 3; a fração atribuível entre expostos é (3-1)/3, cerca de 66,7%.",
+  "distratores": "A calcula a fração atribuível como diferença absoluta; C apresenta odds ratio, medida não principal do desenho, e fração incorreta; D classifica erroneamente como caso-controle.",
+  "conceito_chave": "Coorte: RR = incidência nos expostos/incidência nos não expostos.",
+  "has_figure": false
+ },
+ {
+  "number": 35,
+  "enunciado": "Puérpera de 12 dias apresenta, há 36 horas, febre de 38,7 °C, dor mamária e área triangular de hiperemia e induração, sem flutuação. Há fissura mamilar e pega inadequada. Apesar de analgesia, medidas locais e manutenção fisiológica da amamentação, apresenta piora clínica. O lactente está saudável. A conduta mais adequada é:",
+  "alternatives": [
+   "iniciar antibiótico antiestafilocócico, manter a amamentação e colher cultura do leite antes da primeira dose.",
+   "iniciar antibiótico antiestafilocócico, manter ordenha suave e suspender a mamada direta na mama acometida até permanecer 24 horas afebril.",
+   "iniciar antibiótico antiestafilocócico, manter amamentação conforme tolerância, corrigir a pega e solicitar exames se houver evolução desfavorável.",
+   "iniciar antibiótico de amplo espectro, manter a amamentação e solicitar ultrassonografia imediata, mesmo sem flutuação."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Mastite lactacional com piora após suporte requer antibiótico antiestafilocócico. Deve-se manter a amamentação conforme tolerância, corrigir a pega e evitar ordenha ou esvaziamento excessivos; cultura e ultrassonografia ficam reservadas para falha terapêutica, recorrência ou suspeita de abscesso.",
+  "distratores": "A torna cultura do leite obrigatória antes do antibiótico; B suspende desnecessariamente a mamada direta; D usa amplo espectro e imagem imediata sem flutuação ou falha após antibiótico.",
+  "conceito_chave": "Mastite: antibiótico e continuidade da amamentação; investigar abscesso se evolução desfavorável.",
+  "has_figure": false
+ },
+ {
+  "number": 36,
+  "enunciado": "Homem de 24 anos procura a Unidade Básica de Saúde por febre diária, fadiga intensa, odinofagia e exantema discreto há dez dias. Relata múltiplas relações sexuais sem preservativo entre duas e quatro semanas antes do início dos sintomas. Ao exame, apresenta faringite não exsudativa e linfonodos cervicais aumentados. Um teste rápido para HIV baseado apenas na detecção de anticorpos foi não reagente. Diante da suspeita de infecção aguda pelo HIV, a conduta propedêutica mais adequada é:",
+  "alternatives": [
+   "Solicitar teste de quarta geração e RNA; confirmar RNA detectável em nova amostra.",
+   "Solicitar teste de quarta geração; usar RNA se a diferenciação HIV-1/HIV-2 for inconclusiva.",
+   "Solicitar teste de quarta geração e RNA; confirmar RNA detectável após a soroconversão.",
+   "Solicitar RNA; confirmar o resultado repetindo o ensaio na amostra inicial."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A síndrome retroviral aguda pode ocorrer antes de testes baseados apenas em anticorpos se tornarem positivos. Deve-se solicitar teste de quarta geração e RNA do HIV; RNA detectável em contexto de sorologia inicial negativa ou indeterminada deve ser confirmado em nova amostra.",
+  "distratores": "B usa RNA apenas se o teste de diferenciação for inconclusivo, podendo perder a janela aguda; C espera soroconversão para confirmar; D repete na mesma amostra, o que não confirma identidade nem exclui erro pré-analítico.",
+  "conceito_chave": "Suspeita de HIV agudo: teste de quarta geração mais RNA.",
+  "has_figure": false
+ },
+ {
+  "number": 37,
+  "enunciado": "Em município onde o teste molecular para DNA-HPV ainda não foi implantado e permanece em uso o fluxo de rastreamento citológico do INCA, mulher de 29 anos retorna à Unidade Básica de Saúde para acompanhamento. Há seis meses, apresentou exame citopatológico satisfatório com lesão intraepitelial escamosa de baixo grau - LSIL. A citologia foi repetida no intervalo recomendado e novamente demonstrou LSIL. A paciente está assintomática, não está gestante, não apresenta imunossupressão e o exame especular não evidencia lesões cervicais visíveis. A conduta mais adequada é:",
+  "alternatives": [
+   "Manter seguimento citológico semestral e encaminhar se a LSIL persistir por 24 meses.",
+   "Encaminhar para colposcopia, com biópsia definida pelos achados colposcópicos.",
+   "Repetir a citologia em seis meses e encaminhar se surgir alteração de maior gravidade.",
+   "Repetir a citologia em 12 meses, considerando a idade inferior a 30 anos."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Em mulher de 25 anos ou mais, a persistência de LSIL em citologia repetida no intervalo recomendado indica colposcopia. A biópsia não é automática: depende de achado colposcópico anormal.",
+  "distratores": "A prolonga seguimento citológico por 24 meses; C repete novamente em seis meses apesar da persistência; D usa intervalo de 12 meses incompatível com o fluxo citológico descrito.",
+  "conceito_chave": "LSIL persistente em adulta: encaminhar para colposcopia.",
+  "has_figure": false
+ },
+ {
+  "number": 38,
+  "enunciado": "Homem de 48 anos apresenta dor em fossa ilíaca esquerda, constipação e temperatura de 37,8 °C há três dias. Está hemodinamicamente estável, tolera líquidos e não apresenta vômitos, imunossupressão, fragilidade ou comorbidades descompensadas. A tomografia mostra diverticulite aguda de sigmoide, sem abscesso, perfuração, obstrução ou gás extraluminal. A conduta mais adequada é",
+  "alternatives": [
+   "realizar tratamento ambulatorial com analgesia, dieta conforme tolerância e antibiótico oral, independentemente da ausência de complicações.",
+   "realizar tratamento clínico ambulatorial e programar sigmoidectomia eletiva após a resolução deste primeiro episódio confirmado por tomografia.",
+   "manter observação hospitalar, iniciar hidratação e antibiótico intravenoso e conceder alta após melhora da dor e normalização da temperatura.",
+   "realizar tratamento ambulatorial com analgesia, dieta conforme tolerância e reavaliação próxima, sem antibioticoterapia inicial de rotina."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A diverticulite é não complicada, e o paciente está estável, tolerando via oral e sem fatores de risco. Pode ser tratado ambulatorialmente com analgesia, dieta conforme tolerância e reavaliação próxima, sem antibiótico de rotina.",
+  "distratores": "A prescreve antibiótico para todos os casos; B indica cirurgia eletiva após primeiro episódio não complicado; C interna e usa antibiótico intravenoso sem critérios.",
+  "conceito_chave": "Diverticulite não complicada em imunocompetente: antibiótico pode ser seletivo, não obrigatório.",
+  "has_figure": false
+ },
+ {
+  "number": 39,
+  "enunciado": "Homem de 39 anos apresenta episódios recorrentes de dor perianal, seguidos de drenagem purulenta e alívio, iniciados após a drenagem de um abscesso há oito meses. Ao exame, há orifício cutâneo a 3 cm da borda anal, com secreção e trajeto endurecido em direção ao canal anal, sem abscesso ou celulite. O diagnóstico e a conduta mais adequados são:",
+  "alternatives": [
+   "Fístula anal criptoglandular; iniciar antibioticoterapia e indicar cirurgia se a drenagem persistir.",
+   "Fístula anal criptoglandular; solicitar ressonância pélvica antes do encaminhamento cirúrgico.",
+   "Fístula anal criptoglandular; encaminhar para tratamento eletivo conforme o envolvimento esfincteriano.",
+   "Fístula anal criptoglandular; indicar fistulotomia, pois o trajeto palpável sugere doença superficial."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Drenagem recorrente após abscesso, orifício externo e trajeto endurecido são típicos de fístula anal criptoglandular. Sem abscesso ativo, o tratamento é eletivo e deve ser planejado conforme o trajeto e o envolvimento do esfíncter, preservando continência.",
+  "distratores": "A usa antibiótico para doença estrutural sem celulite; B exige ressonância para toda fístula simples; D presume trajeto superficial e indica fistulotomia sem definir anatomia.",
+  "conceito_chave": "Fístula anal: a técnica depende da relação com o complexo esfincteriano.",
+  "has_figure": false
+ },
+ {
+  "number": 40,
+  "enunciado": "Gestante de 18 semanas, assintomática, apresenta urocultura de rotina, coletada adequadamente, com crescimento isolado de Escherichia coli superior a 100.000 UFC/mL. Nega alergias, está clinicamente bem e não possui história de infecção urinária recorrente. A conduta mais adequada é:",
+  "alternatives": [
+   "tratar conforme o antibiograma e iniciar profilaxia antimicrobiana contínua após o primeiro episódio, mantendo-a até o final da gestação.",
+   "tratar conforme o antibiograma e acompanhar com exame de urina, solicitando nova cultura se surgirem sintomas ou alteração persistente do sedimento.",
+   "tratar conforme o antibiograma e repetir a urocultura após o término do esquema, redefinindo o seguimento conforme o resultado.",
+   "tratar conforme o antibiograma e programar nova urocultura no terceiro trimestre, antecipando-a se ocorrer recorrência clínica."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Bacteriúria assintomática na gestação com contagem significativa deve ser tratada conforme o antibiograma. Após o esquema, realiza-se urocultura de controle para documentar erradicação e orientar seguimento.",
+  "distratores": "A inicia profilaxia contínua após um único episódio; B não programa cultura de cura; D adia o controle para o terceiro trimestre.",
+  "conceito_chave": "Bacteriúria assintomática na gestação: tratar e confirmar cura com urocultura.",
+  "has_figure": false
+ },
+ {
+  "number": 41,
+  "enunciado": "Homem de 57 anos, com diabetes mellitus tipo 2 há 18 anos, apresenta redução progressiva e indolor da acuidade visual no olho direito. Faz uso irregular das medicações, com hemoglobina glicada de 10,2% e pressão arterial de 158 × 94 mmHg. A acuidade visual com melhor correção é de 20/50 no olho direito e 20/25 no olho esquerdo. A retinografia do olho direito é apresentada a seguir. A tomografia de coerência óptica mostra contorno foveal preservado, sem líquido intra ou sub-retiniano. Não há hemorragia vítrea nem descolamento tracional da retina. Considerando o principal achado da retinografia e a conduta mais adequada, assinale a alternativa correta.",
+  "alternatives": [
+   "Retinopatia diabética não proliferativa grave, com alterações microvasculares intrarretinianas; intensificar o controle sistêmico e reavaliar em curto prazo.",
+   "Retinopatia diabética proliferativa, com neovascularização do disco; realizar panfotocoagulação com brevidade e otimizar o controle glicêmico e pressórico.",
+   "Oclusão isquêmica da veia central da retina, com neovascularização; iniciar anti-VEGF e indicar laser conforme a evolução retiniana.",
+   "Papilopatia diabética com proliferação vascular peripapilar; otimizar o controle sistêmico e acompanhar a evolução antes de tratamento específico."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A retinografia mostra neovascularização do disco, definindo retinopatia diabética proliferativa. Sem edema macular no OCT, a prioridade é panfotocoagulação em tempo oportuno, associada à otimização do controle glicêmico e pressórico.",
+  "distratores": "A classifica como não proliferativa grave apesar dos vasos novos; C não corresponde ao padrão difuso de oclusão venosa; D atribui a papilopatia, que não explica a proliferação neovascular típica.",
+  "conceito_chave": "Neovascularização retiniana ou de disco = retinopatia diabética proliferativa.",
+  "has_figure": true
+ },
+ {
+  "number": 42,
+  "enunciado": "Mulher de 30 anos recebe benzilpenicilina benzatina em uma Unidade Básica de Saúde localizada em área rural. Minutos depois, apresenta urticária difusa, edema labial, sibilância, estridor, pressão arterial de 76 × 42 mmHg e enchimento capilar lentificado. Mantém pulso central palpável. A equipe do atendimento pré-hospitalar chegará em aproximadamente 30 minutos. A conduta imediata mais adequada é:",
+  "alternatives": [
+   "Adrenalina 0,5 mg IM na coxa, oxigênio e cristaloide; iniciar infusão IV pela hipotensão inicial.",
+   "Adrenalina 0,5 mg IM na coxa, oxigênio e cristaloide; substituir a repetição por bolus IV se persistir o choque.",
+   "Adrenalina 0,5 mg IM na coxa, oxigênio e cristaloide; repetir em 5 a 15 minutos e considerar infusão IV se refratária.",
+   "Adrenalina 0,5 mg IM na coxa, oxigênio e cristaloide; repetir após completar a expansão volêmica inicial."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Há anafilaxia com choque e comprometimento respiratório. A adrenalina intramuscular na face anterolateral da coxa é imediata, associada a oxigênio e cristaloide; pode ser repetida a cada 5 a 15 minutos, e infusão intravenosa é considerada se o choque for refratário.",
+  "distratores": "A inicia infusão IV apenas pela hipotensão inicial; B sugere bolus intravenoso, de maior risco; D atrasa a repetição da adrenalina até completar a expansão.",
+  "conceito_chave": "Anafilaxia: adrenalina IM primeiro e repetida precocemente se necessário.",
+  "has_figure": false
+ },
+ {
+  "number": 43,
+  "enunciado": "Menino de 7 anos com leucemia linfoblástica aguda, em quimioterapia, comparece para revisão da caderneta de vacinação planejada com a equipe de oncologia. Está afebril e clinicamente estável. Foram identificadas doses pendentes das vacinas influenza inativada, pneumocócica conjugada, hepatite B e tríplice viral. A orientação mais adequada é",
+  "alternatives": [
+   "aplicar as vacinas inativadas nos intervalos entre os ciclos e considerar válidas todas as doses, adiando a tríplice viral até o término da quimioterapia.",
+   "aplicar a vacina influenza inativada durante a quimioterapia e adiar as demais vacinas até a recuperação imunológica após o tratamento.",
+   "planejar as vacinas inativadas com a equipe de referência, considerando menor resposta e possível revacinação, e adiar a tríplice viral até a recuperação imunológica.",
+   "adiar todas as vacinas durante a quimioterapia, pois mesmo os imunizantes inativados apresentam risco aumentado de eventos adversos nesses pacientes."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Vacinas inativadas podem ser administradas durante a quimioterapia quando indicadas pela equipe de referência, embora a resposta possa ser menor e algumas doses precisem ser repetidas após recuperação imunológica. Vacinas vivas, como tríplice viral, devem ser adiadas.",
+  "distratores": "A considera automaticamente válidas todas as doses inativadas; B restringe a vacinação à influenza; D adia também vacinas inativadas, que não causam infecção vacinal.",
+  "conceito_chave": "Imunossuprimido em quimioterapia: inativadas podem ser usadas; vivas são adiadas.",
+  "has_figure": false
+ },
+ {
+  "number": 44,
+  "enunciado": "Mulher de 32 anos apresenta dismenorreia progressiva e dor pélvica crônica. A ultrassonografia mostra endometrioma unilateral de 4 cm, sem características suspeitas. A reserva ovariana está preservada, e ela não pretende engravidar no próximo ano. Apesar de adesão ao contraceptivo hormonal combinado contínuo e, posteriormente, a um progestagênio por períodos adequados, mantém dor incapacitante. Deseja evitar cirurgia. A próxima estratégia não cirúrgica mais adequada é:",
+  "alternatives": [
+   "iniciar agonista de GnRH por tempo limitado, associado à terapia de adição, com reavaliação clínica.",
+   "reiniciar contraceptivo combinado cíclico, alternando-o com AINE durante os períodos de exacerbação da dor.",
+   "interromper a supressão hormonal e manter analgesia, para evitar comprometimento da reserva ovariana.",
+   "indicar punção do endometrioma guiada por ultrassonografia, mantendo progestagênio após o procedimento."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A dor por endometriose persiste apesar de contraceptivo combinado e progestagênio adequados, e a paciente deseja evitar cirurgia. Um agonista de GnRH por tempo limitado, com terapia de adição para reduzir perda óssea e sintomas hipoestrogênicos, é opção de segunda linha.",
+  "distratores": "B repete estratégia já ineficaz; C interrompe supressão e mantém apenas analgesia; D indica punção de endometrioma, associada a alta recorrência e sem benefício duradouro.",
+  "conceito_chave": "Endometriose refratária a primeira linha: agonista de GnRH com add-back por período limitado.",
+  "has_figure": false
+ },
+ {
+  "number": 45,
+  "enunciado": "Homem de 81 anos, previamente independente, está internado por pneumonia. No terceiro dia, torna-se desatento, alterna sonolência e agitação, apresenta inversão do ciclo sono-vigília e flutuação dos sintomas ao longo do dia. Não há déficit neurológico focal nem sinais de abstinência de álcool ou benzodiazepínicos. A abordagem inicial mais adequada é:",
+  "alternatives": [
+   "Corrigir os precipitantes, adotar medidas não farmacológicas e manter haloperidol até a resolução do quadro.",
+   "Corrigir os precipitantes, adotar medidas não farmacológicas e reservar antipsicótico para agitação grave ou risco.",
+   "Corrigir os precipitantes, adotar medidas não farmacológicas e iniciar quetiapina para regular o ciclo sono-vigília.",
+   "Corrigir os precipitantes, adotar medidas não farmacológicas e usar benzodiazepínico nos períodos de agitação."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Início agudo, flutuação, desatenção e alteração do ciclo sono-vigília definem delirium. O manejo inicial é identificar e corrigir precipitantes, promover orientação, sono, mobilização e uso de óculos/aparelhos auditivos; antipsicótico fica reservado a agitação grave ou risco.",
+  "distratores": "A mantém haloperidol de rotina; C usa quetiapina para regular o sono sem indicação; D escolhe benzodiazepínico, que pode piorar delirium fora de abstinência.",
+  "conceito_chave": "Delirium: tratar a causa e usar medidas não farmacológicas; sedação é exceção.",
+  "has_figure": false
+ },
+ {
+  "number": 46,
+  "enunciado": "Mulher de 48 anos, obesa, apresenta dor e edema assimétrico na panturrilha esquerda há três dias. O escore de Wells indica alta probabilidade de trombose venosa profunda. A ultrassonografia com compressão, limitada aos segmentos femoral e poplíteo, é tecnicamente adequada e não evidencia trombose. Os sintomas persistem, e não foi identificada outra causa. A avaliação ultrassonográfica de todo o membro não está disponível. A conduta mais adequada é:",
+  "alternatives": [
+   "considerar a trombose excluída, pois o exame proximal inicial foi tecnicamente adequado.",
+   "solicitar D-dímero e encerrar a investigação caso o resultado esteja abaixo do ponto de corte.",
+   "repetir a ultrassonografia proximal em cinco a sete dias, antecipando a avaliação se houver piora clínica.",
+   "iniciar anticoagulação terapêutica e dispensar nova imagem, devido à alta probabilidade clínica."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Com alta probabilidade clínica e ultrassonografia proximal inicial negativa, a TVP distal ainda não foi excluída e pode progredir. Quando a ultrassonografia de todo o membro não está disponível, deve-se repetir o exame proximal em cinco a sete dias.",
+  "distratores": "A encerra a investigação após um único exame proximal; B usa D-dímero para excluir TVP em alta probabilidade após imagem negativa; D anticoagula sem confirmação e dispensa reavaliação por imagem.",
+  "conceito_chave": "Alta suspeita de TVP + US proximal negativa: ultrassonografia seriada.",
+  "has_figure": false
+ },
+ {
+  "number": 47,
+  "enunciado": "Durante uma ação do Programa Saúde na Escola, um agente comunitário de saúde previamente capacitado realiza a avaliação da acuidade visual de uma criança de 8 anos. O teste é feito em ambiente iluminado e silencioso, com a escala de Snellen posicionada à distância recomendada e cada olho avaliado separadamente. A criança não utiliza óculos. Foram obtidos os seguintes resultados: • olho direito: 20/20; • olho esquerdo: 20/50. Após nova orientação e repetição do teste, os resultados permanecem inalterados. A criança não apresenta hiperemia, secreção, dor ocular ou história de trauma. O professor relata que ela frequentemente troca de lugar para enxergar o quadro. A conduta mais adequada é:",
+  "alternatives": [
+   "Registrar a alteração e repetir a acuidade visual na UBS em 30 dias, encaminhando se o resultado permanecer assimétrico.",
+   "Encaminhar para avaliação oftalmológica e orientar oclusão diária do olho direito enquanto aguarda a consulta especializada.",
+   "Encaminhar para atendimento oftalmológico de urgência devido à assimetria visual e acompanhar após a definição diagnóstica.",
+   "Registrar o rastreamento alterado, encaminhar para avaliação oftalmológica e acompanhar pela APS o acesso e o plano terapêutico."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A assimetria persistente de acuidade visual, com olho esquerdo 20/50, torna o rastreamento alterado e sugere erro refrativo ou ambliopia. A criança deve ser encaminhada para avaliação oftalmológica, e a APS deve acompanhar o acesso e o tratamento.",
+  "distratores": "A posterga o encaminhamento; B inicia oclusão sem diagnóstico e prescrição especializada; C classifica como urgência apesar da ausência de dor, trauma ou sinais inflamatórios.",
+  "conceito_chave": "Rastreamento visual alterado na escola: encaminhar e garantir continuidade do cuidado.",
+  "has_figure": false
+ },
+ {
+  "number": 48,
+  "enunciado": "Gestante de 30 semanas apresenta sangramento vaginal vermelho vivo, indolor e em pequena quantidade. Está hemodinamicamente estável, sem contrações, e a avaliação fetal inicial é tranquilizadora. A localização placentária ainda não foi confirmada. A conduta inicial mais adequada é:",
+  "alternatives": [
+   "Avaliar mãe e feto, obter acesso venoso e exames, localizar a placenta por ultrassonografia e evitar toque vaginal digital.",
+   "Avaliar mãe e feto, realizar exame especular e, se o colo estiver fechado, fazer toque vaginal antes da ultrassonografia.",
+   "Avaliar mãe e feto, realizar ultrassonografia transabdominal e adiar a via transvaginal até cessar o sangramento.",
+   "Avaliar mãe e feto, manter observação e realizar ultrassonografia se houver persistência ou recorrência do sangramento."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Sangramento vermelho vivo e indolor no terceiro trimestre levanta suspeita de placenta prévia. A avaliação inicial inclui estabilização materna, avaliação fetal, acesso e exames, ultrassonografia para localização placentária e proibição de toque vaginal digital até excluir placenta prévia.",
+  "distratores": "B permite toque antes da ultrassonografia; C evita sem motivo a via transvaginal, que é segura e mais precisa; D posterga a localização placentária.",
+  "conceito_chave": "Sangramento indolor no terceiro trimestre: não realizar toque digital antes de localizar a placenta.",
+  "has_figure": false
+ },
+ {
+  "number": 49,
+  "enunciado": "Homem de 70 kg apresenta queimaduras de espessura parcial em todo o tronco anterior e em todo o membro superior esquerdo. Chega duas horas após o acidente, tendo recebido 500 mL de Ringer lactato durante o transporte. Considerando a regra dos nove e o volume inicial estimado de 2 mL/kg/% de superfície corporal queimada, com metade administrada nas primeiras oito horas contadas a partir da queimadura, a conduta inicial mais adequada é:",
+  "alternatives": [
+   "infundir aproximadamente 630 mL/h nas seis horas restantes, mantendo a taxa calculada independentemente da resposta clínica.",
+   "infundir aproximadamente 315 mL/h nas seis horas restantes, sem descontar o volume administrado durante o transporte.",
+   "infundir aproximadamente 550 mL/h nas seis horas restantes, descontando o volume previamente administrado.",
+   "infundir aproximadamente 230 mL/h nas seis horas restantes, ajustando a taxa conforme perfusão e débito urinário."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Tronco anterior corresponde a 18% e um membro superior inteiro a 9%, totalizando 27% de superfície corporal queimada. Pelo cálculo de 2 mL/kg/%, o volume de 24 horas é 3.780 mL; metade são 1.890 mL nas primeiras oito horas, restando 1.390 mL após descontar 500 mL, ou cerca de 230 mL/h nas seis horas restantes, com ajuste pela resposta.",
+  "distratores": "A usa taxa excessiva e fixa; B não desconta o volume já recebido; C superestima a taxa restante.",
+  "conceito_chave": "Reposição em queimados: contar o tempo desde a queimadura e titular pelo débito urinário e perfusão.",
+  "has_figure": false
+ },
+ {
+  "number": 50,
+  "enunciado": "Lactente de 18 meses não aponta para compartilhar interesse, responde pouco ao nome e mantém contato ocular reduzido. O M-CHAT- R/F, incluindo a entrevista de seguimento, permanece positivo. Não apresenta regressão do desenvolvimento, convulsões, alterações motoras ou sinais neurológicos focais. A melhor conduta na Atenção Primária é:",
+  "alternatives": [
+   "Encaminhar para avaliação multiprofissional e auditiva, iniciar intervenção precoce e manter acompanhamento longitudinal pela UBS.",
+   "Solicitar avaliação auditiva e reavaliar o desenvolvimento após o resultado, encaminhando se os sinais permanecerem presentes.",
+   "Encaminhar para avaliação multiprofissional e auditiva, iniciando as intervenções após a definição diagnóstica pela equipe especializada.",
+   "Iniciar estimulação do desenvolvimento e seguimento pela UBS, encaminhando se não houver resposta clínica no acompanhamento."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "M-CHAT-R/F positivo e sinais sociais precoces exigem encaminhamento para avaliação multiprofissional e auditiva, mas a intervenção precoce não deve esperar o diagnóstico definitivo. A UBS mantém acompanhamento longitudinal da criança e da família.",
+  "distratores": "B espera a audição antes de encaminhar; C posterga intervenção até confirmação especializada; D mantém apenas estimulação na UBS e atrasa avaliação abrangente.",
+  "conceito_chave": "Suspeita de TEA: encaminhar e intervir precocemente, sem esperar fechamento diagnóstico.",
+  "has_figure": false
+ },
+ {
+  "number": 51,
+  "enunciado": "Mulher de 19 anos procura serviço de referência 24 horas após violência sexual com penetração vaginal sem preservativo. Não utilizava contraceptivo e não possui registro vacinal confiável contra hepatite B. O agressor apresenta HBsAg não reagente, sem fatores conhecidos de alto risco para hepatite B, e situação sorológica desconhecida para HIV. Conforme a Nota Técnica nº 222/2025-CGHA/DATHI/SVSA/MS, além da contracepção de emergência, da PEP para HIV, da profilaxia para sífilis, gonococo e clamídia e do início da vacinação contra hepatite B, a conduta complementar adequada é:",
+  "alternatives": [
+   "Dispensar IGHAHB pelo HBsAg não reagente da fonte e administrar metronidazol no primeiro atendimento.",
+   "Administrar IGHAHB e postergar metronidazol pela concomitância com contracepção de emergência ou antirretrovirais.",
+   "Administrar IGHAHB e metronidazol no primeiro atendimento, pois ambas as medidas independem das demais profilaxias.",
+   "Dispensar IGHAHB pelo HBsAg não reagente da fonte e postergar metronidazol até o término da PEP."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A Nota Técnica nº 222/2025 reforça que vítima de violência sexual sem esquema vacinal completo ou imunidade comprovada contra hepatite B deve receber vacina e IGHAHB precocemente. O metronidazol integra a profilaxia de tricomoníase, mas seu uso deve ser postergado quando há contracepção de emergência ou antirretrovirais.",
+  "distratores": "A dispensa indevidamente a imunoglobulina e administra metronidazol no primeiro atendimento; C ignora a orientação de postergar o metronidazol; D dispensa a imunoglobulina apesar da ausência de imunização comprovada.",
+  "conceito_chave": "Violência sexual: em não imunizada, vacina + IGHAHB; postergar metronidazol se houver contracepção de emergência ou PEP.",
+  "has_figure": false
+ },
+ {
+  "number": 52,
+  "enunciado": "Homem de 67 anos, tabagista, com DPOC grave, apresenta exacerbação com escarro purulento, FR de 30 irpm, uso de musculatura acessória e SpO₂ de 84% em ar ambiente. Após oxigênio controlado, a gasometria mostra pH 7,29, PaCO₂ 62 mmHg e PaO₂ 54 mmHg. Está sonolento, porém desperta ao chamado, obedece a comandos e protege a via aérea. Não apresenta vômitos, choque ou secreção respiratória abundante. A estratégia ventilatória inicial mais adequada é:",
+  "alternatives": [
+   "iniciar VNI e titular o oxigênio para SpO₂ de 88% a 92%, reavaliando clínica e gasometria em 30 a 60 minutos e intubando se houver deterioração.",
+   "iniciar VNI com alvo de SpO₂ de 88% a 92% e considerar falha caso a PaCO₂ permaneça acima de 60 mmHg, mesmo com melhora do pH e do esforço respiratório.",
+   "iniciar VNI com alvo de SpO₂ de 92% a 96% e indicar intubação se o pH permanecer abaixo de 7,30 na primeira reavaliação.",
+   "iniciar VNI com alvo de SpO₂ de 88% a 92% e mantê-la por pelo menos duas horas, deixando a intubação para pH abaixo de 7,20 ou ocorrência de apneia."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A exacerbação de DPOC cursa com insuficiência respiratória hipercápnica aguda, acidemia e esforço respiratório, mas o paciente ainda protege a via aérea e coopera. A ventilação não invasiva é a primeira estratégia, com alvo de SpO₂ de 88% a 92% e reavaliação precoce; piora clínica ou gasométrica indica intubação.",
+  "distratores": "B define falha apenas pela PaCO₂ absoluta, mesmo com melhora; C usa alvo de oxigênio alto e critério rígido de pH; D prolonga tentativa de VNI apesar de possível deterioração.",
+  "conceito_chave": "DPOC com acidose respiratória e sem contraindicação: VNI precoce e reavaliação em 30 a 60 minutos.",
+  "has_figure": false
+ },
+ {
+  "number": 53,
+  "enunciado": "Homem de 59 anos, com diabetes mellitus tipo 2, apresenta pressão arterial de 146/88 mmHg e relação albumina/creatinina urinária de 180 mg/g, confirmada em duas amostras. A taxa de filtração glomerular é preservada, o potássio sérico é normal e ele não utiliza anti-hipertensivos. A estratégia anti-hipertensiva inicial preferencial é:",
+  "alternatives": [
+   "Iniciar IECA ou BRA, titular até a meta pressórica e suspender o fármaco se a creatinina aumentar mais de 20%, mantendo controle do potássio.",
+   "Associar IECA e BRA em baixas doses, titular conforme a tolerância e monitorar creatinina e potássio após os ajustes.",
+   "Iniciar IECA ou BRA em baixa dose e mantê-la enquanto houver redução da pressão, intensificando o tratamento se a albuminúria persistir após três meses.",
+   "Iniciar IECA ou BRA, titular até a maior dose tolerada e monitorar creatinina e potássio após o início e os ajustes de dose."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Diabetes, hipertensão e albuminúria persistente indicam IECA ou BRA, titulado até a maior dose tolerada, devido ao benefício pressórico e renal. Creatinina e potássio devem ser monitorados após início e ajustes.",
+  "distratores": "A usa um limite de aumento da creatinina excessivamente baixo para suspensão automática; B associa IECA e BRA, combinação que aumenta eventos adversos; C mantém dose baixa sem buscar dose efetiva.",
+  "conceito_chave": "DRC albuminúrica no diabetes: IECA ou BRA em dose máxima tolerada, sem combinação dupla.",
+  "has_figure": false
+ },
+ {
+  "number": 54,
+  "enunciado": "Puérpera de 5 dias apresenta febre, dor hipogástrica, loquiação fétida e útero doloroso, sendo diagnosticada com endometrite puerperal. Foi iniciado tratamento intravenoso com clindamicina e gentamicina. Após 48 horas sem melhora, acrescentou-se ampicilina. Ao completar 72 horas de antibioticoterapia, permanece com picos febris de 38,8 °C, embora esteja hemodinamicamente estável e com redução da dor uterina. Hemoculturas e urocultura são negativas, e a ultrassonografia não mostra restos ovulares. A conduta mais adequada é:",
+  "alternatives": [
+   "manter o esquema atual por mais 72 horas, indicando exames de imagem para o surgimento de instabilidade hemodinâmica.",
+   "manter antibioticoterapia intravenosa e solicitar tomografia de abdome e pelve para investigar abscesso ou tromboflebite pélvica séptica.",
+   "substituir o esquema atual por piperacilina-tazobactam e realizar imagem se a febre persistir por mais 48 horas.",
+   "realizar esvaziamento uterino para controle do foco, apesar da ausência de restos ovulares na ultrassonografia."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Febre persistente apesar de antibioticoterapia adequada para endometrite, com melhora parcial e culturas negativas, exige investigação de foco oculto. A tomografia de abdome e pelve pode identificar abscesso ou sugerir tromboflebite pélvica séptica, mantendo-se o tratamento intravenoso.",
+  "distratores": "A adia imagem até instabilidade; C troca empiricamente o esquema antes de procurar foco; D propõe esvaziamento uterino sem restos ovulares.",
+  "conceito_chave": "Endometrite puerperal sem resposta em 48 a 72 horas: procurar abscesso ou tromboflebite pélvica.",
+  "has_figure": false
+ },
+ {
+  "number": 55,
+  "enunciado": "Criança de 3 anos chega ao pronto-socorro com tosse metálica, rouquidão e estridor em repouso. Apresenta tiragem intercostal discreta, frequência respiratória de 34 irpm e saturação de oxigênio de 97% em ar ambiente. Está febril, mas sem toxemia, sialorreia ou dificuldade para engolir. A conduta mais adequada é:",
+  "alternatives": [
+   "Administrar dexametasona e adrenalina nebulizada, concedendo alta após 60 minutos se houver desaparecimento do estridor em repouso.",
+   "Administrar dexametasona e adrenalina nebulizada, repetir a nebulização em intervalos fixos de duas horas e manter internação por 24 horas.",
+   "Administrar dexametasona e adrenalina nebulizada, mantendo observação por algumas horas para detectar recorrência e reavaliar a necessidade de nova dose.",
+   "Administrar dexametasona e budesonida nebulizada, acrescentando adrenalina se o estridor persistir após 30 minutos."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Estridor em repouso caracteriza crupe moderado a grave. A criança deve receber dexametasona e adrenalina nebulizada, permanecendo em observação por algumas horas devido ao possível retorno dos sintomas após o efeito da adrenalina.",
+  "distratores": "A libera após apenas 60 minutos; B programa doses fixas e internação obrigatória; D associa dois corticosteroides e posterga a adrenalina.",
+  "conceito_chave": "Crupe com estridor em repouso: dexametasona + adrenalina nebulizada e observação.",
+  "has_figure": false
+ },
+ {
+  "number": 56,
+  "enunciado": "Mulher de 46 anos apresenta dor epigástrica irradiada para o dorso há 18 horas, com náuseas e vômitos. A lipase é de 1.380 U/L, ALT de 218 U/L e bilirrubina total de 3,1 mg/dL. A ultrassonografia mostra cálculos na vesícula, colédoco de 5 mm sem cálculo e ausência de colecistite. Após suporte clínico, evolui com melhora, tolera líquidos e a bilirrubina diminui para 1,5 mg/dL no dia seguinte. A conduta mais adequada é:",
+  "alternatives": [
+   "Realizar CPRE urgente, pois a elevação inicial das bilirrubinas e aminotransferases indica obstrução persistente.",
+   "Iniciar antibiótico para colecistite, manter jejum até normalizar a lipase e programar colecistectomia em seis semanas.",
+   "Manter suporte e alimentação conforme tolerância, dispensar CPRE urgente e realizar colecistectomia nesta internação.",
+   "Solicitar tomografia contrastada para estadiamento e adiar a colecistectomia até a normalização das enzimas pancreáticas."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "O quadro é pancreatite aguda biliar leve, com melhora clínica e queda espontânea da bilirrubina, sugerindo passagem do cálculo. Não há colangite nem obstrução persistente para CPRE urgente; a alimentação deve ser retomada conforme tolerância e a colecistectomia realizada na mesma internação.",
+  "distratores": "A indica CPRE apenas pela alteração inicial; B trata colecistite inexistente e adia cirurgia; D solicita tomografia sem indicação e condiciona cirurgia à normalização enzimática.",
+  "conceito_chave": "Pancreatite biliar leve sem colangite: colecistectomia na internação; CPRE apenas se obstrução persistente ou colangite.",
+  "has_figure": false
+ },
+ {
+  "number": 57,
+  "enunciado": "Mulher adulta, lúcida e com plena capacidade decisória apresenta hemorragia digestiva grave. Após ser informada sobre riscos, alternativas e possibilidade de morte, recusa expressamente transfusão de concentrado de hemácias, plasma e plaquetas por convicção religiosa. A decisão é registrada e assinada no prontuário. Apesar do tratamento endoscópico e das estratégias não transfusionais, apresenta novo sangramento e perde a capacidade de se comunicar. Não há evidência de revogação da recusa. A conduta eticamente mais adequada é:",
+  "alternatives": [
+   "manter estratégias não transfusionais e solicitar à família que confirme a decisão, seguindo a manifestação dos representantes se houver discordância.",
+   "manter as medidas alternativas, mas realizar transfusão diante de risco imediato de morte, pois a decisão foi registrada antes da perda aguda de sangue.",
+   "respeitar a recusa previamente formalizada, intensificar hemostasia e estratégias não transfusionais e reavaliar sua vontade se recuperar a capacidade.",
+   "manter as medidas não transfusionais enquanto solicita autorização judicial urgente para validar a recusa em situação de emergência."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Uma recusa transfusional livre, informada, específica e formalizada por adulto capaz continua válida quando ele perde temporariamente a capacidade, na ausência de revogação. Devem-se intensificar hemostasia e alternativas não transfusionais e reconsiderar a decisão apenas se a paciente recuperar capacidade e manifestar nova vontade.",
+  "distratores": "A transfere à família uma decisão já tomada pela paciente; B desconsidera autonomia por risco de morte; D exige autorização judicial para validar manifestação antecipada válida.",
+  "conceito_chave": "Autonomia previamente expressa deve ser respeitada mesmo em emergência.",
+  "has_figure": false
+ },
+ {
+  "number": 58,
+  "enunciado": "Mulher de 52 anos, assintomática e sem história familiar de câncer de mama, realiza mamografia de rastreamento. Em comparação com o exame de dois anos antes, identifica-se nova lesão no quadrante superolateral da mama esquerda. As incidências diagnósticas mostram massa irregular, de alta densidade. A ultrassonografia direcionada demonstra massa hipoecoica irregular, com margens anguladas, concordante com a mamografia e acessível à biópsia ultrassonográfica. Não há linfonodos axilares suspeitos. A classificação radiológica e a próxima conduta mais adequadas são:",
+  "alternatives": [
+   "BI-RADS 4C; realizar biópsia por agulha grossa guiada por ultrassonografia e avaliar a concordância radiológico-patológica.",
+   "BI-RADS 5; realizar biópsia por agulha grossa guiada por ultrassonografia e avaliar a concordância radiológico-patológica.",
+   "BI-RADS 5; realizar punção aspirativa por agulha fina e indicar biópsia por agulha grossa se a citologia for inconclusiva.",
+   "BI-RADS 5; realizar ressonância magnética antes da confirmação histológica para definir a extensão da lesão."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A mamografia mostra massa irregular, de alta densidade e margens espiculadas, concordante com a lesão suspeita à ultrassonografia, caracterizando BI-RADS 5. Deve-se realizar biópsia por agulha grossa guiada por ultrassonografia e avaliar a concordância radiológico-patológica.",
+  "distratores": "A subestima a probabilidade de malignidade como 4C; C usa punção aspirativa, insuficiente para caracterização histológica inicial; D antecipa ressonância antes do diagnóstico tecidual.",
+  "conceito_chave": "BI-RADS 5: biópsia percutânea com core biopsy e correlação radiológico-patológica.",
+  "has_figure": true
+ },
+ {
+  "number": 59,
+  "enunciado": "Um teste diagnóstico foi avaliado em 1.000 pessoas por meio de padrão de referência independente. Entre 200 pessoas com a doença, 190 tiveram resultado positivo. Entre 800 pessoas sem a doença, 160 tiveram resultado positivo. Em outro paciente, a avaliação clínica estimou probabilidade pré-teste de 30%, e o resultado do teste foi positivo. A probabilidade pós-teste de doença é aproximadamente:",
+  "alternatives": [
+   "67%, pois a razão de verossimilhança positiva deve ser aplicada às odds pré-teste.",
+   "95%, pois a sensibilidade corresponde à probabilidade de doença após resultado positivo.",
+   "59%, pois a razão de verossimilhança deve ser multiplicada diretamente pela probabilidade pré-teste.",
+   "80%, pois a especificidade representa a probabilidade de doença entre os resultados positivos."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A sensibilidade é 190/200 = 95% e a especificidade é 640/800 = 80%, logo a razão de verossimilhança positiva é 0,95/0,20 = 4,75. A probabilidade pré-teste de 30% corresponde a odds de 0,30/0,70; multiplicando por 4,75 e reconvertendo, a probabilidade pós-teste é aproximadamente 67%.",
+  "distratores": "B confunde sensibilidade com valor preditivo positivo; C multiplica a razão de verossimilhança diretamente pela probabilidade; D interpreta especificidade como probabilidade pós-teste.",
+  "conceito_chave": "Razões de verossimilhança atuam sobre odds, não diretamente sobre probabilidades.",
+  "has_figure": false
+ },
+ {
+  "number": 60,
+  "enunciado": "Lactente de 10 meses, pesando 8 kg, é levado a uma Unidade Básica de Saúde por diarreia aquosa iniciada há 36 horas, com oito evacuações nas últimas 24 horas e dois episódios de vômito. Não apresenta febre nem sangue nas fezes e permanece em aleitamento materno. Ao exame, encontra-se irritado, com olhos fundos, ausência de lágrimas, boca levemente seca e sede intensa, bebendo avidamente a solução oferecida. A prega cutânea abdominal retorna lentamente. O pulso é cheio, as extremidades estão aquecidas, o enchimento capilar é de 2 segundos e a diurese está reduzida, porém presente. Segundo o protocolo do Ministério da Saúde, a classificação do estado de hidratação e o manejo inicial mais adequados são:",
+  "alternatives": [
+   "Com desidratação; Plano B, com SRO de 50 a 100 mL/kg em 4 a 6 horas, conforme a sede.",
+   "Sem desidratação; Plano A, com 50 a 100 mL de SRO após cada evacuação.",
+   "Desidratação grave; Plano C, com 100 mL/kg de solução intravenosa em seis horas.",
+   "Com desidratação; Plano B, com SRO por sonda nasogástrica desde o início, a 20 mL/kg/h."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Olhos fundos, sede intensa e prega cutânea com retorno lento fornecem pelo menos dois sinais de desidratação. O manejo é Plano B, com solução de reidratação oral de 50 a 100 mL/kg em 4 a 6 horas, ofertada conforme a sede e com reavaliação.",
+  "distratores": "B classifica como sem desidratação; C usa Plano C apesar de perfusão preservada e capacidade de beber; D indica sonda desde o início, reservada a falha ou impossibilidade da via oral.",
+  "conceito_chave": "Diarreia com desidratação e capacidade de beber: Plano B com SRO.",
+  "has_figure": false
+ },
+ {
+  "number": 61,
+  "enunciado": "Homem de 73 anos, com insuficiência cardíaca e hipertensão, apresenta dispneia intensa, ortopneia e expectoração espumosa. Na admissão, apresenta PA de 190/110 mmHg, FC de 112 bpm, SpO₂ de 86%, crepitações até campos médios e extremidades aquecidas, sem sinais de choque. Foram iniciadas ventilação não invasiva, furosemida intravenosa e nitroglicerina em infusão contínua. Após 20 minutos, a SpO₂ aumentou para 93%, mas o paciente mantém dispneia importante e PA de 176/104 mmHg. A conduta mais adequada neste momento é:",
+  "alternatives": [
+   "suspender a nitroglicerina e administrar pequena expansão com cristaloide, devido ao risco de redução do retorno venoso pela ventilação não invasiva.",
+   "repetir imediatamente a dose de furosemida, mantendo a nitroglicerina na dose inicial até que ocorra aumento da diurese.",
+   "iniciar dobutamina para aumentar o débito cardíaco, reduzindo a nitroglicerina para evitar queda excessiva da pré-carga.",
+   "titular progressivamente a nitroglicerina, mantendo a ventilação não invasiva e monitorando pressão arterial e resposta respiratória."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Trata-se de edema agudo de pulmão hipertensivo, ainda com pressão elevada e congestão apesar de melhora inicial. A nitroglicerina deve ser titulada progressivamente, mantendo a ventilação não invasiva e monitorando resposta respiratória e hemodinâmica.",
+  "distratores": "A suspende vasodilatador e oferece volume em paciente congesto; B repete diurético antes de otimizar redução de pré e pós-carga; C usa inotrópico sem choque ou baixo débito.",
+  "conceito_chave": "Edema pulmonar hipertensivo: VNI e vasodilatação rápida são centrais.",
+  "has_figure": false
+ },
+ {
+  "number": 62,
+  "enunciado": "Mulher de 46 anos apresentou chikungunya há dois meses. Mantém rigidez matinal prolongada, dor e edema em mãos e tornozelos, com limitação importante das atividades diárias. Utilizou analgésico simples e anti-inflamatório não esteroidal em dose adequada, sem melhora satisfatória. Não apresenta sinais de infecção bacteriana, doença reumatológica prévia ou contraindicação ao uso de corticoide. A conduta mais adequada é",
+  "alternatives": [
+   "iniciar corticoide oral em dose anti-inflamatória, associado a medidas de reabilitação, com reavaliação clínica e redução gradual conforme a resposta.",
+   "manter o anti-inflamatório em dose plena por mais quatro semanas, considerando o corticoide para sintomas persistentes por mais de 90 dias.",
+   "iniciar metotrexato associado a ácido fólico, pois a persistência de sinovite por mais de seis semanas já caracteriza fase crônica.",
+   "realizar infiltração com corticoide nas articulações mais sintomáticas, evitando tratamento sistêmico diante do acometimento poliarticular."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Após dois meses, a paciente está na fase pós-aguda da chikungunya, com poliartrite incapacitante e falha de analgésico e AINE. Curso curto de corticoide oral em dose anti-inflamatória, associado a reabilitação e redução gradual conforme resposta, é apropriado.",
+  "distratores": "B prolonga AINE apesar de falha; C inicia metotrexato antes da fase crônica e sem avaliação especializada; D usa infiltrações isoladas em doença poliarticular.",
+  "conceito_chave": "Chikungunya pós-aguda com artrite incapacitante: corticoide sistêmico curto e reabilitação.",
+  "has_figure": false
+ },
+ {
+  "number": 63,
+  "enunciado": "Adolescente de 17 anos apresenta amenorreia há nove meses após restrição alimentar intensa, exercício diário e perda de 14 kg. Refere medo persistente de ganhar peso; IMC de 16,2 kg/m², com estabilidade hemodinâmica. β-hCG é negativo; TSH e prolactina são normais; FSH é normal-baixo, LH reduzido e estradiol reduzido. O diagnóstico e a abordagem inicial mais adequados são:",
+  "alternatives": [
+   "Insuficiência ovariana primária; repetir o FSH, solicitar cariótipo e iniciar anticoncepcional combinado.",
+   "Amenorreia hipotalâmica funcional associada a provável transtorno alimentar restritivo; avaliar estabilidade, instituir recuperação nutricional, acompanhamento multiprofissional e solicitar densitometria óssea.",
+   "Síndrome dos ovários policísticos; solicitar ultrassonografia, iniciar metformina e prescrever progestagênio cíclico.",
+   "Hipogonadismo hipogonadotrófico por doença hipofisária; solicitar ressonância da sela e iniciar reposição hormonal."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Perda ponderal, restrição alimentar, exercício excessivo, estradiol baixo e gonadotrofinas baixas ou normal-baixas indicam amenorreia hipotalâmica funcional, provavelmente associada a transtorno alimentar. A prioridade é avaliar segurança clínica, recuperar energia e peso com equipe multiprofissional e avaliar saúde óssea.",
+  "distratores": "A esperaria FSH elevado na insuficiência ovariana; C não apresenta hiperandrogenismo nem padrão de SOP; D sugere lesão hipofisária sem sinais focais e ignora o déficit energético evidente.",
+  "conceito_chave": "Amenorreia hipotalâmica: corrigir baixa disponibilidade energética e proteger massa óssea.",
+  "has_figure": false
+ },
+ {
+  "number": 64,
+  "enunciado": "Homem de 30 anos sofre trauma pélvico após colisão automobilística. Está hemodinamicamente estável e apresenta sangue no meato uretral, incapacidade de urinar e dor suprapúbica. Não há outra lesão com necessidade de intervenção imediata. A conduta mais adequada é",
+  "alternatives": [
+   "realizar tentativa cuidadosa de sondagem uretral por profissional experiente e solicitar uretrografia retrógrada se houver resistência à progressão.",
+   "realizar cistostomia suprapúbica imediatamente e programar a uretrografia retrógrada após a estabilização definitiva das lesões pélvicas.",
+   "solicitar tomografia de pelve com contraste para definir a integridade da uretra e realizar a drenagem urinária após o resultado do exame.",
+   "realizar uretrografia retrógrada antes da instrumentação uretral e estabelecer drenagem urinária, por via suprapúbica se houver ruptura ou impossibilidade de cateterização segura."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Sangue no meato, retenção urinária e trauma pélvico sugerem lesão uretral. A uretrografia retrógrada deve preceder qualquer instrumentação; se houver ruptura ou não for possível cateterização segura, realiza-se drenagem suprapúbica.",
+  "distratores": "A tenta sondagem antes de estudar a uretra; B faz cistostomia sem definir lesão e posterga exame; C usa tomografia de pelve, que não substitui uretrografia retrógrada.",
+  "conceito_chave": "Suspeita de lesão uretral: não sondar antes da uretrografia.",
+  "has_figure": false
+ },
+ {
+  "number": 65,
+  "enunciado": "Criança de 2 anos, com desenvolvimento neuropsicomotor normal e vacinação atualizada, apresenta duas crises convulsivas generalizadas, com duração de três minutos cada, separadas por quatro horas durante o mesmo episódio febril. Recupera-se completamente entre as crises e não apresenta déficit focal, sinais meníngeos ou alteração persistente do nível de consciência. A interpretação e a conduta mais adequadas são:",
+  "alternatives": [
+   "Convulsão febril complexa; sem EEG, neuroimagem ou profilaxia de rotina.",
+   "Convulsão febril complexa; realizar EEG ambulatorial pela recorrência.",
+   "Convulsão febril complexa; realizar ressonância magnética antes da alta.",
+   "Convulsão febril complexa; prescrever diazepam em todos os episódios febris."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Duas crises no mesmo episódio febril tornam a convulsão febril complexa, embora sejam breves, generalizadas e com recuperação completa. Na ausência de sinais neurológicos, meningismo ou alteração persistente, não se indicam EEG, neuroimagem ou profilaxia anticonvulsivante de rotina.",
+  "distratores": "B solicita EEG apenas pela recorrência no mesmo episódio; C indica ressonância sem sinais focais; D prescreve diazepam em toda febre, estratégia sem benefício rotineiro.",
+  "conceito_chave": "Convulsão febril complexa não implica exame complementar automático.",
+  "has_figure": false
+ },
+ {
+  "number": 66,
+  "enunciado": "Homem de 39 anos apresenta quatro placas eritemato-infiltradas e hipoestésicas em tronco e membros, além de espessamento do nervo ulnar direito. A baciloscopia do raspado intradérmico é positiva. A classificação operacional e o tratamento recomendado são:",
+  "alternatives": [
+   "Paucibacilar; PQT-U por seis doses, conforme o número de lesões.",
+   "Multibacilar; PQT-U por 12 doses, sem exigir baciloscopia negativa para alta.",
+   "Multibacilar; PQT-U por 24 doses, devido à baciloscopia positiva.",
+   "Multibacilar; PQT-U por 12 doses, prolongada até negativação baciloscópica."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Baciloscopia positiva classifica operacionalmente a hanseníase como multibacilar, independentemente do número de lesões. O tratamento é PQT-U por 12 doses, e a alta por cura não exige negativação da baciloscopia.",
+  "distratores": "A usa apenas o número de lesões e ignora a baciloscopia; C mantém esquema antigo de 24 doses; D prolonga tratamento até negativação, que pode demorar.",
+  "conceito_chave": "Hanseníase com baciloscopia positiva = multibacilar, 12 doses de PQT-U.",
+  "has_figure": false
+ },
+ {
+  "number": 67,
+  "enunciado": "Mulher de 64 anos, em uso de hidroclorotiazida, apresenta confusão mental e crise convulsiva generalizada. O sódio sérico é de 114 mEq/L, e o tempo de instalação da hiponatremia é desconhecido. A conduta imediata mais adequada é",
+  "alternatives": [
+   "suspender o tiazídico e iniciar solução salina hipertônica a 3% em infusão contínua, buscando elevar o sódio em 4 a 6 mEq/L nas primeiras 24 horas.",
+   "administrar um bolus de solução salina hipertônica a 3% e manter infusão em velocidade fixa até que o sódio sérico alcance 130 mEq/L.",
+   "suspender o tiazídico e iniciar solução salina isotônica, utilizando a solução hipertônica para persistência dos sintomas após a correção volêmica.",
+   "suspender o tiazídico e administrar solução salina hipertônica a 3% em bolus, repetindo conforme a resposta clínica e monitorando seriadamente o sódio."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Crise convulsiva por hiponatremia grave é emergência neurológica. Deve-se suspender o tiazídico e administrar bolus de solução salina hipertônica a 3%, repetindo conforme resposta clínica e monitorando o sódio para obter elevação inicial controlada.",
+  "distratores": "A usa infusão contínua e define meta em 24 horas, em vez de tratar imediatamente os sintomas; B mantém infusão até 130 mEq/L, com alto risco de correção excessiva; C escolhe salina isotônica apesar da convulsão.",
+  "conceito_chave": "Hiponatremia sintomática grave: bolus de salina 3% e controle rigoroso da correção.",
+  "has_figure": false
+ },
+ {
+  "number": 68,
+  "enunciado": "Puérpera apresenta perda sanguínea estimada em 1.200 mL logo após parto vaginal. A placenta está completa, o útero encontra-se aumentado e amolecido e não há laceração evidente. Apresenta PA de 168/106 mmHg e nega história de asma. Foram iniciados reposição volêmica, massagem uterina, ocitocina e ácido tranexâmico. Após dez minutos, o útero permanece atônico e o sangramento continua. A próxima conduta mais adequada é:",
+  "alternatives": [
+   "controlar rapidamente a pressão arterial e administrar metilergometrina, recorrendo ao balão se o sangramento persistir.",
+   "repetir imediatamente o ácido tranexâmico e aguardar a resposta antes de acrescentar outro uterotônico.",
+   "administrar uterotônico de segunda linha compatível, como carboprost, e realizar tamponamento uterino se não houver resposta.",
+   "inserir balão de tamponamento imediatamente, indicando outro uterotônico para falha do procedimento."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "A causa é atonia uterina persistente. Como a paciente tem hipertensão grave, a metilergometrina é contraindicada; sem asma, pode-se usar carboprost como uterotônico de segunda linha e, se não houver resposta, realizar tamponamento uterino.",
+  "distratores": "A usa metilergometrina em hipertensa; B repete ácido tranexâmico imediatamente, embora a segunda dose tenha intervalo e não substitua uterotônico; D pula a tentativa com outro uterotônico compatível.",
+  "conceito_chave": "Hemorragia por atonia: escolher uterotônico conforme contraindicações e avançar para balão se refratária.",
+  "has_figure": false
+ },
+ {
+  "number": 69,
+  "enunciado": "Menino de 8 anos, sem vacinação antirrábica prévia, é mordido profundamente na mão por cão desconhecido e não passível de observação. Após lavagem abundante da ferida, a profilaxia pós-exposição mais adequada é:",
+  "alternatives": [
+   "Iniciar vacina e aplicar soro ou imunoglobulina por via intramuscular.",
+   "Iniciar vacina e aguardar sete dias antes de indicar soro ou imunoglobulina.",
+   "Iniciar vacina e infiltrar soro ou imunoglobulina dentro e ao redor da ferida.",
+   "Iniciar vacina e reservar soro ou imunoglobulina para lesões múltiplas ou cefálicas."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Mordedura profunda na mão por cão desconhecido e não observável é exposição grave. Além da vacina, o soro ou a imunoglobulina antirrábica deve ser infiltrado dentro e ao redor da ferida; eventual volume restante é aplicado por via intramuscular em local distante da vacina.",
+  "distratores": "A aplica todo o produto apenas por via intramuscular; B atrasa a imunização passiva; D restringe indevidamente sua indicação a lesões múltiplas ou cefálicas.",
+  "conceito_chave": "Exposição grave à raiva: vacina + imunização passiva infiltrada na ferida.",
+  "has_figure": false
+ },
+ {
+  "number": 70,
+  "enunciado": "Homem de 28 anos com retocolite ulcerativa apresenta febre, taquicardia, dor e distensão abdominal. A radiografia mostra cólon transverso com 7 cm de diâmetro, sem pneumoperitônio. É iniciado tratamento com jejum, reposição hidroeletrolítica, corticoide intravenoso, antibiótico, profilaxia tromboembólica e avaliação conjunta da cirurgia. Após 24 horas, mantém FC de 126 bpm e febre de 38,9 °C, apresenta aumento da dor e da distensão, lactato em elevação e dilatação colônica de 8 cm. Não há pneumoperitônio. A conduta mais adequada é:",
+  "alternatives": [
+   "manter o tratamento clínico por mais 48 horas, pois a ausência de perfuração permite completar a resposta ao corticoide.",
+   "iniciar infliximabe como terapia de resgate, programando cirurgia para ausência de resposta nas próximas 24 a 48 horas.",
+   "realizar descompressão colonoscópica e manter o corticoide intravenoso, indicando cirurgia se houver nova dilatação.",
+   "indicar colectomia subtotal de urgência com ileostomia terminal, sem aguardar perfuração ou nova tentativa de resgate clínico."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Há megacólon tóxico com deterioração sistêmica e aumento da dilatação apesar do tratamento intensivo. A colectomia subtotal de urgência com ileostomia terminal deve ser realizada sem esperar perfuração ou nova tentativa de resgate medicamentoso.",
+  "distratores": "A prolonga tratamento apesar de piora; B usa infliximabe em paciente com sinais de falha grave e possível isquemia; C propõe colonoscopia, contraindicada pelo risco de perfuração.",
+  "conceito_chave": "Megacólon tóxico com piora clínica: cirurgia urgente antes da perfuração.",
+  "has_figure": false
+ },
+ {
+  "number": 71,
+  "enunciado": "Homem de 60 anos apresenta dor torácica há oito horas, troponina elevada e eletrocardiograma sem supradesnivelamento persistente do segmento ST. Está hemodinamicamente estável, sem recorrência da dor, insuficiência cardíaca, arritmia grave ou sangramento ativo. A conduta inicial mais adequada é",
+  "alternatives": [
+   "iniciar terapia anti-isquêmica e antitrombótica, além de estatina de alta intensidade, estratificar o risco e planejar estratégia invasiva durante a internação.",
+   "iniciar antiagregação e terapia anti-isquêmica, adiando a anticoagulação até a definição da anatomia coronariana para reduzir o risco hemorrágico.",
+   "iniciar terapia antitrombótica e realizar coronariografia imediata, pois a elevação da troponina isoladamente caracteriza critério de muito alto risco.",
+   "iniciar tratamento medicamentoso e realizar teste funcional antes da coronariografia, desde que não haja recorrência da dor ou alteração eletrocardiográfica."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Há síndrome coronariana aguda sem supradesnivelamento, com troponina positiva e sem critérios de muito alto risco. Indicam-se tratamento anti-isquêmico e antitrombótico, estatina de alta intensidade e estratégia invasiva precoce, preferencialmente em até 24 horas, conforme o risco e a disponibilidade.",
+  "distratores": "B posterga anticoagulação sem motivo; C indica coronariografia imediata apenas pela troponina; D usa teste funcional em paciente com infarto confirmado.",
+  "conceito_chave": "NSTEMI estável: tratamento antitrombótico e estratégia invasiva precoce conforme risco, não necessariamente imediata.",
+  "has_figure": false
+ },
+ {
+  "number": 72,
+  "enunciado": "Durante consulta de rotina, o médico observa equimoses em diferentes estágios no tronco e nas coxas de uma criança de 5 anos. A explicação do padrasto é incompatível com as lesões, e a criança apresenta relato breve sugestivo de agressão. Encontra-se clinicamente estável e sem indicação médica de internação. A conduta mais adequada é:",
+  "alternatives": [
+   "Documentar e notificar o caso, obtendo relato detalhado da criança antes de definir as medidas de proteção.",
+   "Documentar e notificar o caso, comunicar o Conselho Tutelar e pactuar com a rede uma saída segura, sem repetir entrevistas.",
+   "Documentar e notificar o caso, liberando a criança com outro familiar indicado pelo acompanhante até avaliação especializada.",
+   "Documentar e encaminhar a criança à rede especializada, comunicando o Conselho Tutelar após confirmação da violência."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Há suspeita fundamentada de violência contra criança. O profissional deve documentar achados, fazer notificação compulsória, comunicar o Conselho Tutelar e articular uma saída segura com a rede, evitando entrevistas repetidas que aumentem revitimização.",
+  "distratores": "A busca relato detalhado antes da proteção; C libera com familiar indicado pelo acompanhante sem avaliação de segurança; D aguarda confirmação para comunicar proteção.",
+  "conceito_chave": "Suspeita de violência infantil já exige notificação e proteção; não é necessário confirmar.",
+  "has_figure": false
+ },
+ {
+  "number": 73,
+  "enunciado": "Recém-nascido assintomático é filho de mãe tratada para sífilis durante a gestação. O esquema materno foi iniciado apenas 20 dias antes do parto. Para avaliar a adequação do tratamento materno e orientar a investigação neonatal, devem ser considerados prioritariamente:",
+  "alternatives": [
+   "Fármaco e esquema; intervalos; antecedência ao parto; teste treponêmico neonatal.",
+   "Fármaco e esquema; intervalos; resposta sorológica materna; títulos não treponêmicos pareados.",
+   "Fármaco e esquema; intervalos; antecedência ao parto; títulos não treponêmicos pareados.",
+   "Fármaco e esquema; antecedência ao parto; tratamento da parceria; títulos não treponêmicos pareados."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "A adequação do tratamento materno depende do fármaco e esquema corretos, dos intervalos entre doses, da antecedência suficiente em relação ao parto e da comparação dos títulos não treponêmicos materno e neonatal. Teste treponêmico neonatal não é útil para essa comparação, pois anticorpos maternos atravessam a placenta.",
+  "distratores": "A inclui teste treponêmico neonatal; B omite a antecedência ao parto; D coloca tratamento da parceria como critério de adequação do tratamento materno.",
+  "conceito_chave": "Sífilis congênita: comparar VDRL/RPR pareados e avaliar esquema e tempo do tratamento materno.",
+  "has_figure": false
+ },
+ {
+  "number": 74,
+  "enunciado": "Lactente de 2 meses apresenta sopro cardíaco, dificuldade para ganhar peso e taquipneia durante as mamadas. O ecocardiograma demonstra comunicação interventricular moderada. A alteração hemodinâmica que melhor explica o quadro é:",
+  "alternatives": [
+   "Shunt esquerda-direita, com hiperfluxo pulmonar e sobrecarga do ventrículo direito.",
+   "Shunt esquerda-direita, com hiperfluxo pulmonar e sobrecarga volumétrica do átrio e ventrículo esquerdos.",
+   "Shunt esquerda-direita, com sobrecarga pressórica do ventrículo direito e câmaras esquerdas preservadas.",
+   "Shunt esquerda-direita, com dilatação isolada do átrio esquerdo, sem sobrecarga ventricular."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Na comunicação interventricular, o shunt esquerda-direita aumenta o fluxo pulmonar. O retorno venoso pulmonar elevado causa sobrecarga volumétrica do átrio e do ventrículo esquerdos, explicando taquipneia e dificuldade de ganho ponderal.",
+  "distratores": "A localiza a principal sobrecarga no ventrículo direito; C descreve sobrecarga pressórica sem repercussão esquerda; D exclui indevidamente a sobrecarga ventricular esquerda.",
+  "conceito_chave": "CIV significativa: hiperfluxo pulmonar e dilatação de câmaras esquerdas.",
+  "has_figure": false
+ },
+ {
+  "number": 75,
+  "enunciado": "Homem de 65 anos apresenta febre alta, dor em hipocôndrio direito, icterícia, hipotensão e confusão mental. Os exames mostram leucocitose e hiperbilirrubinemia direta, e a ultrassonografia evidencia dilatação das vias biliares. Após coleta de culturas, início de antibioticoterapia e suporte hemodinâmico, a estratégia de controle do foco mais adequada é:",
+  "alternatives": [
+   "Realizar drenagem biliar urgente por CPRE após colangiorressonância para documentar a causa e o nível da obstrução.",
+   "Realizar drenagem biliar urgente por via percutânea, considerada preferencial na presença de hipotensão e alteração neurológica.",
+   "Realizar drenagem biliar cirúrgica com exploração da via biliar e colecistectomia na mesma abordagem, após estabilização inicial.",
+   "Realizar drenagem biliar urgente, preferencialmente por CPRE, assim que iniciado o suporte hemodinâmico e antimicrobiano."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A tríade de Charcot associada a hipotensão e confusão indica colangite aguda grave. Após antibiótico e suporte, é necessária drenagem biliar urgente, preferencialmente por CPRE, sem atrasar por exames adicionais.",
+  "distratores": "A exige colangiorressonância antes do controle do foco; B escolhe drenagem percutânea como primeira opção, reservada quando CPRE falha ou não é possível; C propõe cirurgia inicial mais invasiva.",
+  "conceito_chave": "Colangite grave: antibiótico, suporte e drenagem biliar urgente.",
+  "has_figure": false
+ },
+ {
+  "number": 76,
+  "enunciado": "Mulher de 42 anos está em acompanhamento na UBS por episódio depressivo moderado. Nega ideação suicida, sintomas psicóticos ou história de mania. Usa sertralina 50 mg/dia há oito semanas, com boa adesão, poucos efeitos adversos e melhora parcial do humor, do sono e da funcionalidade. Ainda apresenta anedonia e redução de energia, mas prefere manter o medicamento atual. A conduta farmacológica mais adequada é:",
+  "alternatives": [
+   "manter a sertralina em 50 mg/dia por mais quatro semanas, pois a resposta parcial indica benefício progressivo sem necessidade de ajuste.",
+   "aumentar gradualmente a dose da sertralina dentro da faixa terapêutica e reavaliar resposta, tolerabilidade e risco após duas a quatro semanas.",
+   "substituir a sertralina por outro antidepressivo, pois a ausência de remissão após oito semanas caracteriza falha do tratamento inicial.",
+   "manter a sertralina em 50 mg/dia e associar outro antidepressivo, mantendo o aumento da dose para falha da combinação."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Após oito semanas de boa adesão, há resposta parcial e boa tolerabilidade à sertralina 50 mg/dia. A conduta é otimizar gradualmente a dose dentro da faixa terapêutica e reavaliar em duas a quatro semanas antes de trocar ou associar outro antidepressivo.",
+  "distratores": "A mantém dose inicial apesar da resposta incompleta; C considera falha antes de otimizar a dose; D associa outro antidepressivo precocemente e aumenta complexidade e risco de efeitos adversos.",
+  "conceito_chave": "Resposta parcial ao antidepressivo bem tolerado: primeiro otimizar a dose.",
+  "has_figure": false
+ },
+ {
+  "number": 77,
+  "enunciado": "Recém-nascido a termo permanece apneico após os passos iniciais da reanimação. Foi iniciada ventilação com pressão positiva por máscara. Após 30 segundos, não há movimento torácico adequado, e a frequência cardíaca é de 70 bpm. A próxima conduta é:",
+  "alternatives": [
+   "Corrigir a VPP, obter expansão torácica e reavaliar a FC após 30 segundos de ventilação efetiva.",
+   "Manter a VPP por mais 30 segundos e corrigir a técnica se a FC não aumentar.",
+   "Estabelecer via aérea alternativa e iniciar compressões por FC abaixo de 100 bpm.",
+   "Elevar o oxigênio a 100% e reavaliar a FC antes de corrigir a VPP."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A frequência cardíaca de 70 bpm após ventilação com pressão positiva sem expansão torácica adequada indica ventilação ineficaz. Deve-se executar as etapas corretivas, obter movimento torácico e então reavaliar a frequência após 30 segundos de VPP efetiva.",
+  "distratores": "B mantém ventilação inadequada antes de corrigi-la; C inicia compressões antes de garantir ventilação efetiva e com FC acima de 60 bpm; D aumenta o oxigênio sem corrigir a causa principal.",
+  "conceito_chave": "Reanimação neonatal: antes de compressões, garantir 30 segundos de ventilação efetiva.",
+  "has_figure": false
+ },
+ {
+  "number": 78,
+  "enunciado": "Homem de 34 anos apresenta ferimento por arma branca no hemitórax esquerdo há 30 minutos. Está taquicárdico, taquipneico, com PA de 92 × 58 mmHg e SpO₂ de 89%. Há redução da expansibilidade, abolição do murmúrio vesicular e macicez no hemitórax esquerdo, com traqueia central e sem ingurgitamento jugular. A ultrassonografia mostra grande volume de líquido pleural, sem líquido pericárdico ou abdominal. O diagnóstico e a conduta imediata mais adequados são:",
+  "alternatives": [
+   "Hemotórax traumático; iniciar ressuscitação com hemoderivados e realizar angiotomografia antes da drenagem.",
+   "Hemotórax traumático; iniciar ressuscitação hemostática e realizar toracostomia com drenagem pleural fechada.",
+   "Hemotórax maciço; realizar toracotomia imediata sem drenagem pleural prévia.",
+   "Hemopneumotórax hipertensivo; realizar descompressão com agulha seguida de drenagem pleural."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Macicez, ausência de murmúrio e grande volume de líquido pleural após trauma penetrante indicam hemotórax. A conduta imediata é ressuscitação hemostática e toracostomia com drenagem pleural fechada; o volume drenado e a evolução definirão necessidade de toracotomia.",
+  "distratores": "A atrasa a drenagem para realizar angiotomografia; C indica toracotomia sem drenagem e sem critérios de débito; D descreve pneumotórax hipertensivo, que costuma causar hipertimpanismo e desvio mediastinal.",
+  "conceito_chave": "Hemotórax traumático instável: dreno torácico e ressuscitação, sem atrasar para tomografia.",
+  "has_figure": false
+ },
+ {
+  "number": 79,
+  "enunciado": "Mulher de 64 anos apresenta dois episódios de sangramento pós-menopausa. A ultrassonografia transvaginal mostra endométrio difusamente espessado, medindo 9 mm, sem lesão intracavitária focal bem definida. A próxima conduta mais apropriada é",
+  "alternatives": [
+   "realizar biópsia endometrial ambulatorial e encerrar a investigação se o resultado for benigno, mesmo diante de recorrência do sangramento.",
+   "realizar histeroscopia cirúrgica com curetagem como procedimento inicial, pois o endométrio acima de 4 mm contraindica a biópsia ambulatorial.",
+   "realizar amostragem endometrial, podendo iniciar por biópsia ambulatorial, e prosseguir com histeroscopia se a amostra for insuficiente ou o sangramento persistir.",
+   "repetir a ultrassonografia em seis a oito semanas e realizar amostragem se o endométrio ultrapassar 11 mm ou houver novo sangramento."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Sangramento pós-menopausa recorrente com endométrio de 9 mm exige amostragem histológica. Pode-se iniciar com biópsia endometrial ambulatorial; se a amostra for insuficiente, o sangramento persistir ou houver suspeita focal, prossegue-se com histeroscopia.",
+  "distratores": "A encerra investigação apesar de recorrência; B torna histeroscopia cirúrgica obrigatória como primeiro exame; D posterga a biópsia usando limiar de 11 mm inadequado.",
+  "conceito_chave": "Sangramento pós-menopausa e endométrio espessado: obter tecido.",
+  "has_figure": false
+ },
+ {
+  "number": 80,
+  "enunciado": "Adolescente de 13 anos apresenta IMC acima do percentil 97 e acantose nigricans. Em três consultas, realizadas com técnica adequada, a pressão arterial variou entre 128-132/80-84 mmHg. Os exames mostram glicemia de jejum de 108 mg/dL, hemoglobina glicada de 5,8%, triglicerídeos de 210 mg/dL, HDL de 36 mg/dL e ALT de 62 U/L. Está assintomático. A conduta inicial mais adequada é:",
+  "alternatives": [
+   "estabelecer meta de perda ponderal por três meses e repetir os exames antes de confirmar a hipertensão ou investigar a elevação das transaminases.",
+   "iniciar metformina devido à acantose e à pré-diabetes, mantendo intervenção familiar e repetindo a avaliação hepática após a melhora glicêmica.",
+   "iniciar anti-hipertensivo e metformina, considerando que a persistência pressórica e as alterações metabólicas já indicam tratamento farmacológico.",
+   "iniciar intervenção familiar intensiva, confirmar a hipertensão, investigar a alteração hepática e acompanhar as alterações glicêmica e lipídica antes de indicar medicamentos."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "O adolescente apresenta obesidade com múltiplas alterações cardiometabólicas, mas precisa de confirmação diagnóstica e avaliação organizada antes de medicação. A primeira linha é intervenção familiar intensiva, confirmação da hipertensão, investigação de elevação de ALT e seguimento de glicemia e lipídios.",
+  "distratores": "A adia a confirmação da pressão e a avaliação hepática; B inicia metformina automaticamente por pré-diabetes leve; C começa dois fármacos sem confirmar hipertensão nem completar intervenção de estilo de vida.",
+  "conceito_chave": "Obesidade pediátrica com comorbidades: intervenção intensiva e investigação dirigida antes de farmacoterapia automática.",
+  "has_figure": false
+ },
+ {
+  "number": 81,
+  "enunciado": "Homem de 62 anos, após viagem prolongada, apresenta sinais de trombose venosa profunda seguidos de dispneia súbita, dor torácica, síncope e hipotensão. A pressão arterial é de 78 × 48 mmHg e a SpO₂ de 86%. A angiotomografia mostra trombos nas artérias pulmonares principais e dilatação do ventrículo direito. Permanece hipotenso após reposição volêmica cautelosa e não há contraindicação à trombólise. A conduta mais adequada é:",
+  "alternatives": [
+   "TEP de risco intermediário-alto; iniciar anticoagulação parenteral e indicar reperfusão se houver deterioração posterior.",
+   "TEP de alto risco; iniciar apixabana e reavaliar a necessidade de reperfusão após estabilização pressórica.",
+   "TEP de alto risco; iniciar anticoagulação parenteral, suporte hemodinâmico e trombólise sistêmica imediata.",
+   "TEP de alto risco; implantar filtro de veia cava inferior antes da anticoagulação pela TVP concomitante."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Hipotensão persistente, síncope e disfunção de ventrículo direito caracterizam tromboembolismo pulmonar de alto risco. Na ausência de contraindicação, deve-se iniciar anticoagulação parenteral, suporte hemodinâmico e trombólise sistêmica imediata.",
+  "distratores": "A classifica como risco intermediário; B usa apixabana e posterga reperfusão em choque; D indica filtro de veia cava, que não substitui anticoagulação e trombólise.",
+  "conceito_chave": "TEP com instabilidade hemodinâmica: reperfusão imediata, geralmente com trombólise sistêmica.",
+  "has_figure": false
+ },
+ {
+  "number": 82,
+  "enunciado": "Homem de 63 anos com diabetes apresenta úlcera plantar com secreção purulenta, necrose, odor fétido e flutuação profunda. Está febril, com FC de 118 bpm, sem choque. O pé está frio, com pulsos ausentes e índice tornozelo-braquial de 0,45. A conduta mais adequada é:",
+  "alternatives": [
+   "Internar, iniciar antibiótico intravenoso e revascularizar antes da drenagem.",
+   "Internar, iniciar antibiótico intravenoso, controlar cirurgicamente o foco e avaliar a revascularização em paralelo.",
+   "Internar, iniciar antibiótico intravenoso e desbridar, deixando a avaliação vascular para após o controle infeccioso.",
+   "Internar, iniciar antibiótico intravenoso e completar os estudos de imagem antes da abordagem cirúrgica."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Há infecção grave do pé diabético com abscesso ou necrose e isquemia crítica. O paciente deve ser internado, receber antibiótico intravenoso e controle cirúrgico urgente do foco, enquanto a equipe vascular avalia revascularização em paralelo.",
+  "distratores": "A espera revascularização antes de drenar infecção profunda; C posterga avaliação vascular, ameaçando viabilidade do membro; D atrasa cirurgia para completar imagem apesar de flutuação e necrose.",
+  "conceito_chave": "Pé diabético infectado e isquêmico: controlar infecção e perfusão de forma coordenada e urgente.",
+  "has_figure": false
+ },
+ {
+  "number": 83,
+  "enunciado": "Gestante de 39 semanas procura a maternidade por redução importante dos movimentos fetais. A cardiotocografia permanece não reativa, com frequência cardíaca fetal basal de 140 bpm, variabilidade moderada e ausência de desacelerações. O perfil biofísico fetal é 4/10, com redução dos movimentos e oligoidrâmnio. O feto está em apresentação cefálica. A gestante encontra-se clinicamente estável, não possui cicatriz uterina e apresenta colo desfavorável. A conduta mais adequada é:",
+  "alternatives": [
+   "Internar, manter vigilância fetal contínua e repetir o perfil biofísico em quatro horas antes de definir a interrupção.",
+   "Iniciar indução com ocitocina e reservar a maturação cervical para ausência de progressão nas primeiras horas.",
+   "Realizar cesariana após preparo materno, pois o perfil 4/10 e o colo desfavorável reduzem a segurança da indução.",
+   "Iniciar maturação cervical e indução do parto, com monitorização contínua e cesariana se houver deterioração fetal."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Perfil biofísico 4/10 em gestação a termo, com redução de movimentos e oligoidrâmnio, indica interrupção. Como não há contraindicação ao parto vaginal, inicia-se maturação cervical e indução com monitorização contínua, realizando cesariana se houver deterioração fetal ou falha obstétrica.",
+  "distratores": "A repete exame apesar de resultado anormal a termo; B usa ocitocina com colo desfavorável sem maturação; C indica cesariana apenas pelo colo desfavorável.",
+  "conceito_chave": "Perfil biofísico 4/10 a termo: interromper; via depende das condições obstétricas e da vigilância fetal.",
+  "has_figure": false
+ },
+ {
+  "number": 84,
+  "enunciado": "Homem de 58 anos apresenta cefaleia intensa, confusão, PA de 230/130 mmHg, hemorragias retinianas, papiledema e elevação da creatinina. Não há suspeita de dissecção de aorta, síndrome coronariana aguda ou edema agudo de pulmão. Após uma hora de anti-hipertensivo intravenoso em ambiente monitorizado, a PA encontra-se em 180/105 mmHg, com melhora parcial da confusão e sem sinais de hipoperfusão. A estratégia subsequente mais adequada é:",
+  "alternatives": [
+   "Manter a PA atual por 24 horas, sem novas reduções.",
+   "Reduzir para cerca de 160/100-110 mmHg em 2 a 6 horas e, depois, gradualmente.",
+   "Reduzir a pressão sistólica para menos de 140 mmHg nas próximas 2 horas.",
+   "Reduzir novamente a pressão arterial média em 20% a 25% na hora seguinte."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Na emergência hipertensiva, a redução inicial aproximada de 20% a 25% da pressão arterial média já foi alcançada, de 230/130 para 180/105 mmHg. Em seguida, o objetivo é chegar a cerca de 160/100-110 mmHg nas próximas duas a seis horas e reduzir gradualmente depois.",
+  "distratores": "A interrompe novas reduções por 24 horas; C busca normalização rápida demais; D propõe nova queda de 20% a 25% na hora seguinte, aumentando risco de hipoperfusão.",
+  "conceito_chave": "Emergência hipertensiva: redução controlada, não normalização abrupta.",
+  "has_figure": false
+ },
+ {
+  "number": 85,
+  "enunciado": "Criança de 15 meses, imunocompetente e sem registro de vacinação contra o sarampo, teve contato domiciliar com caso confirmado da doença há 48 horas. Está assintomática e não apresenta contraindicação ao uso de vacinas vivas atenuadas. Além da notificação e das medidas de bloqueio, a conduta individual mais adequada é:",
+  "alternatives": [
+   "Solicitar sorologia e vacinar se não houver anticorpos.",
+   "Administrar imunoglobulina e adiar a tríplice viral.",
+   "Administrar tríplice viral e imunoglobulina simultaneamente.",
+   "Administrar tríplice viral agora e completar o esquema conforme o calendário."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A criança suscetível teve contato com sarampo há 48 horas e pode receber vacina tríplice viral como profilaxia pós-exposição dentro de 72 horas. Depois, deve completar o esquema de rotina conforme a idade.",
+  "distratores": "A atrasa a intervenção para esperar sorologia; B reserva imunoglobulina para situações específicas, como contraindicação à vacina ou grupos de alto risco; C administra simultaneamente vacina e imunoglobulina, o que compromete a resposta vacinal.",
+  "conceito_chave": "Contato com sarampo em suscetível imunocompetente: tríplice viral até 72 horas.",
+  "has_figure": false
+ },
+ {
+  "number": 86,
+  "enunciado": "Homem de 36 anos está no quinto dia após apendicectomia laparoscópica por apendicite perfurada, em uso de ceftriaxona e metronidazol. Mantém febre de 38,7 °C e dor no flanco e na fossa ilíaca direita. As incisões estão limpas; há dor local, intensificada pela extensão passiva da coxa direita, sem irritação peritoneal. Leucócitos: 17.300/mm³, com 8% de bastonetes; PCR: 184 mg/L. A conduta mais adequada é:",
+  "alternatives": [
+   "substituir ceftriaxona e metronidazol por piperacilina-tazobactam e reavaliar a evolução clínica após 24 a 48 horas.",
+   "solicitar ultrassonografia abdominal para pesquisar coleção na fossa ilíaca direita e avaliar a possibilidade de drenagem percutânea.",
+   "solicitar tomografia computadorizada do abdome e da pelve com contraste intravenoso para investigar coleção intra-abdominal.",
+   "coletar hemoculturas, manter o esquema antimicrobiano em uso e repetir a avaliação clínica e laboratorial após 24 horas."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Febre persistente no quinto pós-operatório, leucocitose e dor que piora com extensão da coxa sugerem coleção profunda, inclusive abscesso de psoas ou intra-abdominal. A tomografia de abdome e pelve com contraste é o exame mais sensível para localizar a coleção e planejar drenagem.",
+  "distratores": "A amplia antibiótico sem buscar controle do foco; B usa ultrassonografia, menos sensível para coleções profundas; D apenas observa apesar de sinais de abscesso.",
+  "conceito_chave": "Febre persistente após apendicite perfurada: procurar abscesso com tomografia contrastada.",
+  "has_figure": false
+ },
+ {
+  "number": 87,
+  "enunciado": "Mulher de 27 anos apresenta dor abdominal migratória que se tornou difusa, febre e vômitos. Está confusa, com PA de 78 × 46 mmHg, enchimento capilar de quatro segundos e sinais de peritonite difusa. O lactato é de 4,3 mmol/L, e a hipotensão persiste após uma alíquota inicial de cristaloide balanceado. Diante da hipótese de apendicite perfurada com peritonite e choque séptico, a abordagem mais adequada é:",
+  "alternatives": [
+   "Iniciar antibiótico, cristaloide guiado pela resposta, noradrenalina por acesso periférico e controle cirúrgico emergente.",
+   "Iniciar antibiótico, completar 30 mL/kg de cristaloide, obter acesso central e iniciar noradrenalina antes da cirurgia.",
+   "Iniciar antibiótico e noradrenalina, estabilizar a pressão, realizar tomografia contrastada e definir a cirurgia pelos achados.",
+   "Iniciar antibiótico, cristaloide e noradrenalina, realizar drenagem percutânea e programar apendicectomia após reversão do choque."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Choque séptico com peritonite exige ações simultâneas: antibiótico precoce, cristaloide guiado pela resposta, noradrenalina que pode ser iniciada por acesso periférico e controle cirúrgico emergente do foco. Não se deve esperar completar volume fixo, acesso central ou tomografia.",
+  "distratores": "B atrasa vasopressor e cirurgia até 30 mL/kg e acesso central; C posterga controle do foco para tomografia; D propõe drenagem percutânea em peritonite difusa.",
+  "conceito_chave": "Sepse com foco cirúrgico: ressuscitar e operar em paralelo.",
+  "has_figure": false
+ },
+ {
+  "number": 88,
+  "enunciado": "Lactente de 8 meses apresenta abaulamento inguinal doloroso, não redutível, associado a vômitos e irritabilidade. Não há peritonite, choque, distensão abdominal importante nem alteração da coloração da pele local. A conduta mais adequada é:",
+  "alternatives": [
+   "Reduzir após analgesia e, se houver sucesso, adiar a correção por quatro a seis semanas.",
+   "Indicar exploração imediata, sem redução prévia, pela associação de dor, irredutibilidade e vômitos.",
+   "Tentar redução cuidadosa após analgesia; se houver sucesso, observar e corrigir precocemente; se falhar, operar com urgência.",
+   "Tentar redução após analgesia e, se falhar, observar antes de realizar nova tentativa."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Na ausência de peritonite, choque ou sinais cutâneos de estrangulamento, pode-se tentar redução manual cuidadosa após analgesia por profissional experiente. Se houver sucesso, observa-se e programa-se correção precoce; se falhar, a cirurgia é urgente.",
+  "distratores": "A adia a correção por várias semanas, aumentando risco de nova encarceramento; B elimina tentativa segura de redução; D observa após falha, atrasando cirurgia.",
+  "conceito_chave": "Hérnia inguinal encarcerada sem sinais de estrangulamento: tentativa de redução e reparo precoce.",
+  "has_figure": false
+ },
+ {
+  "number": 89,
+  "enunciado": "Homem de 29 anos é levado ao pronto-socorro após cair de um patinete elétrico e bater a cabeça no solo. O acompanhante relata perda da consciência por aproximadamente um minuto e dois episódios de vômito após o acidente. Na admissão, 40 minutos depois, o paciente mantém os olhos abertos espontaneamente, informa corretamente o próprio nome, mas confunde o local e a data. Cumpre adequadamente as ordens motoras e movimenta os quatro membros. As pupilas são isocóricas e fotorreagentes, sem déficit neurológico focal ou sinais de fratura da base do crânio. Considerando a classificação do traumatismo cranioencefálico e a conduta inicial, assinale a alternativa correta.",
+  "alternatives": [
+   "TCE leve; realizar tomografia sem contraste e avaliação neurológica seriada.",
+   "TCE leve; observar por duas horas e indicar tomografia se persistir Glasgow 14.",
+   "TCE moderado; realizar tomografia e manter internação mesmo com exame normal.",
+   "TCE leve; observar por quatro horas e indicar tomografia se houver novo vômito."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A escala de Glasgow é 14: abertura ocular 4, resposta verbal confusa 4 e resposta motora 6, classificando TCE leve. A perda de consciência, os vômitos e o Glasgow 14 indicam tomografia de crânio sem contraste e avaliação neurológica seriada.",
+  "distratores": "B posterga a tomografia apesar dos critérios presentes; C classifica Glasgow 14 como TCE moderado; D condiciona imagem a novo vômito.",
+  "conceito_chave": "TCE leve pode exigir tomografia quando há Glasgow 14, vômitos ou perda de consciência.",
+  "has_figure": false
+ },
+ {
+  "number": 90,
+  "enunciado": "Mulher de 25 anos apresenta, há quatro meses, episódios semanais de ingestão de quantidade de alimentos claramente maior que a habitual, acompanhados de perda de controle. Após os episódios, provoca vômitos para evitar ganho de peso. Mantém peso dentro da faixa esperada e sua autoestima é fortemente influenciada pela forma corporal. O diagnóstico e a abordagem inicial mais adequados são",
+  "alternatives": [
+   "anorexia nervosa do tipo compulsão alimentar/purgativa; avaliar eletrólitos e iniciar programa de restauração ponderal supervisionada.",
+   "transtorno de compulsão alimentar; iniciar terapia cognitivo-comportamental e considerar lisdexanfetamina para reduzir as compulsões.",
+   "transtorno purgativo; investigar repercussões metabólicas e iniciar psicoterapia focada nos comportamentos compensatórios.",
+   "bulimia nervosa; avaliar complicações metabólicas e cardíacas e iniciar terapia cognitivo-comportamental, considerando antidepressivo como adjuvante."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "Compulsões recorrentes com perda de controle, vômitos compensatórios, peso não necessariamente baixo e autoavaliação dependente da forma corporal caracterizam bulimia nervosa. Deve-se investigar distúrbios eletrolíticos e cardíacos e iniciar terapia cognitivo-comportamental, considerando antidepressivo como adjuvante.",
+  "distratores": "A exigiria baixo peso para anorexia; B não inclui comportamentos compensatórios regulares; C descreve purgação sem compulsões objetivas.",
+  "conceito_chave": "Bulimia: compulsão + comportamento compensatório, geralmente sem baixo peso obrigatório.",
+  "has_figure": false
+ },
+ {
+  "number": 91,
+  "enunciado": "Criança de 4 anos apresenta febre alta, sialorreia, odinofagia intensa, voz abafada e desconforto respiratório progressivo, sem tosse. Permanece sentada, inclinada para a frente, e evita deitar. Mantém-se consciente, mas apresenta estridor inspiratório e retrações torácicas. A conduta prioritária é:",
+  "alternatives": [
+   "Manter posição de conforto, oferecer oxigênio e iniciar antibiótico intravenoso, intervindo na via aérea se ocorrer hipoxemia.",
+   "Manter a criança calma e realizar intubação na emergência, utilizando videolaringoscopia e preparo para via aérea de resgate.",
+   "Manter a criança calma e assegurar a via aérea em ambiente controlado, com equipe especializada e acesso cirúrgico disponível.",
+   "Manter posição de conforto e realizar nasofibroscopia com anestesia tópica, assegurando a via aérea conforme o achado."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "O quadro é altamente sugestivo de epiglotite, com risco de obstrução súbita. A criança deve permanecer calma, na posição de conforto, sem manipulação desnecessária, e ter a via aérea assegurada em ambiente controlado por equipe especializada, com possibilidade de acesso cirúrgico.",
+  "distratores": "A espera hipoxemia para intervir; B realiza intubação na emergência sem ambiente e equipe ideais; D propõe nasofibroscopia que pode precipitar obstrução.",
+  "conceito_chave": "Epiglotite: não agitar nem examinar a orofaringe; controlar a via aérea com equipe experiente.",
+  "has_figure": false
+ },
+ {
+  "number": 92,
+  "enunciado": "Gestante de 24 semanas apresenta febre de 39 °C, calafrios, vômitos e dor lombar direita. Está taquicárdica, com sinal de Giordano positivo, nitrito e leucocitúria. Não tolera líquidos, mas permanece hemodinamicamente estável, sem sinais de choque ou fatores de risco conhecidos para bactéria multirresistente. A urocultura foi coletada e está pendente. A conduta mais adequada é:",
+  "alternatives": [
+   "Internar, iniciar hidratação e ceftriaxona intravenosa, ajustar o esquema ao antibiograma e, após melhora clínica, completar sete dias de tratamento.",
+   "Internar, iniciar hidratação e ceftriaxona intravenosa, ajustar o esquema ao antibiograma e, após melhora clínica, completar 10 a 14 dias de tratamento.",
+   "Internar, iniciar hidratação e ceftriaxona intravenosa, ajustar o esquema ao antibiograma e manter a via parenteral durante todo o tratamento.",
+   "Internar, iniciar hidratação e ceftriaxona intravenosa, ajustar o esquema ao antibiograma e, após melhora clínica, completar o tratamento com nitrofurantoína."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "Pielonefrite na gestação com febre alta, vômitos e intolerância oral requer internação, hidratação e ceftriaxona intravenosa, com ajuste ao antibiograma. Após melhora e capacidade de ingerir medicamentos, pode-se completar por via oral um total de 10 a 14 dias.",
+  "distratores": "A usa duração total curta; C mantém via parenteral durante todo o tratamento sem necessidade; D escolhe nitrofurantoína, que não atinge concentrações adequadas no parênquima renal.",
+  "conceito_chave": "Pielonefrite gestacional: internação e 10 a 14 dias de antibiótico; nitrofurantoína não trata pielonefrite.",
+  "has_figure": false
+ },
+ {
+  "number": 93,
+  "enunciado": "Em visita domiciliar, a equipe de Saúde da Família avalia mulher de 79 anos, restrita ao leito após AVC e com multimorbidade, que teve internações repetidas e dificuldade de acesso às especialidades. Usa 12 medicamentos, com duplicidades entre prescrições. A filha, única cuidadora, relata exaustão e insegurança no manejo. A paciente foi admitida no Serviço de Atenção Domiciliar, com acompanhamento compartilhado com a UBS e as especialidades. A conduta mais adequada é:",
+  "alternatives": [
+   "Manter a UBS como referência, transferir ao SAD a coordenação temporária, revisar as prescrições e orientar a cuidadora.",
+   "Manter a UBS como coordenadora, pactuar plano único com a rede, conciliar as prescrições e apoiar a cuidadora.",
+   "Manter a UBS como coordenadora, solicitar a revisão pelos prescritores e organizar com o SAD a rotina da cuidadora.",
+   "Compartilhar a coordenação entre UBS e SAD, atribuir à especialidade principal a revisão terapêutica e capacitar a cuidadora."
+  ],
+  "correct_index": 1,
+  "correct_letter": "B",
+  "comentario": "A UBS preserva a coordenação longitudinal do cuidado, mesmo com participação do Serviço de Atenção Domiciliar e especialistas. Deve construir plano único com a rede, conciliar prescrições e duplicidades e apoiar diretamente a cuidadora, reduzindo sobrecarga e risco.",
+  "distratores": "A transfere a coordenação ao SAD; C delega a revisão aos vários prescritores, mantendo fragmentação; D divide coordenação e entrega a revisão à especialidade principal.",
+  "conceito_chave": "APS coordena o cuidado: plano integrado, conciliação medicamentosa e apoio ao cuidador.",
+  "has_figure": false
+ },
+ {
+  "number": 94,
+  "enunciado": "Recém-nascido com 36 semanas e 4 dias apresenta taquipneia logo após cesariana eletiva, realizada antes do início do trabalho de parto. A mãe permaneceu afebril, a bolsa rompeu no momento do parto e não houve suspeita de corioamnionite. O recém- nascido apresenta frequência respiratória de 72 irpm, retrações subcostais leves e saturação de 91% em ar ambiente, que aumenta para 96% com fração inspirada de oxigênio de 25%. Está ativo, bem perfundido e sem instabilidade térmica. A radiografia de tórax mostra hiperinsuflação pulmonar, reforço perihilar e líquido nas cisuras. O diagnóstico e a abordagem inicial mais adequados são:",
+  "alternatives": [
+   "Taquipneia transitória; oxigênio e monitorização, com CPAP se houver piora.",
+   "Taquipneia transitória; CPAP imediato e surfactante se FiO₂ ≥ 30%.",
+   "Síndrome do desconforto respiratório; CPAP e surfactante conforme a resposta.",
+   "Pneumonia neonatal; culturas e antibioticoterapia empírica."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Cesárea sem trabalho de parto, início imediato, necessidade baixa de oxigênio e radiografia com hiperinsuflação, reforço perihilar e líquido nas cisuras indicam taquipneia transitória do recém-nascido. O manejo é suporte com oxigênio e monitorização, usando CPAP se houver piora.",
+  "distratores": "B antecipa CPAP e surfactante sem necessidade; C sugere doença da membrana hialina, cujo padrão radiológico e fatores de risco são diferentes; D indica infecção sem fatores maternos ou sinais sistêmicos.",
+  "conceito_chave": "Taquipneia transitória: retenção de líquido pulmonar e tratamento predominantemente de suporte.",
+  "has_figure": false
+ },
+ {
+  "number": 95,
+  "enunciado": "Homem de 52 anos, assintomático e de risco habitual, apresenta teste imunoquímico fecal positivo em programa organizado de rastreamento do câncer colorretal. Duas semanas depois, repetiu o exame por iniciativa própria, com resultado negativo. Não apresenta anemia, sangramento visível nem contraindicação à colonoscopia. Considerando a sequência adequada do rastreamento, assinale a alternativa correta.",
+  "alternatives": [
+   "Realizar colonoscopia; se completa e normal, suspender o FIT e reavaliar em 10 anos.",
+   "Realizar colonoscopia; se normal, manter o FIT anual pelo risco residual da primeira positividade.",
+   "Repetir o FIT em três meses e indicar colonoscopia diante de nova positividade.",
+   "Realizar colonografia por tomografia e indicar colonoscopia se houver lesão suspeita."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Um FIT positivo exige colonoscopia, e a repetição negativa não anula o primeiro resultado. Se a colonoscopia for completa, de alta qualidade e normal, o paciente passa a seguir o intervalo de rastreamento após colonoscopia normal, em geral dez anos.",
+  "distratores": "B mantém FIT anual apesar de colonoscopia normal; C repete teste de triagem em vez de investigar o resultado positivo; D usa colonografia quando a colonoscopia é possível.",
+  "conceito_chave": "FIT positivo é indicação de colonoscopia; não se confirma com outro FIT.",
+  "has_figure": false
+ },
+ {
+  "number": 96,
+  "enunciado": "Homem de 70 kg apresenta crise tônico-clônica generalizada contínua há oito minutos. A glicemia capilar é normal, e foram iniciados oxigênio, monitorização cardiorrespiratória e medidas de proteção da via aérea. Ainda não foi possível obter acesso venoso. A conduta farmacológica imediata mais adequada é:",
+  "alternatives": [
+   "Aguardar acesso venoso para administrar benzodiazepínico em dose plena.",
+   "Administrar midazolam 5 mg IM e repetir após dez minutos.",
+   "Administrar midazolam 10 mg IM e preparar fármaco de segunda linha.",
+   "Administrar levetiracetam por via intraóssea antes do benzodiazepínico."
+  ],
+  "correct_index": 2,
+  "correct_letter": "C",
+  "comentario": "Crise tônico-clônica contínua por mais de cinco minutos é estado de mal epiléptico. Sem acesso venoso, deve-se administrar midazolam 10 mg por via intramuscular em adulto de 70 kg e preparar imediatamente uma medicação de segunda linha.",
+  "distratores": "A espera acesso venoso e atrasa benzodiazepínico; B usa dose intramuscular insuficiente; D inverte a sequência ao dar levetiracetam antes do benzodiazepínico.",
+  "conceito_chave": "Estado de mal: benzodiazepínico imediato; midazolam IM é opção quando não há acesso venoso.",
+  "has_figure": false
+ },
+ {
+  "number": 97,
+  "enunciado": "Mulher de 34 anos com doença de Graves interrompeu o antitireoidiano e chega com temperatura de 39,4 °C, agitação, diarreia, tremor, bócio difuso e desorientação. O eletrocardiograma mostra fibrilação atrial com resposta ventricular de 156 bpm. Está hemodinamicamente estável e sem sinais de insuficiência cardíaca, mas apresenta asma grave com broncoespasmo ativo. Após suporte inicial e investigação do fator precipitante, o esquema terapêutico mais adequado é:",
+  "alternatives": [
+   "controlar a frequência com diltiazem, administrar tionamida, oferecer iodo após a tionamida e associar corticosteroide.",
+   "controlar a frequência com diltiazem e administrar simultaneamente tionamida, iodo e corticosteroide.",
+   "controlar a frequência com diltiazem, administrar inicialmente o iodo e iniciar a tionamida após o bloqueio da liberação hormonal.",
+   "controlar a frequência com diltiazem e administrar tionamida, indicando iodo e corticosteroide para ausência de resposta inicial."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A apresentação é de tempestade tireotóxica. Como há asma grave com broncoespasmo ativo, evita-se betabloqueador e controla-se a frequência com diltiazem; administra-se tionamida, depois iodo para bloquear liberação hormonal, além de corticosteroide e tratamento do precipitante.",
+  "distratores": "B dá iodo simultaneamente à tionamida, sem respeitar a sequência; C oferece iodo antes da síntese hormonal ser bloqueada; D posterga iodo e corticosteroide, que fazem parte do tratamento inicial.",
+  "conceito_chave": "Tempestade tireotóxica: tionamida antes do iodo; usar alternativa ao betabloqueador se broncoespasmo grave.",
+  "has_figure": false
+ },
+ {
+  "number": 98,
+  "enunciado": "Trabalhador rural apresenta miose, broncorreia intensa, sialorreia, bradicardia e fasciculações após exposição a inseticida organofosforado. A equipe retirou as roupas contaminadas, realizou descontaminação cutânea e iniciou suporte da via aérea. A terapêutica específica mais adequada é:",
+  "alternatives": [
+   "Administrar atropina intravenosa em doses crescentes até redução da broncorreia e melhora da ventilação, seguida de manutenção, associando pralidoxima precocemente.",
+   "Administrar atropina intravenosa em doses crescentes até frequência cardíaca superior a 100 bpm e midríase, seguida de manutenção, associando pralidoxima.",
+   "Administrar atropina intravenosa em bolus padronizados até cessarem as fasciculações, seguida de manutenção em dose fixa, e reservar pralidoxima para fraqueza progressiva.",
+   "Administrar pralidoxima antes da atropina e iniciar manutenção atropínica quando houver normalização da frequência cardíaca e das pupilas."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "A intoxicação organofosforada causa síndrome colinérgica. A atropina deve ser titulada rapidamente até secar secreções brônquicas e melhorar ventilação, seguida de manutenção; a pralidoxima é associada precocemente para reativar a acetilcolinesterase e tratar manifestações nicotínicas.",
+  "distratores": "B usa frequência cardíaca e midríase como metas, em vez da broncorreia; C espera cessarem fasciculações com atropina e posterga pralidoxima; D administra pralidoxima antes de controlar a ameaça respiratória com atropina.",
+  "conceito_chave": "Organofosforado: atropinizar pelos pulmões, não pelas pupilas; associar pralidoxima cedo.",
+  "has_figure": false
+ },
+ {
+  "number": 99,
+  "enunciado": "No início de um ano, um município possuía 50.200 habitantes, dos quais 200 já tinham determinada doença. Durante o período, foram confirmados 100 casos novos. Entre esses casos incidentes, ocorreram 20 óbitos. Considerando também os pacientes previamente doentes, foram registrados 30 óbitos pela doença no município naquele ano. A incidência acumulada entre as pessoas inicialmente sob risco, a letalidade entre os casos incidentes e o coeficiente de mortalidade específico por 100.000 habitantes foram, aproximadamente:",
+  "alternatives": [
+   "199 por 100.000; 20%; e 40 por 100.000.",
+   "199 por 100.000; 10%; e 40 por 100.000.",
+   "200 por 100.000; 10%; e 60 por 100.000.",
+   "200 por 100.000; 20%; e 60 por 100.000."
+  ],
+  "correct_index": 3,
+  "correct_letter": "D",
+  "comentario": "A população inicialmente sob risco é 50.000, pois 200 já estavam doentes; 100 casos novos correspondem a 200 por 100.000. A letalidade entre incidentes é 20/100 = 20%, e a mortalidade específica é 30/50.200 × 100.000, aproximadamente 60 por 100.000.",
+  "distratores": "A e B subestimam a mortalidade e uma delas erra a letalidade; C acerta incidência aproximada, mas reduz a letalidade para 10%.",
+  "conceito_chave": "Incidência usa população sob risco; letalidade usa casos; mortalidade usa população total.",
+  "has_figure": false
+ },
+ {
+  "number": 100,
+  "enunciado": "Homem de 45 anos, trabalhador de depósito, apresenta lombalgia mecânica há três dias após levantar uma caixa, sem irradiação ou sinais de alarme. O exame neurológico é normal, e o teste de Lasègue é negativo. A empresa permite redução temporária da carga física, mas o paciente solicita ressonância e afastamento prolongado. A conduta mais adequada é:",
+  "alternatives": [
+   "Prescrever analgesia, manter atividade conforme tolerância e adaptar temporariamente o trabalho; solicitar imagem diante de sinais de alarme ou se o resultado puder modificar a conduta.",
+   "Prescrever analgesia, manter atividade conforme tolerância e adaptar temporariamente o trabalho; solicitar ressonância se restar qualquer dor após seis semanas, mesmo com melhora funcional.",
+   "Prescrever analgesia, manter atividade conforme tolerância e adaptar temporariamente o trabalho; solicitar radiografia inicial por se tratar de episódio relacionado à atividade ocupacional.",
+   "Prescrever analgesia, recomendar repouso relativo e afastamento por duas semanas; solicitar imagem se não houver recuperação ao final desse período."
+  ],
+  "correct_index": 0,
+  "correct_letter": "A",
+  "comentario": "Lombalgia mecânica aguda sem sinais de alarme deve ser manejada com analgesia, manutenção de atividades conforme tolerância e adaptação temporária da carga ocupacional. Imagem não é indicada inicialmente e deve ser reservada a sinais de alarme, persistência relevante ou situação em que altere a conduta.",
+  "distratores": "B transforma qualquer dor residual em indicação automática de ressonância; C solicita radiografia apenas por relação com o trabalho; D recomenda repouso e afastamento prolongado, que podem retardar recuperação.",
+  "conceito_chave": "Lombalgia aguda inespecífica: manter-se ativo e evitar imagem de rotina.",
+  "has_figure": false
+ }
+]
