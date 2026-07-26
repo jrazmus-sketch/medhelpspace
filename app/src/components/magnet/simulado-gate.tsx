@@ -174,15 +174,24 @@ export function SimuladoGate({ utm, cohorts }: { utm: MagnetUtm; cohorts: Cohort
           />
         </div>
 
+        {/* Turma picker as a compact 2-up grid. Four full-width stacked cards made
+            this form ~900px tall and left the hero visibly lopsided; the exam date
+            moves inline so the option stays one line without losing the detail
+            that makes people pick the right turma. */}
         <fieldset>
           <legend className="mb-1.5 block text-sm font-medium text-foreground">
             <SiteText as="span" k="sim.gate.cohort_label" fallback="Para qual Revalida você está estudando?" />
           </legend>
-          <div className="space-y-2">
-            {cohorts.map((c) => (
+          {/* Single column on small phones: at 375px a 2-up grid leaves ~120px of
+              text and truncates "Revalida 2026.2". */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {[
+              ...cohorts.map((c) => ({ slug: c.slug, label: c.label, hint: c.hint })),
+              { slug: UNDECIDED_COHORT, label: "Ainda não decidi", hint: "escolho depois" },
+            ].map((c) => (
               <label
                 key={c.slug}
-                className={`flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors ${
+                className={`flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition-colors ${
                   cohort === c.slug
                     ? "border-brand bg-brand-muted/20"
                     : "border-border bg-background hover:border-brand/50"
@@ -197,31 +206,13 @@ export function SimuladoGate({ utm, cohorts }: { utm: MagnetUtm; cohorts: Cohort
                   className="h-4 w-4 shrink-0 accent-brand"
                 />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-foreground">{c.label}</span>
-                  <span className="block text-xs text-muted-foreground">{c.when}</span>
+                  <span className="block truncate text-sm font-semibold text-foreground">
+                    {c.label}
+                  </span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{c.hint}</span>
                 </span>
               </label>
             ))}
-            <label
-              className={`flex min-h-[52px] cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors ${
-                cohort === UNDECIDED_COHORT
-                  ? "border-brand bg-brand-muted/20"
-                  : "border-border bg-background hover:border-brand/50"
-              }`}
-            >
-              <input
-                type="radio"
-                name="cohort"
-                value={UNDECIDED_COHORT}
-                checked={cohort === UNDECIDED_COHORT}
-                onChange={() => setCohort(UNDECIDED_COHORT)}
-                className="h-4 w-4 shrink-0 accent-brand"
-              />
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-foreground">Ainda não decidi</span>
-                <span className="block text-xs text-muted-foreground">Escolho a turma depois</span>
-              </span>
-            </label>
           </div>
         </fieldset>
 

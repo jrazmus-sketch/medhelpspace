@@ -285,11 +285,18 @@ export async function gradeSimulado(progress: SimuladoProgress): Promise<Simulad
 
 // ── Turma options for the funnel picker ──────────────────────────────────────
 
-export type CohortOption = { slug: string; label: string; when: string };
+// `when` is the full sentence; `hint` is the same fact abbreviated, for the
+// compact two-up picker in the hero where a full date would wrap.
+export type CohortOption = { slug: string; label: string; when: string; hint: string };
 
 const MONTHS = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+];
+
+const MONTHS_SHORT = [
+  "jan", "fev", "mar", "abr", "mai", "jun",
+  "jul", "ago", "set", "out", "nov", "dez",
 ];
 
 // Every ACTIVE turma, ordered by exam date — deliberately not filtered by
@@ -313,6 +320,7 @@ export async function getActiveCohortOptions(): Promise<CohortOption[]> {
       slug: c.slug as string,
       label: c.name as string,
       when: `Prova em ${d.getUTCDate()} de ${MONTHS[d.getUTCMonth()]} de ${d.getUTCFullYear()}`,
+      hint: `prova em ${MONTHS_SHORT[d.getUTCMonth()]}/${d.getUTCFullYear()}`,
     };
   });
 }

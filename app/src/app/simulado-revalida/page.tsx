@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FunnelBeacon } from "@/components/magnet/funnel-beacon";
 import { SimuladoGate } from "@/components/magnet/simulado-gate";
+import { SimuladoReportPreview } from "@/components/magnet/simulado-report-preview";
+import { SimuladoFaq } from "@/components/magnet/simulado-faq";
 import { SiteText } from "@/components/landing/site-text";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 import {
@@ -52,7 +54,7 @@ export default async function SimuladoRevalidaPage({
   return (
     <div
       className="relative flex min-h-screen flex-col overflow-hidden text-foreground"
-      style={{ background: "radial-gradient(ellipse 140% 85% at 50% -8%, #160a34 0%, #0a0620 44%, #030109 100%)" }}
+      style={{ background: "radial-gradient(ellipse 140% 85% at 50% -8%, #1d1042 0%, #120a2b 44%, #08041a 100%)" }}
     >
       <FunnelBeacon utm={utm} funnel="simulado-100" />
 
@@ -70,8 +72,8 @@ export default async function SimuladoRevalidaPage({
           style={{
             inset: "-25% -12%",
             backgroundImage:
-              "linear-gradient(rgba(140,100,240,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(140,100,240,0.16) 1px, transparent 1px), linear-gradient(rgba(110,80,210,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(110,80,210,0.07) 1px, transparent 1px)",
-            backgroundSize: "84px 84px, 84px 84px, 21px 21px, 21px 21px",
+              "linear-gradient(rgba(150,115,245,0.085) 1px, transparent 1px), linear-gradient(90deg, rgba(150,115,245,0.085) 1px, transparent 1px), linear-gradient(rgba(120,90,215,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(120,90,215,0.035) 1px, transparent 1px)",
+            backgroundSize: "104px 104px, 104px 104px, 26px 26px, 26px 26px",
             transform: "perspective(1100px) rotateX(24deg)",
             transformOrigin: "50% 40%",
           }}
@@ -84,14 +86,14 @@ export default async function SimuladoRevalidaPage({
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(44% 32% at 82% 0%, rgba(192,132,232,0.20), transparent 60%), radial-gradient(42% 34% at 6% 14%, rgba(122,29,145,0.20), transparent 58%), radial-gradient(ellipse 90% 42% at 50% 110%, rgba(122,29,145,0.10), transparent 72%), linear-gradient(to right, rgba(3,1,9,0.5), transparent 15%, transparent 85%, rgba(3,1,9,0.5))",
+            "radial-gradient(44% 32% at 82% 0%, rgba(192,132,232,0.22), transparent 60%), radial-gradient(38% 26% at 70% 8%, rgba(240,170,140,0.09), transparent 62%), radial-gradient(42% 34% at 6% 14%, rgba(122,29,145,0.20), transparent 58%), radial-gradient(ellipse 90% 42% at 50% 110%, rgba(122,29,145,0.10), transparent 72%), linear-gradient(to right, rgba(3,1,9,0.5), transparent 15%, transparent 85%, rgba(3,1,9,0.5))",
         }}
       />
 
       {/* Subtle film grain for texture. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.07] mix-blend-soft-light"
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.035] mix-blend-soft-light"
         style={{
           backgroundImage:
             "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
@@ -112,7 +114,10 @@ export default async function SimuladoRevalidaPage({
 
       <main className="flex-1">
         {/* ── Hero: pitch (left) + gate (right) ─────────────────────────────── */}
-        <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-14 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
+        {/* items-START, not items-center: the columns are never the same height,
+            and centering a short column against a tall form leaves it floating in
+            the middle with dead space above and below. */}
+        <section className="mx-auto grid max-w-6xl items-start gap-10 px-5 py-14 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-14">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-brand/30 bg-brand-muted/30 px-3 py-1 text-xs font-semibold text-brand">
               <span className="h-1.5 w-1.5 rounded-full bg-brand" />
@@ -125,7 +130,7 @@ export default async function SimuladoRevalidaPage({
               </span>
               <SiteText as="span" k="sim.hero.title_2" fallback="." />
             </h1>
-            <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               <SiteText
                 as="span"
                 multiline
@@ -153,19 +158,17 @@ export default async function SimuladoRevalidaPage({
                 />
               </p>
             </div>
-          </div>
 
-          {/* The gate + a compact "what you get" strip. */}
-          <div>
-            <SimuladoGate utm={utm} cohorts={cohorts} />
-            <ul className="mt-5 space-y-2.5 px-1">
+            {/* "O que você vai receber" lives on the LEFT now: it's pitch, not form,
+                and it gives this column the height it was missing. */}
+            <ul className="mt-6 space-y-2.5">
               {[
                 { k: "sim.get.0", fallback: "100 questões inéditas no estilo da 1ª etapa" },
                 { k: "sim.get.1", fallback: "Clínica Médica, Cirurgia, Pediatria, GO e Saúde Coletiva" },
                 { k: "sim.get.2", fallback: "Gabarito com comentários sobre todas as alternativas" },
                 { k: "sim.get.3", fallback: "Sem limite de tempo — seu progresso fica salvo" },
               ].map((item) => (
-                <li key={item.k} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                <li key={item.k} className="flex items-start gap-2.5 text-[15px] text-muted-foreground">
                   <span
                     aria-hidden
                     className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-muted/60 text-[10px] font-bold text-brand"
@@ -176,10 +179,43 @@ export default async function SimuladoRevalidaPage({
                 </li>
               ))}
             </ul>
+
+            {/* The three things that actually dissolve the hesitation, said where
+                the hesitation happens rather than after signup. */}
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-muted-foreground">
+              {[
+                { k: "sim.hero.re_0", fallback: "Grátis, sem cartão" },
+                { k: "sim.hero.re_1", fallback: "Sem cronômetro" },
+                { k: "sim.hero.re_2", fallback: "Pare e volte quando quiser" },
+              ].map((item) => (
+                <span key={item.k} className="inline-flex items-center gap-1.5">
+                  <span aria-hidden className="text-brand">
+                    ✓
+                  </span>
+                  <SiteText as="span" k={item.k} fallback={item.fallback} />
+                </span>
+              ))}
+            </div>
+
+            <p className="mt-5 border-l-2 border-brand/40 pl-4 text-[15px] leading-relaxed text-muted-foreground">
+              <SiteText
+                as="span"
+                multiline
+                k="sim.hero.trust"
+                fallback="São as mesmas 100 questões que entregamos aos nossos alunos dentro da plataforma. Aqui elas são suas de graça — sem versão reduzida."
+              />
+            </p>
+          </div>
+
+          {/* Right column: the form, and only the form. */}
+          <div className="lg:sticky lg:top-8">
+            <SimuladoGate utm={utm} cohorts={cohorts} />
           </div>
         </section>
 
-        {/* ── Composition: 5 blocos of 20 by grande área ────────────────────── */}
+        <SimuladoReportPreview />
+
+        {/* ── Composition: the five grandes áreas ───────────────────────────── */}
         <section className="border-y border-border/60 bg-surface-1/30">
           <div className="mx-auto max-w-4xl px-5 py-12 sm:py-16">
             <div className="text-center">
@@ -268,6 +304,8 @@ export default async function SimuladoRevalidaPage({
             ))}
           </div>
         </section>
+
+        <SimuladoFaq />
 
         {/* ── Final CTA band ────────────────────────────────────────────────── */}
         <section className="border-t border-border/60 bg-gradient-to-b from-brand-muted/10 to-transparent">
