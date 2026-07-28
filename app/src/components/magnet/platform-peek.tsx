@@ -122,7 +122,7 @@ function MemorecardMockup() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/landing/memorecards/card-3.webp"
-        alt="MemoreCard — HPV e Colo Uterino (Ginecologia)"
+        alt="MemoreCard — Amenorreia Primária (Ginecologia)"
         width={640}
         height={800}
         draggable={false}
@@ -135,7 +135,7 @@ function MemorecardMockup() {
         </span>
         <p className="text-[8px] leading-snug text-muted-foreground">
           <span className="font-bold text-foreground">Grito da prova: </span>
-          HPV transitório é comum; persistência oncogênica = lesão precursora.
+          Sem menstruar aos 15–16 anos = avalie primeiro o desenvolvimento puberal.
         </p>
       </div>
     </div>

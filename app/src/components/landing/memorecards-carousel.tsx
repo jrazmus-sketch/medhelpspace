@@ -16,45 +16,40 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Card = { src: string; title: string; specialty: string; grito: string };
 
-// 6 teaser cards, deliberately spanning 6 specialties to sell the
+// 5 teaser cards, deliberately spanning 5 specialties to sell the
 // "biblioteca por especialidade" promise. `grito` lines are the conclusions
-// printed on each poster (accurate, not invented).
+// printed on each poster (accurate, not invented) — keep them ≤ ~80 chars so
+// the strip below stays two lines and the device doesn't jump between cards.
 const CARDS: Card[] = [
   {
     src: "/landing/memorecards/card-1.webp",
-    title: "DRGE",
-    specialty: "Gastroenterologia",
-    grito: "Pirose + regurgitação + piora pós-prandial/ao deitar = pense em DRGE.",
+    title: "DRGE sem Alarme",
+    specialty: "Clínica Médica",
+    grito: "Sintomas típicos e sem alarme = IBP por 8 semanas antes de investigar.",
   },
   {
     src: "/landing/memorecards/card-2.webp",
-    title: "ITU na Gestação",
+    title: "Glicemia no Pré-natal",
     specialty: "Obstetrícia",
-    grito: "Gestante + urocultura positiva = não ignore; tratar protege mãe e feto.",
+    grito: "Jejum 92–125 no início = diabetes gestacional; ≥ 126 = diabetes na gestação.",
   },
   {
     src: "/landing/memorecards/card-3.webp",
-    title: "HPV e Colo Uterino",
+    title: "Amenorreia Primária",
     specialty: "Ginecologia",
-    grito: "HPV transitório é comum; persistência oncogênica = lesão precursora.",
+    grito: "Sem menstruar aos 15–16 anos = avalie primeiro o desenvolvimento puberal.",
   },
   {
     src: "/landing/memorecards/card-4.webp",
-    title: "Escarlatina",
+    title: "Doença de Kawasaki",
     specialty: "Pediatria",
-    grito: "Febre + amigdalite purulenta + exantema em lixa = escarlatina.",
+    grito: "Criança pequena + febre ≥ 5 dias = procure os critérios de Kawasaki.",
   },
   {
     src: "/landing/memorecards/card-5.webp",
-    title: "Crise Hipertensiva",
-    specialty: "Cardiologia",
-    grito: "PA muito alta + lesão aguda de órgão-alvo = emergência hipertensiva.",
-  },
-  {
-    src: "/landing/memorecards/card-6.webp",
-    title: "Obstrução de Delgado",
-    specialty: "Cirurgia",
-    grito: "Obstrução de delgado + sinais de complicação = cirurgia, não observação.",
+    title: "Diverticulite Aguda",
+    specialty: "Cirurgia Geral",
+    grito: "Dor na fossa ilíaca esquerda + febre = pense em diverticulite.",
   },
 ];
 
@@ -182,7 +177,8 @@ export function MemorecardsScreen({ color }: { color: string }) {
         <span className="mt-px flex-shrink-0 text-[9px]" style={{ color }} aria-hidden>
           ✦
         </span>
-        <p className="text-[8px] font-medium leading-snug" style={{ color: "var(--lp-fg-55)" }}>
+        {/* min-h reserves two lines so the device height doesn't jump per card */}
+        <p className="min-h-[22px] text-[8px] font-medium leading-snug" style={{ color: "var(--lp-fg-55)" }}>
           <span className="font-bold" style={{ color: "var(--lp-fg)" }}>
             Grito da prova:{" "}
           </span>
