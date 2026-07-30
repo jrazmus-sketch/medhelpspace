@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, ChevronRight, ChevronLeft, Calendar, Target, Clock, Check, Layers } from "lucide-react";
 import { completeCalibration, dismissCalibrationBanner } from "@/actions/study-plan";
 import type { ContentType } from "@/lib/study-plan/derive";
+import { todayKeyBR, diffDaysKey } from "@/lib/br-date";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -484,8 +485,8 @@ function countBits(mask: number): number {
 }
 
 function daysToDate(dateKey: string): number {
-  const target = new Date(dateKey + "T00:00:00").getTime();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.max(0, Math.ceil((target - today.getTime()) / 86_400_000));
+  // Counted on the Brazilian calendar day, like every other countdown in the
+  // product. This runs in the browser, so the device's timezone would otherwise
+  // decide the answer — off by one for a student sitting outside Brazil.
+  return Math.max(0, diffDaysKey(todayKeyBR(), dateKey.slice(0, 10)));
 }
