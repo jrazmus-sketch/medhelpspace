@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { todayKeyBR, toDateKeyBR, addDaysKey } from "@/lib/br-date";
 import { createClient } from "@/lib/supabase/server";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
@@ -19,14 +20,15 @@ function calcStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const unique = [...new Set(dates)].sort().reverse();
   let streak = 0;
-  const today = new Date().toISOString().split("T")[0];
+  // Brazilian calendar day — must match the dashboard's streak (app/page.tsx),
+  // which links here; on the server's UTC day the two showed different numbers
+  // for the same student every evening after 21:00 BRT.
+  const today = todayKeyBR();
   let cursor = today;
   for (const d of unique) {
     if (d === cursor) {
       streak++;
-      const prev = new Date(cursor);
-      prev.setDate(prev.getDate() - 1);
-      cursor = prev.toISOString().split("T")[0];
+      cursor = addDaysKey(cursor, -1);
     } else if (d < cursor) break;
   }
   return streak;
@@ -105,7 +107,7 @@ export default async function RelatorioPage() {
   const nowMs = Date.now();
   const total = attempts.length;
   const correct = attempts.filter((a) => a.is_correct).length;
-  const activityDates = attempts.map((a) => a.created_at.split("T")[0]);
+  const activityDates = attempts.map((a) => toDateKeyBR(a.created_at));
   const streak = calcStreak(activityDates);
   const studyDays = membership?.joined_at
     ? Math.max(0, Math.floor((nowMs - new Date(membership.joined_at).getTime()) / 86_400_000))
@@ -149,15 +151,15 @@ export default async function RelatorioPage() {
 
   // ── 30-day daily buckets
   const buckets = new Map<string, DayBucket>();
-  const today = new Date();
+  const todayBR = todayKeyBR();
   for (let i = 29; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().split("T")[0];
+    const key = addDaysKey(todayBR, -i);
     buckets.set(key, { date: key, total: 0, correct: 0 });
   }
   for (const a of attempts) {
-    const day = a.created_at.split("T")[0];
+    // Same Brazilian-day bucketing as the streak above, so a 21:30 BRT session
+    // is plotted on the day the student actually studied.
+    const day = toDateKeyBR(a.created_at);
     if (buckets.has(day)) {
       const b = buckets.get(day)!;
       b.total++;

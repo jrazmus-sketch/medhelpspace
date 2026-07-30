@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { todayKeyBR } from "@/lib/br-date";
 import {
   derivePlan,
   defaultPrefs,
@@ -44,7 +45,8 @@ export async function fetchAllSpecialtyPages(
 export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan | null> {
   const admin = createAdminClient();
 
-  const todayKey = new Date().toISOString().split("T")[0];
+  // The student's day in Brazil — NOT the server's UTC day (see lib/br-date.ts).
+  const todayKey = todayKeyBR();
 
   const [
     prefsRes,
@@ -58,6 +60,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     completionsRes,
     topicsRes,
     topicContentRes,
+    questionCountsRes,
   ] = await Promise.all([
     admin
       .from("study_plans")
@@ -92,8 +95,14 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     fetchAllSpecialtyPages(admin),
     admin
       .from("quiz_attempts")
-      .select("specialty_id, is_correct, created_at, page_id, error_category")
-      .eq("user_id", userId),
+      // question_id drives the mastery check (distinct questions answered, latest
+      // attempt each) — without it a page can never be judged complete. The
+      // explicit order makes "latest attempt wins" deterministic when two
+      // attempts on one question share a timestamp.
+      .select("specialty_id, is_correct, created_at, page_id, question_id, error_category")
+      .eq("user_id", userId)
+      .order("created_at")
+      .order("id"),
     admin
       .from("lesson_completions")
       .select("lesson_id, page_id, completed_at")
@@ -104,6 +113,11 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     admin
       .from("topic_content")
       .select("topic_id, resource_type, page_id, question_filter"),
+    // How many questions each quiz page holds — the denominator of the mastery
+    // check. One row per quiz page (~200), comfortably under PostgREST's
+    // 1000-row cap. If the view is missing (patch not applied yet) this simply
+    // returns an error and every topic falls back to its own incidence_count.
+    admin.from("quiz_page_question_counts").select("page_id, question_count"),
   ]);
 
   // Build prefs object, applying defaults for missing fields
@@ -162,12 +176,18 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     }
   }
 
+  const questionCountsByPageId = new Map<number, number>();
+  for (const r of questionCountsRes.data ?? []) {
+    questionCountsByPageId.set(Number(r.page_id), Number(r.question_count));
+  }
+
   const signals: Signals = {
     quizAttempts: (quizAttemptsRes.data ?? []) as Signals["quizAttempts"],
     lessonCompletions: (completionsRes.data ?? []) as Signals["lessonCompletions"],
     reviewDueToday: reviewDueToday ?? 0,
     lessonsByPageId,
     pauses: (pausesRes.data ?? []) as Signals["pauses"],
+    questionCountsByPageId,
   };
 
   return derivePlan({
@@ -254,7 +274,7 @@ export async function getStudyPlanPauses(userId: string): Promise<{
   id: number;
 }[]> {
   const admin = createAdminClient();
-  const todayKey = new Date().toISOString().split("T")[0];
+  const todayKey = todayKeyBR();
   const { data } = await admin
     .from("study_plan_pauses")
     .select("id, pause_from, pause_until, reason")

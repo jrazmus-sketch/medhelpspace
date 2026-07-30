@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { todayKeyBR } from "@/lib/br-date";
 
 /**
  * Server-side review queries. Per the project's data-fetching invariant these
@@ -7,8 +8,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * service-role pattern the dashboard uses for per-user data.
  */
 
+// The student's day in Brazil. On the server's UTC day, the /app nav review
+// badge and /app/revisao released cards a day early every evening — and
+// disagreed with the plan card, which counts due items on the Brazilian day.
 function todayKey(): string {
-  return new Date().toISOString().split("T")[0];
+  return todayKeyBR();
 }
 
 // ── Counts ─────────────────────────────────────────────────────────────────────

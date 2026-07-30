@@ -19,9 +19,17 @@
  *  - Paused state early-returns (no wasted item-building work)
  *  - questionsTarget/lessonsTarget now actually drive plan size (fixed dead values)
  *  - error-classification tilt: specialties with knowledge-gap errors surface sooner
+ *
+ * V2.1 (planner audit fixes):
+ *  - every "today" is the STUDENT's day in America/São_Paulo, never the server's
+ *    UTC day (see lib/br-date.ts). Vercel runs UTC, so the old code rolled over
+ *    to tomorrow at 21:00 BRT.
+ *  - a topic's quiz is retired from the plan by MASTERY, not by a single answered
+ *    question. See isPageMastered below.
  */
 
 import { GAP_ERROR_CATEGORIES, type QuizErrorCategory } from "@/lib/quiz-errors";
+import { todayKeyBR, toDateKeyBR, dayOfWeekForKey, addDaysKey, diffDaysKey } from "@/lib/br-date";
 
 export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
@@ -135,11 +143,18 @@ export type CohortInfo = {
 };
 
 export type Signals = {
-  quizAttempts: { specialty_id: number | null; is_correct: boolean; created_at: string; page_id: number; error_category?: string | null }[];
+  quizAttempts: { specialty_id: number | null; is_correct: boolean; created_at: string; page_id: number; question_id?: number | null; error_category?: string | null }[];
   lessonCompletions: { lesson_id: number; page_id: number; completed_at: string }[];
   reviewDueToday: number;
   lessonsByPageId: Map<number, number>;
   pauses: { pause_from: string; pause_until: string; reason: string | null }[];
+  /**
+   * page_id → how many quiz questions that page actually holds (from the
+   * `quiz_page_question_counts` view). Drives the mastery check below. An empty
+   * map is safe: each topic falls back to its own `incidence_count`, which
+   * equals the question count for 199 of 211 topics.
+   */
+  questionCountsByPageId?: Map<number, number>;
 };
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -147,6 +162,81 @@ export type Signals = {
 const MEDHELP_60D_MODULE_ID = 1;
 
 const DAY_NAMES_PT = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
+/**
+ * Share of a page's questions a student must currently be getting right before
+ * the topic stops being scheduled. Mirrors the Roteiro's "dominado" threshold
+ * (lib/study-plan/roadmap.ts) so the two surfaces never disagree.
+ */
+const MASTERY_ACCURACY = 0.7;
+
+type PageProgress = { answered: number; correct: number };
+
+/**
+ * Per-page progress from the raw attempt log, counted by DISTINCT question using
+ * each question's LATEST attempt.
+ *
+ * Counting raw attempts would let a student "finish" a 30-question page by
+ * answering the same question 30 times, and would permanently hold accuracy down
+ * after a retry session (the wrong first attempt keeps counting). Latest-attempt
+ * semantics match what the student believes: "I get these right now."
+ */
+export function buildPageProgress(
+  attempts: Signals["quizAttempts"],
+): Map<number, PageProgress> {
+  // page_id → question_id → { correct, at }
+  const latest = new Map<number, Map<number, { correct: boolean; at: string }>>();
+  for (const a of attempts) {
+    // An attempt with no question_id proves nothing about coverage — it could be
+    // the same question answered ten times. quiz_attempts.question_id is NOT
+    // NULL, so this only guards synthesized signals (e.g. the funnel preview).
+    if (a.question_id == null) continue;
+    const qid = a.question_id;
+    let byQuestion = latest.get(a.page_id);
+    if (!byQuestion) {
+      byQuestion = new Map();
+      latest.set(a.page_id, byQuestion);
+    }
+    const prev = byQuestion.get(qid);
+    if (!prev || a.created_at > prev.at) {
+      byQuestion.set(qid, { correct: a.is_correct, at: a.created_at });
+    } else if (a.created_at === prev.at && prev.correct && !a.is_correct) {
+      // Exact tie on the same question: resolve toward the WRONG answer, so the
+      // verdict does not depend on row order. Ambiguous data must never be the
+      // thing that promotes a topic to "mastered" and drops it from the plan.
+      byQuestion.set(qid, { correct: false, at: a.created_at });
+    }
+  }
+  const out = new Map<number, PageProgress>();
+  for (const [pageId, byQuestion] of latest) {
+    let correct = 0;
+    for (const v of byQuestion.values()) if (v.correct) correct++;
+    out.set(pageId, { answered: byQuestion.size, correct });
+  }
+  return out;
+}
+
+/**
+ * A quiz page leaves the daily plan only once the student has answered every
+ * question on it AND is currently at or above the mastery threshold.
+ *
+ * The previous rule retired a page after ONE answered question, so a topic could
+ * disappear from the plan forever after a single tap — the plan drained itself
+ * and then claimed "você já cobriu o material" while the Roteiro still showed the
+ * topic as em andamento.
+ */
+export function isPageMastered(
+  progress: PageProgress | undefined,
+  totalQuestions: number,
+): boolean {
+  if (!progress || progress.answered === 0) return false;
+  // An unknown/absurd total means "we cannot prove this page is finished" — so
+  // never retire it. NaN must be caught explicitly: every comparison against it
+  // is false, so a bare `totalQuestions <= 0` check would let it through.
+  if (!Number.isFinite(totalQuestions) || totalQuestions <= 0) return false;
+  if (progress.answered < totalQuestions) return false;
+  return progress.correct / progress.answered >= MASTERY_ACCURACY;
+}
 
 // ── Defaults helper ──────────────────────────────────────────────────────────
 
@@ -185,18 +275,20 @@ export function derivePlan(args: {
   const { prefs, cohort, specialties, pages, topics, topicContent, signals } = args;
 
   // ── Date setup ────────────────────────────────────────────────────────────
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayKey = today.toISOString().split("T")[0];
-  const dayOfWeek = today.getDay(); // 0=Sun..6=Sat
+  // Everything below is anchored to the STUDENT's calendar day in Brazil. The
+  // server runs UTC, so deriving "today" from the server clock moved the plan a
+  // day forward every night at 21:00 BRT.
+  const todayKey = todayKeyBR();
+  const dayOfWeek = dayOfWeekForKey(todayKey); // 0=Sun..6=Sat
   const dayBit = 1 << dayOfWeek;
 
   // ── Phase detection ──────────────────────────────────────────────────────
   let daysToExam: number | null = null;
   let phase: Phase = "foundation";
   if (cohort?.test_date) {
-    const exam = new Date(cohort.test_date + "T00:00:00");
-    daysToExam = Math.max(0, Math.ceil((exam.getTime() - today.getTime()) / 86_400_000));
+    // test_date is a DATE column ("2027-01-15"); tolerate a full timestamp too.
+    const examKey = cohort.test_date.slice(0, 10);
+    daysToExam = Math.max(0, diffDaysKey(todayKey, examKey));
     if (daysToExam <= 14) phase = "taper";
     else if (daysToExam <= prefs.intensification_start_days) phase = "intensification";
     else phase = "foundation";
@@ -256,8 +348,10 @@ export function derivePlan(args: {
   }
 
   // ── Progress today (always computed for dashboard card) ──────────────────
-  const todayAttempts = signals.quizAttempts.filter((a) => a.created_at.startsWith(todayKey));
-  const todayCompletions = signals.lessonCompletions.filter((c) => c.completed_at.startsWith(todayKey));
+  // created_at/completed_at are UTC timestamps — compare on the Brazilian
+  // calendar day they fall on, not on their UTC date prefix.
+  const todayAttempts = signals.quizAttempts.filter((a) => toDateKeyBR(a.created_at) === todayKey);
+  const todayCompletions = signals.lessonCompletions.filter((c) => toDateKeyBR(c.completed_at) === todayKey);
   const progressToday = {
     questionsAnswered: todayAttempts.length,
     lessonsCompleted: todayCompletions.length,
@@ -286,11 +380,11 @@ export function derivePlan(args: {
   } else if ((prefs.recurring_off_days & dayBit) !== 0) {
     paused = true;
     pauseReason = { type: "recurring_off", dayName: DAY_NAMES_PT[dayOfWeek] };
-    nextAvailableDate = nextDayMatchingMask(today, prefs.available_days & ~prefs.recurring_off_days, signals.pauses);
+    nextAvailableDate = nextDayMatchingMask(todayKey, prefs.available_days & ~prefs.recurring_off_days, signals.pauses);
   } else if ((prefs.available_days & dayBit) === 0) {
     paused = true;
     pauseReason = { type: "weekly_off", dayName: DAY_NAMES_PT[dayOfWeek] };
-    nextAvailableDate = nextDayMatchingMask(today, prefs.available_days & ~prefs.recurring_off_days, signals.pauses);
+    nextAvailableDate = nextDayMatchingMask(todayKey, prefs.available_days & ~prefs.recurring_off_days, signals.pauses);
   }
 
   // ── Early return for paused state — don't waste compute on items ─────────
@@ -355,10 +449,14 @@ export function derivePlan(args: {
     ranked.push(...allRanked.sort((a, b) => b.weight - a.weight));
   }
 
-  // ── Content type prefs + already-completed quiz pages ────────────────────
+  // ── Content type prefs + per-page quiz progress ──────────────────────────
   const allowedTypes = new Set(prefs.preferred_content_types);
-  const completedQuizPages = new Set<number>();
-  for (const a of signals.quizAttempts) completedQuizPages.add(a.page_id);
+  const pageProgress = buildPageProgress(signals.quizAttempts);
+  const questionCounts = signals.questionCountsByPageId ?? new Map<number, number>();
+  // Pages already emitted in THIS run — three topics can share one quiz page
+  // (e.g. the 7 urology sub-topics on page 90242), and the plan must not list
+  // the same link three times.
+  const emittedQuizPages = new Set<number>();
 
   // ── Topic → content pointers (from topic_content) ────────────────────────
   const contentByTopic = new Map<number, TopicContentRow[]>();
@@ -445,31 +543,63 @@ export function derivePlan(args: {
     const topicRows = contentByTopic.get(topic.id) ?? [];
     let emitted = false;
 
-    // QUIZ — the primary driver; skip topics whose quiz page is already done.
+    // QUIZ — the primary driver. A topic stays in rotation until its quiz page
+    // is MASTERED (every question answered, currently ≥70% right). Partially
+    // answered pages come back with their progress shown, so an interrupted
+    // topic is resumed instead of silently dropped.
     if (allowedTypes.has("quiz")) {
       const quizPage = contentPageFor(topic, "quiz");
-      if (quizPage && !completedQuizPages.has(quizPage.id)) {
-        const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
-        items.push({
-          kind: "quiz",
-          title: topic.name,
-          subtitle: `${specInfo.name} · ${tierLabel} · ${topic.incidence_count} no exame`,
-          href: `/app/${specInfo.slug}/${quizPage.slug}`,
-          estimatedMinutes: Math.round(15 * minutesScale),
-          iconHint: "quiz",
-          reason:
-            gapWeight >= 0.5
-              ? "Você tem errado por conteúdo aqui — reforce este tema"
-              : weakness > 0.5
-                ? "Ponto fraco + alta incidência no Revalida"
-                : topic.priority_tier === "A"
-                  ? "Tema de altíssima incidência no Revalida"
-                  : "Próximo tema por incidência no exame",
-          specialtyId: topic.specialty_id as number,
-          pageId: quizPage.id,
-        });
-        completedQuizPages.add(quizPage.id);
-        emitted = true;
+      if (quizPage && !emittedQuizPages.has(quizPage.id)) {
+        const progress = pageProgress.get(quizPage.id);
+        // The page's real question count, falling back to the topic's incidence
+        // (equal for 199 of 211 topics) when the view is unavailable or returns
+        // something unusable. A total of 0 means the page has nothing to answer:
+        // scheduling it would pin an item that can never be completed, so it is
+        // skipped rather than shown forever.
+        const viewCount = questionCounts.get(quizPage.id);
+        const totalQuestions =
+          typeof viewCount === "number" && Number.isFinite(viewCount) && viewCount > 0
+            ? viewCount
+            : topic.incidence_count;
+        if (totalQuestions > 0 && !isPageMastered(progress, totalQuestions)) {
+          const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
+          const answered = progress?.answered ?? 0;
+          const inProgress = answered > 0;
+          // Clamp: a question deleted after being answered would otherwise read
+          // "18 de 15 questões".
+          const shownAnswered = Math.min(answered, totalQuestions);
+          // Fully answered but still under the 70% bar — say so, because
+          // "retome de onde parou" on a 20-de-20 item reads as a bug.
+          const accuracyPct = inProgress ? Math.round((progress!.correct / answered) * 100) : 0;
+          const needsAccuracy = inProgress && answered >= totalQuestions;
+          items.push({
+            kind: "quiz",
+            title: topic.name,
+            subtitle: needsAccuracy
+              ? `${specInfo.name} · ${accuracyPct}% de acerto · revise os erros`
+              : inProgress
+                ? `${specInfo.name} · ${shownAnswered} de ${totalQuestions} questões`
+                : `${specInfo.name} · ${tierLabel} · ${topic.incidence_count} no exame`,
+            href: `/app/${specInfo.slug}/${quizPage.slug}`,
+            estimatedMinutes: Math.round(15 * minutesScale),
+            iconHint: "quiz",
+            reason: needsAccuracy
+              ? `Você respondeu tudo, mas ainda está em ${accuracyPct}% — refaça para fixar`
+              : inProgress
+                ? "Retome de onde parou neste tema"
+                : gapWeight >= 0.5
+                ? "Você tem errado por conteúdo aqui — reforce este tema"
+                : weakness > 0.5
+                  ? "Ponto fraco + alta incidência no Revalida"
+                  : topic.priority_tier === "A"
+                    ? "Tema de altíssima incidência no Revalida"
+                    : "Próximo tema por incidência no exame",
+            specialtyId: topic.specialty_id as number,
+            pageId: quizPage.id,
+          });
+          emittedQuizPages.add(quizPage.id);
+          emitted = true;
+        }
       }
     }
 
@@ -613,23 +743,18 @@ function countBits(mask: number): number {
 }
 
 function nextDateAfter(dateKey: string): string {
-  const d = new Date(dateKey + "T00:00:00");
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0];
+  return addDaysKey(dateKey, 1);
 }
 
 function nextDayMatchingMask(
-  from: Date,
+  fromKey: string,
   mask: number,
   pauses: { pause_from: string; pause_until: string }[],
 ): string | null {
   if (mask === 0) return null; // no days are available — no resume date
-  const cursor = new Date(from);
   for (let i = 1; i <= 30; i++) {
-    cursor.setDate(cursor.getDate() + 1);
-    const day = cursor.getDay();
-    const key = cursor.toISOString().split("T")[0];
-    if ((mask & (1 << day)) === 0) continue;
+    const key = addDaysKey(fromKey, i);
+    if ((mask & (1 << dayOfWeekForKey(key))) === 0) continue;
     const inPause = pauses.some((p) => p.pause_from <= key && p.pause_until >= key);
     if (inPause) continue;
     return key;

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { todayKeyBR } from "@/lib/br-date";
 import type { Intensity, ContentType, WeaknessSensitivity } from "@/lib/study-plan/derive";
 
 // NOTE: A "use server" module may only export async functions. Do NOT re-export
@@ -124,7 +125,9 @@ export async function skipToday(reason?: string): Promise<void> {
   const user = await getUser();
   if (!user) return;
   const supabase = await createClient();
-  const todayKey = new Date().toISOString().split("T")[0];
+  // The student's today in Brazil — a UTC key would skip TOMORROW for anyone
+  // tapping "pular hoje" after 21:00 BRT.
+  const todayKey = todayKeyBR();
   await supabase.from("study_plan_pauses").insert({
     user_id: user.id,
     pause_from: todayKey,

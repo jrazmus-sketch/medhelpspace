@@ -1,16 +1,27 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildPageProgress, isPageMastered, type Signals } from "./derive";
 
 /**
  * Roadmap ("Roteiro") data — a read-only projection of the full incidence-ranked
  * topic arc, grouped by priority tier, with per-topic progress. This is the
  * whole-course view that complements the adaptive daily plan (no frozen dates).
  *
- * Status is derived cheaply from quiz_attempts (no review_schedule join):
+ * Status:
  *   - nao_iniciado : no attempts on the topic's quiz page
- *   - dominado     : answered ≥ all its questions AND accuracy ≥ 70%
+ *   - dominado     : every question on the page answered AND accuracy ≥ 70%
  *   - em_andamento : started but not yet mastered
- * `topic.incidence_count` already equals the number of quiz questions on the
- * source page (that's how it was seeded), so it doubles as the "total" here.
+ *
+ * "Dominado" MUST mean exactly what the daily plan means by "retired", or the
+ * two surfaces contradict each other — the Roteiro would call a topic finished
+ * while the plan keeps scheduling it, or vice versa. So this shares the engine's
+ * buildPageProgress + isPageMastered rather than re-deriving:
+ *   - progress counts DISTINCT questions (latest attempt each), so answering one
+ *     question twenty times no longer reads as a mastered twenty-question page;
+ *   - the denominator is the page's REAL question count from
+ *     quiz_page_question_counts, not `incidence_count`. Those agree for 199 of
+ *     211 topics, but the 12 sub-topics that share a coarse source page (e.g. the
+ *     7 urology topics on one 30-question page) were flipping to "Dominado" after
+ *     2–6 answers, which also inflated the "N dominados" headline.
  */
 
 export type RoadmapStatus = "nao_iniciado" | "em_andamento" | "dominado";
@@ -49,14 +60,22 @@ const TIER_LABEL: Record<string, string> = {
 export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
   const admin = createAdminClient();
 
-  const [topicsRes, specialtiesRes, attemptsRes] = await Promise.all([
+  const [topicsRes, specialtiesRes, attemptsRes, questionCountsRes] = await Promise.all([
     admin
       .from("topics")
       .select("id, name, specialty_id, source_page_id, incidence_count, priority_tier")
       .not("priority_tier", "is", null)
       .order("incidence_count", { ascending: false }),
     admin.from("specialties").select("id, name, slug"),
-    admin.from("quiz_attempts").select("page_id, is_correct").eq("user_id", userId),
+    admin
+      .from("quiz_attempts")
+      .select("page_id, is_correct, created_at, question_id")
+      .eq("user_id", userId)
+      .order("created_at")
+      .order("id"),
+    // Real per-page question totals. If the view is unavailable each topic falls
+    // back to its own incidence_count (correct for 199 of 211).
+    admin.from("quiz_page_question_counts").select("page_id, question_count"),
   ]);
 
   const specialties = (specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[];
@@ -74,13 +93,11 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
     for (const p of pages ?? []) pageSlugById.set(p.id as number, p.slug as string);
   }
 
-  // Per-page attempt tally.
-  const byPage = new Map<number, { n: number; correct: number }>();
-  for (const a of (attemptsRes.data ?? []) as { page_id: number; is_correct: boolean }[]) {
-    const b = byPage.get(a.page_id) ?? { n: 0, correct: 0 };
-    b.n++;
-    if (a.is_correct) b.correct++;
-    byPage.set(a.page_id, b);
+  // Per-page progress — the SAME computation the daily plan uses.
+  const byPage = buildPageProgress((attemptsRes.data ?? []) as Signals["quizAttempts"]);
+  const questionCounts = new Map<number, number>();
+  for (const r of questionCountsRes.data ?? []) {
+    questionCounts.set(Number(r.page_id), Number(r.question_count));
   }
 
   // Build per-tier buckets. Outros is no longer guarded — its coarse buckets were
@@ -95,11 +112,14 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
     if (!spec) continue;
 
     const tally = t.source_page_id != null ? byPage.get(t.source_page_id) : undefined;
-    const n = tally?.n ?? 0;
-    const accuracy = n > 0 ? (tally as { correct: number }).correct / n : null;
+    const n = tally?.answered ?? 0;
+    const accuracy = n > 0 ? tally!.correct / n : null;
+    const totalQuestions =
+      (t.source_page_id != null ? questionCounts.get(t.source_page_id) : undefined)
+      ?? t.incidence_count;
     let status: RoadmapStatus;
     if (n === 0) status = "nao_iniciado";
-    else if (n >= t.incidence_count && (accuracy ?? 0) >= 0.7) status = "dominado";
+    else if (isPageMastered(tally, totalQuestions)) status = "dominado";
     else status = "em_andamento";
 
     if (status !== "nao_iniciado") started++;

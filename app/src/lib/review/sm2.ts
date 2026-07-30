@@ -8,6 +8,9 @@
  *   Correct   → repetitions++; interval 1 → 6 → round(prev × ease); ease unchanged
  *   Incorrect → repetitions = 0; interval = 1; ease -= 0.20 (floor 1.3); lapses++
  */
+
+import { todayKeyBR, addDaysKey } from "@/lib/br-date";
+
 export type ReviewResult = "correct" | "incorrect";
 
 export interface Sm2State {
@@ -44,9 +47,12 @@ export function nextSm2(prev: Sm2State, result: ReviewResult): Sm2State {
   return { ease_factor: ease, interval_days: interval, repetitions, lapses };
 }
 
-/** Days from today → an ISO `YYYY-MM-DD` due date. */
+/**
+ * Days from today → an ISO `YYYY-MM-DD` due date, counted from the STUDENT's day
+ * in Brazil. Off the server clock, a card graded at 22:00 BRT with interval 1 was
+ * scheduled for the day after tomorrow — and a lapsed card (interval 1) is
+ * exactly the one needed tomorrow.
+ */
 export function dueDateAfter(intervalDays: number): string {
-  const due = new Date();
-  due.setDate(due.getDate() + intervalDays);
-  return due.toISOString().split("T")[0];
+  return addDaysKey(todayKeyBR(), intervalDays);
 }

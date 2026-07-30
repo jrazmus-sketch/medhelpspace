@@ -532,15 +532,32 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     subject: "Seu plano de estudos para hoje",
     kicker: "Olá, {{displayName}}",
     headline: "Plano de hoje",
-    body_html:
-      "Seu plano personalizado está pronto na plataforma. Abra para ver as tarefas específicas baseadas no seu desempenho atual.{{daysToExamLine}}",
+    // The tasks themselves are IN the e-mail ({{planItems}}) — the cron only sends
+    // when the derived plan has at least one item, so this body never renders empty.
+    body_html: `<p style="margin:0 0 18px;font-size:15px;color:#4b5563;line-height:1.65;">
+  Estas são as tarefas que o seu plano recomenda para hoje — cerca de <strong style="color:#111827;">{{totalMinutes}} minutos</strong> de estudo.{{daysToExamLine}}
+</p>
+{{planItems}}
+<p style="margin:18px 0 0;font-size:13px;color:#9ca3af;line-height:1.6;">
+  Marque o que concluir na plataforma — o plano de amanhã se ajusta ao seu ritmo.
+</p>`,
     cta_label: "Abrir plano de hoje →",
     cta_href: "/app/plano",
     variables: [
       { tag: "displayName", description: "Primeiro nome do membro" },
       {
+        tag: "planItems",
+        description:
+          "Lista das tarefas do dia em HTML (título, subtítulo e duração de cada item, com link) — gerada pelo cron a partir do plano derivado",
+      },
+      {
+        tag: "totalMinutes",
+        description: "Tempo estimado total do plano de hoje, em minutos (só o número)",
+      },
+      {
         tag: "daysToExamLine",
-        description: "Frase opcional com a contagem regressiva da prova (pode vir vazia)",
+        description:
+          "Frase opcional com a contagem regressiva da prova (vazia enquanto a banca não confirma a data da turma)",
       },
     ],
     active: true,
@@ -1602,7 +1619,30 @@ export const SAMPLE_VARS: Record<string, string> = {
   endsAt: "30 de novembro de 2026",
   summaryBody:
     "Esta semana: <strong>42 questões</strong> respondidas com <strong>78% de acerto</strong>, <strong>5 aulas</strong> concluídas, em <strong>4 dias</strong> ativos. Faltam 120 dias para a prova.",
-  daysToExamLine: " <br/><br/>Faltam <strong>120 dias</strong> para sua prova.",
+  // No leading <br/><br/> — this sentence now CLOSES the daily-plan intro
+  // paragraph rather than standing alone. The preview and "Enviar teste" must
+  // show what the cron actually sends.
+  daysToExamLine: " Faltam <strong>120 dias</strong> para a sua prova.",
+  // The daily-plan task list is generated per student by the lifecycle cron; the
+  // sample mirrors one row of renderPlanItemsHtml so preview/test-send look real.
+  planItems:
+    `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;margin:0 0 10px;background:#f9f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:13px 16px;">
+      <a href="#" style="font-size:15px;font-weight:700;color:#7a1d91;text-decoration:none;line-height:1.4;">Tuberculose</a>
+      <p style="margin:5px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">Pneumologia &middot; prioridade A &middot; 14 no exame &nbsp;·&nbsp; ~15 min</p>
+    </td>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;margin:0 0 10px;background:#f9f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:13px 16px;">
+      <a href="#" style="font-size:15px;font-weight:700;color:#7a1d91;text-decoration:none;line-height:1.4;">8 itens para revisar</a>
+      <p style="margin:5px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">Repetição espaçada &middot; SM-2 &nbsp;·&nbsp; ~4 min</p>
+    </td>
+  </tr>
+</table>`,
+  totalMinutes: "45",
   // Admin-alert samples
   buyerName: "João Silva",
   buyerEmail: "joao.silva@example.com",

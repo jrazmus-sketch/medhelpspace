@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { todayKeyBR } from "@/lib/br-date";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getPageSiblings } from "@/lib/page-siblings";
 import { getAudiocardsSlugForSpecialty } from "@/lib/audiocards/discovery";
@@ -60,7 +61,10 @@ export async function FlashcardRenderer({
   const progressByCard = new Map<number, { due_date: string; repetitions: number }>();
   const latestResultByCard = new Map<number, "correct" | "incorrect">();
   let dueTodayCount = 0;
-  const todayKey = new Date().toISOString().split("T")[0];
+  // Brazilian calendar day — must match the SM-2 due dates written by
+  // lib/review/sm2.ts and the counts in lib/review/queries.ts, or the player
+  // releases cards a day early every evening.
+  const todayKey = todayKeyBR();
 
   if (!USE_MOCK_DATA) {
     try {

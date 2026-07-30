@@ -4,8 +4,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { Resend } from "resend";
 import crypto from "node:crypto";
 import { getEmailSettings, getEmailTemplate } from "@/lib/email";
-import { renderEmail, type EmailTemplateRow } from "@/lib/email-render";
+import { renderEmail, escapeHtml, type EmailTemplateRow } from "@/lib/email-render";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
+import {
+  todayKeyBR,
+  toDateKeyBR,
+  addDaysKey,
+  diffDaysKey,
+  dayOfWeekBR,
+  dayOfWeekForKey,
+} from "@/lib/br-date";
+import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
+import type { PlanItem } from "@/lib/study-plan/derive";
 
 // Mirror of scripts/send-lifecycle-notifications.js, ported for Vercel Cron.
 // Schedule: configured in app/vercel.json (daily 11:00 UTC = 08:00 BRT).
@@ -22,18 +32,97 @@ const FLASHCARD_DUE_THRESHOLD = 10;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// "Today" is the STUDENT's today (America/São_Paulo), never the server's. The cron
+// fires at 11:00 UTC = 08:00 BRT so UTC usually agrees, but every comparison below
+// runs against a DATE column (unlock_date, pause_from/until) or becomes an email_log
+// context_id, and those must be the Brazilian calendar date or a retry/re-deploy
+// after 21:00 BRT would silently address tomorrow. See lib/br-date.ts.
 function todayKey() {
-  return new Date().toISOString().split("T")[0];
+  return todayKeyBR();
 }
 function offsetDateKey(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
+  return addDaysKey(todayKeyBR(), days);
 }
 function fmtPtBr(dateStr: string) {
   return new Date(dateStr + "T12:00:00").toLocaleDateString("pt-BR", {
     day: "numeric", month: "long", year: "numeric",
   });
+}
+
+// ── Pause state (study plan V2) ──────────────────────────────────────────────
+//
+// `study_plans.paused_until` was retired by schema-patch-study-plans-v2.sql — the
+// column still exists for back-compat but nothing writes it any more, so gating on
+// it meant vacationing students and students on a plantão day kept getting the
+// daily plan and the missed-days nudge. Real pause state is three things, matching
+// the precedence in lib/study-plan/derive.ts:
+//   (a) an explicit study_plan_pauses date range covering today,
+//   (b) today's weekday bit set in recurring_off_days (plantão pattern),
+//   (c) today's weekday bit NOT set in available_days.
+// Both masks are bit0=Sunday … bit6=Saturday.
+const ALL_DAYS_MASK = 127;
+
+type PlanRow = {
+  user_id: string;
+  available_days?: number | null;
+  recurring_off_days?: number | null;
+  email_daily_plan?: boolean | null;
+  email_weekly_summary?: boolean | null;
+};
+type PauseRow = { user_id: string; pause_from: string; pause_until: string };
+
+// A missing study_plans row is NOT paused (the student simply never customised a
+// plan) — the weekly-summary default-ON semantics depend on that.
+function isPausedToday(
+  plan: PlanRow | null | undefined,
+  pauses: PauseRow[],
+  today: string = todayKeyBR(),
+): boolean {
+  if (isOnBreak(pauses, today)) return true;
+  if (!plan) return false;
+  const dayBit = 1 << dayOfWeekForKey(today);
+  if (((plan.recurring_off_days ?? 0) & dayBit) !== 0) return true;
+  if (((plan.available_days ?? ALL_DAYS_MASK) & dayBit) === 0) return true;
+  return false;
+}
+
+/**
+ * Only the explicit date-range pauses (vacation, exam week) — NOT the weekly
+ * availability pattern.
+ *
+ * Use this for anything RETROSPECTIVE. "Today isn't one of your study days" is a
+ * correct reason to skip today's task list; it is a wrong reason to withhold a
+ * recap of the week that just happened. The weekly summary only runs on Mondays,
+ * so gating it on `isPausedToday` would compose into "never" for every student
+ * whose schedule excludes Monday — e.g. a Tue/Thu/weekend plan (available_days
+ * = 85), which is a real, opted-in student in production.
+ */
+function isOnBreak(pauses: PauseRow[], today: string = todayKeyBR()): boolean {
+  return pauses.some((p) => p.pause_from <= today && p.pause_until >= today);
+}
+
+// ── Daily-plan email body ────────────────────────────────────────────────────
+//
+// One table row per plan item. Table + inline styles only (no flexbox, no external
+// CSS) — Gmail/Outlook strip everything else. Titles/subtitles come from DB content
+// (topic names) so they are escaped before landing in the HTML.
+function renderPlanItemsHtml(items: PlanItem[], appUrl: string): string {
+  return items
+    .map((item) => {
+      // Item hrefs are site-relative ("/app/cardiologia/foo"); make them absolute
+      // exactly the way renderEmail's resolveHref() does for cta_href.
+      const href = item.href.startsWith("/") ? `${appUrl}${item.href}` : item.href;
+      const minutes = Math.max(1, Math.round(item.estimatedMinutes));
+      return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;margin:0 0 10px;background:#f9f5ff;border-radius:8px;">
+  <tr>
+    <td style="padding:13px 16px;">
+      <a href="${href}" style="font-size:15px;font-weight:700;color:#7a1d91;text-decoration:none;line-height:1.4;">${escapeHtml(item.title)}</a>
+      <p style="margin:5px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">${escapeHtml(item.subtitle)} &nbsp;·&nbsp; ~${minutes} min</p>
+    </td>
+  </tr>
+</table>`;
+    })
+    .join("\n");
 }
 
 type LogLine = string;
@@ -176,7 +265,7 @@ export async function GET(request: NextRequest) {
     const now = new Date().toISOString();
     const { data: memberships } = await supabase
       .from("user_cohort_memberships")
-      .select("user_id, cohort:cohorts(id, name, membership_starts_at, membership_ends_at, test_date)");
+      .select("user_id, cohort:cohorts(id, name, membership_starts_at, membership_ends_at, test_date, date_confirmed)");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const active = (memberships ?? []).filter((m: any) => {
       const c = m.cohort;
@@ -184,14 +273,30 @@ export async function GET(request: NextRequest) {
     });
     const userIds = active.map((m) => m.user_id as string);
     if (userIds.length === 0) return [];
-    const [{ data: profiles }, { data: plans }] = await Promise.all([
+    const today = todayKey();
+    // NOTE: these `.in("user_id", userIds)` selects are subject to PostgREST's
+    // 1000-row cap and would silently truncate on a large membership. Fine at the
+    // current member count; paginate with .range() if the cohort ever outgrows it.
+    const [{ data: profiles }, { data: plans }, { data: pauses }] = await Promise.all([
       supabase.from("profiles").select("id, email, display_name").in("id", userIds),
       supabase.from("study_plans")
-        .select("user_id, intensity, email_daily_plan, email_weekly_summary, paused_until")
+        // paused_until deliberately NOT selected — retired by study-plans-v2.
+        .select("user_id, intensity, email_daily_plan, email_weekly_summary, available_days, recurring_off_days")
         .in("user_id", userIds),
+      supabase.from("study_plan_pauses")
+        .select("user_id, pause_from, pause_until")
+        .in("user_id", userIds)
+        .lte("pause_from", today)
+        .gte("pause_until", today),
     ]);
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-    const planMap = new Map((plans ?? []).map((p) => [p.user_id, p]));
+    const planMap = new Map((plans ?? []).map((p) => [p.user_id, p as PlanRow]));
+    const pauseMap = new Map<string, PauseRow[]>();
+    for (const p of (pauses ?? []) as PauseRow[]) {
+      const list = pauseMap.get(p.user_id);
+      if (list) list.push(p);
+      else pauseMap.set(p.user_id, [p]);
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return active.map((m: any) => {
       const profile = profileMap.get(m.user_id);
@@ -201,6 +306,7 @@ export async function GET(request: NextRequest) {
         display_name: (profile?.display_name as string | null) ?? null,
         cohort: m.cohort,
         plan: planMap.get(m.user_id) ?? null,
+        pauses: pauseMap.get(m.user_id) ?? [],
       };
     }).filter((s): s is typeof s & { email: string } =>
       typeof s.email === "string" && s.email.length > 0,
@@ -352,13 +458,16 @@ export async function GET(request: NextRequest) {
 
   // ── [4/8] Weekly summary (Mondays only) ──────────────────────────────────
   push(`\n[4/8] Weekly summary…`);
-  if (new Date().getDay() !== 1) push("  Skipped (not Monday).");
+  if (dayOfWeekBR() !== 1) push("  Skipped (not Monday).");
   else {
     const students = await getActiveStudents();
+    // Default ON: a student with no study_plans row still gets the summary.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eligible = students.filter((s: any) => {
+      // isOnBreak, NOT isPausedToday — this recap must reach students whose weekly
+      // schedule excludes Monday. See the note on isOnBreak.
+      if (isOnBreak(s.pauses)) return false;
       if (!s.plan) return true;
-      if (s.plan.paused_until && s.plan.paused_until >= todayKey()) return false;
       return s.plan.email_weekly_summary !== false;
     });
     push(`  ${eligible.length} eligible students`);
@@ -377,9 +486,13 @@ export async function GET(request: NextRequest) {
         const correctQ = (attempts ?? []).filter((a) => a.is_correct).length;
         const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : null;
         const lessonsDone = completions ?? 0;
-        const daysActive = new Set((attempts ?? []).map((a) => (a.created_at as string).split("T")[0])).size;
-        const daysToExam = s.cohort?.test_date
-          ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
+        // Bucket by the student's Brazilian day. On the raw UTC prefix, one
+        // evening straddling 21:00 BRT counted as two active days.
+        const daysActive = new Set((attempts ?? []).map((a) => toDateKeyBR(a.created_at as string))).size;
+        // The countdown stays hidden until the banca confirms the date — same rule
+        // the rest of the product follows (60d-unlock email, cohort-timing copy).
+        const daysToExam = s.cohort?.test_date && s.cohort?.date_confirmed
+          ? Math.max(0, diffDaysKey(todayKey(), toDateKeyBR(s.cohort.test_date)))
           : null;
         const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
         const body = totalQ === 0 && lessonsDone === 0
@@ -408,25 +521,51 @@ export async function GET(request: NextRequest) {
   push(`\n[5/8] Daily plan email (opt-in)…`);
   {
     const students = await getActiveStudents();
+    // Opt-in only: no study_plans row means the student never enabled this.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eligible = students.filter((s: any) => {
       if (!s.plan) return false;
-      if (s.plan.paused_until && s.plan.paused_until >= todayKey()) return false;
+      if (isPausedToday(s.plan, s.pauses)) return false;
       return s.plan.email_daily_plan === true;
     });
     push(`  ${eligible.length} eligible (opt-in)`);
+    // Each send derives the student's plan, which costs ~14 queries and re-reads
+    // the whole content catalog (>1000 pages) — ~0.5s per student, all inside a
+    // maxDuration = 60 function. A Vercel hard timeout is NOT a JS exception, so
+    // the outer try/catch never fires and alertCronFailure never sends: the run
+    // would die silently AND starve sections [6/8]–[8/8], which come after this
+    // one. Until the catalog fetch is hoisted out of the loop, cap the batch and
+    // say out loud who was deferred — a silent truncation would read as success.
+    const DAILY_PLAN_BATCH_CAP = 40;
+    const batch = eligible.slice(0, DAILY_PLAN_BATCH_CAP);
+    if (eligible.length > batch.length) {
+      push(`  WARNING: capped at ${batch.length}; ${eligible.length - batch.length} students NOT sent today. Hoist the catalog fetch out of getDerivedPlanForUser before raising this.`);
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const s of eligible as any[]) {
+    for (const s of batch as any[]) {
       try {
         const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
-        const daysToExam = s.cohort?.test_date
-          ? Math.max(0, Math.ceil((new Date(s.cohort.test_date).getTime() - Date.now()) / 86_400_000))
+        // The email carries the ACTUAL plan, so it is derived per student with the
+        // same engine /app/plano renders from. If the derivation says paused (a
+        // pause the coarse filter above can't see) or produces nothing to do, send
+        // nothing at all — an empty "here's your plan" is worse than silence.
+        const plan = await getDerivedPlanForUser(s.user_id);
+        if (!plan || plan.paused || plan.items.length === 0) {
+          const why = !plan ? "sem plano derivado" : plan.paused ? "plano pausado hoje" : "nenhum item para hoje";
+          push(`  SKIP [daily-plan → ${s.email}] — ${why}`);
+          continue;
+        }
+        // Countdown only once the banca confirmed the date (see weekly summary).
+        const daysToExam = s.cohort?.test_date && s.cohort?.date_confirmed
+          ? Math.max(0, diffDaysKey(todayKey(), toDateKeyBR(s.cohort.test_date)))
           : null;
         const { subject, html } = renderEmail(templates["daily-plan"], settings, {
           displayName,
+          planItems: renderPlanItemsHtml(plan.items, settings.app_url),
+          totalMinutes: String(Math.round(plan.totalEstimatedMinutes)),
           daysToExamLine:
             daysToExam != null
-              ? ` <br/><br/>Faltam <strong>${daysToExam} dias</strong> para sua prova.`
+              ? ` Faltam <strong>${daysToExam} dias</strong> para a sua prova.`
               : "",
         });
         await sendOne({
@@ -445,9 +584,11 @@ export async function GET(request: NextRequest) {
     const students = await getActiveStudents();
     const threeDaysAgo = new Date(); threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     const threeIso = threeDaysAgo.toISOString();
+    // A student on vacation or on a plantão day is not "missing" days — never nudge
+    // them for a gap their own plan told us to expect.
     const userIds = students
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((s: any) => !(s.plan?.paused_until && s.plan.paused_until >= todayKey()))
+      .filter((s: any) => !isPausedToday(s.plan, s.pauses))
       .map((s) => s.user_id as string);
 
     let nudged = 0;
@@ -505,15 +646,16 @@ export async function GET(request: NextRequest) {
         const { data: recentAttempts } = await supabase
           .from("quiz_attempts").select("created_at").eq("user_id", s.user_id)
           .order("created_at", { ascending: false }).limit(200);
-        const dates = [...new Set((recentAttempts ?? []).map((a) => (a.created_at as string).split("T")[0]))].sort().reverse();
+        // Brazilian days — a UTC prefix credits a 22:00 BRT session to tomorrow
+        // and inflates the streak against today's cursor.
+        const dates = [...new Set((recentAttempts ?? []).map((a) => toDateKeyBR(a.created_at as string)))].sort().reverse();
         let streak = 0;
         const today = todayKey();
         let cursor = today;
         for (const d of dates) {
           if (d === cursor) {
             streak++;
-            const prev = new Date(cursor); prev.setDate(prev.getDate() - 1);
-            cursor = prev.toISOString().split("T")[0];
+            cursor = addDaysKey(cursor, -1);
           } else if (d < cursor) break;
         }
         if (streak >= 30) {
@@ -545,7 +687,7 @@ export async function GET(request: NextRequest) {
     // Skip paused plans, mirroring the missed-3-days nudge.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const eligible = (students as any[]).filter(
-      (s) => !(s.plan?.paused_until && s.plan.paused_until >= today),
+      (s) => !isPausedToday(s.plan, s.pauses, today),
     );
     let notified = 0;
     for (const s of eligible) {

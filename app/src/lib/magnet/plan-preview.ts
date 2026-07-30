@@ -98,11 +98,17 @@ export async function buildPlanPreview(
         is_correct: a.isCorrect,
         created_at: nowIso,
         page_id: a.pageId,
+        question_id: a.questionId,
       })),
     lessonCompletions: [],
     reviewDueToday: 0,
     lessonsByPageId: new Map<number, number>(),
     pauses: [],
+    // Deliberately empty: the 15 magnet answers touch ~15 different pages, so
+    // each topic falls back to its own incidence_count and stays far below
+    // mastery — exactly right, since the preview must show the lead the topics
+    // the simulado just exposed, not hide them.
+    questionCountsByPageId: new Map<number, number>(),
   };
 
   const plan = derivePlan({

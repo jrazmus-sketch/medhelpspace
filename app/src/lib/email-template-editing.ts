@@ -26,7 +26,11 @@ const PROSE_TEMPLATE_KINDS = new Set<string>([
   "60d-unlock",
   "expiry-warning-7d",
   "expiry-notice",
-  "daily-plan",
+  // NOT "daily-plan": its body is now a block-level {{planItems}} token holding a
+  // generated <table> list, exactly the structural shape described above. TipTap
+  // wraps that token in a <p> (yielding <p><table>…</table></p>, which an HTML
+  // parser breaks into stray empty paragraphs) and strips the inline style off
+  // the {{totalMinutes}} <strong>. Same reason "weekly-summary" is absent.
   "support-ticket-reply",
   "lead-code",
   "lead-d0",

@@ -13,6 +13,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { WelcomeCard } from "@/components/onboarding/welcome-card";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
+import { todayKeyBR, toDateKeyBR, addDaysKey, dayOfWeekForKey, hourBR } from "@/lib/br-date";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import { getAudiocardsPlaylist } from "@/lib/audiocards/discovery";
 import { SiteText } from "@/components/landing/site-text";
@@ -258,8 +259,11 @@ function formatPauseDate(dateKey: string): string {
 function calcStreak(dates: string[]): number {
   if (!dates.length) return 0;
   const unique = [...new Set(dates)].sort().reverse();
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
+  // Streaks are counted on the student's calendar day in Brazil — on a UTC
+  // server the day rolls over at 21:00 BRT and an evening session would land on
+  // "tomorrow", breaking the streak the student is actually keeping.
+  const today = todayKeyBR();
+  const yesterday = addDaysKey(today, -1);
   if (unique[0] !== today && unique[0] !== yesterday) return 0;
   let streak = 1;
   for (let i = 0; i < unique.length - 1; i++) {
@@ -389,29 +393,18 @@ export default async function MemberDashboardPage() {
   // recently. A standing card (never a notification), kept separate from the plan.
   const audiocardsPlaylist = user ? await getAudiocardsPlaylist(user.id) : [];
 
-  // Daily plan signals — derived from today's quiz + lesson activity
-  const todayKey = new Date().toISOString().split("T")[0];
-  const todayAttempts = quizAttempts.filter((a) => a.created_at.startsWith(todayKey));
-  const questionsTodayCount = todayAttempts.length;
-  const specialtiesTodayCount = new Set(
-    todayAttempts.map((a) => a.specialty_id).filter((s): s is number => s != null),
-  ).size;
-  let lessonsTodayCount = 0;
-  if (user) {
-    try {
-      const { count } = await admin
-        .from("lesson_completions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .gte("completed_at", `${todayKey}T00:00:00`);
-      lessonsTodayCount = count ?? 0;
-    } catch { /* table not migrated yet */ }
-  }
+  // The student's Brazilian calendar day (see lib/br-date.ts) — drives the date
+  // watermark, the greeting and the streak below. Today's per-day counters used
+  // to be recomputed here too; the "Plano de hoje" card reads them from
+  // derivedPlan.progressToday instead, which is the same derivation the /app/plano
+  // page shows, so the duplicates (and their extra lesson_completions round-trip)
+  // are gone.
+  const todayKey = todayKeyBR();
 
   const quizTotal = quizAttempts.length;
   const quizCorrect = quizAttempts.filter((a) => a.is_correct).length;
   const quizPct = quizTotal > 0 ? quizCorrect / quizTotal : 0;
-  const activityDates = quizAttempts.map((a) => a.created_at.split("T")[0]);
+  const activityDates = quizAttempts.map((a) => toDateKeyBR(a.created_at));
   const streak = calcStreak(activityDates);
 
   // Specialties + tracks (tracks needed for last-page lookup)
@@ -495,9 +488,12 @@ export default async function MemberDashboardPage() {
     }
   }
 
-  const now = new Date();
-  const dayLabel = `${DAY_NAMES[now.getDay()].toLowerCase()}, ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
-  const greeting = greetingFor(now.getHours());
+  // Wall-clock copy in the STUDENT's timezone. Read off the server clock (UTC on
+  // Vercel) this greeted "Boa noite" from 15:00 in São Paulo and dated the plan
+  // card a day ahead all evening.
+  const brDayOfMonth = Number(todayKey.slice(8, 10));
+  const dayLabel = `${DAY_NAMES[dayOfWeekForKey(todayKey)].toLowerCase()}, ${brDayOfMonth} ${MONTH_NAMES[Number(todayKey.slice(5, 7)) - 1]}`;
+  const greeting = greetingFor(hourBR());
 
   const cohortBadge =
     viewas.type === "unlocked"
@@ -632,7 +628,7 @@ export default async function MemberDashboardPage() {
             color: "rgba(255,255,255,0.07)", letterSpacing: "-0.06em",
             pointerEvents: "none", userSelect: "none",
           }}>
-            {now.getDate()}
+            {brDayOfMonth}
           </div>
 
           {/* Header — clickable, goes to /app/plano */}
