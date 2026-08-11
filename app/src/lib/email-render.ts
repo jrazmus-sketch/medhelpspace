@@ -113,6 +113,13 @@ export function withSenderName(fromAddress: string, name: string): string {
 // /admin/email-clicks feed + lead drawer can name a later open/click to its email.
 export const BROADCAST_KIND = "lead-broadcast";
 
+// The one templated CTA target a broadcast may carry. Putting the literal tag in
+// `ctaHref` makes the button resolve to THAT RECIPIENT's simulado magic link, so an
+// existing lead reaches question 1 without retyping a name, address or turma we
+// already hold. Filled per-recipient in sendCustomBroadcast; every other href is a
+// plain URL shared by the whole send.
+export const BROADCAST_ACCESS_HREF = "{{accessUrl}}";
+
 export type BroadcastSpec = {
   subject: string;
   headline?: string;
@@ -127,6 +134,9 @@ export type BroadcastRecipient = {
   email: string;
   firstName: string | null;
   unsubscribeToken: string | null;
+  // Auths the simulado magic link. Null for the send-to-myself test, which must
+  // never carry a real lead's exam credential.
+  resultToken?: string | null;
 };
 
 export function escapeHtml(s: string): string {
@@ -166,6 +176,9 @@ export function textToEmailParagraphs(text: string): string[] {
 function normalizeCtaHref(href: string): string {
   const h = href.trim();
   if (!h) return "";
+  // A template tag is not a bare domain: prefixing it yields "https://{{accessUrl}}",
+  // which interpolates to "https://https://…" and dead-links the button.
+  if (h.startsWith("{{")) return h;
   if (/^https?:\/\//i.test(h) || h.startsWith("/")) return h;
   return `https://${h}`;
 }
@@ -198,6 +211,7 @@ export function buildBroadcastTemplate(input: BroadcastSpec): EmailTemplateRow {
     variables: [
       { tag: "greeting", description: "Saudação personalizada" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento" },
+      { tag: "accessUrl", description: "Link do simulado (por lead)" },
     ],
     active: true,
     sort_order: 999,

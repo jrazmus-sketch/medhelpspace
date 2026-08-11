@@ -7,6 +7,7 @@ import { AlertTriangle, Ban, Eye, EyeOff, Loader2, Send, X } from "lucide-react"
 import {
   buildBroadcastTemplate,
   renderEmail,
+  BROADCAST_ACCESS_HREF,
   type BroadcastSpec,
   type EmailSettingsRow,
 } from "@/lib/email-render";
@@ -22,6 +23,12 @@ import {
 // "send test to myself" guards against firing a real blast by accident.
 
 type Scope = "selected" | "filtered";
+
+// Where the CTA button points. "simulado" swaps the free-text URL for the
+// {{accessUrl}} tag, which resolves per recipient to THEIR magic link into the free
+// 100-question simulado — they land on question 1 without retyping a name, e-mail or
+// turma we already hold. Any other campaign keeps a plain shared URL.
+type CtaTarget = "url" | "simulado";
 
 // One count per audience bucket, precomputed by the parent for each scope. The
 // modal buckets the current scope and applies the include toggles live.
@@ -73,6 +80,7 @@ export function BulkBroadcastModal({
   const [body, setBody] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
   const [ctaHref, setCtaHref] = useState("");
+  const [ctaTarget, setCtaTarget] = useState<CtaTarget>("url");
   const [withGreeting, setWithGreeting] = useState(true);
 
   const [showPreview, setShowPreview] = useState(false); // mobile toggle; lg always shows
@@ -88,10 +96,10 @@ export function BulkBroadcastModal({
       headline: headline.trim() || undefined,
       bodyText: body,
       ctaLabel: ctaLabel.trim() || undefined,
-      ctaHref: ctaHref.trim() || undefined,
+      ctaHref: ctaTarget === "simulado" ? BROADCAST_ACCESS_HREF : ctaHref.trim() || undefined,
       withGreeting,
     }),
-    [subject, headline, body, ctaLabel, ctaHref, withGreeting],
+    [subject, headline, body, ctaLabel, ctaHref, ctaTarget, withGreeting],
   );
 
   // The audience math for the current scope. `willReceive` reflects the live toggle
@@ -116,6 +124,9 @@ export function BulkBroadcastModal({
     const { html } = renderEmail(tpl, emailSettings, {
       greeting: withGreeting ? "Oi, Maria! " : "",
       unsubscribeUrl: `${emailSettings.app_url}/api/leads/unsubscribe?t=exemplo`,
+      // Stand-in for the per-recipient magic link; the real send fills each lead's
+      // own result_token here.
+      accessUrl: `${emailSettings.app_url}/simulado-revalida/acesso?t=exemplo`,
     });
     return html;
   }, [spec, emailSettings, withGreeting, t]);
@@ -372,6 +383,25 @@ export function BulkBroadcastModal({
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("leads.broadcastCtaTarget")}
+                </label>
+                <select
+                  value={ctaTarget}
+                  onChange={(e) => setCtaTarget(e.target.value as CtaTarget)}
+                  className={inputCls}
+                >
+                  <option value="url">{t("leads.broadcastCtaTargetUrl")}</option>
+                  <option value="simulado">{t("leads.broadcastCtaTargetSimulado")}</option>
+                </select>
+              </div>
+            </div>
+
+            {/* The URL field only exists for a shared link; the simulado target is
+                per-recipient and has nothing to type. Full-width rather than a third
+                grid cell so the placeholder stays readable at 375px. */}
+            {ctaTarget === "url" ? (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   {t("leads.broadcastCtaHref")}
                 </label>
                 <input
@@ -382,7 +412,11 @@ export function BulkBroadcastModal({
                   maxLength={300}
                 />
               </div>
-            </div>
+            ) : (
+              <p className="rounded-lg border border-brand/25 bg-brand/5 px-3 py-2 text-xs text-muted-foreground">
+                {t("leads.broadcastCtaSimuladoHint")}
+              </p>
+            )}
 
             {/* Mobile: toggle preview */}
             <button

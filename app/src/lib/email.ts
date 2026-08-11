@@ -16,7 +16,12 @@ import {
   type BroadcastSpec,
   type BroadcastRecipient,
 } from "@/lib/email-render";
-import { unsubscribeUrl as buildUnsubscribeUrl } from "@/lib/magnet/links";
+import {
+  unsubscribeUrl as buildUnsubscribeUrl,
+  simuladoAccessUrl,
+  SIMULADO_PATH,
+  SITE_URL,
+} from "@/lib/magnet/links";
 
 // Transactional-email SEND path. The actual content lives in the DB
 // (email_templates / email_settings, admin-editable) and is rendered by the pure
@@ -271,6 +276,10 @@ export async function sendCustomBroadcast(
       const vars: Record<string, string> = {
         greeting: withGreeting ? broadcastGreeting(r.firstName) : "",
         unsubscribeUrl: unsub,
+        // Per-recipient magic link into the simulado — the point of {{accessUrl}}.
+        // Tokenless (the send-to-myself test) falls back to the public landing page
+        // rather than a dead ?t=, so a test never renders a broken button.
+        accessUrl: r.resultToken ? simuladoAccessUrl(r.resultToken) : `${SITE_URL}${SIMULADO_PATH}`,
       };
       const { subject, html } = renderEmail(template, settings, vars);
       const res = await sendEmailRaw({ to: r.email, subject, html, from, listUnsubscribeUrl: unsub });

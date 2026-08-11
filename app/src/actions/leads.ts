@@ -532,10 +532,15 @@ function normalizeSpec(spec: BroadcastSpec): BroadcastSpec {
  * whole filtered view — the client resolves the scope to an id list). The admin picks
  * the audience per send via `audience`: converted customers and unverified leads are
  * opt-out (default IN, uncheck to exclude); unsubscribed/bounced are ALWAYS skipped
- * (compliance, not a choice). Everything not sent is counted in `skipped`. Renders
+ * (compliance, not a choice — the Resend webhook is what marks a hard bounce, so that
+ * suppression is automatic). Everything not sent is counted in `skipped`. Renders
  * through the branded shell + list-mail footer and stamps last_emailed_at on the
  * successes so "Última atividade" stays honest. Does NOT touch drip_step — a
  * broadcast is not a step in the automated sequence.
+ *
+ * The CTA may be the {{accessUrl}} tag (BROADCAST_ACCESS_HREF), which resolves to
+ * each recipient's own simulado magic link. That link is a credential for THEIR exam
+ * session, which is why it is built per-recipient here and never composed by hand.
  */
 export async function broadcastToLeads(
   leadIds: string[],
@@ -556,7 +561,9 @@ export async function broadcastToLeads(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("leads")
-    .select("id, email, first_name, drip_status, verified_at, converted_at, unsubscribe_token")
+    .select(
+      "id, email, first_name, drip_status, verified_at, converted_at, unsubscribe_token, result_token",
+    )
     .in("id", leadIds);
   if (error) {
     console.error("broadcastToLeads fetch error:", error);
@@ -585,6 +592,10 @@ export async function broadcastToLeads(
       email: row.email as string,
       firstName: (row.first_name as string | null) ?? null,
       unsubscribeToken: (row.unsubscribe_token as string | null) ?? null,
+      // Resolves {{accessUrl}} — every lead row has one (NOT NULL DEFAULT
+      // gen_random_uuid()), including addresses captured by another funnel that
+      // have never seen the simulado gate.
+      resultToken: (row.result_token as string | null) ?? null,
     });
   }
 
@@ -634,7 +645,10 @@ export async function sendBroadcastTestToSelf(
 
   const { sendCustomBroadcast } = await import("@/lib/email");
   const results = await sendCustomBroadcast(
-    [{ id: "test", email, firstName: null, unsubscribeToken: null }],
+    // No result_token: a test must never carry a real lead's exam credential, and
+    // the acting admin usually has no lead row at all. {{accessUrl}} degrades to
+    // the public /simulado-revalida landing page for this send only.
+    [{ id: "test", email, firstName: null, unsubscribeToken: null, resultToken: null }],
     clean,
     { log: false },
   );
