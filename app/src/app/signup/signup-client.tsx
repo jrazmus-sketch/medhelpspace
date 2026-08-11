@@ -12,6 +12,7 @@ import { SiteText } from "@/components/landing/site-text";
 import { BrandLockup } from "@/components/brand/brand-lockup";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { trackSignUp } from "@/lib/analytics/track";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 function mapSignupError(msg: string): string {
   if (msg.includes("already registered")) return "Este e-mail já está cadastrado.";
@@ -95,6 +96,7 @@ export function SignupPageClient() {
                 <span className="font-medium text-foreground">{email}</span>.
                 Clique no link para ativar sua conta.
               </p>
+              <GmailPromotionsNote email={email} className="mt-4" />
               <p className="mt-4 text-xs text-muted-foreground">
                 Já confirmou?{" "}
                 <Link href="/login" className="text-brand hover:underline">

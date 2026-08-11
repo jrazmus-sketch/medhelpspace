@@ -18,6 +18,7 @@ import { trackFunnel, getFunnelSessionId, markLeadCaptured } from "@/lib/magnet/
 import { SiteText } from "@/components/landing/site-text";
 import { PayoffPreview } from "@/components/magnet/payoff-preview";
 import { PlatformPeekModal } from "@/components/magnet/platform-peek";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 // Mirrors the repo's spread-via-helper workaround for the dangerouslySetInnerHTML
 // security hook (see components/admin/editable-text.tsx).
@@ -887,6 +888,8 @@ function MagnetResultsFree({
               <strong className="text-foreground">{maskedEmail || email}</strong>. Digite abaixo
               para desbloquear.
             </p>
+            <GmailPromotionsNote email={maskedEmail || email} />
+
             <input
               type="text"
               inputMode="numeric"

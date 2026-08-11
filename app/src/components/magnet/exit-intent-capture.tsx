@@ -8,6 +8,7 @@ import {
   LEAD_CAPTURED_EVENT,
 } from "@/lib/magnet/funnel-track";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 // Exit-intent "salvar para depois" capture (idea 1, done as exit-intent — NOT a
 // co-primary button, so it never cannibalizes a quiz start). It arms only for a
@@ -182,6 +183,7 @@ export function ExitIntentCapture({ utm }: { utm: MagnetUtm }) {
               Quando quiser voltar, é só continuar de onde parou — te mandamos o link para o
               seu e-mail.
             </p>
+            <GmailPromotionsNote email={email} className="mt-4" />
             <button
               onClick={() => setOpen(false)}
               className="mt-5 w-full rounded-lg bg-brand px-5 py-3 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"

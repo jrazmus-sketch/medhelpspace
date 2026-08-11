@@ -8,6 +8,7 @@ import { UNDECIDED_COHORT } from "@/lib/magnet/links";
 import type { CohortOption } from "@/lib/magnet/simulado";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 import { SiteText } from "@/components/landing/site-text";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 // Single-screen entry for /simulado-revalida. Nome + e-mail + turma, then the exam
 // starts IMMEDIATELY — no "check your inbox" step. The expensive drop-off is the
@@ -103,6 +104,9 @@ export function SimuladoGate({ utm, cohorts }: { utm: MagnetUtm; cohorts: Cohort
             vars={{ email: resumeSentTo }}
           />
         </p>
+        {/* resumeSentTo is the server's masked address — the domain survives
+            masking, so Gmail is still detectable here. */}
+        <GmailPromotionsNote email={resumeSentTo} className="mt-4" />
       </div>
     );
   }

@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SiteText } from "@/components/landing/site-text";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 function VerifyContent() {
   const searchParams = useSearchParams();
@@ -59,6 +60,7 @@ function VerifyContent() {
             Enviamos um novo link de confirmação para{" "}
             <span className="font-medium text-foreground">{email}</span>.
           </p>
+          <GmailPromotionsNote email={email} className="mt-4" />
           <p className="mt-4 text-xs text-muted-foreground">
             Já confirmou?{" "}
             <Link href="/login" className="text-brand hover:underline">

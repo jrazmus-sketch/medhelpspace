@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { confirmSimuladoEmail, correctSimuladoEmail } from "@/actions/simulado";
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 // This form makes the server send mail to whatever address is typed here, so it
 // carries the same challenge as the other send surfaces. Both-or-neither: with no
@@ -132,6 +133,16 @@ export function SimuladoEmailCheck({
             </p>
           )}
 
+          {/* Inline: this banner already draws its own border. Uses the address the
+              link actually went to — after a correction the success message below
+              carries the note for the NEW one.
+              NEVER in bounce mode: that address is dead, the mail was never
+              delivered, and sending them to the Promoções tab to look for it wastes
+              the one surface left that can save their exam. */}
+          {!isBounce && (
+            <GmailPromotionsNote email={maskedEmail} variant="inline" className="mt-2" />
+          )}
+
           {/* No `success` token exists in the theme (only the raw --c-success var,
               which is chart/mockup-scoped). Confirmation reads as plain foreground
               text; only errors take a colour. */}
@@ -142,6 +153,12 @@ export function SimuladoEmailCheck({
             >
               {msg.text}
             </p>
+          )}
+
+          {/* The corrected address, once the resend succeeded. `email` is what they
+              typed; the note is silent unless it is Gmail. */}
+          {msg?.tone === "ok" && (
+            <GmailPromotionsNote email={email} variant="inline" className="mt-2" />
           )}
 
           {editing ? (

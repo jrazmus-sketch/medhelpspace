@@ -10,6 +10,8 @@ import {
 } from "@/lib/magnet/links";
 import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 import { SiteText } from "@/components/landing/site-text";
+import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
+import { isGmailAddress } from "@/lib/gmail";
 
 // Gift-first email gate for /flashcards-revalida. Two steps up front, then a
 // "check your inbox" confirmation — the 50-card deck is delivered by a magic link
@@ -124,10 +126,18 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
           💾 Guarde esse e-mail: você pode estudar em partes e voltar de onde parou pelo{" "}
           <strong className="text-foreground">mesmo link</strong>, quando quiser.
         </p>
-        <div className="mt-5 rounded-xl border border-border bg-background/60 p-3 text-xs text-muted-foreground">
-          Não chegou em 2 minutos? Verifique a caixa de <strong className="text-foreground">spam</strong> ou
-          promoções — e marque como “não é spam” para receber os próximos.
-        </div>
+        {/* One note, not two. A Gmail user gets the specific instruction (the mail
+            was delivered and filed under Promoções, which is not spam); everyone
+            else keeps the generic spam prompt. Stacking both would tell them to
+            look in two places and mislabel a delivered message as spam. */}
+        {isGmailAddress(masked) ? (
+          <GmailPromotionsNote email={masked} className="mt-5" />
+        ) : (
+          <div className="mt-5 rounded-xl border border-border bg-background/60 p-3 text-xs text-muted-foreground">
+            Não chegou em 2 minutos? Verifique a caixa de <strong className="text-foreground">spam</strong> ou
+            promoções — e marque como “não é spam” para receber os próximos.
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setPhase("email")}
