@@ -2,9 +2,26 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics/config";
+import { hasConsentChoice } from "@/lib/analytics/consent";
 
 export function StickyCTABar() {
-  const [visible, setVisible] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  // Both bars dock to the bottom of a phone, and the consent toast sits above
+  // this one (z-70 vs z-50) — so while the notice is unanswered a tap aimed at
+  // "Comprar Agora" lands on "Aceitar" instead. Measured, not theorised. The
+  // notice is first-visit-only and this bar returns the moment they choose, so
+  // yielding is cheaper than fighting over the corner.
+  const [consentPending, setConsentPending] = useState(false);
+
+  useEffect(() => {
+    // Only when the toast can actually appear: with no GA id it never renders,
+    // and gating on it then would hide this bar permanently.
+    const check = () => setConsentPending(Boolean(GA_MEASUREMENT_ID) && !hasConsentChoice());
+    check();
+    window.addEventListener("mhs-consent-change", check);
+    return () => window.removeEventListener("mhs-consent-change", check);
+  }, []);
 
   useEffect(() => {
     // Observe the end of the hero section to decide when to show the bar
@@ -14,13 +31,15 @@ export function StickyCTABar() {
     const obs = new IntersectionObserver(
       ([entry]) => {
         // Show bar when hero is no longer visible (user scrolled past it)
-        setVisible(!entry.isIntersecting);
+        setPastHero(!entry.isIntersecting);
       },
       { threshold: 0.1 },
     );
     obs.observe(heroSection);
     return () => obs.disconnect();
   }, []);
+
+  const visible = pastHero && !consentPending;
 
   return (
     <div
