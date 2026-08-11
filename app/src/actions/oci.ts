@@ -39,21 +39,21 @@ export async function exportOciConversions(): Promise<OciExport> {
 export async function markOciUploaded(input: {
   verifiedIds: string[];
   purchaseIds: string[];
+  simStartedIds?: string[];
+  simSubmittedIds?: string[];
 }): Promise<{ ok: true }> {
   await requireBillingRole();
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  if (input.verifiedIds?.length) {
-    await admin
-      .from("leads")
-      .update({ oci_verified_uploaded_at: now })
-      .in("id", input.verifiedIds);
-  }
-  if (input.purchaseIds?.length) {
-    await admin
-      .from("leads")
-      .update({ oci_purchase_uploaded_at: now })
-      .in("id", input.purchaseIds);
-  }
+
+  const stamp = async (column: string, ids: string[] | undefined) => {
+    if (!ids?.length) return;
+    await admin.from("leads").update({ [column]: now }).in("id", ids);
+  };
+
+  await stamp("oci_verified_uploaded_at", input.verifiedIds);
+  await stamp("oci_purchase_uploaded_at", input.purchaseIds);
+  await stamp("oci_sim_started_uploaded_at", input.simStartedIds);
+  await stamp("oci_sim_submitted_uploaded_at", input.simSubmittedIds);
   return { ok: true };
 }

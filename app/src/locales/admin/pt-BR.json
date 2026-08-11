@@ -1513,8 +1513,8 @@
     "collapsedNone": "Nenhuma conversão aguardando envio ao Google Ads",
     "expand": "Abrir",
     "collapse": "Fechar",
-    "ready": "{{verified}} verificações · {{purchase}} compras prontas para enviar",
-    "readyNone": "Nada para enviar agora. Aparece quando um lead vindo de anúncio do Google verifica o e-mail ou compra.",
+    "ready": "{{verified}} verificações · {{simStarted}} simulados iniciados · {{simSubmitted}} simulados entregues · {{purchase}} compras prontas para enviar",
+    "readyNone": "Nada para enviar agora. Aparece quando um lead vindo de anúncio do Google verifica o e-mail, começa ou entrega o simulado, ou compra.",
     "download": "Baixar CSV",
     "building": "Gerando…",
     "rowsIncluded": "{{count}} conversões no arquivo",
@@ -1522,7 +1522,7 @@
     "markUploaded": "Marcar como enviado",
     "marking": "Marcando…",
     "error": "Algo deu errado. Tente novamente.",
-    "help": "Exige as ações de conversão “Lead verified” e “Purchase” criadas na conta do Google Ads."
+    "help": "Exige as ações de conversão “Lead verified”, “Simulado started”, “Simulado submitted” e “Purchase” criadas na conta do Google Ads."
   },
   "emailTemplates": {
     "title": "Modelos de e-mail",

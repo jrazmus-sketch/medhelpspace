@@ -32,11 +32,14 @@ export function OciPanel({ counts }: Props) {
   const [downloaded, setDownloaded] = useState<{
     verifiedIds: string[];
     purchaseIds: string[];
+    simStartedIds: string[];
+    simSubmittedIds: string[];
     rowCount: number;
   } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  const totalReady = counts.verified + counts.purchase;
+  const totalReady =
+    counts.verified + counts.purchase + counts.simStarted + counts.simSubmitted;
 
   function onDownload() {
     setErr(null);
@@ -51,6 +54,8 @@ export function OciPanel({ counts }: Props) {
         setDownloaded({
           verifiedIds: res.verifiedIds,
           purchaseIds: res.purchaseIds,
+          simStartedIds: res.simStartedIds,
+          simSubmittedIds: res.simSubmittedIds,
           rowCount: res.rowCount,
         });
       } catch {
@@ -67,6 +72,8 @@ export function OciPanel({ counts }: Props) {
         await markOciUploaded({
           verifiedIds: downloaded.verifiedIds,
           purchaseIds: downloaded.purchaseIds,
+          simStartedIds: downloaded.simStartedIds,
+          simSubmittedIds: downloaded.simSubmittedIds,
         });
         setDownloaded(null);
         router.refresh();
@@ -121,7 +128,12 @@ export function OciPanel({ counts }: Props) {
               <p className="text-sm text-muted-foreground">{t("oci.readyNone")}</p>
             ) : !downloaded ? (
               <p className="text-sm">
-                {t("oci.ready", { verified: counts.verified, purchase: counts.purchase })}
+                {t("oci.ready", {
+                  verified: counts.verified,
+                  purchase: counts.purchase,
+                  simStarted: counts.simStarted,
+                  simSubmitted: counts.simSubmitted,
+                })}
               </p>
             ) : (
               <div className="space-y-3 rounded-xl border border-brand/20 bg-brand-muted p-4">
