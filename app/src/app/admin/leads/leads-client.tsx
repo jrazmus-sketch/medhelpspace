@@ -18,7 +18,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import type { LeadRow, LeadTier } from "@/lib/admin/leads";
+import type { FunnelKey, LeadRow, LeadTier } from "@/lib/admin/leads";
 import type { FunnelEventDay } from "@/lib/admin/funnel";
 import type { BroadcastSpec, EmailSettingsRow } from "@/lib/email-render";
 import { FunnelPanel, type FunnelStageDatum, type FunnelBySourceRow } from "./funnel-panel";
@@ -70,7 +70,21 @@ const RANGE_MS: Record<Exclude<RangeKey, "all">, number> = {
   "30d": 30 * 86_400_000,
 };
 
-const KNOWN_FUNNELS = ["simulado-honesto", "flashcards-50", "simulado-100"] as const;
+// Tabs/filters key off FUNNEL MEMBERSHIP (row.funnels), not `source`. `source` is
+// first-touch and immutable, so a lead who did the flashcards magnet in July and the
+// simulado in August counts only toward flashcards under a source-keyed tab — which
+// is exactly how second signups went missing from this page.
+const KNOWN_FUNNELS = ["quiz", "flashcards", "simulado"] as const;
+
+function inFunnel(r: LeadRow, funnel: string): boolean {
+  return (r.funnels as readonly string[]).includes(funnel);
+}
+
+// Denominator for the simulado progress badge. Declared here rather than imported:
+// SIMULADO_TOTAL lives in lib/magnet/simulado.ts, which pulls in the service-role
+// admin client and must not reach a client bundle. Matches the hardcoded "/15" and
+// drip "total: 6" already used in this file.
+const SIMULADO_QUESTION_COUNT = 100;
 
 // Local YYYY-MM-DD (sparkline buckets by the admin's wall-clock day).
 function localDayKey(d: Date): string {
@@ -300,7 +314,11 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
 
   // Funnels that actually have leads (drives the tab row; hidden when only one).
   const funnelsPresent = useMemo(() => {
-    const present = new Set(rows.filter((r) => qaMode || !r.isTest).map((r) => r.source));
+    const present = new Set<string>();
+    for (const r of rows) {
+      if (!qaMode && r.isTest) continue;
+      for (const f of r.funnels) present.add(f);
+    }
     return KNOWN_FUNNELS.filter((f) => present.has(f));
   }, [rows, qaMode]);
 
@@ -317,7 +335,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
     const results = rows.filter((r) => {
       if (!qaMode && r.isTest) return false;
       if (!showArchived && r.isArchived) return false;
-      if (effectiveTab !== "all" && r.source !== effectiveTab) return false;
+      if (effectiveTab !== "all" && !inFunnel(r, effectiveTab)) return false;
       if (rangeCutoff !== null && new Date(r.createdAt).getTime() < rangeCutoff) return false;
       if (focus && !matchesFocus(r, focus, now)) return false;
       if (tier !== "all" && r.tier !== tier) return false;
@@ -386,7 +404,10 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
     for (const r of rows) {
       if (r.isTest || r.isArchived) continue;
       if (r.dripStatus !== "active" || !r.verified) continue;
-      if (r.source === "flashcards-50" || r.source === "simulado-100") continue;
+      // OWNERSHIP, not origin. The quiz cron targets `drip_funnel = 'quiz'` and warns
+      // that `source` must not be used here: a lead who arrived via the quiz and later
+      // entered the simulado is owned by the simulado ladder and carries ITS step.
+      if (r.dripFunnel !== "quiz") continue;
       counts.set(r.dripStep, (counts.get(r.dripStep) ?? 0) + 1);
       total++;
     }
@@ -407,7 +428,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
         (r) =>
           (qaMode || !r.isTest) &&
           !r.isArchived &&
-          (effectiveTab === "all" || r.source === effectiveTab) &&
+          (effectiveTab === "all" || inFunnel(r, effectiveTab)) &&
           (rangeCutoff === null || new Date(r.createdAt).getTime() >= rangeCutoff),
       ),
     [rows, qaMode, effectiveTab, rangeCutoff],
@@ -646,13 +667,11 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
   const canResendEmail = useMemo(() => {
     if (selectedRows.length === 0) return false;
     // Flashcards/simulado-funnel leads have their own sequences (lead-fc-* /
-    // lead-sim-*) — the quiz templates would be wrong for them.
-    return selectedRows.every(
-      (r) =>
-        r.dripStatus === "active" &&
-        r.source !== "flashcards-50" &&
-        r.source !== "simulado-100",
-    );
+    // lead-sim-*) — the quiz templates would be wrong for them. Test OWNERSHIP, not
+    // origin: a quiz-sourced lead who later entered the simulado now carries the
+    // simulado ladder's step, so resending a quiz rung would be the wrong email at
+    // the wrong number.
+    return selectedRows.every((r) => r.dripStatus === "active" && r.dripFunnel === "quiz");
   }, [selectedRows]);
 
   const canUnsubscribe = selectedRows.some(
@@ -934,42 +953,75 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
     );
   }
 
+  // One badge per funnel the lead has ACTUALLY entered, each carrying that funnel's
+  // own progress — a lead in two funnels gets two badges. The badge for the funnel
+  // that currently owns the drip is outlined, because that is the sequence mailing
+  // them right now and it is not always the one they arrived through.
   function Progress({ row }: { row: LeadRow }) {
-    if (row.source === "flashcards-50") {
+    // Brand ring = "this is the sequence mailing them now", matching the
+    // funnelOwnsDrip pill in the detail drawer.
+    const owned = (f: FunnelKey) =>
+      row.dripFunnel === f ? " ring-1 ring-inset ring-brand/50" : "";
+    const chip = "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium";
+
+    const badges = row.funnels.map((f) => {
+      if (f === "quiz") {
+        const answered = row.questionsAnswered ?? 0;
+        return (
+          <span
+            key={f}
+            className={`${chip} bg-indigo-500/15 text-indigo-600 dark:text-indigo-300${owned("quiz")}`}
+            title={t("leads.funnel_quiz")}
+          >
+            <span aria-hidden>📋</span>
+            {answered}/15
+            {row.score != null && <span className="opacity-70">· {row.score}</span>}
+          </span>
+        );
+      }
+      if (f === "flashcards") {
+        return (
+          <span
+            key={f}
+            className={`${chip} bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-300${owned("flashcards")}`}
+            title={t("leads.funnel_flashcards")}
+          >
+            <span aria-hidden>🎴</span>
+            {t("leads.funnel_flashcards")}
+          </span>
+        );
+      }
+      // Simulado: answered-count while in progress, score once submitted. Both are
+      // out of 100, so the denominator never changes meaning mid-funnel.
+      const answered = row.simAnswered ?? 0;
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-xs font-medium text-fuchsia-600 dark:text-fuchsia-300">
-          <span aria-hidden>🎴</span>
-          {t("leads.funnel_flashcards")}
-        </span>
-      );
-    }
-    if (row.source === "simulado-100") {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 text-xs font-medium text-sky-600 dark:text-sky-300">
+        <span
+          key={f}
+          className={`${chip} bg-sky-500/15 text-sky-600 dark:text-sky-300${owned("simulado")}`}
+          title={t("leads.funnel_simulado")}
+        >
           <span aria-hidden>📝</span>
-          {t("leads.funnel_simulado")}
+          {row.simCompletedAt && row.simScore != null
+            ? t("leads.scoreShort", { score: row.simScore })
+            : `${answered}/${SIMULADO_QUESTION_COUNT}`}
         </span>
       );
-    }
+    });
+
     if (row.captureSource === "exit_intent") {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-600 dark:text-indigo-300">
+      badges.unshift(
+        <span
+          key="exit"
+          className={`${chip} bg-amber-500/15 text-amber-700 dark:text-amber-300`}
+        >
           <span aria-hidden>⏳</span>
           {t("leads.captureExitIntent")}
-        </span>
+        </span>,
       );
     }
-    const answered = row.questionsAnswered ?? 0;
-    return (
-      <div className="flex items-center gap-1.5 whitespace-nowrap text-sm">
-        <span className={row.completed ? "font-medium" : "text-muted-foreground"}>{answered}/15</span>
-        {row.score != null && (
-          <span className="text-xs text-muted-foreground">
-            · {t("leads.scoreShort", { score: row.score })}
-          </span>
-        )}
-      </div>
-    );
+
+    if (badges.length === 0) return <span className="text-sm text-muted-foreground">—</span>;
+    return <div className="flex flex-wrap items-center gap-1">{badges}</div>;
   }
 
   function DripStep({ row }: { row: LeadRow }) {
@@ -1023,9 +1075,9 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
   ).length;
 
   const funnelTabLabel = (f: string) =>
-    f === "simulado-honesto"
+    f === "quiz"
       ? t("leads.funnel_quiz")
-      : f === "flashcards-50"
+      : f === "flashcards"
         ? t("leads.funnel_flashcards")
         : t("leads.funnel_simulado");
 
@@ -1443,6 +1495,17 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
                   {/* Drip step + engagement — both email-sequence facts. */}
                   <td className="px-3 py-3 align-top">
                     <DripStep row={row} />
+                    {row.lastBroadcastAt && (
+                      <div
+                        className="mt-0.5 flex items-center gap-1 text-xs text-brand"
+                        title={t("leads.broadcastSentOn", {
+                          date: fmtDateShort(row.lastBroadcastAt),
+                        })}
+                      >
+                        <Send className="h-3 w-3" aria-hidden />
+                        {fmtDateShort(row.lastBroadcastAt)}
+                      </div>
+                    )}
                     {opens !== null && (
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {t("leads.engagementOpens", { count: opens })}

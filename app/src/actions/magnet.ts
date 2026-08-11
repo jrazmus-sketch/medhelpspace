@@ -931,6 +931,14 @@ export async function chooseFlashcardsCohortAndSend(input: {
     else if (!res.ok) {
       emailed = false;
       console.error("lead-fc-access send failed:", res.reason);
+    } else {
+      // Stamp the send like the drip cron does, for the same reason as lead-d0 above:
+      // without it /admin/leads "Last activity" falls back to created_at and reads as
+      // stale the moment after the access email went out.
+      await admin
+        .from("leads")
+        .update({ last_emailed_at: new Date().toISOString() })
+        .eq("email", email);
     }
   } catch (e) {
     emailed = false;

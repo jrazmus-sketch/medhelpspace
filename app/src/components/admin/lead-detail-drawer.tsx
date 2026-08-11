@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { getLeadDetail } from "@/actions/leads";
 import type { LeadDetail, LeadEmail, LeadQuizAnswer } from "@/lib/admin/lead-detail";
-import type { LeadRow } from "@/lib/admin/leads";
+import type { FunnelKey, LeadRow } from "@/lib/admin/leads";
 
 // Friendly i18n key per funnel email kind. Unknown kinds fall back to the raw value.
 const EMAIL_KIND_KEYS: Record<string, string> = {
@@ -35,6 +35,63 @@ const EMAIL_KIND_KEYS: Record<string, string> = {
   "lead-recover-unfinished-1": "leads.emailKind.recoverUnfinished1",
   "lead-recover-unfinished-2": "leads.emailKind.recoverUnfinished2",
 };
+
+// Deck/exam sizes for the progress denominators. Declared here rather than imported
+// because the modules that own them (lib/magnet/simulado.ts) pull in the service-role
+// admin client, which must never reach a client bundle.
+const SIMULADO_QUESTION_COUNT = 100;
+const FLASHCARDS_DECK_SIZE = 50;
+
+type Milestone = { label: string; value: string };
+
+// The milestones that actually mean something for each funnel. Kept out of the
+// lifecycle timeline because the three funnels measure completely different things:
+// the quiz counts answers out of 15, the magnet counts cards reviewed out of 50, the
+// simulado counts answers out of 100 and then a score.
+// `when` is the drawer's own fmt(), passed in rather than reimplemented: formatting
+// dates here with toLocaleString(undefined) picks the BROWSER locale, so these rows
+// printed "Aug 11, 2026, 1:09 PM" next to the timeline's "11 de ago. de 2026, 13:09".
+function funnelMilestones(
+  f: FunnelKey,
+  d: LeadDetail,
+  t: (k: string, o?: Record<string, unknown>) => string,
+  when: (iso: string | null) => string,
+): Milestone[] {
+  if (f === "quiz") {
+    return [
+      { label: t("leads.tlAnswered"), value: `${d.questionsAnswered ?? 0}/15` },
+      { label: t("leads.mScore"), value: d.score != null ? String(d.score) : "—" },
+      { label: t("leads.tlCompleted"), value: when(d.completedAt) },
+    ];
+  }
+  if (f === "flashcards") {
+    return [
+      { label: t("leads.mEntered"), value: when(d.fcEnteredAt) },
+      {
+        label: t("leads.mReviewed"),
+        value: d.fcReviewed != null ? `${d.fcReviewed}/${FLASHCARDS_DECK_SIZE}` : "—",
+      },
+      { label: t("leads.mFinished"), value: when(d.fcCompletedAt) },
+      { label: t("leads.mLastActivity"), value: when(d.fcLastActivityAt) },
+    ];
+  }
+  return [
+    { label: t("leads.mEntered"), value: when(d.simEnteredAt) },
+    { label: t("leads.mStarted"), value: when(d.simStartedAt) },
+    {
+      label: t("leads.mAnswered"),
+      value: `${d.simAnswered ?? 0}/${SIMULADO_QUESTION_COUNT}`,
+    },
+    {
+      label: t("leads.mScore"),
+      value:
+        d.simCompletedAt && d.simScore != null
+          ? `${d.simScore}/${SIMULADO_QUESTION_COUNT}`
+          : t("leads.mNotSubmitted"),
+    },
+    { label: t("leads.mLastActivity"), value: when(d.simLastActivityAt) },
+  ];
+}
 
 interface Props {
   row: LeadRow | null;
@@ -163,20 +220,29 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
                     value={fmt(detail.createdAt, true)}
                     done
                   />
-                  <TimelineRow
-                    label={t("leads.tlAnswered")}
-                    value={
-                      detail.questionsAnswered != null
-                        ? t("leads.answeredCount", { n: detail.questionsAnswered })
-                        : "—"
-                    }
-                    done={(detail.questionsAnswered ?? 0) > 0}
-                  />
-                  <TimelineRow
-                    label={t("leads.tlCompleted")}
-                    value={fmt(detail.completedAt, true)}
-                    done={Boolean(detail.completedAt)}
-                  />
+                  {/* "Answered" and "Finished all 15" describe the 15-question quiz and
+                      nothing else. `completed_at` is set on entry by the flashcards and
+                      simulado funnels too, so rendering these for every lead put a
+                      "Finished all 15 ✓" on people who never saw the quiz. Per-funnel
+                      milestones live in the Funnels section below. */}
+                  {detail.funnels.includes("quiz") && (
+                    <>
+                      <TimelineRow
+                        label={t("leads.tlAnswered")}
+                        value={
+                          detail.questionsAnswered != null
+                            ? t("leads.answeredCount", { n: detail.questionsAnswered })
+                            : "—"
+                        }
+                        done={(detail.questionsAnswered ?? 0) > 0}
+                      />
+                      <TimelineRow
+                        label={t("leads.tlCompleted")}
+                        value={fmt(detail.completedAt, true)}
+                        done={Boolean(detail.completedAt)}
+                      />
+                    </>
+                  )}
                   <TimelineRow
                     label={t("leads.tlCodeSent")}
                     value={
@@ -209,6 +275,45 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
               </Section>
 
               {/* Quiz result */}
+              {/* Which free offerings this lead joined, and how far they got in each.
+                  Membership is the per-funnel entry timestamp, never `source` — a lead
+                  who did the flashcards magnet and then the simulado shows both. */}
+              <Section title={t("leads.sectionFunnels")}>
+                <ul className="space-y-3">
+                  {detail.funnels.map((f) => (
+                    <li key={f} className="rounded-lg border border-border/60 px-3 py-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          {f === "quiz"
+                            ? t("leads.funnel_quiz")
+                            : f === "flashcards"
+                              ? t("leads.funnel_flashcards")
+                              : t("leads.funnel_simulado")}
+                        </span>
+                        {detail.dripFunnel === f && (
+                          <span className="rounded-full bg-brand-muted/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+                            {t("leads.funnelOwnsDrip")}
+                          </span>
+                        )}
+                      </div>
+                      <dl className="mt-1.5 space-y-1">
+                        {funnelMilestones(f, detail, t, (iso) => fmt(iso, true)).map((m) => (
+                          <div key={m.label} className="flex justify-between gap-3 text-xs">
+                            <dt className="text-muted-foreground">{m.label}</dt>
+                            <dd className="text-right tabular-nums">{m.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </li>
+                  ))}
+                  {detail.funnels.length === 0 && (
+                    <li className="text-sm text-muted-foreground">{t("leads.noFunnels")}</li>
+                  )}
+                </ul>
+              </Section>
+
+              {/* Quiz result — only for leads who actually took the 15-question quiz. */}
+              {detail.funnels.includes("quiz") && (
               <Section
                 title={t("leads.sectionQuiz")}
                 right={
@@ -248,6 +353,7 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
                   </>
                 )}
               </Section>
+              )}
 
               {/* Emails */}
               <Section title={t("leads.sectionEmails")}>

@@ -283,7 +283,7 @@ export async function startSimulado(input: {
   // Send the resume link either way. Awaited: fire-and-forget is frozen by the
   // serverless runtime. Non-fatal — a send failure must not block the exam.
   try {
-    await sendTemplateEmail({
+    const res = await sendTemplateEmail({
       kind: "lead-sim-access",
       to: email,
       vars: {
@@ -293,6 +293,15 @@ export async function startSimulado(input: {
       },
       fromName: FUNNEL_SENDER_NAME,
     });
+    // Stamp the send the way the drip crons do. Without it /admin/leads "Last
+    // activity" falls back to created_at, so a lead who signed up and was mailed
+    // seconds ago reads as untouched.
+    if (res.ok) {
+      await admin
+        .from("leads")
+        .update({ last_emailed_at: new Date().toISOString() })
+        .eq("email", email);
+    }
   } catch (e) {
     console.error("lead-sim-access send threw:", e);
   }

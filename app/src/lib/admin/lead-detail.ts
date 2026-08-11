@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { FunnelKey } from "@/lib/admin/leads";
 
 // Server-only read model for the /admin/leads detail drawer. `leads` and
 // `lead_email_events` are deny-all RLS (service-role only), so this MUST run through
@@ -46,6 +47,24 @@ export type LeadDetail = {
   email: string;
   firstName: string | null;
   createdAt: string;
+
+  // Funnel membership + per-funnel milestones. A lead can be in several at once —
+  // the flashcards magnet and the 100-question simulado are separate front doors to
+  // the same list. Membership is the per-funnel entry timestamp, NOT `source`, which
+  // is first-touch and never overwritten.
+  funnels: FunnelKey[];
+  dripFunnel: FunnelKey; // which sequence currently owns the lead
+  fcEnteredAt: string | null;
+  fcStartedAt: string | null;
+  fcCompletedAt: string | null;
+  fcLastActivityAt: string | null;
+  fcReviewed: number | null; // cards reviewed, out of FLASHCARDS_DECK_SIZE
+  simEnteredAt: string | null;
+  simStartedAt: string | null;
+  simCompletedAt: string | null;
+  simLastActivityAt: string | null;
+  simAnswered: number | null;
+  simScore: number | null;
 
   // Attribution
   source: string | null;
@@ -170,7 +189,7 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
   const { data: lead } = await admin
     .from("leads")
     .select(
-      "id, email, first_name, created_at, source, capture_source, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, device_type, geo_city, geo_region, geo_country, landing_referrer, landing_path, user_agent, funnel_session_id, score, questions_answered, weak_specialty_ids, result, code_sent_at, code_attempts, verified_at, completed_at, drip_step, drip_status, last_emailed_at, converted_at, unsubscribed_at, recovery_a_sent_at, recovery_b_step, recovery_sent_at, target_cohort, result_token",
+      "id, email, first_name, created_at, source, capture_source, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, device_type, geo_city, geo_region, geo_country, landing_referrer, landing_path, user_agent, funnel_session_id, score, questions_answered, weak_specialty_ids, result, code_sent_at, code_attempts, verified_at, completed_at, drip_step, drip_status, last_emailed_at, converted_at, unsubscribed_at, recovery_a_sent_at, recovery_b_step, recovery_sent_at, target_cohort, result_token, drip_funnel, fc_entered_at, fc_started_at, fc_completed_at, fc_last_activity_at, fc_progress, sim_entered_at, sim_started_at, sim_completed_at, sim_last_activity_at, sim_answered, sim_score",
     )
     .eq("id", id)
     .maybeSingle();
@@ -291,13 +310,41 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
     (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
   );
 
+  const source = (lead.source as string | null) ?? null;
+  const fcEnteredAt = (lead.fc_entered_at as string | null) ?? null;
+  const simEnteredAt = (lead.sim_entered_at as string | null) ?? null;
+  const questionsAnswered = (lead.questions_answered as number | null) ?? null;
+
+  const funnels: FunnelKey[] = [];
+  if (source === "simulado-honesto" || (questionsAnswered ?? 0) > 0) funnels.push("quiz");
+  if (fcEnteredAt) funnels.push("flashcards");
+  if (simEnteredAt) funnels.push("simulado");
+
+  // fc_progress is { [cardId]: 'correct' | 'incorrect' } — the count of reviewed
+  // cards is its key count, the same read the flashcards drip cron does.
+  const fcProgress = (lead.fc_progress as Record<string, unknown> | null) ?? null;
+
   return {
     id: lead.id as string,
     email,
     firstName: (lead.first_name as string | null) ?? null,
     createdAt: lead.created_at as string,
 
-    source: (lead.source as string | null) ?? null,
+    funnels,
+    dripFunnel: ((lead.drip_funnel as FunnelKey | null) ?? "quiz") as FunnelKey,
+    fcEnteredAt,
+    fcStartedAt: (lead.fc_started_at as string | null) ?? null,
+    fcCompletedAt: (lead.fc_completed_at as string | null) ?? null,
+    fcLastActivityAt: (lead.fc_last_activity_at as string | null) ?? null,
+    fcReviewed: fcProgress ? Object.keys(fcProgress).length : null,
+    simEnteredAt,
+    simStartedAt: (lead.sim_started_at as string | null) ?? null,
+    simCompletedAt: (lead.sim_completed_at as string | null) ?? null,
+    simLastActivityAt: (lead.sim_last_activity_at as string | null) ?? null,
+    simAnswered: (lead.sim_answered as number | null) ?? null,
+    simScore: (lead.sim_score as number | null) ?? null,
+
+    source,
     captureSource: (lead.capture_source as string | null) ?? null,
     utmSource: (lead.utm_source as string | null) ?? null,
     utmMedium: (lead.utm_medium as string | null) ?? null,
@@ -315,7 +362,7 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
     userAgent: (lead.user_agent as string | null) ?? null,
 
     score: (lead.score as number | null) ?? null,
-    questionsAnswered: (lead.questions_answered as number | null) ?? null,
+    questionsAnswered,
     weakSpecialties,
     answers,
 
