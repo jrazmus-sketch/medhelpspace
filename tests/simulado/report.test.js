@@ -25,6 +25,20 @@ async function get(path, cookie) {
   return { status: res.status, body, rendered, headers: res.headers };
 }
 
+// Question text reaches the page twice — once as markup, once inside the RSC
+// flight payload — and each escapes "<" its own way ("&lt;" and "<"). A
+// comentário containing "K < 3,0 mEq/L" then matches neither. Decode both forms
+// before looking for the raw database string.
+function decodeForMatch(s) {
+  return String(s)
+    .replace(/\\u003c/gi, '<')
+    .replace(/\\u003e/gi, '>')
+    .replace(/\\u0026/gi, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+}
+
 // Build a lead whose exam is already submitted, with a known answer pattern.
 async function seed({ email, correct, wrong, blankFlagged }) {
   const qs = await db`
@@ -151,12 +165,18 @@ async function seed({ email, correct, wrong, blankFlagged }) {
     `;
     check('all 100 questions rendered', all.every((q) => body.includes(`Questão ${q.position}<`)),
       'a question header is missing');
-    check('comentários present', all.every((q) => body.includes(q.comentario.slice(0, 40))),
-      'a comentário is missing');
-    check('distractor analysis present',
-      all.every((q) => body.includes(q.distratores.slice(0, 40))));
-    check('conceito-chave present',
-      all.every((q) => body.includes(q.conceito_chave.slice(0, 30))));
+    const haystack = decodeForMatch(body);
+    const missing = (field, len) =>
+      all.filter((q) => !haystack.includes(q[field].slice(0, len))).map((q) => q.position);
+    const missComentario = missing('comentario', 40);
+    const missDistratores = missing('distratores', 40);
+    const missConceito = missing('conceito_chave', 30);
+    check('comentários present', missComentario.length === 0,
+      `missing on Q${missComentario.join(', Q')}`);
+    check('distractor analysis present', missDistratores.length === 0,
+      `missing on Q${missDistratores.join(', Q')}`);
+    check('conceito-chave present', missConceito.length === 0,
+      `missing on Q${missConceito.join(', Q')}`);
     check('filters rendered', /Que eu errei/.test(body) && /Não respondidas/.test(body) &&
       /Marcadas/.test(body) && /Todas/.test(body));
     check('figures lazy-loaded', /loading="lazy"/.test(body));

@@ -10,9 +10,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A paciente tem hipertensão estágio 2 confirmada em medidas repetidas e risco cardiovascular elevado. Nesse cenário, a terapia inicial combinada em baixas doses aumenta a chance de controle precoce; IECA ou BRA é uma boa base, associado a bloqueador do canal de cálcio ou diurético tiazídico, além das mudanças de estilo de vida.",
-  "distratores": "A propõe monoterapia para uma pressão muito acima da meta; C escolhe betabloqueador sem indicação preferencial e posterga o bloqueio do sistema renina-angiotensina; D atrasa tratamento necessário, embora MAPA/MRPA possa complementar a avaliação.",
-  "conceito_chave": "Hipertensão estágio 2 e alto risco: iniciar combinação de dois fármacos de primeira linha.",
+  "comentario": "As medidas repetidas confirmam hipertensão arterial em faixa elevada, e a paciente tem diabetes, tabagismo e alto risco cardiovascular. Nessa situação, a combinação inicial de duas classes em baixas doses aumenta a chance de controle e deve ser associada a intervenções sobre tabagismo, sedentarismo, alimentação e peso. IECA ou BRA é uma boa base do esquema; pode ser combinado a bloqueador do canal de cálcio ou diurético tiazídico.",
+  "distratores": "A: A monoterapia tende a ser insuficiente diante de níveis pressóricos cerca de 20/10 mmHg acima da meta e de alto risco cardiovascular; C: Betabloqueador não é escolha inicial rotineira sem indicação específica, como doença coronariana, arritmia ou insuficiência cardíaca; D: A repetição com técnica adequada já documentou elevação persistente; MAPA ou MRPA não deve atrasar o tratamento de uma paciente de alto risco com valores tão elevados.",
+  "conceito_chave": "Hipertensão estágio 2 e alto risco cardiovascular favorecem início com combinação de duas classes.",
   "has_figure": false
  },
  {
@@ -26,9 +26,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "O quadro é compatível com bronquiolite com hipoxemia persistente, redução importante da ingesta e esforço respiratório moderado. A prioridade é oxigênio de baixo fluxo, higiene nasal, hidratação e internação para observação e reavaliação seriada.",
-  "distratores": "A inclui broncodilatador de rotina, que não é recomendado; B solicita radiografia e antibiótico sem sinais de pneumonia bacteriana; D antecipa alto fluxo antes de testar suporte convencional em criança sem exaustão ou apneia.",
-  "conceito_chave": "Bronquiolite: tratamento é suporte; oxigênio e internação quando há hipoxemia ou dificuldade alimentar relevante.",
+  "comentario": "O quadro é compatível com bronquiolite viral, com hipoxemia persistente e redução importante da ingesta. O tratamento é de suporte: oxigênio de baixo fluxo, higiene nasal e reposição hídrica, com internação para monitorização. A ausência de apneia, exaustão ou falha do oxigênio convencional não justifica iniciar cânula nasal de alto fluxo como primeira medida.",
+  "distratores": "A: Broncodilatador não é recomendado de rotina em bronquiolite típica; um teste indiscriminado acrescenta tratamento sem benefício demonstrado; B: Radiografia e antibiótico não são rotineiros sem sinais de pneumonia bacteriana ou complicação; D: Alto fluxo é opção para hipoxemia ou esforço respiratório que não respondem adequadamente ao oxigênio convencional, não a etapa inicial obrigatória neste caso.",
+  "conceito_chave": "Bronquiolite é tratada com suporte; oxigênio, hidratação e monitorização são guiados pela gravidade.",
   "has_figure": false
  },
  {
@@ -42,9 +42,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Sem documentação de infecção recente ou tratamento prévio, a gestante deve ser tratada como sífilis de duração ignorada. Como a história sugere anafilaxia à penicilina, é necessária dessensibilização hospitalar, seguida de três doses semanais de benzilpenicilina benzatina, mantendo intervalos rigorosos.",
-  "distratores": "A interpreta o título alto como prova de infecção recente; B aceita intervalo excessivo entre as doses na gestação; D substitui a penicilina, único tratamento comprovadamente eficaz para prevenir sífilis congênita.",
-  "conceito_chave": "Sífilis na gestação com alergia verdadeira: dessensibilizar e tratar com penicilina.",
+  "comentario": "Sem documentação de infecção adquirida no último ano, a gestante deve ser tratada como sífilis latente de duração ignorada: benzilpenicilina benzatina 2,4 milhões UI por via intramuscular, semanalmente, por três semanas. A história é compatível com reação imediata grave à penicilina; como a penicilina é o único tratamento com eficácia comprovada para prevenir transmissão vertical, deve-se realizar dessensibilização em ambiente hospitalar. Na gestação, as doses são idealmente semanais e o intervalo não pode ultrapassar nove dias.",
+  "distratores": "A: Título alto não prova, isoladamente, infecção recente; dose única subtrataria sífilis de duração ignorada; B: O esquema de três doses está correto, mas o limite de 14 dias não se aplica à gestante; acima de nove dias o esquema deve ser reiniciado; D: Ceftriaxona não substitui a penicilina como tratamento materno adequado para prevenção da sífilis congênita.",
+  "conceito_chave": "Na gestação, alergia à penicilina exige dessensibilização; sífilis de duração ignorada recebe três doses semanais.",
   "has_figure": false
  },
  {
@@ -58,9 +58,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A tomografia mostra apendicite aguda não complicada, mas a presença de apendicolito aumenta a chance de falha e recorrência do tratamento não operatório. A apendicectomia laparoscópica na mesma internação é a estratégia definitiva preferencial; se não houver perfuração, não se mantém antibiótico no pós-operatório.",
-  "distratores": "B posterga desnecessariamente a cirurgia; C oferece tratamento conservador em cenário menos favorável pela presença do apendicolito; D indica apendicectomia intervalar, conduta reservada a contextos específicos, como massa ou abscesso tratados inicialmente sem operação.",
-  "conceito_chave": "Apendicite não complicada com apendicolito: preferir apendicectomia na internação.",
+  "comentario": "A tomografia mostra apendicite aguda não complicada, mas com apendicolito, fator associado a maior falha do tratamento não operatório. Em paciente jovem e estável, a apendicectomia laparoscópica na internação é a conduta preferencial. Se a cirurgia confirmar doença não complicada e houver controle adequado do foco, basta antibioticoprofilaxia, sem antibiótico pós-operatório.",
+  "distratores": "B: Não há benefício em aguardar normalização de febre ou marcadores antes de operar uma apendicite não complicada estável; C: Antibioticoterapia isolada é menos adequada com apendicolito, devido ao maior risco de falha e recorrência; D: Apendicectomia intervalar não é indicada após tratamento conservador de apendicite não complicada; além disso, o tratamento inicial preferencial aqui é cirúrgico.",
+  "conceito_chave": "Apendicite não complicada com apendicolito favorece apendicectomia; antibiótico pós-operatório não é rotineiro se não houver complicação.",
   "has_figure": false
  },
  {
@@ -74,9 +74,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Na cetoacidose diabética com potássio abaixo de 3,0 mEq/L, a insulina deve ser temporariamente adiada porque agravaria a hipocalemia e aumentaria o risco de arritmia. Inicia-se solução isotônica, reposição de potássio e monitorização cardíaca; a insulina entra após hidratação inicial e correção do potássio para nível seguro.",
-  "distratores": "A inicia insulina sem confirmar correção da hipocalemia; B exige potássio e bicarbonato desnecessariamente altos; D associa insulina desde o início apesar do potássio crítico.",
-  "conceito_chave": "CAD com K baixo: corrigir potássio antes de iniciar insulina.",
+  "comentario": "Há cetoacidose diabética com hipocalemia importante. A insulina desloca potássio para o meio intracelular e pode precipitar arritmia fatal; por isso, deve ser adiada enquanto o potássio estiver abaixo de 3,0 mEq/L. Inicia-se solução isotônica e reposição de potássio com monitorização cardíaca; após pelo menos uma hora de hidratação e potássio acima de 3,0 mEq/L, inicia-se insulina intravenosa.",
+  "distratores": "A: Iniciar insulina independentemente da nova concentração de potássio mantém risco de hipocalemia grave; B: Não é necessário aguardar potássio acima de 4,0 mEq/L nem bicarbonato acima de 12 mEq/L; o critério imediato é corrigir a hipocalemia para faixa segura; D: Diurese presente permite repor potássio, mas não torna segura a administração simultânea de insulina com potássio de 2,8 mEq/L.",
+  "conceito_chave": "Na cetoacidose com K < 3,0 mEq/L, repor potássio primeiro e adiar insulina.",
   "has_figure": false
  },
  {
@@ -90,9 +90,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Na estratégia nacional de resgate para adolescentes e jovens de 15 a 19 anos sem histórico vacinal contra HPV, o esquema para imunocompetentes é de dose única. Na ausência de registro confiável, considera-se não vacinado e aplica-se a dose na oportunidade.",
-  "distratores": "B e C usam esquemas multidose que não correspondem ao resgate do imunocompetente; D cria uma repetição condicionada à falta de registro, sem indicação.",
-  "conceito_chave": "Resgate HPV de 15 a 19 anos, imunocompetente e sem registro: uma dose.",
+  "comentario": "A estratégia nacional de resgate prorrogada para 2026 contempla adolescentes e jovens de 15 a 19 anos sem vacinação ou sem registro. Para imunocompetentes, o esquema é de dose única. A ausência de caderneta ou registro, após busca nos sistemas disponíveis, autoriza a vacinação e evita oportunidade perdida.",
+  "distratores": "B: Duas doses não são exigidas apenas porque a vacinação começou após os 15 anos nessa estratégia de resgate; C: Três doses são reservadas a grupos específicos, como imunossuprimidos e algumas indicações especiais, não à simples falta de registro; D: Não se repete a dose em seis meses apenas porque um registro antigo continua indisponível.",
+  "conceito_chave": "Resgate do HPV em imunocompetentes de 15 a 19 anos não vacinados: uma dose em 2026.",
   "has_figure": false
  },
  {
@@ -106,9 +106,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A combinação de microcitose, ferritina baixa e saturação da transferrina reduzida confirma anemia ferropriva. Em mulher pós-menopausa, é necessário investigar perda gastrointestinal com colonoscopia e endoscopia digestiva alta, sem esperar a resposta à reposição de ferro.",
-  "distratores": "A condiciona a endoscopia alta ao resultado da colonoscopia; C usa FIT como triagem em uma paciente que já tem anemia ferropriva; D posterga investigação etiológica potencialmente importante.",
-  "conceito_chave": "Anemia ferropriva em homem ou mulher pós-menopausa: investigar trato gastrointestinal alto e baixo.",
+  "comentario": "Os índices hematimétricos e os estudos de ferro confirmam anemia ferropriva. Em mulher pós-menopausa, mesmo sem sintomas digestivos, deve-se investigar perda gastrointestinal ou neoplasia com avaliação bidirecional: colonoscopia e endoscopia digestiva alta. A reposição de ferro pode ser iniciada, mas a investigação não deve aguardar resposta hematológica.",
+  "distratores": "A: Condicionar a endoscopia alta a colonoscopia normal pode deixar de identificar fonte alta concomitante; C: Teste imunoquímico fecal não substitui colonoscopia na investigação de anemia ferropriva estabelecida; D: Resposta ao ferro não exclui sangramento oculto nem neoplasia; esperar oito semanas atrasa a investigação etiológica.",
+  "conceito_chave": "Anemia ferropriva em homem ou mulher pós-menopausa exige investigação gastrointestinal, geralmente com endoscopia alta e colonoscopia.",
   "has_figure": false
  },
  {
@@ -122,9 +122,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "O gráfico mostra peso abaixo do esperado com cruzamento descendente de curvas, caracterizando queda progressiva do escore-z. A abordagem inicial deve ser ampla: avaliar alimentação, interação cuidador-criança, crescimento linear, IMC, condições sociais e instituir intervenção nutricional com seguimento próximo.",
-  "distratores": "A chama de variante constitucional apesar da desaceleração; C inicia suplemento e exames padronizados sem avaliação etiológica inicial adequada; D presume doença orgânica e encaminha antes de investigar causas alimentares e psicossociais mais comuns.",
-  "conceito_chave": "Queda de escore-z é sinal de alerta: avaliar crescimento global e contexto alimentar e social.",
+  "comentario": "A curva ponderal permanece abaixo do escore-z -2 e se afasta progressivamente das curvas de referência, configurando baixo peso para a idade com desaceleração. A primeira abordagem deve ser ampla e proporcional: revisar alimentação, dinâmica cuidador-criança, estatura, IMC e condições sociais; iniciar intervenção nutricional e acompanhar em intervalo curto. A ausência de sintomas reduz a probabilidade de doença orgânica, mas não transforma a trajetória em variante normal.",
+  "distratores": "A: Desenvolvimento adequado não neutraliza a queda progressiva do escore-z; seis meses é intervalo excessivo para reavaliação; C: Suplemento hipercalórico e exames padronizados não devem preceder avaliação alimentar e antropométrica completa; três meses pode ser longo diante de queda contínua; D: A investigação extensa e o encaminhamento antes de intervenção nutricional não são a primeira etapa em criança ativa e sem sinais de doença orgânica.",
+  "conceito_chave": "Mais importante que um ponto isolado é a trajetória: cruzamento descendente de curvas exige avaliação e acompanhamento próximos.",
   "has_figure": true
  },
  {
@@ -138,9 +138,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Há hemorragia externa ameaçadora à vida com choque hemorrágico. O controle deve ser simultâneo: torniquete, acessos calibrosos, ácido tranexâmico precoce, protocolo de transfusão maciça com hemocomponentes aquecidos e encaminhamento imediato para hemostasia definitiva.",
-  "distratores": "A prioriza grande volume de cristaloide e atrasa hemoderivados; B propõe tomografia em paciente que necessita controle imediato do foco; C aguarda exames antes de completar a reposição balanceada.",
-  "conceito_chave": "Choque hemorrágico: controlar a fonte e iniciar ressuscitação hemostática sem atrasos.",
+  "comentario": "O choque hemorrágico decorre de sangramento compressível de membro que não cessou com compressão manual. Deve-se aplicar torniquete proximal imediatamente, iniciar ácido tranexâmico dentro de três horas, obter acessos calibrosos, ativar transfusão maciça com hemocomponentes aquecidos em estratégia hemostática e encaminhar para controle definitivo sem atrasos.",
+  "distratores": "A: Um litro de cristaloide pode agravar diluição e coagulopatia; a ativação da transfusão não deve esperar falha dessa reposição; B: Tomografia de corpo inteiro atrasaria o controle de um foco externo evidente em paciente instável; C: Aguardar coagulograma para completar a reposição hemostática retarda tratamento de choque grave.",
+  "conceito_chave": "Hemorragia externa maciça: controlar o sangramento primeiro e ressuscitar com sangue, não com grandes volumes de cristaloide.",
   "has_figure": false
  },
  {
@@ -154,25 +154,25 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Adolescente com capacidade de compreensão, relação consensual e ausência de risco pode receber atendimento confidencial. Deve-se ofertar qualquer método elegível, inclusive DIU ou implante, por decisão compartilhada e sem impor método específico ou exames desnecessários.",
-  "distratores": "A privilegia o implante apenas pela nuliparidade; C condiciona LARC a rastreamento de IST negativo; D transforma o preservativo em requisito para inserção, embora deva ser recomendado para prevenção de IST, não imposto como condição.",
-  "conceito_chave": "Planejamento reprodutivo do adolescente: sigilo, autonomia e escolha compartilhada.",
+  "comentario": "Adolescente com capacidade para compreender o cuidado, em relação consensual e sem risco relevante, tem direito a atendimento confidencial e acesso à contracepção. Métodos reversíveis de longa duração podem ser ofertados, mas a escolha deve ser compartilhada e não imposta pela nuliparidade. Rastreamento de IST e preservativo devem ser recomendados conforme risco, sem condicionar o método contraceptivo.",
+  "distratores": "A: O implante não deve ser priorizado de forma impositiva apenas por nuliparidade; DIU também é elegível; C: Rastreamento de IST não é pré-requisito geral para iniciar implante ou para inserção de DIU quando não há cervicite ativa; D: Preservativo deve ser aconselhado para prevenção de IST, mas seu uso não pode ser condição para oferecer LARC.",
+  "conceito_chave": "Adolescente capaz pode receber contracepção confidencial; LARC é elegível, com escolha compartilhada.",
   "has_figure": false
  },
  {
   "number": 11,
   "enunciado": "Mulher de 28 anos, no quarto dia de dengue, evolui com dor abdominal intensa e contínua, vômitos persistentes e elevação progressiva do hematócrito. A contagem de plaquetas é de 78.000/mm³. Apresenta pressão arterial de 110/70 mmHg, pulsos amplos, extremidades aquecidas e diurese preservada, sem sangramento grave, choque ou disfunção de órgãos. Conforme o manual de manejo clínico da dengue do Ministério da Saúde, a conduta mais adequada é:",
   "alternatives": [
-   "Classificar no Grupo C, internar e administrar solução salina 10 mL/kg na primeira e na segunda hora, com reavaliações seriadas.",
+   "Classificar no Grupo C, internar e administrar solução salina a 0,9% 10 mL/kg na primeira hora e 10 mL/kg na segunda hora, com reavaliações clínica e laboratorial.",
    "Classificar no Grupo C, internar e administrar solução salina 20 mL/kg em duas horas, reavaliando ao final da expansão.",
    "Classificar no Grupo D, internar e administrar solução salina 20 mL/kg em 20 minutos, com reavaliação imediata.",
    "Classificar no Grupo C, internar e administrar solução salina 10 mL/kg na primeira hora, passando à manutenção se permanecer estável."
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Dor abdominal intensa, vômitos persistentes e elevação do hematócrito são sinais de alarme, sem choque ou disfunção orgânica; portanto, trata-se de dengue Grupo C. Deve-se iniciar solução isotônica 10 mL/kg na primeira hora, reavaliar o quadro clínico e o hematócrito e manter 10 mL/kg/h na segunda hora, ajustando as etapas seguintes conforme a resposta.",
-  "distratores": "B dilui 20 mL/kg em duas horas sem a reavaliação intermediária prevista; C classifica como Grupo D apesar da ausência de choque; D passa precocemente à manutenção sem completar a avaliação da resposta.",
-  "conceito_chave": "Dengue com sinais de alarme: Grupo C, expansão de 10 mL/kg e reavaliações frequentes.",
+  "comentario": "Dor abdominal intensa, vômitos persistentes e hematócrito em ascensão são sinais de alarme, sem critérios de choque: dengue Grupo C. O Ministério da Saúde orienta internação, solução salina a 0,9% 10 mL/kg na primeira hora, reavaliação clínica, mais 10 mL/kg na segunda hora e reavaliação clínica e do hematócrito ao fim dessa etapa.",
+  "distratores": "B: Embora o volume total seja semelhante, administrar 20 mL/kg sem reavaliar após a primeira hora perde uma etapa de segurança do protocolo; C: Grupo D exige choque, sangramento grave ou disfunção orgânica; pulsos amplos, perfusão e diurese preservadas afastam essa classificação; D: A manutenção só começa após melhora clínica e laboratorial da fase de expansão; não deve ser presumida ao fim da primeira hora.",
+  "conceito_chave": "Dengue com sinais de alarme e sem choque é Grupo C: 10 mL/kg na primeira e na segunda hora, com reavaliações.",
   "has_figure": false
  },
  {
@@ -186,9 +186,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "O padrão é típico de migrânea sem aura na infância, sem sinais de alarme e com exame neurológico normal. A primeira abordagem inclui medidas de rotina de sono, alimentação e hidratação, diário de cefaleia e analgésico precoce, como ibuprofeno, no início da crise.",
-  "distratores": "B inicia profilaxia sem frequência ou incapacidade que a justifique; C coloca triptano como primeira escolha e condiciona imagem à resposta; D solicita ressonância por características que são compatíveis com migrânea pediátrica.",
-  "conceito_chave": "Migrânea infantil típica e sem alarme: manejo clínico; neuroimagem não é rotina.",
+  "comentario": "A criança preenche critérios clínicos de migrânea sem aura; em pediatria, crises podem durar de 2 a 72 horas e ser bilaterais. Sem sinais de alarme, exame neurológico e fundo de olho normais dispensam neuroimagem. A abordagem inicial combina controle de gatilhos, diário e analgésico precoce, como ibuprofeno.",
+  "distratores": "B: Seis episódios em quatro meses não obrigam profilaxia; ela depende de frequência, incapacidade e falha do manejo agudo, após decisão individualizada; C: Triptano não é a primeira opção antes de analgésicos usuais; ressonância não é indicada apenas por falha em duas crises; D: Bilateralidade e duração de duas a três horas são compatíveis com migrânea infantil e não exigem imagem.",
+  "conceito_chave": "Migrânea infantil pode ser bilateral e durar a partir de duas horas; sem alarme, trate clinicamente.",
   "has_figure": false
  },
  {
@@ -202,9 +202,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Sintomas persistentes por mais de duas semanas, anedonia e prejuízo funcional caracterizam depressão pós-parto, não tristeza puerperal. Em episódio moderado, sem psicose ou risco suicida, e com preferência informada, é adequado combinar psicoterapia e antidepressivo compatível com a lactação, mantendo amamentação e seguimento precoce.",
-  "distratores": "A posterga o antidepressivo apesar da gravidade moderada e da preferência pelo tratamento combinado; B suspende a amamentação sem necessidade; C posterga a psicoterapia, embora a paciente tenha acesso e deseje a combinação.",
-  "conceito_chave": "Depressão pós-parto moderada: tratamento combinado e monitorização; psicose ou suicídio mudam a urgência.",
+  "comentario": "A duração superior a duas semanas, anedonia, culpa e prejuízo funcional caracterizam depressão pós-parto moderada, não tristeza puerperal. Como a paciente prefere tratamento combinado e tem acesso, psicoterapia estruturada mais antidepressivo compatível com lactação é uma escolha adequada. A amamentação pode ser mantida, com reavaliação precoce de resposta, efeitos adversos e risco.",
+  "distratores": "A: Psicoterapia isolada contraria a preferência informada e pode ser insuficiente diante do prejuízo importante; B: Não é necessário suspender a amamentação ao iniciar antidepressivo compatível com a lactação; C: Farmacoterapia isolada não corresponde à preferência por tratamento combinado e posterga uma intervenção eficaz já acessível.",
+  "conceito_chave": "Depressão pós-parto moderada pode ser tratada com psicoterapia e antidepressivo compatível, mantendo amamentação.",
   "has_figure": false
  },
  {
@@ -218,9 +218,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A radiografia mostra consolidação lobar compatível com pneumonia adquirida na comunidade, e o paciente não apresenta critérios de gravidade ou comorbidades que exijam esquema ampliado. A amoxicilina oral, com reavaliação em 48 a 72 horas, é opção ambulatorial adequada.",
-  "distratores": "A amplia desnecessariamente a cobertura; C interna e usa ceftriaxona sem critérios clínicos; D acrescenta corticosteroide sistêmico, que não é indicado rotineiramente na pneumonia não grave.",
-  "conceito_chave": "PAC não grave em adulto sem comorbidades: tratamento oral ambulatorial e reavaliação.",
+  "comentario": "A radiografia mostra consolidação lobar compatível com pneumonia adquirida na comunidade. O paciente é jovem, estável, sem hipoxemia ou comorbidades que ampliem a cobertura e pode ser tratado ambulatorialmente com amoxicilina oral e reavaliação em 48 a 72 horas.",
+  "distratores": "A: Amoxicilina-clavulanato mais macrolídeo é cobertura mais ampla que a necessária para adulto ambulatorial sem comorbidades relevantes; C: Consolidação lobar isolada e tabagismo não indicam internação nem ceftriaxona intravenosa; D: Corticosteroide sistêmico não é tratamento rotineiro de pneumonia comunitária não grave.",
+  "conceito_chave": "Pneumonia comunitária não grave em adulto sem comorbidades pode ser tratada ambulatorialmente com amoxicilina.",
   "has_figure": true
  },
  {
@@ -234,25 +234,25 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Contato domiciliar com prova tuberculínica reagente, radiografia normal e ausência de sintomas caracteriza infecção latente pelo Mycobacterium tuberculosis. Para criança com cepa sensível, o esquema de rifampicina associada à isoniazida por três meses é uma opção curta e eficaz.",
-  "distratores": "B usa rifampicina isolada por duração inadequada; C prescreve isoniazida por apenas três meses; D descreve rifapentina e isoniazida diariamente, enquanto o esquema 3HP é semanal e depende de critérios de uso.",
-  "conceito_chave": "ILTB: excluir doença ativa antes de iniciar esquema preventivo.",
+  "comentario": "Contato domiciliar, prova tuberculínica de 7 mm e exclusão de doença ativa estabelecem infecção latente por tuberculose. Entre os esquemas recomendados está rifampicina associada à isoniazida diariamente por três meses (3HR), apropriado para a criança e para bacilo sensível aos dois fármacos.",
+  "distratores": "B: Rifampicina isolada é esquema válido por quatro meses, não por três meses; C: Isoniazida isolada não é administrada por apenas três meses; os esquemas usuais são mais prolongados; D: Isoniazida mais rifapentina por três meses é administrada semanalmente, não diariamente.",
+  "conceito_chave": "ILTB em contato pediátrico pode ser tratada com 3HR diário; cuidado com duração e frequência dos esquemas.",
   "has_figure": false
  },
  {
   "number": 16,
-  "enunciado": "Mulher de 42 anos apresenta dor contínua em hipocôndrio direito há 12 horas, associada a náuseas, inapetência e temperatura de 38,1 °C. Ao exame, apresenta dor à palpação do hipocôndrio direito e sinal de Murphy positivo. Está hemodinamicamente estável e não apresenta disfunção orgânica. A ultrassonografia evidencia cálculos na vesícula, espessamento da parede vesicular e Murphy ultrassonográfico positivo. Bilirrubinas e enzimas canaliculares estão normais, o colédoco mede 4 mm e não há imagem de cálculo na via biliar. A paciente apresenta baixo risco cirúrgico. A conduta mais adequada é:",
+  "enunciado": "Mulher de 42 anos apresenta dor contínua em hipocôndrio direito há 12 horas, náuseas e temperatura de 38,1 °C. Ao exame, há sinal de Murphy positivo. Está hemodinamicamente estável, sem disfunção orgânica. A ultrassonografia evidencia cálculos, espessamento da parede vesicular e Murphy ultrassonográfico positivo. Bilirrubinas e enzimas canaliculares são normais, o colédoco mede 4 mm e não há cálculo na via biliar. A paciente tem baixo risco cirúrgico. A conduta mais adequada é:",
   "alternatives": [
-   "Suporte clínico e colecistectomia laparoscópica precoce na mesma internação.",
-   "Suporte clínico e colecistectomia eletiva em seis a oito semanas após melhora.",
-   "Colangiorressonância antes da cirurgia, pelo risco de coledocolitíase.",
-   "Colecistectomia na mesma internação, após resolução clínica e laboratorial."
+   "Iniciar suporte clínico e realizar colecistectomia laparoscópica precoce na mesma internação.",
+   "Iniciar suporte clínico e realizar colecistostomia percutânea, programando colecistectomia após seis a oito semanas.",
+   "Iniciar suporte clínico e solicitar colangiorressonância antes da cirurgia, devido à possibilidade de coledocolitíase.",
+   "Tratar com antimicrobianos até resolução dos sintomas, conceder alta e programar colecistectomia eletiva em seis a oito semanas."
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "O quadro clínico e ultrassonográfico é de colecistite aguda calculosa não complicada, sem evidência de coledocolitíase e em paciente de baixo risco cirúrgico. A conduta é suporte clínico e colecistectomia laparoscópica precoce na mesma internação.",
-  "distratores": "B aumenta recorrência e novas complicações ao adiar a cirurgia; C solicita colangiorressonância sem sinais de cálculo na via biliar; D espera resolução completa, quando a cirurgia precoce é preferível.",
-  "conceito_chave": "Colecistite aguda não complicada: colecistectomia precoce na mesma internação.",
+  "comentario": "O caso preenche critérios de colecistite aguda calculosa sem disfunção orgânica e sem sinais de coledocolitíase. Em paciente de baixo risco, o tratamento inclui suporte, antimicrobiano quando indicado e colecistectomia laparoscópica precoce na mesma internação, idealmente sem aguardar resolução completa do processo.",
+  "distratores": "B: Colecistostomia percutânea é reservada principalmente a pacientes de alto risco cirúrgico ou sem condições para operação imediata; C: Bilirrubinas normais, colédoco de 4 mm e ausência de cálculo não justificam colangiorressonância pré-operatória rotineira; D: Tratamento clínico seguido de cirurgia tardia aumenta risco de recorrência e reinternação quando a cirurgia precoce é segura.",
+  "conceito_chave": "Colecistite calculosa em paciente operável: colecistectomia laparoscópica precoce na mesma internação.",
   "has_figure": false
  },
  {
@@ -266,9 +266,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "O paciente é elegível para trombólise intravenosa e tem sinais de oclusão de grande vaso. A angiotomografia deve ser obtida em paralelo, sem atrasar o trombolítico, e a transferência para centro com trombectomia deve ocorrer se a oclusão for confirmada.",
-  "distratores": "A espera a resposta à trombólise antes de investigar grande vaso; B omite trombólise de ponte sem contraindicação; C propõe alvo pressórico mais baixo que o necessário e posterga a angiografia.",
-  "conceito_chave": "AVC isquêmico com possível grande vaso: trombólise sem atraso e avaliação imediata para trombectomia.",
+  "comentario": "Há AVC isquêmico incapacitante dentro da janela de trombólise e provável oclusão de grande vaso. A pressão está abaixo de 185/110 mmHg e não contraindica trombólise. Deve-se iniciar trombolítico intravenoso sem esperar angiotomografia; a angiotomografia é obtida sem atrasar a infusão e, se confirmar grande vaso, organiza-se transferência imediata para trombectomia.",
+  "distratores": "A: Esperar o fim da infusão e a resposta clínica atrasa a identificação e a transferência para trombectomia; B: A trombólise ponte não deve ser omitida em paciente elegível apenas porque se planeja trombectomia; C: Não é necessário reduzir a pressão para menos de 160/90 mmHg; o limiar pré-trombólise é inferior a 185/110 mmHg.",
+  "conceito_chave": "Na suspeita de grande vaso, faça trombólise se elegível e angiotomografia sem atrasar o trombolítico.",
   "has_figure": false
  },
  {
@@ -282,9 +282,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Dor à mobilização do colo e anexos, sem abscesso, gravidez ou gravidade sistêmica, permite tratamento ambulatorial de doença inflamatória pélvica. O esquema deve cobrir gonococo, clamídia e anaeróbios: ceftriaxona em dose única, doxiciclina e metronidazol por 14 dias.",
-  "distratores": "A torna o metronidazol opcional; B usa azitromicina em dose única como substituição inadequada da doxiciclina; C reduz a duração para sete dias.",
-  "conceito_chave": "DIP ambulatorial: ceftriaxona + doxiciclina + metronidazol por 14 dias.",
+  "comentario": "Dor pélvica com dor à mobilização cervical e anexial sustenta diagnóstico clínico de doença inflamatória pélvica. Sem gestação, abscesso, peritonite ou gravidade sistêmica, o tratamento é ambulatorial com ceftriaxona 500 mg intramuscular em dose única, doxiciclina e metronidazol por 14 dias.",
+  "distratores": "A: O metronidazol deve integrar rotineiramente o esquema para cobertura de anaeróbios, não apenas quando vaginose é demonstrada; B: Azitromicina em dose única não substitui o curso de doxiciclina de 14 dias no esquema-padrão apresentado; C: Sete dias são insuficientes para doxiciclina e metronidazol no tratamento de DIP.",
+  "conceito_chave": "DIP ambulatorial: ceftriaxona dose única mais doxiciclina e metronidazol por 14 dias.",
   "has_figure": false
  },
  {
@@ -298,9 +298,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "O líquor é compatível com meningite bacteriana. Devem-se colher hemoculturas sem atrasar o tratamento, iniciar ceftriaxona imediatamente e administrar dexametasona antes ou junto da primeira dose; o esquema é reavaliado após bacterioscopia, cultura e sensibilidade.",
-  "distratores": "A condiciona a dexametasona ao resultado inicial; B acrescenta vancomicina apesar de o enunciado excluir resistência pneumocócica relevante local; C inicia o corticosteroide tarde, após confirmação etiológica.",
-  "conceito_chave": "Meningite bacteriana: antibiótico imediato; dexametasona antes ou com a primeira dose.",
+  "comentario": "O líquor é típico de meningite bacteriana. Hemoculturas devem ser colhidas sem retardar o antibiótico. No cenário explicitado, o esquema empírico nacional com ceftriaxona é apropriado; dexametasona deve ser iniciada imediatamente antes ou junto da primeira dose para preservar possível benefício, sendo reavaliada quando a etiologia for conhecida.",
+  "distratores": "A: Esperar sugestão bacterioscópica pode fazer perder a janela de benefício da dexametasona; B: A vancomicina não é necessária no cenário que exclui resistência pneumocócica relevante às cefalosporinas; sua manutenção indiscriminada amplia espectro sem indicação; C: Dexametasona iniciada após confirmação etiológica ou muitas horas depois não oferece o mesmo benefício.",
+  "conceito_chave": "Na meningite bacteriana, antibiótico não pode atrasar; dexametasona, quando indicada, deve preceder ou acompanhar a primeira dose.",
   "has_figure": false
  },
  {
@@ -314,9 +314,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Não há cetoacidose, mas existe hiperglicemia importante por subutilização de insulina e vulnerabilidade social. O plano mais seguro é reconstruir um esquema basal-bolus individualizado com NPH e regular, incluindo doses prandiais e correções, garantir insumos, educação e retorno próximo.",
-  "distratores": "A usa predominantemente escala de correção, sem esquema prandial estruturado; B simplesmente retoma doses antigas sem reavaliação; D posterga insulina prandial e mantém manejo reativo.",
-  "conceito_chave": "DM1 exige insulina basal e prandial; barreiras de acesso devem ser tratadas como parte do plano.",
+  "comentario": "O paciente tem hiperglicemia por subdosagem de insulina, mas não apresenta cetoacidose. Diabetes tipo 1 exige insulina basal e prandial continuamente. A UBS pode instituir esquema basal-bolus individualizado com NPH e regular, incluir correções, garantir insumos, educação para hipoglicemia e dias de doença, apoio social e retorno próximo.",
+  "distratores": "A: NPH mais regular apenas por escala de correção omite doses prandiais programadas e favorece variabilidade glicêmica; B: Retomar cegamente doses antigas ignora perda ponderal, alimentação atual e risco de hipoglicemia; é preciso reavaliar e individualizar; D: Adiar doses prandiais até glicemia abaixo de 250 mg/dL perpetua deficiência de insulina nas refeições.",
+  "conceito_chave": "Diabetes tipo 1 nunca deve ficar sem insulina basal; organize esquema basal-bolus e remova barreiras de acesso.",
   "has_figure": false
  },
  {
@@ -330,9 +330,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "O eletrocardiograma mostra bradicardia importante em paciente com hipotensão, alteração do nível de consciência e sinais de má perfusão. A abordagem inicial inclui suporte, monitorização, acesso venoso e atropina; se não houver resposta rápida, prepara-se estimulação transcutânea ou infusão de dopamina/epinefrina.",
-  "distratores": "B coloca a estimulação antes da tentativa inicial com atropina; C inverte a sequência ao começar pelo vasopressor; D atribui a instabilidade à hipovolemia e atrasa tratamento específico da bradicardia.",
-  "conceito_chave": "Bradicardia sintomática instável: atropina e preparo imediato para marcapasso ou infusão vasoativa.",
+  "comentario": "O eletrocardiograma mostra bradicardia acentuada, e o paciente apresenta sinais inequívocos de instabilidade: hipotensão, alteração do sensório, dispneia e má perfusão. Após suporte, monitorização e acesso, administra-se atropina intravenosa e prepara-se imediatamente estimulação transcutânea ou infusão de dopamina/epinefrina se não houver resposta.",
+  "distratores": "B: A estimulação pode ser necessária, mas atropina não deve ser reservada apenas para falha de captura; pode ser administrada enquanto o marcapasso é preparado; C: Vasopressor é alternativa após falha da atropina ou quando a estimulação não está disponível; não precisa precedê-la neste traçado; D: Expansão volêmica isolada não trata a causa elétrica da instabilidade e atrasaria cronotropismo ou estimulação.",
+  "conceito_chave": "Bradicardia instável: atropina sem demora e preparação simultânea para marcapasso ou infusão vasoativa.",
   "has_figure": true
  },
  {
@@ -346,9 +346,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Insuficiência aórtica aguda importante com edema pulmonar persistente representa insuficiência cardíaca grave por destruição valvar. A indicação é cirurgia de emergência, idealmente em até 24 horas, mantendo antibiótico direcionado e suporte durante o preparo.",
-  "distratores": "A permite espera de 24 a 48 horas apesar da congestão refratária; B posterga cirurgia em quadro de deterioração; D aguarda controle da bacteremia, o que pode ser fatal diante da falência valvar.",
-  "conceito_chave": "Endocardite com regurgitação aguda e edema pulmonar refratário: cirurgia de emergência.",
+  "comentario": "Endocardite de valva aórtica com insuficiência aórtica aguda importante e edema pulmonar persistente apesar de tratamento configura insuficiência cardíaca grave por destruição valvar. O controle definitivo exige cirurgia de emergência, idealmente em até 24 horas, sem esperar esterilização das hemoculturas; antibiótico direcionado e suporte continuam no preparo.",
+  "distratores": "A: Prazo de 24 a 48 horas pode ser tardio diante de edema pulmonar persistente e insuficiência valvar aguda importante; B: Aguardar três a cinco dias em busca de estabilidade mantém a lesão mecânica causadora da deterioração; D: Controle da bacteremia não corrige a regurgitação aguda e não deve preceder a cirurgia necessária por insuficiência cardíaca.",
+  "conceito_chave": "Na endocardite, insuficiência valvar aguda com edema pulmonar refratário é indicação de cirurgia de emergência.",
   "has_figure": false
  },
  {
@@ -362,9 +362,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Cálculo distal de 6 mm, dor controlada, ausência de infecção e função renal preservada permitem tratamento expulsivo. Analgesia, alfabloqueador, orientação de retorno e acompanhamento são adequados, com intervenção se houver complicação ou ausência de eliminação em prazo razoável.",
-  "distratores": "B restringe inadequadamente o alfabloqueador a cálculos proximais ou maiores; C indica ureteroscopia imediata apesar da chance de eliminação; D fixa prazo curto de duas semanas como indicação automática de intervenção.",
-  "conceito_chave": "Cálculo ureteral distal pequeno e sem complicação: manejo expectante com terapia expulsiva.",
+  "comentario": "Cálculo distal de 6 mm, dor controlada, função renal preservada e ausência de infecção permitem manejo expulsivo. Analgesia e alfabloqueador podem aumentar a chance de eliminação de cálculos distais maiores que 5 mm, com acompanhamento e intervenção se surgirem febre, obstrução relevante, perda de função, dor intratável ou ausência de eliminação após período razoável.",
+  "distratores": "B: Alfabloqueador é mais útil justamente em cálculo distal de 5 a 10 mm, não apenas proximal ou acima de 10 mm; C: Discreta dilatação isolada não torna obrigatória ureteroscopia precoce em paciente estável; D: Duas semanas é prazo rígido e curto; a observação pode alcançar cerca de quatro a seis semanas se não houver complicações.",
+  "conceito_chave": "Cálculo ureteral distal de 5 a 10 mm e sem complicação pode receber terapia expulsiva e seguimento.",
   "has_figure": false
  },
  {
@@ -378,9 +378,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Há pré-eclâmpsia com sinais de gravidade e provável síndrome HELLP parcial em 35 semanas. Deve-se prevenir eclâmpsia com sulfato de magnésio, tratar imediatamente a hipertensão grave e resolver a gestação após estabilização materna; a via de parto depende das condições obstétricas.",
-  "distratores": "A inicia indução simultaneamente à estabilização; C propõe conduta expectante apesar da gravidade e idade gestacional; D transforma trombocitopenia e transaminases elevadas em indicação automática de cesariana.",
-  "conceito_chave": "Pré-eclâmpsia grave após 34 semanas: estabilizar a mãe e interromper a gestação.",
+  "comentario": "A gestante tem hipertensão crônica com pré-eclâmpsia sobreposta e sinais de gravidade, incluindo hipertensão grave, sintomas neurológicos, dor em hipocôndrio, trombocitopenia e elevação de transaminases. Aos 35 semanas, deve receber sulfato de magnésio, anti-hipertensivo de ação rápida e resolução da gestação após estabilização materna. A via depende das condições obstétricas e fetais; cesariana não é automática.",
+  "distratores": "A: Iniciar indução simultaneamente antes de estabilizar a hipertensão aumenta risco materno e não respeita a prioridade inicial; C: Não se posterga a resolução para completar corticosteroide diante de doença materna grave com 35 semanas; D: Trombocitopenia e transaminases elevadas indicam resolução, mas não determinam cesariana se parto vaginal for viável e seguro.",
+  "conceito_chave": "Pré-eclâmpsia grave: estabilize primeiro, depois resolva a gestação; a via de parto é obstétrica.",
   "has_figure": false
  },
  {
@@ -394,9 +394,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "A distribuição ascendente de nódulos e úlceras ao longo dos vasos linfáticos, após contato com solo e vegetação, é típica de esporotricose cutâneo-linfática. Em paciente imunocompetente e sem doença disseminada, o itraconazol oral é o tratamento de escolha, mantido por algumas semanas após a resolução clínica.",
-  "distratores": "A e B sugerem agentes possíveis no padrão esporotricoide, mas menos compatíveis com o conjunto clínico; D indica leishmaniose e posterga tratamento apesar da apresentação clássica e da cultura já coletada.",
-  "conceito_chave": "Nódulos em cadeia linfática após inoculação ambiental: pensar em esporotricose.",
+  "comentario": "A imagem e a evolução mostram linfangite nodular em padrão esporotricoide, iniciada após inoculação ambiental. Em paciente imunocompetente, sem doença extracutânea e com função hepática normal, o diagnóstico mais provável é esporotricose cutâneo-linfática. O tratamento de escolha é itraconazol oral, mantido por duas a quatro semanas após resolução clínica completa.",
+  "distratores": "A: Nocardiose pode produzir padrão semelhante, mas é menos provável diante do aspecto clássico; o tratamento não deve ser escolhido como primeira hipótese sem apoio microbiológico; B: Micobactérias atípicas entram no diferencial, porém a combinação empírica proposta é excessiva e depende da espécie e da susceptibilidade; D: Leishmaniose pode ter disseminação linfática, mas o padrão e a exposição favorecem esporotricose; aguardar indefinidamente atrasaria terapia de quadro típico.",
+  "conceito_chave": "Pápula que ulcera seguida de nódulos ascendentes pelo trajeto linfático é apresentação clássica da esporotricose cutâneo-linfática.",
   "has_figure": true
  },
  {
@@ -410,9 +410,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "O acidente ocorreu durante o trabalho, com lesão e afastamento, devendo ser registrado com nexo ocupacional. O serviço deve realizar a notificação compulsória no Sinan e emitir ou viabilizar a CAT sem depender da iniciativa ou do prazo do empregador.",
-  "distratores": "A posterga indevidamente a CAT; B condiciona notificação ao tempo de afastamento ou sequela; D subordina medidas assistenciais e de vigilância à confirmação posterior pelo INSS ou perícia.",
-  "conceito_chave": "Acidente de trabalho: notificação e CAT não dependem da concordância da empresa.",
+  "comentario": "O acidente ocorreu durante o trabalho e causou fratura com afastamento, estabelecendo nexo ocupacional clínico. Desde a ampliação da lista nacional, acidentes de trabalho devem ser notificados no Sinan conforme o fluxo vigente. A Comunicação de Acidente de Trabalho também deve ser emitida ou viabilizada sem esperar a empresa; médico, trabalhador, dependente, sindicato ou autoridade pública podem fazê-lo quando o empregador se omite.",
+  "distratores": "A: Aguardar o prazo da empresa deixa o trabalhador desprotegido e não é requisito para a notificação epidemiológica ou para a CAT por outro legitimado; B: A notificação não depende de afastamento superior a 15 dias nem de sequela; esses elementos podem interferir em benefício, não no dever de registrar o agravo; D: O nexo para vigilância e emissão da CAT não precisa aguardar confirmação do INSS ou perícia trabalhista.",
+  "conceito_chave": "Sinan e CAT têm finalidades distintas e podem ser providenciados simultaneamente diante de acidente de trabalho.",
   "has_figure": false
  },
  {
@@ -426,9 +426,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "O recém-nascido tem hiperbilirrubinemia hemolítica acima do limiar de fototerapia, mas ainda distante do limiar de exsanguineotransfusão. A medida inicial é fototerapia intensiva, manutenção do aleitamento e monitorização estreita da bilirrubina e da hemólise.",
-  "distratores": "B suspende o aleitamento sem indicação; C usa fototerapia convencional apesar do nível terapêutico e dos fatores de risco; D antecipa imunoglobulina, reservada a hemólise isoimune com elevação apesar de fototerapia intensiva e proximidade do limiar de troca.",
-  "conceito_chave": "Doença hemolítica com bilirrubina acima do limiar: fototerapia intensiva primeiro.",
+  "comentario": "Há doença hemolítica imune por incompatibilidade ABO, e a bilirrubina já ultrapassou o limiar de fototerapia intensiva. A medida inicial é iniciar fototerapia intensiva imediatamente, manter aleitamento eficaz e monitorar bilirrubina, resposta e sinais de hemólise. A imunoglobulina é reservada a doença isoimune cuja bilirrubina atinge o limiar de escalonamento ou continua aumentando apesar de fototerapia intensiva.",
+  "distratores": "B: Suspender amamentação não é necessário quando a sucção é eficaz e não há indicação clínica específica de complemento; C: Fototerapia convencional é insuficiente para valor acima do limiar de terapia intensiva; D: Coombs positivo e ascensão rápida, isoladamente, não obrigam imunoglobulina antes de avaliar resposta à fototerapia intensiva e proximidade do limiar de troca.",
+  "conceito_chave": "Na hemólise neonatal, comece fototerapia intensiva no limiar; imunoglobulina não é automática.",
   "has_figure": false
  },
  {
@@ -442,9 +442,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Paciente Child-Pugh C com 11 pontos, após sangramento varicoso controlado, permanece em alto risco de falha e ressangramento. Deve ser avaliado para TIPS preemptivo, preferencialmente nas primeiras 72 horas, além da terapia vasoativa e endoscópica.",
-  "distratores": "B reserva TIPS apenas para falha, perdendo a janela de prevenção; C usa persistência de varizes como critério; D adia para momento eletivo, quando o benefício depende da realização precoce.",
-  "conceito_chave": "Hemorragia varicosa de alto risco: considerar TIPS preemptivo em até 72 horas.",
+  "comentario": "Apesar do controle endoscópico, Child-Pugh C com 11 pontos define alto risco de falha e ressangramento. O TIPS preemptivo, idealmente nas primeiras 24 a 72 horas, deve ser avaliado em paciente sem contraindicação, associado às medidas vasoativas, antibiótico e ligadura já realizadas.",
+  "distratores": "B: Reservar TIPS apenas para falha ou ressangramento perde o benefício preventivo nos pacientes de alto risco selecionados; C: Repetir ligadura não substitui a avaliação de TIPS preemptivo no Child-Pugh C 10-13; D: Adiar para fase eletiva após controle completo também perde a janela de 72 horas.",
+  "conceito_chave": "Hemorragia varicosa controlada em Child-Pugh C 10-13 ainda indica avaliação de TIPS preemptivo.",
   "has_figure": false
  },
  {
@@ -458,9 +458,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A hipercalcemia repetida com PTH no limite alto é inadequadamente não suprimida e sugere hiperparatireoidismo primário. Antes da cirurgia, deve-se excluir hipercalcemia hipocalciúrica familiar com calciúria e relação de depuração cálcio/creatinina; nefrolitíase é critério para paratireoidectomia quando o diagnóstico é confirmado.",
-  "distratores": "A usa exames de localização para confirmar diagnóstico bioquímico; B trata apenas hipercalciúria e ignora provável hiperparatireoidismo; C presume forma familiar apenas porque o PTH está na faixa de referência.",
-  "conceito_chave": "Na hipercalcemia, PTH normal-alto é anormal; localização vem depois do diagnóstico.",
+  "comentario": "Na hipercalcemia, PTH normal-alto é inadequadamente não suprimido e aponta para hiperparatireoidismo primário. Deve-se confirmar e diferenciar de hipercalcemia hipocalciúrica familiar com calciúria e relação de depuração cálcio/creatinina. Nefrolitíase recorrente é critério de paratireoidectomia se o diagnóstico for confirmado; imagem cervical serve para localização pré-operatória, não para diagnóstico.",
+  "distratores": "A: Ultrassonografia e cintilografia não confirmam hiperparatireoidismo e não devem preceder a avaliação bioquímica e a exclusão de hipercalcemia hipocalciúrica familiar; B: Tiazídico pode elevar o cálcio e não trata a causa; nefrolitíase em hiperparatireoidismo confirmado favorece cirurgia; C: PTH dentro do intervalo laboratorial não torna provável hipercalcemia hipocalciúrica familiar por si só; o dado decisivo é a depuração urinária de cálcio.",
+  "conceito_chave": "Em hipercalcemia, PTH que não está suprimido é anormal; imagem localiza a glândula depois do diagnóstico bioquímico.",
   "has_figure": false
  },
  {
@@ -474,9 +474,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Os sintomas sugerem apneia obstrutiva do sono, mas os achados anatômicos são apenas moderados e não explicam claramente a gravidade clínica. A polissonografia noturna completa deve confirmar e graduar o distúrbio antes da decisão terapêutica.",
-  "distratores": "A indica cirurgia sem confirmação em cenário discordante; C trata poligrafia domiciliar como equivalente na criança; D usa endoscopia do sono como exame inicial, embora não substitua a polissonografia.",
-  "conceito_chave": "Criança com suspeita de AOS e discordância clínico-anatômica: solicitar polissonografia.",
+  "comentario": "A criança tem alta suspeita clínica de apneia obstrutiva do sono, mas hipertrofia anatômica apenas moderada. Quando sintomas e exame são discordantes, a polissonografia noturna completa confirma o diagnóstico, quantifica a gravidade e orienta a indicação e o risco da cirurgia.",
+  "distratores": "A: Operar sem quantificar a doença é menos seguro quando há discordância clínico-anatômica; C: Poligrafia domiciliar não é considerada equivalente universal à polissonografia em criança; D: Endoscopia do sono pode ter papel em situações selecionadas ou doença residual, mas não substitui a confirmação e graduação inicial pela polissonografia.",
+  "conceito_chave": "Na criança com suspeita de AOS e discordância entre sintomas e anatomia, solicite polissonografia antes da cirurgia.",
   "has_figure": false
  },
  {
@@ -486,13 +486,13 @@
    "Inserir DIU ou implante hoje; orientar preservativo por sete dias e informar o baixo risco de perfuração.",
    "Inserir o implante hoje; adiar o DIU durante o aleitamento pelo maior risco de perfuração.",
    "Inserir DIU ou implante hoje; dispensar proteção adicional se a escolha for pelo DIU.",
-   "Inserir DIU ou implante hoje; dispensar proteção adicional e informar o baixo risco de perfuração."
+   "Inserir DIU ou implante hoje; por preencher os critérios da amenorreia lactacional, dispensar proteção adicional e informar que o risco absoluto de perfuração uterina é baixo."
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A puérpera está amenorreica, em aleitamento exclusivo, com menos de seis meses pós-parto e sem relações desde o parto, permitindo afastar gestação com segurança clínica. DIU ou implante podem ser inseridos nessa consulta, sem método adicional, explicando-se que o risco absoluto de perfuração do DIU é baixo.",
-  "distratores": "A recomenda proteção adicional sem necessidade; B contraindica o DIU durante a lactação; C dispensa proteção apenas para o DIU, embora também não seja necessária para o implante nas condições descritas.",
-  "conceito_chave": "Critérios clínicos podem excluir gestação; LARC pode ser iniciado no puerpério tardio.",
+  "comentario": "A puérpera está com 45 dias, amenorreica, em aleitamento materno exclusivo e sem relações desde o parto; gravidez pode ser razoavelmente excluída. DIU e implante são elegíveis para inserção imediata. Como ela satisfaz os critérios do método da amenorreia lactacional, não é necessária proteção adicional. A lactação aumenta discretamente o risco relativo de perfuração uterina, mas o risco absoluto permanece baixo e deve ser informado.",
+  "distratores": "A: Exigir preservativo por sete dias para qualquer escolha é desnecessário neste contexto, especialmente para DIU; B: Aleitamento não contraindica DIU; postergá-lo priva a paciente de método elegível; C: A conclusão sobre proteção adicional está correta para o DIU, mas o aconselhamento está incompleto por não contemplar adequadamente o implante e o risco específico do DIU.",
+  "conceito_chave": "No puerpério tardio com amenorreia, aleitamento exclusivo e gravidez excluída, DIU ou implante podem ser iniciados no mesmo dia.",
   "has_figure": false
  },
  {
@@ -506,9 +506,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Fratura exposta contaminada exige antibiótico o mais cedo possível, avaliação da profilaxia antitetânica, cobertura estéril, alinhamento e imobilização, seguida de desbridamento cirúrgico urgente. Culturas e exames de imagem não devem atrasar o controle inicial.",
-  "distratores": "A propõe irrigação e desbridamento local na emergência como substituto da cirurgia; C atrasa antibiótico até cultura; D condiciona o desbridamento à tomografia.",
-  "conceito_chave": "Fratura exposta: antibiótico precoce, antitetânica, imobilização e desbridamento cirúrgico.",
+  "comentario": "Fratura exposta contaminada requer antibiótico intravenoso o mais cedo possível, avaliação e atualização antitetânica, cobertura estéril, alinhamento, imobilização e desbridamento cirúrgico urgente. Irrigação agressiva ou exploração profunda na emergência pode introduzir contaminação e não substitui o centro cirúrgico.",
+  "distratores": "A: Desbridamento local na emergência e avaliação ortopédica posterior invertem a sequência e podem lesar tecidos viáveis; C: Culturas prévias não devem atrasar antibiótico; seu valor inicial é limitado em relação aos patógenos de infecção subsequente; D: Tomografia não é requisito antes de desbridamento e estabilização de uma fratura diafisária já diagnosticada.",
+  "conceito_chave": "Fratura exposta: antibiótico e antitetânica cedo, cobertura e imobilização, depois desbridamento cirúrgico urgente.",
   "has_figure": false
  },
  {
@@ -522,9 +522,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "No gráfico, a curva observada já supera o limite superior aproximadamente na semana 5 e permanece acima dele até a semana 12. Isso caracteriza excesso epidêmico durante todo esse intervalo, mesmo com queda progressiva após o pico.",
-  "distratores": "A antecipa retorno à zona de alerta; B inicia o excesso apenas na semana 6 e afirma término na 11; C confunde redução da incidência com retorno ao canal esperado.",
-  "conceito_chave": "Canal endêmico: incidência acima do limite superior indica situação epidêmica.",
+  "comentario": "No gráfico, a curva de incidência observada ultrapassa o limite superior do canal na semana 5 e permanece acima dele até a semana 12. A queda após o pico não representa retorno ao esperado enquanto a curva continua acima do limite superior.",
+  "distratores": "A: O excesso não termina na semana 9; a curva segue acima do limite superior depois disso; B: O início foi antecipado em uma semana e a duração subestimada; a superação já ocorre na semana 5 e persiste até a 12; C: Redução do valor absoluto após o pico não basta para encerrar excesso epidêmico se o limite superior também é menor.",
+  "conceito_chave": "No canal endêmico, excesso epidêmico é definido pela curva acima do limite superior, não apenas pelo pico.",
   "has_figure": true
  },
  {
@@ -538,9 +538,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Os participantes foram classificados pela exposição e acompanhados sem o desfecho, caracterizando coorte prospectiva. O risco foi 90/300 nos expostos e 30/300 nos não expostos, resultando em RR 3; a fração atribuível entre expostos é (3-1)/3, cerca de 66,7%.",
-  "distratores": "A calcula a fração atribuível como diferença absoluta; C apresenta odds ratio, medida não principal do desenho, e fração incorreta; D classifica erroneamente como caso-controle.",
-  "conceito_chave": "Coorte: RR = incidência nos expostos/incidência nos não expostos.",
+  "comentario": "Os participantes eram livres do desfecho e foram acompanhados segundo exposição, caracterizando coorte prospectiva. Risco nos expostos: 90/300 = 0,30; nos não expostos: 30/300 = 0,10; risco relativo = 3,0. A fração atribuível percentual nos expostos é (RR - 1)/RR x 100 = 66,7%.",
+  "distratores": "A: O desenho e o risco relativo estão corretos, mas 20% é diferença absoluta de riscos, não fração atribuível percentual entre expostos; C: A razão de chances pode ser calculada, mas não é a medida principal de uma coorte com incidências conhecidas; a fração também está incorreta; D: Não é caso-controle, pois exposição definiu os grupos antes da ocorrência do desfecho.",
+  "conceito_chave": "Coorte permite risco relativo; fração atribuível nos expostos = (RR-1)/RR.",
   "has_figure": false
  },
  {
@@ -554,9 +554,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Mastite lactacional com piora após suporte requer antibiótico antiestafilocócico. Deve-se manter a amamentação conforme tolerância, corrigir a pega e evitar ordenha ou esvaziamento excessivos; cultura e ultrassonografia ficam reservadas para falha terapêutica, recorrência ou suspeita de abscesso.",
-  "distratores": "A torna cultura do leite obrigatória antes do antibiótico; B suspende desnecessariamente a mamada direta; D usa amplo espectro e imagem imediata sem flutuação ou falha após antibiótico.",
-  "conceito_chave": "Mastite: antibiótico e continuidade da amamentação; investigar abscesso se evolução desfavorável.",
+  "comentario": "Febre, dor e área eritematosa triangular sem flutuação sugerem mastite lactacional sem abscesso. Como houve piora apesar de medidas conservadoras, indica-se antibiótico antiestafilocócico, manutenção da amamentação conforme tolerância, correção da pega e reavaliação. Cultura e ultrassonografia são reservadas a falha terapêutica, recorrência, gravidade ou suspeita de coleção.",
+  "distratores": "A: Cultura de leite não é obrigatória antes da primeira dose em caso típico e não complicado; B: Suspender a mamada na mama acometida favorece estase e não é necessário em lactente saudável; D: Antibiótico de amplo espectro e ultrassonografia imediata são desproporcionais sem flutuação ou sinais de abscesso.",
+  "conceito_chave": "Mastite lactacional: manter drenagem da mama, corrigir pega e usar antibiótico quando houver infecção bacteriana provável ou piora.",
   "has_figure": false
  },
  {
@@ -570,9 +570,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A síndrome retroviral aguda pode ocorrer antes de testes baseados apenas em anticorpos se tornarem positivos. Deve-se solicitar teste de quarta geração e RNA do HIV; RNA detectável em contexto de sorologia inicial negativa ou indeterminada deve ser confirmado em nova amostra.",
-  "distratores": "B usa RNA apenas se o teste de diferenciação for inconclusivo, podendo perder a janela aguda; C espera soroconversão para confirmar; D repete na mesma amostra, o que não confirma identidade nem exclui erro pré-analítico.",
-  "conceito_chave": "Suspeita de HIV agudo: teste de quarta geração mais RNA.",
+  "comentario": "Síndrome retroviral aguda pode ocorrer antes da positividade de teste baseado apenas em anticorpos. Deve-se solicitar teste de quarta geração e RNA do HIV. RNA detectável com sorologia ainda negativa ou indeterminada sugere infecção aguda e deve ser confirmado em nova amostra, sem esperar soroconversão para vincular e iniciar cuidado.",
+  "distratores": "B: O algoritmo de diferenciação aplica-se após teste de triagem reagente; neste caso a suspeita aguda exige RNA desde o início; C: Esperar soroconversão atrasa diagnóstico e tratamento quando o RNA já é detectável; D: Repetir o ensaio na mesma amostra não exclui erro de identificação ou coleta; a confirmação deve usar nova amostra.",
+  "conceito_chave": "Suspeita de HIV agudo com teste de anticorpos negativo: peça teste de quarta geração e RNA; confirme em nova amostra.",
   "has_figure": false
  },
  {
@@ -586,9 +586,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Em mulher de 25 anos ou mais, a persistência de LSIL em citologia repetida no intervalo recomendado indica colposcopia. A biópsia não é automática: depende de achado colposcópico anormal.",
-  "distratores": "A prolonga seguimento citológico por 24 meses; C repete novamente em seis meses apesar da persistência; D usa intervalo de 12 meses incompatível com o fluxo citológico descrito.",
-  "conceito_chave": "LSIL persistente em adulta: encaminhar para colposcopia.",
+  "comentario": "No município que ainda utiliza o fluxo citológico, mulher com 25 anos ou mais e LSIL deve repetir citologia em seis meses. Persistência de LSIL em duas citologias consecutivas é indicação de colposcopia; biópsia depende do achado colposcópico. A questão explicita o cenário de transição para não confundir com o novo rastreamento por DNA-HPV.",
+  "distratores": "A: Aguardar 24 meses após duas citologias alteradas posterga avaliação já indicada; C: Uma terceira citologia não é necessária antes da colposcopia; a persistência já foi documentada; D: Repetição em 12 meses não é o intervalo de seguimento para LSIL nessa mulher de 29 anos no fluxo citológico descrito.",
+  "conceito_chave": "No fluxo citológico, LSIL persistente em duas coletas semestrais a partir de 25 anos indica colposcopia.",
   "has_figure": false
  },
  {
@@ -602,9 +602,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A diverticulite é não complicada, e o paciente está estável, tolerando via oral e sem fatores de risco. Pode ser tratado ambulatorialmente com analgesia, dieta conforme tolerância e reavaliação próxima, sem antibiótico de rotina.",
-  "distratores": "A prescreve antibiótico para todos os casos; B indica cirurgia eletiva após primeiro episódio não complicado; C interna e usa antibiótico intravenoso sem critérios.",
-  "conceito_chave": "Diverticulite não complicada em imunocompetente: antibiótico pode ser seletivo, não obrigatório.",
+  "comentario": "A tomografia confirma diverticulite aguda não complicada, e a paciente é imunocompetente, estável, tolera líquidos e não tem comorbidade descompensada. Pode ser tratada ambulatorialmente com analgesia, alimentação conforme tolerância, orientações de alarme e reavaliação próxima. Antibiótico pode ser usado seletivamente, mas não é obrigatório de rotina nesse perfil.",
+  "distratores": "A: Antibiótico para todos os casos não complicados expõe a efeitos adversos sem benefício obrigatório; B: Um primeiro episódio não complicado não indica sigmoidectomia eletiva rotineira; a decisão futura é individualizada; C: Internação e antibiótico intravenoso são excessivos sem incapacidade oral, sepse ou complicação.",
+  "conceito_chave": "Diverticulite não complicada em imunocompetente estável pode ser tratada sem antibiótico de rotina.",
   "has_figure": false
  },
  {
@@ -618,9 +618,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Drenagem recorrente após abscesso, orifício externo e trajeto endurecido são típicos de fístula anal criptoglandular. Sem abscesso ativo, o tratamento é eletivo e deve ser planejado conforme o trajeto e o envolvimento do esfíncter, preservando continência.",
-  "distratores": "A usa antibiótico para doença estrutural sem celulite; B exige ressonância para toda fístula simples; D presume trajeto superficial e indica fistulotomia sem definir anatomia.",
-  "conceito_chave": "Fístula anal: a técnica depende da relação com o complexo esfincteriano.",
+  "comentario": "Drenagem recorrente após abscesso, com orifício externo e trajeto em direção ao canal anal, caracteriza fístula anal criptoglandular. Sem abscesso ou celulite, antibiótico não resolve o trajeto. O tratamento é cirúrgico eletivo e deve preservar continência, escolhendo técnica conforme relação com o esfíncter; imagem é reservada sobretudo a fístulas complexas, recorrentes ou de anatomia incerta.",
+  "distratores": "A: Antibiótico não fecha fístula crônica e não deve ser usado como tratamento definitivo sem infecção aguda associada; B: Ressonância não é obrigatória antes do encaminhamento de toda fístula clinicamente evidente e aparentemente simples; D: Trajeto palpável não prova que a fistulotomia seja segura; atravessar esfíncter em grau relevante aumenta risco de incontinência.",
+  "conceito_chave": "Fístula anal exige tratamento cirúrgico escolhido conforme envolvimento do esfíncter.",
   "has_figure": false
  },
  {
@@ -634,9 +634,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Bacteriúria assintomática na gestação com contagem significativa deve ser tratada conforme o antibiograma. Após o esquema, realiza-se urocultura de controle para documentar erradicação e orientar seguimento.",
-  "distratores": "A inicia profilaxia contínua após um único episódio; B não programa cultura de cura; D adia o controle para o terceiro trimestre.",
-  "conceito_chave": "Bacteriúria assintomática na gestação: tratar e confirmar cura com urocultura.",
+  "comentario": "Urocultura com E. coli acima de 100.000 UFC/mL em gestante assintomática estabelece bacteriúria assintomática. Deve ser tratada com antibiótico seguro e dirigido pelo antibiograma, seguida de urocultura de controle após o esquema para documentar erradicação e definir necessidade de novo tratamento ou vigilância.",
+  "distratores": "A: Profilaxia contínua após um primeiro episódio isolado não é rotina; é considerada em recorrência ou persistência; B: Apenas exame de urina ou sintomas não confirmam erradicação; a urocultura de controle é necessária; D: Esperar apenas o terceiro trimestre pode manter bacteriúria persistente sem diagnóstico por semanas.",
+  "conceito_chave": "Bacteriúria assintomática na gestação deve ser tratada e seguida por urocultura de controle.",
   "has_figure": false
  },
  {
@@ -650,9 +650,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A retinografia mostra neovascularização do disco, definindo retinopatia diabética proliferativa. Sem edema macular no OCT, a prioridade é panfotocoagulação em tempo oportuno, associada à otimização do controle glicêmico e pressórico.",
-  "distratores": "A classifica como não proliferativa grave apesar dos vasos novos; C não corresponde ao padrão difuso de oclusão venosa; D atribui a papilopatia, que não explica a proliferação neovascular típica.",
-  "conceito_chave": "Neovascularização retiniana ou de disco = retinopatia diabética proliferativa.",
+  "comentario": "A retinografia mostra neovascularização do disco óptico, característica de retinopatia diabética proliferativa. A ausência de líquido na tomografia de coerência óptica afasta edema macular atual, mas não reduz a urgência do tratamento da proliferação. Indica-se panfotocoagulação com brevidade, além de otimização glicêmica e pressórica.",
+  "distratores": "A: Alterações microvasculares intrarretinianas não formam a rede vascular exuberante sobre o disco vista na imagem; C: O padrão é de retinopatia diabética, não de oclusão de veia central, que tipicamente apresenta hemorragias difusas e veias tortuosas; D: Papilopatia diabética causa edema de disco, não neovascularização proliferativa, e não justifica apenas observação deste achado.",
+  "conceito_chave": "Neovascularização de disco define retinopatia diabética proliferativa e exige tratamento retiniano oportuno.",
   "has_figure": true
  },
  {
@@ -666,9 +666,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Há anafilaxia com choque e comprometimento respiratório. A adrenalina intramuscular na face anterolateral da coxa é imediata, associada a oxigênio e cristaloide; pode ser repetida a cada 5 a 15 minutos, e infusão intravenosa é considerada se o choque for refratário.",
-  "distratores": "A inicia infusão IV apenas pela hipotensão inicial; B sugere bolus intravenoso, de maior risco; D atrasa a repetição da adrenalina até completar a expansão.",
-  "conceito_chave": "Anafilaxia: adrenalina IM primeiro e repetida precocemente se necessário.",
+  "comentario": "Há anafilaxia com choque e comprometimento respiratório. A primeira medida específica é adrenalina 0,5 mg intramuscular na face anterolateral da coxa, associada a oxigênio, posicionamento e cristaloide. Se não houver resposta, repete-se a dose intramuscular em 5 a 15 minutos; infusão intravenosa titulada fica para choque refratário em ambiente monitorizado e por equipe experiente.",
+  "distratores": "A: Infusão intravenosa não substitui de início a adrenalina intramuscular, mesmo com hipotensão; B: Bolus intravenoso tem alto risco de arritmia e erro de dose e não deve substituir a repetição intramuscular em paciente com pulso; D: Adrenalina não deve esperar o término da expansão volêmica; atraso aumenta mortalidade.",
+  "conceito_chave": "Anafilaxia: adrenalina IM imediata na coxa, repetir em 5-15 minutos; infusão IV apenas se refratária.",
   "has_figure": false
  },
  {
@@ -682,9 +682,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Vacinas inativadas podem ser administradas durante a quimioterapia quando indicadas pela equipe de referência, embora a resposta possa ser menor e algumas doses precisem ser repetidas após recuperação imunológica. Vacinas vivas, como tríplice viral, devem ser adiadas.",
-  "distratores": "A considera automaticamente válidas todas as doses inativadas; B restringe a vacinação à influenza; D adia também vacinas inativadas, que não causam infecção vacinal.",
-  "conceito_chave": "Imunossuprimido em quimioterapia: inativadas podem ser usadas; vivas são adiadas.",
+  "comentario": "Durante quimioterapia, vacinas inativadas não causam infecção, mas a resposta pode ser reduzida; aplicação e eventual revacinação devem ser planejadas com a oncologia nos momentos de melhor resposta. Vacinas vivas, como tríplice viral, são contraindicadas durante imunossupressão e ficam para após recuperação imunológica.",
+  "distratores": "A: Nem todas as doses inativadas aplicadas durante imunossupressão serão necessariamente consideradas válidas; pode haver necessidade de revacinação; B: Adiar pneumocócica e hepatite B em todos os casos pode deixar a criança desprotegida; o planejamento deve ser individualizado; D: Vacinas inativadas não apresentam o mesmo risco de replicação das vacinas vivas e não são automaticamente proibidas.",
+  "conceito_chave": "Quimioterapia: vacinas vivas são adiadas; inativadas podem ser planejadas, sabendo que a resposta pode ser menor.",
   "has_figure": false
  },
  {
@@ -698,9 +698,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A dor por endometriose persiste apesar de contraceptivo combinado e progestagênio adequados, e a paciente deseja evitar cirurgia. Um agonista de GnRH por tempo limitado, com terapia de adição para reduzir perda óssea e sintomas hipoestrogênicos, é opção de segunda linha.",
-  "distratores": "B repete estratégia já ineficaz; C interrompe supressão e mantém apenas analgesia; D indica punção de endometrioma, associada a alta recorrência e sem benefício duradouro.",
-  "conceito_chave": "Endometriose refratária a primeira linha: agonista de GnRH com add-back por período limitado.",
+  "comentario": "A dor por endometriose persiste apesar de tentativas adequadas com contraceptivo combinado e progestagênio, e a paciente deseja evitar cirurgia. Agonista de GnRH por tempo limitado, associado desde o início a terapia de adição, é uma opção de segunda linha para reduzir sintomas e efeitos hipoestrogênicos; deve haver reavaliação clínica e proteção óssea.",
+  "distratores": "B: Voltar a esquema cíclico menos supressivo tende a piorar dor e repete classe já ineficaz; C: Interromper supressão hormonal não protege a reserva ovariana e deixa a doença sintomática sem tratamento adequado; D: Punção isolada de endometrioma apresenta alta recorrência e não é tratamento padrão da dor.",
+  "conceito_chave": "Endometriose refratária a contraceptivo e progestagênio pode receber agonista de GnRH com add-back por tempo limitado.",
   "has_figure": false
  },
  {
@@ -714,9 +714,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Início agudo, flutuação, desatenção e alteração do ciclo sono-vigília definem delirium. O manejo inicial é identificar e corrigir precipitantes, promover orientação, sono, mobilização e uso de óculos/aparelhos auditivos; antipsicótico fica reservado a agitação grave ou risco.",
-  "distratores": "A mantém haloperidol de rotina; C usa quetiapina para regular o sono sem indicação; D escolhe benzodiazepínico, que pode piorar delirium fora de abstinência.",
-  "conceito_chave": "Delirium: tratar a causa e usar medidas não farmacológicas; sedação é exceção.",
+  "comentario": "Início agudo, desatenção, flutuação, alteração do ciclo sono-vigília e infecção precipitante caracterizam delirium. O manejo inicial é identificar e corrigir causas, revisar medicamentos, orientar, mobilizar, garantir sono, hidratação, visão e audição. Antipsicótico não trata a causa e é reservado a agitação grave com risco, na menor dose e pelo menor tempo.",
+  "distratores": "A: Haloperidol contínuo até a resolução não é rotina e expõe a efeitos extrapiramidais e cardíacos; C: Quetiapina não deve ser iniciada apenas para regular sono em delirium; D: Benzodiazepínicos podem piorar delirium, exceto em abstinência de álcool ou sedativos, excluída no caso.",
+  "conceito_chave": "Delirium: trate o precipitante e use medidas não farmacológicas; antipsicótico apenas se houver risco importante.",
   "has_figure": false
  },
  {
@@ -730,9 +730,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Com alta probabilidade clínica e ultrassonografia proximal inicial negativa, a TVP distal ainda não foi excluída e pode progredir. Quando a ultrassonografia de todo o membro não está disponível, deve-se repetir o exame proximal em cinco a sete dias.",
-  "distratores": "A encerra a investigação após um único exame proximal; B usa D-dímero para excluir TVP em alta probabilidade após imagem negativa; D anticoagula sem confirmação e dispensa reavaliação por imagem.",
-  "conceito_chave": "Alta suspeita de TVP + US proximal negativa: ultrassonografia seriada.",
+  "comentario": "Com alta probabilidade clínica, ultrassonografia proximal negativa única não exclui trombose distal que pode propagar. Se ultrassonografia de todo o membro não está disponível, deve-se repetir o exame proximal em cinco a sete dias, ou antes se houver piora, para detectar extensão.",
+  "distratores": "A: Um exame proximal único não encerra a investigação em alta probabilidade com sintomas persistentes; B: D-dímero tem menor utilidade após alta probabilidade clínica e não substitui imagem seriada neste contexto; D: Anticoagulação empírica definitiva sem nova imagem expõe a sangramento quando é possível obter confirmação seriada em prazo seguro.",
+  "conceito_chave": "Alta suspeita de TVP com ultrassom proximal negativo: repetir em 5-7 dias se não houver exame de todo o membro.",
   "has_figure": false
  },
  {
@@ -746,9 +746,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A assimetria persistente de acuidade visual, com olho esquerdo 20/50, torna o rastreamento alterado e sugere erro refrativo ou ambliopia. A criança deve ser encaminhada para avaliação oftalmológica, e a APS deve acompanhar o acesso e o tratamento.",
-  "distratores": "A posterga o encaminhamento; B inicia oclusão sem diagnóstico e prescrição especializada; C classifica como urgência apesar da ausência de dor, trauma ou sinais inflamatórios.",
-  "conceito_chave": "Rastreamento visual alterado na escola: encaminhar e garantir continuidade do cuidado.",
+  "comentario": "Acuidade de 20/50 em um olho, diferença de duas ou mais linhas e dificuldade funcional no quadro tornam o rastreamento alterado. A criança deve ser encaminhada para avaliação oftalmológica, e a APS deve acompanhar acesso e adesão. Não há sinais de urgência; oclusão só é iniciada após diagnóstico e prescrição, pois pode prejudicar o olho melhor se usada incorretamente.",
+  "distratores": "A: Repetir em 30 dias atrasa avaliação de possível ambliopia em idade ainda tratável; B: Oclusão empírica antes de diagnóstico e correção óptica não é segura; C: Assimetria crônica sem dor, trauma ou inflamação não exige atendimento de urgência.",
+  "conceito_chave": "Rastreamento visual assimétrico persistente em criança exige avaliação oftalmológica, sem tampão empírico.",
   "has_figure": false
  },
  {
@@ -762,9 +762,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Sangramento vermelho vivo e indolor no terceiro trimestre levanta suspeita de placenta prévia. A avaliação inicial inclui estabilização materna, avaliação fetal, acesso e exames, ultrassonografia para localização placentária e proibição de toque vaginal digital até excluir placenta prévia.",
-  "distratores": "B permite toque antes da ultrassonografia; C evita sem motivo a via transvaginal, que é segura e mais precisa; D posterga a localização placentária.",
-  "conceito_chave": "Sangramento indolor no terceiro trimestre: não realizar toque digital antes de localizar a placenta.",
+  "comentario": "Sangramento vermelho vivo e indolor no terceiro trimestre sugere placenta prévia. A prioridade é avaliar estabilidade materna e fetal, obter acesso e exames conforme o volume de sangramento e localizar a placenta por ultrassonografia. Toque vaginal digital deve ser evitado até excluir placenta prévia; a ultrassonografia transvaginal é segura e mais precisa quando necessária.",
+  "distratores": "B: Colo fechado ao exame especular não torna seguro o toque digital antes de localizar a placenta; C: Não é necessário adiar a via transvaginal por sangramento; ela pode ser realizada com técnica adequada; D: A ultrassonografia deve ser feita no episódio inicial, não apenas se o sangramento persistir ou recidivar.",
+  "conceito_chave": "Sangramento indolor no terceiro trimestre: suspeite placenta prévia e não faça toque digital antes da ultrassonografia.",
   "has_figure": false
  },
  {
@@ -778,9 +778,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Tronco anterior corresponde a 18% e um membro superior inteiro a 9%, totalizando 27% de superfície corporal queimada. Pelo cálculo de 2 mL/kg/%, o volume de 24 horas é 3.780 mL; metade são 1.890 mL nas primeiras oito horas, restando 1.390 mL após descontar 500 mL, ou cerca de 230 mL/h nas seis horas restantes, com ajuste pela resposta.",
-  "distratores": "A usa taxa excessiva e fixa; B não desconta o volume já recebido; C superestima a taxa restante.",
-  "conceito_chave": "Reposição em queimados: contar o tempo desde a queimadura e titular pelo débito urinário e perfusão.",
+  "comentario": "Pela regra dos nove, tronco anterior corresponde a 18% e todo o membro superior a 9%, totalizando 27%. Volume: 2 mL x 70 kg x 27 = 3.780 mL em 24 horas; metade, 1.890 mL, deve ser administrada nas primeiras oito horas a partir da queimadura. Como 500 mL já foram infundidos e restam seis horas, faltam 1.390 mL, cerca de 230 mL/h, com ajuste pela perfusão e pelo débito urinário.",
+  "distratores": "A: A taxa de 630 mL/h decorre de cálculo excessivo e, além disso, nenhuma taxa deve permanecer fixa sem resposta clínica; B: 315 mL/h corresponde aproximadamente a ignorar o volume já recebido e divide inadequadamente o restante; C: 550 mL/h ainda superestima o volume devido nas seis horas restantes.",
+  "conceito_chave": "Fórmula de queimados é estimativa: conte o tempo desde a lesão, desconte o que já foi dado e ajuste por resposta.",
   "has_figure": false
  },
  {
@@ -794,14 +794,14 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "M-CHAT-R/F positivo e sinais sociais precoces exigem encaminhamento para avaliação multiprofissional e auditiva, mas a intervenção precoce não deve esperar o diagnóstico definitivo. A UBS mantém acompanhamento longitudinal da criança e da família.",
-  "distratores": "B espera a audição antes de encaminhar; C posterga intervenção até confirmação especializada; D mantém apenas estimulação na UBS e atrasa avaliação abrangente.",
-  "conceito_chave": "Suspeita de TEA: encaminhar e intervir precocemente, sem esperar fechamento diagnóstico.",
+  "comentario": "M-CHAT-R/F persistente positivo e sinais de comunicação social atípica indicam alto risco para transtorno do espectro autista. A APS deve encaminhar para avaliação multiprofissional e auditiva, iniciar intervenção precoce baseada nas necessidades sem esperar confirmação formal e manter acompanhamento longitudinal da criança e da família.",
+  "distratores": "B: Esperar o resultado auditivo antes de encaminhar atrasa intervenção em uma janela crítica do desenvolvimento; C: A intervenção não deve aguardar fechamento diagnóstico pela equipe especializada; D: Apenas estimular e observar na UBS é insuficiente diante de triagem confirmadamente positiva.",
+  "conceito_chave": "Suspeita de TEA: não espere o laudo para iniciar intervenção e organizar avaliação auditiva e multiprofissional.",
   "has_figure": false
  },
  {
   "number": 51,
-  "enunciado": "Mulher de 19 anos procura serviço de referência 24 horas após violência sexual com penetração vaginal sem preservativo. Não utilizava contraceptivo e não possui registro vacinal confiável contra hepatite B. O agressor apresenta HBsAg não reagente, sem fatores conhecidos de alto risco para hepatite B, e situação sorológica desconhecida para HIV. Conforme a Nota Técnica nº 222/2025-CGHA/DATHI/SVSA/MS, além da contracepção de emergência, da PEP para HIV, da profilaxia para sífilis, gonococo e clamídia e do início da vacinação contra hepatite B, a conduta complementar adequada é:",
+  "enunciado": "Mulher de 19 anos procura serviço de referência 24 horas após violência sexual com penetração vaginal sem preservativo. Não utilizava contraceptivo e não possui registro vacinal confiável contra hepatite B. O agressor apresenta HBsAg não reagente, sem fatores conhecidos de alto risco para hepatite B, e situação sorológica desconhecida para HIV. Conforme a Nota Técnica nº 222/2025-CGHA/DATHI/SVSA/MS, além da contracepção de emergência, da PEP para HIV, da profilaxia para sífilis, gonococo e clamídia e do início da vacinação contra hepatite B, segundo essa nota técnica, a conduta complementar adequada é:",
   "alternatives": [
    "Dispensar IGHAHB pelo HBsAg não reagente da fonte e administrar metronidazol no primeiro atendimento.",
    "Administrar IGHAHB e postergar metronidazol pela concomitância com contracepção de emergência ou antirretrovirais.",
@@ -810,9 +810,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A Nota Técnica nº 222/2025 reforça que vítima de violência sexual sem esquema vacinal completo ou imunidade comprovada contra hepatite B deve receber vacina e IGHAHB precocemente. O metronidazol integra a profilaxia de tricomoníase, mas seu uso deve ser postergado quando há contracepção de emergência ou antirretrovirais.",
-  "distratores": "A dispensa indevidamente a imunoglobulina e administra metronidazol no primeiro atendimento; C ignora a orientação de postergar o metronidazol; D dispensa a imunoglobulina apesar da ausência de imunização comprovada.",
-  "conceito_chave": "Violência sexual: em não imunizada, vacina + IGHAHB; postergar metronidazol se houver contracepção de emergência ou PEP.",
+  "comentario": "A Nota Técnica nº 222/2025 reforça que vítima de violência sexual sem esquema completo ou imunidade comprovada deve receber imunoglobulina humana anti-hepatite B e iniciar vacinação, mesmo no cenário descrito. A mesma nota determina que o metronidazol seja postergado quando houver uso concomitante de contracepção de emergência ou antirretrovirais, para melhorar tolerabilidade e adesão. O enunciado explicita a norma aplicável para evitar mistura com fluxos anteriores baseados apenas no HBsAg da fonte.",
+  "distratores": "A: Contraria a nota ao dispensar imunoglobulina e ao administrar metronidazol junto da contracepção e da PEP; C: A imunoglobulina está indicada, mas o metronidazol não deve ser dado no primeiro atendimento com contracepção de emergência e ARV; D: Acerta a postergação do metronidazol, porém dispensa incorretamente a imunoglobulina.",
+  "conceito_chave": "Na NT 222/2025, não imunizada após violência sexual recebe vacina e IGHAHB; metronidazol é postergado se houver contracepção de emergência ou ARV.",
   "has_figure": false
  },
  {
@@ -826,9 +826,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A exacerbação de DPOC cursa com insuficiência respiratória hipercápnica aguda, acidemia e esforço respiratório, mas o paciente ainda protege a via aérea e coopera. A ventilação não invasiva é a primeira estratégia, com alvo de SpO₂ de 88% a 92% e reavaliação precoce; piora clínica ou gasométrica indica intubação.",
-  "distratores": "B define falha apenas pela PaCO₂ absoluta, mesmo com melhora; C usa alvo de oxigênio alto e critério rígido de pH; D prolonga tentativa de VNI apesar de possível deterioração.",
-  "conceito_chave": "DPOC com acidose respiratória e sem contraindicação: VNI precoce e reavaliação em 30 a 60 minutos.",
+  "comentario": "Exacerbação de DPOC com acidose respiratória, hipercapnia, esforço aumentado e paciente ainda colaborativo e protetor da via aérea é indicação clássica de ventilação não invasiva. O oxigênio deve ser titulado para 88% a 92%, com reavaliação clínica e gasométrica em 30 a 60 minutos. Piora do sensório, da acidose, da oxigenação ou incapacidade de proteger a via aérea indica intubação.",
+  "distratores": "B: PaCO₂ isoladamente acima de 60 mmHg não define falha se pH e esforço melhoram; C: Alvo de 92% a 96% aumenta risco de piora da hipercapnia; pH discretamente abaixo de 7,30 na primeira reavaliação deve ser interpretado com a tendência clínica; D: Esperar obrigatoriamente duas horas pode atrasar intubação em deterioração; critérios de falha não se limitam a pH <7,20 ou apneia.",
+  "conceito_chave": "DPOC hipercápnica com acidose e via aérea protegida: VNI, SpO₂ 88%-92% e reavaliação precoce.",
   "has_figure": false
  },
  {
@@ -842,9 +842,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Diabetes, hipertensão e albuminúria persistente indicam IECA ou BRA, titulado até a maior dose tolerada, devido ao benefício pressórico e renal. Creatinina e potássio devem ser monitorados após início e ajustes.",
-  "distratores": "A usa um limite de aumento da creatinina excessivamente baixo para suspensão automática; B associa IECA e BRA, combinação que aumenta eventos adversos; C mantém dose baixa sem buscar dose efetiva.",
-  "conceito_chave": "DRC albuminúrica no diabetes: IECA ou BRA em dose máxima tolerada, sem combinação dupla.",
+  "comentario": "Diabetes com albuminúria persistente de 180 mg/g indica bloqueio do sistema renina-angiotensina. Deve-se iniciar IECA ou BRA e titular à maior dose aprovada e tolerada, visando controle pressórico e proteção renal. Creatinina e potássio precisam ser monitorados após início e ajustes; aumento de creatinina de até cerca de 30% pode ser aceitável após avaliação clínica.",
+  "distratores": "A: Suspender por aumento acima de 20% é um limiar excessivamente baixo e pode interromper tratamento benéfico; B: Combinar IECA e BRA aumenta hipercalemia e lesão renal sem benefício e não é recomendado; C: Manter dose baixa apenas porque a pressão caiu perde benefício antiproteinúrico e pressórico da titulação tolerada.",
+  "conceito_chave": "Albuminúria diabética: IECA ou BRA na maior dose tolerada, nunca os dois juntos; monitore creatinina e potássio.",
   "has_figure": false
  },
  {
@@ -858,9 +858,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Febre persistente apesar de antibioticoterapia adequada para endometrite, com melhora parcial e culturas negativas, exige investigação de foco oculto. A tomografia de abdome e pelve pode identificar abscesso ou sugerir tromboflebite pélvica séptica, mantendo-se o tratamento intravenoso.",
-  "distratores": "A adia imagem até instabilidade; C troca empiricamente o esquema antes de procurar foco; D propõe esvaziamento uterino sem restos ovulares.",
-  "conceito_chave": "Endometrite puerperal sem resposta em 48 a 72 horas: procurar abscesso ou tromboflebite pélvica.",
+  "comentario": "Endometrite puerperal que permanece febril por 48 a 72 horas apesar de clindamicina, gentamicina e cobertura para enterococo exige busca de foco não controlado. Tomografia de abdome e pelve avalia abscesso, hematoma infectado e achados compatíveis com tromboflebite pélvica séptica. O antibiótico intravenoso deve ser mantido enquanto a investigação prossegue.",
+  "distratores": "A: Aguardar instabilidade para fazer imagem atrasa o diagnóstico de complicação em febre persistente; C: Trocar empiricamente para espectro mais amplo sem procurar coleção ou trombose não corrige possível falta de controle do foco; D: Sem restos ovulares, esvaziamento uterino oferece risco e não trata as principais hipóteses da febre persistente.",
+  "conceito_chave": "Febre persistente após 48-72 horas de tratamento adequado de endometrite: procure abscesso ou tromboflebite pélvica.",
   "has_figure": false
  },
  {
@@ -874,9 +874,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Estridor em repouso caracteriza crupe moderado a grave. A criança deve receber dexametasona e adrenalina nebulizada, permanecendo em observação por algumas horas devido ao possível retorno dos sintomas após o efeito da adrenalina.",
-  "distratores": "A libera após apenas 60 minutos; B programa doses fixas e internação obrigatória; D associa dois corticosteroides e posterga a adrenalina.",
-  "conceito_chave": "Crupe com estridor em repouso: dexametasona + adrenalina nebulizada e observação.",
+  "comentario": "Tosse metálica, rouquidão e estridor em repouso sem sialorreia ou toxemia indicam crupe moderado. Dexametasona reduz inflamação e adrenalina nebulizada produz melhora rápida. Como o efeito da adrenalina é transitório, a criança deve permanecer em observação por algumas horas e receber alta apenas se continuar sem estridor em repouso e com boa ventilação.",
+  "distratores": "A: Sessenta minutos é observação curta para detectar recorrência após o efeito da adrenalina; B: Nebulizações em intervalos fixos e internação de 24 horas não são necessárias se houver resposta sustentada; D: Budesonida não precisa ser associada à dexametasona; adrenalina não deve esperar falha de 30 minutos quando já há estridor em repouso.",
+  "conceito_chave": "Crupe com estridor em repouso: dexametasona + adrenalina nebulizada e observação por algumas horas.",
   "has_figure": false
  },
  {
@@ -890,14 +890,14 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "O quadro é pancreatite aguda biliar leve, com melhora clínica e queda espontânea da bilirrubina, sugerindo passagem do cálculo. Não há colangite nem obstrução persistente para CPRE urgente; a alimentação deve ser retomada conforme tolerância e a colecistectomia realizada na mesma internação.",
-  "distratores": "A indica CPRE apenas pela alteração inicial; B trata colecistite inexistente e adia cirurgia; D solicita tomografia sem indicação e condiciona cirurgia à normalização enzimática.",
-  "conceito_chave": "Pancreatite biliar leve sem colangite: colecistectomia na internação; CPRE apenas se obstrução persistente ou colangite.",
+  "comentario": "Dor típica e lipase elevada confirmam pancreatite aguda biliar. A queda rápida da bilirrubina, colédoco de calibre normal e ausência de cálculo ou colangite sugerem passagem espontânea do cálculo, sem indicação de CPRE urgente. Deve-se manter suporte, iniciar alimentação conforme tolerância e realizar colecistectomia na mesma internação para prevenir recorrência.",
+  "distratores": "A: Alterações iniciais não provam obstrução persistente; CPRE urgente é reservada a colangite ou obstrução biliar mantida; B: Não há colecistite que justifique antibiótico; adiar seis semanas aumenta recorrência em pancreatite leve; D: Tomografia não é necessária para confirmar caso típico em melhora e a lipase não precisa normalizar antes da operação.",
+  "conceito_chave": "Pancreatite biliar leve sem colangite: sem CPRE urgente, alimentação precoce e colecistectomia na internação.",
   "has_figure": false
  },
  {
   "number": 57,
-  "enunciado": "Mulher adulta, lúcida e com plena capacidade decisória apresenta hemorragia digestiva grave. Após ser informada sobre riscos, alternativas e possibilidade de morte, recusa expressamente transfusão de concentrado de hemácias, plasma e plaquetas por convicção religiosa. A decisão é registrada e assinada no prontuário. Apesar do tratamento endoscópico e das estratégias não transfusionais, apresenta novo sangramento e perde a capacidade de se comunicar. Não há evidência de revogação da recusa. A conduta eticamente mais adequada é:",
+  "enunciado": "Mulher adulta, lúcida e com plena capacidade decisória apresenta hemorragia digestiva grave. Após ser informada sobre riscos, alternativas e possibilidade de morte, recusa expressamente transfusão de concentrado de hemácias, plasma e plaquetas por convicção religiosa. A recusa é específica para o episódio atual, livre, esclarecida, registrada e assinada no prontuário. Apesar do tratamento endoscópico e das estratégias não transfusionais, apresenta novo sangramento e perde a capacidade de se comunicar. Não há evidência de revogação da recusa. A conduta eticamente mais adequada é:",
   "alternatives": [
    "manter estratégias não transfusionais e solicitar à família que confirme a decisão, seguindo a manifestação dos representantes se houver discordância.",
    "manter as medidas alternativas, mas realizar transfusão diante de risco imediato de morte, pois a decisão foi registrada antes da perda aguda de sangue.",
@@ -906,9 +906,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Uma recusa transfusional livre, informada, específica e formalizada por adulto capaz continua válida quando ele perde temporariamente a capacidade, na ausência de revogação. Devem-se intensificar hemostasia e alternativas não transfusionais e reconsiderar a decisão apenas se a paciente recuperar capacidade e manifestar nova vontade.",
-  "distratores": "A transfere à família uma decisão já tomada pela paciente; B desconsidera autonomia por risco de morte; D exige autorização judicial para validar manifestação antecipada válida.",
-  "conceito_chave": "Autonomia previamente expressa deve ser respeitada mesmo em emergência.",
+  "comentario": "A paciente era adulta, capaz e realizou recusa específica, livre, esclarecida e documentada para o episódio. A perda posterior de capacidade não revoga essa manifestação. À luz da autonomia e da jurisprudência do STF para adulto capaz, devem-se respeitar os limites recusados, intensificar hemostasia e estratégias de manejo sem sangue e reavaliar a vontade se ela recuperar capacidade.",
+  "distratores": "A: A família não precisa confirmar decisão válida e não pode substituí-la por preferência contrária; B: Transfundir contra a manifestação específica e válida viola autonomia; o risco foi compreendido e não houve revogação; D: Autorização judicial não é condição para reconhecer recusa previamente válida de adulta capaz.",
+  "conceito_chave": "Recusa transfusional válida de adulto capaz continua eficaz após perda de capacidade, salvo revogação.",
   "has_figure": false
  },
  {
@@ -922,9 +922,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A mamografia mostra massa irregular, de alta densidade e margens espiculadas, concordante com a lesão suspeita à ultrassonografia, caracterizando BI-RADS 5. Deve-se realizar biópsia por agulha grossa guiada por ultrassonografia e avaliar a concordância radiológico-patológica.",
-  "distratores": "A subestima a probabilidade de malignidade como 4C; C usa punção aspirativa, insuficiente para caracterização histológica inicial; D antecipa ressonância antes do diagnóstico tecidual.",
-  "conceito_chave": "BI-RADS 5: biópsia percutânea com core biopsy e correlação radiológico-patológica.",
+  "comentario": "A mamografia e a ultrassonografia mostram massa nova, irregular e espiculada/angulada, altamente sugestiva de malignidade, compatível com BI-RADS 5. Como há alvo ultrassonográfico, a próxima etapa é biópsia por agulha grossa guiada por ultrassonografia, seguida de correlação radiológico-patológica.",
+  "distratores": "A: BI-RADS 4C expressa alta suspeição, mas a morfologia apresentada é classicamente BI-RADS 5; C: Punção aspirativa oferece citologia e é inferior à biópsia core para arquitetura e biomarcadores; D: Ressonância não deve atrasar confirmação histológica e não é exame obrigatório antes da biópsia de lesão acessível.",
+  "conceito_chave": "BI-RADS 5 requer diagnóstico tecidual; prefira core biopsy do alvo mais acessível e confira concordância.",
   "has_figure": true
  },
  {
@@ -938,9 +938,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A sensibilidade é 190/200 = 95% e a especificidade é 640/800 = 80%, logo a razão de verossimilhança positiva é 0,95/0,20 = 4,75. A probabilidade pré-teste de 30% corresponde a odds de 0,30/0,70; multiplicando por 4,75 e reconvertendo, a probabilidade pós-teste é aproximadamente 67%.",
-  "distratores": "B confunde sensibilidade com valor preditivo positivo; C multiplica a razão de verossimilhança diretamente pela probabilidade; D interpreta especificidade como probabilidade pós-teste.",
-  "conceito_chave": "Razões de verossimilhança atuam sobre odds, não diretamente sobre probabilidades.",
+  "comentario": "Sensibilidade = 190/200 = 95%; especificidade = 640/800 = 80%; razão de verossimilhança positiva = 0,95/(1-0,80) = 4,75. Odds pré-teste = 0,30/0,70 = 0,429; odds pós-teste = 0,429 x 4,75 = 2,04; probabilidade pós-teste = 2,04/(1+2,04) ≈ 67%.",
+  "distratores": "B: Sensibilidade é P(teste positivo | doença), não P(doença | teste positivo); C: Multiplicar a razão de verossimilhança diretamente pela probabilidade ignora a conversão para odds; D: Especificidade é P(teste negativo | ausência de doença), não valor preditivo positivo.",
+  "conceito_chave": "Razão de verossimilhança atua sobre odds: probabilidade -> odds -> multiplicação -> probabilidade.",
   "has_figure": false
  },
  {
@@ -954,9 +954,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Olhos fundos, sede intensa e prega cutânea com retorno lento fornecem pelo menos dois sinais de desidratação. O manejo é Plano B, com solução de reidratação oral de 50 a 100 mL/kg em 4 a 6 horas, ofertada conforme a sede e com reavaliação.",
-  "distratores": "B classifica como sem desidratação; C usa Plano C apesar de perfusão preservada e capacidade de beber; D indica sonda desde o início, reservada a falha ou impossibilidade da via oral.",
-  "conceito_chave": "Diarreia com desidratação e capacidade de beber: Plano B com SRO.",
+  "comentario": "Irritabilidade, olhos fundos, sede intensa e prega cutânea lenta fornecem pelo menos dois sinais de desidratação, sem sinais de choque ou desidratação grave. O manejo é Plano B na unidade, com solução de reidratação oral 50 a 100 mL/kg em 4 a 6 horas conforme sede, mantendo aleitamento e reavaliando.",
+  "distratores": "B: Os múltiplos sinais impedem classificar como sem desidratação e usar apenas Plano A; C: Pulso cheio, extremidades aquecidas e enchimento de 2 segundos afastam desidratação grave que exigiria Plano C; D: Sonda nasogástrica é reservada a incapacidade de ingerir volume suficiente ou falha da via oral, não medida inicial em lactente que bebe avidamente.",
+  "conceito_chave": "Alguma desidratação: Plano B com SRO supervisionada; grave: Plano C intravenoso.",
   "has_figure": false
  },
  {
@@ -970,9 +970,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Trata-se de edema agudo de pulmão hipertensivo, ainda com pressão elevada e congestão apesar de melhora inicial. A nitroglicerina deve ser titulada progressivamente, mantendo a ventilação não invasiva e monitorando resposta respiratória e hemodinâmica.",
-  "distratores": "A suspende vasodilatador e oferece volume em paciente congesto; B repete diurético antes de otimizar redução de pré e pós-carga; C usa inotrópico sem choque ou baixo débito.",
-  "conceito_chave": "Edema pulmonar hipertensivo: VNI e vasodilatação rápida são centrais.",
+  "comentario": "O quadro é edema agudo de pulmão hipertensivo, com perfil quente e congesto. A ventilação não invasiva melhorou a oxigenação, mas a pressão continua alta e a dispneia é importante; deve-se titular a nitroglicerina para reduzir pré e pós-carga, mantendo VNI e monitorização. O efeito deve ser guiado pela pressão e pela resposta respiratória.",
+  "distratores": "A: Expansão volêmica piora congestão, e não há evidência de hipovolemia; B: Repetir diurético em 20 minutos antes de avaliar resposta e sem tratar melhor a pós-carga não é a prioridade; C: Dobutamina é indicada em baixo débito/hipoperfusão, ausentes neste perfil hipertensivo e quente.",
+  "conceito_chave": "Edema pulmonar hipertensivo: VNI e vasodilatação titulada são centrais; inotrópico é para baixo débito.",
   "has_figure": false
  },
  {
@@ -986,9 +986,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Após dois meses, a paciente está na fase pós-aguda da chikungunya, com poliartrite incapacitante e falha de analgésico e AINE. Curso curto de corticoide oral em dose anti-inflamatória, associado a reabilitação e redução gradual conforme resposta, é apropriado.",
-  "distratores": "B prolonga AINE apesar de falha; C inicia metotrexato antes da fase crônica e sem avaliação especializada; D usa infiltrações isoladas em doença poliarticular.",
-  "conceito_chave": "Chikungunya pós-aguda com artrite incapacitante: corticoide sistêmico curto e reabilitação.",
+  "comentario": "Com dois meses de evolução, a paciente está na fase pós-aguda da chikungunya e tem padrão inflamatório poliarticular incapacitante que não respondeu a analgésico e AINE. O manual do Ministério da Saúde permite prednisona em dose anti-inflamatória, associada à reabilitação, com reavaliação precoce e desmame gradual conforme resposta.",
+  "distratores": "B: Não é necessário esperar completar 90 dias quando há inflamação incapacitante e falha de AINE; C: Metotrexato é considerado na fase crônica, sobretudo após persistência e falha de estratégias anteriores, não automaticamente após seis semanas; D: Infiltração isolada é pouco adequada em acometimento poliarticular e não substitui tratamento sistêmico.",
+  "conceito_chave": "Chikungunya pós-aguda inflamatória refratária pode receber corticoide oral com desmame e reabilitação.",
   "has_figure": false
  },
  {
@@ -1002,9 +1002,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Perda ponderal, restrição alimentar, exercício excessivo, estradiol baixo e gonadotrofinas baixas ou normal-baixas indicam amenorreia hipotalâmica funcional, provavelmente associada a transtorno alimentar. A prioridade é avaliar segurança clínica, recuperar energia e peso com equipe multiprofissional e avaliar saúde óssea.",
-  "distratores": "A esperaria FSH elevado na insuficiência ovariana; C não apresenta hiperandrogenismo nem padrão de SOP; D sugere lesão hipofisária sem sinais focais e ignora o déficit energético evidente.",
-  "conceito_chave": "Amenorreia hipotalâmica: corrigir baixa disponibilidade energética e proteger massa óssea.",
+  "comentario": "Amenorreia após restrição alimentar, exercício intenso, baixo IMC e hipogonadismo hipogonadotrófico laboratorial caracteriza amenorreia hipotalâmica funcional, provavelmente no contexto de transtorno alimentar restritivo. A prioridade é avaliar estabilidade e risco, restaurar energia e peso com equipe multiprofissional e cuidar da saúde óssea; após nove meses de amenorreia, densitometria é apropriada.",
+  "distratores": "A: Insuficiência ovariana primária cursaria com FSH elevado; anticoncepcional não corrige déficit energético; C: SOP costuma associar hiperandrogenismo e não explica estradiol baixo com perda ponderal intensa; D: O contexto explica supressão hipotalâmica e não há sinais que tornem lesão hipofisária a primeira hipótese.",
+  "conceito_chave": "Amenorreia hipotalâmica funcional é diagnóstico de contexto e exclusão; trate o déficit energético, não apenas o sangramento.",
   "has_figure": false
  },
  {
@@ -1018,9 +1018,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Sangue no meato, retenção urinária e trauma pélvico sugerem lesão uretral. A uretrografia retrógrada deve preceder qualquer instrumentação; se houver ruptura ou não for possível cateterização segura, realiza-se drenagem suprapúbica.",
-  "distratores": "A tenta sondagem antes de estudar a uretra; B faz cistostomia sem definir lesão e posterga exame; C usa tomografia de pelve, que não substitui uretrografia retrógrada.",
-  "conceito_chave": "Suspeita de lesão uretral: não sondar antes da uretrografia.",
+  "comentario": "Sangue no meato, retenção e trauma pélvico sugerem lesão uretral. A instrumentação às cegas pode ampliar uma ruptura; deve-se realizar uretrografia retrógrada antes de sondagem. A drenagem é então estabelecida conforme o achado, frequentemente por via suprapúbica quando há ruptura ou cateterização segura não é possível.",
+  "distratores": "A: Mesmo tentativa cuidadosa antes da uretrografia pode agravar a lesão suspeita; B: Cistostomia pode ser necessária, mas o paciente está estável e a uretrografia deve definir a lesão antes quando disponível; C: Tomografia de pelve não substitui uretrografia retrógrada para avaliar uretra.",
+  "conceito_chave": "Sangue no meato após trauma pélvico: uretrografia retrógrada antes de sondagem.",
   "has_figure": false
  },
  {
@@ -1034,9 +1034,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Duas crises no mesmo episódio febril tornam a convulsão febril complexa, embora sejam breves, generalizadas e com recuperação completa. Na ausência de sinais neurológicos, meningismo ou alteração persistente, não se indicam EEG, neuroimagem ou profilaxia anticonvulsivante de rotina.",
-  "distratores": "B solicita EEG apenas pela recorrência no mesmo episódio; C indica ressonância sem sinais focais; D prescreve diazepam em toda febre, estratégia sem benefício rotineiro.",
-  "conceito_chave": "Convulsão febril complexa não implica exame complementar automático.",
+  "comentario": "Duas crises no mesmo episódio febril, dentro de 24 horas, classificam a convulsão febril como complexa, embora sejam breves, generalizadas e com recuperação completa. Em criança neurologicamente normal, sem meningismo ou déficit, não se indicam de rotina EEG, neuroimagem ou profilaxia anticonvulsivante; investiga-se e trata-se a causa da febre e orienta-se a família.",
+  "distratores": "B: Recorrência em 24 horas, isoladamente, não torna EEG obrigatório; C: Ressonância não é indicada sem focalidade, alteração persistente ou outra suspeita neurológica; D: Diazepam em todos os episódios febris não previne de forma aceitável e expõe a sedação e depressão respiratória.",
+  "conceito_chave": "Convulsão febril complexa não significa automaticamente EEG, imagem ou profilaxia; a clínica orienta a investigação.",
   "has_figure": false
  },
  {
@@ -1050,9 +1050,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Baciloscopia positiva classifica operacionalmente a hanseníase como multibacilar, independentemente do número de lesões. O tratamento é PQT-U por 12 doses, e a alta por cura não exige negativação da baciloscopia.",
-  "distratores": "A usa apenas o número de lesões e ignora a baciloscopia; C mantém esquema antigo de 24 doses; D prolonga tratamento até negativação, que pode demorar.",
-  "conceito_chave": "Hanseníase com baciloscopia positiva = multibacilar, 12 doses de PQT-U.",
+  "comentario": "Baciloscopia positiva classifica operacionalmente hanseníase multibacilar, independentemente de haver apenas quatro lesões. O esquema é poliquimioterapia única multibacilar por 12 doses. A alta por cura é baseada na conclusão do esquema, sem exigir negativação da baciloscopia.",
+  "distratores": "A: Baciloscopia positiva impede classificação paucibacilar baseada apenas no número de lesões; C: Vinte e quatro doses não é duração padrão para este caso; D: Prolongar até negativação baciloscópica não é recomendado e pode manter tratamento desnecessário.",
+  "conceito_chave": "Na hanseníase, qualquer baciloscopia positiva define multibacilar; PQT-U por 12 doses.",
   "has_figure": false
  },
  {
@@ -1066,9 +1066,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Crise convulsiva por hiponatremia grave é emergência neurológica. Deve-se suspender o tiazídico e administrar bolus de solução salina hipertônica a 3%, repetindo conforme resposta clínica e monitorando o sódio para obter elevação inicial controlada.",
-  "distratores": "A usa infusão contínua e define meta em 24 horas, em vez de tratar imediatamente os sintomas; B mantém infusão até 130 mEq/L, com alto risco de correção excessiva; C escolhe salina isotônica apesar da convulsão.",
-  "conceito_chave": "Hiponatremia sintomática grave: bolus de salina 3% e controle rigoroso da correção.",
+  "comentario": "Convulsão e confusão por sódio de 114 mEq/L configuram hiponatremia sintomática grave. A terapia imediata é solução salina hipertônica a 3% em bolus, repetida conforme persistência de sintomas, com dosagens frequentes de sódio. O objetivo inicial é melhorar sintomas com elevação aproximada de 4 a 6 mEq/L, evitando correção excessiva no primeiro dia.",
+  "distratores": "A: Infusão contínua é menos apropriada que bolus em convulsão ativa e o alvo de 4 a 6 mEq/L foi atribuído a 24 horas, não à correção inicial sintomática; B: Manter infusão fixa até 130 mEq/L causa alto risco de desmielinização osmótica; C: Soro isotônico é lento e pode ser inadequado em sintomas neurológicos graves que exigem hipertônico imediato.",
+  "conceito_chave": "Hiponatremia com convulsão: bolus de NaCl 3%, alvo inicial de melhora e +4 a 6 mEq/L, sem normalização rápida.",
   "has_figure": false
  },
  {
@@ -1082,9 +1082,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "A causa é atonia uterina persistente. Como a paciente tem hipertensão grave, a metilergometrina é contraindicada; sem asma, pode-se usar carboprost como uterotônico de segunda linha e, se não houver resposta, realizar tamponamento uterino.",
-  "distratores": "A usa metilergometrina em hipertensa; B repete ácido tranexâmico imediatamente, embora a segunda dose tenha intervalo e não substitua uterotônico; D pula a tentativa com outro uterotônico compatível.",
-  "conceito_chave": "Hemorragia por atonia: escolher uterotônico conforme contraindicações e avançar para balão se refratária.",
+  "comentario": "Atonia uterina é a causa do sangramento: útero aumentado e amolecido, placenta completa e sem laceração evidente. Ocitocina, massagem e ácido tranexâmico já foram feitos. Hipertensão grave contraindica metilergometrina; ausência de asma permite carboprost como uterotônico de segunda linha. Se o sangramento persistir, procede-se ao tamponamento uterino e escalonamento cirúrgico conforme resposta.",
+  "distratores": "A: Mesmo após tratar a pressão, metilergometrina não é a melhor escolha imediata em puérpera com hipertensão grave; B: A segunda dose de tranexâmico não é repetida após dez minutos; usualmente é considerada após 30 minutos se o sangramento persistir ou reiniciar em 24 horas; D: Balão pode ser necessário, mas ainda há uterotônico de segunda linha seguro a administrar sem atraso.",
+  "conceito_chave": "Atonia refratária: escolha uterotônico conforme contraindicações; hipertensão evita ergometrina, asma evita carboprost.",
   "has_figure": false
  },
  {
@@ -1098,9 +1098,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Mordedura profunda na mão por cão desconhecido e não observável é exposição grave. Além da vacina, o soro ou a imunoglobulina antirrábica deve ser infiltrado dentro e ao redor da ferida; eventual volume restante é aplicado por via intramuscular em local distante da vacina.",
-  "distratores": "A aplica todo o produto apenas por via intramuscular; B atrasa a imunização passiva; D restringe indevidamente sua indicação a lesões múltiplas ou cefálicas.",
-  "conceito_chave": "Exposição grave à raiva: vacina + imunização passiva infiltrada na ferida.",
+  "comentario": "Mordedura profunda na mão por animal desconhecido e não observável é exposição grave. Após lavagem, pessoa nunca vacinada deve iniciar vacina antirrábica e receber soro ou imunoglobulina, infiltrando o máximo possível dentro e ao redor da ferida; eventual restante é aplicado conforme orientação do produto em local distinto da vacina.",
+  "distratores": "A: Aplicação apenas intramuscular perde a neutralização local no sítio de inoculação; B: A imunoglobulina deve ser aplicada o mais cedo possível, não se espera sete dias; D: Lesão profunda em mão já é exposição grave, mesmo sendo única e não cefálica.",
+  "conceito_chave": "Profilaxia antirrábica grave em não vacinado: vacina + imunoglobulina infiltrada na ferida.",
   "has_figure": false
  },
  {
@@ -1114,9 +1114,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Há megacólon tóxico com deterioração sistêmica e aumento da dilatação apesar do tratamento intensivo. A colectomia subtotal de urgência com ileostomia terminal deve ser realizada sem esperar perfuração ou nova tentativa de resgate medicamentoso.",
-  "distratores": "A prolonga tratamento apesar de piora; B usa infliximabe em paciente com sinais de falha grave e possível isquemia; C propõe colonoscopia, contraindicada pelo risco de perfuração.",
-  "conceito_chave": "Megacólon tóxico com piora clínica: cirurgia urgente antes da perfuração.",
+  "comentario": "Dilatação colônica acima de 6 cm associada a febre, taquicardia e toxicidade sistêmica caracteriza megacólon tóxico. A piora em 24 horas, com dor, distensão, lactato e diâmetro em ascensão apesar de terapia intensiva, sugere falha e risco iminente de perfuração. Indica-se colectomia subtotal de urgência com ileostomia terminal, sem aguardar pneumoperitônio.",
+  "distratores": "A: Persistir por mais 48 horas diante de deterioração aumenta risco de perfuração, sepse e morte; B: Terapia biológica de resgate não é apropriada em deterioração sistêmica e lactato crescente; C: Colonoscopia é contraindicada pelo risco de perfuração no megacólon tóxico.",
+  "conceito_chave": "Megacólon tóxico em deterioração clínica é cirúrgico mesmo sem perfuração radiológica.",
   "has_figure": false
  },
  {
@@ -1130,9 +1130,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Há síndrome coronariana aguda sem supradesnivelamento, com troponina positiva e sem critérios de muito alto risco. Indicam-se tratamento anti-isquêmico e antitrombótico, estatina de alta intensidade e estratégia invasiva precoce, preferencialmente em até 24 horas, conforme o risco e a disponibilidade.",
-  "distratores": "B posterga anticoagulação sem motivo; C indica coronariografia imediata apenas pela troponina; D usa teste funcional em paciente com infarto confirmado.",
-  "conceito_chave": "NSTEMI estável: tratamento antitrombótico e estratégia invasiva precoce conforme risco, não necessariamente imediata.",
+  "comentario": "Troponina elevada com quadro compatível e sem supra persistente define síndrome coronariana aguda sem supradesnivelamento de alto risco. Inicia-se antiagregação, anticoagulação parenteral, terapia anti-isquêmica e estatina de alta intensidade, avalia-se risco isquêmico/hemorrágico e planeja-se estratégia invasiva durante a internação, antecipada conforme escore e evolução.",
+  "distratores": "B: Adiar anticoagulação até anatomia coronariana deixa o paciente sem parte do tratamento antitrombótico indicado; C: Troponina positiva isolada indica alto risco e estratégia precoce, mas não necessariamente coronariografia imediata em menos de duas horas sem critérios de muito alto risco; D: Teste funcional não é a etapa inicial em infarto sem supra confirmado por troponina.",
+  "conceito_chave": "SCA sem supra: antitrombóticos, estatina e estratificação para invasão precoce; imediata só se muito alto risco.",
   "has_figure": false
  },
  {
@@ -1146,9 +1146,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Há suspeita fundamentada de violência contra criança. O profissional deve documentar achados, fazer notificação compulsória, comunicar o Conselho Tutelar e articular uma saída segura com a rede, evitando entrevistas repetidas que aumentem revitimização.",
-  "distratores": "A busca relato detalhado antes da proteção; C libera com familiar indicado pelo acompanhante sem avaliação de segurança; D aguarda confirmação para comunicar proteção.",
-  "conceito_chave": "Suspeita de violência infantil já exige notificação e proteção; não é necessário confirmar.",
+  "comentario": "Há suspeita fundamentada de violência física. O profissional deve registrar achados e falas espontâneas, notificar compulsoriamente, comunicar o Conselho Tutelar e articular uma saída segura com a rede. Entrevistas repetidas ou interrogatório detalhado podem revitimizar e contaminar a escuta especializada.",
+  "distratores": "A: Obter relato detalhado pela equipe assistencial não é necessário e pode causar revitimização; C: Não se libera com familiar escolhido pelo acompanhante sem avaliação de segurança e pactuação com a rede; D: Notificação e proteção ocorrem diante de suspeita, sem esperar confirmação especializada.",
+  "conceito_chave": "Suspeita de violência infantil: documente, notifique, acione proteção e organize saída segura; não faça múltiplas entrevistas.",
   "has_figure": false
  },
  {
@@ -1162,9 +1162,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "A adequação do tratamento materno depende do fármaco e esquema corretos, dos intervalos entre doses, da antecedência suficiente em relação ao parto e da comparação dos títulos não treponêmicos materno e neonatal. Teste treponêmico neonatal não é útil para essa comparação, pois anticorpos maternos atravessam a placenta.",
-  "distratores": "A inclui teste treponêmico neonatal; B omite a antecedência ao parto; D coloca tratamento da parceria como critério de adequação do tratamento materno.",
-  "conceito_chave": "Sífilis congênita: comparar VDRL/RPR pareados e avaliar esquema e tempo do tratamento materno.",
+  "comentario": "A adequação do tratamento materno depende do uso de benzilpenicilina benzatina no esquema completo para o estágio clínico, com intervalos corretos, tratamento iniciado pelo menos 30 dias antes do parto e finalizado antes do nascimento. Para orientar a investigação do recém-nascido, compara-se o teste não treponêmico do sangue periférico materno no parto com o neonatal, preferencialmente pelo mesmo método. O teste treponêmico neonatal não diferencia anticorpos maternos de infecção do bebê.",
+  "distratores": "A: Teste treponêmico neonatal pode refletir anticorpos transferidos e não é o elemento pareado prioritário; B: Resposta sorológica materna é acompanhada, mas a alternativa omite a antecedência mínima ao parto, essencial à adequação; D: Tratamento da parceria é importante para prevenir reinfecção, mas não compõe isoladamente o critério atual de adequação do tratamento materno.",
+  "conceito_chave": "Sífilis na gestação: tratamento correto e oportuno; no parto, compare títulos não treponêmicos materno e neonatal.",
   "has_figure": false
  },
  {
@@ -1178,9 +1178,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Na comunicação interventricular, o shunt esquerda-direita aumenta o fluxo pulmonar. O retorno venoso pulmonar elevado causa sobrecarga volumétrica do átrio e do ventrículo esquerdos, explicando taquipneia e dificuldade de ganho ponderal.",
-  "distratores": "A localiza a principal sobrecarga no ventrículo direito; C descreve sobrecarga pressórica sem repercussão esquerda; D exclui indevidamente a sobrecarga ventricular esquerda.",
-  "conceito_chave": "CIV significativa: hiperfluxo pulmonar e dilatação de câmaras esquerdas.",
+  "comentario": "Na comunicação interventricular moderada, a queda da resistência vascular pulmonar após o nascimento aumenta o shunt da esquerda para a direita. O hiperfluxo pulmonar retorna ao átrio e ventrículo esquerdos, causando sobrecarga volumétrica dessas câmaras e sintomas de insuficiência cardíaca durante mamadas.",
+  "distratores": "A: O ventrículo direito pode lidar com maior fluxo, mas a sobrecarga volumétrica predominante recai sobre câmaras esquerdas pelo retorno pulmonar aumentado; C: Sobrecarga pressórica de ventrículo direito ocorre se houver hipertensão pulmonar importante, não explica a fisiologia inicial típica; D: O ventrículo esquerdo também recebe volume aumentado; não há dilatação isolada do átrio.",
+  "conceito_chave": "CIV significativa: shunt E-D, hiperfluxo pulmonar e sobrecarga volumétrica de átrio e ventrículo esquerdos.",
   "has_figure": false
  },
  {
@@ -1194,9 +1194,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A tríade de Charcot associada a hipotensão e confusão indica colangite aguda grave. Após antibiótico e suporte, é necessária drenagem biliar urgente, preferencialmente por CPRE, sem atrasar por exames adicionais.",
-  "distratores": "A exige colangiorressonância antes do controle do foco; B escolhe drenagem percutânea como primeira opção, reservada quando CPRE falha ou não é possível; C propõe cirurgia inicial mais invasiva.",
-  "conceito_chave": "Colangite grave: antibiótico, suporte e drenagem biliar urgente.",
+  "comentario": "Febre, dor, icterícia, hipotensão e confusão configuram colangite aguda grave com disfunção orgânica. Após antibiótico e suporte, o foco deve ser controlado por drenagem biliar urgente, preferencialmente endoscópica por CPRE. Exame adicional não deve atrasar descompressão em paciente com diagnóstico clínico e dilatação biliar.",
+  "distratores": "A: Colangiorressonância antes da drenagem atrasa controle do foco sem necessidade; B: Drenagem percutânea é alternativa quando CPRE falha, é impossível ou não está disponível, não preferência automática pela hipotensão; C: Cirurgia aberta tem maior morbidade e não é primeira via de drenagem quando CPRE é viável.",
+  "conceito_chave": "Colangite grave é emergência de controle do foco: drene urgentemente, de preferência por CPRE.",
   "has_figure": false
  },
  {
@@ -1210,9 +1210,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Após oito semanas de boa adesão, há resposta parcial e boa tolerabilidade à sertralina 50 mg/dia. A conduta é otimizar gradualmente a dose dentro da faixa terapêutica e reavaliar em duas a quatro semanas antes de trocar ou associar outro antidepressivo.",
-  "distratores": "A mantém dose inicial apesar da resposta incompleta; C considera falha antes de otimizar a dose; D associa outro antidepressivo precocemente e aumenta complexidade e risco de efeitos adversos.",
-  "conceito_chave": "Resposta parcial ao antidepressivo bem tolerado: primeiro otimizar a dose.",
+  "comentario": "Após oito semanas de sertralina 50 mg/dia, adesão e tolerabilidade adequadas com resposta parcial indicam benefício, mas a dose ainda é inicial. A estratégia preferencial é otimizar gradualmente dentro da faixa terapêutica e reavaliar em duas a quatro semanas, monitorando sintomas, funcionalidade, efeitos adversos, adesão e risco.",
+  "distratores": "A: Manter indefinidamente a dose inicial posterga a otimização diante de sintomas residuais relevantes; C: Resposta parcial não é falha completa que obrigue troca imediata do antidepressivo; D: Associação de dois antidepressivos antes de otimizar o primeiro aumenta complexidade e efeitos adversos sem necessidade.",
+  "conceito_chave": "Resposta parcial e boa tolerabilidade: primeiro otimize a dose do antidepressivo antes de trocar ou combinar.",
   "has_figure": false
  },
  {
@@ -1226,9 +1226,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A frequência cardíaca de 70 bpm após ventilação com pressão positiva sem expansão torácica adequada indica ventilação ineficaz. Deve-se executar as etapas corretivas, obter movimento torácico e então reavaliar a frequência após 30 segundos de VPP efetiva.",
-  "distratores": "B mantém ventilação inadequada antes de corrigi-la; C inicia compressões antes de garantir ventilação efetiva e com FC acima de 60 bpm; D aumenta o oxigênio sem corrigir a causa principal.",
-  "conceito_chave": "Reanimação neonatal: antes de compressões, garantir 30 segundos de ventilação efetiva.",
+  "comentario": "A frequência cardíaca de 70 bpm após 30 segundos não pode ser interpretada como falha da ventilação porque não houve expansão torácica. A prioridade é executar as etapas corretivas da VPP, obter movimento do tórax e então fornecer 30 segundos de ventilação efetiva antes de reavaliar a frequência. Compressões só começam se FC permanecer abaixo de 60 bpm após ventilação eficaz.",
+  "distratores": "B: Manter técnica ineficaz por mais 30 segundos atrasa ventilação pulmonar; C: FC abaixo de 100 exige ventilação; compressões não são indicadas com 70 bpm antes de VPP eficaz; D: Oxigênio a 100% é usado quando se iniciam compressões, não antes de corrigir uma VPP sem expansão torácica.",
+  "conceito_chave": "Na reanimação neonatal, FC só guia o próximo passo depois de ventilação que realmente expande o tórax.",
   "has_figure": false
  },
  {
@@ -1242,9 +1242,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Macicez, ausência de murmúrio e grande volume de líquido pleural após trauma penetrante indicam hemotórax. A conduta imediata é ressuscitação hemostática e toracostomia com drenagem pleural fechada; o volume drenado e a evolução definirão necessidade de toracotomia.",
-  "distratores": "A atrasa a drenagem para realizar angiotomografia; C indica toracotomia sem drenagem e sem critérios de débito; D descreve pneumotórax hipertensivo, que costuma causar hipertimpanismo e desvio mediastinal.",
-  "conceito_chave": "Hemotórax traumático instável: dreno torácico e ressuscitação, sem atrasar para tomografia.",
+  "comentario": "Macicez, murmúrio abolido e grande volume de líquido pleural após trauma penetrante indicam hemotórax. Com hipoxemia e hipotensão, inicia-se ressuscitação hemostática e toracostomia com drenagem pleural fechada. O volume inicial e o débito subsequente do dreno ajudam a definir necessidade de toracotomia.",
+  "distratores": "A: Angiotomografia antes da drenagem atrasaria tratamento de ameaça imediata à ventilação e à circulação; C: Mesmo quando se suspeita hemotórax maciço, a drenagem torácica normalmente precede e orienta a toracotomia, salvo situação excepcional de operação imediata já em curso; D: Macicez e líquido pleural apontam para sangue; pneumotórax hipertensivo produz hipertimpanismo e é tratado por descompressão, quadro ausente.",
+  "conceito_chave": "Hemotórax traumático instável: ressuscitação com sangue e dreno torácico; o débito define escalonamento cirúrgico.",
   "has_figure": false
  },
  {
@@ -1258,9 +1258,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Sangramento pós-menopausa recorrente com endométrio de 9 mm exige amostragem histológica. Pode-se iniciar com biópsia endometrial ambulatorial; se a amostra for insuficiente, o sangramento persistir ou houver suspeita focal, prossegue-se com histeroscopia.",
-  "distratores": "A encerra investigação apesar de recorrência; B torna histeroscopia cirúrgica obrigatória como primeiro exame; D posterga a biópsia usando limiar de 11 mm inadequado.",
-  "conceito_chave": "Sangramento pós-menopausa e endométrio espessado: obter tecido.",
+  "comentario": "Sangramento pós-menopausa recorrente com endométrio de 9 mm exige avaliação histológica. Pode-se iniciar por biópsia endometrial ambulatorial; se a amostra for insuficiente, o sangramento persistir/recorrer ou houver suspeita de lesão focal, indica-se histeroscopia com amostragem dirigida.",
+  "distratores": "A: Biópsia benigna cega não encerra investigação de sangramento recorrente se a clínica persiste; B: Espessura acima de 4 mm não contraindica biópsia ambulatorial nem torna curetagem inicial obrigatória; D: Em sintomática, o limiar não é 11 mm e não se deve apenas repetir ultrassonografia.",
+  "conceito_chave": "Pós-menopausa com sangramento e endométrio >4 mm: amostragem; persistência ou amostra insuficiente leva à histeroscopia.",
   "has_figure": false
  },
  {
@@ -1274,9 +1274,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "O adolescente apresenta obesidade com múltiplas alterações cardiometabólicas, mas precisa de confirmação diagnóstica e avaliação organizada antes de medicação. A primeira linha é intervenção familiar intensiva, confirmação da hipertensão, investigação de elevação de ALT e seguimento de glicemia e lipídios.",
-  "distratores": "A adia a confirmação da pressão e a avaliação hepática; B inicia metformina automaticamente por pré-diabetes leve; C começa dois fármacos sem confirmar hipertensão nem completar intervenção de estilo de vida.",
-  "conceito_chave": "Obesidade pediátrica com comorbidades: intervenção intensiva e investigação dirigida antes de farmacoterapia automática.",
+  "comentario": "O adolescente tem obesidade com múltiplas repercussões: pressão persistentemente elevada, pré-diabetes, hipertrigliceridemia/HDL baixo e possível doença hepática esteatótica metabólica. A primeira linha é intervenção familiar intensiva e longitudinal. A hipertensão deve ser confirmada, idealmente por monitorização ambulatorial quando disponível, e a ALT elevada deve ser investigada; medicações dependem da confirmação, gravidade e resposta.",
+  "distratores": "A: Adiar toda investigação por três meses perde a oportunidade de confirmar hipertensão e excluir hepatopatia; B: Metformina não é automática apenas por acantose e pré-diabetes; estilo de vida e avaliação global vêm primeiro; C: Não há indicação imediata de dois fármacos sem confirmação de hipertensão ou tentativa estruturada de intervenção, na ausência de sintomas ou lesão grave.",
+  "conceito_chave": "Obesidade pediátrica exige busca ativa de comorbidades; intervenção familiar é base, mas alterações persistentes precisam ser confirmadas e investigadas.",
   "has_figure": false
  },
  {
@@ -1290,9 +1290,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Hipotensão persistente, síncope e disfunção de ventrículo direito caracterizam tromboembolismo pulmonar de alto risco. Na ausência de contraindicação, deve-se iniciar anticoagulação parenteral, suporte hemodinâmico e trombólise sistêmica imediata.",
-  "distratores": "A classifica como risco intermediário; B usa apixabana e posterga reperfusão em choque; D indica filtro de veia cava, que não substitui anticoagulação e trombólise.",
-  "conceito_chave": "TEP com instabilidade hemodinâmica: reperfusão imediata, geralmente com trombólise sistêmica.",
+  "comentario": "Hipotensão persistente associada a tromboembolismo pulmonar confirma TEP de alto risco. Sem contraindicação à lise, deve-se iniciar suporte, anticoagulação parenteral e trombólise sistêmica imediata para reperfusão. Reposição volêmica deve ser cautelosa para não piorar a falência do ventrículo direito.",
+  "distratores": "A: Hipotensão define alto risco, não intermediário-alto, e exige reperfusão sem esperar deterioração adicional; B: Apixabana oral não é a terapia inicial de TEP em choque nem substitui reperfusão; D: Filtro de veia cava é reservado sobretudo a contraindicação à anticoagulação ou recorrência selecionada; TVP concomitante não é indicação isolada.",
+  "conceito_chave": "TEP com choque é alto risco: suporte, heparina e reperfusão imediata se não houver contraindicação.",
   "has_figure": false
  },
  {
@@ -1306,9 +1306,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Há infecção grave do pé diabético com abscesso ou necrose e isquemia crítica. O paciente deve ser internado, receber antibiótico intravenoso e controle cirúrgico urgente do foco, enquanto a equipe vascular avalia revascularização em paralelo.",
-  "distratores": "A espera revascularização antes de drenar infecção profunda; C posterga avaliação vascular, ameaçando viabilidade do membro; D atrasa cirurgia para completar imagem apesar de flutuação e necrose.",
-  "conceito_chave": "Pé diabético infectado e isquêmico: controlar infecção e perfusão de forma coordenada e urgente.",
+  "comentario": "Há infecção grave do pé diabético com abscesso/necrose e isquemia importante. O paciente deve ser internado, receber antibiótico intravenoso e controle cirúrgico urgente do foco. A equipe vascular deve avaliar revascularização em paralelo, planejando a sequência conforme perfusão, extensão da infecção e viabilidade; nem drenagem nem avaliação arterial podem ser adiadas.",
+  "distratores": "A: Revascularizar antes de drenar uma coleção purulenta pode atrasar controle de sepse; a sequência precisa ser coordenada, não rígida; C: Deixar avaliação vascular apenas para depois compromete cicatrização e salvamento do membro; D: Imagem adicional não deve atrasar drenagem de abscesso clinicamente evidente e necrose em paciente sistêmico.",
+  "conceito_chave": "Pé diabético infectado e isquêmico exige controle urgente do foco e estratégia vascular paralela.",
   "has_figure": false
  },
  {
@@ -1322,9 +1322,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Perfil biofísico 4/10 em gestação a termo, com redução de movimentos e oligoidrâmnio, indica interrupção. Como não há contraindicação ao parto vaginal, inicia-se maturação cervical e indução com monitorização contínua, realizando cesariana se houver deterioração fetal ou falha obstétrica.",
-  "distratores": "A repete exame apesar de resultado anormal a termo; B usa ocitocina com colo desfavorável sem maturação; C indica cesariana apenas pelo colo desfavorável.",
-  "conceito_chave": "Perfil biofísico 4/10 a termo: interromper; via depende das condições obstétricas e da vigilância fetal.",
+  "comentario": "Perfil biofísico 4/10 com oligoidrâmnio a termo indica comprometimento e necessidade de interrupção. A cardiotocografia tem variabilidade moderada e ausência de desacelerações, sem padrão que imponha cesariana imediata. Como não há cicatriz uterina, pode-se realizar maturação cervical seguida de indução, com monitorização contínua e cesariana se ocorrer deterioração.",
+  "distratores": "A: Repetir o perfil adia parto já indicado por resultado anormal a termo; B: Ocitocina sem maturação é menos eficaz em colo desfavorável e não é a melhor sequência; C: Colo desfavorável isoladamente não contraindica indução nem obriga cesariana quando o traçado permite tentativa monitorizada.",
+  "conceito_chave": "BPP 4/10 a termo indica parto; a via depende do traçado e das condições obstétricas, não apenas do colo.",
   "has_figure": false
  },
  {
@@ -1338,9 +1338,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Na emergência hipertensiva, a redução inicial aproximada de 20% a 25% da pressão arterial média já foi alcançada, de 230/130 para 180/105 mmHg. Em seguida, o objetivo é chegar a cerca de 160/100-110 mmHg nas próximas duas a seis horas e reduzir gradualmente depois.",
-  "distratores": "A interrompe novas reduções por 24 horas; C busca normalização rápida demais; D propõe nova queda de 20% a 25% na hora seguinte, aumentando risco de hipoperfusão.",
-  "conceito_chave": "Emergência hipertensiva: redução controlada, não normalização abrupta.",
+  "comentario": "A apresentação é emergência hipertensiva com encefalopatia, retinopatia grave e lesão renal. A redução inicial já foi aproximadamente 20% da pressão arterial média, dentro da meta da primeira hora. A etapa seguinte é alcançar cerca de 160/100-110 mmHg nas próximas duas a seis horas e depois reduzir gradualmente, evitando isquemia por queda excessiva.",
+  "distratores": "A: Manter sem nova redução por 24 horas deixa pressão ainda muito elevada após a fase inicial; C: Sistólica abaixo de 140 mmHg em duas horas seria queda excessiva sem indicação especial; D: Reduzir mais 20%-25% na hora seguinte somaria queda perigosa; esse percentual se refere à primeira hora.",
+  "conceito_chave": "Emergência hipertensiva comum: -20%-25% da PAM na primeira hora, depois cerca de 160/100-110 em 2-6 horas.",
   "has_figure": false
  },
  {
@@ -1354,9 +1354,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A criança suscetível teve contato com sarampo há 48 horas e pode receber vacina tríplice viral como profilaxia pós-exposição dentro de 72 horas. Depois, deve completar o esquema de rotina conforme a idade.",
-  "distratores": "A atrasa a intervenção para esperar sorologia; B reserva imunoglobulina para situações específicas, como contraindicação à vacina ou grupos de alto risco; C administra simultaneamente vacina e imunoglobulina, o que compromete a resposta vacinal.",
-  "conceito_chave": "Contato com sarampo em suscetível imunocompetente: tríplice viral até 72 horas.",
+  "comentario": "Criança imunocompetente, não vacinada e exposta há 48 horas está dentro da janela de 72 horas para profilaxia pós-exposição com tríplice viral. Deve receber a vacina imediatamente e completar o esquema conforme o calendário; também se mantêm notificação, bloqueio e vigilância de sintomas.",
+  "distratores": "A: Sorologia atrasaria profilaxia efetiva e não é necessária antes de vacinar; B: Imunoglobulina é usada em suscetíveis de alto risco ou quando vacina é contraindicada e dentro da janela própria; não é a melhor opção para esta criança imunocompetente; C: Vacina e imunoglobulina não devem ser administradas simultaneamente, pois a imunoglobulina interfere na resposta à vacina viva.",
+  "conceito_chave": "Contato com sarampo há até 72 horas e sem contraindicação: tríplice viral imediatamente.",
   "has_figure": false
  },
  {
@@ -1370,9 +1370,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Febre persistente no quinto pós-operatório, leucocitose e dor que piora com extensão da coxa sugerem coleção profunda, inclusive abscesso de psoas ou intra-abdominal. A tomografia de abdome e pelve com contraste é o exame mais sensível para localizar a coleção e planejar drenagem.",
-  "distratores": "A amplia antibiótico sem buscar controle do foco; B usa ultrassonografia, menos sensível para coleções profundas; D apenas observa apesar de sinais de abscesso.",
-  "conceito_chave": "Febre persistente após apendicite perfurada: procurar abscesso com tomografia contrastada.",
+  "comentario": "Febre e dor focal no quinto dia após apendicite perfurada, com sinal do psoas e marcadores elevados, sugerem abscesso intra-abdominal ou retroperitoneal. Tomografia de abdome e pelve com contraste intravenoso é o melhor exame para localizar, dimensionar e planejar drenagem. A decisão sobre antibiótico e drenagem depende do achado.",
+  "distratores": "A: Escalonar antibiótico sem procurar coleção pode falhar por ausência de controle do foco; B: Ultrassonografia tem menor sensibilidade para coleção profunda junto ao psoas e pode ser limitada por gás; D: Aguardar mais 24 horas mantém possível abscesso sem controle do foco.",
+  "conceito_chave": "Febre persistente e dor focal após apendicite perfurada: procure abscesso com tomografia contrastada.",
   "has_figure": false
  },
  {
@@ -1386,9 +1386,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Choque séptico com peritonite exige ações simultâneas: antibiótico precoce, cristaloide guiado pela resposta, noradrenalina que pode ser iniciada por acesso periférico e controle cirúrgico emergente do foco. Não se deve esperar completar volume fixo, acesso central ou tomografia.",
-  "distratores": "B atrasa vasopressor e cirurgia até 30 mL/kg e acesso central; C posterga controle do foco para tomografia; D propõe drenagem percutânea em peritonite difusa.",
-  "conceito_chave": "Sepse com foco cirúrgico: ressuscitar e operar em paralelo.",
+  "comentario": "A paciente tem choque séptico e peritonite difusa por provável perfuração. Antibiótico de amplo espectro, alíquotas de cristaloide guiadas por resposta e noradrenalina podem ser iniciados imediatamente, inclusive por acesso periférico adequado. O controle cirúrgico do foco é emergente; tomografia, acesso central ou completar volume fixo não devem atrasá-lo.",
+  "distratores": "B: Não é obrigatório completar 30 mL/kg nem obter acesso central antes da noradrenalina ou da cirurgia; volume deve ser individualizado; C: Tomografia não acrescenta informação necessária diante de peritonite difusa e atrasaria operação; D: Drenagem percutânea não controla peritonite difusa por víscera perfurada.",
+  "conceito_chave": "Choque séptico com peritonite: antibiótico e noradrenalina cedo, e cirurgia para controle imediato do foco.",
   "has_figure": false
  },
  {
@@ -1402,9 +1402,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Na ausência de peritonite, choque ou sinais cutâneos de estrangulamento, pode-se tentar redução manual cuidadosa após analgesia por profissional experiente. Se houver sucesso, observa-se e programa-se correção precoce; se falhar, a cirurgia é urgente.",
-  "distratores": "A adia a correção por várias semanas, aumentando risco de nova encarceramento; B elimina tentativa segura de redução; D observa após falha, atrasando cirurgia.",
-  "conceito_chave": "Hérnia inguinal encarcerada sem sinais de estrangulamento: tentativa de redução e reparo precoce.",
+  "comentario": "A hérnia está encarcerada, mas não há sinais clínicos de estrangulamento, peritonite ou choque. Após analgesia e sedação apropriada, pode-se tentar redução manual cuidadosa. Se reduzir, observa-se a criança e programa-se correção precoce devido ao alto risco de recorrência; se falhar ou surgirem sinais de isquemia, opera-se com urgência.",
+  "distratores": "A: Adiar quatro a seis semanas após redução expõe o lactente a novo encarceramento; a correção deve ser precoce; B: Exploração sem tentativa de redução é reservada quando há suspeita de estrangulamento ou contraindicação à manobra; D: Falha de redução requer cirurgia, não observação e repetidas tentativas traumáticas.",
+  "conceito_chave": "Hérnia inguinal encarcerada sem estrangulamento: tente redução cuidadosa; sucesso leva a reparo precoce, falha a urgência cirúrgica.",
   "has_figure": false
  },
  {
@@ -1412,15 +1412,15 @@
   "enunciado": "Homem de 29 anos é levado ao pronto-socorro após cair de um patinete elétrico e bater a cabeça no solo. O acompanhante relata perda da consciência por aproximadamente um minuto e dois episódios de vômito após o acidente. Na admissão, 40 minutos depois, o paciente mantém os olhos abertos espontaneamente, informa corretamente o próprio nome, mas confunde o local e a data. Cumpre adequadamente as ordens motoras e movimenta os quatro membros. As pupilas são isocóricas e fotorreagentes, sem déficit neurológico focal ou sinais de fratura da base do crânio. Considerando a classificação do traumatismo cranioencefálico e a conduta inicial, assinale a alternativa correta.",
   "alternatives": [
    "TCE leve; realizar tomografia sem contraste e avaliação neurológica seriada.",
-   "TCE leve; observar por duas horas e indicar tomografia se persistir Glasgow 14.",
+   "TCE leve; observar até completar duas horas do trauma e realizar tomografia apenas se a pontuação de Glasgow permanecer em 14.",
    "TCE moderado; realizar tomografia e manter internação mesmo com exame normal.",
    "TCE leve; observar por quatro horas e indicar tomografia se houver novo vômito."
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A escala de Glasgow é 14: abertura ocular 4, resposta verbal confusa 4 e resposta motora 6, classificando TCE leve. A perda de consciência, os vômitos e o Glasgow 14 indicam tomografia de crânio sem contraste e avaliação neurológica seriada.",
-  "distratores": "B posterga a tomografia apesar dos critérios presentes; C classifica Glasgow 14 como TCE moderado; D condiciona imagem a novo vômito.",
-  "conceito_chave": "TCE leve pode exigir tomografia quando há Glasgow 14, vômitos ou perda de consciência.",
+  "comentario": "A pontuação de Glasgow é 14: olhos 4, verbal 4 por confusão e motora 6. Isso ainda é TCE leve, mas Glasgow abaixo de 15 na avaliação e dois episódios de vômito indicam tomografia de crânio sem contraste e observação neurológica seriada. A ausência de déficit focal não elimina risco de lesão intracraniana.",
+  "distratores": "B: Esperar completar duas horas pode ser inadequado diante de dois vômitos e Glasgow 14 já documentados; a imagem não deve depender apenas da persistência desse escore; C: Glasgow 14 não classifica TCE moderado; moderado corresponde a 9-12; D: Novo vômito não é necessário para indicar tomografia quando já houve dois e há confusão.",
+  "conceito_chave": "TCE leve inclui Glasgow 13-15; fatores de risco dentro dessa faixa determinam tomografia.",
   "has_figure": false
  },
  {
@@ -1434,9 +1434,9 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "Compulsões recorrentes com perda de controle, vômitos compensatórios, peso não necessariamente baixo e autoavaliação dependente da forma corporal caracterizam bulimia nervosa. Deve-se investigar distúrbios eletrolíticos e cardíacos e iniciar terapia cognitivo-comportamental, considerando antidepressivo como adjuvante.",
-  "distratores": "A exigiria baixo peso para anorexia; B não inclui comportamentos compensatórios regulares; C descreve purgação sem compulsões objetivas.",
-  "conceito_chave": "Bulimia: compulsão + comportamento compensatório, geralmente sem baixo peso obrigatório.",
+  "comentario": "Compulsões semanais com perda de controle, comportamentos compensatórios por vômito, influência da forma corporal na autoestima, duração superior a três meses e peso não baixo caracterizam bulimia nervosa. Devem-se avaliar eletrólitos, função renal, alterações dentárias e eletrocardiograma conforme o caso; terapia cognitivo-comportamental é primeira linha e fluoxetina pode ser adjuvante.",
+  "distratores": "A: Anorexia nervosa exige peso significativamente baixo, ausente; B: Transtorno de compulsão alimentar não apresenta comportamentos compensatórios recorrentes; C: Transtorno purgativo não inclui episódios de compulsão alimentar objetiva recorrente.",
+  "conceito_chave": "Bulimia = compulsão + compensação recorrente, sem exigência de baixo peso; TCC é base do tratamento.",
   "has_figure": false
  },
  {
@@ -1450,9 +1450,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "O quadro é altamente sugestivo de epiglotite, com risco de obstrução súbita. A criança deve permanecer calma, na posição de conforto, sem manipulação desnecessária, e ter a via aérea assegurada em ambiente controlado por equipe especializada, com possibilidade de acesso cirúrgico.",
-  "distratores": "A espera hipoxemia para intervir; B realiza intubação na emergência sem ambiente e equipe ideais; D propõe nasofibroscopia que pode precipitar obstrução.",
-  "conceito_chave": "Epiglotite: não agitar nem examinar a orofaringe; controlar a via aérea com equipe experiente.",
+  "comentario": "Febre alta, sialorreia, voz abafada, posição de tripé e estridor sem tosse sugerem epiglotite. Manipulação pode precipitar obstrução completa. A criança deve ser mantida calma e em posição de conforto, com via aérea assegurada em ambiente controlado por anestesia/otorrino ou equipe experiente, com material e acesso cirúrgico de resgate disponíveis.",
+  "distratores": "A: Esperar hipoxemia para intervir é perigoso, pois a obstrução pode ser súbita; B: Intubação na sala de emergência sem ambiente e equipe planejados aumenta risco; videolaringoscopia não elimina a necessidade de controle especializado; D: Nasofibroscopia com anestesia tópica antes de assegurar o ambiente pode agitar e obstruir a criança.",
+  "conceito_chave": "Suspeita de epiglotite: não examine a orofaringe; mantenha calma e controle a via aérea com equipe e resgate cirúrgico.",
   "has_figure": false
  },
  {
@@ -1466,9 +1466,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "Pielonefrite na gestação com febre alta, vômitos e intolerância oral requer internação, hidratação e ceftriaxona intravenosa, com ajuste ao antibiograma. Após melhora e capacidade de ingerir medicamentos, pode-se completar por via oral um total de 10 a 14 dias.",
-  "distratores": "A usa duração total curta; C mantém via parenteral durante todo o tratamento sem necessidade; D escolhe nitrofurantoína, que não atinge concentrações adequadas no parênquima renal.",
-  "conceito_chave": "Pielonefrite gestacional: internação e 10 a 14 dias de antibiótico; nitrofurantoína não trata pielonefrite.",
+  "comentario": "Pielonefrite na gestação exige internação, hidratação e antibiótico parenteral empírico, como ceftriaxona, ajustado à urocultura. Após melhora e período afebril, pode-se converter para antibiótico oral com boa penetração renal e completar 10 a 14 dias de tratamento, conforme protocolo e resposta.",
+  "distratores": "A: Sete dias é duração curta para o esquema obstétrico adotado no caso; C: Não é necessário manter via parenteral durante todo o curso se a paciente melhora e tolera via oral; D: Nitrofurantoína não atinge níveis adequados no parênquima renal e não serve para completar tratamento de pielonefrite.",
+  "conceito_chave": "Pielonefrite gestacional: internação e antibiótico IV; após melhora, transição oral e curso total de 10-14 dias.",
   "has_figure": false
  },
  {
@@ -1482,9 +1482,9 @@
   ],
   "correct_index": 1,
   "correct_letter": "B",
-  "comentario": "A UBS preserva a coordenação longitudinal do cuidado, mesmo com participação do Serviço de Atenção Domiciliar e especialistas. Deve construir plano único com a rede, conciliar prescrições e duplicidades e apoiar diretamente a cuidadora, reduzindo sobrecarga e risco.",
-  "distratores": "A transfere a coordenação ao SAD; C delega a revisão aos vários prescritores, mantendo fragmentação; D divide coordenação e entrega a revisão à especialidade principal.",
-  "conceito_chave": "APS coordena o cuidado: plano integrado, conciliação medicamentosa e apoio ao cuidador.",
+  "comentario": "A Atenção Primária permanece coordenadora longitudinal do cuidado mesmo com Serviço de Atenção Domiciliar. Deve pactuar plano único com SAD e especialidades, realizar conciliação e desprescrição de duplicidades e apoiar/capacitar a cuidadora, considerando sua sobrecarga.",
+  "distratores": "A: Transferir coordenação ao SAD fragmenta a longitudinalidade e o papel da UBS; C: Apenas solicitar que prescritores revisem mantém fragmentação; a equipe coordenadora deve conciliar ativamente; D: Coordenação compartilhada sem referência clara e revisão atribuída a uma especialidade perpetuam duplicidades.",
+  "conceito_chave": "Na atenção domiciliar, a UBS continua coordenando a rede e deve conciliar medicamentos e cuidar também do cuidador.",
   "has_figure": false
  },
  {
@@ -1498,9 +1498,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Cesárea sem trabalho de parto, início imediato, necessidade baixa de oxigênio e radiografia com hiperinsuflação, reforço perihilar e líquido nas cisuras indicam taquipneia transitória do recém-nascido. O manejo é suporte com oxigênio e monitorização, usando CPAP se houver piora.",
-  "distratores": "B antecipa CPAP e surfactante sem necessidade; C sugere doença da membrana hialina, cujo padrão radiológico e fatores de risco são diferentes; D indica infecção sem fatores maternos ou sinais sistêmicos.",
-  "conceito_chave": "Taquipneia transitória: retenção de líquido pulmonar e tratamento predominantemente de suporte.",
+  "comentario": "Cesariana eletiva sem trabalho de parto, início imediato, hiperinsuflação, reforço perihilar e líquido em cisuras são típicos de taquipneia transitória do recém-nascido por depuração retardada do líquido pulmonar. O caso é leve e responde a baixa FiO₂; manejo inicial é oxigênio, monitorização e suporte, usando CPAP se houver piora.",
+  "distratores": "B: CPAP imediato não é obrigatório em leve necessidade de oxigênio, e o limiar de surfactante refere-se a síndrome de desconforto respiratório, não TTN; C: A radiografia e o contexto não mostram padrão reticulogranular/baixo volume típico de deficiência de surfactante; D: Ausência de fatores infecciosos, estabilidade térmica e radiografia clássica tornam pneumonia improvável.",
+  "conceito_chave": "TTN após cesariana eletiva: suporte e observação; CPAP apenas se o desconforto exigir.",
   "has_figure": false
  },
  {
@@ -1514,9 +1514,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Um FIT positivo exige colonoscopia, e a repetição negativa não anula o primeiro resultado. Se a colonoscopia for completa, de alta qualidade e normal, o paciente passa a seguir o intervalo de rastreamento após colonoscopia normal, em geral dez anos.",
-  "distratores": "B mantém FIT anual apesar de colonoscopia normal; C repete teste de triagem em vez de investigar o resultado positivo; D usa colonografia quando a colonoscopia é possível.",
-  "conceito_chave": "FIT positivo é indicação de colonoscopia; não se confirma com outro FIT.",
+  "comentario": "Um FIT positivo em rastreamento deve ser seguido de colonoscopia; repetir o teste não anula sangramento previamente detectado. Se a colonoscopia for completa, de boa qualidade e normal, a pessoa retorna ao intervalo de rastreamento por colonoscopia de risco habitual, em geral 10 anos, sem FIT anual nesse período.",
+  "distratores": "B: Manter FIT anual após colonoscopia normal de qualidade gera falsos positivos e exames desnecessários; C: Repetir FIT em três meses atrasa o exame diagnóstico indicado pelo primeiro resultado positivo; D: Colonografia não substitui colonoscopia após FIT positivo quando colonoscopia é possível, pois não permite biópsia ou polipectomia.",
+  "conceito_chave": "FIT positivo não se confirma com outro FIT: encaminha diretamente para colonoscopia.",
   "has_figure": false
  },
  {
@@ -1530,9 +1530,9 @@
   ],
   "correct_index": 2,
   "correct_letter": "C",
-  "comentario": "Crise tônico-clônica contínua por mais de cinco minutos é estado de mal epiléptico. Sem acesso venoso, deve-se administrar midazolam 10 mg por via intramuscular em adulto de 70 kg e preparar imediatamente uma medicação de segunda linha.",
-  "distratores": "A espera acesso venoso e atrasa benzodiazepínico; B usa dose intramuscular insuficiente; D inverte a sequência ao dar levetiracetam antes do benzodiazepínico.",
-  "conceito_chave": "Estado de mal: benzodiazepínico imediato; midazolam IM é opção quando não há acesso venoso.",
+  "comentario": "Crise contínua por mais de cinco minutos é estado de mal epiléptico e requer benzodiazepínico imediato. Sem acesso venoso, em adulto de 70 kg, midazolam 10 mg intramuscular é dose de primeira linha; simultaneamente prepara-se acesso e fármaco de segunda linha, como levetiracetam, valproato ou fosfenitoína, se a crise persistir.",
+  "distratores": "A: Aguardar acesso venoso prolonga a crise e aumenta complicações; B: 5 mg intramuscular é dose insuficiente para adulto acima de 40 kg, e esperar dez minutos para corrigir subdose é inadequado; D: Benzodiazepínico deve vir antes do fármaco de segunda linha, mesmo que o acesso intraósseo seja possível.",
+  "conceito_chave": "Sem acesso IV no estado de mal: midazolam IM 10 mg no adulto e preparação imediata da segunda linha.",
   "has_figure": false
  },
  {
@@ -1546,9 +1546,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A apresentação é de tempestade tireotóxica. Como há asma grave com broncoespasmo ativo, evita-se betabloqueador e controla-se a frequência com diltiazem; administra-se tionamida, depois iodo para bloquear liberação hormonal, além de corticosteroide e tratamento do precipitante.",
-  "distratores": "B dá iodo simultaneamente à tionamida, sem respeitar a sequência; C oferece iodo antes da síntese hormonal ser bloqueada; D posterga iodo e corticosteroide, que fazem parte do tratamento inicial.",
-  "conceito_chave": "Tempestade tireotóxica: tionamida antes do iodo; usar alternativa ao betabloqueador se broncoespasmo grave.",
+  "comentario": "O quadro é tempestade tireotóxica. Asma grave com broncoespasmo contraindica betabloqueador; diltiazem pode controlar a frequência enquanto se administra tionamida. O iodo deve ser dado pelo menos uma hora depois da tionamida para não fornecer substrato à síntese hormonal. Corticosteroide reduz conversão periférica e trata possível insuficiência adrenal relativa; também se trata o precipitante.",
+  "distratores": "B: Iodo simultâneo à tionamida perde a sequência protetora e pode fornecer substrato antes de bloquear organificação; C: Iodo antes da tionamida é a inversão mais perigosa da sequência; D: Iodo e corticosteroide não devem ser reservados à ausência de resposta; integram o tratamento inicial da tempestade.",
+  "conceito_chave": "Tempestade tireotóxica: tionamida primeiro, iodo depois; em asma grave, controle a frequência sem betabloqueador.",
   "has_figure": false
  },
  {
@@ -1562,9 +1562,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "A intoxicação organofosforada causa síndrome colinérgica. A atropina deve ser titulada rapidamente até secar secreções brônquicas e melhorar ventilação, seguida de manutenção; a pralidoxima é associada precocemente para reativar a acetilcolinesterase e tratar manifestações nicotínicas.",
-  "distratores": "B usa frequência cardíaca e midríase como metas, em vez da broncorreia; C espera cessarem fasciculações com atropina e posterga pralidoxima; D administra pralidoxima antes de controlar a ameaça respiratória com atropina.",
-  "conceito_chave": "Organofosforado: atropinizar pelos pulmões, não pelas pupilas; associar pralidoxima cedo.",
+  "comentario": "O toxíndrome colinérgico por organofosforado exige atropina intravenosa em doses rapidamente crescentes até secar broncorreia e melhorar ventilação/oxigenação; frequência cardíaca e pupilas não são os alvos principais. Depois mantém-se infusão titulada. Pralidoxima deve ser associada precocemente para manifestações nicotínicas, sobretudo fasciculações e fraqueza.",
+  "distratores": "B: Taquicardia e midríase não são metas e podem causar excesso de atropina sem resolver secreções; C: Atropina não cessa fasciculações; dose fixa ignora recorrência de secreções e pralidoxima não deve esperar piora; D: Pralidoxima não substitui atropina nem deve preceder controle imediato da síndrome muscarínica ameaçadora.",
+  "conceito_chave": "Atropinize pelo pulmão: broncorreia e ventilação guiam a dose; associe pralidoxima cedo.",
   "has_figure": false
  },
  {
@@ -1578,8 +1578,8 @@
   ],
   "correct_index": 3,
   "correct_letter": "D",
-  "comentario": "A população inicialmente sob risco é 50.000, pois 200 já estavam doentes; 100 casos novos correspondem a 200 por 100.000. A letalidade entre incidentes é 20/100 = 20%, e a mortalidade específica é 30/50.200 × 100.000, aproximadamente 60 por 100.000.",
-  "distratores": "A e B subestimam a mortalidade e uma delas erra a letalidade; C acerta incidência aproximada, mas reduz a letalidade para 10%.",
+  "comentario": "A população inicialmente sob risco exclui os 200 casos existentes: 50.200 - 200 = 50.000. Incidência acumulada = 100/50.000 = 0,002 = 200 por 100.000. Letalidade entre incidentes = 20/100 = 20%. Mortalidade específica = 30/50.200 x 100.000 ≈ 59,8, ou 60 por 100.000.",
+  "distratores": "A: Usa denominador incorreto para incidência e subestima a mortalidade ao considerar apenas 20 óbitos; B: Além do denominador inadequado, letalidade de 10% não corresponde aos 20 óbitos entre 100 incidentes; C: A incidência está correta, mas letalidade e mortalidade estão reduzidas.",
   "conceito_chave": "Incidência usa população sob risco; letalidade usa casos; mortalidade usa população total.",
   "has_figure": false
  },
@@ -1594,9 +1594,9 @@
   ],
   "correct_index": 0,
   "correct_letter": "A",
-  "comentario": "Lombalgia mecânica aguda sem sinais de alarme deve ser manejada com analgesia, manutenção de atividades conforme tolerância e adaptação temporária da carga ocupacional. Imagem não é indicada inicialmente e deve ser reservada a sinais de alarme, persistência relevante ou situação em que altere a conduta.",
-  "distratores": "B transforma qualquer dor residual em indicação automática de ressonância; C solicita radiografia apenas por relação com o trabalho; D recomenda repouso e afastamento prolongado, que podem retardar recuperação.",
-  "conceito_chave": "Lombalgia aguda inespecífica: manter-se ativo e evitar imagem de rotina.",
+  "comentario": "O caso é lombalgia mecânica aguda inespecífica, sem radiculopatia ou sinais de alarme. O manejo inclui explicação favorável, analgesia, manutenção de atividades conforme tolerância e adaptação temporária do trabalho. Imagem inicial não melhora desfechos; é reservada a sinais de alarme, déficit progressivo ou situação em que o resultado possa mudar a conduta após evolução apropriada.",
+  "distratores": "B: Dor residual isolada em seis semanas, com melhora funcional, não obriga ressonância; a decisão depende de persistência significativa e impacto na conduta; C: Relação com esforço ocupacional não é indicação de radiografia inicial; D: Repouso e afastamento prolongado favorecem incapacidade e não são recomendados sem gravidade.",
+  "conceito_chave": "Lombalgia aguda sem alarme: mantenha atividade e não peça imagem de rotina. REFERÊNCIAS NORMATIVAS E TÉCNICAS PRIORITÁRIAS 1. Brasil. Ministério da Saúde. Dengue: diagnóstico e manejo clínico - adulto e criança. 6ª edição, 2024. 2. Brasil. Ministério da Saúde. Sífilis em gestantes e protocolos vigentes de prevenção da transmissão vertical. 3. Brasil. Ministério da Saúde. Nota Técnica nº 222/2025-CGHA/DATHI/SVSA/MS, publicada em 2026. 4. Brasil. Ministério da Saúde. Estratégia de resgate da vacinação contra HPV para pessoas de 15 a 19 anos, prorrogada até dezembro de 2026. 5. Brasil. Ministério da Saúde. Manual de Recomendações para o Controle da Tuberculose no Brasil e notas informativas vigentes sobre tratamento preventivo. 6. Brasil. Ministério da Saúde. Chikungunya: manejo clínico. 2ª edição revisada, 2025. 7. Brasil. Ministério da Saúde e INCA. Diretrizes Brasileiras para o Rastreamento do Câncer do Colo do Útero com teste DNA-HPV oncogênico, 2025. 8. Brasil. Ministério da Saúde. Guia de Vigilância em Saúde. 6ª edição revisada, 2024, e atualizações posteriores. 9. Conselho Federal de Medicina. Código de Ética Médica e Resolução CFM nº 2.232/2019, interpretados à luz da jurisprudência atual. 10. Supremo Tribunal Federal. Temas 952 e 1.069 de repercussão geral sobre autonomia de adulto capaz na recusa de transfusão de sangue. 11. Sociedade Brasileira de Pediatria. Documentos científicos vigentes sobre reanimação neonatal, bronquiolite, convulsão febril, cefaleia e distúrbios respiratórios. 12. Federação Brasileira das Associações de Ginecologia e Obstetrícia. Recomendações vigentes para urgências obstétricas, infecções, contracepção e endometriose. 13. Sociedade Brasileira de Cardiologia. Diretrizes vigentes sobre hipertensão, síndrome coronariana, insuficiência cardíaca e emergências cardiovasculares. 14. Diretrizes de sociedades médicas reconhecidas e consensos internacionais vigentes, contextualizados ao SUS.",
   "has_figure": false
  }
 ]
