@@ -413,7 +413,10 @@ export function BulkBroadcastModal({
                 />
               </div>
             ) : (
-              <p className="rounded-lg border border-brand/25 bg-brand/5 px-3 py-2 text-xs text-muted-foreground">
+              // text-sm, not the text-xs the sibling hints use: this explains that
+              // the button becomes a per-lead credential, and it is read once before
+              // a send that can reach 300 people.
+              <p className="rounded-lg border border-brand/25 bg-brand/5 px-3 py-2 text-sm text-muted-foreground">
                 {t("leads.broadcastCtaSimuladoHint")}
               </p>
             )}
