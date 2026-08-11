@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { SiteText } from "./site-text";
 import { FooterAccessLinks } from "./footer-access-links";
+import { SOCIAL_PROFILES, type SocialProfile } from "@/lib/social";
 
+// Same glyphs the e-mail footer ships as PNG (scripts/build-social-email-icons.js),
+// drawn inline here because the web can render SVG. Keyed by SocialProfile.key so
+// the list itself lives in one place — lib/social.ts.
 function InstagramIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -11,6 +15,29 @@ function InstagramIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+function YouTubeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
+      <path d="m10 15 5-3-5-3z" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+    </svg>
+  );
+}
+
+const SOCIAL_ICONS: Record<SocialProfile["key"], (p: { className?: string }) => React.ReactElement> = {
+  instagram: InstagramIcon,
+  youtube: YouTubeIcon,
+  tiktok: TikTokIcon,
+};
 
 export function LandingFooter() {
   return (
@@ -28,22 +55,27 @@ export function LandingFooter() {
             <p className="mb-4 max-w-[200px] text-xs leading-relaxed" style={{ color: "var(--lp-fg-25)" }}>
               <SiteText as="span" multiline k="footer.tagline" fallback="Sistema de aprovação para o Revalida — treino direto ao ponto, do jeito que a prova cobra." />
             </p>
-            <div className="flex items-center gap-3">
-              {[
-                { href: "https://www.instagram.com/medhelpspace/", label: "Instagram", Icon: InstagramIcon },
-              ].map(({ href, label, Icon }) => (
+            {/* gap-0 + p-3 rather than gap-3 on a bare 20px glyph: the padding IS
+                the 44px tap target (20 + 12 + 12), and it doubles as the spacing
+                the gap used to provide. One 20px target was already awkward to
+                hit; three side by side would be a row of near-misses. */}
+            <div className="-ml-3 flex items-center">
+              {SOCIAL_PROFILES.map(({ key, url, label }) => {
+                const Icon = SOCIAL_ICONS[key];
+                return (
                 <a
-                  key={label}
-                  href={href}
+                  key={key}
+                  href={url}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="transition-colors"
+                  className="p-3 transition-colors"
                   style={{ color: "var(--lp-fg-25)" }}
                 >
                   <Icon className="h-5 w-5" />
                 </a>
-              ))}
+                );
+              })}
             </div>
           </div>
 
