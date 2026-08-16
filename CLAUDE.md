@@ -315,7 +315,8 @@ payment that has already granted membership.
 - [x] Attribution capture — `/r/<CODE>` records the click, sets a 30-day HttpOnly cookie, and redirects; the charge route freezes the attribution onto the order. Coupon outranks link; last click wins.
 - [x] Release cron — `/api/cron/ambassador-commissions`, daily 08:00 UTC (05:00 BRT). Flips pendente → liberada at `release_on` using `todayKeyBR()`, re-checks the order is still `paid`, and re-asserts `status='pendente'` in the UPDATE so a concurrent run can't double-release.
 - [x] Ambassador panel — `/embaixador`, read-only (cl. 8.1). Deliberately NOT under `/app`: that layout requires an active cohort membership and most ambassadors hold none, so the route does its own auth check and gates on having an `ambassadors` row. Dark-only (outside the `/app`+`/admin` theme-unlocked zone). Mobile-checked at 375/414/768.
-- [ ] Admin — ambassador CRUD, commission ledger, monthly statement + manual payout entry
+- [x] Admin — `/admin/embaixadores` (billing tier only): create/edit ambassadors, per-ambassador totals, and the full cl. 7.5 cycle — close the month, record the NFS-e, mark paid, reopen. Closing takes commissions *released* up to the end of the reference month (later ones wait for the next cycle) and includes negative adjustments, so a chargeback reduces the payout. Reopen is refused once paid.
+- [x] Cohort price/date changes are audited (`cohort_create` / `cohort_update` in `admin_audit_log`, before → after, money rendered as BRL)
 
 ## Theme requirements (non-negotiable)
 - Light and dark mode supported from day one
