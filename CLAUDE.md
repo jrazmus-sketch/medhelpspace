@@ -116,6 +116,10 @@ Tables and their purpose:
 | `presentation_slides` | H5P CoursePresentation+AdvancedText/Image → one row per slide; for memorecards pages |
 | `nav_items` | Blurb cards and link lists from hub pages; `target_page_id` null = incomplete |
 | `review_schedule` | Unified SM-2 spaced-repetition state for the Revisão feature; one row per `(user, item_type, item_id)`, `item_type` ∈ flashcard/quiz_question/memorecard. Backfilled from `flashcard_progress`. Patch: `schema-patch-review-schedule.sql` |
+| `ambassadors` | One row per contracted embaixador; carries `code` (?ref=), `coupon_id`, `status`, `contract_starts_on`/`contract_ends_on`, `commission_rate_bps`, and `access_cohort_id` (the "turma de acesso" that grants free access — NULL for non-student ambassadors). Patch: `schema-patch-ambassadors.sql` |
+| `ambassador_clicks` | Referral-link landings, for the panel's click count and attribution disputes |
+| `commissions` | The ledger. One `kind='sale'` row per attributed order plus negative `kind='adjustment'` rows for post-payout chargebacks. `rate_bps` is stamped at creation so rate changes never move history. Statuses are the contract's five: pendente/liberada/em_analise/paga/cancelada |
+| `payouts` | One monthly repasse per ambassador; `nf_url` + status ladder already present so self-service withdrawal is a later form, not a migration |
 | `flashcard_theme_topics` | Maps each flashcard theme `(specialty_id, group_label)` → `topics.id`, so `getWeightedRevalidaDeck` ranks themes by real incidence via a FK instead of fuzzy name-matching at query time (that silently dropped ~1 in 4 high-yield themes). Resolved offline by `scripts/backfill-flashcard-theme-topics.js` (exact + curated alias map); keyed by label (not card id) so it survives the full-replace flashcard regeneration — re-run the backfill after a regen. Patch: `schema-patch-flashcard-theme-topics.sql` |
 
 **Access control** (RLS): pages with `content_module_id IS NULL` require active cohort
@@ -298,6 +302,21 @@ shortcodes). All other MedVoice pages are `text-lesson` type. Both are handled b
 - [x] Phase H — Blurb-nav-hub renderer (63 hub pages; verified on /app/cardiologia and track hubs)
 - [x] Admin panel — Phase I complete: dashboard, members (role mgmt, password reset, session revoke), cohorts (edit, cascade preview, soft delete), module unlock date overrides, audit log, stub pages for content editors
 
+### Programa de Embaixadores (pilot)
+
+Contract terms are enforced in the DB, not in route code — see the commission trigger
+in `schema-patch-ambassadors.sql`. Commission base is `base_amount_cents - discount_cents`
+(installment interest excluded, PagBank fees NOT deducted); release is BR-today + 30 days.
+The trigger is wrapped in an exception handler on purpose: it runs in the same transaction
+as `finalizePaidOrder`'s status flip, so a commission bug must never be able to roll back a
+payment that has already granted membership.
+
+- [x] Schema — ambassadors, clicks, commissions ledger, payouts, order attribution (applied to prod AND local; trigger verified with 15 checks in a rolled-back transaction)
+- [x] Attribution capture — `/r/<CODE>` records the click, sets a 30-day HttpOnly cookie, and redirects; the charge route freezes the attribution onto the order. Coupon outranks link; last click wins.
+- [x] Release cron — `/api/cron/ambassador-commissions`, daily 08:00 UTC (05:00 BRT). Flips pendente → liberada at `release_on` using `todayKeyBR()`, re-checks the order is still `paid`, and re-asserts `status='pendente'` in the UPDATE so a concurrent run can't double-release.
+- [x] Ambassador panel — `/embaixador`, read-only (cl. 8.1). Deliberately NOT under `/app`: that layout requires an active cohort membership and most ambassadors hold none, so the route does its own auth check and gates on having an `ambassadors` row. Dark-only (outside the `/app`+`/admin` theme-unlocked zone). Mobile-checked at 375/414/768.
+- [ ] Admin — ambassador CRUD, commission ledger, monthly statement + manual payout entry
+
 ## Theme requirements (non-negotiable)
 - Light and dark mode supported from day one
 - Semantic color tokens only; no literal colors in component code
@@ -390,8 +409,9 @@ new installs, or apply the same workaround patterns.
 - **Supabase Auth** (email/password) via `@supabase/ssr`
 - **`createBrowserClient`** for client components (`lib/supabase/client.ts`)
 - **`createServerClient`** for server components and middleware (`lib/supabase/server.ts`)
-- **Next.js middleware** (`src/middleware.ts`) refreshes session cookies on every request;
-  uses `auth.getUser()` (server-validated), not `getSession()` (cookie-only, unvalidated)
+- **Next.js proxy** (`src/proxy.ts` — Next 16 renamed the `middleware` file convention to
+  `proxy`) refreshes session cookies on every request; uses `auth.getUser()` (server-validated),
+  not `getSession()` (cookie-only, unvalidated). Its matcher deliberately excludes `/api/*`.
 - **`AuthProvider`** (`providers/auth-provider.tsx`) is the React context that holds
   `user` (Supabase `AuthUser`) and `profile` (our `profiles` table row); wraps all app routes
 
@@ -514,6 +534,21 @@ node scripts/run-sql.js schema-patch-001.sql
 The script connects via the direct Postgres URL (`db.<project-ref>.supabase.co:5432`),
 derived automatically from `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_DB_PASSWORD`.
 To use the Transaction Pooler instead, set `DATABASE_URL` directly in `app/.env.local`.
+(The direct `db.<ref>.supabase.co` host no longer resolves — `DATABASE_URL` via the
+pooler is the working path.)
+
+**Apply every patch to BOTH databases.** `app/.env.development.local` overrides `.env.local`
+in dev, so `npm run dev` talks to the **local** Supabase while `run-sql.js` targets **prod**.
+A patch applied only to prod makes dev fail with PostgREST `PGRST205 ... not found in the
+schema cache`, which looks exactly like a stale-cache bug but isn't:
+
+```bash
+node scripts/run-sql.js schema-patch-foo.sql                            # prod
+DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:55322/postgres" \
+  node scripts/run-sql.js schema-patch-foo.sql                         # local
+```
+
+Local PostgREST does not auto-reload; follow up with `NOTIFY pgrst, 'reload schema';`.
 
 ## Content rendering design decisions (locked in)
 

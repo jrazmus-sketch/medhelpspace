@@ -8,6 +8,7 @@ import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { validateBilling, onlyDigits, type BillingDetails } from "@/lib/br";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
+import { REF_COOKIE, resolveAttribution } from "@/lib/ambassadors/attribution";
 
 // pt-BR error for both the credit-card in-flight guard (app-layer) and the
 // idx_orders_one_pending_card_per_user_cohort unique-violation (DB-layer) —
@@ -369,6 +370,22 @@ export async function POST(request: NextRequest) {
     interestCents = plan.totalValue - baseAfterDiscount;
   }
 
+  // Ambassador attribution (cl. 3.1). Resolved and frozen here, at order
+  // creation, so it can never be recomputed later against a changed cookie or a
+  // reassigned coupon. Whether it actually earns a commission is decided by the
+  // DB trigger when the order settles, against the contract's state on that date.
+  //
+  // Best-effort: an attribution lookup failure must not cost the buyer a purchase.
+  let attribution: Awaited<ReturnType<typeof resolveAttribution>> = null;
+  try {
+    attribution = await resolveAttribution({
+      couponId,
+      refCode: request.cookies.get(REF_COOKIE)?.value ?? null,
+    });
+  } catch (err) {
+    console.error("ambassador attribution lookup failed", err);
+  }
+
   // Create pending order. For 100%-off, we insert it as 'paid' immediately
   // (no PagBank round-trip below) and short-circuit to finalizePaidOrder.
   const initialStatus = isFullDiscount ? "pending" : "pending"; // both start pending; full-discount transitions below
@@ -382,6 +399,9 @@ export async function POST(request: NextRequest) {
       discount_cents: discountCents,
       coupon_id: couponId,
       interest_cents: interestCents,
+      ambassador_id: attribution?.ambassadorId ?? null,
+      ambassador_attribution_source: attribution?.source ?? null,
+      ambassador_attributed_at: attribution ? new Date().toISOString() : null,
       currency: "BRL",
       payment_method: paymentMethod,
       status: initialStatus,
