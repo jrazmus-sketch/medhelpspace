@@ -111,6 +111,7 @@ export function AdminHeader() {
         { href: "/admin/billing", label: t("nav.billing"), show: isSuperAdmin() || isBillingAdmin() },
         { href: "/admin/notas-fiscais", label: t("nav.notasFiscais"), show: isSuperAdmin() || isBillingAdmin() },
         { href: "/admin/coupons", label: t("nav.coupons"), show: isSuperAdmin() || isBillingAdmin() },
+        { href: "/admin/embaixadores", label: t("nav.embaixadores"), show: isSuperAdmin() || isBillingAdmin() },
       ],
     },
     {
