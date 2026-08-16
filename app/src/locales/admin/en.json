@@ -757,7 +757,9 @@
       "member_created": "Member created",
       "order_refunded": "Order refunded",
       "nfse_issued": "Invoice issued",
-      "nfse_skipped": "Invoice skipped"
+      "nfse_skipped": "Invoice skipped",
+      "cohort_create": "Cohort created",
+      "cohort_update": "Cohort changed"
     }
   },
   "pageNew": {

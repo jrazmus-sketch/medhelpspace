@@ -41,6 +41,21 @@ export function AuditLogClient({ logs, profileMap }: Props) {
     return translated === key ? action : translated;
   }
 
+  // Money is stored in centavos; printing "299700" in an audit trail makes the
+  // reader do the conversion at exactly the moment they are trying to check a
+  // number. Anything else is passed through as-is.
+  function fmtAuditValue(field: string, value: unknown): string {
+    if (value === null || value === undefined || value === "") return "—";
+    if (field.endsWith("_cents") && typeof value === "number") {
+      return `R$ ${(value / 100).toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
+    }
+    if (typeof value === "boolean") return value ? "sim" : "não";
+    return String(value);
+  }
+
   function detailsFor(action: string, details: Record<string, unknown> | null): string {
     if (!details) return "—";
     if (action === "role_change") {
@@ -48,6 +63,28 @@ export function AuditLogClient({ logs, profileMap }: Props) {
     }
     if (action === "password_reset") {
       return String(details.email ?? "—");
+    }
+    // Cohort edits carry a {field: {before, after}} map. Rendered generically it
+    // would collapse to "[object Object]" and hide the one thing anyone opens
+    // this log to find — what a price used to be.
+    if (action === "cohort_update" || action === "cohort_create") {
+      const slug = details.slug ? String(details.slug) : "";
+      const changes = details.changes as
+        | Record<string, { before: unknown; after: unknown }>
+        | undefined;
+      if (!changes) {
+        // cohort_create: flat fields, no before/after.
+        const flat = Object.entries(details)
+          .filter(([k]) => k !== "slug" && k !== "cohort_id")
+          .map(([k, v]) => `${k}: ${fmtAuditValue(k, v)}`)
+          .join(", ");
+        return [slug, flat].filter(Boolean).join(" · ") || "—";
+      }
+      const parts = Object.entries(changes).map(
+        ([field, { before, after }]) =>
+          `${field}: ${fmtAuditValue(field, before)} → ${fmtAuditValue(field, after)}`,
+      );
+      return [slug, parts.join(" · ")].filter(Boolean).join(" · ") || "—";
     }
     const pairs = Object.entries(details).filter(
       ([, v]) => v !== null && v !== undefined && v !== "",

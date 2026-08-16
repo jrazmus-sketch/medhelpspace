@@ -140,7 +140,7 @@ export async function assignMemberToCohort(userId: string, cohortId: number | nu
 }
 
 export async function createCohort(formData: FormData) {
-  await requireBillingRole();
+  const { user } = await requireBillingRole();
   const admin = createAdminClient();
 
   const commerce = commerceFromFormData(formData);
@@ -181,8 +181,58 @@ export async function createCohort(formData: FormData) {
       }))
     );
   }
+
+  // Record the price a turma was born with, so the history of changes has a
+  // starting point instead of beginning at the first edit.
+  if (newCohort) {
+    await writeAuditLog(user.id, "cohort_create", null, {
+      cohort_id: newCohort.id,
+      slug: String(formData.get("slug")),
+      price_cents: commerce.price_cents,
+      sale_price_cents: commerce.sale_price_cents,
+      is_for_sale: commerce.is_for_sale,
+    }).catch((e) => console.error("cohort_create audit failed", e));
+  }
+
   revalidatePath("/admin/cohorts");
   revalidateStorefront();
+}
+
+// Fields whose change is worth a permanent record. Price and storefront
+// visibility are money; test_date silently moves every MedHelp 60D unlock date
+// through the cohorts_sync_unlock_dates trigger, so it belongs here too.
+const COHORT_AUDITED_FIELDS = [
+  "name",
+  "price_cents",
+  "sale_price_cents",
+  "is_for_sale",
+  "sale_ends_at",
+  "test_date",
+  "date_confirmed",
+] as const;
+
+/**
+ * Diff a cohort update down to the fields that matter, as {before, after} pairs.
+ *
+ * Cohorts carry no `updated_at` and, until now, no audit entry — so a price could
+ * change with nothing anywhere recording who did it or when. That gap cost real
+ * time on 2026-08-16: a deliberate price cut was indistinguishable from a data
+ * error, and the only evidence available was Postgres transaction ids.
+ */
+function diffCohortFields(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+): Record<string, { before: unknown; after: unknown }> {
+  const changes: Record<string, { before: unknown; after: unknown }> = {};
+  for (const field of COHORT_AUDITED_FIELDS) {
+    if (!(field in after)) continue;
+    const a = before[field] ?? null;
+    const b = after[field] ?? null;
+    // Dates come back as timestamps but go in as strings; compare stringified so
+    // an unchanged date doesn't log as a change on every save.
+    if (String(a) !== String(b)) changes[field] = { before: a, after: b };
+  }
+  return changes;
 }
 
 export async function updateCohort(
@@ -195,14 +245,35 @@ export async function updateCohort(
     membership_ends_at: string;
   } & CohortCommerce,
 ) {
-  await requireBillingRole();
+  const { user } = await requireBillingRole();
   const cErr = validateCommerce(data);
   if (cErr) throw new Error(cErr);
   const dErr = validateCohortDates(data.test_date, data.membership_starts_at, data.membership_ends_at);
   if (dErr) throw new Error(dErr);
   const admin = createAdminClient();
+
+  // Read the current row first so the log can carry before → after rather than
+  // just "someone saved this form".
+  const { data: before } = await admin
+    .from("cohorts")
+    .select("slug, name, price_cents, sale_price_cents, is_for_sale, sale_ends_at, test_date, date_confirmed")
+    .eq("id", cohortId)
+    .maybeSingle();
+
   const { error } = await admin.from("cohorts").update(data).eq("id", cohortId);
   if (error) throw new Error(error.message);
+
+  const changes = before ? diffCohortFields(before, data as Record<string, unknown>) : {};
+  // Only log a real change. A save that alters nothing would otherwise bury the
+  // price edits we actually want to find.
+  if (Object.keys(changes).length > 0) {
+    await writeAuditLog(user.id, "cohort_update", null, {
+      cohort_id: cohortId,
+      slug: before?.slug ?? null,
+      changes,
+    }).catch((e) => console.error("cohort_update audit failed", cohortId, e));
+  }
+
   revalidatePath("/admin/cohorts");
   revalidatePath(`/admin/cohorts/${cohortId}/modules`);
   revalidateStorefront();
@@ -211,21 +282,31 @@ export async function updateCohort(
 // Quick storefront on/off toggle. Turning a cohort on requires a price (the DB
 // CHECK enforces this too — we pre-check for a friendly error).
 export async function setCohortForSale(cohortId: number, isForSale: boolean) {
-  await requireBillingRole();
+  const { user } = await requireBillingRole();
   const admin = createAdminClient();
-  if (isForSale) {
-    const { data: c } = await admin
-      .from("cohorts")
-      .select("price_cents")
-      .eq("id", cohortId)
-      .single();
-    if (!c || c.price_cents == null) throw new Error("PRICE_REQUIRED_FOR_SALE");
-  }
+  const { data: c } = await admin
+    .from("cohorts")
+    .select("slug, price_cents, is_for_sale")
+    .eq("id", cohortId)
+    .single();
+  if (isForSale && (!c || c.price_cents == null)) throw new Error("PRICE_REQUIRED_FOR_SALE");
+
   const { error } = await admin
     .from("cohorts")
     .update({ is_for_sale: isForSale })
     .eq("id", cohortId);
   if (error) throw new Error(error.message);
+
+  // Pulling a cohort off the storefront is how a turma is retired from sale —
+  // exactly the kind of change someone later needs to date.
+  if (c && c.is_for_sale !== isForSale) {
+    await writeAuditLog(user.id, "cohort_update", null, {
+      cohort_id: cohortId,
+      slug: c.slug ?? null,
+      changes: { is_for_sale: { before: c.is_for_sale, after: isForSale } },
+    }).catch((e) => console.error("cohort_update audit failed", cohortId, e));
+  }
+
   revalidatePath("/admin/cohorts");
   revalidateStorefront();
 }

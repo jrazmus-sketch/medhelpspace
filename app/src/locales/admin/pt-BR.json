@@ -757,7 +757,9 @@
       "member_created": "Membro criado",
       "order_refunded": "Pedido estornado",
       "nfse_issued": "Nota fiscal emitida",
-      "nfse_skipped": "Nota fiscal dispensada"
+      "nfse_skipped": "Nota fiscal dispensada",
+      "cohort_create": "Turma criada",
+      "cohort_update": "Turma alterada"
     }
   },
   "pageNew": {
