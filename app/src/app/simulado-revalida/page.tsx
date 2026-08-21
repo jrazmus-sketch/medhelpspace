@@ -53,15 +53,13 @@ const OG_DESCRIPTION =
 // with zero redirects, so the crawler gets bytes on the first request. Anything pasted
 // into a chat should be the www form for the same reason.
 const OG_IMAGE = "https://www.medhelpspace.com.br/og-simulado-revalida.png";
-// The SHARE identity is the short alias (rewritten to this page in next.config.ts),
-// because /simulado is what actually gets pasted into a WhatsApp group. Deliberately
-// different from `alternates.canonical` below, which stays on /simulado-revalida so
-// Google keeps indexing the descriptive, sitemap-listed slug.
-//
-// Pointing og:url at the short link also means a crawler that canonicalizes on og:url
-// resolves to a URL WhatsApp has never scraped — so the stale generic preview cached
-// from the pre-fix share cannot come back.
-const OG_URL = "https://www.medhelpspace.com.br/simulado";
+// og:url is deliberately NOT set. It names one canonical share identity, so every
+// alias of this page would inherit whatever preview the crawler already cached for
+// that one URL — and a stale or downgraded card would follow the link everywhere,
+// with no way to get a clean scrape short of inventing another slug. Omitting it
+// makes each shared URL its own preview object, which is what we actually want from
+// a page reachable at several paths. SEO is unaffected: `alternates.canonical` below
+// is the tag Google consolidates on, and it is untouched.
 
 export const metadata: Metadata = {
   title: "Simulado Revalida Grátis | 100 Questões Estilo INEP | Gabarito Comentado",
@@ -74,7 +72,6 @@ export const metadata: Metadata = {
     siteName: "MedHelpSpace",
     title: OG_TITLE,
     description: OG_DESCRIPTION,
-    url: OG_URL,
     locale: "pt_BR",
     type: "website",
     images: [

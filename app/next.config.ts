@@ -32,6 +32,15 @@ const nextConfig: NextConfig = {
         source: "/simulado",
         destination: "/simulado-revalida",
       },
+      {
+        // Second alias, same page. Reads better in a chat than /simulado, and exists
+        // because a link-preview cache is per-URL and cannot be busted any other way:
+        // /simulado was first scraped while the card was still 216KB, which WhatsApp
+        // renders as the SMALL layout, and that verdict sticks for days. A path it has
+        // never seen gets a clean scrape of the fixed card.
+        source: "/simulado-gratis",
+        destination: "/simulado-revalida",
+      },
     ];
   },
   async redirects() {

@@ -25,6 +25,9 @@ export const SIMULADO_PATH = "/simulado-revalida";
 // leads still land with source=SIMULADO_SOURCE. Keep SIMULADO_PATH for everything a
 // machine follows (drip emails, magic links, ads, sitemap) — that is the canonical URL.
 export const SIMULADO_SHORT_PATH = "/simulado";
+// Same page again. Kept because link-preview caches are per-URL: when a card has to be
+// re-scraped, only a path the crawler has never seen gets a clean read.
+export const SIMULADO_SHORT_PATH_ALT = "/simulado-gratis";
 export const REVALIDA_2026_2_SLUG = "revalida-2026-2";
 export const REVALIDA_2027_1_SLUG = "revalida-2027-1";
 // NOTE: the 2027.2 turma slug has NO hyphen before the final 2 ('revalida-20272') —
