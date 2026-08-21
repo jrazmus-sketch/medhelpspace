@@ -37,12 +37,16 @@ import { getActiveCohortOptions } from "@/lib/magnet/simulado";
 // and AudioCards/MedVoice are paid. Naming them as the giveaway would be a promise the
 // landing page does not keep. Same reason "Sem cartão." stays out (Karina, 2026-07-26).
 //
-// Product names match the app's canonical spelling (see components/magnet/platform-peek).
+// The five products and their order are Karina's pick (2026-08-21) and are mirrored
+// exactly in the image's "NA PLATAFORMA" strip — the card and the description must never
+// name different things. Spelling follows the app's canonical names (see
+// components/magnet/platform-peek.tsx).
+//
 // Keep the description at ~110 characters or less — WhatsApp truncates past that and
-// the CTA is the first thing lost.
+// the CTA is the first thing lost. The current string is 96.
 const OG_TITLE = "Faça grátis: simulado Revalida com 100 questões inéditas";
 const OG_DESCRIPTION =
-  "Gabarito comentado alternativa por alternativa. Na plataforma: MedVoice, AudioCards, Flashcards. Comece agora.";
+  "Na plataforma: Questões Comentadas, Revalida Up, MedVoice, AudioCards, Flashcards. Comece agora.";
 const OG_IMAGE = "https://medhelpspace.com.br/og-simulado-revalida.png";
 
 export const metadata: Metadata = {
@@ -64,7 +68,7 @@ export const metadata: Metadata = {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Simulado gratuito do Revalida com 100 questões inéditas — MedVoice, AudioCards, Flashcards, MemoreCards e Resumos",
+        alt: "Simulado gratuito do Revalida com 100 questões inéditas — Questões Comentadas, Revalida Up, MedVoice, AudioCards e Flashcards",
       },
     ],
   },
