@@ -47,7 +47,12 @@ import { getActiveCohortOptions } from "@/lib/magnet/simulado";
 const OG_TITLE = "Faça grátis: simulado Revalida com 100 questões inéditas";
 const OG_DESCRIPTION =
   "Na plataforma: Questões Comentadas, Revalida Up, MedVoice, AudioCards, Flashcards. Comece agora.";
-const OG_IMAGE = "https://medhelpspace.com.br/og-simulado-revalida.png";
+// Both og: URLs use the www host DELIBERATELY. The apex 308-redirects to www, and a
+// preview crawler that has to follow a hop is a coin flip — WhatsApp showed no card at
+// all for the apex form of this link (2026-08-21). www serves the page and the image
+// with zero redirects, so the crawler gets bytes on the first request. Anything pasted
+// into a chat should be the www form for the same reason.
+const OG_IMAGE = "https://www.medhelpspace.com.br/og-simulado-revalida.png";
 // The SHARE identity is the short alias (rewritten to this page in next.config.ts),
 // because /simulado is what actually gets pasted into a WhatsApp group. Deliberately
 // different from `alternates.canonical` below, which stays on /simulado-revalida so
@@ -56,7 +61,7 @@ const OG_IMAGE = "https://medhelpspace.com.br/og-simulado-revalida.png";
 // Pointing og:url at the short link also means a crawler that canonicalizes on og:url
 // resolves to a URL WhatsApp has never scraped — so the stale generic preview cached
 // from the pre-fix share cannot come back.
-const OG_URL = "https://medhelpspace.com.br/simulado";
+const OG_URL = "https://www.medhelpspace.com.br/simulado";
 
 export const metadata: Metadata = {
   title: "Simulado Revalida Grátis | 100 Questões Estilo INEP | Gabarito Comentado",
