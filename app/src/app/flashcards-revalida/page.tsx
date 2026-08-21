@@ -129,8 +129,11 @@ export default async function FlashcardsRevalidaPage({
               <SiteText as="span" k="fc.hero.title_1" fallback="50 flashcards dos assuntos que" />{" "}
               <span className="bg-gradient-to-r from-brand to-[#c084e8] bg-clip-text text-transparent">
                 <SiteText as="span" k="fc.hero.title_accent" fallback="mais caem" />
-              </span>{" "}
-              <SiteText as="span" k="fc.hero.title_2" fallback="no Revalida." />
+              </span>
+              {/* autoSpace instead of a literal {" "}: same tail-segment rule as
+                  /simulado-revalida — the space follows the edited copy, so a
+                  punctuation-only tail doesn't print "mais caem ." */}
+              <SiteText as="span" autoSpace k="fc.hero.title_2" fallback="no Revalida." />
             </h1>
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
               <SiteText

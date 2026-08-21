@@ -41,6 +41,17 @@ type Props = {
    * "{flashcards} cartões..." into "5.280 cartões..." on screen.
    */
   vars?: Record<string, string | number>;
+  /**
+   * Emit a leading space unless the copy already starts with one or with
+   * punctuation. For tail segments that sit right after an inline accent span:
+   * the tail may be a bare "." (no space wanted) or a real word ("e comentadas."
+   * — space wanted), and only the editor knows which. A hardcoded {" "} in the
+   * page would print "inéditas ." for the first case; no space at all glues the
+   * word on ("inéditase comentadas") and gives it no place to wrap. Editors
+   * can't solve it themselves — updateScalarField trims plain text on save, so a
+   * space typed into the field never survives.
+   */
+  autoSpace?: boolean;
 };
 
 // Replace `{token}` occurrences with vars[token]; unknown tokens are left as-is.
@@ -52,7 +63,15 @@ function interpolate(text: string, vars?: Record<string, string | number>): stri
 // A single piece of editable landing copy. When the row exists it renders an
 // inline-editable field (active only for admins in edit mode on desktop, via
 // EditableText); otherwise it renders the fallback as plain, non-editable text.
-export function SiteText({ k, fallback, className, as = "span", multiline, vars }: Props) {
+export function SiteText({
+  k,
+  fallback,
+  className,
+  as = "span",
+  multiline,
+  vars,
+  autoSpace,
+}: Props) {
   const map = useContext(Ctx);
   const row = map[k];
 
@@ -61,22 +80,34 @@ export function SiteText({ k, fallback, className, as = "span", multiline, vars 
   const raw = (row?.value || fallback) ?? "";
   const display = interpolate(raw, vars);
 
+  // Rendered outside the editable field, so edit mode still seeds/saves the
+  // stored text verbatim.
+  const lead = autoSpace && !/^[\s.,;:!?)\]}%…»]/.test(display) ? " " : null;
+
   if (!row) {
     const Tag = as;
-    return <Tag className={className}>{display}</Tag>;
+    return (
+      <>
+        {lead}
+        <Tag className={className}>{display}</Tag>
+      </>
+    );
   }
 
   return (
-    <EditableText
-      variant="plain"
-      table="site_content"
-      id={row.id}
-      field="value"
-      value={display}
-      editValue={raw}
-      as={as}
-      className={className}
-      multiline={multiline}
-    />
+    <>
+      {lead}
+      <EditableText
+        variant="plain"
+        table="site_content"
+        id={row.id}
+        field="value"
+        value={display}
+        editValue={raw}
+        as={as}
+        className={className}
+        multiline={multiline}
+      />
+    </>
   );
 }

@@ -16,6 +16,35 @@ import { getActiveCohortOptions } from "@/lib/magnet/simulado";
 // the emailed link is for resuming. Lives OUTSIDE the /app gate. All copy is
 // SiteText-wired (sim.*) so Karina can edit it in the visual editor.
 
+// The link-preview card is DELIBERATELY separate from the Google snippet below.
+// The <title>/description are written for a search result (keyword-first, long);
+// the openGraph/twitter block is written for a WhatsApp group (short, benefit-first,
+// "grátis" up front), because that is where this funnel actually gets shared.
+//
+// Both openGraph and twitter MUST be spelled out here. Next.js does NOT deep-merge
+// them with the root layout — a page that omits openGraph inherits the layout's
+// entire object, so /simulado-revalida previewed as the generic site card
+// ("MedHelpSpace Revalida" + /og-image.png) no matter what title it set. Any new
+// funnel page needs its own block for the same reason.
+// Karina, 2026-08-21: the card has to name what only MedHelpSpace has (AudioCards,
+// MedVoice, MemoreCards) and it has to push the click. So the title opens on the
+// imperative + "grátis", the description names the differentiators and closes on the
+// CTA, and og-simulado-revalida.png carries a literal "Começar agora →" button plus a
+// "NA PLATAFORMA" strip listing the five products.
+//
+// The differentiators are deliberately framed as what is ON THE PLATFORM, never as
+// part of the free offer: this URL lands on a form for the free 100-question simulado,
+// and AudioCards/MedVoice are paid. Naming them as the giveaway would be a promise the
+// landing page does not keep. Same reason "Sem cartão." stays out (Karina, 2026-07-26).
+//
+// Product names match the app's canonical spelling (see components/magnet/platform-peek).
+// Keep the description at ~110 characters or less — WhatsApp truncates past that and
+// the CTA is the first thing lost.
+const OG_TITLE = "Faça grátis: simulado Revalida com 100 questões inéditas";
+const OG_DESCRIPTION =
+  "Gabarito comentado alternativa por alternativa. Na plataforma: MedVoice, AudioCards, Flashcards. Comece agora.";
+const OG_IMAGE = "https://medhelpspace.com.br/og-simulado-revalida.png";
+
 export const metadata: Metadata = {
   title: "Simulado Revalida Grátis | 100 Questões Estilo INEP | Gabarito Comentado",
   description:
@@ -23,6 +52,28 @@ export const metadata: Metadata = {
     // from the visible copy, and this is the same claim in the Google snippet.
     "Faça grátis um simulado com 100 questões inéditas no estilo INEP e gabarito comentado. Teste seu nível, identifique lacunas e descubra o que revisar.",
   alternates: { canonical: "/simulado-revalida" },
+  openGraph: {
+    siteName: "MedHelpSpace",
+    title: OG_TITLE,
+    description: OG_DESCRIPTION,
+    url: "https://medhelpspace.com.br/simulado-revalida",
+    locale: "pt_BR",
+    type: "website",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "Simulado gratuito do Revalida com 100 questões inéditas — MedVoice, AudioCards, Flashcards, MemoreCards e Resumos",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: OG_TITLE,
+    description: OG_DESCRIPTION,
+    images: [OG_IMAGE],
+  },
 };
 
 export const dynamic = "force-dynamic"; // reads UTM from the query string
@@ -124,7 +175,10 @@ export default async function SimuladoRevalidaPage({
               <span className="bg-gradient-to-r from-brand to-[#c084e8] bg-clip-text text-transparent">
                 <SiteText as="span" k="sim.hero.title_accent" fallback="100 questões inéditas" />
               </span>
-              <SiteText as="span" k="sim.hero.title_2" fallback="." />
+              {/* autoSpace, not a literal {" "}: this tail is "." in the seed but
+                  Karina edits it to real words ("e comentadas."). Without it the
+                  word glues onto the accent span and can never wrap. */}
+              <SiteText as="span" autoSpace k="sim.hero.title_2" fallback="." />
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               <SiteText
