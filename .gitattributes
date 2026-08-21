@@ -1,0 +1,4 @@
+# Shell scripts must keep LF line endings or the shebang breaks on Linux CI
+# runners ("bad interpreter: /usr/bin/env bash^M"). This repo has core.autocrlf=true,
+# so pin *.sh explicitly.
+*.sh text eol=lf

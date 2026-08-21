@@ -1,0 +1,48 @@
+name: Database backup
+
+# MANUAL-ONLY UNTIL THE SECRETS EXIST.
+# The daily schedule below is commented out on purpose: this workflow needs six
+# repository secrets (SUPABASE_DB_URL, BACKUP_GPG_PASSPHRASE, R2_S3_ENDPOINT,
+# R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET) plus an R2 bucket, and until
+# those are set every scheduled run would fail and mail a failure notice. Run it by
+# hand from the Actions tab ("Run workflow") to prove the credentials work, then
+# uncomment the two schedule lines to turn on the daily backup.
+on:
+  # schedule:
+  #   - cron: '0 8 * * *'   # daily 08:00 UTC (05:00 BRT). Redundancy layer, off-platform.
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # ⚠️ GOTCHA: pg_dump's MAJOR version must match the server. GitHub runners ship
+      # postgresql-client-16 and /usr/bin/pg_dump resolves to it via pg_wrapper, which
+      # aborts on a newer server ("server version mismatch"). medhelpspace's prod
+      # Postgres is 17.6 (verified 2026-07-08), so install client 17 and prepend to PATH.
+      - name: Install matching PostgreSQL client
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version
+
+      - name: Run backup
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_GPG_PASSPHRASE: ${{ secrets.BACKUP_GPG_PASSPHRASE }}
+          R2_S3_ENDPOINT: ${{ secrets.R2_S3_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          RETENTION_DAYS: '30'
+        run: bash scripts/backup-db.sh
