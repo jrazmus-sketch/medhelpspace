@@ -48,6 +48,15 @@ const OG_TITLE = "Faça grátis: simulado Revalida com 100 questões inéditas";
 const OG_DESCRIPTION =
   "Na plataforma: Questões Comentadas, Revalida Up, MedVoice, AudioCards, Flashcards. Comece agora.";
 const OG_IMAGE = "https://medhelpspace.com.br/og-simulado-revalida.png";
+// The SHARE identity is the short alias (rewritten to this page in next.config.ts),
+// because /simulado is what actually gets pasted into a WhatsApp group. Deliberately
+// different from `alternates.canonical` below, which stays on /simulado-revalida so
+// Google keeps indexing the descriptive, sitemap-listed slug.
+//
+// Pointing og:url at the short link also means a crawler that canonicalizes on og:url
+// resolves to a URL WhatsApp has never scraped — so the stale generic preview cached
+// from the pre-fix share cannot come back.
+const OG_URL = "https://medhelpspace.com.br/simulado";
 
 export const metadata: Metadata = {
   title: "Simulado Revalida Grátis | 100 Questões Estilo INEP | Gabarito Comentado",
@@ -60,7 +69,7 @@ export const metadata: Metadata = {
     siteName: "MedHelpSpace",
     title: OG_TITLE,
     description: OG_DESCRIPTION,
-    url: "https://medhelpspace.com.br/simulado-revalida",
+    url: OG_URL,
     locale: "pt_BR",
     type: "website",
     images: [
