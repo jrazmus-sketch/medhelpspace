@@ -15,12 +15,14 @@ export function ThreadReply({
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const reopens = status === "resolved" || status === "closed";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setExpired(false);
     const m = message.trim();
     if (m.length < 1) {
       setError("Escreva uma mensagem.");
@@ -35,6 +37,13 @@ export function ThreadReply({
           body: JSON.stringify({ message: m }),
         });
         if (!res.ok) {
+          // Same stale-session case as the new-ticket form: the page still renders
+          // as logged in, but the POST arrives with a dead cookie.
+          if (res.status === 401) {
+            setExpired(true);
+            setError(null);
+            return;
+          }
           setError("Não foi possível enviar. Tente novamente.");
           return;
         }
@@ -61,6 +70,23 @@ export function ThreadReply({
         className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-brand/50"
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
+      {expired && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          <p className="font-medium">Sua sessão expirou.</p>
+          <p className="mt-1 text-destructive/90">
+            Sua resposta continua aqui — entre novamente e clique em “Enviar”.
+          </p>
+          {/* New tab on purpose — see the note in suporte-client.tsx. */}
+          <a
+            href="/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex min-h-[44px] items-center font-semibold underline underline-offset-4"
+          >
+            Entrar novamente
+          </a>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3">
         {reopens ? (
           <p className="text-[12px] text-muted-foreground">

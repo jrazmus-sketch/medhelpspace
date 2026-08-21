@@ -37,10 +37,12 @@ export function SuporteClient({ initialTickets }: { initialTickets: SupportTicke
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setExpired(false);
     const s = subject.trim();
     const m = message.trim();
     // Capture where they came from (client-only) — helps triage "técnico" reports.
@@ -62,6 +64,14 @@ export function SuporteClient({ initialTickets }: { initialTickets: SupportTicke
           body: JSON.stringify({ category, subject: s, message: m, pageUrl }),
         });
         if (!res.ok) {
+          // 401 means the session died while this page sat open — the rendered
+          // page still looks logged in, but the POST has no valid cookie (and the
+          // route just cleared it). Say so, instead of an unactionable "retry".
+          if (res.status === 401) {
+            setExpired(true);
+            setError(null);
+            return;
+          }
           const { error: code } = await res
             .json()
             .catch(() => ({ error: "save_failed" }));
@@ -154,6 +164,25 @@ export function SuporteClient({ initialTickets }: { initialTickets: SupportTicke
         </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {expired && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <p className="font-medium">Sua sessão expirou.</p>
+            <p className="mt-1 text-destructive/90">
+              Sua mensagem continua aqui — entre novamente e clique em “Enviar chamado”.
+            </p>
+            {/* New tab on purpose: /login ignores ?next=, so navigating here would
+                send them to /app and throw away everything they just typed. */}
+            <a
+              href="/login"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex min-h-[44px] items-center font-semibold underline underline-offset-4"
+            >
+              Entrar novamente
+            </a>
+          </div>
+        )}
 
         <button
           type="submit"
