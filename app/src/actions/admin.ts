@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { mirrorQuizPageToFunnel } from "@/lib/simulado/mirror";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { VIEWAS_COOKIE } from "@/lib/viewas";
@@ -1070,6 +1071,19 @@ export async function updateQuizQuestions(pageId: number, questions: QuizQuestio
     } else {
       await admin.from("quiz_questions").insert({ page_id: pageId, ...payload });
     }
+  }
+
+  // The 100Q set that /simulado-revalida serves free is mirrored on one of these
+  // pages and has no editor of its own; push the edits across so the funnel copy
+  // can't silently fall behind. No-op for every other page.
+  try {
+    const { mirrored, skipped } = await mirrorQuizPageToFunnel(pageId);
+    if (mirrored > 0) revalidatePath("/simulado-revalida");
+    if (skipped.length > 0) {
+      console.warn("[admin] simulado funnel mirror skipped positions", skipped);
+    }
+  } catch (err) {
+    console.error("[admin] simulado funnel mirror failed", pageId, err);
   }
 
   revalidatePath(`/admin/pages/${pageId}/edit`);

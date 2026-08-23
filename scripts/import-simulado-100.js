@@ -29,6 +29,14 @@
  * and in 60D from a single command. Member rows are matched on (page_id, position),
  * so quiz_questions ids are stable and member progress survives a re-import.
  *
+ * THE REVERSE DIRECTION IS HANDLED AT RUNTIME, NOT HERE. An edit made in the
+ * admin (inline editor or page editor) writes quiz_questions and is mirrored back
+ * into simulado_questions by app/src/lib/simulado/mirror.ts, so the member copy is
+ * the live source of truth between imports. Re-running this script with
+ * --member-page OVERWRITES those edits from the JSON: re-parse the PDFs, or fold
+ * the corrections into merged.json, before re-importing a set that has already
+ * been corrected in the admin.
+ *
  * Usage:
  *   node scripts/import-simulado-100.js --dir <folder>           # dry run
  *   node scripts/import-simulado-100.js --dir <folder> --apply   # write to DB

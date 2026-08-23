@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { safe } from "@/lib/sanitize";
+import { mirrorQuizQuestionToFunnel } from "@/lib/simulado/mirror";
 
 // (table, field) pairs that EditableText is allowed to write to.
 // Membership in this set is the single source of truth — adding a new
@@ -108,6 +109,11 @@ export async function updateScalarField(
     after: cleanValue,
   });
 
+  // The free simulado keeps its own copy of these 100 questions and has no
+  // editing surface of its own, so a member-side edit has to be pushed across or
+  // leads keep reading the old text. No-op for every other quiz page.
+  if (table === "quiz_questions") await mirrorEdited(id);
+
   revalidatePath("/app", "layout");
   // Site strings render on every public page via the root-layout provider; the
   // ISR'd marketing routes ("/" and "/loja") cache their output, so bust both so
@@ -170,5 +176,20 @@ export async function updateQuizAnswerField(
     after: cleanValue,
   });
 
+  await mirrorEdited(questionId);
+
   revalidatePath("/app", "layout");
+}
+
+// Mirror a member-copy edit into the free funnel's twin row. Deliberately never
+// throws: the member edit is already saved and correct, and failing the action
+// here would tell an admin their save failed when it did not. A row the mirror
+// can't convert is left stale rather than half-written — see lib/simulado/mirror.
+async function mirrorEdited(questionId: number): Promise<void> {
+  try {
+    const { mirrored } = await mirrorQuizQuestionToFunnel(questionId);
+    if (mirrored > 0) revalidatePath("/simulado-revalida");
+  } catch (err) {
+    console.error("[inline-edit] simulado funnel mirror failed", questionId, err);
+  }
 }
