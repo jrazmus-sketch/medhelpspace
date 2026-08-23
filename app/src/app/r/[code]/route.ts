@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { REF_COOKIE, REF_MAX_AGE_SECONDS, safeDestination } from "@/lib/ambassadors/ref-link";
+import {
+  REF_COOKIE,
+  REF_MAX_AGE_SECONDS,
+  normalizeRefCode,
+  safeDestination,
+} from "@/lib/ambassadors/ref-link";
 
 // Ambassador tracking link: https://medhelpspace.com.br/r/<CODE>
 //
@@ -32,14 +37,15 @@ export async function GET(
 
   const response = NextResponse.redirect(destination);
 
-  const trimmed = code?.trim();
-  if (!trimmed) return response;
+  // Exact match on the stored value, never a pattern: see normalizeRefCode.
+  const refCode = normalizeRefCode(code);
+  if (!refCode) return response;
 
   const admin = createAdminClient();
   const { data: ambassador, error: lookupError } = await admin
     .from("ambassadors")
     .select("id, code, status")
-    .ilike("code", trimmed)
+    .eq("code", refCode)
     .maybeSingle();
 
   // A failed lookup and an unknown code both send the visitor onward, but they
@@ -47,7 +53,7 @@ export async function GET(
   // whole programme silently stops attributing and nobody finds out until an
   // ambassador asks why their sales show zero clicks.
   if (lookupError) {
-    console.error("ambassador lookup failed for ref code", trimmed, lookupError);
+    console.error("ambassador lookup failed for ref code", refCode, lookupError);
     return response;
   }
 

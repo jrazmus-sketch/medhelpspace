@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeRefCode } from "./ref-link";
 
 // Ambassador sale attribution (Contrato de Parceria Comercial, cl. 3.1).
 //
@@ -63,13 +64,16 @@ export async function resolveAttribution(args: {
   }
 
   // ── Otherwise the tracking link ───────────────────────────────────────────
-  const code = refCode?.trim();
+  // The cookie is set from the stored value by /r/<code>, so it should already
+  // be exact — but it is still client-supplied, and a pattern lookup here would
+  // let a hand-written cookie pick an ambassador to credit.
+  const code = normalizeRefCode(refCode);
   if (!code) return null;
 
   const { data } = await admin
     .from("ambassadors")
     .select("id")
-    .ilike("code", code)
+    .eq("code", code)
     .maybeSingle();
 
   return data?.id ? { ambassadorId: data.id as number, source: "link" } : null;

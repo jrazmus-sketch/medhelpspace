@@ -100,10 +100,17 @@ export async function criarEmbaixador(input: {
   }
 
   // The ambassador needs an account before they can see their panel.
+  //
+  // The match stays case-insensitive because addresses are stored as the member
+  // typed them, but LIKE metacharacters are refused rather than escaped: none of
+  // them belong in an address, and left in, "%@gmail.com" would silently make an
+  // ambassador out of whichever account happened to match first.
+  const email = input.userEmail.trim();
+  if (/[%_*\\]/.test(email)) return { ok: false as const, error: "USER_NOT_FOUND" as const };
   const { data: profile } = await admin
     .from("profiles")
     .select("id")
-    .ilike("email", input.userEmail.trim())
+    .ilike("email", email)
     .maybeSingle();
   if (!profile) return { ok: false as const, error: "USER_NOT_FOUND" as const };
 

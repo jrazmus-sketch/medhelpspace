@@ -52,3 +52,24 @@ export function buildRefUrl(origin: string, code: string, destino?: string): str
   if (destino) url.searchParams.set("destino", destino);
   return url.toString();
 }
+
+/**
+ * Normalize a ref code from a URL or cookie into the exact value stored in
+ * `ambassadors.code`, or null if it cannot be one.
+ *
+ * Codes are minted by `criarEmbaixador`, which uppercases and constrains them to
+ * [A-Z0-9._-]; the unique index is on UPPER(code). Applying the same two rules
+ * here means the caller can look the code up with an exact match instead of a
+ * pattern.
+ *
+ * That distinction is the point. `_` is a single-character LIKE wildcard and `%`
+ * matches anything, so a pattern lookup lets a visitor mint /r/M_RIA10 — or just
+ * /r/% — and be credited to whichever ambassador happens to match. Attribution
+ * decides who gets paid, so the lookup has to be exact.
+ */
+export function normalizeRefCode(raw: string | null | undefined): string | null {
+  const code = raw?.trim().toUpperCase();
+  if (!code) return null;
+  if (!/^[A-Z0-9._-]+$/.test(code)) return null;
+  return code;
+}
