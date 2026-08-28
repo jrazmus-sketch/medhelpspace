@@ -29,7 +29,7 @@ export default async function EmbaixadoresPage() {
       admin
         .from("ambassadors")
         .select(
-          "id, user_id, code, status, profile_type, commission_rate_bps, contract_ends_on, coupon_id, access_cohort_id, terminated_for_cause, termination_kind, termination_ground, first_valid_sale_at, termination_reason, created_at",
+          "id, user_id, code, status, profile_type, commission_rate_bps, contract_ends_on, coupon_id, access_cohort_id, terminated_for_cause, termination_kind, termination_ground, first_valid_sale_at, access_revoked_at, access_revoked_note, termination_reason, created_at",
         )
         .order("created_at", { ascending: false }),
       admin.from("commissions").select("id, ambassador_id, kind, status, amount_cents, release_on, payout_id"),
@@ -64,12 +64,15 @@ export default async function EmbaixadoresPage() {
   // cl. 12.6 is evaluated in the DB so the panel can never disagree with the
   // contract. One RPC per ambassador is fine at pilot scale (a dozen rows).
   const accessEnds = new Map<number, string | null>();
+  const accessStatus = new Map<number, string | null>();
   await Promise.all(
     (ambassadors ?? []).map(async (a) => {
-      const { data } = await admin.rpc("ambassador_access_ends_on", {
-        p_ambassador_id: a.id as number,
-      });
-      accessEnds.set(a.id as number, (data as string | null) ?? null);
+      const [{ data: ends }, { data: st }] = await Promise.all([
+        admin.rpc("ambassador_access_ends_on", { p_ambassador_id: a.id as number }),
+        admin.rpc("ambassador_access_status", { p_ambassador_id: a.id as number }),
+      ]);
+      accessEnds.set(a.id as number, (ends as string | null) ?? null);
+      accessStatus.set(a.id as number, (st as string | null) ?? null);
     }),
   );
 
@@ -94,6 +97,9 @@ export default async function EmbaixadoresPage() {
       terminationGround: (a.termination_ground as string | null) ?? null,
       firstValidSaleAt: (a.first_valid_sale_at as string | null) ?? null,
       accessEndsOn: accessEnds.get(a.id as number) ?? null,
+      accessStatus: accessStatus.get(a.id as number) ?? null,
+      accessRevokedAt: (a.access_revoked_at as string | null) ?? null,
+      accessRevokedNote: (a.access_revoked_note as string | null) ?? null,
       terminationReason: (a.termination_reason as string | null) ?? null,
       clicks: clickCounts.get(a.id as number) ?? 0,
       sales: mine.filter((c) => c.kind === "sale" && c.status !== "cancelada").length,

@@ -10,6 +10,7 @@ import {
   atualizarEmbaixador,
   gerarFechamento,
   registrarAjuste,
+  confirmarRetiradaAcesso,
   registrarNota,
   rejeitarNota,
   registrarPagamento,
@@ -32,6 +33,9 @@ export interface AmbassadorRow {
   terminationGround: string | null;
   firstValidSaleAt: string | null;
   accessEndsOn: string | null;
+  accessStatus: string | null;
+  accessRevokedAt: string | null;
+  accessRevokedNote: string | null;
   terminationReason: string | null;
   clicks: number;
   sales: number;
@@ -102,6 +106,7 @@ export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: P
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [adjustingId, setAdjustingId] = useState<number | null>(null);
+  const pendingRevokes = ambassadors.filter((r) => r.accessStatus === "a_encerrar").length;
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Expected failures come back as { ok: false, error: CODE } — NOT as thrown
@@ -147,6 +152,14 @@ export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: P
       <p className="text-sm leading-relaxed text-muted-foreground">
         {t("embaixadores.cycleHint")}
       </p>
+
+      {/* cl. 12.6 removals are manual through the pilot, so the one thing the
+          panel owes Karina is that a due date cannot be quietly missed. */}
+      {pendingRevokes > 0 ? (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
+          {t("embaixadores.pendingRevokes", { count: pendingRevokes })}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -223,17 +236,44 @@ export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: P
                 </dl>
 
                 {/* cl. 12.6, computed in the DB. Shown for the embaixador-aluno
-                    only, since no other profile carries course access. */}
-                {a.profileType === "embaixador_aluno" ? (
-                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    {t("embaixadores.courseAccess")}:{" "}
-                    <strong className="text-foreground">
+                    only, since no other profile carries course access.
+                    'a_encerrar' is the pending item that must not be forgotten,
+                    so it is the one state that gets colour and an action. */}
+                {a.accessStatus ? (
+                  <div
+                    className={
+                      a.accessStatus === "a_encerrar"
+                        ? "mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3"
+                        : "mt-2 rounded-lg border border-border/60 p-3"
+                    }
+                  >
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      <strong className="text-foreground">
+                        {t(`embaixadores.accessStatus.${a.accessStatus}`)}
+                      </strong>
                       {a.accessEndsOn
-                        ? new Date(`${a.accessEndsOn}T12:00:00`).toLocaleDateString("pt-BR")
-                        : "—"}
-                    </strong>
-                    {a.firstValidSaleAt ? ` · ${t("embaixadores.firstSaleOn")} ${new Date(a.firstValidSaleAt).toLocaleDateString("pt-BR")}` : ""}
-                  </p>
+                        ? ` · ${t("embaixadores.courseAccess")} ${new Date(`${a.accessEndsOn}T12:00:00`).toLocaleDateString("pt-BR")}`
+                        : ""}
+                      {a.firstValidSaleAt
+                        ? ` · ${t("embaixadores.firstSaleOn")} ${new Date(a.firstValidSaleAt).toLocaleDateString("pt-BR")}`
+                        : ""}
+                    </p>
+                    {a.accessStatus === "a_encerrar" ? (
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => run(() => confirmarRetiradaAcesso(a.id))}
+                        className="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-amber-500/50 px-3 text-sm font-medium disabled:opacity-50"
+                      >
+                        {t("embaixadores.confirmRevoke")}
+                      </button>
+                    ) : null}
+                    {a.accessRevokedAt ? (
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        {new Date(a.accessRevokedAt).toLocaleString("pt-BR")} — {a.accessRevokedNote}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {editingId === a.id ? (

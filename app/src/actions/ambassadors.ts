@@ -540,3 +540,94 @@ export async function registrarAjuste(
   revalidatePath("/admin/embaixadores");
   return { ok: true as const };
 }
+
+/**
+ * Confirm that the embaixador-aluno's free course access has been removed
+ * (cl. 12.6). Removal stays a deliberate human act through the pilot — this
+ * records it and performs the one narrow deletion it is allowed to.
+ *
+ * The hazard this guards against: `user_cohort_memberships` carries no source
+ * column, so a membership granted by this programme is indistinguishable from
+ * one somebody paid for. Deleting blind would take away purchased access, which
+ * is the single thing Karina ruled out. So a paid order for that same cohort
+ * short-circuits the deletion: the benefit is closed for the record, the access
+ * stays, and the note says why.
+ *
+ * Scope is deliberately narrow — one row of one cohort. It never touches the
+ * account, the profile, other cohorts, or any other product.
+ */
+export async function confirmarRetiradaAcesso(ambassadorId: number) {
+  const { userId, admin } = await requireBilling();
+
+  const { data: amb } = await admin
+    .from("ambassadors")
+    .select("id, user_id, code, profile_type, access_cohort_id, access_revoked_at")
+    .eq("id", ambassadorId)
+    .maybeSingle();
+  if (!amb) return { ok: false as const, error: "NOT_FOUND" as const };
+  if (amb.profile_type !== "embaixador_aluno" || !amb.access_cohort_id) {
+    return { ok: false as const, error: "NO_COURSE_BENEFIT" as const };
+  }
+  if (amb.access_revoked_at) {
+    return { ok: false as const, error: "ALREADY_REVOKED" as const };
+  }
+
+  // Only 'a_encerrar' is actionable; the panel shouldn't offer it otherwise, but
+  // the state is re-derived here so a stale screen can't act early.
+  const { data: status } = await admin.rpc("ambassador_access_status", {
+    p_ambassador_id: ambassadorId,
+  });
+  if (status !== "a_encerrar") {
+    return { ok: false as const, error: "NOT_DUE_YET" as const };
+  }
+
+  const { data: paidOrder } = await admin
+    .from("orders")
+    .select("id")
+    .eq("user_id", amb.user_id as string)
+    .eq("cohort_id", amb.access_cohort_id as number)
+    .eq("status", "paid")
+    .limit(1)
+    .maybeSingle();
+
+  let note: string;
+  let removed = false;
+
+  if (paidOrder) {
+    note =
+      "Benefício encerrado. Acesso à turma MANTIDO: o embaixador comprou essa turma separadamente (pedido " +
+      String(paidOrder.id) +
+      ").";
+  } else {
+    const { error: delErr } = await admin
+      .from("user_cohort_memberships")
+      .delete()
+      .eq("user_id", amb.user_id as string)
+      .eq("cohort_id", amb.access_cohort_id as number);
+    if (delErr) throw new Error(delErr.message);
+    removed = true;
+    note = "Acesso gratuito da turma do Programa de Embaixadores retirado.";
+  }
+
+  const { error } = await admin
+    .from("ambassadors")
+    .update({
+      access_revoked_at: new Date().toISOString(),
+      access_revoked_by: userId,
+      access_revoked_note: note,
+    })
+    .eq("id", ambassadorId)
+    .is("access_revoked_at", null);
+  if (error) throw new Error(error.message);
+
+  await writeAudit(userId, "ambassador_access_revoked", {
+    ambassador_id: ambassadorId,
+    code: amb.code ?? null,
+    cohort_id: amb.access_cohort_id,
+    membership_removed: removed,
+    kept_because_purchased: Boolean(paidOrder),
+    note,
+  });
+  revalidatePath("/admin/embaixadores");
+  return { ok: true as const, removed, keptBecausePurchased: Boolean(paidOrder) };
+}

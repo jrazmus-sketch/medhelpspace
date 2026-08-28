@@ -1228,7 +1228,10 @@
       "ORDER_NOT_ATTRIBUTED": "That order has no attributed commission.",
       "ORDER_OTHER_AMBASSADOR": "That order belongs to another ambassador.",
       "ALREADY_FULLY_REVERSED": "That order's commission was already reversed in full.",
-      "EXCEEDS_COMMISSION": "The amount exceeds the order's original commission."
+      "EXCEEDS_COMMISSION": "The amount exceeds the order's original commission.",
+      "NO_COURSE_BENEFIT": "This profile has no free course access.",
+      "ALREADY_REVOKED": "This access removal was already confirmed.",
+      "NOT_DUE_YET": "This access is not due for removal yet."
     },
     "terminationKind": "Termination type",
     "terminationKinds": {
@@ -1250,7 +1253,16 @@
     "adjustmentOrder": "Order ID (optional)",
     "adjustmentReason": "Reason",
     "courseAccess": "Course access until",
-    "firstSaleOn": "first sale on"
+    "firstSaleOn": "first sale on",
+    "accessStatus": {
+      "ativo": "Benefit active",
+      "aguardando_data": "Awaiting date",
+      "a_encerrar": "Access to revoke",
+      "encerrado": "Access revoked"
+    },
+    "confirmRevoke": "Confirm access removal",
+    "pendingRevokes_one": "1 access to revoke",
+    "pendingRevokes_other": "{{count}} accesses to revoke"
   },
   "coupons": {
     "title": "Coupons",

@@ -1228,7 +1228,10 @@
       "ORDER_NOT_ATTRIBUTED": "Esse pedido não tem comissão atribuída.",
       "ORDER_OTHER_AMBASSADOR": "Esse pedido pertence a outro embaixador.",
       "ALREADY_FULLY_REVERSED": "A comissão desse pedido já foi estornada integralmente.",
-      "EXCEEDS_COMMISSION": "O valor excede a comissão original do pedido."
+      "EXCEEDS_COMMISSION": "O valor excede a comissão original do pedido.",
+      "NO_COURSE_BENEFIT": "Esse perfil não tem acesso gratuito ao curso.",
+      "ALREADY_REVOKED": "A retirada desse acesso já foi confirmada.",
+      "NOT_DUE_YET": "Ainda não é a data de encerramento desse acesso."
     },
     "terminationKind": "Tipo de encerramento",
     "terminationKinds": {
@@ -1250,7 +1253,16 @@
     "adjustmentOrder": "ID do pedido (opcional)",
     "adjustmentReason": "Motivo",
     "courseAccess": "Acesso ao curso até",
-    "firstSaleOn": "1ª venda em"
+    "firstSaleOn": "1ª venda em",
+    "accessStatus": {
+      "ativo": "Benefício ativo",
+      "aguardando_data": "Aguardando data",
+      "a_encerrar": "Acesso a encerrar",
+      "encerrado": "Acesso encerrado"
+    },
+    "confirmRevoke": "Confirmar retirada do acesso",
+    "pendingRevokes_one": "1 acesso a encerrar",
+    "pendingRevokes_other": "{{count}} acessos a encerrar"
   },
   "coupons": {
     "title": "Cupons",
