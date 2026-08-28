@@ -1,9 +1,16 @@
 # ClinAct — Build Spec
 
 Companion to the design proposal sent to Karina (2026-08-21). That document is the
-*what and why* for her approval; this one is the buildable detail. Nothing here is
-implemented yet — no code, no schema patch. Scope is frozen only after Karina
-validates the panel + case schema (her point 15).
+*what and why*; this one is the buildable detail. Nothing here is implemented yet —
+no code, no schema patch.
+
+**Karina approved the architecture on 2026-08-27.** Her changes are folded in and
+marked with that date where they overrode an earlier decision: published-version
+snapshots, no grace period, card self-update in Phase 1, a simple Minha Evolução at
+launch, a configurable `final_key` instead of a mandatory diagnosis, and NFS-e gated
+on the 7-day guarantee. Two corrections she caught apply to the **proposal artifact**,
+not this file: `clinact_clues` describes the case (four tables describe, two record),
+and only **two** blocks are system-generated, not three.
 
 Product: **MedHelpSpace ClinAct** — clinical reasoning that ends in a decision.
 Sold **separately** from Revalida; access independent in both directions.
@@ -22,7 +29,7 @@ CREATE TABLE user_product_access (
   product      text NOT NULL CHECK (product IN ('revalida','clinact')),
   source       text NOT NULL,          -- 'subscription' | 'pix_oneoff' | 'bundle' | 'grant'
   starts_at    timestamptz NOT NULL DEFAULT now(),
-  access_until timestamptz NOT NULL,   -- THE authority; see invariant below
+  paid_until   timestamptz NOT NULL,   -- THE authority; see invariant below
   updated_at   timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, product)
 );
@@ -33,10 +40,23 @@ CREATE TABLE user_product_access (
 
 - `p = 'revalida'` → existing cohort check **OR** a live `user_product_access` row
   (so a bundle can grant Revalida without inventing a fake cohort).
-- `p = 'clinact'` → `access_until > now()`.
+- `p = 'clinact'` → `paid_until > now()`.
 
 App-side gate mirrors `lib/membership-gate.ts`: `requireProductAccess('clinact')`,
 admin roles bypass, no access → `/clinact` (the sales page), not `/loja`.
+
+**Routing: subdirectory, not subdomain** (decided 2026-08-27). ClinAct lives at
+`medhelpspace.com.br/clinact` inside the existing Next.js app — one deployment, one
+domain, one session cookie. A subdomain would have meant cookie-domain juggling for
+no gain, and bundles are on the roadmap, so a Revalida member arriving at ClinAct
+should already be logged in. It also inherits the main domain's search authority.
+
+**The ClinAct member area must NOT live under `/app`.** That layout requires an
+active *cohort* membership, and a ClinAct subscriber will usually hold none — the
+exact reason `/embaixador` sits outside `/app`. ClinAct routes do their own
+`requireProductAccess('clinact')` check. Slot the new routes into
+`lib/theme-scope.ts` deliberately: `/clinact` (sales) is public and dark-only; the
+member area joins the theme-unlocked zone.
 
 **Do not** reuse `content_module_id` gating for ClinAct — that is cohort-date logic
 and would couple the two products' unlock rules.
@@ -53,17 +73,41 @@ cannot lock members out. Same defense-in-depth posture as `finalize.ts`.
 
 ## 2. Case engine schema
 
-Six tables, prefix `clinact_`. `specialty_id` → existing `specialties`;
+Seven tables, prefix `clinact_`. `specialty_id` → existing `specialties`;
 `topic_id` → existing `topics` (reuses the incidence weighting already built).
 
 | Table | Key columns |
 |---|---|
-| `clinact_cases` | `slug` UNIQUE, `format`, `title`, `specialty_id`, `topic_id`, `difficulty`, `primary_skill`, `est_minutes`, `summary`, `takeaway`, `status`, `revision`, `published_at`, `created_by` |
+| `clinact_cases` | `slug` UNIQUE, `format`, `title`, `specialty_id`, `topic_id`, `difficulty`, `primary_skill`, `est_minutes`, `summary`, `takeaway`, `final_key`, `status`, `revision`, `published_at`, `created_by` |
 | `clinact_steps` | `case_id`, `position`, `kind`, `enabled`, `scene_key`, `skill`, `content jsonb` |
 | `clinact_options` | `step_id`, `position`, `label`, `is_correct`, `feedback`, `seduction`, `effect jsonb`, `next_scene_key` |
 | `clinact_clues` | `case_id`, `position`, `label`, `detail`, `category`, `is_red_herring`, `cluster` |
 | `clinact_attempts` | `user_id`, `case_id`, `case_revision`, `started_at`, `finished_at`, `score`, `duration_ms`, `state jsonb` |
 | `clinact_step_events` | `attempt_id`, `step_id`, `option_id`, `skill`, `is_correct`, `confidence`, `time_ms`, `answered_at` |
+| `clinact_case_versions` | `case_id`, `revision`, `published_at`, `snapshot jsonb`, UNIQUE(`case_id`,`revision`) |
+
+Four tables describe the case (`cases`, `steps`, `options`, `clues`), two record what
+the student did (`attempts`, `step_events`), and one preserves history
+(`case_versions`).
+
+`final_key` is the centre of the Código Decifrado map — **not necessarily a
+diagnosis** (Karina, 2026-08-27). It can be a syndrome, mechanism, complication,
+priority, investigation or conduct. Authored as `CHAVE FINAL:` in the import format.
+
+### Published versions are snapshotted, not just numbered
+
+`clinact_attempts.case_revision` alone is a number pointing at content that may no
+longer exist. On every publish of an already-published case, write the full case —
+steps, options, clues — as a JSONB snapshot into `clinact_case_versions` **before**
+the edit lands.
+
+Without it, editing one option on a case 300 students already took makes their
+attempts unreadable: you know they answered "B", not what "B" said. This matters
+most in the exact situation the product is built for — a medical guideline changes
+and the case is rewritten.
+
+**Cheap now, impossible later.** Retrofitting cannot recover overwritten content.
+Ship it before the first case is ever published.
 
 Enums (as CHECK constraints, matching project convention):
 
@@ -200,11 +244,16 @@ she starts producing the 40.
 ### Findings from the current docs (2026-08-21)
 
 1. **Separate API, separate credentials.** Recurrence lives at
-   `assinaturas.pagseguro.uol.com.br` (sandbox:
-   `sandbox.assinaturas.pagseguro.uol.com.br`) with its own token and its own public
-   key — not a parameter on `api.pagseguro.com`. New env vars, new module, new
-   webhook route. Note the existing footgun: the Connect public key in `.env.local`
-   is unrelated to this one.
+   `api.assinaturas.pagseguro.com` (sandbox: `sandbox.api.assinaturas.pagseguro.com`)
+   — not a parameter on `api.pagseguro.com`. New env vars, new module, new webhook
+   route. Note the existing footgun: the Connect public key in `.env.local` is
+   unrelated to this one.
+   **The public key is genuinely separate** and is created by us via
+   `PUT /public-keys`; keys minted for the recurring API do not work for any other
+   PagBank service. The **token** is the same account token, gated by account
+   release — confirm in writing with PagBank before touching any credential.
+   **Production requires the Integrations team to release the PJ account**, then a
+   homologação form after sandbox testing. Neither is automatic; see §8.
 2. **Credit card only.** Pagamentos Recorrentes accepts card exclusively today
    ("novas formas de pagamento estarão disponíveis em breve"); retry config is
    documented as card-only. **No Pix Automático in the subscriptions API** — not in
@@ -254,13 +303,41 @@ Events: `subscription.initial`, `.updated`, `.activated`, `.suspended`,
 | PagBank status | Access rule |
 |---|---|
 | `PENDING` | none until first authorization |
-| `TRIAL` / `ACTIVE` | `access_until = period_end` |
-| `OVERDUE` / `PENDING_ACTION` | keep access through a grace window (`period_end + GRACE_DAYS`); dunning emails |
-| `SUSPENDED` / `CANCELED` | paid-through: access to `period_end`, no extension |
+| `TRIAL` / `ACTIVE` | `paid_until = period_end` |
+| `OVERDUE` / `PENDING_ACTION` | **no extension.** Access runs out at `paid_until`; dunning emails |
+| `SUSPENDED` / `CANCELED` | paid-through: access to `paid_until`, no extension |
 | `EXPIRED` | ended |
 
 Only `subscription.recurrence` / `.activated` with a confirmed payment moves
-`access_until` forward. Everything else adjusts intent, never grants.
+`paid_until` forward. Everything else adjusts intent, never grants.
+
+**No grace period** (Karina, 2026-08-27). Access exists exactly as far as payment
+reaches. A failed renewal does not extend anything: PagBank keeps retrying at 3/5/7
+days in the background, and if one succeeds, access is restored and `paid_until`
+jumps to the new period. Retries are *billing recovery*, never *access tolerance*.
+
+The trade she accepted knowingly: a student whose card fails for a bank-side reason
+is locked out for up to a week while still intending to pay. That is support load and
+some churn, priced in deliberately — which is why §4.1 is Phase 1 and not later.
+
+No `grace_until` column. No `GRACE_DAYS` constant.
+
+### 4.1 Card self-update — Phase 1, not later
+
+A subscriber whose card is declined must be able to fix it themselves. Nobody should
+have to email support to replace an expired card.
+
+- Endpoint: `PUT /customers/{customer_id}/billing_info` — card only. Note it sits on
+  the **customer**, not the subscription: updating the card updates it for every
+  subscription that customer holds.
+- Needs client-side encryption with the recurring public key, so it **cannot be built
+  before PagBank releases the account.** This is what moves the release request onto
+  the Phase 1 critical path rather than Phase 3's.
+- Dunning email → a page that takes a new card → PagBank retries (or
+  `POST` a manual retry, max 1/day/subscription).
+- On the next confirmed payment, access restores automatically. Restoration is the
+  same code path as any renewal: a confirmed payment moves `paid_until` forward. There
+  is no separate "reactivate" branch to get wrong.
 
 Daily reconcile cron polls `GET /subscriptions/{id}` for drift and repairs — same
 pattern as the existing `reconcile-pix` cron.
@@ -268,7 +345,7 @@ pattern as the existing `reconcile-pix` cron.
 ### Pix path
 
 No recurrence. Reuse the existing Orders API path (`createPixOrder`) as a one-off
-that pushes `access_until` by +30 days (monthly) or +12 months (annual). No
+that pushes `paid_until` by +30 days (monthly) or +12 months (annual). No
 cancellation concept. Renewal reminders at D-5 / D-2 / D-0 / D+3 via the existing
 drip infrastructure — route on a ClinAct-specific funnel field, **never** on
 `leads.source` (see the drip-ownership invariant).
@@ -276,9 +353,37 @@ drip infrastructure — route on a ClinAct-specific funnel field, **never** on
 Card annual: PagBank yearly plan, auto-renew, with a reminder 7 days before each
 renewal.
 
+### Commercial rules (confirmed 2026-08-27)
+
+- **R$ 29,90/mês · R$ 299/ano.** Annual ≈ ten months paid for twelve.
+- **No free trial and no free cases inside ClinAct.** Access begins at purchase. The
+  sales page carries demos and screenshots instead — which makes it load-bearing for
+  conversion in a way it would not have been with a trial.
+- **Cancellation keeps paid-through access.** Cancel on the 10th with a period ending
+  the 25th → access until the 25th, no renewal after. Same rule as `SUSPENDED`, so no
+  extra branch: cancelling sets intent, never revokes a paid period.
+- **7-day guarantee** on the initial purchase; see §6 for how it gates NFS-e.
+
+## 5. Minha Evolução — simple version ships at launch
+
+The full Perfil de Raciocínio Clínico stays Phase 2. A plain progress screen ships in
+Phase 1 (Karina, 2026-08-27): treinos concluídos, desempenho geral, per-format counts
+and accuracy, a confidence tally, and **erros com alta confiança**.
+
+Cheap, because nothing new is stored: every number is an aggregate over
+`clinact_step_events` joined to `clinact_attempts` and `clinact_cases.format`, all of
+which are written from case 1 regardless. Build it as live queries, not a stats table,
+until volume argues otherwise. Estimated cost: about a day.
+
+`erros com alta confiança` is one predicate — `is_correct = false AND confidence =
+'alta'` — and is the single most diagnostically interesting number the product has.
+It is available from the first case whether or not anything renders it.
+
 ---
 
-## 5. NFS-e — WebISS → Emissor Nacional
+---
+
+## 6. NFS-e — WebISS → Emissor Nacional
 
 **Deadline: 2026-11-01.** Resolução CGSN nº 191/2026 (2026-08-04) revoked
 189/2026 (which said 2026-09-01). ME/EPP under Simples Nacional issuing NFS-e must
@@ -306,44 +411,58 @@ Migration checklist:
 - [ ] Replace the hardcoded `0802` with the national tributação code — **blocked on
       the accountant.** Also confirm whether Feira de Santana is on SEFIN Nacional
       or a convênio.
-- [ ] `nfse_eligible_at` per order instead of the hardcoded 7-day guarantee: a
-      subscription renewal has no guarantee window and is issuable on confirmation.
+- [ ] `nfse_eligible_at` per order instead of the hardcoded 7-day guarantee. The rule
+      (Karina, 2026-08-27): **initial purchase** → eligible at payment + 7 days, if no
+      refund was requested; **renewals** → no guarantee window, eligible on
+      confirmation. The platform's job is computing *when a sale becomes issuable*,
+      not issuing it. Surface the state in the pending list so it is obvious at a
+      glance which charges have cleared the guarantee.
 - [ ] CSV export per competência (buyer, CPF, address, amount, date, product), with
       pending rows flagged — Karina's point 5.
 
-Automation trigger is a **volume**, not a date: **>50 notas in a month**. Monthly
-subscriptions issue one nota per charge, so 100 subscribers = 100 notas/month on top
-of Revalida. The Emissor Nacional has its own API (ICP-Brasil e-CNPJ A1/A3 cert,
+Automation is deferred by volume, not scheduled — and the threshold is deliberately
+**not** hardcoded (Karina, 2026-08-27): watch the manual operation and decide when it
+stops being efficient. Monthly
+subscriptions issue one nota per charge, so 100 subscribers means 100 notas/month on
+top of Revalida — the load grows linearly with the thing we are trying to grow. The Emissor Nacional has its own API (ICP-Brasil e-CNPJ A1/A3 cert,
 mutual TLS), so doing the November cut-over *to it* means automation later is
 plugging in an API at the same place — not a second migration.
 
 ---
 
-## 6. Build order
+## 7. Build order
 
-1. Schema + engine + panel + bulk importer + authoring guide + **Decisão em 30
-   Segundos** end-to-end. Gate: Karina registers one case in the panel *and* imports a
-   3-case file, both unaided, and reports friction.
-2. Remaining three formats — Clínica em Cena (branching + prontuário) last.
-3. Subscription module, Pix one-off, ClinAct sales page, grace + dunning emails.
+1. Schema (including `clinact_case_versions`) + engine + panel + bulk importer +
+   authoring guide + **Decisão em 30 Segundos** end-to-end.
+   **Gate:** Karina registers a case from scratch → previews → publishes, *and*
+   imports a multi-case file, both unaided, and reports friction.
+2. Remaining three formats: **Código Clínico**, **Ponto de Virada**, then **Clínica em
+   Cena** (branching + prontuário) last.
+3. Subscription module, access control, Pix one-off, retries, **card self-update**,
+   **Minha Evolução**, dunning emails, ClinAct sales page.
 4. Import the 40 launch cases; live review per format.
 
 **Parallel track:** NFS-e Nacional cut-over, hard date 2026-11-01.
 
+**Off the critical path but gating step 3:** the PagBank account release. It has two
+approval gates with third-party latency, and card self-update cannot be built without
+it. File it early — the URL is now settled (`medhelpspace.com.br/clinact`), which was
+the only thing it was waiting on.
+
 ---
 
-## 7. Open — blocking on Karina / third parties
+## 8. Open — blocking on Karina / third parties
 
-| Item | Needed from |
-|---|---|
-| Annual price (proposed R$ 299/yr vs R$ 29,90/mo) | Karina |
-| Free trial vs one open case per format | Karina |
-| Does the 7-day guarantee apply to monthly subscriptions | Karina |
-| Bundle / existing-student pricing | Karina |
-| Confirm confidence = 3 levels (irreversible after case 1) | Karina |
-| Recurrence enabled on the PJ account + assinaturas token & public key | PagBank |
-| National tributação code replacing 0802; Feira de Santana's national status | Accountant |
-| Authoring guide + four templates + bulk importer, delivered before content production starts | Me → Karina |
+| Item | Needed from | State |
+|---|---|---|
+| Bundle / existing-student pricing | Karina | **still open** — needed for the sales page |
+| PJ account released for the recurring API + homologação | PagBank | **open** — file now; URL settled |
+| Karina's pilot case passes the importer | Karina | **open** — gates the other 39 |
+| Templates for the other three formats | Me → Karina | **open** — held until the pilot passes |
+| Annual price · free trial · guarantee scope · confidence levels | Karina | closed 2026-08-27 |
+| National tributação code | Accountant | closed — `080201` national, `0802` stays municipal |
+| Feira de Santana's national status | Accountant | adhered to ADN, still routes via WebISS; **confirm the CNPJ's habilitação before switching** |
+| Authoring guide + four templates | Me → Karina | shipped `126597b`; guide + 30s model sent |
 
 ---
 
