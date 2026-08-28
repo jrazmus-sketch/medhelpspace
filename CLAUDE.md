@@ -318,6 +318,35 @@ payment that has already granted membership.
 - [x] Admin — `/admin/embaixadores` (billing tier only): create/edit ambassadors, per-ambassador totals, and the full cl. 7.5 cycle — close the month, record the NFS-e, mark paid, reopen. Closing takes commissions *released* up to the end of the reference month (later ones wait for the next cycle) and includes negative adjustments, so a chargeback reduces the payout. Reopen is refused once paid.
 - [x] Cohort price/date changes are audited (`cohort_create` / `cohort_update` in `admin_audit_log`, before → after, money rendered as BRL)
 
+### ClinAct (build step 1 — shipped 2026-08-28)
+
+Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/formato-de-conteudo.md`
+(v1) — bundled copy in `app/src/content/clinact/` is kept byte-identical by a test.
+
+- [x] Schema — `schema-patch-clinact.sql` (prod + local): `user_product_access` +
+  `user_has_product_access(p)`, seven `clinact_*` tables, RLS. ONE write path:
+  `clinact_save_case(jsonb, uuid)` (atomic replace, one transaction per case) and
+  `clinact_publish_case`. Both snapshot the full document into `clinact_case_versions`
+  whenever the published revision changes — every `attempts.case_revision` has a frozen copy.
+- [x] Engine — `app/src/lib/clinact/`: `parse.ts` (format v1, line-numbered PT errors),
+  `serialize.ts` (round trip), `validate.ts` (publish blockers; media missing = warn on
+  import, BLOCK on publish via CDN HEAD), `scoring.ts` (weights 1/0.6/0.2/0 frozen; case
+  score → per-format → overall, never over events), `engine.ts` (screens + state fold).
+- [x] Admin — `/admin/clinact` (super_admin + content_admin): list, editor (`/novo`, `/[id]`:
+  ficha · blocks · checklist, preview via signed 6h link, publish/unpublish/duplicate/archive,
+  export .txt), importer (`/importar`: files + paste, dry-run table, partial import, always
+  drafts, published skipped unless opted in). Audit: `clinact_publish/unpublish/archive/
+  delete_draft/import`.
+- [x] Member — `/clinact` (sales placeholder, public dark-only), `/clinact/treinar`,
+  `/clinact/caso/[slug]`, `/clinact/preview/[token]` — all under `app/clinact/(membro)/`
+  gated by `requireProductAccess('clinact')` (lib/clinact/access.ts), NOT under `/app`.
+  Answers/feedback never reach the client before the decision is submitted.
+- [ ] Step 2 — Código Clínico, Ponto de Virada, Clínica em Cena players (engine + parser +
+  editor already carry all four; only the player renderings for pistas/map/prontuário remain).
+- [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, Minha
+  Evolução, real sales page. Nothing writes `user_product_access` yet: grant access by
+  inserting a row (`source='grant'`).
+
 ## Theme requirements (non-negotiable)
 - Light and dark mode supported from day one
 - Semantic color tokens only; no literal colors in component code

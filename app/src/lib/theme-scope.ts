@@ -20,6 +20,9 @@ export function isThemeUnlockedPath(pathname: string | null | undefined): boolea
     pathname === "/app" ||
     pathname.startsWith("/app/") ||
     pathname === "/admin" ||
-    pathname.startsWith("/admin/")
+    pathname.startsWith("/admin/") ||
+    // ClinAct member area (everything under /clinact/ except the sales page
+    // at /clinact itself, which is public and dark-only like /loja).
+    pathname.startsWith("/clinact/")
   );
 }

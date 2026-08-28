@@ -7,7 +7,8 @@
       p === "/app" ||
       p.indexOf("/app/") === 0 ||
       p === "/admin" ||
-      p.indexOf("/admin/") === 0;
+      p.indexOf("/admin/") === 0 ||
+      p.indexOf("/clinact/") === 0;
 
     var r;
     if (!unlocked) {
