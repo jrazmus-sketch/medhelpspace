@@ -35,11 +35,12 @@ o primeiro que vai estar funcionando na plataforma.
 === CASO ===
 ```
 
-- Imagens: nunca cole a imagem dentro do documento. Escreva o nome do arquivo na
-  linha, e mande os arquivos junto, na mesma pasta:
+- Imagens e áudios: nunca cole o arquivo dentro do documento. Escreva o nome do
+  arquivo na linha, e deixe os arquivos na mesma pasta:
 
 ```
 [imagem: ecg-caso-12.jpg]
+[audio: sopro-aortico.mp3]
 ```
 
 ### Atenção: desligue a lista automática do Google Docs
@@ -206,11 +207,13 @@ apontar desvios:
 Paciente chega à sala vermelha. PA 88/54, FC 128, SpO₂ 86%.
 
 - Estabilizar antes de qualquer exame
+  qualidade: ideal
   feedback: Correto. Nada se resolve com o paciente instável.
   fizemos: O₂ suplementar 5 L/min, acesso calibroso
   estado: PA 92/60, instável
   relógio: 5
 - Enviar direto para a angio-TC
+  qualidade: prejudicial
   feedback: O transporte de um instável custa caro.
   estado: PA 78/48, instável
   relógio: 15
@@ -225,6 +228,17 @@ Paciente chega à sala vermelha. PA 88/54, FC 128, SpO₂ 86%.
 - **`relógio:`** são os minutos narrativos gastos.
 - **`vai para:`** só quando a conduta precisa **desviar**. Em branco — que é o
   normal — a conduta cai na cena seguinte.
+- **`qualidade:`** é como a conduta entra no desempenho do aluno. Quatro valores:
+
+| `qualidade:` | O que significa |
+|---|---|
+| `ideal` | a conduta certa naquele momento |
+| `aceitavel` | razoável, mas não era a prioridade |
+| `inadequada` | erro sem dano direto |
+| `prejudicial` | pode causar dano |
+
+  Escreva em **todas** as condutas de cena. É o que permite medir a Clínica em Cena
+  sem transformá-la num certo/errado que ela não é.
 
 **Você não escreve prontuário.** Ele é a leitura do que as condutas revelaram.
 
@@ -234,7 +248,49 @@ voltar ao caminho comum. Isso é proposital: oito cenas com três condutas cada 
 
 ---
 
-## 8. Blocos curtos
+## 8. Imagem e áudio
+
+Os dois funcionam igual, nos quatro formatos, e podem aparecer **em qualquer ponto do
+caso** — não só na abertura.
+
+```
+[imagem: rx-torax-caso-12.jpg]
+legenda: Radiografia de tórax na admissão.
+alt: Radiografia de tórax PA com opacidade em base direita.
+
+[audio: sopro-aortico.mp3]
+legenda: Ausculta em foco aórtico.
+transcricao: Sopro sistólico ejetivo, +++/6.
+```
+
+- A linha da mídia **se prende ao que vem logo acima** — mesma regra do
+  `feedback:`. Sozinha depois de um bloco, ela pertence ao bloco; dentro de uma pista,
+  pertence à pista; embaixo de uma conduta, é o que aquela conduta revela.
+- `legenda:` é o que o aluno lê. `alt:` descreve a imagem para quem usa leitor de
+  tela. `transcricao:` faz o mesmo pelo áudio. As duas últimas são opcionais, mas
+  escreva sempre que der — é o que torna o caso utilizável por todo mundo.
+- Vídeo ainda não; a estrutura já está pronta para quando for.
+
+**A mídia pode ser revelada por uma escolha.** É o uso mais forte dos quatro formatos:
+
+```
+- Auscultar o precórdio antes de pedir exames
+  feedback: Boa. O achado muda a hipótese.
+  encontramos: Sopro sistólico em foco aórtico
+  [audio: sopro-aortico.mp3]
+```
+
+O aluno escolhe auscultar — e só então ouve. Pede a radiografia — e só então vê. No
+Ponto de Virada, um ECG pode ser o próprio `## NOVO DADO`. No Código Clínico, uma
+imagem dermatológica pode ser uma das pistas.
+
+**Envie os arquivos junto com o caso**, com o mesmo nome que você escreveu. Áudio em
+`.mp3`. Se o arquivo ainda não existir, escreva a linha do mesmo jeito e avise: o caso
+importa com o espaço reservado, é aviso e não erro.
+
+---
+
+## 9. Blocos curtos
 
 ```
 ## NOVO DADO
@@ -274,12 +330,16 @@ Paciente instável não sai da sala para confirmar diagnóstico.
 
 Em `## ORDENAR`, a ordem em que você escreve **é** a ordem correta.
 
+**O cronômetro é pressão, não trava.** Ao chegar a zero ele não envia a resposta, não
+bloqueia as alternativas, não marca erro e não encerra o caso. O aluno responde
+normalmente depois. Só registramos quanto tempo levou.
+
 `## CONFIANÇA` não tem conteúdo — é só ligar. A escala é fixa: baixa, média, alta.
 Use apenas nas decisões em que faz sentido medir a segurança do aluno.
 
 ---
 
-## 9. O que você NÃO precisa revisar
+## 10. O que você NÃO precisa revisar
 
 O importador corrige tudo isto sozinho:
 
@@ -298,7 +358,7 @@ tema depois — é aviso, não erro.
 
 ---
 
-## 10. Quando o modelo não couber
+## 11. Quando o modelo não couber
 
 Se você precisar de algo que o formato não prevê, **não invente marcação**.
 Escreva um parágrafo normal começando com `NOTA:`:
@@ -312,7 +372,7 @@ que uma observação em português — ela quebra em silêncio e ninguém perceb
 
 ---
 
-## 11. Como o importador responde
+## 12. Como o importador responde
 
 Ao subir o arquivo, antes de gravar qualquer coisa, você vê uma tabela: um caso
 por linha, com `OK`, `avisos` ou `erro`. Os erros dizem o nome do caso e a linha.

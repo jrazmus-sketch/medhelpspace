@@ -17,7 +17,7 @@ pelo menos um caso de cada um dos outros três.
 | `NOVO DADO` | se o caso pedir |
 | `CONFIANÇA` | se o caso pedir |
 | `CUSTO DO ATRASO` | se o caso pedir |
-| `MÍDIA` | se o caso pedir |
+| `MÍDIA` | disponível em qualquer ponto — imagem ou áudio |
 
 ## As duas regras que sustentam o formato
 
@@ -41,6 +41,10 @@ escreve na conduta:
 | `encontramos` | achados de exame e resultados |
 | `fizemos` | condutas executadas |
 | `estado` | sinais vitais e estabilidade atuais |
+
+Escreva `qualidade:` em **todas** as condutas: `ideal`, `aceitavel`, `inadequada` ou
+`prejudicial`. É o que permite medir a Clínica em Cena sem reduzi-la a certo/errado.
+Uma conduta pode revelar mídia — veja a seção 8 do guia.
 
 Sugestão: 3 a 5 cenas, com 3 condutas cada.
 
@@ -68,15 +72,18 @@ RESUMO:
 
 
 -
+  qualidade:
   feedback:
   encontramos:
   estado:
   relógio:
 -
+  qualidade:
   feedback:
   estado:
   relógio:
 -
+  qualidade:
   feedback:
   estado:
   relógio:
@@ -86,10 +93,12 @@ RESUMO:
 
 
 -
+  qualidade:
   feedback:
   estado:
   relógio:
 -
+  qualidade:
   feedback:
   estado:
   relógio:
@@ -98,13 +107,16 @@ RESUMO:
 
 
 -
+  qualidade:
   feedback:
   encontramos:
   relógio:
 -
+  qualidade:
   feedback:
   relógio:
 -
+  qualidade:
   feedback:
   relógio:
 
@@ -112,11 +124,14 @@ RESUMO:
 
 
 -
+  qualidade:
   feedback:
   fizemos:
 -
+  qualidade:
   feedback:
 -
+  qualidade:
   feedback:
 
 ## FEEDBACK

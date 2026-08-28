@@ -12,6 +12,13 @@ on the 7-day guarantee. Two corrections she caught apply to the **proposal artif
 not this file: `clinact_clues` describes the case (four tables describe, two record),
 and only **two** blocks are system-generated, not three.
 
+**Closed 2026-08-28** on her second pass: media generalised to image + audio in all
+four formats and revealable mid-case (§2.1); `quality` scoring for scene conducts
+(§2.2); first-completed-attempt analytics (§2.3); autosave confirmed (§2.4); the timer
+never blocks (§2.5); annual card renews yearly until cancelled (§4). She considers the
+architecture closed for implementation. Two answers still outstanding — the `quality`
+weights and who records the clinical audio.
+
 Product: **MedHelpSpace ClinAct** — clinical reasoning that ends in a decision.
 Sold **separately** from Revalida; access independent in both directions.
 
@@ -80,8 +87,8 @@ Seven tables, prefix `clinact_`. `specialty_id` → existing `specialties`;
 |---|---|
 | `clinact_cases` | `slug` UNIQUE, `format`, `title`, `specialty_id`, `topic_id`, `difficulty`, `primary_skill`, `est_minutes`, `summary`, `takeaway`, `final_key`, `status`, `revision`, `published_at`, `created_by` |
 | `clinact_steps` | `case_id`, `position`, `kind`, `enabled`, `scene_key`, `skill`, `content jsonb` |
-| `clinact_options` | `step_id`, `position`, `label`, `is_correct`, `feedback`, `seduction`, `effect jsonb`, `next_scene_key` |
-| `clinact_clues` | `case_id`, `position`, `label`, `detail`, `category`, `is_red_herring`, `cluster` |
+| `clinact_options` | `step_id`, `position`, `label`, `is_correct`, `quality`, `feedback`, `seduction`, `effect jsonb`, `next_scene_key` |
+| `clinact_clues` | `case_id`, `position`, `label`, `detail`, `media jsonb`, `category`, `is_red_herring`, `cluster` |
 | `clinact_attempts` | `user_id`, `case_id`, `case_revision`, `started_at`, `finished_at`, `score`, `duration_ms`, `state jsonb` |
 | `clinact_step_events` | `attempt_id`, `step_id`, `option_id`, `skill`, `is_correct`, `confidence`, `time_ms`, `answered_at` |
 | `clinact_case_versions` | `case_id`, `revision`, `published_at`, `snapshot jsonb`, UNIQUE(`case_id`,`revision`) |
@@ -116,6 +123,100 @@ Enums (as CHECK constraints, matching project convention):
 - `status` ∈ `draft | published | archived`
 - `confidence` ∈ `baixa | media | alta` — **fixed three levels, decided before case 1.**
   Variable scales destroy cross-cohort comparability.
+- `quality` ∈ `ideal | aceitavel | inadequada | prejudicial` — nullable; see §2.2.
+
+### 2.1 Media is a JSONB shape, not a table
+
+One object, used in three places, every field but `type` and `url` optional:
+
+```json
+{ "type": "image|audio|video", "url": "…", "caption": "…",
+  "alt": "…", "transcript": "…" }
+```
+
+Where it appears:
+
+| Place | How | Schema impact |
+|---|---|---|
+| A `midia` / `narrativa` / `novo_dado` step | inside `content jsonb` | none |
+| A clue that *is* an image | `clinact_clues.media` | **new column** |
+| A conduct that *reveals* media | `effect.revela[].midia` | none (JSONB) |
+
+Available in **all four formats** (Karina, 2026-08-28). The block inventory listed
+`midia` but the per-format matrix omitted it, so this had no documented answer.
+
+`type` is an open string, not a two-value enum: video is out of the MVP but must not
+require a migration to add. `alt` and `transcript` are the accessibility fields —
+optional, but the panel should nudge for them.
+
+**Files live on Bunny CDN**, same as MedVoice and AudioCards. No new storage.
+
+The requirement that matters is not "support audio" — it is that **media can be
+revealed by a decision**, not only shown at the top of a case. Auscultating produces
+a sound; ordering a film produces an image. That is why `revela` entries carry
+optional media: revealing a finding and revealing a sentence are the same act.
+
+### 2.2 Scoring — `quality` where nuance is real, `is_correct` where it is not
+
+A scene conduct is rarely right or wrong. `clinact_options.quality` carries the
+nuance; it is **nullable**, and when null the option falls back to `is_correct`. So an
+ordinary multiple-choice question is authored exactly as before, and only scene
+conducts carry an explicit quality.
+
+| `quality` | Weight |
+|---|---|
+| `ideal` | 1.0 |
+| `aceitavel` — reasonable, not the priority | 0.6 |
+| `inadequada` | 0.2 |
+| `prejudicial` — potentially harmful | 0.0 |
+
+Case score = mean of the weights of the options actually chosen. Binary questions
+score 1.0 / 0.0 through the same path, so Minha Evolução compares formats without a
+per-format special case.
+
+**The weights freeze before the first published case.** Changing them later silently
+rewrites the meaning of every historical percentage — the identical argument that
+fixed the confidence scale at three levels. Pending Karina's explicit confirmation.
+
+### 2.3 Repetition — the first *completed* attempt is canonical
+
+Every attempt is stored. Minha Evolução reads only the first completed attempt per
+`(user_id, case_id)`; repeats are retained for retention analysis later.
+
+No new column: `DISTINCT ON (user_id, case_id)` over attempts with `finished_at NOT
+NULL`, ordered by `finished_at`. A flag would be one more thing to fall out of sync.
+An abandoned first try never becomes the reference, which is what "concluída" means.
+
+Report the canonical attempt **with its `case_revision`** — with version snapshots in
+place, "60% on revision 1" stays meaningful after a guideline rewrite.
+
+**UI consequence:** a repeat that scores 100% against a dashboard still showing 60%
+reads as a bug. Repeat runs must be visibly marked as not counting.
+
+### 2.4 Autosave and resume
+
+Already the design, restated because it is load-bearing for Clínica em Cena: runtime
+state is folded from chosen effects into `clinact_attempts.state` and written on every
+step event. Scene, prior decisions, revealed clues, patient state, narrative clock,
+locked hypothesis, confidences given, blocks completed — all of it lives in that one
+field.
+
+Because it is **server-side, not browser storage**, resume survives a closed tab, a
+dropped connection, a reload, *and a different device*. No case is ever restarted by
+accident.
+
+"Reiniciar" is a deliberate, separate action that opens a **new** attempt and leaves
+the original registered — so the canonical-attempt rule above still holds.
+
+### 2.5 The timer is pressure, not a lock
+
+At zero the `cronometro` does **not** submit, does **not** disable the options, does
+**not** mark the answer wrong, and does **not** end the case. The student answers
+normally afterwards. `clinact_step_events.time_ms` already records how long they took,
+so the data exists without the timer ever gating anything.
+
+"Decisão em 30 Segundos" names the *experience* of prioritising under pressure, not a
+time-eliminated exam.
 
 ### Why `content` is JSONB
 
@@ -136,14 +237,16 @@ file, zero DB work, and the field appears in the panel automatically.
 
 Format → default step stack lives in code (`lib/clinact/format-presets.ts`), not the
 DB: picking a format seeds the stack, every block toggles per case. The matrix of
-which block is default/optional/absent per format is in the proposal document.
+which block is default/optional/absent per format is in the proposal document —
+with one correction: **`midia` is available in all four formats** and was missing
+from that matrix. See §2.1.
 
 ### Convergent branching (Clínica em Cena)
 
 - Steps group by `scene_key`. `clinact_options.next_scene_key` is **NULL by default**
   → falls through to the next scene in `position` order. Convergence is the default;
   divergence is opt-in.
-- `effect jsonb` = `{ revela: [{cat, texto}], estado: {...}, relogio: n }`.
+- `effect jsonb` = `{ revela: [{cat, texto, midia?}], estado: {...}, relogio: n }`.
   `cat` ∈ `sabemos | encontramos | fizemos | estado` — that is the entire Prontuário
   Vivo authoring surface. Nothing is written per step.
 - Runtime state is derived by folding chosen options' effects over the attempt;
@@ -216,6 +319,12 @@ gotcha are already solved there).
   dropzone and resolves them by name. An unresolved filename is a **warning**, not an
   error — the case imports with an empty media slot.
 - **Audit log** entry per batch: who, how many, which slugs, how many rejected.
+- **Media tags** `[imagem: arquivo.jpg]` / `[audio: arquivo.mp3]` are standalone lines
+  that attach to whatever precedes them — the same upward-attaching rule as
+  `feedback:`. Optional `legenda:`, `alt:`, `transcricao:` follow. Valid inside a
+  block, inside a clue, and under a conduct (where it becomes a revealed finding).
+- **`qualidade:`** on a scene conduct maps to `clinact_options.quality`. Absent, the
+  option falls back to `*` / `-`.
 
 ### 3.3 The authoring format is a deliverable, not a convention
 
@@ -350,8 +459,10 @@ cancellation concept. Renewal reminders at D-5 / D-2 / D-0 / D+3 via the existin
 drip infrastructure — route on a ClinAct-specific funnel field, **never** on
 `leads.source` (see the drip-ownership invariant).
 
-Card annual: PagBank yearly plan, auto-renew, with a reminder 7 days before each
-renewal.
+Card annual: PagBank yearly plan, **auto-renewing yearly until cancelled**, exactly
+as monthly auto-renews monthly, with a reminder 7 days before each renewal. Cancel in
+June on a plan paid in January and access runs the full twelve months — only the next
+renewal stops. Pix never auto-renews in either term (Karina, 2026-08-28).
 
 ### Commercial rules (confirmed 2026-08-27)
 
@@ -456,6 +567,8 @@ the only thing it was waiting on.
 | Item | Needed from | State |
 |---|---|---|
 | Bundle / existing-student pricing | Karina | **still open** — needed for the sales page |
+| Confirm the `quality` weights (frozen before case 1 publishes) | Karina | **open** |
+| Clinical audio files — who records them, and when | Karina | **open** — cases can reference sounds that do not exist yet |
 | PJ account released for the recurring API + homologação | PagBank | **open** — file now; URL settled |
 | Karina's pilot case passes the importer | Karina | **open** — gates the other 39 |
 | Templates for the other three formats | Me → Karina | **open** — held until the pilot passes |
