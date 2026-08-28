@@ -16,8 +16,13 @@ and only **two** blocks are system-generated, not three.
 four formats and revealable mid-case (§2.1); `quality` scoring for scene conducts
 (§2.2); first-completed-attempt analytics (§2.3); autosave confirmed (§2.4); the timer
 never blocks (§2.5); annual card renews yearly until cancelled (§4). She considers the
-architecture closed for implementation. Two answers still outstanding — the `quality`
-weights and who records the clinical audio.
+architecture closed for implementation.
+
+**Fully closed 2026-08-28.** Weights confirmed (1,0 / 0,6 / 0,2 / 0,0, no negatives);
+audio is hers to supply and gates nothing at launch; a Revalida student pays full price.
+She added two rules that change the build: scores **normalise per case** (§2.2.1), and a
+missing media file **warns on import but blocks publication** (§2). Build is authorised:
+motor + schema + painel + Decisão em 30 Segundos, end to end.
 
 Product: **MedHelpSpace ClinAct** — clinical reasoning that ends in a decision.
 Sold **separately** from Revalida; access independent in both directions.
@@ -151,6 +156,15 @@ optional, but the panel should nudge for them.
 
 **Files live on Bunny CDN**, same as MedVoice and AudioCards. No new storage.
 
+**Media content is Karina's, infrastructure is ours** (2026-08-28). She holds no sound
+library yet, and audio is **not** a requirement for the 40 launch cases — neither all of
+them nor any minimum. She supplies a file when a case genuinely benefits, building a
+curated library over time (sopros, B3/B4, sibilos, crepitações, roncos, estridor), with
+clinical fidelity and usage rights as the filter: no audio scraped from the internet, and
+no AI-synthesised sound where the acoustic detail is the finding. So the architecture
+carries audio from day one while the content arrives gradually — which is exactly why
+import warns and publish blocks.
+
 The requirement that matters is not "support audio" — it is that **media can be
 revealed by a decision**, not only shown at the top of a case. Auscultating produces
 a sound; ordering a film produces an image. That is why `revela` entries carry
@@ -174,9 +188,24 @@ Case score = mean of the weights of the options actually chosen. Binary question
 score 1.0 / 0.0 through the same path, so Minha Evolução compares formats without a
 per-format special case.
 
-**The weights freeze before the first published case.** Changing them later silently
-rewrites the meaning of every historical percentage — the identical argument that
-fixed the confidence scale at three levels. Pending Karina's explicit confirmation.
+**Confirmed by Karina 2026-08-28** and frozen from here: changing them later silently
+rewrites the meaning of every historical percentage, the identical argument that fixed
+the confidence scale at three levels. No negative weights — a below-zero score would
+make Minha Evolução harder to read for no gain.
+
+### 2.2.1 Scores normalise per case, not per decision
+
+**Aggregation happens at the case level.** The chain is fixed:
+
+> decisions → **score of that case (0–100%)** → mean of that format's cases → overall
+
+Never a raw mean over decisions or step events. A Clínica em Cena with four decisions
+would otherwise carry four times the weight of a Decisão em 30 Segundos with one, and
+the per-format percentages would stop being comparable — which is the entire point of
+showing them side by side.
+
+Only **cases completed on the first attempt** enter the mean (§2.3). One case is one
+unit of training, whatever it cost the student internally.
 
 ### 2.3 Repetition — the first *completed* attempt is canonical
 
@@ -255,8 +284,12 @@ from that matrix. See §2.1.
   `is_red_herring` dims with the reason). One layout for every case.
 
 **Publish validator refuses** when: a scene is unreachable, `next_scene_key` points
-at a non-existent scene, any path never reaches the terminal scene, or a detour runs
-deeper than 1 scene before reconverging. Errors are named by scene, in Portuguese —
+at a non-existent scene, any path never reaches the terminal scene, a detour runs
+deeper than 1 scene before reconverging, or **any referenced media file is missing**
+(Karina, 2026-08-28). Import and publish deliberately disagree here: importing a case
+whose audio has not been produced yet is a **warning**, because she writes the case
+before recording the sound; publishing it is **blocked**, because a student must never
+meet a dead audio button or an empty image slot. Errors are named by scene, in Portuguese —
 the panel audience is a content producer, not a developer.
 
 ---
@@ -481,10 +514,14 @@ The full Perfil de Raciocínio Clínico stays Phase 2. A plain progress screen s
 Phase 1 (Karina, 2026-08-27): treinos concluídos, desempenho geral, per-format counts
 and accuracy, a confidence tally, and **erros com alta confiança**.
 
-Cheap, because nothing new is stored: every number is an aggregate over
-`clinact_step_events` joined to `clinact_attempts` and `clinact_cases.format`, all of
-which are written from case 1 regardless. Build it as live queries, not a stats table,
-until volume argues otherwise. Estimated cost: about a day.
+Cheap, because nothing new is stored: every number derives from `clinact_step_events`
+joined to `clinact_attempts` and `clinact_cases.format`, all written from case 1
+regardless. Build it as live queries, not a stats table, until volume argues otherwise.
+Estimated cost: about a day.
+
+**Aggregate per case, never per event** (§2.2.1). Score each attempt first, then average
+the attempts — averaging step events directly would let a long case dominate the
+percentage, and the format comparison would quietly stop meaning anything.
 
 `erros com alta confiança` is one predicate — `is_correct = false AND confidence =
 'alta'` — and is the single most diagnostically interesting number the product has.
@@ -566,10 +603,8 @@ the only thing it was waiting on.
 
 | Item | Needed from | State |
 |---|---|---|
-| Bundle / existing-student pricing | Karina | **still open** — needed for the sales page |
-| Confirm the `quality` weights (frozen before case 1 publishes) | Karina | **open** |
-| Clinical audio files — who records them, and when | Karina | **open** — cases can reference sounds that do not exist yet |
 | PJ account released for the recurring API + homologação | PagBank | **open** — file now; URL settled |
+| `quality` weights · clinical audio · Revalida-student pricing | Karina | closed 2026-08-28 |
 | Karina's pilot case passes the importer | Karina | **open** — gates the other 39 |
 | Templates for the other three formats | Me → Karina | **open** — held until the pilot passes |
 | Annual price · free trial · guarantee scope · confidence levels | Karina | closed 2026-08-27 |
