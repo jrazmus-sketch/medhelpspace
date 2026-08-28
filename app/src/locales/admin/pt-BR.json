@@ -1153,7 +1153,7 @@
     "title": "Embaixadores",
     "new": "Novo embaixador",
     "empty": "Nenhum embaixador cadastrado ainda.",
-    "cycleHint": "Fechamento mensal: comissões liberadas até o último dia do mês anterior. O demonstrativo sai até o 2º dia útil, a NFS-e chega até o 5º e o pagamento é feito até o dia 15.",
+    "cycleHint": "Fechamento mensal: comissões liberadas até o último dia do mês anterior. O demonstrativo sai até o 2º dia útil, a NFS-e chega até o 5º dia útil e o pagamento é feito até o dia 15 — no primeiro dia útil seguinte, se o dia 15 não for útil. Nota atrasada ou corrigida entra no ciclo seguinte, sem perda de saldo.",
     "edit": "Editar",
     "save": "Salvar",
     "cancel": "Cancelar",
@@ -1186,9 +1186,7 @@
       "active": "Ativo",
       "terminated": "Encerrado"
     },
-    "forCause": "Rescisão por justa causa",
     "terminationReason": "Motivo",
-    "forCauseHint": "A justa causa encerra o acesso ao curso imediatamente, mas NÃO anula comissões legítimas anteriores — só vendas fraudulentas ou irregulares perdem a comissão (cl. 6).",
     "closeMonth": "Gerar fechamento do mês",
     "finalSettlement": "Acerto final",
     "finalSettlementHint": "Paga o saldo mesmo abaixo de R$ 200,00, no encerramento do contrato (cl. 7.3).",
@@ -1220,8 +1218,39 @@
       "MONTH_ALREADY_SETTLED": "Este mês já tem um fechamento gerado.",
       "PAYOUT_NOT_FOUND": "Repasse não encontrado.",
       "ALREADY_PAID": "Este repasse já foi pago.",
-      "REASON_REQUIRED": "Informe o motivo da rejeição."
-    }
+      "REASON_REQUIRED": "Informe o motivo da rejeição.",
+      "COUPON_REQUIRED": "Vincule o cupom de 5% antes de ativar o embaixador.",
+      "ACCESS_COHORT_REQUIRED": "O embaixador-aluno precisa de uma turma de acesso antes da ativação.",
+      "TERMINATION_KIND_REQUIRED": "Informe o tipo de encerramento.",
+      "TERMINATION_GROUND_REQUIRED": "A justa causa exige uma das hipóteses da cl. 12.6.",
+      "NOT_FOUND": "Embaixador não encontrado.",
+      "AMOUNT_INVALID": "Informe um valor positivo para estornar.",
+      "ORDER_NOT_ATTRIBUTED": "Esse pedido não tem comissão atribuída.",
+      "ORDER_OTHER_AMBASSADOR": "Esse pedido pertence a outro embaixador.",
+      "ALREADY_FULLY_REVERSED": "A comissão desse pedido já foi estornada integralmente.",
+      "EXCEEDS_COMMISSION": "O valor excede a comissão original do pedido."
+    },
+    "terminationKind": "Tipo de encerramento",
+    "terminationKinds": {
+      "voluntaria": "Saída voluntária",
+      "nao_renovacao": "Não renovação",
+      "justa_causa": "Rescisão por justa causa"
+    },
+    "terminationGround": "Hipótese (cl. 12.6)",
+    "terminationGrounds": {
+      "fraude": "Fraude",
+      "compartilhamento_conteudo": "Compartilhamento de conteúdo",
+      "violacao_credenciais": "Violação de credenciais",
+      "falta_uso_curso": "Outra falta ligada ao uso do curso"
+    },
+    "terminationHint": "O acesso do embaixador-aluno segue a cl. 12.6: na saída voluntária ou não renovação, ele mantém o acesso até o fim da turma se já houver 90 dias de contrato ou a primeira venda válida — o que vier primeiro. O encerramento imediato só cabe nas quatro hipóteses acima. Nenhum encerramento anula comissões legítimas anteriores (cl. 12.5).",
+    "adjustment": "Lançar ajuste (estorno parcial)",
+    "adjustmentHint": "Informe o valor da comissão a estornar. Entra como lançamento negativo e reduz o próximo repasse.",
+    "adjustmentAmount": "Valor a estornar (R$)",
+    "adjustmentOrder": "ID do pedido (opcional)",
+    "adjustmentReason": "Motivo",
+    "courseAccess": "Acesso ao curso até",
+    "firstSaleOn": "1ª venda em"
   },
   "coupons": {
     "title": "Cupons",

@@ -146,7 +146,13 @@ export async function atualizarEmbaixador(
     commissionRateBps: number;
     contractEndsOn: string | null;
     couponId: number | null;
-    terminatedForCause: boolean;
+    terminationKind: "voluntaria" | "nao_renovacao" | "justa_causa" | null;
+    terminationGround:
+      | "fraude"
+      | "compartilhamento_conteudo"
+      | "violacao_credenciais"
+      | "falta_uso_curso"
+      | null;
     terminationReason: string | null;
   },
 ) {
@@ -157,17 +163,52 @@ export async function atualizarEmbaixador(
 
   const { data: before } = await admin
     .from("ambassadors")
-    .select("code, status, commission_rate_bps, contract_ends_on")
+    .select("code, status, commission_rate_bps, contract_ends_on, profile_type, access_cohort_id")
     .eq("id", ambassadorId)
     .maybeSingle();
+  if (!before) return { ok: false as const, error: "NOT_FOUND" as const };
 
+  // Activation is the gate, not creation: the coupon and the link only become
+  // visible once active, so an ambassador must not reach that state without the
+  // 5% coupon actually bound to them. Activating without it is how a sale gets
+  // made that generates no commission — the failure Karina flagged (cl. 3.1).
+  if (input.status === "active") {
+    if (!input.couponId) {
+      return { ok: false as const, error: "COUPON_REQUIRED" as const };
+    }
+    // cl. 1.4 / 2.2: the turma de acesso is what the free access is scoped to,
+    // so an embaixador-aluno without one has an unresolvable benefit.
+    if (before.profile_type === "embaixador_aluno" && !before.access_cohort_id) {
+      return { ok: false as const, error: "ACCESS_COHORT_REQUIRED" as const };
+    }
+  }
+
+  // cl. 12.6 limits immediate loss of course access to four enumerated grounds,
+  // all tied to use of the course. Refusing a bare "justa causa" here is what
+  // stops access being cut on an unsupported marking.
+  if (input.status === "terminated") {
+    if (!input.terminationKind) {
+      return { ok: false as const, error: "TERMINATION_KIND_REQUIRED" as const };
+    }
+    if (input.terminationKind === "justa_causa" && !input.terminationGround) {
+      return { ok: false as const, error: "TERMINATION_GROUND_REQUIRED" as const };
+    }
+  }
+
+  const isTerminating = input.status === "terminated";
   const patch: Record<string, unknown> = {
     status: input.status,
     commission_rate_bps: input.commissionRateBps,
     contract_ends_on: input.contractEndsOn,
     coupon_id: input.couponId,
-    terminated_for_cause: input.terminatedForCause,
-    termination_reason: input.terminationReason,
+    termination_kind: isTerminating ? input.terminationKind : null,
+    termination_ground:
+      isTerminating && input.terminationKind === "justa_causa"
+        ? input.terminationGround
+        : null,
+    // Kept in sync for the existing reads; the pair above is the authority.
+    terminated_for_cause: isTerminating && input.terminationKind === "justa_causa",
+    termination_reason: isTerminating ? input.terminationReason : null,
   };
   // Stamp the transition timestamps only as they actually happen, so a later
   // edit can't quietly rewrite when someone was activated or terminated.
@@ -184,6 +225,8 @@ export async function atualizarEmbaixador(
   await writeAudit(userId, "ambassador_update", {
     ambassador_id: ambassadorId,
     code: before?.code ?? null,
+    termination_kind: isTerminating ? input.terminationKind : null,
+    termination_ground: isTerminating ? input.terminationGround : null,
     changes: {
       status: { before: before?.status ?? null, after: input.status },
       commission_rate_bps: {
@@ -302,20 +345,54 @@ export async function registrarNota(
   return { ok: true as const };
 }
 
-/** Reject the note (cl. 7.6): the balance stays put and rolls to the next cycle. */
+/**
+ * Reject the note (cl. 7.6). The rejected payout stays as the record of what
+ * happened, but its commissions are DETACHED and returned to 'liberada'.
+ *
+ * That detachment is the whole point. A closing only ever picks up commissions
+ * with `payout_id IS NULL`, so leaving them attached to a rejected payout
+ * stranded the balance until someone noticed and reopened by hand — while both
+ * the panel and the Guia promise "nota atrasada ou corrigida: processada no
+ * ciclo seguinte, sem perda ou expiração do saldo" (cl. 7.6, cl. 12.5).
+ *
+ * The balance rolls into the next month's closing, which is a different
+ * reference month, so the one-payout-per-month index is not in the way.
+ */
 export async function rejeitarNota(payoutId: number, reason: string) {
   const { userId, admin } = await requireBilling();
   if (!reason.trim()) return { ok: false as const, error: "REASON_REQUIRED" as const };
 
+  const { data: payout } = await admin
+    .from("payouts")
+    .select("id, status")
+    .eq("id", payoutId)
+    .maybeSingle();
+  if (!payout) return { ok: false as const, error: "PAYOUT_NOT_FOUND" as const };
+  // Once paid, a correction is a negative adjustment, never a rewrite (cl. 6).
+  if (payout.status === "paga") return { ok: false as const, error: "ALREADY_PAID" as const };
+
   const { error } = await admin
     .from("payouts")
     .update({ status: "rejeitada", rejection_reason: reason.trim() })
-    .eq("id", payoutId);
+    .eq("id", payoutId)
+    .neq("status", "paga");
   if (error) throw new Error(error.message);
 
-  await writeAudit(userId, "ambassador_payout_rejected", { payout_id: payoutId, reason });
+  // Release the commissions back into the pool so the next closing sweeps them.
+  const { data: freed, error: cErr } = await admin
+    .from("commissions")
+    .update({ payout_id: null, status: "liberada" })
+    .eq("payout_id", payoutId)
+    .select("id");
+  if (cErr) throw new Error(cErr.message);
+
+  await writeAudit(userId, "ambassador_payout_rejected", {
+    payout_id: payoutId,
+    reason,
+    commissions_returned: freed?.length ?? 0,
+  });
   revalidatePath("/admin/embaixadores");
-  return { ok: true as const };
+  return { ok: true as const, returned: freed?.length ?? 0 };
 }
 
 /** Payment made (by the 15th, cl. 7.5). Closes the payout and its commissions. */
@@ -384,6 +461,81 @@ export async function reabrirFechamento(payoutId: number) {
   await writeAudit(userId, "ambassador_payout_reopened", {
     payout_id: payoutId,
     ambassador_id: payout.ambassador_id,
+  });
+  revalidatePath("/admin/embaixadores");
+  return { ok: true as const };
+}
+
+/**
+ * Post a manual adjustment to the ledger — the mechanism for a PARTIAL refund.
+ *
+ * `orders` has no partial state (status is all-or-nothing) and no refunded-amount
+ * column, so the platform cannot compute a proportional reversal on its own.
+ * Rather than build partial refunds into checkout — outside the pilot's scope —
+ * the correction is posted here against the original order, which is what the
+ * ledger's `adjustment` kind already exists for (cl. 6).
+ *
+ * Enter the amount to REVERSE as a positive number; it is stored negative so the
+ * ledger still sums to the balance. It lands 'liberada' and therefore joins the
+ * next closing, reducing that payout instead of being invoiced separately.
+ *
+ * Guarded against the double-discount Karina asked about: an order whose sale
+ * commission is already 'cancelada' has been reversed in full by the trigger, so
+ * adjusting it again would take the money twice.
+ */
+export async function registrarAjuste(
+  ambassadorId: number,
+  input: { reverseCents: number; reason: string; orderId: string | null },
+) {
+  const { userId, admin } = await requireBilling();
+
+  const reason = input.reason.trim();
+  if (!reason) return { ok: false as const, error: "REASON_REQUIRED" as const };
+  if (!Number.isInteger(input.reverseCents) || input.reverseCents <= 0) {
+    return { ok: false as const, error: "AMOUNT_INVALID" as const };
+  }
+
+  let rateBps = 0;
+  if (input.orderId) {
+    const { data: sale } = await admin
+      .from("commissions")
+      .select("id, ambassador_id, amount_cents, status, rate_bps")
+      .eq("order_id", input.orderId)
+      .eq("kind", "sale")
+      .maybeSingle();
+    if (!sale) return { ok: false as const, error: "ORDER_NOT_ATTRIBUTED" as const };
+    if (sale.ambassador_id !== ambassadorId) {
+      return { ok: false as const, error: "ORDER_OTHER_AMBASSADOR" as const };
+    }
+    if (sale.status === "cancelada") {
+      return { ok: false as const, error: "ALREADY_FULLY_REVERSED" as const };
+    }
+    if (input.reverseCents > (sale.amount_cents as number)) {
+      return { ok: false as const, error: "EXCEEDS_COMMISSION" as const };
+    }
+    rateBps = sale.rate_bps as number;
+  }
+
+  const { error } = await admin.from("commissions").insert({
+    ambassador_id: ambassadorId,
+    order_id: input.orderId,
+    kind: "adjustment",
+    status: "liberada",
+    base_amount_cents: 0,
+    rate_bps: rateBps,
+    amount_cents: -input.reverseCents,
+    confirmed_at: new Date().toISOString(),
+    release_on: todayKeyBR(),
+    released_at: new Date().toISOString(),
+    notes: reason,
+  });
+  if (error) throw new Error(error.message);
+
+  await writeAudit(userId, "ambassador_adjustment", {
+    ambassador_id: ambassadorId,
+    order_id: input.orderId,
+    reverse_cents: input.reverseCents,
+    reason,
   });
   revalidatePath("/admin/embaixadores");
   return { ok: true as const };

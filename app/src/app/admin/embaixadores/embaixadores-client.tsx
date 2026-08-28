@@ -9,6 +9,7 @@ import {
   criarEmbaixador,
   atualizarEmbaixador,
   gerarFechamento,
+  registrarAjuste,
   registrarNota,
   rejeitarNota,
   registrarPagamento,
@@ -27,6 +28,10 @@ export interface AmbassadorRow {
   couponId: number | null;
   accessCohortId: number | null;
   terminatedForCause: boolean;
+  terminationKind: string | null;
+  terminationGround: string | null;
+  firstValidSaleAt: string | null;
+  accessEndsOn: string | null;
   terminationReason: string | null;
   clicks: number;
   sales: number;
@@ -82,6 +87,13 @@ const PAYOUT_STYLES: Record<string, string> = {
   rejeitada: "bg-red-500/15 text-red-400",
 };
 
+type TerminationKind = "voluntaria" | "nao_renovacao" | "justa_causa";
+type TerminationGround =
+  | "fraude"
+  | "compartilhamento_conteudo"
+  | "violacao_credenciais"
+  | "falta_uso_curso";
+
 export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -89,6 +101,7 @@ export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: P
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [adjustingId, setAdjustingId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Expected failures come back as { ok: false, error: CODE } — NOT as thrown
@@ -209,6 +222,20 @@ export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: P
                   <Stat label={t("embaixadores.paid")} value={brl(a.paidCents)} />
                 </dl>
 
+                {/* cl. 12.6, computed in the DB. Shown for the embaixador-aluno
+                    only, since no other profile carries course access. */}
+                {a.profileType === "embaixador_aluno" ? (
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    {t("embaixadores.courseAccess")}:{" "}
+                    <strong className="text-foreground">
+                      {a.accessEndsOn
+                        ? new Date(`${a.accessEndsOn}T12:00:00`).toLocaleDateString("pt-BR")
+                        : "—"}
+                    </strong>
+                    {a.firstValidSaleAt ? ` · ${t("embaixadores.firstSaleOn")} ${new Date(a.firstValidSaleAt).toLocaleDateString("pt-BR")}` : ""}
+                  </p>
+                ) : null}
+
                 {editingId === a.id ? (
                   <EditForm
                     row={a}
@@ -239,7 +266,25 @@ export function EmbaixadoresClient({ ambassadors, payouts, cohorts, coupons }: P
                   >
                     {t("embaixadores.finalSettlement")}
                   </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => setAdjustingId(adjustingId === a.id ? null : a.id)}
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border px-3 text-sm disabled:opacity-50"
+                  >
+                    {t("embaixadores.adjustment")}
+                  </button>
                 </div>
+
+                {adjustingId === a.id ? (
+                  <AdjustmentForm
+                    busy={pending}
+                    onCancel={() => setAdjustingId(null)}
+                    onSubmit={(input) =>
+                      run(() => registrarAjuste(a.id, input), () => setAdjustingId(null))
+                    }
+                  />
+                ) : null}
 
                 {isExpanded ? (
                   <PayoutList payouts={mine} busy={pending} run={run} />
@@ -529,7 +574,8 @@ function EditForm({
     commissionRateBps: number;
     contractEndsOn: string | null;
     couponId: number | null;
-    terminatedForCause: boolean;
+    terminationKind: TerminationKind | null;
+    terminationGround: TerminationGround | null;
     terminationReason: string | null;
   }) => void;
 }) {
@@ -538,7 +584,10 @@ function EditForm({
   const [rate, setRate] = useState(String(row.commissionRateBps / 100));
   const [endsOn, setEndsOn] = useState(row.contractEndsOn ?? "");
   const [couponId, setCouponId] = useState(row.couponId ? String(row.couponId) : "");
-  const [forCause, setForCause] = useState(row.terminatedForCause);
+  const [kind, setKind] = useState<TerminationKind | "">(
+    row.terminatedForCause ? "justa_causa" : "",
+  );
+  const [ground, setGround] = useState<TerminationGround | "">("");
   const [reason, setReason] = useState(row.terminationReason ?? "");
 
   return (
@@ -569,15 +618,33 @@ function EditForm({
 
       {status === "terminated" ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={forCause} onChange={(e) => setForCause(e.target.checked)} className="h-4 w-4" />
-            {t("embaixadores.forCause")}
-          </label>
+          <Field label={t("embaixadores.terminationKind")}>
+            <select value={kind} onChange={(e) => setKind(e.target.value as TerminationKind | "")} className={inputCls}>
+              <option value="">—</option>
+              <option value="voluntaria">{t("embaixadores.terminationKinds.voluntaria")}</option>
+              <option value="nao_renovacao">{t("embaixadores.terminationKinds.nao_renovacao")}</option>
+              <option value="justa_causa">{t("embaixadores.terminationKinds.justa_causa")}</option>
+            </select>
+          </Field>
+          {/* cl. 12.6 lists four grounds, all tied to use of the course. Access is
+              only cut immediately on one of them, so the ground is required rather
+              than a free-text note. */}
+          {kind === "justa_causa" ? (
+            <Field label={t("embaixadores.terminationGround")}>
+              <select value={ground} onChange={(e) => setGround(e.target.value as TerminationGround | "")} className={inputCls}>
+                <option value="">—</option>
+                <option value="fraude">{t("embaixadores.terminationGrounds.fraude")}</option>
+                <option value="compartilhamento_conteudo">{t("embaixadores.terminationGrounds.compartilhamento_conteudo")}</option>
+                <option value="violacao_credenciais">{t("embaixadores.terminationGrounds.violacao_credenciais")}</option>
+                <option value="falta_uso_curso">{t("embaixadores.terminationGrounds.falta_uso_curso")}</option>
+              </select>
+            </Field>
+          ) : null}
           <Field label={t("embaixadores.terminationReason")}>
             <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
           </Field>
           <p className="text-xs leading-relaxed text-muted-foreground sm:col-span-2">
-            {t("embaixadores.forCauseHint")}
+            {t("embaixadores.terminationHint")}
           </p>
         </div>
       ) : null}
@@ -592,7 +659,9 @@ function EditForm({
               commissionRateBps: Math.round(Number(rate) * 100),
               contractEndsOn: endsOn || null,
               couponId: couponId ? Number(couponId) : null,
-              terminatedForCause: status === "terminated" ? forCause : false,
+              terminationKind: status === "terminated" ? (kind || null) : null,
+              terminationGround:
+                status === "terminated" && kind === "justa_causa" ? (ground || null) : null,
               terminationReason: status === "terminated" ? reason.trim() || null : null,
             })
           }
@@ -626,5 +695,71 @@ function Field({
       {children}
       {hint ? <span className="mt-1 block text-[11px] leading-relaxed">{hint}</span> : null}
     </label>
+  );
+}
+
+/**
+ * Partial refunds have no first-class representation: `orders.status` is
+ * all-or-nothing, so the platform cannot derive a proportional reversal. This
+ * posts the correction against the ledger instead (cl. 6), which is what the
+ * `adjustment` kind is for. Amount is entered in reais and sent as cents.
+ */
+function AdjustmentForm(props: {
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (input: { reverseCents: number; reason: string; orderId: string | null }) => void;
+}) {
+  const { t } = useTranslation();
+  const [amount, setAmount] = useState("");
+  const [orderId, setOrderId] = useState("");
+  const [reason, setReason] = useState("");
+
+  return (
+    <div className="mt-3 space-y-3 rounded-lg border border-border/60 p-3">
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {t("embaixadores.adjustmentHint")}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Field label={t("embaixadores.adjustmentAmount")}>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label={t("embaixadores.adjustmentOrder")}>
+          <input value={orderId} onChange={(e) => setOrderId(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label={t("embaixadores.adjustmentReason")}>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} />
+        </Field>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={props.busy}
+          onClick={() =>
+            props.onSubmit({
+              reverseCents: Math.round(Number(amount) * 100),
+              reason: reason.trim(),
+              orderId: orderId.trim() || null,
+            })
+          }
+          className="min-h-[44px] rounded-lg bg-brand px-4 text-sm font-medium text-white disabled:opacity-50"
+        >
+          {t("embaixadores.save")}
+        </button>
+        <button
+          type="button"
+          onClick={props.onCancel}
+          className="min-h-[44px] rounded-lg border border-border px-4 text-sm"
+        >
+          {t("embaixadores.cancel")}
+        </button>
+      </div>
+    </div>
   );
 }

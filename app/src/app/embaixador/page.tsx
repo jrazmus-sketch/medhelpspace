@@ -11,7 +11,7 @@ import {
   type CommissionRow,
 } from "@/lib/ambassadors/panel";
 import { toDateKeyBR } from "@/lib/br-date";
-import { MousePointerClick, ShoppingBag, Clock, Wallet } from "lucide-react";
+import { MousePointerClick, ShoppingBag, Clock, Wallet, FileText, Download } from "lucide-react";
 
 export const metadata = { title: "Painel do Embaixador — MedHelpSpace" };
 export const dynamic = "force-dynamic";
@@ -159,7 +159,13 @@ export default async function EmbaixadorPage() {
         </div>
       ) : null}
 
-      {/* ── Cupom e link ─────────────────────────────────────────────────── */}
+      {/* ── Cupom e link ─────────────────────────────────────────────────────
+          Shown only while active. A pending ambassador who starts promoting
+          makes sales that generate no commission — the trigger requires an
+          active contract on the date of sale (cl. 4.4) — so handing out the
+          instruments early is how an administrative delay turns into someone
+          working for free. */}
+      {ambassador.status === "active" ? (
       <section className="mt-6 rounded-xl border border-border bg-surface-1 p-4 sm:p-5">
         <h2 className="text-sm font-semibold">Seu cupom e seu link</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -182,6 +188,16 @@ export default async function EmbaixadorPage() {
           depende do navegador em que foi clicado.
         </p>
       </section>
+      ) : (
+        <section className="mt-6 rounded-xl border border-border bg-surface-1 p-4 text-sm leading-relaxed text-muted-foreground sm:p-5">
+          <h2 className="text-sm font-semibold text-foreground">Seu cupom e seu link</h2>
+          <p className="mt-2">
+            {ambassador.status === "pending"
+              ? "Ficam disponíveis assim que sua participação for ativada. Antes disso, uma venda não geraria comissão — por isso eles ainda não aparecem aqui."
+              : "Sua participação foi encerrada, então o cupom e o link não estão mais ativos. As comissões já registradas continuam devidas."}
+          </p>
+        </section>
+      )}
 
       {/* ── Números ──────────────────────────────────────────────────────── */}
       {/* 2-up on phones (a 4-up row would squeeze "R$ 313,22" onto two lines at
@@ -235,13 +251,45 @@ export default async function EmbaixadorPage() {
             .
           </li>
           <li>
-            <strong className="text-foreground">4.</strong> O pagamento é feito até o dia 15.
+            <strong className="text-foreground">4.</strong> O pagamento é feito até o dia 15 —
+            se não for dia útil, no primeiro dia útil seguinte.
           </li>
         </ol>
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
           Neste primeiro ciclo o painel é apenas de consulta — não há botão de saque. Uma nota
-          enviada fora do prazo entra no ciclo seguinte, sem perda de saldo.
+          enviada fora do prazo, ou que precise de correção, entra no ciclo seguinte, sem perda
+          nem expiração do saldo.
         </p>
+      </section>
+
+      {/* ── Guia do Embaixador ───────────────────────────────────────────────
+          Lives here rather than in /app: that layout requires an active cohort
+          membership and most ambassadors hold none. */}
+      <section className="mt-4 rounded-xl border border-border bg-surface-1 p-4 sm:p-5">
+        <h2 className="text-sm font-semibold">Guia do Embaixador</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Como a venda é atribuída, quando a comissão é liberada, e como enviar a nota fiscal
+          para receber.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href="/guia-do-embaixador.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-white"
+          >
+            <FileText className="h-4 w-4" />
+            Abrir o guia
+          </a>
+          <a
+            href="/guia-do-embaixador.pdf"
+            download
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium"
+          >
+            <Download className="h-4 w-4" />
+            Baixar PDF
+          </a>
+        </div>
       </section>
 
       {/* ── Tabela de preços (fonte oficial, cl. 4.3) ────────────────────── */}

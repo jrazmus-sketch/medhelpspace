@@ -29,7 +29,7 @@ export default async function EmbaixadoresPage() {
       admin
         .from("ambassadors")
         .select(
-          "id, user_id, code, status, profile_type, commission_rate_bps, contract_ends_on, coupon_id, access_cohort_id, terminated_for_cause, termination_reason, created_at",
+          "id, user_id, code, status, profile_type, commission_rate_bps, contract_ends_on, coupon_id, access_cohort_id, terminated_for_cause, termination_kind, termination_ground, first_valid_sale_at, termination_reason, created_at",
         )
         .order("created_at", { ascending: false }),
       admin.from("commissions").select("id, ambassador_id, kind, status, amount_cents, release_on, payout_id"),
@@ -61,6 +61,18 @@ export default async function EmbaixadoresPage() {
     clickCounts.set(id, (clickCounts.get(id) ?? 0) + 1);
   }
 
+  // cl. 12.6 is evaluated in the DB so the panel can never disagree with the
+  // contract. One RPC per ambassador is fine at pilot scale (a dozen rows).
+  const accessEnds = new Map<number, string | null>();
+  await Promise.all(
+    (ambassadors ?? []).map(async (a) => {
+      const { data } = await admin.rpc("ambassador_access_ends_on", {
+        p_ambassador_id: a.id as number,
+      });
+      accessEnds.set(a.id as number, (data as string | null) ?? null);
+    }),
+  );
+
   const rows: AmbassadorRow[] = (ambassadors ?? []).map((a) => {
     const mine = (commissions ?? []).filter((c) => c.ambassador_id === a.id);
     const sumBy = (status: string) =>
@@ -78,6 +90,10 @@ export default async function EmbaixadoresPage() {
       couponId: (a.coupon_id as number | null) ?? null,
       accessCohortId: (a.access_cohort_id as number | null) ?? null,
       terminatedForCause: Boolean(a.terminated_for_cause),
+      terminationKind: (a.termination_kind as string | null) ?? null,
+      terminationGround: (a.termination_ground as string | null) ?? null,
+      firstValidSaleAt: (a.first_valid_sale_at as string | null) ?? null,
+      accessEndsOn: accessEnds.get(a.id as number) ?? null,
       terminationReason: (a.termination_reason as string | null) ?? null,
       clicks: clickCounts.get(a.id as number) ?? 0,
       sales: mine.filter((c) => c.kind === "sale" && c.status !== "cancelada").length,

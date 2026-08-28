@@ -1153,7 +1153,7 @@
     "title": "Ambassadors",
     "new": "New ambassador",
     "empty": "No ambassadors yet.",
-    "cycleHint": "Monthly closing: commissions released up to the last day of the previous month. The statement goes out by the 2nd business day, the invoice arrives by the 5th, and payment is made by the 15th.",
+    "cycleHint": "Monthly closing: commissions released up to the last day of the previous month. The statement goes out by the 2nd business day, the invoice arrives by the 5th business day, and payment is made by the 15th — the next business day if the 15th is not one. A late or corrected invoice rolls into the next cycle, with no loss of balance.",
     "edit": "Edit",
     "save": "Save",
     "cancel": "Cancel",
@@ -1186,9 +1186,7 @@
       "active": "Active",
       "terminated": "Terminated"
     },
-    "forCause": "Terminated for cause",
     "terminationReason": "Reason",
-    "forCauseHint": "Termination for cause ends course access immediately but does NOT void legitimate prior commissions — only fraudulent or irregular sales lose theirs (cl. 6).",
     "closeMonth": "Close the month",
     "finalSettlement": "Final settlement",
     "finalSettlementHint": "Pays the balance even below R$ 200.00, when the contract ends (cl. 7.3).",
@@ -1220,8 +1218,39 @@
       "MONTH_ALREADY_SETTLED": "This month already has a closing.",
       "PAYOUT_NOT_FOUND": "Payout not found.",
       "ALREADY_PAID": "This payout has already been paid.",
-      "REASON_REQUIRED": "Enter the rejection reason."
-    }
+      "REASON_REQUIRED": "Enter the rejection reason.",
+      "COUPON_REQUIRED": "Link the 5% coupon before activating the ambassador.",
+      "ACCESS_COHORT_REQUIRED": "An ambassador-student needs an access cohort before activation.",
+      "TERMINATION_KIND_REQUIRED": "Select the termination type.",
+      "TERMINATION_GROUND_REQUIRED": "Termination for cause requires one of the cl. 12.6 grounds.",
+      "NOT_FOUND": "Ambassador not found.",
+      "AMOUNT_INVALID": "Enter a positive amount to reverse.",
+      "ORDER_NOT_ATTRIBUTED": "That order has no attributed commission.",
+      "ORDER_OTHER_AMBASSADOR": "That order belongs to another ambassador.",
+      "ALREADY_FULLY_REVERSED": "That order's commission was already reversed in full.",
+      "EXCEEDS_COMMISSION": "The amount exceeds the order's original commission."
+    },
+    "terminationKind": "Termination type",
+    "terminationKinds": {
+      "voluntaria": "Voluntary exit",
+      "nao_renovacao": "Non-renewal",
+      "justa_causa": "Termination for cause"
+    },
+    "terminationGround": "Ground (cl. 12.6)",
+    "terminationGrounds": {
+      "fraude": "Fraud",
+      "compartilhamento_conteudo": "Content sharing",
+      "violacao_credenciais": "Credential violation",
+      "falta_uso_curso": "Other fault tied to course use"
+    },
+    "terminationHint": "An ambassador-student's access follows cl. 12.6: on voluntary exit or non-renewal they keep access to the end of the cohort if 90 days of contract or a first valid sale has passed — whichever came first. Immediate termination applies only on the four grounds above. No termination voids commissions already earned (cl. 12.5).",
+    "adjustment": "Post adjustment (partial refund)",
+    "adjustmentHint": "Enter the commission amount to reverse. It posts as a negative entry and reduces the next payout.",
+    "adjustmentAmount": "Amount to reverse (R$)",
+    "adjustmentOrder": "Order ID (optional)",
+    "adjustmentReason": "Reason",
+    "courseAccess": "Course access until",
+    "firstSaleOn": "first sale on"
   },
   "coupons": {
     "title": "Coupons",
