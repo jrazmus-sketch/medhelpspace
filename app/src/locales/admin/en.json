@@ -1901,7 +1901,8 @@
       "addClue": "Add clue",
       "confidenceHint": "No content: the student reports low, medium or high before seeing the previous decision's answer.",
       "timerHint": "Pressure, not a lock: at zero the student still answers. Applies to the next decision.",
-      "unmatched": "\"{{value}}\" is not in the list — link it manually."
+      "unmatched": "\"{{value}}\" is not in the list — link it manually.",
+      "republished": "Changes published — new revision created."
     },
     "importer": {
       "title": "Import cases",
@@ -1942,7 +1943,8 @@
         "skip_published": "skipped (published)",
         "update_published": "updates the published one",
         "error": "has errors"
-      }
+      },
+      "mixedNote": "New cases landed as drafts. Already-published ones were updated live, with a new revision."
     },
     "all": "All"
   }

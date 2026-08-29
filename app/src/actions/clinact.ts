@@ -89,6 +89,20 @@ export async function saveCaseDraft(input: unknown): Promise<SaveResult> {
 
 export type PublishResult = { ok: true; revision: number } | { ok: false; error: "blocked" | "not_found"; blockers?: string[] };
 
+/**
+ * Validate an UNSAVED document (with the CDN media probe) so the editor can
+ * refuse before anything lands — on a published case the save itself is the
+ * republish, so validating after saving would be too late.
+ */
+export async function validateCaseDoc(input: unknown): Promise<{ blockers: string[] }> {
+  await requireContentAdmin();
+  const parsed = CaseDocSchema.safeParse(input);
+  if (!parsed.success) return { blockers: [parsed.error.issues[0]?.message ?? "Documento inválido"] };
+  const doc = parsed.data as CaseDoc;
+  const exists = await probeMedia(doc);
+  return { blockers: publishBlockers(validateForPublish(doc, (url) => exists.get(url) ?? false)) };
+}
+
 export async function publishCase(caseId: number): Promise<PublishResult> {
   const { userId, admin } = await requireContentAdmin();
   const doc = await getCaseDoc(caseId);
@@ -437,11 +451,12 @@ export async function restartAttempt(caseId: number, isPreview: boolean): Promis
   // resumable (finished_at stays null, so it never becomes canonical).
   const open = await getOpenAttempt(ctx.userId, caseId, isPreview);
   if (open) await ctx.admin.from("clinact_attempts").update({ state: { ...open.state, abandoned: true } }).eq("id", open.id);
-  const { data, error } = await ctx.admin
-    .from("clinact_attempts")
-    .insert({ user_id: ctx.userId, case_id: caseId, case_revision: c.revision, is_preview: isPreview, state: emptyState() })
-    .select("id")
-    .single();
+  const { data, error } = await ctx.admin.rpc("clinact_open_attempt", {
+    p_user: ctx.userId,
+    p_case_id: caseId,
+    p_is_preview: isPreview,
+    p_revision: c.revision,
+  });
   if (error) throw error;
-  return { attemptId: data.id as number };
+  return { attemptId: (data as AttemptRow).id };
 }

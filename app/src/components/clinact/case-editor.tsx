@@ -26,6 +26,7 @@ import { ConfirmModal } from "@/components/admin/confirm-modal";
 import { MediaListField } from "./media-field";
 import {
   saveCaseDraft,
+  validateCaseDoc,
   publishCase,
   unpublishCase,
   archiveCase,
@@ -59,7 +60,7 @@ const inputCls =
 const btn = "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3.5 text-sm font-medium transition-colors disabled:opacity-50";
 const btnPrimary = `${btn} bg-brand text-brand-fg hover:opacity-90`;
 const btnGhost = `${btn} border border-border hover:bg-accent`;
-const iconBtn = "inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30";
+const iconBtn = "inline-flex h-11 w-11 shrink-0 sm:h-9 sm:w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30";
 
 type Taxonomy = { specialties: { id: number; name: string }[]; topics: { id: number; name: string; specialty_id: number | null }[] };
 
@@ -141,6 +142,23 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
 
   function onPublish() {
     startTransition(async () => {
+      // Validate what is on screen BEFORE it lands: on a published case the
+      // save itself is the republish (revision += 1, snapshot), so a blocked
+      // document must never reach the DB.
+      const v = await validateCaseDoc(normalizeForSave(doc));
+      if (v.blockers.length) {
+        setBlockers(v.blockers);
+        setTab("verificar");
+        return;
+      }
+      setBlockers(null);
+      if (status === "published") {
+        const id = await doSave();
+        if (!id) return;
+        toast.success(t("clinact.editor.republished"));
+        router.refresh();
+        return;
+      }
       const id = dirty || !doc.id ? await doSave() : doc.id;
       if (!id) return;
       const r = await publishCase(id);
@@ -149,7 +167,6 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
         setTab("verificar");
         return;
       }
-      setBlockers(null);
       setDoc((d) => ({ ...d, status: "published", revision: r.revision }));
       toast.success(t("clinact.editor.published", { revision: r.revision }));
       router.refresh();
@@ -435,13 +452,17 @@ function normalizeForSave(doc: CaseDoc): CaseDoc {
   };
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, children, group = false }: { label: string; hint?: string; children: React.ReactNode; group?: boolean }) {
+  // `group` renders a div instead of a <label>: composite fields (media rows,
+  // item lists) hold several controls and a wrapping label would give the
+  // first <select> the whole row's text as its accessible name.
+  const Tag = group ? "div" : "label";
   return (
-    <label className="block">
+    <Tag className="block">
       <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
       {children}
       {hint ? <span className="mt-1 block text-xs text-muted-foreground">{hint}</span> : null}
-    </label>
+    </Tag>
   );
 }
 
@@ -518,7 +539,7 @@ function StepCard(props: {
         {step.kind === "confianca" ? <p className="text-sm text-muted-foreground">{t("clinact.editor.confidenceHint")}</p> : null}
         {step.kind === "cronometro" ? <p className="text-sm text-muted-foreground">{t("clinact.editor.timerHint")}</p> : null}
         {fields.map((f) => (
-          <Field key={f.key} label={t(`clinact.fields.${f.labelKey}`)}>
+          <Field key={f.key} label={t(`clinact.fields.${f.labelKey}`)} group={f.kind === "media" || f.kind === "items"}>
             {f.kind === "textarea" ? (
               <textarea value={String(content[f.key] ?? "")} onChange={(e) => setContent(f.key, e.target.value)} rows={4} className={inputCls} />
             ) : f.kind === "text" ? (
@@ -559,7 +580,7 @@ function ItemsField({ value, onChange }: { value: string[]; onChange: (v: string
           <button className={`${iconBtn} hover:text-destructive`} onClick={() => onChange(value.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></button>
         </div>
       ))}
-      <button onClick={() => onChange([...value, ""])} className="inline-flex min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><Plus className="h-4 w-4" /> {t("clinact.editor.addItem")}</button>
+      <button onClick={() => onChange([...value, ""])} className="inline-flex min-h-11 sm:min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><Plus className="h-4 w-4" /> {t("clinact.editor.addItem")}</button>
       <p className="text-xs text-muted-foreground">{t("clinact.editor.orderHint")}</p>
     </div>
   );
@@ -606,7 +627,7 @@ function OptionsEditor({ options, scene, sceneKeys, onChange }: { options: Optio
         </div>
       ))}
       {options.length < 5 ? (
-        <button onClick={() => onChange([...options, { position: options.length, label: "", is_correct: options.length === 0, effect: {} }])} className="inline-flex min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <button onClick={() => onChange([...options, { position: options.length, label: "", is_correct: options.length === 0, effect: {} }])} className="inline-flex min-h-11 sm:min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <Plus className="h-4 w-4" /> {t("clinact.editor.addOption")}
         </button>
       ) : null}
@@ -621,7 +642,7 @@ function RevealsEditor({ option, onChange }: { option: OptionDoc; onChange: (p: 
   const setReveals = (r: typeof reveals) => onChange({ effect: { ...option.effect, revela: r.length ? r : undefined } });
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="text-xs text-muted-foreground hover:text-foreground">
+      <button onClick={() => setOpen(true)} className="inline-flex min-h-11 items-center text-xs text-muted-foreground hover:text-foreground sm:min-h-9">
         + {t("clinact.fields.reveals")}
       </button>
     );
@@ -643,7 +664,7 @@ function RevealsEditor({ option, onChange }: { option: OptionDoc; onChange: (p: 
           <MediaListField single value={r.midia ? [r.midia] : []} onChange={(m) => setReveals(reveals.map((x, j) => (j === i ? { ...x, midia: m[0] } : x)))} />
         </div>
       ))}
-      <button onClick={() => setReveals([...reveals, { cat: "encontramos", texto: "" }])} className="inline-flex min-h-9 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /> {t("clinact.editor.addReveal")}</button>
+      <button onClick={() => setReveals([...reveals, { cat: "encontramos", texto: "" }])} className="inline-flex min-h-11 sm:min-h-9 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Plus className="h-3.5 w-3.5" /> {t("clinact.editor.addReveal")}</button>
     </div>
   );
 }
@@ -673,7 +694,7 @@ function CluesEditor({ clues, onChange }: { clues: ClueDoc[]; onChange: (c: Clue
           <MediaListField single value={c.media ? [c.media] : []} onChange={(m) => upd(i, { media: m[0] ?? null })} />
         </div>
       ))}
-      <button onClick={() => onChange([...clues, { position: clues.length, label: "", is_red_herring: false }])} className="inline-flex min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><Plus className="h-4 w-4" /> {t("clinact.editor.addClue")}</button>
+      <button onClick={() => onChange([...clues, { position: clues.length, label: "", is_red_herring: false }])} className="inline-flex min-h-11 sm:min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground"><Plus className="h-4 w-4" /> {t("clinact.editor.addClue")}</button>
     </div>
   );
 }

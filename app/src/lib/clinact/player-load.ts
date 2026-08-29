@@ -6,7 +6,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildScreens, buildReveal, emptyState, stepKey, stripAnswers, type PublicStep, type Reveal, type Screen } from "./engine";
-import { getOpenAttempt, type AttemptRow } from "./queries";
+import { type AttemptRow } from "./queries";
 import { type AttemptState, type CaseDoc, type ClueDoc, type StepDoc } from "./types";
 
 export type PublicScreen = Omit<Screen, "decision" | "after"> & {
@@ -36,16 +36,17 @@ export type PlayerPayload = {
 
 export async function loadPlayer(doc: CaseDoc, userId: string, isPreview: boolean): Promise<PlayerPayload> {
   const admin = createAdminClient();
-  let attempt = await getOpenAttempt(userId, doc.id!, isPreview);
-  if (!attempt) {
-    const { data, error } = await admin
-      .from("clinact_attempts")
-      .insert({ user_id: userId, case_id: doc.id, case_revision: doc.revision ?? 0, is_preview: isPreview, state: emptyState() })
-      .select("*")
-      .single();
-    if (error) throw error;
-    attempt = data as AttemptRow;
-  }
+  // Idempotent: a partial unique index + ON CONFLICT DO NOTHING in the RPC
+  // guarantee one resumable attempt per (user, case, preview) even when Next
+  // prefetches or double-renders this page.
+  const { data, error } = await admin.rpc("clinact_open_attempt", {
+    p_user: userId,
+    p_case_id: doc.id,
+    p_is_preview: isPreview,
+    p_revision: doc.revision ?? 0,
+  });
+  if (error) throw error;
+  const attempt = data as AttemptRow;
   const state = (Object.keys(attempt.state ?? {}).length ? attempt.state : emptyState()) as AttemptState;
   const screens = buildScreens(doc.steps);
 

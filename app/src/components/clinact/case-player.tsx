@@ -280,19 +280,36 @@ function ScreenView({
 function BottomBar({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(0);
+  // The cookie consent card (z-70, fixed bottom) reserves its own height as
+  // body padding-bottom. Read that and sit ABOVE it, so a first-visit student
+  // never finds "Confirmar decisão" underneath the notice.
+  const [lift, setLift] = useState(0);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const measure = () => {
       const fixed = window.getComputedStyle(el).position === "fixed";
-      setH(fixed ? el.offsetHeight : 0);
-    });
+      const pad = fixed ? parseFloat(document.body.style.paddingBottom || "0") || 0 : 0;
+      setLift(pad);
+      setH(fixed ? el.offsetHeight + pad : 0);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    const mo = new MutationObserver(measure);
+    mo.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
   }, []);
   return (
     <>
-      <div ref={ref} className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0">
+      <div
+        ref={ref}
+        style={lift ? { bottom: lift } : undefined}
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0"
+      >
         {children}
       </div>
       <div aria-hidden style={{ height: h }} />

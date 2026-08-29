@@ -1901,7 +1901,8 @@
       "addClue": "Adicionar pista",
       "confidenceHint": "Sem conteúdo: o aluno informa baixa, média ou alta antes de ver a resposta da decisão anterior.",
       "timerHint": "Pressão, não trava: ao zerar, o aluno continua respondendo. Vale para a próxima decisão.",
-      "unmatched": "\"{{value}}\" não está na lista — ligue manualmente."
+      "unmatched": "\"{{value}}\" não está na lista — ligue manualmente.",
+      "republished": "Alterações publicadas — nova revisão criada."
     },
     "importer": {
       "title": "Importar casos",
@@ -1942,7 +1943,8 @@
         "skip_published": "pulado (publicado)",
         "update_published": "atualiza o publicado",
         "error": "com erro"
-      }
+      },
+      "mixedNote": "Os casos novos entraram como rascunho. Os já publicados foram atualizados no ar, com nova revisão."
     },
     "all": "Todos"
   }

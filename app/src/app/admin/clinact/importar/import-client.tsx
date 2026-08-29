@@ -106,15 +106,15 @@ export function ImportClient() {
       {/* Guide + templates: reachable from the screen itself (§3.3) */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface-1 p-3 text-sm">
         <FileText className="h-4 w-4 text-muted-foreground" />
-        <a href="/admin/clinact/modelos/guia?ver=1" target="_blank" rel="noopener" className="min-h-9 leading-9 text-brand underline-offset-2 hover:underline">{t("clinact.importer.guide")}</a>
+        <a href="/admin/clinact/modelos/guia?ver=1" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-brand underline-offset-2 hover:underline">{t("clinact.importer.guide")}</a>
         <span className="text-muted-foreground">·</span>
-        <a href="/admin/clinact/modelos/temas?ver=1" target="_blank" rel="noopener" className="min-h-9 leading-9 text-brand underline-offset-2 hover:underline">{t("clinact.importer.topics")}</a>
+        <a href="/admin/clinact/modelos/temas?ver=1" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-brand underline-offset-2 hover:underline">{t("clinact.importer.topics")}</a>
         <span className="text-muted-foreground">·</span>
         <span className="text-muted-foreground">{t("clinact.importer.templates")}:</span>
         {FORMATS.map((f) => (
           <span key={f} className="inline-flex items-center gap-1">
             <a href={`/admin/clinact/modelos/${f}?modelo=1`} className="min-h-9 rounded-md border border-border px-2 leading-9 hover:bg-accent">{FORMAT_LABELS[f]}</a>
-            <a href={`/admin/clinact/modelos/${f}?ver=1`} target="_blank" rel="noopener" className="min-h-9 leading-9 text-xs text-muted-foreground hover:text-foreground" title={t("clinact.importer.fullExample")}>({t("clinact.importer.example")})</a>
+            <a href={`/admin/clinact/modelos/${f}?ver=1`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-xs text-muted-foreground hover:text-foreground" title={t("clinact.importer.fullExample")}>({t("clinact.importer.example")})</a>
           </span>
         ))}
       </div>
@@ -209,7 +209,9 @@ export function ImportClient() {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-muted-foreground">{t("clinact.importer.draftsNote")}</p>
+          <p className="text-xs text-muted-foreground">
+            {result.imported.some((r) => r.action === "update_published") ? t("clinact.importer.mixedNote") : t("clinact.importer.draftsNote")}
+          </p>
         </div>
       ) : null}
     </div>

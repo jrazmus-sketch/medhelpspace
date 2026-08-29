@@ -10,7 +10,7 @@ export function ClinactShell({ children, isAdmin }: { children: React.ReactNode;
     <div className="flex min-h-screen flex-col bg-background [overflow-x:clip]">
       <header className="sticky top-0 z-50 border-b border-border bg-surface-1">
         <div className="mx-auto flex h-13 max-w-5xl items-center gap-3 px-4">
-          <Link href="/clinact/treinar" className="flex items-center gap-2 font-bold">
+          <Link href="/clinact/treinar" className="flex min-h-11 items-center gap-2 font-bold">
             <span className="text-brand">MedHelp</span>
             <span className="rounded-md bg-brand/15 px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-brand">ClinAct</span>
           </Link>

@@ -40,7 +40,7 @@ export function MediaListField({
         <button
           type="button"
           onClick={add}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-dashed border-border px-3 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex min-h-11 sm:min-h-9 items-center gap-1.5 rounded-md border border-dashed border-border px-3 text-sm text-muted-foreground hover:text-foreground"
         >
           <Plus className="h-4 w-4" /> {t("clinact.media.add")}
         </button>

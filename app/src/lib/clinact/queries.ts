@@ -113,9 +113,11 @@ export async function getOpenAttempt(userId: string, caseId: number, isPreview: 
     .eq("is_preview", isPreview)
     .is("finished_at", null)
     .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data as AttemptRow | null) ?? null;
+    .limit(5);
+  // "Reiniciar" leaves the old attempt open but flagged abandoned (§2.4): it
+  // must never resume and never become canonical.
+  const open = ((data ?? []) as AttemptRow[]).find((a) => !(a.state as { abandoned?: boolean })?.abandoned);
+  return open ?? null;
 }
 
 /** First completed attempt per case for a user (§2.3) — the canonical one. */
