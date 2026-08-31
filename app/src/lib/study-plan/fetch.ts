@@ -159,6 +159,8 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     .from("review_schedule")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)
+    // Revalida types only — ClinAct cases have their own queue.
+    .in("item_type", ["flashcard", "quiz_question", "memorecard"])
     .eq("suspended", false)
     .lte("due_date", todayKey);
 

@@ -242,6 +242,11 @@ Paciente chega à sala vermelha. PA 88/54, FC 128, SpO₂ 86%.
 
 **Você não escreve prontuário.** Ele é a leitura do que as condutas revelaram.
 
+**Como o sistema navega as cenas:** uma cena que aparece em algum `vai para:` é
+uma cena de desvio — o fluxo normal (as condutas em branco) **pula** essas cenas
+e segue para a próxima cena comum. Ou seja: escreva o desvio no lugar onde ele
+acontece na história, como no modelo; quem não desviou nunca passa por ele.
+
 **Convergência é o padrão.** Um desvio pode durar no máximo uma cena antes de
 voltar ao caminho comum. Isso é proposital: oito cenas com três condutas cada dão
 24 blocos de texto para escrever — não 6.561 histórias.

@@ -633,7 +633,7 @@ export async function getMemberDetail(userId: string): Promise<MemberDetail> {
       .eq("id", userId)
       .single(),
     admin.rpc("get_site_completion", { p_user: userId }),
-    admin.from("review_schedule").select("due_date, suspended").eq("user_id", userId),
+    admin.from("review_schedule").select("due_date, suspended").eq("user_id", userId).in("item_type", ["flashcard", "quiz_question", "memorecard"]),
     admin
       .from("email_log")
       .select("id, kind, sent_at")

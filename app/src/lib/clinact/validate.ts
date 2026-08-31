@@ -98,52 +98,69 @@ export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null)
     if (keys.some((k) => !k)) add(false, "Toda cena precisa de um apelido");
 
     const idx = new Map(keys.map((k, i) => [k, i]));
-    const next = (i: number) => (i + 1 < scenes.length ? i + 1 : null);
-    const edges = new Map<number, Set<number>>();
+    // Detour scenes = targeted by any "vai para". The normal flow SKIPS them:
+    // a blank conduct falls to the next NON-detour scene (or the end of the
+    // case). This matches the guide's inline template (chegada → deterioracao
+    // → investigacao): chegada's good conducts land on investigacao.
+    const targeted = new Set<number>();
+    for (const sc of scenes) {
+      for (const o of sc.options) {
+        if (o.next_scene_key) {
+          const t = idx.get(o.next_scene_key);
+          if (t === undefined) add(false, `Cena "${sc.scene_key}": "vai para: ${o.next_scene_key}" aponta para uma cena que não existe`);
+          else targeted.add(t);
+        }
+      }
+    }
+    /** First non-detour scene after i; null = the case ends. */
+    const fallNext = (i: number): number | null => {
+      for (let j = i + 1; j < scenes.length; j++) if (!targeted.has(j)) return j;
+      return null;
+    };
+    const edges = new Map<number, Set<number | null>>();
     for (let i = 0; i < scenes.length; i++) {
-      const targets = new Set<number>();
+      const out = new Set<number | null>();
       for (const o of scenes[i].options) {
         if (o.next_scene_key) {
           const t = idx.get(o.next_scene_key);
-          if (t === undefined) add(false, `Cena "${keys[i]}": "vai para: ${o.next_scene_key}" aponta para uma cena que não existe`);
-          else targets.add(t);
+          if (t !== undefined) out.add(t);
         } else {
-          const n = next(i);
-          if (n !== null) targets.add(n);
+          out.add(fallNext(i));
         }
       }
-      edges.set(i, targets);
+      edges.set(i, out);
     }
     // Reachability from the first scene.
     const reached = new Set<number>([0]);
     const stack = [0];
     while (stack.length) {
       const cur = stack.pop()!;
-      for (const t of edges.get(cur) ?? []) if (!reached.has(t)) { reached.add(t); stack.push(t); }
+      for (const t of edges.get(cur) ?? []) if (t !== null && !reached.has(t)) { reached.add(t); stack.push(t); }
     }
     for (let i = 0; i < scenes.length; i++) if (!reached.has(i)) add(false, `Cena "${keys[i]}" nunca é alcançada`);
-    // Every path reaches the terminal scene: with convergence (fall-through)
-    // that fails only when a detour points backwards forever or dead-ends.
-    const last = scenes.length - 1;
-    const canReachEnd = new Set<number>([last]);
+    // Every reached scene must have a path to the end of the case (null edge).
+    const canEnd = new Set<number>();
     let changed = true;
     while (changed) {
       changed = false;
       for (let i = 0; i < scenes.length; i++) {
-        if (canReachEnd.has(i)) continue;
-        for (const t of edges.get(i) ?? []) if (canReachEnd.has(t)) { canReachEnd.add(i); changed = true; break; }
+        if (canEnd.has(i)) continue;
+        for (const t of edges.get(i) ?? []) {
+          if (t === null || canEnd.has(t)) { canEnd.add(i); changed = true; break; }
+        }
       }
     }
-    for (let i = 0; i < scenes.length; i++) if (reached.has(i) && !canReachEnd.has(i)) add(false, `Cena "${keys[i]}": há um caminho que nunca chega ao fim do caso`);
-    // Detour depth ≤ 1: a `vai para` target must fall back into the main line
-    // (i.e. its own fall-through) within one scene — its options may not detour again.
-    for (let i = 0; i < scenes.length; i++) {
-      for (const o of scenes[i].options) {
+    for (let i = 0; i < scenes.length; i++) if (reached.has(i) && !canEnd.has(i)) add(false, `Cena "${keys[i]}": há um caminho que nunca chega ao fim do caso`);
+    // Detour depth ≤ 1 ("um desvio dura no máximo uma cena"): a detour's
+    // explicit jumps may not land on another detour scene. (Its blank
+    // conducts already converge — fallNext never returns a detour.)
+    for (const t of targeted) {
+      for (const o of scenes[t].options) {
         if (!o.next_scene_key) continue;
-        const t = idx.get(o.next_scene_key);
-        if (t === undefined) continue;
-        const detourAgain = scenes[t].options.some((x) => x.next_scene_key && idx.get(x.next_scene_key) !== next(t));
-        if (detourAgain) add(false, `Cena "${keys[i]}" → "${keys[t]}": desvio com mais de uma cena antes de voltar ao caminho comum`);
+        const dest = idx.get(o.next_scene_key);
+        if (dest !== undefined && targeted.has(dest)) {
+          add(false, `Cena "${keys[t]}" → "${keys[dest]}": desvio com mais de uma cena antes de voltar ao caminho comum`);
+        }
       }
     }
   }

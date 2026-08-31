@@ -6,8 +6,7 @@
  * up to a decision, the decision itself, its modifiers (cronômetro before it,
  * confiança after it), and the post-answer blocks revealed once answered
  * (feedback, custo do atraso, ...). Blocks after the last decision form the
- * closing screen (leve deste caso). One engine, four formats; only the
- * Decisão em 30 Segundos path is exercised in build step 1.
+ * closing screen (leve deste caso). One engine, four formats.
  */
 
 import { optionWeight, orderWeight } from "./scoring";
@@ -81,12 +80,13 @@ export function emptyState(): AttemptState {
   return { cursor: 0, answered: {}, revealed: [], estado: {}, relogio: 0, scene_key: null };
 }
 
+/**
+ * Finished = the cursor reached the closing screen. NOT "every decision
+ * answered": convergent branching (Clínica em Cena) legitimately skips
+ * scenes, and the score is the mean over the decisions actually taken.
+ */
 export function isFinished(state: AttemptState, screens: Screen[]): boolean {
-  return state.cursor >= screens.length - 1 && screens[screens.length - 1]?.closing === true && allDecisionsAnswered(state, screens);
-}
-
-export function allDecisionsAnswered(state: AttemptState, screens: Screen[]): boolean {
-  return screens.every((sc) => !sc.decision || !!state.answered[String(sc.decision.id ?? sc.decision.position)]);
+  return screens[Math.min(state.cursor, screens.length - 1)]?.closing === true;
 }
 
 export function stepKey(step: StepDoc): string {
@@ -145,8 +145,49 @@ export function applyDecision(state: AttemptState, screen: Screen, decision: Dec
   return { state: next, answered, chosen, reveals };
 }
 
+/**
+ * Scenes targeted by any "vai para" are DETOUR scenes: the normal flow never
+ * falls into them (the guide's template authors them INLINE — chegada →
+ * deterioracao → investigacao — and the good conducts of chegada must land on
+ * investigacao). They are only entered by the jump itself; their own blank
+ * conducts converge to the next non-detour scene, closing the detour in one
+ * scene as the guide promises.
+ */
+export function detourSceneKeys(screens: Screen[]): Set<string> {
+  const targeted = new Set<string>();
+  for (const sc of screens) {
+    for (const o of sc.decision?.options ?? []) {
+      if (o.next_scene_key) targeted.add(o.next_scene_key);
+    }
+  }
+  return targeted;
+}
+
+/**
+ * Move to the next screen. Convergence is the default: cursor moves to the
+ * next screen, SKIPPING detour scenes (see detourSceneKeys). A chosen option
+ * with `next_scene_key` diverts to that scene's screen instead — the jump is
+ * derived from the ANSWERED option, so a resumed attempt advances identically
+ * (§2.4).
+ */
 export function advance(state: AttemptState, screens: Screen[]): AttemptState {
-  return { ...state, cursor: Math.min(state.cursor + 1, screens.length - 1) };
+  const cur = screens[state.cursor];
+  if (cur?.decision) {
+    const a = state.answered[stepKey(cur.decision)];
+    if (a?.option_id != null) {
+      const chosen = cur.decision.options.find((o) => (o.id ?? o.position) === a.option_id);
+      if (chosen?.next_scene_key) {
+        const target = screens.findIndex((sc) => sc.decision?.scene_key === chosen.next_scene_key);
+        if (target >= 0 && target !== state.cursor) return { ...state, cursor: target };
+      }
+    }
+  }
+  const detours = detourSceneKeys(screens);
+  let j = state.cursor + 1;
+  while (j < screens.length - 1 && screens[j].decision?.scene_key && detours.has(screens[j].decision!.scene_key!)) {
+    j++;
+  }
+  return { ...state, cursor: Math.min(j, screens.length - 1) };
 }
 
 /** Weights of every answered decision, in screen order — input to caseScore(). */

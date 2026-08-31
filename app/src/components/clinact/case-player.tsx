@@ -10,8 +10,29 @@ import type { PlayerPayload, PublicScreen } from "@/lib/clinact/player-load";
 import type { Reveal } from "@/lib/clinact/engine";
 import { FORMAT_LABELS, type AttemptState, type Confidence, type Media, type StepDoc } from "@/lib/clinact/types";
 import { Prose, MediaView } from "./prose";
+import { CodigoDecifrado } from "./codigo-decifrado";
+import { ClipboardList } from "lucide-react";
 
 // Member-facing: Portuguese only, no i18n (project rule).
+
+const QUALITY_LABEL: Record<string, string> = {
+  ideal: "Ideal",
+  aceitavel: "Aceitável",
+  inadequada: "Inadequada",
+  prejudicial: "Prejudicial",
+};
+const QUALITY_BADGE: Record<string, string> = {
+  ideal: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  aceitavel: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  inadequada: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+  prejudicial: "bg-red-500/15 text-red-700 dark:text-red-300",
+};
+const QUALITY_TONE: Record<string, string> = {
+  ideal: "border-emerald-500/60 bg-emerald-500/10",
+  aceitavel: "border-amber-500/60 bg-amber-500/10",
+  inadequada: "border-orange-500/60 bg-orange-500/10",
+  prejudicial: "border-destructive/60 bg-destructive/10",
+};
 
 const CONF: { v: Confidence; label: string }[] = [
   { v: "baixa", label: "Baixa" },
@@ -26,6 +47,8 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
   const [screens, setScreens] = useState<PublicScreen[]>(payload.screens);
   const [finished, setFinished] = useState(payload.finished);
   const [score, setScore] = useState<number | null>(payload.score);
+  const [clues, setClues] = useState(payload.clues);
+  const [finalKey, setFinalKey] = useState(payload.finalKey);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +78,8 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
       if (r.finished) {
         setFinished(true);
         setScore(r.score);
+        if (r.clues) setClues(r.clues);
+        if (r.finalKey !== undefined) setFinalKey(r.finalKey);
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
@@ -69,6 +94,8 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
       setScreens(payload.screens.map((s) => ({ ...s, after: null })));
       setFinished(false);
       setScore(null);
+      setClues(payload.clues);
+      setFinalKey(payload.finalKey);
     });
   }
 
@@ -88,14 +115,16 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
         </div>
       </header>
 
+      {payload.format === "clinica_em_cena" ? <ProntuarioVivo state={state} /> : null}
+
       {finished || screen.closing ? (
-        <ClosingScreen screen={screen} score={score} takeaway={payload.takeaway} isPreview={payload.isPreview} onRestart={onRestart} pending={pending} clues={payload.clues} subscribeCta={subscribeCta} />
+        <ClosingScreen screen={screen} score={score} takeaway={payload.takeaway} isPreview={payload.isPreview} onRestart={onRestart} pending={pending} clues={clues} subscribeCta={subscribeCta} format={payload.format} finalKey={finalKey} />
       ) : (
         <ScreenView
           key={screen.index}
           screen={screen}
           reveal={reveal}
-          clues={payload.clues}
+          clues={clues}
           onDecision={onDecision}
           onContinue={onContinue}
           pending={pending}
@@ -184,11 +213,13 @@ function ScreenView({
                 const rv = reveal?.options.find((x) => x.id === o.id);
                 const isChosen = reveal ? reveal.chosen_option_id === o.id : chosen === o.id;
                 const tone = reveal
-                  ? rv?.is_correct
-                    ? "border-emerald-500/60 bg-emerald-500/10"
-                    : isChosen
-                      ? "border-destructive/60 bg-destructive/10"
-                      : "border-border opacity-70"
+                  ? isChosen && rv?.quality
+                    ? QUALITY_TONE[rv.quality]
+                    : rv?.is_correct
+                      ? "border-emerald-500/60 bg-emerald-500/10"
+                      : isChosen
+                        ? "border-destructive/60 bg-destructive/10"
+                        : "border-border opacity-70"
                   : isChosen
                     ? "border-brand bg-brand/10"
                     : "border-border bg-surface-1 hover:border-brand/50";
@@ -206,7 +237,11 @@ function ScreenView({
                       </span>
                       <span className="flex-1">
                         {o.label}
-                        {reveal && rv?.quality ? <span className="ml-2 text-xs uppercase tracking-wide text-muted-foreground">{rv.quality}</span> : null}
+                        {reveal && rv?.quality && (isChosen || rv.is_correct) ? (
+                          <span className={cn("ml-2 rounded-full px-2 py-0.5 text-xs font-medium", QUALITY_BADGE[rv.quality] ?? "bg-muted text-muted-foreground")}>
+                            {QUALITY_LABEL[rv.quality] ?? rv.quality}
+                          </span>
+                        ) : null}
                         {reveal && (isChosen || rv?.is_correct) && rv?.feedback ? <span className="mt-2 block text-sm text-muted-foreground">{rv.feedback}</span> : null}
                         {reveal && isChosen && !rv?.is_correct && rv?.seduction ? (
                           <span className="mt-1.5 block text-sm italic text-muted-foreground">Por que engana: {rv.seduction}</span>
@@ -314,6 +349,55 @@ function BottomBar({ children }: { children: React.ReactNode }) {
       </div>
       <div aria-hidden style={{ height: h }} />
     </>
+  );
+}
+
+/**
+ * Prontuário Vivo — the generated chart of a Clínica em Cena run. Renders
+ * ONLY what the chosen conducts revealed (state.revealed folded server-side):
+ * the four drawers, the current patient state and the narrative clock.
+ */
+function ProntuarioVivo({ state }: { state: AttemptState }) {
+  const drawers: { cat: "sabemos" | "encontramos" | "fizemos"; label: string }[] = [
+    { cat: "sabemos", label: "Sabemos" },
+    { cat: "encontramos", label: "Encontramos" },
+    { cat: "fizemos", label: "Fizemos" },
+  ];
+  const byCat = (cat: string) => state.revealed.filter((r) => r.cat === cat && r.texto);
+  const estados = state.revealed.filter((r) => r.cat === "estado" && r.texto);
+  const estado = state.estado?.descricao ?? (estados.length ? estados[estados.length - 1].texto : null);
+  const empty = !estado && state.relogio === 0 && drawers.every((d) => byCat(d.cat).length === 0);
+  if (empty) return null;
+  return (
+    <details className="mb-5 rounded-xl border border-border bg-surface-1" open>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+        <ClipboardList className="h-4 w-4 text-brand" /> Prontuário Vivo
+        <span className="ml-auto flex items-center gap-1 text-xs font-normal tabular-nums text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" /> {state.relogio} min
+        </span>
+      </summary>
+      <div className="space-y-3 border-t border-border px-4 py-3 text-sm">
+        {estado ? (
+          <p className="rounded-lg bg-amber-500/10 px-3 py-2 font-medium text-amber-800 dark:text-amber-200">
+            Estado: <span className="font-normal">{estado}</span>
+          </p>
+        ) : null}
+        {drawers.map((d) => {
+          const items = byCat(d.cat);
+          if (!items.length) return null;
+          return (
+            <div key={d.cat}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{d.label}</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {items.map((r, i) => (
+                  <li key={i}>{r.texto}</li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </details>
   );
 }
 
@@ -433,7 +517,7 @@ function AfterBlock({ step }: { step: StepDoc }) {
   );
 }
 
-function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending, clues, subscribeCta }: { screen: PublicScreen; score: number | null; takeaway: string | null; isPreview: boolean; onRestart: () => void; pending: boolean; clues: PlayerPayload["clues"]; subscribeCta?: boolean }) {
+function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending, clues, subscribeCta, format, finalKey }: { screen: PublicScreen; score: number | null; takeaway: string | null; isPreview: boolean; onRestart: () => void; pending: boolean; clues: PlayerPayload["clues"]; subscribeCta?: boolean; format?: PlayerPayload["format"]; finalKey?: string | null }) {
   const hasLeve = screen.before.some((s) => s.kind === "leve_deste_caso");
   return (
     <div className="space-y-5">
@@ -442,6 +526,7 @@ function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending,
         <p className="mt-1 text-4xl font-bold tabular-nums">{score != null ? `${Math.round(score)}%` : "—"}</p>
         {isPreview ? <p className="mt-1 text-xs text-muted-foreground">Pré-visualização: nada foi registrado na sua evolução.</p> : null}
       </section>
+      {format === "codigo_clinico" ? <CodigoDecifrado clues={clues} finalKey={finalKey ?? null} /> : null}
       {screen.before.map((s) => (
         <PassiveBlock key={s.id ?? s.position} step={s} clues={clues} />
       ))}

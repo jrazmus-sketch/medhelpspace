@@ -30,6 +30,8 @@ export type PlayerPayload = {
   finished: boolean;
   score: number | null;
   takeaway: string | null;
+  /** Centre of the Código Decifrado map (codigo_clinico only). */
+  finalKey: string | null;
   /** True when the student already has a finished, canonical attempt (§2.3 UI rule). */
   hasCanonical: boolean;
 };
@@ -81,6 +83,14 @@ export async function loadPlayer(doc: CaseDoc, userId: string, isPreview: boolea
     hasCanonical = (count ?? 0) > 0;
   }
 
+  // Clues before the case ends carry NO map spoilers: which clue is the
+  // distrator (and why) and how they cluster is the Código Decifrado's
+  // payoff, revealed by advanceAttempt when the attempt finishes.
+  const finished = !!attempt.finished_at;
+  const clues = finished
+    ? doc.clues
+    : doc.clues.map((c) => ({ ...c, cluster: null, is_red_herring: false, red_herring_reason: null }));
+
   return {
     attemptId: attempt.id,
     caseId: doc.id!,
@@ -90,12 +100,13 @@ export async function loadPlayer(doc: CaseDoc, userId: string, isPreview: boolea
     estMinutes: doc.est_minutes ?? null,
     isPreview,
     screens: publicScreens,
-    clues: doc.clues,
+    clues,
     state,
     reveals,
-    finished: !!attempt.finished_at,
+    finished,
     score: attempt.score,
     takeaway: doc.takeaway ?? null,
+    finalKey: finished ? (doc.final_key ?? null) : null,
     hasCanonical,
   };
 }

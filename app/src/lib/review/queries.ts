@@ -17,6 +17,13 @@ function todayKey(): string {
 
 // ── Counts ─────────────────────────────────────────────────────────────────────
 
+/**
+ * The Revalida Revisão reads ONLY its own item types. ClinAct shares the
+ * review_schedule table (item_type='clinact_case') but has its own queue at
+ * /clinact/treinar — the two products must never mix queues.
+ */
+export const REVALIDA_REVIEW_TYPES = ["flashcard", "quiz_question", "memorecard"] as const;
+
 export interface ReviewCounts {
   /** Non-suspended items due on/before today (all types). */
   dueTotal: number;
@@ -36,6 +43,7 @@ export async function getReviewCounts(userId: string): Promise<ReviewCounts> {
       .from("review_schedule")
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
+      .in("item_type", [...REVALIDA_REVIEW_TYPES])
       .eq("suspended", false)
       .lte("due_date", today);
 
@@ -48,6 +56,7 @@ export async function getReviewCounts(userId: string): Promise<ReviewCounts> {
         .from("review_schedule")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
+        .in("item_type", [...REVALIDA_REVIEW_TYPES])
         .eq("suspended", false)
         .eq("repetitions", 0),
     ]);
@@ -123,6 +132,7 @@ export async function getReviewItems(
     .from("review_schedule")
     .select("item_type, item_id, specialty_id")
     .eq("user_id", userId)
+    .in("item_type", [...REVALIDA_REVIEW_TYPES])
     .eq("suspended", false);
 
   if (mode === "due") {

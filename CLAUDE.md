@@ -352,8 +352,13 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   requires only LOGIN; pages gate individually — free cases fully playable without a
   subscription, others lock + CTA to /clinact. Patch: `schema-patch-clinact-free-cases.sql`
   (also makes `clinact_save_case` PRESERVE is_free when the doc omits it — re-import safe).
-- [ ] Step 2 — Código Clínico, Ponto de Virada, Clínica em Cena players (engine + parser +
-  editor already carry all four; only the player renderings for pistas/map/prontuário remain).
+- [x] Step 2 (shipped 2026-08-31): all four format players live. Código Decifrado map
+  (components/clinact/codigo-decifrado.tsx — clusters linked, distratores dimmed with
+  reason, CHAVE FINAL centre) and Prontuário Vivo (in case-player) are GENERATED, never
+  authored. Clínica em Cena branching: a scene targeted by any `vai para` is a DETOUR —
+  normal fall-through SKIPS it (matches the guide's inline template; documented in guide
+  §7, both copies). Map spoilers (cluster/distrator/CHAVE FINAL) are stripped from the
+  client payload until the attempt finishes — advanceAttempt returns them on finish.
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, Minha
   Evolução, real sales page. Nothing writes `user_product_access` yet: grant access by
   inserting a row (`source='grant'`).

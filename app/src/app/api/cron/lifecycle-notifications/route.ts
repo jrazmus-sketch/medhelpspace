@@ -698,6 +698,8 @@ export async function GET(request: NextRequest) {
           .from("review_schedule")
           .select("*", { count: "exact", head: true })
           .eq("user_id", s.user_id)
+          // Revalida types only — ClinAct reviews never trigger this bell.
+          .in("item_type", ["flashcard", "quiz_question", "memorecard"])
           .eq("suspended", false)
           .lte("due_date", today);
         if ((dueCount ?? 0) < FLASHCARD_DUE_THRESHOLD) continue;

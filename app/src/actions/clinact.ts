@@ -10,6 +10,7 @@ import { getCaseDoc, getTaxonomy, probeMedia, getOpenAttempt, type AttemptRow } 
 import { collectMedia, mediaKey } from "@/lib/clinact/media";
 import { slugifyTitle } from "@/lib/clinact/slug";
 import { createPreviewToken } from "@/lib/clinact/preview-token";
+import { onCaseFinished } from "@/lib/clinact/review";
 import { caseScore } from "@/lib/clinact/scoring";
 import {
   buildScreens,
@@ -22,7 +23,7 @@ import {
   type Decision,
   type Reveal,
 } from "@/lib/clinact/engine";
-import { CLINACT_CDN_BASE, CLINACT_MEDIA_PREFIX, type AttemptState, type CaseDoc, type CaseFormat } from "@/lib/clinact/types";
+import { CLINACT_CDN_BASE, CLINACT_MEDIA_PREFIX, type AttemptState, type CaseDoc, type CaseFormat, type ClueDoc } from "@/lib/clinact/types";
 
 // Conventions (same as actions/ambassadors.ts):
 //   1. Only async functions are exported.
@@ -414,13 +415,13 @@ export async function submitDecision(attemptId: number, stepId: number, decision
   return { ok: true, reveal: buildReveal(screen, applied), state: applied.state };
 }
 
-export type AdvanceResult = { ok: true; state: AttemptState; finished: boolean; score: number | null };
+export type AdvanceResult = { ok: true; state: AttemptState; finished: boolean; score: number | null; clues?: ClueDoc[]; finalKey?: string | null };
 
 export async function advanceAttempt(attemptId: number): Promise<AdvanceResult> {
   const { admin, attempt, doc } = await loadAttemptForUser(attemptId);
   const screens = buildScreens(doc.steps);
   const state = (Object.keys(attempt.state).length ? attempt.state : emptyState()) as AttemptState;
-  if (attempt.finished_at) return { ok: true, state, finished: true, score: attempt.score };
+  if (attempt.finished_at) return { ok: true, state, finished: true, score: attempt.score, clues: doc.clues, finalKey: doc.final_key ?? null };
   const current = screens[state.cursor];
   if (current?.decision && !state.answered[stepKey(current.decision)]) {
     // Cannot skip a decision.
@@ -431,12 +432,45 @@ export async function advanceAttempt(attemptId: number): Promise<AdvanceResult> 
   if (reachedClosing) {
     const score = caseScore(earnedWeights(next, screens));
     const duration = Date.now() - new Date(attempt.started_at).getTime();
-    await admin
+    const { data: closed } = await admin
       .from("clinact_attempts")
       .update({ state: next, finished_at: new Date().toISOString(), score, duration_ms: Math.max(0, Math.min(duration, 2_147_483_647)) })
       .eq("id", attemptId)
-      .is("finished_at", null);
-    return { ok: true, state: next, finished: true, score };
+      .is("finished_at", null)
+      .select("id")
+      .maybeSingle();
+    // Spaced review (frozen rule, Karina 2026-08-31). Never blocks the finish.
+    if (closed && !attempt.is_preview) {
+      try {
+        const [{ count: earlier }, { count: hc }] = await Promise.all([
+          admin
+            .from("clinact_attempts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", attempt.user_id)
+            .eq("case_id", attempt.case_id)
+            .eq("is_preview", false)
+            .not("finished_at", "is", null)
+            .neq("id", attemptId),
+          admin
+            .from("clinact_step_events")
+            .select("id", { count: "exact", head: true })
+            .eq("attempt_id", attemptId)
+            .eq("is_correct", false)
+            .eq("confidence", "alta"),
+        ]);
+        await onCaseFinished({
+          userId: attempt.user_id,
+          caseId: attempt.case_id,
+          specialtyId: doc.specialty_id ?? null,
+          score,
+          highConfidenceErrors: hc ?? 0,
+          isFirstCompletion: (earlier ?? 0) === 0,
+        });
+      } catch (e) {
+        console.error("clinact review scheduling failed", e);
+      }
+    }
+    return { ok: true, state: next, finished: true, score, clues: doc.clues, finalKey: doc.final_key ?? null };
   }
   await admin.from("clinact_attempts").update({ state: next }).eq("id", attemptId);
   return { ok: true, state: next, finished: false, score: null };

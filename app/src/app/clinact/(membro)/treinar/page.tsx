@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { getClinactViewer } from "@/lib/clinact/access";
 import { listPublishedCases, getCanonicalAttempts, getTaxonomy } from "@/lib/clinact/queries";
+import { getDueClinactReviews } from "@/lib/clinact/review";
 import { FORMAT_LABELS, type CaseFormat } from "@/lib/clinact/types";
-import { Check, Clock, Lock, Sparkles } from "lucide-react";
+import { Check, Clock, Lock, RotateCcw, Sparkles } from "lucide-react";
 
 export const metadata = { title: "Casos" };
 
@@ -10,11 +11,17 @@ const DIFF: Record<string, string> = { basica: "Básica", intermediaria: "Interm
 
 export default async function TreinarPage() {
   const viewer = await getClinactViewer();
-  const [cases, canonical, taxonomy] = await Promise.all([
+  const [cases, canonical, taxonomy, dueReviews] = await Promise.all([
     listPublishedCases(),
     getCanonicalAttempts(viewer.userId),
     getTaxonomy(),
+    getDueClinactReviews(viewer.userId),
   ]);
+  const caseById = new Map(cases.map((c) => [c.id, c]));
+  // Only reviews the viewer can actually open (case still published + playable).
+  const reviews = dueReviews
+    .map((r) => caseById.get(r.case_id))
+    .filter((c): c is NonNullable<typeof c> => !!c && (viewer.hasAccess || c.is_free));
   const spName = new Map(taxonomy.specialties.map((s) => [s.id, s.name]));
   const byFormat = new Map<CaseFormat, typeof cases>();
   for (const c of cases) byFormat.set(c.format, [...(byFormat.get(c.format) ?? []), c]);
@@ -33,6 +40,28 @@ export default async function TreinarPage() {
             Os casos marcados como <strong>grátis</strong> estão liberados por completo. Os demais abrem com a assinatura.
           </p>
         </div>
+      ) : null}
+
+      {reviews.length ? (
+        <section className="mt-6">
+          <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+            <RotateCcw className="h-3.5 w-3.5" /> Revisões de hoje
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Casos que chegaram à data de rever. Refazer não muda a sua primeira nota — reexpõe o raciocínio.</p>
+          <ul className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-amber-500/40 bg-surface-1">
+            {reviews.map((c) => (
+              <li key={c.id}>
+                <Link href={`/clinact/caso/${c.slug}`} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-accent/50">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{c.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{FORMAT_LABELS[c.format]}</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">Rever</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {cases.length === 0 ? (
