@@ -111,6 +111,7 @@ export const CaseDocSchema = z.object({
   takeaway: z.string().nullable().optional(),
   final_key: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  is_free: z.boolean().optional(),
   steps: z.array(StepSchema),
   clues: z.array(ClueSchema),
 });

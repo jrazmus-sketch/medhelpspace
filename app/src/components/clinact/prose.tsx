@@ -33,7 +33,16 @@ export function MediaView({ media, className }: { media: Media; className?: stri
   if (media.type === "audio") {
     return (
       <figure className={cn("rounded-lg border border-border bg-surface-1 p-3", className)}>
-        <audio controls preload="none" src={media.url} className="w-full" />
+        <audio
+          controls
+          preload="none"
+          src={media.url}
+          className="w-full"
+          // Karina 2026-08-31: protect licensed clinical audio — hide the
+          // download control and block the context menu. Deterrence, not DRM.
+          controlsList="nodownload"
+          onContextMenu={(e) => e.preventDefault()}
+        />
         {media.caption ? <figcaption className="mt-2 text-sm text-muted-foreground">{media.caption}</figcaption> : null}
         {media.transcript ? (
           <details className="mt-2 text-sm">
@@ -47,7 +56,7 @@ export function MediaView({ media, className }: { media: Media; className?: stri
   if (media.type === "video") {
     return (
       <figure className={cn("rounded-lg border border-border bg-surface-1 p-2", className)}>
-        <video controls preload="metadata" src={media.url} className="w-full rounded" />
+        <video controls preload="metadata" src={media.url} className="w-full rounded" controlsList="nodownload" onContextMenu={(e) => e.preventDefault()} />
         {media.caption ? <figcaption className="mt-2 px-1 text-sm text-muted-foreground">{media.caption}</figcaption> : null}
       </figure>
     );

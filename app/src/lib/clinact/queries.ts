@@ -13,7 +13,7 @@ export async function listCases(): Promise<CaseListRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("clinact_cases")
-    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, updated_at")
+    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, is_free, updated_at")
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as CaseListRow[];
@@ -23,7 +23,7 @@ export async function listPublishedCases(): Promise<CaseListRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("clinact_cases")
-    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, updated_at")
+    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, is_free, updated_at")
     .eq("status", "published")
     .order("published_at", { ascending: false });
   if (error) throw error;

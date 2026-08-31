@@ -1836,7 +1836,9 @@
       "clueCategory": "Category (history, exam…)",
       "clueCluster": "Cluster",
       "redHerring": "Red herring (does not close the case)",
-      "redHerringReason": "Why it does not close"
+      "redHerringReason": "Why it does not close",
+      "isFree": "Free sample case",
+      "isFreeHint": "Fully open to any signed-in user, no subscription. The plan is ONE free case per format."
     },
     "media": {
       "add": "Add media",
@@ -1877,8 +1879,8 @@
       "archive": "Archive",
       "archived": "Case archived.",
       "archiveConfirm": "Out of circulation. Nothing is deleted.",
-      "delete": "Delete draft",
-      "deleteConfirm": "This draft was never published and will be permanently deleted.",
+      "delete": "Delete permanently",
+      "deleteConfirm": "Deletes the case, its blocks, revisions and preview attempts — forever. Only possible because no real student has taken this case.",
       "deleteRefused": "Only never-published drafts can be deleted — use Archive.",
       "notFound": "Case not found.",
       "tab": {
@@ -1902,7 +1904,9 @@
       "confidenceHint": "No content: the student reports low, medium or high before seeing the previous decision's answer.",
       "timerHint": "Pressure, not a lock: at zero the student still answers. Applies to the next decision.",
       "unmatched": "\"{{value}}\" is not in the list — link it manually.",
-      "republished": "Changes published — new revision created."
+      "republished": "Changes published — new revision created.",
+      "deleteRefusedAttempts": "This case has real student attempts — it can only be archived, never deleted.",
+      "deleteRefusedPublished": "Unpublish the case before deleting."
     },
     "importer": {
       "title": "Import cases",
@@ -1946,6 +1950,7 @@
       },
       "mixedNote": "New cases landed as drafts. Already-published ones were updated live, with a new revision."
     },
-    "all": "All"
+    "all": "All",
+    "freeBadge": "Free"
   }
 }

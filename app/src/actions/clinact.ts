@@ -136,15 +136,25 @@ export async function archiveCase(caseId: number): Promise<{ ok: boolean }> {
   return { ok: !!data };
 }
 
-/** Hard delete — only a draft that was never published (§3). */
-export async function deleteDraft(caseId: number): Promise<{ ok: true } | { ok: false; error: "was_published" | "not_found" }> {
+/**
+ * Hard delete (rule updated per Karina 2026-08-31): allowed for any case that
+ * is not currently published AND has no REAL student attempts. Preview
+ * attempts never protect a case; a real attempt always does — those cases can
+ * only be archived, preserving attempts, revisions and history.
+ */
+export async function deleteDraft(caseId: number): Promise<{ ok: true } | { ok: false; error: "published" | "has_attempts" | "not_found" }> {
   const { userId, admin } = await requireContentAdmin();
   const { data: c } = await admin.from("clinact_cases").select("id, slug, title, status, revision").eq("id", caseId).maybeSingle();
   if (!c) return { ok: false, error: "not_found" };
-  const { count } = await admin.from("clinact_case_versions").select("id", { count: "exact", head: true }).eq("case_id", caseId);
-  if (c.status !== "draft" || (c.revision as number) > 0 || (count ?? 0) > 0) return { ok: false, error: "was_published" };
+  if (c.status === "published") return { ok: false, error: "published" };
+  const { count } = await admin
+    .from("clinact_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("case_id", caseId)
+    .eq("is_preview", false);
+  if ((count ?? 0) > 0) return { ok: false, error: "has_attempts" };
   await admin.from("clinact_cases").delete().eq("id", caseId);
-  await writeAudit(userId, "clinact_delete_draft", { case_id: caseId, slug: c.slug, title: c.title });
+  await writeAudit(userId, "clinact_delete_case", { case_id: caseId, slug: c.slug, title: c.title, revision: c.revision });
   revalidateAdmin();
   return { ok: true };
 }

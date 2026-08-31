@@ -341,6 +341,17 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   `/clinact/caso/[slug]`, `/clinact/preview/[token]` — all under `app/clinact/(membro)/`
   gated by `requireProductAccess('clinact')` (lib/clinact/access.ts), NOT under `/app`.
   Answers/feedback never reach the client before the decision is submitted.
+- [x] Karina's gate feedback (2026-08-31): audio/video download hidden in the player
+  (deterrence: controlsList + context-menu block), permanent delete allowed for any
+  non-published case with NO real student attempts (preview attempts never protect;
+  real attempts → archive only), and **Minha Evolução (simple) is LIVE** at
+  `/clinact/evolucao` — treinos, desempenho geral, por formato, confiança,
+  erros com alta confiança; all from canonical attempts (§2.2.1/§2.3), live queries.
+- [x] Free sample cases (2026-08-31, supersedes "no free content"): `clinact_cases.is_free`
+  ("Caso gratuito" toggle in the ficha; plan = ONE per format). The (membro) layout now
+  requires only LOGIN; pages gate individually — free cases fully playable without a
+  subscription, others lock + CTA to /clinact. Patch: `schema-patch-clinact-free-cases.sql`
+  (also makes `clinact_save_case` PRESERVE is_free when the doc omits it — re-import safe).
 - [ ] Step 2 — Código Clínico, Ponto de Virada, Clínica em Cena players (engine + parser +
   editor already carry all four; only the player renderings for pistas/map/prontuário remain).
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, Minha

@@ -190,6 +190,8 @@ export type CaseDoc = {
   status?: CaseStatus;
   revision?: number;
   published_at?: string | null;
+  /** Editorial flag (Karina 2026-08-31): one free sample case per format. */
+  is_free?: boolean;
   steps: StepDoc[];
   clues: ClueDoc[];
 };
@@ -210,6 +212,7 @@ export type CaseListRow = {
   status: CaseStatus;
   revision: number;
   published_at: string | null;
+  is_free: boolean;
   updated_at: string;
 };
 

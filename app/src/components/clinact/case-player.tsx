@@ -19,7 +19,7 @@ const CONF: { v: Confidence; label: string }[] = [
   { v: "alta", label: "Alta" },
 ];
 
-export function CasePlayer({ payload }: { payload: PlayerPayload }) {
+export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerPayload; subscribeCta?: boolean }) {
   const router = useRouter();
   const [state, setState] = useState<AttemptState>(payload.state);
   const [reveals, setReveals] = useState<Record<string, Reveal>>(payload.reveals);
@@ -89,7 +89,7 @@ export function CasePlayer({ payload }: { payload: PlayerPayload }) {
       </header>
 
       {finished || screen.closing ? (
-        <ClosingScreen screen={screen} score={score} takeaway={payload.takeaway} isPreview={payload.isPreview} onRestart={onRestart} pending={pending} clues={payload.clues} />
+        <ClosingScreen screen={screen} score={score} takeaway={payload.takeaway} isPreview={payload.isPreview} onRestart={onRestart} pending={pending} clues={payload.clues} subscribeCta={subscribeCta} />
       ) : (
         <ScreenView
           key={screen.index}
@@ -433,7 +433,7 @@ function AfterBlock({ step }: { step: StepDoc }) {
   );
 }
 
-function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending, clues }: { screen: PublicScreen; score: number | null; takeaway: string | null; isPreview: boolean; onRestart: () => void; pending: boolean; clues: PlayerPayload["clues"] }) {
+function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending, clues, subscribeCta }: { screen: PublicScreen; score: number | null; takeaway: string | null; isPreview: boolean; onRestart: () => void; pending: boolean; clues: PlayerPayload["clues"]; subscribeCta?: boolean }) {
   const hasLeve = screen.before.some((s) => s.kind === "leve_deste_caso");
   return (
     <div className="space-y-5">
@@ -446,6 +446,13 @@ function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending,
         <PassiveBlock key={s.id ?? s.position} step={s} clues={clues} />
       ))}
       {!hasLeve && takeaway ? <AfterBlock step={{ position: 0, kind: "leve_deste_caso", enabled: true, content: { text: takeaway }, options: [] }} /> : null}
+      {subscribeCta ? (
+        <section className="rounded-2xl border border-brand/40 bg-brand/10 p-5 text-center">
+          <p className="font-semibold">Gostou do treino?</p>
+          <p className="mt-1 text-sm text-muted-foreground">Este foi um dos casos gratuitos. A assinatura libera a biblioteca completa — com casos novos toda semana.</p>
+          <Link href="/clinact" className="mt-3 inline-flex min-h-12 items-center justify-center rounded-xl bg-brand px-8 text-base font-semibold text-brand-fg">Conhecer a assinatura</Link>
+        </section>
+      ) : null}
       <div className="flex flex-col gap-2 sm:flex-row">
         <Link href="/clinact/treinar" className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand text-base font-semibold text-brand-fg">Voltar aos casos</Link>
         <button type="button" onClick={onRestart} disabled={pending} className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-border text-base font-medium">

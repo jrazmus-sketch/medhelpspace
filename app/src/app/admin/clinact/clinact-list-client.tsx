@@ -100,6 +100,7 @@ export function ClinactListClient({ rows }: { rows: Row[] }) {
                   <p>rev. {r.revision}</p>
                   <p>{fmtDate(r.published_at ?? r.updated_at)}</p>
                 </div>
+                {r.is_free ? <span className="shrink-0 rounded-full bg-sky-500/15 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">{t("clinact.freeBadge")}</span> : null}
                 <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-xs font-medium", STATUS_STYLE[r.status])}>{t(`clinact.status.${r.status}`)}</span>
               </Link>
             </li>

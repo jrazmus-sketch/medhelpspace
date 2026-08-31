@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import { getClinactViewer } from "@/lib/clinact/access";
 import { getCaseDocBySlug } from "@/lib/clinact/queries";
 import { loadPlayer } from "@/lib/clinact/player-load";
 import { CasePlayer } from "@/components/clinact/case-player";
@@ -15,11 +15,10 @@ export default async function CasePage({ params }: { params: Promise<{ slug: str
   const doc = await getCaseDocBySlug(slug);
   // Drafts are never reachable here — not even by admins (they have /preview).
   if (!doc || doc.status !== "published") notFound();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) notFound(); // layout already redirected; belt and braces
-  const payload = await loadPlayer(doc, user.id, false);
-  return <CasePlayer key={payload.attemptId} payload={payload} />;
+  const viewer = await getClinactViewer();
+  // Free sample cases (one per format) open for any signed-in user; the rest
+  // require the subscription.
+  if (!viewer.hasAccess && !doc.is_free) redirect("/clinact");
+  const payload = await loadPlayer(doc, viewer.userId, false);
+  return <CasePlayer key={payload.attemptId} payload={payload} subscribeCta={!viewer.hasAccess} />;
 }

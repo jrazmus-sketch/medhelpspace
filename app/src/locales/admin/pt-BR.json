@@ -1836,7 +1836,9 @@
       "clueCategory": "Categoria (anamnese, exame físico…)",
       "clueCluster": "Grupo",
       "redHerring": "Distrator (não fecha o caso)",
-      "redHerringReason": "Por que não fecha"
+      "redHerringReason": "Por que não fecha",
+      "isFree": "Caso gratuito (amostra)",
+      "isFreeHint": "Liberado por completo para qualquer usuário logado, sem assinatura. O plano é UM caso grátis por formato."
     },
     "media": {
       "add": "Adicionar mídia",
@@ -1877,8 +1879,8 @@
       "archive": "Arquivar",
       "archived": "Caso arquivado.",
       "archiveConfirm": "Sai de circulação. Nada é apagado.",
-      "delete": "Excluir rascunho",
-      "deleteConfirm": "Este rascunho nunca foi publicado e será apagado de vez.",
+      "delete": "Excluir de vez",
+      "deleteConfirm": "Apaga o caso, os blocos, as revisões e as tentativas de pré-visualização — para sempre. Só é possível porque nenhum aluno de verdade fez este caso.",
       "deleteRefused": "Só rascunhos nunca publicados podem ser excluídos — use Arquivar.",
       "notFound": "Caso não encontrado.",
       "tab": {
@@ -1902,7 +1904,9 @@
       "confidenceHint": "Sem conteúdo: o aluno informa baixa, média ou alta antes de ver a resposta da decisão anterior.",
       "timerHint": "Pressão, não trava: ao zerar, o aluno continua respondendo. Vale para a próxima decisão.",
       "unmatched": "\"{{value}}\" não está na lista — ligue manualmente.",
-      "republished": "Alterações publicadas — nova revisão criada."
+      "republished": "Alterações publicadas — nova revisão criada.",
+      "deleteRefusedAttempts": "Este caso tem tentativas reais de alunos — só pode ser arquivado, nunca apagado.",
+      "deleteRefusedPublished": "Despublique o caso antes de excluir."
     },
     "importer": {
       "title": "Importar casos",
@@ -1946,6 +1950,7 @@
       },
       "mixedNote": "Os casos novos entraram como rascunho. Os já publicados foram atualizados no ar, com nova revisão."
     },
-    "all": "Todos"
+    "all": "Todos",
+    "freeBadge": "Grátis"
   }
 }

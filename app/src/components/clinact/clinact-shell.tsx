@@ -16,6 +16,7 @@ export function ClinactShell({ children, isAdmin }: { children: React.ReactNode;
           </Link>
           <nav className="ml-auto flex items-center gap-1 text-sm">
             <Link href="/clinact/treinar" className="flex min-h-11 items-center px-2.5 text-muted-foreground hover:text-foreground">Casos</Link>
+            <Link href="/clinact/evolucao" className="flex min-h-11 items-center px-2.5 text-muted-foreground hover:text-foreground">Evolução</Link>
             {isAdmin ? <Link href="/admin/clinact" className="flex min-h-11 items-center px-2.5 text-muted-foreground hover:text-foreground">Admin</Link> : null}
             <ThemeToggle />
           </nav>

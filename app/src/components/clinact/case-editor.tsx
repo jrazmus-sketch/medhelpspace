@@ -200,7 +200,7 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
     startTransition(async () => {
       const r = await deleteDraft(doc.id!);
       if (!r.ok) {
-        toast.error(t("clinact.editor.deleteRefused"));
+        toast.error(t(r.error === "has_attempts" ? "clinact.editor.deleteRefusedAttempts" : "clinact.editor.deleteRefusedPublished"));
         return;
       }
       router.push("/admin/clinact");
@@ -261,13 +261,14 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
               <a className={btnGhost} href={`/admin/clinact/${doc.id}/exportar`}>
                 <Download className="h-4 w-4" /> {t("clinact.editor.export")}
               </a>
-              {status === "draft" && !doc.revision ? (
-                <button className={`${btnGhost} text-destructive`} onClick={() => setConfirm("delete")} disabled={pending}>
-                  <Trash2 className="h-4 w-4" /> {t("clinact.editor.delete")}
-                </button>
-              ) : status !== "archived" ? (
+              {status !== "archived" ? (
                 <button className={btnGhost} onClick={() => setConfirm("archive")} disabled={pending}>
                   {t("clinact.editor.archive")}
+                </button>
+              ) : null}
+              {status !== "published" ? (
+                <button className={`${btnGhost} text-destructive`} onClick={() => setConfirm("delete")} disabled={pending}>
+                  <Trash2 className="h-4 w-4" /> {t("clinact.editor.delete")}
                 </button>
               ) : null}
             </>
@@ -342,6 +343,13 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
               <input value={doc.final_key ?? ""} onChange={(e) => set({ final_key: e.target.value })} className={inputCls} />
             </Field>
           ) : null}
+          <label className="flex items-start gap-2 rounded-lg border border-border bg-background p-3">
+            <input type="checkbox" checked={!!doc.is_free} onChange={(e) => set({ is_free: e.target.checked })} className="mt-0.5 h-4 w-4" />
+            <span className="text-sm">
+              <span className="font-medium">{t("clinact.fields.isFree")}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{t("clinact.fields.isFreeHint")}</span>
+            </span>
+          </label>
           <Field label={t("clinact.fields.notes")} hint={t("clinact.fields.notesHint")}>
             <textarea value={doc.notes ?? ""} onChange={(e) => set({ notes: e.target.value })} rows={3} className={inputCls} />
           </Field>
