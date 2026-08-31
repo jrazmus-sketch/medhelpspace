@@ -5,6 +5,15 @@ import { FORMAT_LABELS, FORMATS, type CaseFormat } from "@/lib/clinact/types";
 import { toDateKeyBR } from "@/lib/br-date";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
+// Karina 2026-08-31: the pill color must follow the meaning of the score —
+// a 0% in green reads as success. Bands anchored on the 60% boundary the
+// review rule also uses: alto ≥80 · intermediário 60–79 · baixo <60.
+function scorePill(score: number): string {
+  if (score >= 80) return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
+  if (score >= 60) return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+  return "bg-red-500/15 text-red-700 dark:text-red-300";
+}
+
 export const metadata = { title: "Minha Evolução" };
 
 // Simple version (spec §5) — ships in the pilot. The full Perfil de
@@ -56,7 +65,7 @@ export default async function EvolucaoPage() {
               label="Erros com alta confiança"
               value={String(ev.highConfidenceErrors)}
               tone={ev.highConfidenceErrors > 0 ? "warn" : undefined}
-              hint={ev.highConfidenceErrors > 0 ? "Tinha certeza — e não era. É aqui que mora o maior risco na prova e na vida real." : "Nenhum até agora."}
+              hint={ev.highConfidenceErrors > 0 ? "Alta confiança em uma decisão incorreta merece atenção especial." : "Nenhum até agora."}
             />
           </div>
 
@@ -71,7 +80,7 @@ export default async function EvolucaoPage() {
                     return (
                       <tr key={f}>
                         <td className="px-4 py-3 font-medium">{FORMAT_LABELS[f]}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">{row ? `${row.count} caso(s)` : "—"}</td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">{row ? `${row.count} ${row.count === 1 ? "caso" : "casos"}` : "—"}</td>
                         <td className="w-20 px-4 py-3 text-right font-semibold tabular-nums">{row ? `${Math.round(row.mean)}%` : ""}</td>
                       </tr>
                     );
@@ -117,12 +126,12 @@ export default async function EvolucaoPage() {
                         <span>· {fmtDate(c.finished_at)}</span>
                         {c.highConfidenceErrors > 0 ? (
                           <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300">
-                            <AlertTriangle className="h-3 w-3" /> {c.highConfidenceErrors} erro(s) com alta confiança
+                            <AlertTriangle className="h-3 w-3" /> {c.highConfidenceErrors} {c.highConfidenceErrors === 1 ? "erro" : "erros"} com alta confiança
                           </span>
                         ) : null}
                       </p>
                     </div>
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-sm font-semibold tabular-nums ${scorePill(c.score)}`}>
                       <CheckCircle2 className="h-3.5 w-3.5" /> {Math.round(c.score)}%
                     </span>
                   </Link>
