@@ -1,9 +1,8 @@
 # ClinAct — Sales page (`/clinact`): spec + architecture assessment
 
-Karina's brief: e-mail **"Página de Vendas", 2026-09-01**. She explicitly asked
-that it **not** be built yet — this file exists so the decisions are recorded
-before step 3 (the commercial stage) starts, and so her copy is not re-derived
-from an e-mail thread later.
+Karina's brief: e-mail **"Página de Vendas", 2026-09-01**; **architecture and all
+six open points approved by her the same day** (reply 2026-09-01 14:10 UTC).
+This file is the decided spec for step 3 — not a proposal.
 
 Status: **not implemented.** `/clinact` today is the placeholder from step 1
 (public, dark-only, "Em breve" / "Entrar nos casos").
@@ -80,43 +79,64 @@ broken-link and phishing vector. Allowed targets: signup, the four free cases,
 
 ---
 
-## 3. Six things to settle *before* implementing
+## 3. The six open points — decided by Karina, 2026-09-01
 
-1. **The hero CTA has no working destination today — this is the one real
-   blocker.** `/clinact/treinar` requires a login (the `(membro)` layout
-   redirects). So "Experimentar gratuitamente" must either go to **signup with
-   `?next=`**, or we allow **anonymous play** of the free cases.
-   *Recommendation: signup-first.* An attempt needs a `user_id` to be recorded;
-   Minha Evolução — a headline selling point two sections above — cannot exist
-   without an account; and signup feeds the lead funnel we already run. Anonymous
-   play would need anonymous attempt storage and would still have to force a
-   signup before showing any progress. **Karina's call, but it changes the build.**
+She approved the architecture and ruled on every point. These are decisions, not
+options; the build follows them.
 
-2. **Prices must not be editable strings.** On the Revalida landing the price
-   comes from the DB (cohort record), not from `site_content`. If the ClinAct
-   price is a free-text row and the checkout reads a plan config, the page can
-   advertise R$ 29,90 while PagBank charges something else — a CDC problem, not
-   just a bug. **Plan config is the single source; the page renders it.** Only the
-   descriptive copy around the number is editable.
+1. **Free-trial entry: signup-first. DECIDED.** "Experimentar gratuitamente"
+   leads to **free account signup**, and after signup/login the user lands on the
+   four free cases. **No anonymous access** — her reason is ours: preserve the
+   attempt, the confidence answer and Minha Evolução.
+   *Build note (verified in the code, not assumed):* **signup has no `next`
+   support today.** `/signup` never reads it and `/auth/signup` hardcodes
+   `emailRedirectTo: ${origin}/auth/confirm`. `/auth/confirm` *does* already
+   honour `next` (defaulting to `/app`), so the missing link is only the middle:
+   the signup page must read `?next=`, the form must forward it, and the route
+   must append it to `emailRedirectTo`. Small, but real work — and it must stay
+   allowlisted (see the note below).
 
-3. **The renewal/billing line must be exempt from the visibility toggle.** Her
-   list has both "visibilidade das principais seções" and "textos legais
-   exibidos junto aos planos". Those must not intersect: nobody should be able to
-   publish plans with the auto-renewal terms hidden.
+2. **Prices come from the plan/checkout config. DECIDED.** The displayed value
+   reads from the official plan configuration as the single source; only the
+   commercial copy around the number is editable. (Reason on record: an editable
+   price string that disagrees with what PagBank charges is a CDC problem, not a
+   bug.)
 
-4. **The Minha Evolução screenshot should be an uploadable image slot**, not a
-   build-time asset — otherwise it goes stale and needs a deploy to refresh
-   (we already carry that debt elsewhere; see `project_screenshot_placeholders`).
+3. **Renewal and billing terms cannot be hidden. DECIDED.** The mandatory
+   renewal/billing information is excluded from the section-visibility toggle —
+   it can never be hidden together with the plans section.
 
-5. **Never hand-type the case count.** She is right to omit it at launch. When it
-   becomes a selling point it must be a live count via `vars`, never a typed
-   number that rots the week after.
+4. **Screenshots are admin-replaceable. DECIDED.** The Minha Evolução screenshot
+   and, where possible, the other product demo images are swappable from the
+   admin with no deploy.
+   *Build note:* store the image URL in `site_content` and reuse the existing
+   Bunny upload path, so an image slot is just another editable field.
 
-6. **Sequencing.** The free-cases CTA works today; plan buttons cannot until step
-   3. Recommend shipping the page with the free path live **before** checkout
-   exists — it starts collecting free-tier signups while payments are being built.
+5. **No case count at launch. DECIDED.** When the number is eventually used
+   commercially it must be **computed from the published library**, never typed
+   by hand.
 
----
+6. **Do NOT publish the page before checkout works. DECIDED — this overrides my
+   recommendation.** I proposed shipping the page early with only the free path
+   live, to start collecting signups. She prefers not to put a public sales page
+   in the air while its flow is incomplete: build it, keep it ready for her
+   review, and make it public only when **signup + four free cases +
+   subscription** all work end to end.
+   *Build note:* this needs a page-level published flag. `/clinact` keeps serving
+   today's placeholder to the public while admins see the full page for review;
+   flipping one flag makes it public. Same draft/published shape the cases
+   already use — no separate preview URL, no risk of the real page leaking early.
+
+**Done ahead of the build (2026-09-01):** `/auth/confirm` builds its redirect as
+`${origin}${next}`, which turns `next=@evil.com` into a different HOST — an open
+redirect off a *successful* confirmation. Nothing feeds `next` into signup links
+today, so it was latent; decision 1 is precisely what would have made it
+reachable. `next` now passes through the same `safeDestination()` guard the `/r/`
+ambassador links use, with a regression test for the userinfo vector.
+
+Also explicitly approved: hide/show sections without deleting, reorder sections,
+CTA destinations from a closed and safe list, and reusing the Revalida editing
+mechanics while keeping ClinAct's own visual identity.
 
 ## 4. Revalida components — reuse map
 
@@ -150,3 +170,8 @@ confiança block (§6); "Leve deste caso" (§9); the four-free-cases block (§11
 
 Total ≈ **4 days**, inside step 3, independent of the PagBank account release
 (only the plan buttons depend on that).
+
+**Publish gate (her decision 6):** the page ships behind a page-level published
+flag. It goes public only when signup → four free cases → subscription work end
+to end — so the page being "done" and the page being "live" are two separate
+events, and the second one is hers to trigger after review.

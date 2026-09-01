@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { safeDestination } from "@/lib/ambassadors/ref-link";
 
 // Handles email confirmation and password-reset links.
 // Supabase email templates must use:
@@ -13,7 +14,14 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/app";
+  // `next` is concatenated onto the origin below (`${origin}${next}`), so it
+  // must be a rooted, same-origin path. Without this guard "@evil.com" makes
+  // the browser read the origin as userinfo and land on evil.com — an open
+  // redirect off a SUCCESSFUL confirmation. Nothing threads `next` into signup
+  // links today, but the ClinAct sales page is specified to (signup-first CTA),
+  // so the guard goes in before that lands. Same helper the /r/ links use.
+  const rawNext = searchParams.get("next");
+  const next = rawNext && safeDestination(rawNext) === rawNext ? rawNext : "/app";
 
   const cookieStore = await cookies();
 

@@ -122,3 +122,21 @@ test("codes outside the minting charset are rejected", () => {
   assert.equal(normalizeRefCode("MARIA,10"), null);
   assert.equal(normalizeRefCode("MARIA\u0000"), null);
 });
+
+// The auth confirmation route (`/auth/confirm`) builds its redirect as
+// `${origin}${next}` and now runs `next` through this same guard. These are the
+// shapes that turn that concatenation into a DIFFERENT host — the reason the
+// guard had to be there before the ClinAct sales page threads `next` into
+// signup links.
+test("origin-concatenation escapes are refused (the /auth/confirm vector)", () => {
+  // "https://site.com" + "@evil.com" → host becomes evil.com (userinfo trick).
+  assert.equal(safeDestination("@evil.com"), "/");
+  assert.equal(safeDestination("evil.com"), "/");
+  assert.equal(safeDestination("//evil.com"), "/");
+  // A literal backslash, spelled out so no escaping layer can quietly eat it.
+  assert.equal(safeDestination("/" + String.fromCharCode(92) + "evil.com"), "/");
+  assert.equal(safeDestination("https://evil.com"), "/");
+  // ...while the destinations the sales page actually needs survive untouched.
+  assert.equal(safeDestination("/clinact/treinar"), "/clinact/treinar");
+  assert.equal(safeDestination("/clinact/caso/tep-paciente-instavel"), "/clinact/caso/tep-paciente-instavel");
+});

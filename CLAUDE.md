@@ -368,8 +368,12 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   file type. Guide §8 carries the table (both copies).
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
-  (Karina 2026-09-01; do not build before step 3). Open decision that blocks its hero CTA:
-  signup-first vs anonymous play for the four free cases. Nothing writes `user_product_access` yet: grant access by
+  (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
+  step 3). Decided: signup-first for the free cases (no anonymous play); prices read from
+  the plan config, never an editable string; renewal/billing text exempt from the
+  visibility toggle; screenshots admin-replaceable; case count computed, never typed; and
+  **the page ships behind a page-level published flag — public only once signup + 4 free
+  cases + subscription work end to end** (her call, overriding my "publish early" advice). Nothing writes `user_product_access` yet: grant access by
   inserting a row (`source='grant'`).
 
 ## Theme requirements (non-negotiable)
