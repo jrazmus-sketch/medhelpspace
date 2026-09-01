@@ -359,8 +359,17 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   normal fall-through SKIPS it (matches the guide's inline template; documented in guide
   §7, both copies). Map spoilers (cluster/distrator/CHAVE FINAL) are stripped from the
   client payload until the attempt finishes — advanceAttempt returns them on finish.
-- [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, Minha
-  Evolução, real sales page. Nothing writes `user_product_access` yet: grant access by
+- [x] Accepted media formats FROZEN (Karina 2026-09-01, "Formatos de audios"): audio
+  mp3/m4a/wav, image jpg/png/webp/gif, video mp4/webm. `.ogg` is REFUSED — Safari only
+  plays Ogg Vorbis from 18.4, so older iPhones get a silent player, which violates her
+  own no-dead-media rule. One allowlist in `lib/clinact/media.ts` (ALLOWED_MEDIA_EXT +
+  mediaRejectionReason) used by BOTH the importer (warning, case still imports) and the
+  uploader (refusal with the PT reason). Before this the ClinAct uploader accepted ANY
+  file type. Guide §8 carries the table (both copies).
+- [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
+  sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
+  (Karina 2026-09-01; do not build before step 3). Open decision that blocks its hero CTA:
+  signup-first vs anonymous play for the four free cases. Nothing writes `user_product_access` yet: grant access by
   inserting a row (`source='grant'`).
 
 ## Theme requirements (non-negotiable)

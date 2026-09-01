@@ -289,8 +289,29 @@ O aluno escolhe auscultar — e só então ouve. Pede a radiografia — e só en
 Ponto de Virada, um ECG pode ser o próprio `## NOVO DADO`. No Código Clínico, uma
 imagem dermatológica pode ser uma das pistas.
 
-**Envie os arquivos junto com o caso**, com o mesmo nome que você escreveu. Áudio em
-`.mp3`. Se o arquivo ainda não existir, escreva a linha do mesmo jeito e avise: o caso
+**Envie os arquivos junto com o caso**, com o mesmo nome que você escreveu.
+
+**Formatos aceitos:**
+
+| Tipo | Aceito | Não aceito |
+|---|---|---|
+| Áudio | `.mp3`, `.m4a`, `.wav` | `.ogg`, `.opus`, `.flac`, `.wma` |
+| Imagem | `.jpg`, `.png`, `.webp`, `.gif` | `.heic`, `.tiff`, `.bmp` |
+| Vídeo (ainda não usado) | `.mp4`, `.webm` | `.mov`, `.avi`, `.mkv` |
+
+A regra por trás da lista é uma só: **o aluno nunca pode encontrar um botão de
+áudio que não toca.** O `.ogg`, por exemplo, só toca em iPhone a partir do Safari
+18.4 — quem tiver um iPhone mais antigo vê o player e não ouve nada. Por isso ele
+fica de fora, mesmo funcionando no seu computador.
+
+Se o seu áudio original for `.wav` ou `.ogg`, **guarde o original** e exporte uma
+cópia em `.mp3` para a plataforma. O `.wav` é aceito, mas gera arquivos muito
+maiores — prefira `.mp3` para o aluno que abre pelo celular.
+
+O importador avisa na hora se um nome de arquivo tiver formato não aceito, e o
+upload recusa o arquivo explicando o motivo.
+
+Se o arquivo ainda não existir, escreva a linha do mesmo jeito e avise: o caso
 importa com o espaço reservado, é aviso e não erro.
 
 ---

@@ -1856,7 +1856,8 @@
         "empty_file": "Arquivo vazio.",
         "too_large": "Arquivo muito grande (máx. 25 MB).",
         "bunny_not_configured": "Upload não configurado neste ambiente.",
-        "upload_failed": "Falha no envio. Tente de novo."
+        "upload_failed": "Falha no envio. Tente de novo.",
+        "bad_type": "Formato de arquivo não aceito."
       }
     },
     "editor": {

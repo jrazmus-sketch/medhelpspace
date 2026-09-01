@@ -63,7 +63,7 @@ export function MediaRow({ media, onChange, onRemove }: { media: Media; onChange
     try {
       const r = await uploadClinactMedia(fd);
       if ("error" in r) {
-        setErr(t(`clinact.media.err.${r.error}`, { defaultValue: t("clinact.media.err.upload_failed") }));
+        setErr(r.detail ?? t(`clinact.media.err.${r.error}`, { defaultValue: t("clinact.media.err.upload_failed") }));
         return;
       }
       onChange({ url: r.url, file: r.key, type: mediaTypeFor(r.key) });
@@ -93,7 +93,7 @@ export function MediaRow({ media, onChange, onRemove }: { media: Media; onChange
           className={inputCls}
         />
         <div className="flex gap-2">
-          <input ref={inputRef} type="file" className="sr-only" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+          <input ref={inputRef} type="file" accept=".mp3,.m4a,.aac,.wav,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm" className="sr-only" onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
           <button
             type="button"
             disabled={busy}

@@ -18,7 +18,7 @@
  */
 
 import { FORMAT_PRESETS } from "./format-presets";
-import { mediaTypeFor, mediaUrlFor } from "./media";
+import { mediaRejectionReason, mediaTypeFor, mediaUrlFor } from "./media";
 import { normalizeSceneKey, slugifyTitle } from "./slug";
 import {
   DIFFICULTIES,
@@ -317,6 +317,8 @@ function parseChunk(chunk: Chunk): ParsedCase {
     if (mm) {
       openAttr = null;
       const file = mm[2].trim();
+      const rejected = mediaRejectionReason(file);
+      if (rejected) warnings.push({ line: ln, message: `"${file}": ${rejected}.` });
       const media: Media = { type: mediaTypeFor(file, mm[1].toLowerCase()), url: mediaUrlFor(file), file };
       const parent: Target = target.kind === "media" ? target.parent : target;
       if (parent.kind === "option") {

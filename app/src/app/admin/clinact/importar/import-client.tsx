@@ -27,7 +27,7 @@ export function ImportClient() {
   const [updatePublished, setUpdatePublished] = useState(false);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [result, setResult] = useState<CommitResult | null>(null);
-  const [mediaLog, setMediaLog] = useState<{ name: string; ok: boolean }[]>([]);
+  const [mediaLog, setMediaLog] = useState<{ name: string; ok: boolean; reason?: string }[]>([]);
   const [pending, startTransition] = useTransition();
   const [mediaBusy, setMediaBusy] = useState(false);
 
@@ -60,12 +60,12 @@ export function ImportClient() {
   async function onMedia(files: FileList | null) {
     if (!files?.length) return;
     setMediaBusy(true);
-    const log: { name: string; ok: boolean }[] = [];
+    const log: { name: string; ok: boolean; reason?: string }[] = [];
     for (const f of Array.from(files)) {
       const fd = new FormData();
       fd.append("file", f);
       const r = await uploadClinactMedia(fd);
-      log.push({ name: mediaKey(f.name), ok: !("error" in r) });
+      log.push({ name: mediaKey(f.name), ok: !("error" in r), reason: "error" in r ? r.detail : undefined });
     }
     setMediaLog((m) => [...m, ...log]);
     setMediaBusy(false);
@@ -147,15 +147,19 @@ export function ImportClient() {
         <div className="space-y-3 rounded-xl border border-border bg-surface-1 p-4">
           <h2 className="text-sm font-semibold">{t("clinact.importer.media")}</h2>
           <p className="text-xs text-muted-foreground">{t("clinact.importer.mediaHint")}</p>
-          <input ref={mediaRef} type="file" accept="image/*,audio/*,video/*" multiple className="sr-only" onChange={(e) => onMedia(e.target.files)} />
+          <input ref={mediaRef} type="file" accept=".mp3,.m4a,.aac,.wav,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm" multiple className="sr-only" onChange={(e) => onMedia(e.target.files)} />
           <button onClick={() => mediaRef.current?.click()} disabled={mediaBusy} className={`${btnGhost} w-full border-dashed`}>
             {mediaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} {t("clinact.importer.pickMedia")}
           </button>
           {mediaLog.length ? (
             <ul className="max-h-40 space-y-1 overflow-auto text-xs">
               {mediaLog.map((m, i) => (
-                <li key={i} className={cn("flex items-center gap-1.5", m.ok ? "text-muted-foreground" : "text-destructive")}>
-                  {m.ok ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <CircleAlert className="h-3.5 w-3.5" />} {m.name}
+                <li key={i} className={cn("flex items-start gap-1.5", m.ok ? "text-muted-foreground" : "text-destructive")}>
+                  {m.ok ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" /> : <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />}
+                  <span>
+                    {m.name}
+                    {m.reason ? <span className="block text-[11px]">{m.reason}</span> : null}
+                  </span>
                 </li>
               ))}
             </ul>

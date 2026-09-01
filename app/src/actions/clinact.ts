@@ -7,7 +7,7 @@ import { CaseDocSchema, ConfidenceSchema } from "@/lib/clinact/schemas";
 import { parseCaseFile, resolveTaxonomy, type Issue } from "@/lib/clinact/parse";
 import { validateForPublish, publishBlockers } from "@/lib/clinact/validate";
 import { getCaseDoc, getTaxonomy, probeMedia, getOpenAttempt, type AttemptRow } from "@/lib/clinact/queries";
-import { collectMedia, mediaKey } from "@/lib/clinact/media";
+import { collectMedia, mediaKey, mediaRejectionReason } from "@/lib/clinact/media";
 import { slugifyTitle } from "@/lib/clinact/slug";
 import { createPreviewToken } from "@/lib/clinact/preview-token";
 import { onCaseFinished } from "@/lib/clinact/review";
@@ -200,12 +200,19 @@ export async function createPreviewLink(caseId: number): Promise<{ url: string }
 
 const MAX_MEDIA_BYTES = 25 * 1024 * 1024;
 
-export async function uploadClinactMedia(formData: FormData): Promise<{ url: string; key: string } | { error: string }> {
+export async function uploadClinactMedia(
+  formData: FormData,
+): Promise<{ url: string; key: string } | { error: string; detail?: string }> {
   await requireContentAdmin();
   const file = formData.get("file");
   if (!(file instanceof File)) return { error: "no_file" };
   if (file.size === 0) return { error: "empty_file" };
   if (file.size > MAX_MEDIA_BYTES) return { error: "too_large" };
+  // Only formats every browser plays (see ALLOWED_MEDIA_EXT). Without this the
+  // uploader accepted ANY file, and an .ogg would publish as a silent player
+  // on older iPhones.
+  const rejected = mediaRejectionReason(file.name || "");
+  if (rejected) return { error: "bad_type", detail: rejected };
 
   const endpoint = process.env.BUNNY_STORAGE_ENDPOINT;
   const accessKey = process.env.BUNNY_STORAGE_PASSWORD || process.env.BUNNY_API_KEY;
