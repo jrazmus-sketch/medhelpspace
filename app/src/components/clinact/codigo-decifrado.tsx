@@ -8,8 +8,8 @@ import { KeyRound, Link2, Unlink } from "lucide-react";
  * (never authored; §2 "two blocks are system-generated").
  *
  * Renders from the clues alone: `cluster` (grupo:) draws the links — clues
- * sharing a cluster appear connected; red herrings (distrator:) are dimmed
- * with their reason beside them. The centre is the case's CHAVE FINAL, which
+ * sharing a cluster appear connected; red herrings (distrator:) are set apart
+ * in their own card, with the reason they do not close the case. The centre is the case's CHAVE FINAL, which
  * is not necessarily a diagnosis. One layout for every case; mobile-first
  * (vertical map, no SVG).
  */
@@ -70,17 +70,24 @@ export function CodigoDecifrado({ clues, finalKey }: { clues: ClueDoc[]; finalKe
         ) : null}
       </div>
 
-      {/* Red herrings — dimmed, with the reason they do not close the case */}
+      {/* Discarded clues are marked by the CARD — dashed border, tinted panel,
+          icon and a struck-through label — never by making the text faint.
+          Karina, 2026-09-02: the reason has to stay readable at 100% zoom and
+          on a phone, because it is the part that teaches. */}
       {herrings.length ? (
-        <div className="mt-3 rounded-xl border border-dashed border-border p-3 opacity-75">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <div className="mt-3 rounded-xl border border-dashed border-border bg-surface-2 p-3">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <Unlink className="h-3.5 w-3.5" /> Não fecham o caso
           </p>
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {herrings.map((c) => (
-              <li key={c.id ?? c.position} className="text-sm">
-                <span className="text-muted-foreground line-through decoration-border">{c.label}</span>
-                {c.red_herring_reason ? <span className="ml-1.5 text-xs italic text-muted-foreground">— {c.red_herring_reason}</span> : null}
+              <li key={c.id ?? c.position} className="text-[15px] leading-snug">
+                <span className="font-medium text-foreground line-through decoration-muted-foreground decoration-1">
+                  {c.label}
+                </span>
+                {c.red_herring_reason ? (
+                  <span className="mt-0.5 block text-sm text-muted-foreground">{c.red_herring_reason}</span>
+                ) : null}
               </li>
             ))}
           </ul>

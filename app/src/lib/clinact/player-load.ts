@@ -41,14 +41,35 @@ export async function loadPlayer(doc: CaseDoc, userId: string, isPreview: boolea
   // Idempotent: a partial unique index + ON CONFLICT DO NOTHING in the RPC
   // guarantee one resumable attempt per (user, case, preview) even when Next
   // prefetches or double-renders this page.
-  const { data, error } = await admin.rpc("clinact_open_attempt", {
-    p_user: userId,
-    p_case_id: doc.id,
-    p_is_preview: isPreview,
-    p_revision: doc.revision ?? 0,
-  });
-  if (error) throw error;
-  const attempt = data as AttemptRow;
+  const open = async () => {
+    const { data, error } = await admin.rpc("clinact_open_attempt", {
+      p_user: userId,
+      p_case_id: doc.id,
+      p_is_preview: isPreview,
+      p_revision: doc.revision ?? 0,
+    });
+    if (error) throw error;
+    return data as AttemptRow;
+  };
+  let attempt = await open();
+
+  // A saved case REPLACES its steps, so every step gets a new id. An attempt
+  // started before that edit still holds answers keyed by the OLD ids, plus the
+  // revealed/estado/relogio it folded from them — resuming it shows a
+  // Prontuário Vivo full of conducts from a run that no longer exists, and a
+  // clock that already counted them (Karina, 2026-09-02, CEC-01). An attempt
+  // with no answers yet has nothing to lose, so it still resumes.
+  const liveStepIds = new Set(doc.steps.map((s) => String(s.id)));
+  const answeredKeys = Object.keys((attempt.state as AttemptState | null)?.answered ?? {});
+  const stale = answeredKeys.length > 0 && answeredKeys.some((k) => !liveStepIds.has(k));
+  if (stale) {
+    await admin
+      .from("clinact_attempts")
+      .update({ state: { ...(attempt.state ?? {}), abandoned: true } })
+      .eq("id", attempt.id);
+    attempt = await open();
+  }
+
   const state = (Object.keys(attempt.state ?? {}).length ? attempt.state : emptyState()) as AttemptState;
   const screens = buildScreens(doc.steps);
 

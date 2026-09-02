@@ -45,23 +45,23 @@ CHAVE FINAL:
 
 
 ## PISTAS
--
+- [pista]
   detalhe:
   categoria:
   grupo: A
--
+- [pista]
   detalhe:
   categoria:
   grupo: A
--
+- [pista]
   detalhe:
   categoria:
   grupo: B
--
+- [pista]
   detalhe:
   categoria:
   grupo: B
--
+- [pista]
   detalhe:
   categoria:
   distrator:
@@ -69,11 +69,11 @@ CHAVE FINAL:
 ## PERGUNTA
 
 
-*
+* [alternativa correta]
   feedback:
--
+- [alternativa errada]
   feedback:
--
+- [alternativa errada]
   feedback:
 
 ## CONFIANÇA

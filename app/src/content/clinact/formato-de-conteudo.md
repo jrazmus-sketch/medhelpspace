@@ -180,6 +180,10 @@ Regras:
 - **`distrator:`** marca a pista que não fecha, e o texto explica o porquê. Ela
   aparece apagada no mapa, com o seu motivo ao lado.
 - `detalhe:` e `categoria:` são opcionais.
+- **O texto principal vai na MESMA linha do `-` ou do `*`.** As linhas
+  `feedback:`, `sedução:`, `detalhe:`, `categoria:` e `grupo:` são complementos da
+  linha acima — nenhuma delas serve como o texto em si. Um `-` sozinho, com o
+  texto só no `detalhe:`, é lido como pista sem texto e o importador recusa.
 
 ---
 

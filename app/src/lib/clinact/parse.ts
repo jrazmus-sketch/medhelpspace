@@ -149,6 +149,14 @@ const RE_BLOCK = /^##\s*(.+?)\s*$/;
 const RE_NOTE = /^\s*NOTA\s*:\s*(.*)$/i;
 const RE_LABEL = /^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ ]{1,20}?)\s*:\s?(.*)$/;
 
+/**
+ * The blank templates ship placeholders on the marker line (`- [pista]`,
+ * `* [alternativa correta]`) so the syntax is obvious at a glance. If one is
+ * left unedited it must fail LOUDLY — a case published with "[pista]" as a
+ * clinical clue is worse than a rejected import.
+ */
+const RE_PLACEHOLDER = /^\[[^\]]*\]$/;
+
 function attrKeyOf(raw: string): AttrKey | null {
   const loose = stripAccents(raw).toLowerCase().replace(/\s+/g, " ").trim();
   return ATTR_BY_LOOSE.get(loose as AttrKey) ?? null;
@@ -507,7 +515,10 @@ function parseChunk(chunk: Chunk): ParsedCase {
 
     if (b.kind === "pistas") {
       b.clues.forEach((c) => {
-        if (!c.label) errors.push({ line: c.line, message: `Pista sem texto.` });
+        if (!c.label) errors.push({ line: c.line, message: `Pista sem texto. O texto da pista vai na mesma linha do "-"; "detalhe:" é só complemento.` });
+        else if (RE_PLACEHOLDER.test(c.label)) {
+          errors.push({ line: c.line, message: `Pista ainda está com o texto de exemplo do modelo ("${c.label}") — substitua pelo texto do caso.` });
+        }
         clues.push({
           position: clues.length,
           label: c.label,
@@ -539,6 +550,9 @@ function parseChunk(chunk: Chunk): ParsedCase {
 
       b.options.forEach((o, oi) => {
         if (!o.label) errors.push({ line: o.line, message: `Alternativa ${oi + 1} sem texto.` });
+        else if (RE_PLACEHOLDER.test(o.label)) {
+          errors.push({ line: o.line, message: `Alternativa ${oi + 1} ainda está com o texto de exemplo do modelo ("${o.label}") — substitua pelo texto do caso.` });
+        }
         let quality: Quality | null = null;
         if (o.quality !== undefined) {
           const q = stripAccents(o.quality.toLowerCase().trim());

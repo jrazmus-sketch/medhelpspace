@@ -48,12 +48,12 @@ RESUMO:
 ## PERGUNTA
 
 
-*
+* [alternativa correta]
   feedback:
--
+- [alternativa errada]
   feedback:
   sedução:
--
+- [alternativa errada]
   feedback:
   sedução:
 
@@ -65,12 +65,12 @@ RESUMO:
 ## REAVALIAÇÃO
 
 
-*
+* [alternativa correta]
   feedback:
--
+- [alternativa errada]
   feedback:
   sedução:
--
+- [alternativa errada]
   feedback:
   sedução:
 

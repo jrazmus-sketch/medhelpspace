@@ -100,7 +100,14 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
   }
 
   const totalDecisions = screens.filter((s) => s.decision).length;
-  const done = Object.keys(state.answered).length;
+  // The ordinal is where the student IS, not how many answers exist. Counting
+  // answers made the header jump to "Decisão 2 de 2" while the first decision's
+  // feedback was still on screen (Karina, 2026-09-02). While the current
+  // decision is unanswered it is the next one; once answered, it is the one
+  // being read.
+  const answeredCount = Object.keys(state.answered).length;
+  const currentAnswered = key ? !!state.answered[key] : false;
+  const decisionOrdinal = Math.min(answeredCount + (currentAnswered ? 0 : 1), totalDecisions);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-4 sm:pt-6">
@@ -111,7 +118,9 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
         <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
           {payload.isPreview ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-700 dark:text-amber-300">Pré-visualização — não conta</span> : null}
           {!payload.isPreview && payload.hasCanonical && !finished ? <span className="rounded-full bg-muted px-2 py-0.5 font-medium">Repetição — não altera sua evolução</span> : null}
-          {totalDecisions > 1 ? <span>Decisão {Math.min(done + 1, totalDecisions)} de {totalDecisions}</span> : null}
+          {totalDecisions > 1 && !finished && !screen.closing ? (
+            <span>Decisão {decisionOrdinal} de {totalDecisions}</span>
+          ) : null}
         </div>
       </header>
 

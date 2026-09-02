@@ -366,6 +366,25 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   mediaRejectionReason) used by BOTH the importer (warning, case still imports) and the
   uploader (refusal with the PT reason). Before this the ClinAct uploader accepted ANY
   file type. Guide §8 carries the table (both copies).
+- [x] Karina's step-2 test round (2026-09-02): **Código Clínico and Ponto de Virada
+  APPROVED**; Clínica em Cena halted on a state bug, all fixed. Four fixes:
+  (1) **`clinact_step_events.step_id` was ON DELETE CASCADE** and `clinact_save_case`
+  replaces every step, so EVERY re-publish silently deleted the per-decision history
+  (confidence, correctness, timing) of every past attempt — scores survived, which is why
+  it looked like only confidence data vanished. Now `ON DELETE SET NULL`; lost events were
+  rebuilt from `clinact_attempts.state.answered`, which held the same facts.
+  Patch: `schema-patch-clinact-preserve-events.sql` (prod + local, backfill verified).
+  (2) A saved case gives every step a NEW id, so an attempt started earlier held answers
+  keyed to dead ids — resuming it pre-filled the Prontuário Vivo with unchosen conducts and
+  double-counted the clock. `loadPlayer` now abandons an attempt whose answered keys no
+  longer exist (an attempt with no answers still resumes).
+  (3) The decision counter used the ANSWER COUNT, so it read "Decisão 2 de 2" during the
+  first decision's feedback; it now tracks the decision being read.
+  (4) Código Decifrado's "Não fecham o caso" block: discard is signalled by the card
+  (dashed border, tinted panel, icon, struck-through label), never by faint text.
+  Blank templates in all four `modelo-*.md` now put the text on the marker line
+  (`- [pista]`, `* [alternativa correta]`) — a bare `-` made the importer say "Pista sem
+  texto"; an unreplaced `[placeholder]` is now a loud import error.
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before

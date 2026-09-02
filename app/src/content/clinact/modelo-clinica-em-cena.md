@@ -71,18 +71,18 @@ RESUMO:
 ## CENA: chegada
 
 
--
+- [conduta]
   qualidade:
   feedback:
   encontramos:
   estado:
   relógio:
--
+- [conduta]
   qualidade:
   feedback:
   estado:
   relógio:
--
+- [conduta]
   qualidade:
   feedback:
   estado:
@@ -92,12 +92,12 @@ RESUMO:
 ## CENA: deterioracao
 
 
--
+- [conduta]
   qualidade:
   feedback:
   estado:
   relógio:
--
+- [conduta]
   qualidade:
   feedback:
   estado:
@@ -106,16 +106,16 @@ RESUMO:
 ## CENA: investigacao
 
 
--
+- [conduta]
   qualidade:
   feedback:
   encontramos:
   relógio:
--
+- [conduta]
   qualidade:
   feedback:
   relógio:
--
+- [conduta]
   qualidade:
   feedback:
   relógio:
@@ -123,14 +123,14 @@ RESUMO:
 ## CENA: conduta-final
 
 
--
+- [conduta]
   qualidade:
   feedback:
   fizemos:
--
+- [conduta]
   qualidade:
   feedback:
--
+- [conduta]
   qualidade:
   feedback:
 
