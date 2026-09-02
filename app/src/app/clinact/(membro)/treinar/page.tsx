@@ -85,7 +85,10 @@ export default async function TreinarPage() {
                       </p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                         <span>{(c.specialty_id && spName.get(c.specialty_id)) || c.specialty_text || "—"}</span>
-                        {c.topic_text ? <span>· {c.topic_text}</span> : null}
+                        {/* TEMA only after the case is done. Reading "Pneumonia" in the
+                            list hands over the reasoning before the student starts
+                            (Karina, 2026-09-02); once finished it is just a label. */}
+                        {done && c.topic_text ? <span>· {c.topic_text}</span> : null}
                         <span>· {DIFF[c.difficulty] ?? c.difficulty}</span>
                         {c.est_minutes ? <span className="inline-flex items-center gap-0.5">· <Clock className="h-3 w-3" /> {c.est_minutes} min</span> : null}
                       </p>

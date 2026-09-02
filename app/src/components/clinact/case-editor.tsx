@@ -86,8 +86,14 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
   const warnings = checks.filter((c) => !c.ok && !c.blocking);
 
   // ── ficha handlers ─────────────────────────────────────────────────────────
+  // The address follows the title even on a published case. Renaming used to
+  // freeze the slug, which left D30-01 living at /caso/choque-decisao-hemodinamica
+  // after "Choque" was taken out of the title precisely so it would not give the
+  // case away (Karina, 2026-09-02). Old addresses keep working: every slug a case
+  // has ever had is kept and redirects here. The case id never changes, so
+  // attempts, Minha Evolução and the review queue are untouched by a rename.
   function onTitle(v: string) {
-    set({ title: v, slug: isNew || status === "draft" ? slugifyTitle(v) : doc.slug });
+    set({ title: v, slug: slugifyTitle(v) });
   }
   function onFormat(f: CaseFormat) {
     const hasContent = doc.steps.some((s) => Object.values(s.content).some((v) => (typeof v === "string" ? v.trim() : Array.isArray(v) ? v.length : false)));

@@ -51,6 +51,47 @@ export async function getCaseDocBySlug(slug: string): Promise<CaseDoc | null> {
   return getCaseDoc(data.id as number);
 }
 
+/**
+ * The case a retired address points at. Renaming a case keeps every slug it has
+ * ever had (clinact_case_slugs), so an old link redirects instead of 404ing.
+ * Returns the case's CURRENT slug so the caller can send the reader there.
+ */
+export async function getCaseBySlugAlias(slug: string): Promise<{ id: number; slug: string } | null> {
+  const admin = createAdminClient();
+  const { data: alias } = await admin
+    .from("clinact_case_slugs")
+    .select("case_id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!alias) return null;
+  const { data: c } = await admin
+    .from("clinact_cases")
+    .select("id, slug")
+    .eq("id", alias.case_id as number)
+    .maybeSingle();
+  if (!c) return null;
+  return { id: c.id as number, slug: c.slug as string };
+}
+
+/**
+ * A free address for `desired`, suffixed (-2, -3, …) when another case already
+ * answers to it — currently OR historically. A rename must never take an
+ * address that still redirects somewhere else (Karina, 2026-09-02: "nunca
+ * sobrescreva outro caso"), which the DB trigger also refuses outright; this
+ * picks a free one so the admin never hits that wall.
+ */
+export async function resolveCaseSlug(desired: string, caseId?: number | null): Promise<string> {
+  const admin = createAdminClient();
+  const candidates = [desired, ...Array.from({ length: 49 }, (_, i) => `${desired}-${i + 2}`)];
+  const { data } = await admin.from("clinact_case_slugs").select("slug, case_id").in("slug", candidates);
+  const owner = new Map((data ?? []).map((r) => [r.slug as string, Number(r.case_id)]));
+  for (const candidate of candidates) {
+    const held = owner.get(candidate);
+    if (held === undefined || (caseId != null && held === caseId)) return candidate;
+  }
+  return `${desired}-${Date.now()}`;
+}
+
 export async function getTaxonomy(): Promise<{
   specialties: { id: number; name: string }[];
   topics: { id: number; name: string; specialty_id: number | null }[];

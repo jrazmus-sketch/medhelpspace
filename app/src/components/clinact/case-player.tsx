@@ -49,6 +49,7 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
   const [score, setScore] = useState<number | null>(payload.score);
   const [clues, setClues] = useState(payload.clues);
   const [finalKey, setFinalKey] = useState(payload.finalKey);
+  const [topic, setTopic] = useState(payload.topic);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -80,6 +81,7 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
         setScore(r.score);
         if (r.clues) setClues(r.clues);
         if (r.finalKey !== undefined) setFinalKey(r.finalKey);
+        if (r.topic !== undefined) setTopic(r.topic);
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
@@ -96,6 +98,7 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
       setScore(null);
       setClues(payload.clues);
       setFinalKey(payload.finalKey);
+      setTopic(payload.topic);
     });
   }
 
@@ -137,7 +140,7 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
       {payload.format === "clinica_em_cena" ? <ProntuarioVivo state={state} /> : null}
 
       {finished || screen.closing ? (
-        <ClosingScreen screen={screen} score={score} takeaway={payload.takeaway} isPreview={payload.isPreview} onRestart={onRestart} pending={pending} clues={clues} subscribeCta={subscribeCta} format={payload.format} finalKey={finalKey} />
+        <ClosingScreen screen={screen} score={score} takeaway={payload.takeaway} isPreview={payload.isPreview} onRestart={onRestart} pending={pending} clues={clues} subscribeCta={subscribeCta} format={payload.format} finalKey={finalKey} topic={topic} />
       ) : (
         <ScreenView
           key={screen.index}
@@ -536,13 +539,14 @@ function AfterBlock({ step }: { step: StepDoc }) {
   );
 }
 
-function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending, clues, subscribeCta, format, finalKey }: { screen: PublicScreen; score: number | null; takeaway: string | null; isPreview: boolean; onRestart: () => void; pending: boolean; clues: PlayerPayload["clues"]; subscribeCta?: boolean; format?: PlayerPayload["format"]; finalKey?: string | null }) {
+function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending, clues, subscribeCta, format, finalKey, topic }: { screen: PublicScreen; score: number | null; takeaway: string | null; isPreview: boolean; onRestart: () => void; pending: boolean; clues: PlayerPayload["clues"]; subscribeCta?: boolean; format?: PlayerPayload["format"]; finalKey?: string | null; topic?: string | null }) {
   const hasLeve = screen.before.some((s) => s.kind === "leve_deste_caso");
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-border bg-surface-1 p-5 text-center">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Caso concluído</p>
         <p className="mt-1 text-4xl font-bold tabular-nums">{score != null ? `${Math.round(score)}%` : "—"}</p>
+        {topic ? <p className="mt-2 text-sm text-muted-foreground">Tema: <span className="font-medium text-foreground">{topic}</span></p> : null}
         {isPreview ? <p className="mt-1 text-xs text-muted-foreground">Pré-visualização: nada foi registrado na sua evolução.</p> : null}
       </section>
       {format === "codigo_clinico" ? <CodigoDecifrado clues={clues} finalKey={finalKey ?? null} /> : null}

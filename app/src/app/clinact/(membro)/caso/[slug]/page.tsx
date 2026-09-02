@@ -1,6 +1,6 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { getClinactViewer } from "@/lib/clinact/access";
-import { getCaseDocBySlug } from "@/lib/clinact/queries";
+import { getCaseBySlugAlias, getCaseDocBySlug } from "@/lib/clinact/queries";
 import { loadPlayer } from "@/lib/clinact/player-load";
 import { CasePlayer } from "@/components/clinact/case-player";
 
@@ -13,6 +13,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function CasePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const doc = await getCaseDocBySlug(slug);
+  // A case that was renamed still answers to its old addresses: send the reader
+  // to the current one instead of 404ing (Karina, 2026-09-02). Only reached when
+  // no case holds this slug now, so it can never shadow a live case.
+  if (!doc) {
+    const moved = await getCaseBySlugAlias(slug);
+    if (moved && moved.slug !== slug) permanentRedirect(`/clinact/caso/${moved.slug}`);
+  }
   // Drafts are never reachable here — not even by admins (they have /preview).
   if (!doc || doc.status !== "published") notFound();
   const viewer = await getClinactViewer();

@@ -15,7 +15,7 @@ pelo menos um caso de cada um dos outros três.
 | `LEVE DESTE CASO` | padrão |
 | `PERGUNTA` | se o caso pedir |
 | `NOVO DADO` | se o caso pedir |
-| `CONFIANÇA` | se o caso pedir |
+| `CONFIANÇA` | **seletiva** — nunca em todas as cenas (guia, seção 9) |
 | `CUSTO DO ATRASO` | se o caso pedir |
 | `MÍDIA` | disponível em qualquer ponto — imagem ou áudio |
 

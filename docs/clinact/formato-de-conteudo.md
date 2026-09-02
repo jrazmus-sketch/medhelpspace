@@ -100,6 +100,31 @@ RESUMO: Dispneia súbita com instabilidade: o que fazer antes da confirmação.
 reclama de `TITULO:` sem acento ou de `Título:` em minúsculas, mas segue em frente
 se faltar o `RESUMO:`.
 
+### O título não entrega o caso
+
+Antes de abrir um caso, o aluno vê **formato, especialidade, título, dificuldade e
+duração**. Ele **não** vê o `TEMA:` — esse aparece só depois que o caso termina.
+
+O motivo é o raciocínio: ler "Pneumonia" na lista entrega justamente aquilo que o
+caso deveria treinar. Por isso o `TÍTULO:` segue a mesma regra — prefira títulos
+narrativos ou situacionais, ligados ao problema que se apresenta, nunca ao
+diagnóstico ou à resposta central.
+
+**Título público = não entrega o caso. `TEMA:` = organiza o caso.**
+
+| Em vez de | Escreva |
+|---|---|
+| Choque — a pressão não respondeu | A pressão não respondeu |
+| Pneumonia no idoso | No início do plantão |
+
+O `TEMA:` continua sendo preenchido normalmente e continua valendo em tudo que é
+interno: organização da biblioteca, filtros, revisão espaçada, relatórios e a sua
+produção editorial. O que muda é só **onde** ele aparece para o aluno.
+
+Se você renomear um caso já publicado, o endereço acompanha o novo título sozinho
+e o endereço antigo continua funcionando — nenhum link quebra, e nada muda no
+histórico de quem já jogou o caso.
+
 ---
 
 ## 3. Os blocos
@@ -366,6 +391,20 @@ normalmente depois. Só registramos quanto tempo levou.
 
 `## CONFIANÇA` não tem conteúdo — é só ligar. A escala é fixa: baixa, média, alta.
 Use apenas nas decisões em que faz sentido medir a segurança do aluno.
+
+**No Clínica em Cena a coleta é seletiva — isso é regra do formato.** Não coloque
+`## CONFIANÇA` depois de todas as cenas. Um caso pode ter nenhuma coleta, uma ou
+várias, conforme a justificativa pedagógica. Priorize as decisões de maior peso
+clínico:
+
+- mudança relevante de hipótese;
+- interpretação de um dado clínico importante;
+- definição de gravidade;
+- escalonamento de cuidado;
+- decisão terapêutica relevante.
+
+Evite nas decisões triviais e onde a repetição atrapalhe o ritmo da narrativa. O
+importador não exige o bloco em cena nenhuma: quem decide é você, cena a cena.
 
 ---
 

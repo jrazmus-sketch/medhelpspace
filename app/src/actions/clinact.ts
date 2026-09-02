@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { CaseDocSchema, ConfidenceSchema } from "@/lib/clinact/schemas";
 import { parseCaseFile, resolveTaxonomy, type Issue } from "@/lib/clinact/parse";
 import { validateForPublish, publishBlockers } from "@/lib/clinact/validate";
-import { getCaseDoc, getTaxonomy, probeMedia, getOpenAttempt, type AttemptRow } from "@/lib/clinact/queries";
+import { getCaseDoc, getTaxonomy, probeMedia, getOpenAttempt, resolveCaseSlug, type AttemptRow } from "@/lib/clinact/queries";
 import { collectMedia, mediaKey, mediaRejectionReason } from "@/lib/clinact/media";
 import { slugifyTitle } from "@/lib/clinact/slug";
 import { createPreviewToken } from "@/lib/clinact/preview-token";
@@ -74,9 +74,12 @@ export async function saveCaseDraft(input: unknown): Promise<SaveResult> {
   const doc = parsed.data as CaseDoc;
   doc.slug = doc.slug?.trim() || slugifyTitle(doc.title);
   if (!doc.slug) return { ok: false, error: "invalid", detail: "slug" };
-
-  const { data: clash } = await admin.from("clinact_cases").select("id").eq("slug", doc.slug).maybeSingle();
-  if (clash && clash.id !== doc.id) return { ok: false, error: "slug_taken" };
+  // Renaming a case moves its address (the editor derives the slug from the
+  // title), so a rename can land on a slug another case still answers to. Take
+  // the next free one rather than refusing the save; the old address keeps
+  // redirecting here via clinact_case_slugs. The case id never changes, so
+  // attempts, Minha Evolução and the review queue are untouched.
+  doc.slug = await resolveCaseSlug(doc.slug, doc.id ?? null);
 
   const { data, error } = await admin.rpc("clinact_save_case", { p_case: doc, p_actor: userId });
   if (error) {
@@ -175,17 +178,10 @@ export async function duplicateCase(caseId: number): Promise<{ ok: true; id: num
     steps: doc.steps.map((s) => ({ ...s, id: undefined, options: s.options.map((o) => ({ ...o, id: undefined })) })),
     clues: doc.clues.map((c) => ({ ...c, id: undefined })),
   };
-  let base = slugifyTitle(copy.title);
-  let slug = base;
-  for (let i = 2; i < 50; i++) {
-    const { data } = await admin.from("clinact_cases").select("id").eq("slug", slug).maybeSingle();
-    if (!data) break;
-    slug = `${base}-${i}`;
-  }
+  const slug = await resolveCaseSlug(slugifyTitle(copy.title));
   copy.slug = slug;
   const { data, error } = await admin.rpc("clinact_save_case", { p_case: copy, p_actor: userId });
   if (error) throw error;
-  base = "";
   revalidateAdmin();
   return { ok: true, id: data as number };
 }
@@ -422,13 +418,13 @@ export async function submitDecision(attemptId: number, stepId: number, decision
   return { ok: true, reveal: buildReveal(screen, applied), state: applied.state };
 }
 
-export type AdvanceResult = { ok: true; state: AttemptState; finished: boolean; score: number | null; clues?: ClueDoc[]; finalKey?: string | null };
+export type AdvanceResult = { ok: true; state: AttemptState; finished: boolean; score: number | null; clues?: ClueDoc[]; finalKey?: string | null; topic?: string | null };
 
 export async function advanceAttempt(attemptId: number): Promise<AdvanceResult> {
   const { admin, attempt, doc } = await loadAttemptForUser(attemptId);
   const screens = buildScreens(doc.steps);
   const state = (Object.keys(attempt.state).length ? attempt.state : emptyState()) as AttemptState;
-  if (attempt.finished_at) return { ok: true, state, finished: true, score: attempt.score, clues: doc.clues, finalKey: doc.final_key ?? null };
+  if (attempt.finished_at) return { ok: true, state, finished: true, score: attempt.score, clues: doc.clues, finalKey: doc.final_key ?? null, topic: doc.topic_text ?? null };
   const current = screens[state.cursor];
   if (current?.decision && !state.answered[stepKey(current.decision)]) {
     // Cannot skip a decision.
@@ -477,7 +473,7 @@ export async function advanceAttempt(attemptId: number): Promise<AdvanceResult> 
         console.error("clinact review scheduling failed", e);
       }
     }
-    return { ok: true, state: next, finished: true, score, clues: doc.clues, finalKey: doc.final_key ?? null };
+    return { ok: true, state: next, finished: true, score, clues: doc.clues, finalKey: doc.final_key ?? null, topic: doc.topic_text ?? null };
   }
   await admin.from("clinact_attempts").update({ state: next }).eq("id", attemptId);
   return { ok: true, state: next, finished: false, score: null };

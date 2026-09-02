@@ -32,6 +32,13 @@ export type PlayerPayload = {
   takeaway: string | null;
   /** Centre of the Código Decifrado map (codigo_clinico only). */
   finalKey: string | null;
+  /**
+   * TEMA — withheld until the case is over, like the map spoilers above. Seeing
+   * "Pneumonia" before starting hands over the reasoning the case is meant to
+   * train (Karina, 2026-09-02). It stays a full internal metadatum: filters,
+   * Minha Evolução, the review queue and the admin all keep using it.
+   */
+  topic: string | null;
   /** True when the student already has a finished, canonical attempt (§2.3 UI rule). */
   hasCanonical: boolean;
 };
@@ -128,6 +135,7 @@ export async function loadPlayer(doc: CaseDoc, userId: string, isPreview: boolea
     score: attempt.score,
     takeaway: doc.takeaway ?? null,
     finalKey: finished ? (doc.final_key ?? null) : null,
+    topic: finished ? (doc.topic_text ?? null) : null,
     hasCanonical,
   };
 }
