@@ -1,35 +1,24 @@
 import Link from "next/link";
-import { getClinactViewer } from "@/lib/clinact/access";
-import { listPublishedCases, getCanonicalAttempts, getTaxonomy } from "@/lib/clinact/queries";
-import { getDueClinactReviews } from "@/lib/clinact/review";
-import { FORMAT_LABELS, type CaseFormat } from "@/lib/clinact/types";
-import { Check, Clock, Lock, RotateCcw, Sparkles } from "lucide-react";
+import { RotateCcw, Sparkles } from "lucide-react";
+import { loadLibrary } from "@/lib/clinact/library";
+import { FORMATS, FORMAT_LABELS } from "@/lib/clinact/types";
+import { FormatCard, SpecialtyCard } from "@/components/clinact/library-cards";
 
 export const metadata = { title: "Casos" };
 
-const DIFF: Record<string, string> = { basica: "Básica", intermediaria: "Intermediária", avancada: "Avançada" };
-
+/**
+ * The library home — the two doors Karina froze on 2026-09-02. Both lead to
+ * the same cases; neither exposes the TEMA.
+ */
 export default async function TreinarPage() {
-  const viewer = await getClinactViewer();
-  const [cases, canonical, taxonomy, dueReviews] = await Promise.all([
-    listPublishedCases(),
-    getCanonicalAttempts(viewer.userId),
-    getTaxonomy(),
-    getDueClinactReviews(viewer.userId),
-  ]);
-  const caseById = new Map(cases.map((c) => [c.id, c]));
-  // Only reviews the viewer can actually open (case still published + playable).
-  const reviews = dueReviews
-    .map((r) => caseById.get(r.case_id))
-    .filter((c): c is NonNullable<typeof c> => !!c && (viewer.hasAccess || c.is_free));
-  const spName = new Map(taxonomy.specialties.map((s) => [s.id, s.name]));
-  const byFormat = new Map<CaseFormat, typeof cases>();
-  for (const c of cases) byFormat.set(c.format, [...(byFormat.get(c.format) ?? []), c]);
+  const { viewer, specialties, countByFormat, dueReviews, cases } = await loadLibrary();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-2xl font-bold">Casos</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Raciocínio clínico que termina em uma decisão. Um caso por vez.</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Raciocínio clínico que termina em uma decisão. Um caso por vez.
+      </p>
 
       {!viewer.hasAccess ? (
         <div className="mt-4 rounded-xl border border-brand/40 bg-brand/10 p-4">
@@ -42,21 +31,25 @@ export default async function TreinarPage() {
         </div>
       ) : null}
 
-      {reviews.length ? (
+      {dueReviews.length ? (
         <section className="mt-6">
           <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
             <RotateCcw className="h-3.5 w-3.5" /> Revisões de hoje
           </h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Casos que chegaram à data de rever. Refazer não muda a sua primeira nota — reexpõe o raciocínio.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Casos que chegaram à data de rever. Refazer não muda a sua primeira nota — reexpõe o raciocínio.
+          </p>
           <ul className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-amber-500/40 bg-surface-1">
-            {reviews.map((c) => (
+            {dueReviews.map((c) => (
               <li key={c.id}>
                 <Link href={`/clinact/caso/${c.slug}`} className="flex min-h-14 items-center gap-3 px-4 py-3 hover:bg-accent/50">
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{c.title}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{FORMAT_LABELS[c.format]}</p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">Rever</span>
+                  <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    Rever
+                  </span>
                 </Link>
               </li>
             ))}
@@ -64,59 +57,50 @@ export default async function TreinarPage() {
         </section>
       ) : null}
 
-      {cases.length === 0 ? (
-        <div className="mt-8 rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">Nenhum caso publicado ainda.</div>
-      ) : (
-        [...byFormat.entries()].map(([format, list]) => (
-          <section key={format} className="mt-8">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-brand">{FORMAT_LABELS[format]}</h2>
-            <ul className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface-1">
-              {list.map((c) => {
-                const done = canonical.get(c.id);
-                const playable = viewer.hasAccess || c.is_free;
-                const body = (
-                  <>
-                    <div className="min-w-0 flex-1">
-                      <p className="flex flex-wrap items-center gap-2 font-medium leading-snug">
-                        {c.title}
-                        {c.is_free && !viewer.hasAccess ? (
-                          <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-xs font-medium text-sky-700 dark:text-sky-300">Grátis</span>
-                        ) : null}
-                      </p>
-                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                        <span>{(c.specialty_id && spName.get(c.specialty_id)) || c.specialty_text || "—"}</span>
-                        {/* TEMA only after the case is done. Reading "Pneumonia" in the
-                            list hands over the reasoning before the student starts
-                            (Karina, 2026-09-02); once finished it is just a label. */}
-                        {done && c.topic_text ? <span>· {c.topic_text}</span> : null}
-                        <span>· {DIFF[c.difficulty] ?? c.difficulty}</span>
-                        {c.est_minutes ? <span className="inline-flex items-center gap-0.5">· <Clock className="h-3 w-3" /> {c.est_minutes} min</span> : null}
-                      </p>
-                      {c.summary ? <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{c.summary}</p> : null}
-                    </div>
-                    {done ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                        <Check className="h-3 w-3" /> {done.score != null ? `${Math.round(Number(done.score))}%` : "feito"}
-                      </span>
-                    ) : !playable ? (
-                      <Lock className="h-4 w-4 shrink-0 text-muted-foreground" aria-label="Disponível com a assinatura" />
-                    ) : null}
-                  </>
-                );
-                return (
-                  <li key={c.id}>
-                    {playable ? (
-                      <Link href={`/clinact/caso/${c.slug}`} className="flex min-h-16 items-center gap-3 px-4 py-3 hover:bg-accent/50">{body}</Link>
-                    ) : (
-                      <Link href="/clinact" className="flex min-h-16 items-center gap-3 px-4 py-3 opacity-70 hover:opacity-100" title="Disponível com a assinatura">{body}</Link>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
-      )}
+      {/* ── Porta A — "como quero treinar?" ─────────────────────────────────── */}
+      <section className="mt-8">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-brand">Treine uma habilidade</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Cada formato treina um jeito diferente de raciocinar. Escolha como você quer pensar hoje.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {FORMATS.map((format) => (
+            <FormatCard
+              key={format}
+              format={format}
+              count={countByFormat[format]}
+              href={`/clinact/treinar/casos?formato=${format}`}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ── Porta B — "o que quero treinar?" ────────────────────────────────── */}
+      <section className="mt-8">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-brand">Estude por especialidade</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Entre pela especialidade e escolha, lá dentro, em qual formato quer treiná-la.
+        </p>
+        {specialties.length ? (
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {specialties.map((s) => (
+              <SpecialtyCard key={s.id} name={s.name} count={s.count} href={`/clinact/treinar/${s.slug}`} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            Nenhuma especialidade com casos publicados ainda.
+          </div>
+        )}
+      </section>
+
+      {cases.length ? (
+        <p className="mt-8 text-center">
+          <Link href="/clinact/treinar/casos" className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline">
+            Ver todos os casos
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

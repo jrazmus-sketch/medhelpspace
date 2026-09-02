@@ -93,16 +93,16 @@ export async function resolveCaseSlug(desired: string, caseId?: number | null): 
 }
 
 export async function getTaxonomy(): Promise<{
-  specialties: { id: number; name: string }[];
+  specialties: { id: number; slug: string; name: string }[];
   topics: { id: number; name: string; specialty_id: number | null }[];
 }> {
   const admin = createAdminClient();
   const [{ data: specialties }, { data: topics }] = await Promise.all([
-    admin.from("specialties").select("id, name").eq("active", true).order("display_order"),
+    admin.from("specialties").select("id, slug, name").eq("active", true).order("display_order"),
     admin.from("topics").select("id, name, specialty_id").order("name"),
   ]);
   return {
-    specialties: (specialties ?? []) as { id: number; name: string }[],
+    specialties: (specialties ?? []) as { id: number; slug: string; name: string }[],
     topics: (topics ?? []) as { id: number; name: string; specialty_id: number | null }[],
   };
 }

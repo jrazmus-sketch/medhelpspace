@@ -71,12 +71,14 @@ test("the player payload withholds the theme until the attempt is finished", () 
 });
 
 test("the library shows the theme only on cases the reader has finished", () => {
-  const page = read("app/clinact/(membro)/treinar/page.tsx");
-  assert.ok(page.includes("{done && c.topic_text ?"), "theme must be gated on completion");
-  assert.ok(!/\{c\.topic_text \?/.test(page), "no ungated theme render may remain");
+  // The case rows moved into the shared list when the two-door library landed
+  // (2026-09-02); the gate travelled with them.
+  const list = read("components/clinact/case-list.tsx");
+  assert.ok(/finished \? c\.topic_text : null/.test(list), "theme must be gated on completion");
+  assert.ok(!/\{c\.topic_text \?/.test(list), "no ungated theme render may remain");
   // What she DOES see before opening is unchanged.
-  for (const shown of ["FORMAT_LABELS[", "DIFF[c.difficulty]", "c.est_minutes"]) {
-    assert.ok(page.includes(shown), `${shown} must still be visible in the list`);
+  for (const shown of ["FORMAT_LABELS[", "DIFFICULTY_LABELS[", "c.est_minutes"]) {
+    assert.ok(list.includes(shown), `${shown} must still be visible in the list`);
   }
 });
 

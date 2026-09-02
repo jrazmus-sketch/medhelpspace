@@ -69,6 +69,26 @@ export const FORMAT_SKILL: Record<CaseFormat, Skill> = {
   ponto_de_virada: "reavaliar",
 };
 
+/**
+ * The verb each format trains, as the student meets it in the library
+ * (Karina, 2026-09-02: "Código Clínico — CONECTAR"). Both doors into the
+ * library lead with it, because the format IS the skill.
+ */
+export const SKILL_LABELS: Record<Skill, string> = {
+  conectar: "CONECTAR",
+  conduzir: "CONDUZIR",
+  priorizar: "PRIORIZAR",
+  reavaliar: "REAVALIAR",
+};
+
+/** One line per format — what the student is about to practise. */
+export const FORMAT_BLURBS: Record<CaseFormat, string> = {
+  codigo_clinico: "Juntar pistas soltas até o caso fechar.",
+  clinica_em_cena: "Conduzir um plantão, cena a cena, com o relógio correndo.",
+  decisao_30s: "Decidir rápido, quando a ordem das condutas é o que importa.",
+  ponto_de_virada: "Rever a hipótese quando um dado novo muda tudo.",
+};
+
 export const FORMAT_LABELS: Record<CaseFormat, string> = {
   codigo_clinico: "Código Clínico",
   clinica_em_cena: "Clínica em Cena",
