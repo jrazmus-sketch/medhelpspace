@@ -420,6 +420,23 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   none, one or several, by clinical weight (§9, both copies + the CEC model table).
   (4) Guide §2: **public title must not give the case away; TEMA organises it.**
   D30-01's slug updated on prod (7 attempts / 5 events verified unchanged).
+- [x] **Biblioteca — two-door architecture FROZEN + BUILT (Karina 2026-09-02, `e847e50`).**
+  `Porta A` formato → especialidade → caso (`/clinact/treinar/casos?formato=&especialidade=`);
+  `Porta B` especialidade → formato → caso (`/clinact/treinar/[especialidade]`, modelled on
+  Revalida's "Estude por especialidade"). **Both doors narrow the SAME library** and hand off
+  to one filtered list — one id, one address, one history, never a copy (test asserts the two
+  paths return the identical row). Format cards lead with the verb (CONECTAR/CONDUZIR/
+  PRIORIZAR/REAVALIAR — `SKILL_LABELS` + `FORMAT_BLURBS` in types.ts). **TEMA is NOT a third
+  public layer** — Cirurgia Geral → Clínica em Cena → "A dor mudou de lugar", never through
+  Apendicite; tests assert no library screen renders or navigates by it. Only specialties with
+  published cases are listed; a format with 0 cases reads "Em breve" and is unclickable.
+  Files: `lib/clinact/library.ts` (loader, server-only) + `library-filters.ts` (pure, testable —
+  library.ts imports access.ts which needs Next's runtime, so filters MUST stay separate),
+  `components/clinact/case-list.tsx` (shared rows, theme gated on completion) and
+  `library-cards.tsx`. `/clinact/treinar/casos` is a STATIC sibling of `[especialidade]`, so a
+  specialty may never be slugged `casos`. Rendered against the local DB with a real session
+  (both doors, chips, trail); **the visual /mobile-check did NOT run — Chrome DevTools profile
+  in use, and that browser must never be killed.**
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
