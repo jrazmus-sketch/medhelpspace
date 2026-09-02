@@ -269,3 +269,135 @@ L
   assert.equal(Object.keys(state.answered).length, 2);
   assert.equal(stepKey(screens[0].decision!) in state.answered, true);
 });
+
+// ── 4. Branching cases number the decisions WITHOUT a total ───────────────
+// CEC-01 is 3 decisions on the normal route and 4 through the detour, so the
+// normal route ended at "Decisão 3 de 4" — unfinished-looking, and it admitted
+// a scene the student never reached (Karina, 2026-09-02).
+
+/** Mirrors the header label in case-player.tsx. */
+function headerLabel(
+  state: { answered: Record<string, unknown> },
+  screen: { decision: { id?: number; position: number } | null; closing?: boolean },
+  total: number,
+  format: string,
+) {
+  if (!(total > 1) || screen.closing) return null;
+  const n = ordinalFor(state, screen, total);
+  return format === "clinica_em_cena" ? `Decisão ${n}` : `Decisão ${n} de ${total}`;
+}
+
+const CEC_BRANCHED = `FORMATO: clinica_em_cena
+TÍTULO: Rotas desiguais
+## NARRATIVA
+N
+## CENA: chegada
+C
+- Ideal
+  qualidade: ideal
+  relógio: 5
+- Nebulizar
+  qualidade: inadequada
+  relógio: 10
+  vai para: resposta
+## CENA: resposta
+R
+- Voltar
+  qualidade: aceitavel
+- Insistir
+  qualidade: prejudicial
+## CENA: investigacao
+I
+- Radiografia
+  qualidade: ideal
+- Nada
+  qualidade: inadequada
+## CENA: gravidade
+G
+- Internar
+  qualidade: ideal
+- Alta
+  qualidade: prejudicial
+## LEVE DESTE CASO
+L
+`;
+
+function branchedDoc() {
+  const doc = parseCaseFile(CEC_BRANCHED).cases[0].doc as CaseDoc;
+  doc.steps.forEach((s, i) => { s.id = 700 + i; s.options.forEach((o, j) => (o.id = 7000 + i * 10 + j)); });
+  return doc;
+}
+
+/** Plays a route, returning the header label shown at each decision. */
+function walk(doc: CaseDoc, pick: (sceneKey: string | null | undefined) => number) {
+  const screens = buildScreens(doc.steps);
+  const total = screens.filter((s) => s.decision).length;
+  let state = emptyState();
+  const labels: (string | null)[] = [];
+  for (let guard = 0; guard < 20; guard++) {
+    const screen = screens[state.cursor];
+    if (!screen.decision) break;
+    labels.push(headerLabel(state, screen, total, "clinica_em_cena"));
+    const opt = screen.decision.options[pick(screen.decision.scene_key)];
+    state = applyDecision(state, screen, { option_id: opt.id! }).state;
+    // the label must not change while the feedback for this decision is read
+    assert.equal(headerLabel(state, screen, total, "clinica_em_cena"), labels[labels.length - 1]);
+    const next = advance(state, screens);
+    if (next.cursor === state.cursor) break;
+    state = next;
+  }
+  return { labels, total, visited: Object.keys(state.answered).length };
+}
+
+test("the normal route never ends short of a total it cannot reach", () => {
+  const doc = branchedDoc();
+  const { labels, total, visited } = walk(doc, () => 0); // always the first (ideal) conduct
+  assert.equal(total, 4, "four decision screens exist");
+  assert.equal(visited, 3, "but the normal route skips the detour scene");
+  assert.deepEqual(labels, ["Decisão 1", "Decisão 2", "Decisão 3"]);
+  assert.ok(!labels.some((l) => l?.includes("de 4")), "no total is claimed");
+});
+
+test("the detour route numbers all four decisions, still without a total", () => {
+  const doc = branchedDoc();
+  // Take the detour at 'chegada', then the first conduct everywhere after.
+  const { labels, visited } = walk(doc, (scene) => (scene === "chegada" ? 1 : 0));
+  assert.equal(visited, 4);
+  assert.deepEqual(labels, ["Decisão 1", "Decisão 2", "Decisão 3", "Decisão 4"]);
+});
+
+test("linear formats keep the total, which is always true for them", () => {
+  const text = `FORMATO: ponto_de_virada
+TÍTULO: Linear
+## NARRATIVA
+N
+## PERGUNTA
+P1?
+* A
+  feedback: f
+- B
+  feedback: f
+## NOVO DADO
+D
+## REAVALIAÇÃO
+P2?
+* C
+  feedback: f
+- D
+  feedback: f
+## LEVE DESTE CASO
+L
+`;
+  const doc = parseCaseFile(text).cases[0].doc as CaseDoc;
+  doc.steps.forEach((s, i) => { s.id = 800 + i; s.options.forEach((o, j) => (o.id = 8000 + i * 10 + j)); });
+  const screens = buildScreens(doc.steps);
+  assert.equal(headerLabel(emptyState(), screens[0], 2, "ponto_de_virada"), "Decisão 1 de 2");
+});
+
+test("the counter is hidden on the closing screen", () => {
+  const doc = branchedDoc();
+  const screens = buildScreens(doc.steps);
+  const closing = screens[screens.length - 1];
+  assert.equal(closing.closing, true);
+  assert.equal(headerLabel(emptyState(), closing, 4, "clinica_em_cena"), null);
+});

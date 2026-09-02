@@ -108,6 +108,16 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
   const answeredCount = Object.keys(state.answered).length;
   const currentAnswered = key ? !!state.answered[key] : false;
   const decisionOrdinal = Math.min(answeredCount + (currentAnswered ? 0 : 1), totalDecisions);
+  // In Clínica em Cena the route BRANCHES, so the number of decisions the
+  // student will actually make is not knowable in advance: CEC-01 is three
+  // decisions on the normal route and four through the detour. Showing every
+  // decision screen as the total made the normal route end at "3 de 4", which
+  // both looks unfinished and admits that a scene exists somewhere the student
+  // never saw. Counting only the committed route is worse: the denominator
+  // would flip from 3 to 4 mid-case the moment a detour is taken, which reads
+  // as a bug. So branching cases number the decisions without a total
+  // (Karina, 2026-09-02); linear formats keep "de N", which is always true.
+  const branching = payload.format === "clinica_em_cena";
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-4 sm:pt-6">
@@ -119,7 +129,7 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
           {payload.isPreview ? <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-medium text-amber-700 dark:text-amber-300">Pré-visualização — não conta</span> : null}
           {!payload.isPreview && payload.hasCanonical && !finished ? <span className="rounded-full bg-muted px-2 py-0.5 font-medium">Repetição — não altera sua evolução</span> : null}
           {totalDecisions > 1 && !finished && !screen.closing ? (
-            <span>Decisão {decisionOrdinal} de {totalDecisions}</span>
+            <span>Decisão {decisionOrdinal}{branching ? "" : ` de ${totalDecisions}`}</span>
           ) : null}
         </div>
       </header>
