@@ -385,6 +385,15 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   Blank templates in all four `modelo-*.md` now put the text on the marker line
   (`- [pista]`, `* [alternativa correta]`) — a bare `-` made the importer say "Pista sem
   texto"; an unreplaced `[placeholder]` is now a loud import error.
+- [x] CEC-01 re-test PASSED (Karina 2026-09-02): all four formats now **APPROVED**
+  (routes, Prontuário on both, clock, reconvergence, no cross-route leakage, media,
+  desktop + mobile). One UX fix shipped after it: **branching cases number decisions
+  with NO total.** The old total counted every decision SCREEN, so CEC-01's normal
+  route ended at "Decisão 3 de 4" — a denominator it cannot reach, which also admits
+  a scene the student never visited. Counting only the committed route is worse: it
+  cannot know a branch is coming without spoiling it, so it would read "1 de 3" and
+  flip to "1 de 4" mid-feedback. `clinica_em_cena` → "Decisão N"; the linear formats
+  keep "de N". Karina still has to publish CEC-01 and mark the four free cases.
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
