@@ -394,6 +394,32 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   cannot know a branch is coming without spoiling it, so it would read "1 de 3" and
   flip to "1 de 4" mid-feedback. `clinica_em_cena` → "Decisão N"; the linear formats
   keep "de N". Karina still has to publish CEC-01 and mark the four free cases.
+- [x] **ETAPA 2 CLOSED by Karina 2026-09-02.** She published CEC-01, played it for real
+  on Mac + phone (registered in Minha Evolução), confirmed the recovered CC-01 history,
+  validated batch import of 4 separate .txt files (one per format → 4 drafts, right
+  editor each) — her normal flow is small batches, up to ~4 — and marked the four free
+  cases: D30-01 *A pressão não respondeu*, CC-01 *Um limite novo na rotina*,
+  PV-01 *Dor pélvica no plantão*, CEC-01 *No início do plantão*. Four decisions shipped
+  in `742d6ac`:
+  (1) **Renaming a case moves its address.** The editor froze the slug once published,
+  so retitling D30-01 (dropping "Choque", which gave the diagnosis away) left it at
+  `/caso/choque-decisao-hemodinamica`. The slug now follows the title always;
+  `clinact_case_slugs` keeps EVERY address a case ever had and the route
+  `permanentRedirect`s a retired one. Patch: `schema-patch-clinact-slug-history.sql`
+  (prod + local) — its trigger REFUSES a slug that is another case's alias, so a rename
+  can never point an old link at the wrong case; the editor suffixes (-2, -3) first.
+  **A rename cannot touch history**: attempts/step_events/review_schedule/Minha Evolução
+  all key on `clinact_cases.id`, never the slug (test asserts no history table stores
+  one). The IMPORTER still matches a re-imported file by slug — deliberately untouched.
+  (2) **TEMA is withheld until the case is over** — reading "Pneumonia" in the library
+  handed over the reasoning. Same finished-gate as the Código Decifrado spoilers; shown
+  on the closing screen and on already-completed library rows. Still a full internal
+  metadatum (filters, review queue, reports, admin). Before opening, the student sees
+  format · specialty · title · difficulty · duration.
+  (3) Guide: **confidence in Clínica em Cena is SELECTIVE** — never after every scene;
+  none, one or several, by clinical weight (§9, both copies + the CEC model table).
+  (4) Guide §2: **public title must not give the case away; TEMA organises it.**
+  D30-01's slug updated on prod (7 attempts / 5 events verified unchanged).
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
