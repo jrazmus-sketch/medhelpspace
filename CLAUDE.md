@@ -470,6 +470,20 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   own token + public key, and `app/.env.local` has NONE** (only the Orders-API
   `PAGBANK_ACCESS_TOKEN`); no recurrence code exists. Per the spec, the sales page and the
   free-case path do NOT depend on that release — only the plan buttons do.
+  **Item 1 DONE + verified** (fresh no-access account: signup → library → free case played in
+  full → paid case redirects to /clinact). **Item 2 DONE (`441da86`)**: the sales page exists in
+  full (her 14 sections, her copy, all via `SiteText`) and is NOT public — `site_pages.published`
+  gates it, admins see it with a "não publicada" banner. New tables `site_pages` +
+  `site_sections` (real booleans/ints, NEVER strings in site_content: "false" as text is truthy).
+  Sections are declared in code (`components/clinact/sales/sections.tsx`) and only ordered/hidden
+  by the table, so adding one is never a migration. **The gate fails CLOSED** — an unreadable
+  layout renders the sections but keeps `published=false`. Prices live in `lib/clinact/plans.ts`
+  (her decision 2) and "dez mensalidades"/"R$ 24,92" are COMPUTED so the claim cannot drift.
+  Renewal text sits inside Planos with no toggle of its own (decision 3). Pure ordering lives in
+  `lib/site-sections-order.ts` because `queries/site-sections.ts` is server-only (same split as
+  `library-filters.ts`). Still to build: `/admin/clinact/pagina` (toggle + reorder) and the
+  screenshot slots. **PagBank store URL answer: `https://www.medhelpspace.com.br`** — same
+  merchant/account/domain, not /clinact (public still shows "Em breve"), not staging.
   **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
   step 3). Decided: signup-first for the free cases (no anonymous play); prices read from
