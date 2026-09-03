@@ -435,8 +435,22 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   `components/clinact/case-list.tsx` (shared rows, theme gated on completion) and
   `library-cards.tsx`. `/clinact/treinar/casos` is a STATIC sibling of `[especialidade]`, so a
   specialty may never be slugged `casos`. Rendered against the local DB with a real session
-  (both doors, chips, trail); **the visual /mobile-check did NOT run — Chrome DevTools profile
-  in use, and that browser must never be killed.**
+  (both doors, chips, trail).
+- [x] **Library restyled to read as the same platform as Revalida (Karina 2026-09-02, `31e2276`).**
+  She confirmed the architecture and asked for Revalida's presentation: Casos = four format
+  cards then the specialty grid; a specialty page = title → short orientation → the four
+  formats (where Revalida shows its content types). Built against the REAL components
+  (`app/app/page.tsx`, `app/app/[specialty]/page.tsx`), not her screenshots — the Gmail
+  connector exposes no attachment bytes, so her prints could not be opened. Each format has a
+  colour token in globals.css (light + dark): `--c-codigo-clinico` / `--c-clinica-em-cena` /
+  `--c-decisao-30s` / `--c-ponto-de-virada`, mapped by `FORMAT_COLOR_VARS`.
+  **GOTCHA: an inline `opacity` on these cards is dead** — the `dash-fade-up` keyframe animates
+  opacity with `fill-mode: both`, so the animation's end state wins; the "Em breve" card dims
+  through `filter` instead. Also: Revalida's on-card text opacities (0.62/0.72/0.75) lose
+  contrast against the DARK palette (light pastels), so ClinAct uses 0.82/0.88/0.92.
+  **The visual mobile check DID run this time** (375 + 768, light + dark): no overflow, tap
+  targets at min-h-11. Chrome DevTools MCP was reachable — the earlier "profile in use" error
+  clears on its own; retry before assuming it is blocked.
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
