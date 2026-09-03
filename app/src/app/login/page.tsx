@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { safeDestination } from "@/lib/ambassadors/ref-link";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { LoginPageClient } from "./login-client";
 
@@ -16,15 +17,21 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string; next?: string; reset?: string }>;
 }) {
+  const { error, reset, next: rawNext } = await searchParams;
+  // Same guard as /auth/confirm and the ambassador links: `next` arrives in the
+  // query string, so it is attacker-controlled.
+  const next = rawNext && safeDestination(rawNext) === rawNext ? rawNext : null;
+
   if (!USE_MOCK_DATA) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) redirect("/app");
+    // Already signed in: honour where they were going, not the default.
+    if (user) redirect(next ?? "/app");
   }
 
-  const { error, reset } = await searchParams;
   return (
     <LoginPageClient
+      next={next}
       initialError={error ? mapAuthError(error) : null}
       initialNotice={
         reset === "sucesso"

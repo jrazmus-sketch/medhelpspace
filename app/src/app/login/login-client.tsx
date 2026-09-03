@@ -11,9 +11,12 @@ import { BrandLockup } from "@/components/brand/brand-lockup";
 export function LoginPageClient({
   initialError,
   initialNotice = null,
+  next = null,
 }: {
   initialError: string | null;
   initialNotice?: string | null;
+  /** Where to land after signing in — already validated on the server. */
+  next?: string | null;
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -38,6 +41,7 @@ export function LoginPageClient({
             )}
 
             <form action="/auth/login" method="post" className="space-y-4">
+              {next ? <input type="hidden" name="next" value={next} /> : null}
               <div className="space-y-1.5">
                 <Label htmlFor="email">E-mail</Label>
                 <Input

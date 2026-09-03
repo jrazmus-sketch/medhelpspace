@@ -21,7 +21,12 @@ function mapSignupError(msg: string): string {
   return "Erro ao criar conta. Tente novamente.";
 }
 
-export function SignupPageClient() {
+export function SignupPageClient({
+  next = null,
+}: {
+  /** Where to land after signing up — already validated on the server. */
+  next?: string | null;
+}) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,7 +49,7 @@ export function SignupPageClient() {
     if (USE_MOCK_DATA) {
       await new Promise((r) => setTimeout(r, 400));
       trackSignUp();
-      router.push("/app");
+      router.push(next ?? "/app");
       return;
     }
 
@@ -55,7 +60,7 @@ export function SignupPageClient() {
         email,
         password,
         displayName: displayName || null,
-        emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        next,
       }),
     });
 
@@ -71,7 +76,7 @@ export function SignupPageClient() {
 
     const { sessionCreated } = await res.json();
     if (sessionCreated) {
-      router.push("/app");
+      router.push(next ?? "/app");
       router.refresh();
     } else {
       setConfirmSent(true);
