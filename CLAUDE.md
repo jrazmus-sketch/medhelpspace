@@ -456,8 +456,21 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   **The visual mobile check DID run this time** (375 + 768, light + dark): no overflow, tap
   targets at min-h-11. Chrome DevTools MCP was reachable — the earlier "profile in use" error
   clears on its own; retry before assuming it is blocked.
+- [x] **ETAPA 2 APPROVED AND CLOSED by Karina 2026-09-02** — four formats, four pilot cases,
+  four free cases, individual + batch import, history protected across editorial revisions,
+  spaced review, confidence + high-confidence-error tracking, the two-door library, the shared
+  Revalida palette, and the spoiler rule tested live on a new case ("Antes mesmo da pulseira":
+  `Emergência · Intermediária · 2 min` before, `Anafilaxia` shown only after finishing).
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
-  sales page. **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
+  sales page. **STARTED 2026-09-02** (`00fb2e2`): login AND signup now thread `next` end to
+  end — `/login` declared `next` and ignored it, so the proxy's `?next=` landed everyone on
+  `/app` (fatal for a ClinAct subscriber with no cohort), and `/auth/signup` hardcoded
+  `emailRedirectTo`. Every hop re-runs `safeDestination()`. **BLOCKER for the subscription
+  half: PagBank recurrence is a SEPARATE API (`assinaturas.pagseguro.uol.com.br`) needing its
+  own token + public key, and `app/.env.local` has NONE** (only the Orders-API
+  `PAGBANK_ACCESS_TOKEN`); no recurrence code exists. Per the spec, the sales page and the
+  free-case path do NOT depend on that release — only the plan buttons do.
+  **Sales page brief + architecture assessment: `CLINACT-SALES-PAGE-SPEC.md`**
   (Karina 2026-09-01 — brief AND her approval of all six open points; do not build before
   step 3). Decided: signup-first for the free cases (no anonymous play); prices read from
   the plan config, never an editable string; renewal/billing text exempt from the
