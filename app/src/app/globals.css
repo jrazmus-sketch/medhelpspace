@@ -707,6 +707,12 @@
   --c-memorecards: #c2410c;   /* warm orange — the lone warm accent, so MemoreCards pops */
   --c-pop:         #06b6d4;
   --c-medhelp60:   #94a3b8;
+  /* ClinAct — one per reasoning format (Karina, 2026-09-02: the specialty page
+     shows the four formats where Revalida shows its content types). */
+  --c-codigo-clinico:  #7c3aed;   /* CONECTAR  — violet */
+  --c-clinica-em-cena: #0d9488;   /* CONDUZIR  — teal, the only cool-green here */
+  --c-decisao-30s:     #b91c1c;   /* PRIORIZAR — red, it is the clock format */
+  --c-ponto-de-virada: #c2410c;   /* REAVALIAR — warm orange, shares MemoreCards' role */
   --c-success:     #059669;
 }
 
@@ -722,6 +728,10 @@
   --c-memorecards: #fb923c;   /* warm orange (light) — the accent shown on the dark landing */
   --c-pop:         #66e0ff;
   --c-medhelp60:   #3a4055;
+  --c-codigo-clinico:  #a78bfa;
+  --c-clinica-em-cena: #2dd4bf;
+  --c-decisao-30s:     #f87171;
+  --c-ponto-de-virada: #fb923c;
   --c-success:     #5dd6a8;
 }
 

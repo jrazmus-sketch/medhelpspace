@@ -2,7 +2,7 @@ import Link from "next/link";
 import { RotateCcw, Sparkles } from "lucide-react";
 import { loadLibrary } from "@/lib/clinact/library";
 import { FORMATS, FORMAT_LABELS } from "@/lib/clinact/types";
-import { FormatCard, SpecialtyCard } from "@/components/clinact/library-cards";
+import { FormatCard, SECTION_LABEL, SpecialtyCard } from "@/components/clinact/library-cards";
 
 export const metadata = { title: "Casos" };
 
@@ -59,15 +59,16 @@ export default async function TreinarPage() {
 
       {/* ── Porta A — "como quero treinar?" ─────────────────────────────────── */}
       <section className="mt-8">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-brand">Treine uma habilidade</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        <div style={SECTION_LABEL}>Treine uma habilidade</div>
+        <p className="mb-3.5 mt-1.5 max-w-[54ch] text-[13.5px] leading-normal text-muted-foreground">
           Cada formato treina um jeito diferente de raciocinar. Escolha como você quer pensar hoje.
         </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {FORMATS.map((format) => (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {FORMATS.map((format, i) => (
             <FormatCard
               key={format}
               format={format}
+              index={i}
               count={countByFormat[format]}
               href={`/clinact/treinar/casos?formato=${format}`}
             />
@@ -76,15 +77,15 @@ export default async function TreinarPage() {
       </section>
 
       {/* ── Porta B — "o que quero treinar?" ────────────────────────────────── */}
-      <section className="mt-8">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-brand">Estude por especialidade</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+      <section className="mt-10 border-t border-surface-2 pt-6">
+        <div style={SECTION_LABEL}>Estude por especialidade</div>
+        <p className="mb-3.5 mt-1.5 max-w-[54ch] text-[13.5px] leading-normal text-muted-foreground">
           Entre pela especialidade e escolha, lá dentro, em qual formato quer treiná-la.
         </p>
         {specialties.length ? (
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {specialties.map((s) => (
-              <SpecialtyCard key={s.id} name={s.name} count={s.count} href={`/clinact/treinar/${s.slug}`} />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {specialties.map((s, i) => (
+              <SpecialtyCard key={s.id} name={s.name} count={s.count} index={i} href={`/clinact/treinar/${s.slug}`} />
             ))}
           </div>
         ) : (

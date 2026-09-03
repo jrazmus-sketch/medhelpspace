@@ -81,6 +81,18 @@ export const SKILL_LABELS: Record<Skill, string> = {
   reavaliar: "REAVALIAR",
 };
 
+/**
+ * The colour token each format wears in the library, mirroring how Revalida
+ * gives every content type its own colour (Karina, 2026-09-02). Tokens only —
+ * the values live in globals.css, light and dark.
+ */
+export const FORMAT_COLOR_VARS: Record<CaseFormat, string> = {
+  codigo_clinico: "var(--c-codigo-clinico)",
+  clinica_em_cena: "var(--c-clinica-em-cena)",
+  decisao_30s: "var(--c-decisao-30s)",
+  ponto_de_virada: "var(--c-ponto-de-virada)",
+};
+
 /** One line per format — what the student is about to practise. */
 export const FORMAT_BLURBS: Record<CaseFormat, string> = {
   codigo_clinico: "Juntar pistas soltas até o caso fechar.",
