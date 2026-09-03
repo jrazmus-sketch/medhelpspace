@@ -442,8 +442,13 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   formats (where Revalida shows its content types). Built against the REAL components
   (`app/app/page.tsx`, `app/app/[specialty]/page.tsx`), not her screenshots — the Gmail
   connector exposes no attachment bytes, so her prints could not be opened. Each format has a
-  colour token in globals.css (light + dark): `--c-codigo-clinico` / `--c-clinica-em-cena` /
-  `--c-decisao-30s` / `--c-ponto-de-virada`, mapped by `FORMAT_COLOR_VARS`.
+  colour token in globals.css, mapped by `FORMAT_COLOR_VARS`. **Those four tokens are `var()`
+  ALIASES of the Revalida palette, not colours of their own** (`9650259`, her follow-up): 1
+  Código Clínico → `--c-questoes`, 2 Clínica em Cena → `--c-resumos`, 3 Decisão em 30 Segundos
+  → `--c-revalida`, 4 Ponto de Virada → `--c-medvoice` — a FIXED order so a student learns the
+  format-colour pairing. Because they are aliases they follow light/dark automatically: never
+  redefine them in the dark block. An **"Em breve" card keeps its own colour** (a ghost: light
+  tint of the hue, hue on icon + verb, normal reading text) — never greyed, never recoloured.
   **GOTCHA: an inline `opacity` on these cards is dead** — the `dash-fade-up` keyframe animates
   opacity with `fill-mode: both`, so the animation's end state wins; the "Em breve" card dims
   through `filter` instead. Also: Revalida's on-card text opacities (0.62/0.72/0.75) lose
