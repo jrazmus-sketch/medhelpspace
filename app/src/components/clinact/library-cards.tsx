@@ -55,19 +55,34 @@ export function FormatCard({
   const color = FORMAT_COLOR_VARS[format];
   const Icon = FORMAT_ICONS[format];
 
+  // A format with no cases here stays visible but inactive. It keeps its OWN
+  // colour — Karina, 2026-09-02: an "Em breve" card must remain recognisable as
+  // that format and must never take a different colour — so instead of fading
+  // the filled tile (which drags the white text down with it and left the card
+  // hard to read), the inactive state is a GHOST of the same colour: a light
+  // tint of it, its own hue on the icon and the verb, and text in the normal
+  // reading colours.
+  const ink = empty
+    ? { verb: color, title: "var(--foreground)", body: "var(--muted-foreground)", cta: "var(--muted-foreground)", icon: color }
+    : {
+        verb: "rgba(255,255,255,0.88)",
+        title: "#fff",
+        body: "rgba(255,255,255,0.82)",
+        cta: "rgba(255,255,255,0.92)",
+        icon: "rgba(255,255,255,0.92)",
+      };
+
   const body = (
     <>
-      <Icon size={22} strokeWidth={1.6} style={{ color: "rgba(255,255,255,0.92)", flexShrink: 0, marginTop: 2 }} />
+      <Icon size={22} strokeWidth={1.6} style={{ color: ink.icon, flexShrink: 0, marginTop: 2 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "rgba(255,255,255,0.88)" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: ink.verb }}>
           {SKILL_LABELS[FORMAT_SKILL[format]]}
         </div>
-        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-.02em", color: "#fff", lineHeight: 1.2, marginTop: 2 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-.02em", color: ink.title, lineHeight: 1.2, marginTop: 2 }}>
           {FORMAT_LABELS[format]}
         </div>
-        <div style={{ fontSize: 12, marginTop: 5, lineHeight: 1.4, color: "rgba(255,255,255,0.82)" }}>
-          {FORMAT_BLURBS[format]}
-        </div>
+        <div style={{ fontSize: 12, marginTop: 5, lineHeight: 1.4, color: ink.body }}>{FORMAT_BLURBS[format]}</div>
         <div
           style={{
             marginTop: 12,
@@ -76,7 +91,7 @@ export function FormatCard({
             gap: 3,
             fontSize: 12,
             fontWeight: 600,
-            color: "rgba(255,255,255,0.92)",
+            color: ink.cta,
           }}
         >
           {empty ? "Em breve" : caseCount(count)}
@@ -94,21 +109,22 @@ export function FormatCard({
     gap: 16,
     textDecoration: "none",
     minHeight: 100,
-    background: `linear-gradient(140deg, color-mix(in srgb, ${color} 92%, #1a0030) 0%, ${color} 100%)`,
+    background: empty
+      ? `color-mix(in srgb, ${color} 10%, var(--surface-1))`
+      : `linear-gradient(140deg, color-mix(in srgb, ${color} 92%, #1a0030) 0%, ${color} 100%)`,
+    outline: empty ? `1px solid color-mix(in srgb, ${color} 30%, var(--surface-2))` : undefined,
+    outlineOffset: empty ? "-1px" : undefined,
     animation: "dash-fade-up 0.45s cubic-bezier(.16,1,.3,1) both",
     animationDelay: `${index * 55}ms`,
     position: "relative",
     overflow: "hidden",
   };
 
-  // A format with no cases here is shown but not clickable — the four formats
-  // are the structure, so hiding one would misrepresent the product.
-  // Dimming goes through `filter`, NOT `opacity`: the fade-up keyframe animates
-  // opacity with fill-mode `both`, so an inline opacity is overridden by the
-  // animation's end state and the card would read as active.
+  // The four formats are the structure, so an empty one is shown rather than
+  // hidden — but it is not a link.
   if (empty) {
     return (
-      <div style={{ ...style, filter: "grayscale(0.55) opacity(0.72)" }} aria-disabled>
+      <div style={style} aria-disabled>
         {body}
       </div>
     );
