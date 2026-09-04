@@ -96,3 +96,23 @@ test("both doors point at the same case URL", () => {
   assert.ok(home.includes("/clinact/treinar/casos?formato="), "format door filters the list");
   assert.ok(home.includes("/clinact/treinar/${s.slug}"), "specialty door opens the specialty");
 });
+
+test("each format aliases the Revalida palette token Karina chose", () => {
+  // She specified the mapping twice and asked for the SAME token, not an
+  // approximation — Ponto de Virada moved to AudioCards on 2026-09-03.
+  const css = readFileSync(path.join(SRC, "app", "globals.css"), "utf8");
+  // Collapse the column alignment so the assertion is about the mapping, not spacing.
+  const flat = css.replace(/[ 	]+/g, " ");
+  const expected: [string, string][] = [
+    ["--c-codigo-clinico", "--c-questoes"],
+    ["--c-clinica-em-cena", "--c-resumos"],
+    ["--c-decisao-30s", "--c-revalida"],
+    ["--c-ponto-de-virada", "--c-audiocards"],
+  ];
+  for (const [token, target] of expected) {
+    assert.ok(flat.includes(`${token}: var(${target});`), `${token} must alias ${target}`);
+    // Aliases resolve at use time, so they must NOT be redefined in the dark
+    // block — that would break the light/dark behaviour she asked us to inherit.
+    assert.equal(css.split(`${token}:`).length - 1, 1, `${token} must be defined exactly once`);
+  }
+});

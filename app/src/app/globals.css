@@ -716,7 +716,7 @@
   --c-codigo-clinico:  var(--c-questoes);   /* 1 — CONECTAR  · magenta-roxo   */
   --c-clinica-em-cena: var(--c-resumos);    /* 2 — CONDUZIR  · roxo-violeta   */
   --c-decisao-30s:     var(--c-revalida);   /* 3 — PRIORIZAR · azul elétrico  */
-  --c-ponto-de-virada: var(--c-medvoice);   /* 4 — REAVALIAR · índigo-violeta */
+  --c-ponto-de-virada: var(--c-audiocards); /* 4 — REAVALIAR · azul-ciano (AudioCards) */
   --c-success:     #059669;
 }
 
