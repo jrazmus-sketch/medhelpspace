@@ -41,6 +41,7 @@ export const STEP_KINDS = [
   "pergunta",
   "ordenar",
   "cena_conduta",
+  "investigacao",
   "novo_dado",
   "reavaliacao",
   "confianca",
@@ -59,7 +60,15 @@ export type StepKind = (typeof STEP_KINDS)[number];
 export const GENERATED_KINDS: readonly StepKind[] = ["prontuario", "codigo_decifrado"];
 
 /** Steps the student answers. Everything else is shown or attached. */
-export const DECISION_KINDS: readonly StepKind[] = ["pergunta", "reavaliacao", "ordenar", "cena_conduta"];
+export const DECISION_KINDS: readonly StepKind[] = ["pergunta", "reavaliacao", "ordenar", "cena_conduta", "investigacao"];
+
+/**
+ * Decisions whose answer is a SET of options rather than one (Karina,
+ * 2026-09-03). Only Clínica em Cena uses it: investigation is part of the
+ * promise of CONDUZIR, and she asked not to extend it to the other formats
+ * merely because it would work there.
+ */
+export const MULTI_SELECT_KINDS: readonly StepKind[] = ["investigacao"];
 
 /** Format → the skill it trains (the case's `primary_skill`). */
 export const FORMAT_SKILL: Record<CaseFormat, Skill> = {
@@ -154,6 +163,13 @@ export type ContentPistas = Record<string, never>; // clues live in `clues`
 export type ContentPergunta = { prompt: string; media?: Media[] };
 export type ContentOrdenar = { prompt: string; items: string[]; media?: Media[] };
 export type ContentCena = { text: string; media?: Media[] };
+/**
+ * The investigation block: one prompt, and the options are the exams/actions
+ * on offer. Each option carries its own quality and its own result (in
+ * `effect.revela`, text plus image or audio), so ordering it is what makes that
+ * information exist.
+ */
+export type ContentInvestigacao = { prompt: string; media?: Media[] };
 export type ContentNovoDado = { text: string; media?: Media[] };
 export type ContentReavaliacao = { prompt: string; media?: Media[] };
 export type ContentConfianca = Record<string, never>;
@@ -169,6 +185,7 @@ export type StepContent =
   | ContentPergunta
   | ContentOrdenar
   | ContentCena
+  | ContentInvestigacao
   | ContentNovoDado
   | ContentReavaliacao
   | ContentConfianca
@@ -264,6 +281,8 @@ export type AttemptState = {
 export type AnsweredStep = {
   option_id?: number | null;
   order?: number[];
+  /** Investigation: every option the student ordered, by id. */
+  selected?: number[];
   is_correct: boolean;
   weight: number;
   confidence?: Confidence | null;

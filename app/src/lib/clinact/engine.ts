@@ -9,8 +9,9 @@
  * closing screen (leve deste caso). One engine, four formats.
  */
 
-import { optionWeight, orderWeight } from "./scoring";
+import { optionWeight, orderWeight, selectionWeight } from "./scoring";
 import {
+  DECISION_KINDS,
   type AnsweredStep,
   type AttemptState,
   type Confidence,
@@ -21,7 +22,11 @@ import {
   type StepKind,
 } from "./types";
 
-const DECISION = new Set<StepKind>(["pergunta", "reavaliacao", "ordenar", "cena_conduta"]);
+// Derived from the shared list rather than repeated here: a second hardcoded
+// copy is how a new decision kind gets added to the types and then silently
+// ignored by the engine (which is exactly what happened when `investigacao`
+// was added).
+const DECISION = new Set<StepKind>(DECISION_KINDS);
 const POST = new Set<StepKind>(["feedback", "custo_do_atraso", "seducao"]);
 
 export type Screen = {
@@ -95,7 +100,9 @@ export function stepKey(step: StepDoc): string {
 
 export type Decision =
   | { option_id: number; confidence?: Confidence | null; time_ms?: number | null }
-  | { order: number[]; confidence?: Confidence | null; time_ms?: number | null };
+  | { order: number[]; confidence?: Confidence | null; time_ms?: number | null }
+  /** Investigation: the set of exams/actions ordered, in one decision. */
+  | { selected: number[]; confidence?: Confidence | null; time_ms?: number | null };
 
 export type Applied = {
   state: AttemptState;
@@ -121,7 +128,37 @@ export function applyDecision(state: AttemptState, screen: Screen, decision: Dec
     estado: { ...state.estado },
   };
 
-  if ("order" in decision) {
+  if ("selected" in decision) {
+    // The investigation block. Every ordered option applies its own effect, so
+    // the Prontuário Vivo ends up holding exactly what this student chose to
+    // find out — and nothing they did not order (Karina, 2026-09-03).
+    //
+    // Effects are folded in the AUTHORED order, not the order they were
+    // clicked, so two students who order the same set get the same chart and
+    // the same clock. The whole block is ONE answer: one weight, one confidence,
+    // one event.
+    const picked = step.options.filter((o) => decision.selected.includes(o.id ?? o.position));
+    const r = selectionWeight(step.options, decision.selected);
+    answered = {
+      selected: decision.selected,
+      is_correct: r.is_correct,
+      weight: r.weight,
+      confidence: decision.confidence ?? null,
+      time_ms: decision.time_ms ?? null,
+    };
+    for (const opt of picked) {
+      const revela = opt.effect?.revela ?? [];
+      if (revela.length) {
+        reveals = [...reveals, ...revela];
+        next.revealed.push(...revela);
+      }
+      if (opt.effect?.estado) Object.assign(next.estado, opt.effect.estado);
+      if (opt.effect?.relogio) next.relogio += opt.effect.relogio;
+    }
+    // A branch from inside an investigation is deliberately NOT supported: the
+    // student picks a set, not a path, so `vai para` on these options is
+    // ignored rather than letting the last one silently win.
+  } else if ("order" in decision) {
     const items = ((step.content as { items?: string[] }).items ?? []).map((_, i) => i);
     const r = orderWeight(decision.order, items);
     answered = { order: decision.order, is_correct: r.is_correct, weight: r.weight, confidence: decision.confidence ?? null, time_ms: decision.time_ms ?? null };

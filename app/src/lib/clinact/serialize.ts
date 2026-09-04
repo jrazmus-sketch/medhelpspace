@@ -19,6 +19,7 @@ const BLOCK_NAMES: Record<StepKind, string> = {
   pergunta: "PERGUNTA",
   ordenar: "ORDENAR",
   cena_conduta: "CENA",
+  investigacao: "INVESTIGAÇÃO",
   novo_dado: "NOVO DADO",
   reavaliacao: "REAVALIAÇÃO",
   confianca: "CONFIANÇA",

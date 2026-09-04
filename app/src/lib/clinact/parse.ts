@@ -102,6 +102,7 @@ const BLOCKS: Record<string, StepKind> = {
   PERGUNTA: "pergunta",
   ORDENAR: "ordenar",
   CENA: "cena_conduta",
+  "INVESTIGACAO": "investigacao",
   "NOVO DADO": "novo_dado",
   REAVALIACAO: "reavaliacao",
   CONFIANCA: "confianca",
@@ -277,7 +278,7 @@ function parseChunk(chunk: Chunk): ParsedCase {
       openAttr = null;
       const bk = blockKindOf(blockMatch[1]);
       if (!bk) {
-        errors.push({ line: ln, message: `Bloco desconhecido: "## ${blockMatch[1]}". Blocos válidos: NARRATIVA, PISTAS, PERGUNTA, ORDENAR, CENA, NOVO DADO, REAVALIAÇÃO, CONFIANÇA, FEEDBACK, CUSTO DO ATRASO, MÍDIA, CRONÔMETRO, LEVE DESTE CASO.` });
+        errors.push({ line: ln, message: `Bloco desconhecido: "## ${blockMatch[1]}". Blocos válidos: NARRATIVA, PISTAS, PERGUNTA, ORDENAR, CENA, INVESTIGAÇÃO, NOVO DADO, REAVALIAÇÃO, CONFIANÇA, FEEDBACK, CUSTO DO ATRASO, MÍDIA, CRONÔMETRO, LEVE DESTE CASO.` });
         target = null;
         continue;
       }
@@ -461,7 +462,8 @@ function parseChunk(chunk: Chunk): ParsedCase {
     const prose = joinProse(b.text);
     const content: Record<string, unknown> = {};
     const options: OptionDoc[] = [];
-    const isDecision = b.kind === "pergunta" || b.kind === "reavaliacao" || b.kind === "cena_conduta";
+    const isDecision =
+      b.kind === "pergunta" || b.kind === "reavaliacao" || b.kind === "cena_conduta" || b.kind === "investigacao";
 
     switch (b.kind) {
       case "narrativa":
@@ -535,13 +537,21 @@ function parseChunk(chunk: Chunk): ParsedCase {
     if (isDecision) {
       lastDecisionIdx = steps.length;
       const n = b.options.length;
-      if (n < 2) errors.push({ line: b.line, message: `"${blockName(b.kind)}" precisa de 2 a 5 alternativas (encontrei ${n}).` });
-      if (n > 5) errors.push({ line: b.line, message: `"${blockName(b.kind)}" tem ${n} alternativas — o máximo é 5.` });
+      // INVESTIGAÇÃO is a menu of exams, not a multiple-choice question: it
+      // holds more options than a question would, and none of them is "the"
+      // answer. Her guidance is a curated list per case, not a global catalogue,
+      // so the cap is higher but still a cap (Karina 2026-09-03).
+      const maxOptions = b.kind === "investigacao" ? 8 : 5;
+      if (n < 2) errors.push({ line: b.line, message: `"${blockName(b.kind)}" precisa de 2 a ${maxOptions} alternativas (encontrei ${n}).` });
+      if (n > maxOptions) errors.push({ line: b.line, message: `"${blockName(b.kind)}" tem ${n} alternativas — o máximo é ${maxOptions}.` });
       if (b.kind === "cena_conduta" && n > 4) warnings.push({ line: b.line, message: `Cena com ${n} condutas — o modelo sugere de 2 a 4.` });
 
       const stars = b.options.filter((o) => o.marker === "*").length;
       const anyQuality = b.options.some((o) => o.quality !== undefined);
-      if (b.kind !== "cena_conduta") {
+      // Neither a scene nor an investigation has a single correct alternative:
+      // the scene is graded by conduct quality, and the investigation by the
+      // quality of the SET the student ordered.
+      if (b.kind !== "cena_conduta" && b.kind !== "investigacao") {
         if (stars === 0) errors.push({ line: b.line, message: `"${blockName(b.kind)}" sem alternativa correta — marque uma com "*".` });
         if (stars > 1) errors.push({ line: b.line, message: `"${blockName(b.kind)}" com ${stars} alternativas marcadas "*" — só uma pode ser a correta.` });
       } else if (stars === 0 && !anyQuality) {
@@ -560,6 +570,10 @@ function parseChunk(chunk: Chunk): ParsedCase {
           else errors.push({ line: o.line, message: `qualidade "${o.quality}" inválida. Use ideal, aceitavel, inadequada ou prejudicial.` });
         } else if (b.kind === "cena_conduta") {
           warnings.push({ line: o.line, message: `Conduta sem "qualidade:" — entra como ${o.marker === "*" ? "certa" : "errada"} (certo/errado).` });
+        } else if (b.kind === "investigacao") {
+          // In INVESTIGAÇÃO the quality IS the score: there is no right/wrong
+          // fallback, because the block is graded as a set (Karina 2026-09-03).
+          errors.push({ line: o.line, message: `Em INVESTIGAÇÃO toda opção precisa de "qualidade:" (ideal, aceitavel, inadequada ou prejudicial) — é ela que vale a nota.` });
         }
         const isCorrect = o.marker === "*" || (b.kind === "cena_conduta" && stars === 0 && quality === "ideal");
         if (!isCorrect && !o.seduction && (format === "decisao_30s" || format === "ponto_de_virada") && b.kind !== "cena_conduta") {
@@ -584,7 +598,7 @@ function parseChunk(chunk: Chunk): ParsedCase {
         });
       });
     } else if (b.options.length) {
-      errors.push({ line: b.options[0].line, message: `Alternativas ("*" / "-") só cabem em PERGUNTA, REAVALIAÇÃO ou CENA — aqui é "${blockName(b.kind)}".` });
+      errors.push({ line: b.options[0].line, message: `Alternativas ("*" / "-") só cabem em PERGUNTA, REAVALIAÇÃO, CENA ou INVESTIGAÇÃO — aqui é "${blockName(b.kind)}".` });
     }
 
     steps.push({
@@ -599,7 +613,7 @@ function parseChunk(chunk: Chunk): ParsedCase {
   }
 
   if (format && !steps.some((s) => s.kind === "pergunta" || s.kind === "reavaliacao" || s.kind === "cena_conduta" || s.kind === "ordenar")) {
-    errors.push({ line: chunk.startLine, message: `O caso não tem nenhuma decisão (PERGUNTA, REAVALIAÇÃO, ORDENAR ou CENA).` });
+    errors.push({ line: chunk.startLine, message: `O caso não tem nenhuma decisão (PERGUNTA, REAVALIAÇÃO, ORDENAR, CENA ou INVESTIGAÇÃO).` });
   }
   if (format && !steps.some((s) => s.kind === "leve_deste_caso")) {
     warnings.push({ line: chunk.startLine, message: `Sem "## LEVE DESTE CASO".` });

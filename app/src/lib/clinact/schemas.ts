@@ -35,6 +35,7 @@ export const CONTENT_SCHEMAS: Record<StepKind, z.ZodTypeAny> = {
   pergunta: z.object({ prompt: text, media: mediaList }),
   ordenar: z.object({ prompt: text, items: z.array(z.string()).default([]), media: mediaList }),
   cena_conduta: z.object({ text, media: mediaList }),
+  investigacao: z.object({ prompt: text, media: mediaList }),
   novo_dado: z.object({ text, media: mediaList }),
   reavaliacao: z.object({ prompt: text, media: mediaList }),
   confianca: z.object({}).passthrough(),
@@ -141,6 +142,10 @@ export const KIND_FIELDS: Record<StepKind, FieldDesc[]> = {
   ],
   cena_conduta: [
     { key: "text", kind: "textarea", labelKey: "text" },
+    { key: "media", kind: "media", labelKey: "media" },
+  ],
+  investigacao: [
+    { key: "prompt", kind: "textarea", labelKey: "prompt" },
     { key: "media", kind: "media", labelKey: "media" },
   ],
   novo_dado: [

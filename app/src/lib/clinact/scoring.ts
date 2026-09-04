@@ -22,6 +22,55 @@ export function optionWeight(opt: { is_correct: boolean; quality?: Quality | nul
  * level (`is_correct` = all in place), graded for the weight so a near-miss
  * is not scored like a blank.
  */
+/**
+ * The investigation block's weight, approved by Karina 2026-09-03:
+ *
+ *   nota = Σ quality(chosen) ÷ ( nº of ideal options + nº chosen beyond them )
+ *
+ * It has to punish two different mistakes at once, which a plain average of
+ * what was ordered does not:
+ *
+ *   · focused and complete   → 1.0
+ *   · missed an essential    → numerator falls short, denominator does not
+ *   · ordered everything     → denominator grows with each extra
+ *   · ordered something harmful → adds 0 AND still grows the denominator
+ *
+ * HER EDITORIAL RULE, which this formula makes load-bearing: inside an
+ * investigation block, two options must not both be marked `ideal` when they
+ * are substitutes for each other — the denominator would then demand both to
+ * reach 1.0. "A or B" relationships are deliberately deferred, not supported.
+ *
+ * `is_correct` is NOT a fallback here (unlike optionWeight): an investigation
+ * option without an explicit quality is treated as neutral-useless (0.2 via the
+ * publish validation requiring quality), so a case cannot accidentally score
+ * full marks on unlabelled options.
+ */
+export function selectionWeight(
+  options: { id?: number; position: number; quality?: Quality | null }[],
+  selectedIds: number[],
+): { weight: number; is_correct: boolean } {
+  const chosen = new Set(selectedIds);
+  const key = (o: { id?: number; position: number }) => o.id ?? o.position;
+
+  const ideals = options.filter((o) => o.quality === "ideal");
+  const picked = options.filter((o) => chosen.has(key(o)));
+  const extras = picked.filter((o) => o.quality !== "ideal");
+
+  const denominator = ideals.length + extras.length;
+  // No ideal options authored and nothing ordered: nothing to measure.
+  if (denominator === 0) return { weight: 0, is_correct: false };
+
+  const earned = picked.reduce((sum, o) => sum + (o.quality ? QUALITY_WEIGHTS[o.quality] : 0), 0);
+  const weight = Math.min(earned / denominator, 1);
+
+  // "Correct" means the ideal investigation, exactly: every ideal one ordered
+  // and nothing else. Used for the marker, never for the score.
+  const pickedIdeals = picked.filter((o) => o.quality === "ideal").length;
+  const is_correct = ideals.length > 0 && pickedIdeals === ideals.length && extras.length === 0;
+
+  return { weight: Math.round(weight * 100) / 100, is_correct };
+}
+
 export function orderWeight(submitted: number[], correct: number[]): { weight: number; is_correct: boolean } {
   if (!correct.length || submitted.length !== correct.length) return { weight: 0, is_correct: false };
   let hits = 0;
