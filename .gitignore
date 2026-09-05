@@ -81,3 +81,7 @@ app/src/app/dev/
 # One-off data-import scripts (already run against prod; read machine-local sources)
 scripts/add-pediatria-simulado-3.js
 scripts/import-revalida-questoes.js
+
+# PagBank homologation evidence — sanitised, but a business document for the
+# analyst, not source. The repo is public; keep it out of history.
+pagbank-homologacao-*.txt
