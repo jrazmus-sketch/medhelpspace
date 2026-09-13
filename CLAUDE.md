@@ -95,8 +95,8 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   rows (incl. SUS back to the no-"e" spelling), explicit RETIRE list (now empty), titles
   normalised to "… Revalida Up", specialty from the FOLDER with `SPECIALTY_OVERRIDES` for what
   she stated in writing. Rollback snapshots: `parsed/revalida-up-rollback-2026-09-13-{prod,local}.sql`
-  (gitignored). Still unconfirmed by her: Oftalmo/Otorrino/Urologia stay in Outros and Chagas
-  in Infectologia (her file headers said otherwise; production placement was kept).
+  (gitignored). Karina confirmed in writing (2026-09-13): Oftalmo/Otorrino/Urologia stay in
+  Outros and Chagas in Infectologia — the file headers were wrong; the FOLDER is authoritative.
 - **Cohort 2026.2 retired from sale (2026-07-11)**: `cohorts.is_for_sale = false` for
   `revalida-2026-2` — the row stays `active = true`, so existing members keep full access
   (membership gating checks only the membership window, never sale flags). Sales focus is
