@@ -88,10 +88,15 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   Câncer Colorretal, Câncer de Esôfago, Hemorragia Digestiva, Pancreatite, Tumor de Pâncreas
   (ids 90061, 90063, 90126, 90164, 90212). Karina's first ask in "Revalida Up Update"; same
   pattern as the two earlier move patches. Patch: `schema-patch-move-gastro-cirurgia-revalida-up.sql`.
-  Her v2 rewrite (190 docx) is imported by `scripts/import-revalida-up-v2.js` — UPDATE in place
-  keyed by slug (165 `topic_content` study-plan links CASCADE on delete, so never delete+reinsert),
-  4 slug renames on the existing rows, explicit RETIRE list to draft, titles normalised to
-  "… Revalida Up", specialty from the FOLDER. Applied to LOCAL; prod waits on her answers.
+  **Her v2 rewrite is LIVE on prod + local (2026-09-13 evening): 195 topics, 862 insights**
+  (190 docx + 5 follow-up .md she sent for the topics missing from the first batch), imported
+  by `scripts/import-revalida-up-v2.js` — UPDATE in place keyed by slug (165 `topic_content`
+  study-plan links CASCADE on delete, so never delete+reinsert), 5 slug renames on the existing
+  rows (incl. SUS back to the no-"e" spelling), explicit RETIRE list (now empty), titles
+  normalised to "… Revalida Up", specialty from the FOLDER with `SPECIALTY_OVERRIDES` for what
+  she stated in writing. Rollback snapshots: `parsed/revalida-up-rollback-2026-09-13-{prod,local}.sql`
+  (gitignored). Still unconfirmed by her: Oftalmo/Otorrino/Urologia stay in Outros and Chagas
+  in Infectologia (her file headers said otherwise; production placement was kept).
 - **Cohort 2026.2 retired from sale (2026-07-11)**: `cohorts.is_for_sale = false` for
   `revalida-2026-2` — the row stays `active = true`, so existing members keep full access
   (membership gating checks only the membership window, never sale flags). Sales focus is

@@ -3,7 +3,9 @@
 /**
  * import-revalida-up-v2.js — generate the SQL that REPLACES the Revalida Up /
  * CaiuNaProva section with Karina's v2 rewrite (2026-09-13), delivered as
- * `<specialty>/<slug>.md.docx` files (markdown converted to Word).
+ * `<specialty>/<slug>.md.docx` files (markdown converted to Word) plus, at the
+ * top of the source folder, the 5 plain `.md` files she sent afterwards for the
+ * topics missing from the first batch. Both shapes produce the same HTML.
  *
  * GENERATOR ONLY. Reads the .docx files and WRITES parsed/revalida-up-v2-import.sql.
  * It does NOT connect to or modify the database. Apply with the existing runner,
@@ -29,7 +31,9 @@
  *   - every title ends in "Revalida Up" (files say "Revalida UP")
  *   - specialty comes from the FOLDER the file sits in (the frontmatter header
  *     disagrees with the folder for 4 files and the folder matches both Karina's
- *     organisation and production). `--specialty-from=header` flips that.
+ *     organisation and production). `--specialty-from=header` flips that. A file
+ *     whose folder is not a specialty (the 5 top-level .md) uses its header, and
+ *     SPECIALTY_OVERRIDES (her e-mail) beats both.
  *   - slug comes from the frontmatter, never the filename (4 files carry a
  *     "(1)" download suffix in their name)
  *   - the docx has no `---` dividers; an <hr> is emitted between insights so the
@@ -49,7 +53,7 @@ const { unzipSync, strFromU8 } = require(path.join(__dirname, "..", "app", "node
 
 const SRC =
   process.env.REVALIDA_SRC ||
-  "C:/Users/jrazm/OneDrive/Desktop/Medhelpspace/novo revalida up/novo revalida up";
+  "C:/Users/jrazm/OneDrive/Desktop/Medhelpspace/novo revalida up";
 const OUT = path.join(__dirname, "..", "parsed", "revalida-up-v2-import.sql");
 const SPECIALTY_FROM = (process.argv.find((a) => a.startsWith("--specialty-from=")) || "--specialty-from=folder")
   .split("=")[1]; // folder | header
@@ -63,6 +67,13 @@ const SPECIALTIES = new Set([
   "outros",
 ]);
 
+// Explicit specialty per slug, when Karina stated it in writing. Beats folder AND
+// header. Her 2026-09-13 follow-up lists Doenças Hepatobiliares under Cirurgia
+// Geral (the file's header says saude-coletiva; production has it under 13 too).
+const SPECIALTY_OVERRIDES = {
+  "doencas-hepatobiliares-revalida-up": "cirurgia-geral",
+};
+
 // Live slug → v2 slug. Same topic, new address: the existing row is renamed so
 // its id (and therefore completions + study-plan links) survives.
 const RENAMES = {
@@ -70,22 +81,17 @@ const RENAMES = {
   "crescimento-e-desenvolvimento-revalida-up": "crescimento-e-desenvolvimento-infantil-revalida-up",
   "psiquiatria-na-infancia-revalida-up": "psiquiatria-infantil-revalida-up",
   "sindrome-desconforto-respiratorio-recem-nascido-revalida-up": "sindrome-do-desconforto-respiratorio-do-recem-nascido-revalida-up",
+  // Prod renamed this one in July (added the "e"); her v2 file uses the original spelling.
+  "sus-historico-principios-e-diretrizes-revalida-up": "sus-historico-principios-diretrizes-revalida-up",
 };
 
-// Live topics with NO v2 file. Retired to status='draft' (kept, never deleted),
-// pending Karina's confirmation that the omission is intentional. EXPLICIT list:
-// anything else that is live-but-absent shows up in the verification query
-// instead of being touched.
-const RETIRE = [
-  "doencas-hepatobiliares-revalida-up",
-  "processo-saude-doenca-revalida-up",
-  "saude-do-trabalhador-revalida-up",
-  "vigilancia-epidemiologica-revalida-up",
-  "sus-historico-principios-e-diretrizes-revalida-up",
-  // Legacy spelling of the SUS slug still present on the LOCAL dev DB (renamed on
-  // prod in July). No such row on prod → no-op there.
-  "sus-historico-principios-diretrizes-revalida-up",
-];
+// Live topics with NO v2 file → status='draft' (kept, never deleted). EXPLICIT
+// list: anything else that is live-but-absent shows up in the verification query
+// instead of being touched. Empty since 2026-09-13 evening: Karina sent the 5
+// topics missing from the first batch, so nothing is retired any more. A slug
+// listed here that regains a file is re-published by the normal UPDATE path and
+// its retire note is cleared.
+const RETIRE = [];
 const RETIRE_NOTE = "retirado 2026-09-13: sem arquivo na versão v2 do Revalida Up (aguardando confirmação da Karina)";
 
 // ── docx → paragraphs ────────────────────────────────────────────────────────
@@ -189,6 +195,50 @@ function convert(file) {
   return { fm, html: body.join("\n"), stats: { h3, padrao, bullets, stray }, warnings };
 }
 
+// ── one .md file → the same shape ────────────────────────────────────────────
+// Plain markdown as Karina's tool exports it: YAML frontmatter, `## CaiuNaProva – X`,
+// `### ①…`, `- ` bullets, `> **PADRÃO DE PROVA:** …` (June files had the same line
+// without the `> `), `---` dividers (ignored — <hr> is derived from the h3s).
+
+function mdInline(s) {
+  return escHtml(s)
+    .replace(/\*\*([^*\n]+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(?<![*\w])\*([^*\n]+?)\*(?![*\w])/g, "<em>$1</em>")
+    .replace(/(?<!\w)_([^_\n]+?)_(?!\w)/g, "<em>$1</em>");
+}
+
+function convertMd(file) {
+  const text = fs.readFileSync(file, "utf8");
+  const warnings = [];
+  const m = text.match(/^\uFEFF?---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!m) return { fm: null, html: "", stats: { h3: 0, padrao: 0, bullets: 0, stray: 0 }, warnings: ["no YAML frontmatter"] };
+  const fm = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^(\w+):\s*(.*)$/);
+    if (kv) fm[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, "");
+  }
+  const body = [];
+  let li = [];
+  let h3 = 0, padrao = 0, bullets = 0, stray = 0;
+  const flush = () => { if (li.length) { body.push("<ul>" + li.join("") + "</ul>"); li = []; } };
+  for (const raw of m[2].split(/\r?\n/)) {
+    let line = raw.replace(/\s+$/, "");
+    if (line === "" || /^-{3,}$/.test(line)) { flush(); continue; }
+    if (line.startsWith("## ")) { flush(); body.push(`<h2>${mdInline(line.slice(3).trim())}</h2>`); continue; }
+    if (line.startsWith("### ")) { flush(); if (h3 > 0) body.push("<hr>"); h3++; body.push(`<h3>${escHtml(line.slice(4).trim())}</h3>`); continue; }
+    if (/^[-*] /.test(line)) { bullets++; li.push(`<li>${mdInline(line.slice(2).trim())}</li>`); continue; }
+    if (line.startsWith("> ")) line = line.slice(2).trim();
+    flush();
+    if (/^\*\*PADR[ÃA]O DE PROVA/i.test(line)) { padrao++; body.push(`<blockquote><p>${mdInline(line)}</p></blockquote>`); }
+    else { stray++; body.push(`<p>${mdInline(line)}</p>`); }
+  }
+  flush();
+  if (h3 === 0) warnings.push("0 insights (<h3>)");
+  if (padrao !== h3) warnings.push(`PADRÃO count ${padrao} != insight count ${h3}`);
+  if (stray) warnings.push(`${stray} stray paragraph(s) emitted as <p>`);
+  return { fm, html: body.join("\n"), stats: { h3, padrao, bullets, stray }, warnings };
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function walk(dir) {
@@ -196,7 +246,7 @@ function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...walk(full));
-    else if (entry.isFile() && entry.name.endsWith(".docx") && !entry.name.startsWith("~$")) out.push(full);
+    else if (entry.isFile() && /\.(docx|md)$/.test(entry.name) && !entry.name.startsWith("~$")) out.push(full);
   }
   return out;
 }
@@ -216,13 +266,19 @@ function main() {
   for (const file of files) {
     const rel = path.relative(SRC, file).split(path.sep).join("/");
     const folder = path.basename(path.dirname(file));
-    const { fm, html, stats, warnings: w } = convert(file);
+    const { fm, html, stats, warnings: w } = file.endsWith(".md") ? convertMd(file) : convert(file);
     for (const x of w) warnings.push(`${rel}: ${x}`);
     if (!fm) continue;
     if (fm.type !== "plain-content") warnings.push(`${rel}: type='${fm.type}'`);
     if (fm.view !== "revalida-up") warnings.push(`${rel}: view='${fm.view}'`);
-    if (fm.specialty !== folder) warnings.push(`${rel}: header specialty '${fm.specialty}' != folder '${folder}' → using ${SPECIALTY_FROM}`);
-    const specialty = SPECIALTY_FROM === "header" ? fm.specialty : folder;
+    const folderIsSpecialty = SPECIALTIES.has(folder);
+    let specialty = SPECIALTY_FROM === "header" || !folderIsSpecialty ? fm.specialty : folder;
+    if (folderIsSpecialty && fm.specialty !== folder) warnings.push(`${rel}: header specialty '${fm.specialty}' != folder '${folder}' → using ${SPECIALTY_FROM}`);
+    if (!folderIsSpecialty) warnings.push(`${rel}: folder '${folder}' is not a specialty → using header '${fm.specialty}'`);
+    if (SPECIALTY_OVERRIDES[fm.slug]) {
+      if (SPECIALTY_OVERRIDES[fm.slug] !== specialty) warnings.push(`${rel}: SPECIALTY_OVERRIDES → '${SPECIALTY_OVERRIDES[fm.slug]}' (header '${fm.specialty}', folder '${folder}')`);
+      specialty = SPECIALTY_OVERRIDES[fm.slug];
+    }
     if (!SPECIALTIES.has(specialty)) warnings.push(`${rel}: unknown specialty '${specialty}'`);
     if (seen.has(fm.slug)) warnings.push(`${rel}: DUPLICATE slug '${fm.slug}' (also ${seen.get(fm.slug)})`);
     seen.set(fm.slug, rel);
@@ -247,7 +303,14 @@ function main() {
       `  AND NOT EXISTS (SELECT 1 FROM pages WHERE slug = ${sqlStr(n)});`
     )
     .join("\n");
-  const retireList = RETIRE.map(sqlStr).join(", ");
+  const retireBlock = RETIRE.length
+    ? `UPDATE pages
+SET status = 'draft',
+    notes = concat_ws(' | ', notes, ${sqlStr(RETIRE_NOTE)}),
+    updated_at = now()
+WHERE view = 'revalida-up' AND status = 'publish'
+  AND slug IN (${RETIRE.map(sqlStr).join(", ")});`
+    : `-- (RETIRE list is empty — nothing to retire.)`;
 
   const sql = `-- revalida-up-v2-import.sql  (GENERATED by scripts/import-revalida-up-v2.js — do not hand-edit)
 --
@@ -276,10 +339,12 @@ END $$;
 ${renameLines}
 
 -- 2. Existing topics: overwrite title / specialty / status on the page …
+--    (a topic retired by an earlier run comes back: status → publish, retire note cleared)
 UPDATE pages p
 SET title = np.title,
     specialty_id = s.id,
     status = 'publish',
+    notes = NULLIF(btrim(replace(replace(COALESCE(p.notes, ''), ${sqlStr(RETIRE_NOTE)}, ''), ' | ', '')), ''),
     updated_at = now()
 FROM np JOIN specialties s ON s.slug = np.spec_slug
 WHERE p.slug = np.slug AND p.view = 'revalida-up';
@@ -318,12 +383,7 @@ SELECT ins.id, 1, np.title, np.body
 FROM ins JOIN np ON np.slug = ins.slug;
 
 -- 4. Retire the live topics that have no v2 file (explicit list; kept as draft).
-UPDATE pages
-SET status = 'draft',
-    notes = concat_ws(' | ', notes, ${sqlStr(RETIRE_NOTE)}),
-    updated_at = now()
-WHERE view = 'revalida-up' AND status = 'publish'
-  AND slug IN (${retireList});
+${retireBlock}
 
 -- ── Verification (printed by run-sql.js) ──
 -- Expect ${rows.length} published, ${RETIRE.length} + legacy skeleton as draft.
