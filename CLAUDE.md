@@ -84,6 +84,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   reached from the 60D accordion at `/app/formula-medhelp`. So the set of pages with
   `content_module_id = 1` is now Fórmula + the legacy MemoreCards/Simulados subtree, NOT
   Revalida Up. Patch: `schema-patch-swap-revalida-formula-gating.sql` (reversible).
+- **Revalida Up: 5 GI topics re-filed Gastro → Cirurgia Geral (2026-09-13, prod + local)**:
+  Câncer Colorretal, Câncer de Esôfago, Hemorragia Digestiva, Pancreatite, Tumor de Pâncreas
+  (ids 90061, 90063, 90126, 90164, 90212). Karina's first ask in "Revalida Up Update"; same
+  pattern as the two earlier move patches. Patch: `schema-patch-move-gastro-cirurgia-revalida-up.sql`.
+  Her v2 rewrite (190 docx) is imported by `scripts/import-revalida-up-v2.js` — UPDATE in place
+  keyed by slug (165 `topic_content` study-plan links CASCADE on delete, so never delete+reinsert),
+  4 slug renames on the existing rows, explicit RETIRE list to draft, titles normalised to
+  "… Revalida Up", specialty from the FOLDER. Applied to LOCAL; prod waits on her answers.
 - **Cohort 2026.2 retired from sale (2026-07-11)**: `cohorts.is_for_sale = false` for
   `revalida-2026-2` — the row stays `active = true`, so existing members keep full access
   (membership gating checks only the membership window, never sale flags). Sales focus is
