@@ -17,9 +17,23 @@ import "server-only";
  * auth failure and sends you hunting for a token problem. Hence the explicit
  * User-Agent below; do not remove it.
  *
- * Verified end to end in sandbox: plan → customer → card (tokenised by PagBank,
- * we never store a PAN) → subscription → invoice PAID → payment APPROVED →
- * cancel. Evidence: pagbank-homologacao-recorrencia.txt.
+ * CARDS ARE ENCRYPTED IN THE BROWSER — we hold no PCI certification, so the card
+ * number must never reach our server. Same `PagSeguro.encryptCard` SDK as the
+ * Revalida checkout (app/checkout/card-form.tsx), but with THIS API's public key
+ * (getPublicKey below): the Orders key is a different key. The encrypted blob
+ * goes on the customer, PagBank tokenises it, and the subscription references
+ * the token.
+ *
+ * ONE PLAINTEXT FIELD, and it is PagBank's rule, not ours: POST /subscriptions
+ * refuses every shape without `security_code` — card token, `encrypted`, inline
+ * customer — even though the CVV is already inside the encrypted blob. So the
+ * CVV passes through our server exactly once, for that call. Never store it,
+ * never log it, never put it in an error message.
+ *
+ * Verified end to end in sandbox with browser-encrypted cards (2026-09-15):
+ * plan → customer + encrypted card → subscription → invoice PAID → payment
+ * APPROVED → cancel; and declined card → OVERDUE → card change → cancel.
+ * Evidence: pagbank-homologacao-recorrencia.txt (gitignored).
  */
 
 const PROD = "https://api.assinaturas.pagseguro.com";
@@ -90,12 +104,14 @@ export type PagBankPlan = {
   interval: { unit: "MONTH" | "YEAR"; length: number };
 };
 
+export type PagBankCard = { token: string; brand: string; first_digits: string; last_digits: string };
+
 export type PagBankCustomer = {
   id: string;
   reference_id: string;
   email: string;
   name: string;
-  billing_info?: { type: string; card: { token: string; brand: string; first_digits: string; last_digits: string } }[];
+  billing_info?: { type: string; card: PagBankCard }[];
 };
 
 /** OVERDUE means the charge did not go through — never treat it as access. */
@@ -120,7 +136,16 @@ export type PagBankPayment = {
 
 // ── Operations, in the order the flow uses them ──────────────────────────────
 
-/** Creates (or rotates) the public key used to encrypt cards in the browser. */
+/** The public key the browser encrypts cards with. Read-only — prefer this. */
+export function getPublicKey(): Promise<{ public_key: string }> {
+  return request("GET", "/public-keys");
+}
+
+/**
+ * Creates the public key, or ROTATES it. After a rotation every card encrypted
+ * with the old key is refused, including a checkout form already open in a
+ * student's browser — so this is an operator action, never a request path.
+ */
 export function createPublicKey(): Promise<{ public_key: string }> {
   return request("PUT", "/public-keys", { type: "card" });
 }
@@ -147,6 +172,10 @@ export function listPlans(): Promise<{ plans: PagBankPlan[] }> {
   return request("GET", "/plans");
 }
 
+/**
+ * Creates the subscriber. Pass the browser-encrypted card and PagBank tokenises
+ * it in the same call; the token comes back on `billing_info[0].card.token`.
+ */
 export function createCustomer(input: {
   reference_id: string;
   name: string;
@@ -154,6 +183,7 @@ export function createCustomer(input: {
   tax_id: string;
   phone?: { area: string; number: string };
   birth_date?: string;
+  encrypted_card?: string;
 }): Promise<PagBankCustomer> {
   return request("POST", "/customers", {
     reference_id: input.reference_id,
@@ -162,6 +192,9 @@ export function createCustomer(input: {
     tax_id: input.tax_id,
     phones: input.phone ? [{ country: "55", area: input.phone.area, number: input.phone.number, type: "MOBILE" }] : undefined,
     birth_date: input.birth_date,
+    billing_info: input.encrypted_card
+      ? [{ type: "CREDIT_CARD", card: { encrypted: input.encrypted_card } }]
+      : undefined,
   });
 }
 
@@ -170,30 +203,26 @@ export function getCustomer(customerId: string): Promise<PagBankCustomer> {
 }
 
 /**
- * Registers the card ON THE CUSTOMER, which is what tokenises it. The
- * subscription then references the returned token — it cannot take a raw card.
+ * Replaces the subscriber's card with a new browser-encrypted one. The token
+ * changes, so read it from the response.
  * NOTE the payload is a BARE ARRAY; wrapping it in an object returns
  * "invalid_payload_format", which is not an obvious error message.
  */
-export function setCustomerCard(
-  customerId: string,
-  card: { number: string; exp_month: string; exp_year: string; security_code: string; holder_name: string },
-): Promise<PagBankCustomer> {
+export function setCustomerCard(customerId: string, encryptedCard: string): Promise<PagBankCustomer> {
   return request("PUT", `/customers/${customerId}/billing_info`, [
-    {
-      type: "CREDIT_CARD",
-      card: {
-        number: card.number,
-        exp_month: card.exp_month,
-        exp_year: card.exp_year,
-        security_code: card.security_code,
-        holder: { name: card.holder_name },
-      },
-    },
+    { type: "CREDIT_CARD", card: { encrypted: encryptedCard } },
   ]);
 }
 
-/** The card is referenced by its token; the CVV is still required each time. */
+/** The card token on a customer, if one is registered. */
+export function customerCardToken(customer: PagBankCustomer): string | null {
+  return customer.billing_info?.find((b) => b.type === "CREDIT_CARD")?.card.token ?? null;
+}
+
+/**
+ * The card is referenced by its token; PagBank still demands the CVV in plain
+ * text on this call (see the header). Pass it straight through — do not keep it.
+ */
 export function createSubscription(input: {
   reference_id: string;
   plan_id: string;
@@ -230,8 +259,8 @@ export function cancelSubscription(subscriptionId: string): Promise<null> {
  * Whether this subscription should currently grant access.
  *
  * Creating a subscription does NOT mean it was paid: a declined first charge
- * comes back with the subscription ACTIVE=false — status OVERDUE — while still
- * returning 201. Access must follow the PAYMENT, never the creation call.
+ * still returns 201, with the subscription in status OVERDUE. Access must
+ * follow the PAYMENT, never the creation call.
  */
 export function grantsAccess(status: SubscriptionStatus): boolean {
   return status === "ACTIVE";

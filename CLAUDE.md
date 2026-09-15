@@ -487,12 +487,24 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   `app/.env.local` only. Gotchas: that host 403s (Cloudflare error 1010) without a browser
   User-Agent; the card registers on the CUSTOMER as a bare array; POST /subscriptions returns 201
   even when the first charge is DENIED (status OVERDUE), so access must follow the payment.
-  **OPEN before homologation:** the sandbox run sent the RAW card from our server, but production
-  must encrypt it in the browser (`PagSeguro.encryptCard` with a Recurring-Payments public key —
-  those keys do not work with the Orders API) and that encrypted path is untested. The evidence
-  file `pagbank-homologacao-recorrencia.txt` (gitignored) reflects the raw-card run. Homologation
-  has NOT been submitted. Per the spec, the sales page and the free-case path do NOT depend on
-  that release — only the plan buttons do.
+  **Browser-encrypted cards PROVEN in sandbox (2026-09-15).** The card is encrypted in the browser
+  with `PagSeguro.encryptCard` using the Recurring-Payments public key (`GET /public-keys` on the
+  assinaturas host — NOT the Orders key) and sent as `billing_info: [{type, card: {encrypted}}]` on
+  POST /customers, which tokenises it; PUT `billing_info` with a new encrypted card changes it (new
+  token). Approved card → ACTIVE / PAID / APPROVED; declined (`5200489065784203`) → 201 OVERDUE /
+  DENIED. The raw-card path is REMOVED from the client — we are not PCI certified. **PagBank's one
+  plaintext field:** POST /subscriptions answers 400 `security_code` mandatory for EVERY shape
+  (card token, `card.encrypted`, inline customer), even though the reference says `encrypted`
+  excludes other fields — so the CVV transits our server once, for that call; never store or log
+  it. `getPublicKey()` reads the key; `createPublicKey()` (PUT) ROTATES it and breaks open checkout
+  forms. A declined first charge schedules an automatic retry for the NEXT DAY
+  (`retries: [{attempt: "FIRST", status: "SCHEDULED"}]` on the subscription). Changing the
+  customer's card moves their subscription onto it, so that retry should charge the new card
+  (not observed — it runs a day later); the subscription stays OVERDUE until then. Evidence for
+  form field 17: `pagbank-homologacao-recorrencia.txt` (repo root, gitignored), regenerated from
+  this encrypted run — 17 calls, approved + declined + card change, audited for
+  token/PAN/CVV/blob/CPF/e-mail. Homologation has NOT been submitted. Per the spec, the sales page
+  and the free-case path do NOT depend on that release — only the plan buttons do.
   **Item 1 DONE + verified** (fresh no-access account: signup → library → free case played in
   full → paid case redirects to /clinact). **Item 2 DONE (`441da86`)**: the sales page exists in
   full (her 14 sections, her copy, all via `SiteText`) and is NOT public — `site_pages.published`
