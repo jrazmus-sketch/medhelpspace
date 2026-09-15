@@ -478,11 +478,21 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   sales page. **STARTED 2026-09-02** (`00fb2e2`): login AND signup now thread `next` end to
   end — `/login` declared `next` and ignored it, so the proxy's `?next=` landed everyone on
   `/app` (fatal for a ClinAct subscriber with no cohort), and `/auth/signup` hardcoded
-  `emailRedirectTo`. Every hop re-runs `safeDestination()`. **BLOCKER for the subscription
-  half: PagBank recurrence is a SEPARATE API (`assinaturas.pagseguro.uol.com.br`) needing its
-  own token + public key, and `app/.env.local` has NONE** (only the Orders-API
-  `PAGBANK_ACCESS_TOKEN`); no recurrence code exists. Per the spec, the sales page and the
-  free-case path do NOT depend on that release — only the plan buttons do.
+  `emailRedirectTo`. Every hop re-runs `safeDestination()`. **PagBank recurrence (updated 2026-09-15):** a SEPARATE API
+  (`sandbox.api.assinaturas.pagseguro.com` / `api.assinaturas.pagseguro.com`) with its own token
+  + public key. **Proven end to end in SANDBOX (`4529f09`)** — plan → customer → card →
+  subscription → invoice PAID → payment APPROVED → cancel — via `lib/pagbank/subscriptions.ts`,
+  which is NOT imported anywhere yet: no subscription checkout, no webhook handler, and nothing
+  writes `user_product_access`. Token `PAGBANK_SUBSCRIPTIONS_TOKEN_SANDBOX` lives in
+  `app/.env.local` only. Gotchas: that host 403s (Cloudflare error 1010) without a browser
+  User-Agent; the card registers on the CUSTOMER as a bare array; POST /subscriptions returns 201
+  even when the first charge is DENIED (status OVERDUE), so access must follow the payment.
+  **OPEN before homologation:** the sandbox run sent the RAW card from our server, but production
+  must encrypt it in the browser (`PagSeguro.encryptCard` with a Recurring-Payments public key —
+  those keys do not work with the Orders API) and that encrypted path is untested. The evidence
+  file `pagbank-homologacao-recorrencia.txt` (gitignored) reflects the raw-card run. Homologation
+  has NOT been submitted. Per the spec, the sales page and the free-case path do NOT depend on
+  that release — only the plan buttons do.
   **Item 1 DONE + verified** (fresh no-access account: signup → library → free case played in
   full → paid case redirects to /clinact). **Item 2 DONE (`441da86`)**: the sales page exists in
   full (her 14 sections, her copy, all via `SiteText`) and is NOT public — `site_pages.published`
