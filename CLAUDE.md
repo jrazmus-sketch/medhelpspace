@@ -505,6 +505,26 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   this encrypted run — 17 calls, approved + declined + card change, audited for
   token/PAN/CVV/blob/CPF/e-mail. Homologation has NOT been submitted. Per the spec, the sales page
   and the free-case path do NOT depend on that release — only the plan buttons do.
+  **Karina's pre-homologation round (2026-09-17), `7ca4f11` + `b937b20`:** annual plan proven end to
+  end (R$ 299,00 → ACTIVE / PAID / APPROVED). **Retries and the webhook URL are ACCOUNT-WIDE, not
+  per subscription**: `GET|PUT /preferences/retries` (intervals only 1/3/5/7 days; `finally`
+  SUSPEND or CANCEL, CANCEL when unset — now 3/5/7 + SUSPEND in sandbox) and
+  `PUT /preferences/notifications` (`urls[]`, only the LAST url is notified). Both live on the
+  credential, so PRODUCTION must be configured again after homologation. **`reference_id` does NOT
+  deduplicate**: the same POST /subscriptions body twice created a second subscription and charged
+  it again. `x-idempotency-key` is the only guard and the header name is CASE-SENSITIVE (lowercase
+  only; other casings are refused with a message about the value's format); a replayed key answers
+  409 `idempotency_key_in_use` — treat that as "already created", then look it up. **Recovery
+  works**: declined → OVERDUE (+ a scheduled retry) → new encrypted card → `PUT /subscriptions/{id}/retry`
+  (one per day) → invoice PAID ~90s later, subscription ACTIVE ~3min later — the payment clears
+  BEFORE the status, so access must follow the PAID invoice. **Webhooks**: route
+  `/api/pagbank/assinaturas/webhook` (separate from the Revalida one, grants nothing, re-reads the
+  subscription from the API), events logged to `clinact_subscription_events`. Undocumented events
+  arrive: `customer.created`, `customer.billing_info.updated` (their `resource.id` is a CUST_ id).
+  **The signature is `x-payload-signature` — an ECDSA DER blob, NOT the Orders
+  `x-authenticity-token` SHA-256 of `{token}-{body}`** (the commit message on `b937b20` says
+  otherwise; it was written before a real delivery arrived). No PagBank public key is published for
+  it, so it is identified and logged, never gated on — ask PagBank during homologation.
   **Item 1 DONE + verified** (fresh no-access account: signup → library → free case played in
   full → paid case redirects to /clinact). **Item 2 DONE (`441da86`)**: the sales page exists in
   full (her 14 sections, her copy, all via `SiteText`) and is NOT public — `site_pages.published`

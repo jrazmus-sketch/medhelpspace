@@ -1,5 +1,17 @@
 import "server-only";
 
+// The pure half lives in subscriptions-core.ts so it can be tested: this
+// module is server-only, which the test runner cannot import.
+import { PagBankSubscriptionsError, type SubscriptionStatus } from "./subscriptions-core";
+
+export {
+  PagBankSubscriptionsError,
+  isIdempotencyConflict,
+  idempotencyKey,
+  grantsAccess,
+} from "./subscriptions-core";
+export type { SubscriptionStatus } from "./subscriptions-core";
+
 /**
  * PagBank Pagamentos Recorrentes (subscriptions) — the ClinAct subscription API.
  *
@@ -73,40 +85,6 @@ function token(env: SubscriptionsEnv): string {
   );
 }
 
-export class PagBankSubscriptionsError extends Error {
-  constructor(
-    readonly status: number,
-    readonly body: unknown,
-  ) {
-    super(`PagBank subscriptions ${status}`);
-    this.name = "PagBankSubscriptionsError";
-  }
-}
-
-/**
- * A replayed idempotency key answers 409 `idempotency_key_in_use` /
- * `idempotency_key_validation` — it does NOT return the original record. So a
- * caller that retries after a timeout must treat this as "the first attempt
- * went through" and go look the resource up by its reference_id, never as a
- * failure to create.
- */
-export function isIdempotencyConflict(error: unknown): boolean {
-  if (!(error instanceof PagBankSubscriptionsError) || error.status !== 409) return false;
-  const messages = (error.body as { error_messages?: { error?: string; description?: string }[] })?.error_messages;
-  return (messages ?? []).some(
-    (m) => /idempot/i.test(m.error ?? "") || /idempot/i.test(m.description ?? ""),
-  );
-}
-
-/** Alphanumeric only, max 200 chars, valid for 48h. Never reuse across payloads. */
-export function idempotencyKey(...parts: (string | number)[]): string {
-  return parts
-    .join("")
-    .normalize("NFD")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .slice(0, 200);
-}
-
 async function request<T>(
   method: string,
   path: string,
@@ -157,21 +135,6 @@ export type PagBankCustomer = {
   name: string;
   billing_info?: { type: string; card: PagBankCard }[];
 };
-
-/**
- * Only ACTIVE grants access. OVERDUE means a charge failed and retries are
- * pending; PENDING_ACTION means the retries are exhausted and the subscriber
- * must register a new card; SUSPENDED is the configured end state when
- * `finally: "SUSPEND"` is set (see setRetrySettings).
- */
-export type SubscriptionStatus =
-  | "ACTIVE"
-  | "OVERDUE"
-  | "PENDING_ACTION"
-  | "SUSPENDED"
-  | "CANCELED"
-  | "PENDING"
-  | "TRIAL";
 
 export type PagBankSubscription = {
   id: string;
@@ -415,15 +378,4 @@ export function getNotificationPreferences(): Promise<NotificationPreferences> {
  */
 export function setNotificationPreferences(prefs: NotificationPreferences): Promise<null> {
   return request("PUT", "/preferences/notifications", prefs);
-}
-
-/**
- * Whether this subscription should currently grant access.
- *
- * Creating a subscription does NOT mean it was paid: a declined first charge
- * still returns 201, with the subscription in status OVERDUE. Access must
- * follow the PAYMENT, never the creation call.
- */
-export function grantsAccess(status: SubscriptionStatus): boolean {
-  return status === "ACTIVE";
 }
