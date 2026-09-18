@@ -2,15 +2,22 @@ import "server-only";
 
 // The pure half lives in subscriptions-core.ts so it can be tested: this
 // module is server-only, which the test runner cannot import.
-import { PagBankSubscriptionsError, type SubscriptionStatus } from "./subscriptions-core";
+import {
+  PagBankSubscriptionsError,
+  reconcileOutcome,
+  type ReconciliationOutcome,
+  type SubscriptionStatus,
+} from "./subscriptions-core";
 
 export {
   PagBankSubscriptionsError,
   isIdempotencyConflict,
   idempotencyKey,
   grantsAccess,
+  reconcileOutcome,
+  canRetryWithNewKey,
 } from "./subscriptions-core";
-export type { SubscriptionStatus } from "./subscriptions-core";
+export type { SubscriptionStatus, ReconciliationOutcome } from "./subscriptions-core";
 
 /**
  * PagBank Pagamentos Recorrentes (subscriptions) — the ClinAct subscription API.
@@ -295,6 +302,45 @@ export function createSubscription(input: {
     },
     input.idempotency_key,
   );
+}
+
+/**
+ * Subscriptions can be looked up by OUR OWN reference_id (verified in sandbox
+ * 2026-09-18: the filter matches the reference we sent, and an unknown one
+ * returns an empty list). That is what makes the 409 recovery below possible.
+ */
+export function listSubscriptions(params?: {
+  reference_id?: string;
+  status?: SubscriptionStatus[];
+}): Promise<{ subscriptions: PagBankSubscription[] }> {
+  const query = new URLSearchParams();
+  if (params?.reference_id) query.set("reference_id", params.reference_id);
+  for (const status of params?.status ?? []) query.append("status", status);
+  const qs = query.toString();
+  return request("GET", `/subscriptions${qs ? `?${qs}` : ""}`);
+}
+
+export async function findSubscriptionByReference(
+  referenceId: string,
+): Promise<PagBankSubscription | null> {
+  const { subscriptions } = await listSubscriptions({ reference_id: referenceId });
+  return subscriptions?.[0] ?? null;
+}
+
+/**
+ * THE 409 RECOVERY PATH. Call this when createSubscription throws and
+ * isIdempotencyConflict() is true — meaning the first attempt may well have
+ * gone through and only the response was lost.
+ *
+ * Never answer that 409 by retrying with a new idempotency key: a new key is a
+ * new request, and it creates a second subscription and charges the student
+ * again. Ask this instead, and let canRetryWithNewKey() decide.
+ */
+export async function reconcileByReference(referenceId: string): Promise<ReconciliationOutcome> {
+  const subscription = await findSubscriptionByReference(referenceId);
+  if (!subscription) return reconcileOutcome(null, []);
+  const { invoices } = await listInvoices(subscription.id);
+  return reconcileOutcome(subscription, invoices ?? []);
 }
 
 export function getSubscription(subscriptionId: string): Promise<PagBankSubscription> {

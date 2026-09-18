@@ -82,3 +82,47 @@ export type SubscriptionStatus =
 export function grantsAccess(status: SubscriptionStatus): boolean {
   return status === "ACTIVE";
 }
+
+/**
+ * What a 409 idempotency conflict turned out to mean.
+ *
+ * Karina's condition for production (2026-09-18), and it is the right one: if
+ * PagBank creates the subscription but our request times out before the 201
+ * arrives, the retry with the SAME key answers 409 — it does not return the
+ * original record. That 409 must never be shown to a student as a failed
+ * payment, and must never be answered by retrying with a NEW key, because a new
+ * key is a new request: it creates a SECOND subscription and charges again
+ * (verified in sandbox — two paid R$ 299,00 invoices).
+ *
+ * So the 409 sends us looking for what already exists, and this decides what we
+ * found. Access follows the PAID INVOICE rather than the subscription's status:
+ * after a recovered charge the invoice reads PAID minutes before the
+ * subscription flips to ACTIVE, and a student who just fixed their card should
+ * not wait out that gap.
+ */
+export type ReconciliationOutcome =
+  /** It exists and it is paid — grant access. */
+  | { kind: "paid"; subscriptionId: string }
+  /** It exists but nothing is paid yet — say "aguardando confirmação", never "falhou". */
+  | { kind: "pending"; subscriptionId: string; status: SubscriptionStatus }
+  /** Nothing was created. Only here is a fresh key safe. */
+  | { kind: "absent" };
+
+export function reconcileOutcome(
+  subscription: { id: string; status: SubscriptionStatus } | null,
+  invoices: { status: string }[],
+): ReconciliationOutcome {
+  if (!subscription) return { kind: "absent" };
+  if (invoices.some((i) => i.status === "PAID")) {
+    return { kind: "paid", subscriptionId: subscription.id };
+  }
+  return { kind: "pending", subscriptionId: subscription.id, status: subscription.status };
+}
+
+/**
+ * A new idempotency key means a new charge. It is only ever safe when the first
+ * attempt left nothing behind.
+ */
+export function canRetryWithNewKey(outcome: ReconciliationOutcome): boolean {
+  return outcome.kind === "absent";
+}
