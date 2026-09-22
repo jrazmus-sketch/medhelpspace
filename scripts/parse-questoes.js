@@ -250,6 +250,7 @@ function main() {
   const warnings = [];
   const perSpec = {};
   let qTotal = 0, anulada = 0, imgHints = 0, dropped = 0;
+  const droppedRows = [];
 
   for (const t of ts) {
     let text;
@@ -261,7 +262,14 @@ function main() {
     for (const chunk of chunks) {
       const p = parseChunk(chunk);
       if (p.error) { warnings.push(`${t.spec}/${t.topicSlug} Q${p.number ?? '?'}: ${p.error}`); continue; }
-      if (!p.correct) { dropped++; warnings.push(`${t.spec}/${t.topicSlug} Q${p.number}: no correct letter — DROPPED${p.anulada ? ' (anulada)' : ''}`); continue; }
+      if (!p.correct) {
+        dropped++;
+        // Keep a machine-readable record: scripts/import-anuladas.js needs the topic of a
+        // question Karina later sends back with a defensible answer.
+        droppedRows.push({ spec: t.spec, topicSlug: t.topicSlug, number: String(p.number), year: p.year || null, anulada: !!p.anulada });
+        warnings.push(`${t.spec}/${t.topicSlug} Q${p.number}: no correct letter — DROPPED${p.anulada ? ' (anulada)' : ''}`);
+        continue;
+      }
       pos += 1;
       if (p.anulada) anulada++;
       if (p.needsImage) imgHints++;
@@ -296,6 +304,7 @@ function main() {
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(result, null, 2), 'utf8');
+  fs.writeFileSync(OUT.replace('questoes-parsed.json', 'questoes-dropped.json'), JSON.stringify(droppedRows, null, 2), 'utf8');
 
   console.log(`\nQuestões parse (from local .docx)`);
   console.log(`  root   : ${ROOT}`);
