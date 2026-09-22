@@ -25,9 +25,10 @@
  * twice, and on 2026-09-20 she was told her typed tables replace the pictures. Each file in
  * TABLE_PICTURES was compared by eye (2026-09-22) against its typed table: every value is
  * in the typed version. On a question that carries a typed table, a listed file is never
- * attached, and if it is already attached it is CLEARED (exact-URL guard). Deliberately NOT
- * listed: pediatria/ictericia-neonatal-2024-2q73-atualizado.jpg — its phototherapy /
- * exsanguinotransfusion reference grid was never typed, and the question needs it.
+ * attached, and if it is already attached it is CLEARED (exact-URL guard).
+ * Icterícia Neonatal Q73's picture was the one exception — its phototherapy /
+ * exsanguinotransfusion grid existed only there — until Karina approved typing that grid out
+ * (scripts/patch-ictericia-q73-table.js, 2026-09-22); it is now listed like the rest.
  */
 const fs = require('fs');
 const path = require('path');
@@ -60,6 +61,9 @@ const TABLE_PICTURES = new Set([
   'neurologia/avc-hemorragico-2025-1-q70.png', 'neurologia/sindrome-guillain-barre-q21-2024-1.png',
   'obstetricia/assistencia-pre-natal-q14-2024-1.png', 'obstetricia/infeccao-urinaria-na-gestacao-q04-26-1.png',
   'pediatria/crescimento-e-desenvolvimento-infantil-q21-26-1.png', 'pediatria/ictericia-neonatal-2024-2-23.png',
+  // Its reference grid was typed out on 2026-09-22 (scripts/patch-ictericia-q73-table.js),
+  // so this picture is now fully redundant like the rest.
+  'pediatria/ictericia-neonatal-2024-2q73-atualizado.jpg',
   'pneumologia/dpoc-2025-1-q21.png',
   'reumatologia/artrite-infecciosa-q96-26-1.png', 'reumatologia/lupus-q71-2022-1.png',
   'saude-coletiva/indicadores-de-saude-q20-26-1.png',
