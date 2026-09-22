@@ -59,7 +59,7 @@ export function FlashcardHub({
             />
             <div className="flex h-full flex-col justify-between gap-3 pl-4 pr-3 py-3.5 sm:py-4">
               <div className="flex items-start justify-between gap-2">
-                <span className="font-medium leading-snug text-foreground group-hover:text-brand transition-colors">
+                <span className="min-w-0 font-medium leading-snug break-words text-foreground group-hover:text-brand transition-colors">
                   {cat.label}
                 </span>
                 <ChevronRight

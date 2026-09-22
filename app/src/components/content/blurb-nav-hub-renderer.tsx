@@ -128,10 +128,10 @@ export function TopicCard({
               id={editable.id}
               field={editable.field}
               value={label}
-              className="font-medium leading-snug text-foreground group-hover:text-brand transition-colors"
+              className="min-w-0 font-medium leading-snug break-words text-foreground group-hover:text-brand transition-colors"
             />
           ) : (
-            <span className="font-medium leading-snug text-foreground group-hover:text-brand transition-colors">
+            <span className="min-w-0 font-medium leading-snug break-words text-foreground group-hover:text-brand transition-colors">
               {label}
             </span>
           )}

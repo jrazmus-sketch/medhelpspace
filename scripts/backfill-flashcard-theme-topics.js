@@ -57,9 +57,20 @@ const ALIASES = {
   'obstetricia': {
     'diabetes gestacional': 'Diabetes da Gestação',
   },
+  // Renamed in the 2026-09 rewrite. "HPV e Câncer do Colo Uterino" is incidence 12 —
+  // without the alias it ranks last and drops out of the weighted deck.
+  'ginecologia': {
+    'hpv e cancer do colo uterino': 'HPV e Câncer de Colo Uterino',
+    'ulceras genitais e ist': 'Úlceras genitais - IST',
+    'puberdade e fisiologia menstrual na adolescencia': 'Fisiologia Menstrual',
+  },
   'pediatria': {
     'maus tratos violencia e prevencao de acidentes na infancia': 'Maus Tratos e Prevenções de Acidentes na Infância',
     'crescimento e desenvolvimento': 'Distúrbios do Crescimento e Desenvolvimento',
+    // Karina's 2026-09 rewrite renamed these; same theme, same topic.
+    'crescimento e desenvolvimento infantil': 'Distúrbios do Crescimento e Desenvolvimento',
+    'invaginacao intestinal no lactente': 'Invaginação Intestinal em Lactente',
+    'sindrome do desconforto respiratorio do recem nascido': 'Manejo Inicial do Desconforto Respiratório no Recém-Nascido',
     'alimentacao complementar': 'Alimentação Complementar do Lactente',
     'desnutricao e obesidade': 'Desnutrição e Obesidade na Infância',
   },
@@ -69,6 +80,7 @@ const ALIASES = {
   },
   'infectologia': {
     'hiv e aids': 'HIV',
+    'hiv aids': 'HIV',   // renamed to "HIV/Aids" in the 2026-09 rewrite
   },
   // ── Completeness (not in the current deck plan, but keeps the map correct) ─────
   'gastroenterologia': {
