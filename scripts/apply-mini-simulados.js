@@ -215,7 +215,14 @@ async function uploadImages(files) {
 
     // ── apply (one transaction) ──
     let pid = maxPageId;
+    const t0 = Date.now();
+    const step = (msg) => console.log(`  [${((Date.now() - t0) / 1000).toFixed(1)}s] ${msg}`);
     await db.begin(async (sql) => {
+      // Two runs at once would both try to create the backups and wait on each other
+      // (seen on prod 2026-09-22): refuse instead of queueing behind another run.
+      const [{ ok }] = await sql`SELECT pg_try_advisory_xact_lock(hashtext('apply-mini-simulados')) AS ok`;
+      if (!ok) throw new Error('another apply-mini-simulados run is in progress — wait for it to finish, then re-run');
+
       // 0. backups — created once; a later re-apply keeps the true "before" state
       const scope = `SELECT id FROM pages WHERE view = 'simulados' AND content_module_id IS NULL`;
       const qscope = `SELECT id FROM quiz_questions WHERE page_id IN (${scope})`;
@@ -235,23 +242,43 @@ async function uploadImages(files) {
         await sql.unsafe(`REVOKE ALL ON ${name} FROM anon, authenticated`);
       }
 
+      step('backups ready');
+
       // 1. review state earned on questions that no longer exist in that form
       if (reviewIds.length) await sql`DELETE FROM review_schedule WHERE item_type = 'quiz_question' AND item_id IN ${sql(reviewIds)}`;
 
-      // 2. existing simulados — slots are 1..25 on both sides, so no position shuffle
-      for (const p of plan.filter((x) => x.page)) {
-        for (const o of p.ops) {
-          if (o.kind === 'update') {
-            await sql`UPDATE quiz_questions SET question = ${o.q.question}, answers = ${sql.json(o.q.answers)},
-                        explanation_html = ${o.q.explanation_html}, media_url = ${o.media}, h5p_sub_id = NULL
-                      WHERE id = ${o.liveId}`;
-          } else if (o.kind === 'insert') {
-            await sql`INSERT INTO quiz_questions (page_id, position, question, answers, media_url, explanation_html)
-                      VALUES (${p.page.id}, ${o.pos}, ${o.q.question}, ${sql.json(o.q.answers)}, ${o.media}, ${o.q.explanation_html})`;
-          }
-        }
-        await sql`UPDATE pages SET updated_at = now() WHERE id = ${p.page.id}`;
+      // 2. existing simulados — slots are 1..25 on both sides, so no position shuffle.
+      //    Batched: one statement per CHUNK rows. Row by row, 3,125 round trips to prod
+      //    through the pooler took ~14 minutes and printed nothing.
+      const CHUNK = 300;
+      const updates = []; const inserts = [];
+      for (const p of plan.filter((x) => x.page)) for (const o of p.ops) {
+        if (o.kind === 'update') updates.push({ id: o.liveId, question: o.q.question, answers: o.q.answers, explanation_html: o.q.explanation_html, media_url: o.media });
+        else if (o.kind === 'insert') inserts.push({ page_id: p.page.id, position: o.pos, question: o.q.question, answers: o.q.answers, explanation_html: o.q.explanation_html, media_url: o.media });
       }
+      for (let i = 0; i < updates.length; i += CHUNK) {
+        const chunk = updates.slice(i, i + CHUNK);
+        const r = await sql`
+          UPDATE quiz_questions q
+          SET question = v.question, answers = v.answers, explanation_html = v.explanation_html,
+              media_url = v.media_url, h5p_sub_id = NULL
+          FROM jsonb_to_recordset(${sql.json(chunk)}::jsonb)
+               AS v(id bigint, question text, answers jsonb, explanation_html text, media_url text)
+          WHERE q.id = v.id`;
+        if (r.count !== chunk.length) throw new Error(`update chunk at ${i}: ${r.count} of ${chunk.length} rows`);
+        step(`updated ${Math.min(i + CHUNK, updates.length)}/${updates.length} questions`);
+      }
+      if (inserts.length) {
+        const r = await sql`
+          INSERT INTO quiz_questions (page_id, position, question, answers, media_url, explanation_html)
+          SELECT v.page_id, v.position, v.question, v.answers, v.media_url, v.explanation_html
+          FROM jsonb_to_recordset(${sql.json(inserts)}::jsonb)
+               AS v(page_id bigint, position int, question text, answers jsonb, media_url text, explanation_html text)`;
+        if (r.count !== inserts.length) throw new Error(`insert: ${r.count} of ${inserts.length} rows`);
+        step(`inserted ${inserts.length} question(s)`);
+      }
+      const touched = plan.filter((x) => x.page).map((x) => x.page.id);
+      if (touched.length) await sql`UPDATE pages SET updated_at = now() WHERE id IN ${sql(touched)}`;
 
       // 3. simulados with no page (local drift) → page + card on the specialty hub
       for (const p of plan.filter((x) => !x.page)) {
@@ -275,10 +302,14 @@ async function uploadImages(files) {
         await sql`DELETE FROM pages WHERE id IN ${sql(delIds)} AND view = 'simulados' AND content_module_id IS NULL`;
       }
       if (hub) {
+        const note = `despublicado ${BK}: sem mini simulados de Emergência (Karina)`;
         await sql`UPDATE pages SET status = 'draft', updated_at = now(),
-                    notes = concat_ws(' | ', notes, ${`despublicado ${BK}: sem mini simulados de Emergência (Karina)`}::text)
+                    notes = CASE WHEN position(${note}::text in coalesce(notes, '')) > 0 THEN notes
+                                 ELSE concat_ws(' | ', notes, ${note}::text) END
                   WHERE id = ${hub.id} AND type = 'blurb-nav-hub'`;
       }
+
+      step('Emergência removed, hub unpublished');
 
       // 5. invariants — fail the whole transaction rather than commit something odd
       // now() is the transaction's start time, so this matches only rows written above.
@@ -291,6 +322,7 @@ async function uploadImages(files) {
       if (left) throw new Error(`${left} Emergência simulado(s) still present`);
       const [{ n: hubLive }] = await sql`SELECT count(*)::int n FROM pages WHERE slug = ${DELETE_HUB} AND status = 'publish'`;
       if (hubLive) throw new Error(`${DELETE_HUB} is still published`);
+      step('invariants passed — committing');
     });
 
     // ── verify ──

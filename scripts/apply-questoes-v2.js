@@ -250,7 +250,11 @@ const stemOf = (html) => textOf(html.replace(/<h3>[\s\S]*?<\/h3>/i, ' ')).replac
       // 1. existing topics
       for (const p of plan) {
         const pageId = p.r.liveId;
-        for (const o of p.ops) if (o.kind === 'dedupe') await sql`DELETE FROM quiz_questions WHERE id = ${o.liveId}`;
+        for (const o of p.ops) if (o.kind === 'dedupe') {
+          // review_schedule.item_id has no FK: clean the copy's review rows or they dangle.
+          await sql`DELETE FROM review_schedule WHERE item_type = 'quiz_question' AND item_id = ${o.liveId}`;
+          await sql`DELETE FROM quiz_questions WHERE id = ${o.liveId}`;
+        }
         // pass 1: park every surviving row far from the final range (UNIQUE page_id+position)
         await sql`UPDATE quiz_questions SET position = position + 10000 WHERE page_id = ${pageId}`;
         for (const o of p.ordered) {

@@ -123,6 +123,18 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   End early: `UPDATE cohort_promotions SET active = false`. Patch: `schema-patch-cohort-promotions.sql`.
   Public promo copy (Karina's v2): NO struck-through price, and NEVER an exam month ("prova de
   maio/setembro") — INEP hasn't announced 2027; `cohorts.test_date` is an internal reference.
+- **Karina's September content — LIVE on prod + local (2026-09-22)**. Questões Revalida
+  (2020 → 2026.1): 200 topics / 975 q via `scripts/apply-questoes-v2.js` — her rule: **never
+  delete a live question** (what came replaces IN PLACE by "Questão N · Revalida YYYY", new is
+  added, what did not come stays). Figures via `scripts/import-questoes-images-v2.js`, which only
+  fills an EMPTY `media_url` and keeps a reviewed `TABLE_PICTURES` list: a picture of a lab table
+  she also TYPED (`.quiz-table`) is never shown next to it — extend that list, by eye, whenever a
+  delivery adds typed tables. Mini simulados: 125 / 3,125 q via `scripts/apply-mini-simulados.js`
+  (full rewrite in place by slug+position, batched, advisory-lock guard); the 5 Emergência mini
+  simulados were DELETED at her request and their hub unpublished (it parents 4 legacy drafts).
+  Rollbacks: `scripts/rollback-questoes-v2.sql`, `scripts/rollback-mini-simulados.sql` (both
+  restore from `*_bk_questoes_20260920` / `*_bk_minisim_20260922`). Still open: the annulled
+  questions she fixed on Drive (fresh download → re-parse → re-run, both re-run safe).
 
 ## Schema (see schema.sql for full DDL)
 
