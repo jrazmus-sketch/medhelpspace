@@ -109,7 +109,8 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   pick in `leads.previous_target_cohort` (backfilled; `bulkAssignCohort` records it on
   first change), and /admin/leads renders "2026.2 → 2027.1" so history is never
   misreported. Patch: `schema-patch-leads-previous-cohort.sql`.
-- **Condição especial de lançamento (Karina, live 2026-09-22 → 05/10/2026)**: buying Turma
+- **Condição especial de lançamento (Karina, live 2026-09-22 → 11/10/2026, extended from 05/10 before
+  ads started — `schema-patch-promo-extend-2026-10-11.sql`)**: buying Turma
   2027.1 in the window (normal R$ 2.997, normal checkout) also moves the buyer onto 2027.2
   when 2027.1 closes. Stored as `cohort_promotions`; frozen on `orders.promotion_id` at charge
   time; copied onto the membership (`rollover_to_cohort_id`) in finalize's grant upsert.
@@ -120,6 +121,8 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   coupon pause for it (`lib/cohort-promotions*`). **Never add a second FK from
   `user_cohort_memberships` to `cohorts`** — every `cohort:cohorts(*)` embed goes PGRST201.
   End early: `UPDATE cohort_promotions SET active = false`. Patch: `schema-patch-cohort-promotions.sql`.
+  Public promo copy (Karina's v2): NO struck-through price, and NEVER an exam month ("prova de
+  maio/setembro") — INEP hasn't announced 2027; `cohorts.test_date` is an internal reference.
 
 ## Schema (see schema.sql for full DDL)
 

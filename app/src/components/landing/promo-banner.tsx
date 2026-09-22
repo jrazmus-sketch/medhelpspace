@@ -10,7 +10,8 @@ import { SiteText } from "@/components/landing/site-text";
 // identical (feedback_cohorts_never_promoted). Copy is Karina's, inline-editable via
 // site_content; the turma names, the price and the last valid day are {tokens}
 // filled from live data, so none of them can drift from what the checkout charges.
-// Deliberately avoids "pague 1, leve 2" and "de R$ 6.994 por …" framing (her call).
+// Deliberately avoids "pague 1, leve 2" and "de R$ 6.994 por …" framing, and shows
+// NO struck-through reference price (her calls, 2026-09-21 and 2026-09-22).
 //
 // Client component for one reason: /loja and / are ISR-cached for up to an hour, so
 // the server-rendered banner could outlive the window. It hides itself at ends_at;
@@ -24,7 +25,7 @@ export type PromoBannerData = {
   rolloverToCohortName: string;
   /** Exclusive end of the window (ISO). */
   endsAt: string;
-  /** "05/10/2026" */
+  /** "11/10/2026" */
   lastDayLabel: string;
   /** The promo turma's live price — "R$ 2.997". */
   priceLabel: string;
@@ -93,12 +94,16 @@ export function PromoBanner({
               <SiteText
                 as="span"
                 multiline
-                k="promo.headline"
-                fallback="Prepare-se para o {origem} e tenha sua preparação garantida até o {destino}."
+                k="promo.headline_v2"
+                fallback="Prepare-se para o {origem} e tenha sua preparação garantida também para o {destino}."
                 vars={{ origem: promo.cohortName, destino: promo.rolloverToCohortName }}
               />
             </h2>
 
+            {/* Karina's v2 copy (2026-09-22). Each bold phrase is its own editable piece
+                (SiteText is plain text); `autoSpace` handles the joins. Never name an
+                exam month here — INEP has not announced the 2027 dates, and the ones in
+                `cohorts.test_date` are internal references only. */}
             <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-foreground/80">
               <SiteText
                 as="span"
@@ -106,24 +111,45 @@ export function PromoBanner({
                 fallback="Matricule-se na Turma {turma} por"
                 vars={{ turma: edition(promo.cohortName) }}
               />{" "}
-              <strong className="whitespace-nowrap font-bold text-foreground">{promo.priceLabel}</strong>.{" "}
+              <strong className="whitespace-nowrap font-bold text-foreground">{promo.priceLabel}</strong>
               <SiteText
                 as="span"
-                multiline
-                k="promo.extend_a"
-                fallback="Se precisar continuar sua preparação para a edição {edicao}, seu acesso será prorrogado automaticamente,"
+                autoSpace
+                k="promo.continue"
+                fallback="e continue até a edição {edicao}"
                 vars={{ edicao: edition(promo.rolloverToCohortName) }}
               />
               <strong className="font-bold text-foreground">
                 <SiteText as="span" autoSpace k="promo.extend_b" fallback="sem uma nova matrícula" />
               </strong>
+              <SiteText as="span" autoSpace k="promo.continue_end" fallback="." />
+            </p>
+
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-foreground/80">
+              <SiteText as="span" k="promo.60d_a" fallback="O" />
+              <strong className="font-bold text-foreground">
+                <SiteText as="span" autoSpace k="promo.60d_b" fallback="MedHelp 60D" />
+              </strong>
+              <SiteText
+                as="span"
+                autoSpace
+                k="promo.60d_c"
+                fallback="é nossa revisão estratégica de reta final, liberada nos"
+              />
+              <strong className="font-bold text-foreground">
+                <SiteText as="span" autoSpace k="promo.60d_d" fallback="60 dias finais antes da prova" />
+              </strong>
               <SiteText
                 as="span"
                 autoSpace
                 multiline
-                k="promo.extend_c"
-                fallback=", com um novo ciclo do MedHelp 60D para a prova de setembro."
+                k="promo.60d_e"
+                fallback="e já incluída no valor da turma. Nesta condição especial, você terá"
               />
+              <strong className="font-bold text-foreground">
+                <SiteText as="span" autoSpace k="promo.60d_f" fallback="dois ciclos do MedHelp 60D" />
+              </strong>
+              <SiteText as="span" autoSpace k="promo.60d_g" fallback=": um para cada edição do Revalida." />
             </p>
           </div>
 

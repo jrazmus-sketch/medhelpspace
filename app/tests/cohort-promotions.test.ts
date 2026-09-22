@@ -21,8 +21,9 @@ import {
 } from "@/lib/cohort-promotions-shared";
 import { WELCOME_COUPONS, RECOVERY_COUPONS, UNDECIDED_COHORT } from "@/lib/magnet/links";
 
-// Karina's window, exactly as seeded: 22/09 00:00 BRT → 06/10 00:00 BRT (exclusive).
-const WINDOW = { startsAt: "2026-09-22T03:00:00+00:00", endsAt: "2026-10-06T03:00:00+00:00" };
+// Karina's window as it stands (extended 2026-09-22 to Sunday 11/10):
+// 22/09 00:00 BRT → 12/10 00:00 BRT (exclusive).
+const WINDOW = { startsAt: "2026-09-22T03:00:00+00:00", endsAt: "2026-10-12T03:00:00+00:00" };
 
 const PROMO: ActivePromotion = {
   id: 1,
@@ -35,25 +36,25 @@ const PROMO: ActivePromotion = {
   rolloverToCohortName: "Revalida 2027.2",
   ...WINDOW,
   blocksCoupons: true,
-  lastDayLabel: "05/10/2026",
+  lastDayLabel: "11/10/2026",
 };
 
-test("window is [start, end) — opens at 00:00 BRT on 22/09, closes at 00:00 BRT on 06/10", () => {
+test("window is [start, end) — opens at 00:00 BRT on 22/09, closes at 00:00 BRT on 12/10", () => {
   const at = (iso: string) => Date.parse(iso);
   assert.equal(isPromotionOpen(WINDOW, at("2026-09-21T23:59:59-03:00")), false);
   assert.equal(isPromotionOpen(WINDOW, at("2026-09-22T00:00:00-03:00")), true);
   // Last evening in Brazil — already "tomorrow" on a UTC server.
-  assert.equal(isPromotionOpen(WINDOW, at("2026-10-05T23:59:59-03:00")), true);
-  assert.equal(isPromotionOpen(WINDOW, at("2026-10-06T00:00:00-03:00")), false);
+  assert.equal(isPromotionOpen(WINDOW, at("2026-10-11T23:59:59-03:00")), true);
+  assert.equal(isPromotionOpen(WINDOW, at("2026-10-12T00:00:00-03:00")), false);
   assert.equal(isPromotionOpen({ startsAt: "nope", endsAt: WINDOW.endsAt }, Date.now()), false);
 });
 
 test("the banner's last valid day is the day BEFORE the exclusive end, in Brasília", () => {
-  assert.equal(lastDayKeyBR(WINDOW.endsAt), "2026-10-05");
-  assert.equal(formatDateKeyBR(lastDayKeyBR(WINDOW.endsAt)), "05/10/2026");
+  assert.equal(lastDayKeyBR(WINDOW.endsAt), "2026-10-11");
+  assert.equal(formatDateKeyBR(lastDayKeyBR(WINDOW.endsAt)), "11/10/2026");
   // Postgres hands timestamptz back in several shapes — all must agree.
-  assert.equal(lastDayKeyBR("2026-10-06 03:00:00+00"), "2026-10-05");
-  assert.equal(lastDayKeyBR("2026-10-06T03:00:00Z"), "2026-10-05");
+  assert.equal(lastDayKeyBR("2026-10-12 03:00:00+00"), "2026-10-11");
+  assert.equal(lastDayKeyBR("2026-10-12T03:00:00Z"), "2026-10-11");
   assert.equal(formatDateKeyBR("garbage"), "");
   assert.equal(lastDayKeyBR("garbage"), "");
 });

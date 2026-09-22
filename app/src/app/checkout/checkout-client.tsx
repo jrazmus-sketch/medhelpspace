@@ -479,11 +479,13 @@ export function CheckoutClient({
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 Condição especial de lançamento
               </p>
+              {/* Mirrors Karina's banner copy (v2, 2026-09-22). No exam month: INEP has
+                  not announced the 2027 dates. */}
               <p className="mt-1.5 text-sm leading-relaxed text-foreground/80">
-                Se precisar continuar sua preparação, seu acesso é prorrogado automaticamente
-                até o {launchCondition.rolloverToCohortName},{" "}
+                Continue até o {launchCondition.rolloverToCohortName}{" "}
                 <strong className="font-semibold text-foreground">sem uma nova matrícula</strong>,
-                com um novo ciclo do MedHelp 60D. Válido para matrículas até{" "}
+                com <strong className="font-semibold text-foreground">dois ciclos do MedHelp 60D</strong>:
+                um para cada edição do Revalida. Válido para matrículas até{" "}
                 {launchCondition.lastDayLabel}.
               </p>
               {couponsBlocked && (
