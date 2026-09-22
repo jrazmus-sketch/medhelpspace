@@ -370,6 +370,22 @@
   font-weight: 600;
 }
 
+/* Tables typed into a question (lab panels, vaccination charts — Questões Revalida,
+   2026-09 import). The wrapper scrolls sideways on a phone instead of stretching the
+   page. The table fills the column and wraps its text to fit; the wrapper only scrolls
+   when a table is genuinely wider than the screen (many columns). */
+.quiz-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.75rem 0 1.25rem;
+}
+
+.prose-content .quiz-table-wrap table.quiz-table {
+  width: 100%;
+  margin-bottom: 0;
+  font-size: 0.875rem;
+}
+
 /* Quiz question stem: keep <h3> heading bold, but normalize paragraph weight
    (existing H5P quizzes wrap stems in <p><strong>... ; simulados don't —
    either way, this guarantees a readable normal-weight stem) */
@@ -418,14 +434,22 @@
   content: "🟣  ";
 }
 
+/* The "✔ …" line that closes a PEGA REVALIDA block: what TO do, after the ❌ traps. */
+.quiz-explanation ul.certo li::marker {
+  content: "✔  ";
+  color: var(--brand);
+}
+
 .quiz-explanation ul.pega,
-.quiz-explanation ul.resumo {
+.quiz-explanation ul.resumo,
+.quiz-explanation ul.certo {
   list-style: none;
   padding-left: 1.5rem;
 }
 
 .quiz-explanation ul.pega li,
-.quiz-explanation ul.resumo li {
+.quiz-explanation ul.resumo li,
+.quiz-explanation ul.certo li {
   margin-bottom: 0.375rem;
 }
 
