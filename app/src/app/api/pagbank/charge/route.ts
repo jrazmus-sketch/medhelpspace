@@ -6,6 +6,8 @@ import { createCharge, createPixOrder, getWebhookBaseUrl, getInstallmentOptions 
 import type { PagBankChargeRequest, PagBankCustomer, PagBankOrderRequest } from "@/lib/pagbank/types";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
+import { getActivePromotionForCohort } from "@/lib/cohort-promotions";
+import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
 import { validateBilling, onlyDigits, type BillingDetails } from "@/lib/br";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { REF_COOKIE, resolveAttribution } from "@/lib/ambassadors/attribution";
@@ -105,6 +107,16 @@ export async function POST(request: NextRequest) {
   };
   // CPF on the card is the billing CPF — single source of truth.
   const cpf = billing.cpf;
+
+  // Launch condition (cohort_promotions). Read once: it decides whether a coupon
+  // may be used at all, and it is frozen onto the order below so a Pix paid after
+  // the window closes still gets the rollover the buyer was shown. The coupon
+  // refusal happens here, before any account is created, so it leaves no side
+  // effects; redeem_coupon enforces the same rule in the DB.
+  const promotion = await getActivePromotionForCohort(cohortSlug);
+  if (promotion?.blocksCoupons && couponCode?.trim()) {
+    return NextResponse.json({ error: COUPON_BLOCKED_MESSAGE }, { status: 400 });
+  }
 
   const supabase = await createClient();
   let { data: { user } } = await supabase.auth.getUser();
@@ -239,10 +251,16 @@ export async function POST(request: NextRequest) {
     // generating the QR, the existing QR is at the wrong amount — supersede it
     // (cancel + release its redemption) and fall through to mint a fresh,
     // correctly-priced order below.
+    // Same for the promotion: a QR minted before the launch condition opened (or
+    // after it closed) must not be reused, or the order would carry the wrong promise.
     const reusable = await findReusablePixOrder(admin, user.id, product.id, nowIso);
     if (reusable) {
-      if ((reusable.couponCode ?? null) === reqCouponCode) {
-        return NextResponse.json(reusable);
+      const { promotionId: reusablePromotionId, ...reusableBody } = reusable;
+      if (
+        (reusable.couponCode ?? null) === reqCouponCode &&
+        reusablePromotionId === (promotion?.id ?? null)
+      ) {
+        return NextResponse.json(reusableBody);
       }
       await admin.from("orders").update({ status: "cancelled" }).eq("id", reusable.orderId);
       await releaseRedemptionsForOrders(admin, [reusable.orderId]);
@@ -320,6 +338,7 @@ export async function POST(request: NextRequest) {
         COUPON_FULLY_REDEEMED: "Cupom esgotado.",
         COUPON_NOT_VALID_FOR_COHORT: "Cupom não é válido para esta turma.",
         COUPON_ALREADY_USED: "Você já usou este cupom.",
+        COUPON_BLOCKED_BY_PROMOTION: COUPON_BLOCKED_MESSAGE,
       };
       // Backstop for the pre-max_uses_per_user unique index on (coupon_id, user_id)
       if (rpcErr.code === "23505") {
@@ -402,6 +421,7 @@ export async function POST(request: NextRequest) {
       ambassador_id: attribution?.ambassadorId ?? null,
       ambassador_attribution_source: attribution?.source ?? null,
       ambassador_attributed_at: attribution ? new Date().toISOString() : null,
+      promotion_id: promotion?.id ?? null,
       currency: "BRL",
       payment_method: paymentMethod,
       status: initialStatus,
@@ -424,7 +444,11 @@ export async function POST(request: NextRequest) {
     // 23505 = unique_violation. Concurrent Pix request won the race — return that one.
     if (paymentMethod === "pix" && orderError?.code === "23505" && !couponCode) {
       const reusable = await findReusablePixOrder(admin, user.id, product.id, new Date().toISOString());
-      if (reusable) return NextResponse.json(reusable);
+      if (reusable) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { promotionId: _internal, ...reusableBody } = reusable;
+        return NextResponse.json(reusableBody);
+      }
     }
     // 23505 on idx_orders_one_pending_card_per_user_cohort: a concurrent request
     // (retry after a network timeout, or a second tab) won the race and already has
@@ -732,7 +756,7 @@ async function findReusablePixOrder(
 ) {
   const { data } = await admin
     .from("orders")
-    .select("id, pagbank_order_id, pix_qr_text, pix_qr_image_url, pix_expires_at, coupon:coupons(code)")
+    .select("id, pagbank_order_id, pix_qr_text, pix_qr_image_url, pix_expires_at, promotion_id, coupon:coupons(code)")
     .eq("user_id", userId)
     .eq("cohort_id", cohortId)
     .eq("payment_method", "pix")
@@ -758,5 +782,7 @@ async function findReusablePixOrder(
     pixExpiresAt: data.pix_expires_at,
     couponCode,
     ccBrand: null,
+    // Internal — compared by the caller, stripped before the body goes to the client.
+    promotionId: (data.promotion_id as number | null) ?? null,
   };
 }

@@ -5,6 +5,8 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { SiteText } from "@/components/landing/site-text";
 import { Check, Lock, Unlock, Clock, CalendarClock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
+import { getPromoBanner } from "@/lib/cohort-promotions";
+import { PromoBanner } from "@/components/landing/promo-banner";
 import { getCohortTiming, type CohortTiming } from "@/lib/cohort-timing";
 import type { CohortProduct } from "@/types/supabase";
 
@@ -51,6 +53,7 @@ export const revalidate = 3600;
 
 export default async function LojaPage() {
   const cohorts = await getCohortsForSale();
+  const promo = await getPromoBanner(cohorts);
 
   return (
     <div
@@ -125,6 +128,13 @@ export default async function LojaPage() {
             </div>
           ) : (
             <>
+              {/* Launch condition — above the cards, which stay identical. */}
+              {promo && (
+                <div className="loja-rise mb-8 md:mb-10" style={{ animationDelay: "80ms" }}>
+                  <PromoBanner promo={promo} />
+                </div>
+              )}
+
               {/* Cohort cards */}
               <div
                 className={

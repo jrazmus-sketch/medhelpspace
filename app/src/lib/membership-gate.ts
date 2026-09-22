@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { applyDueRolloverFor } from "@/lib/cohort-promotions";
 
 const ADMIN_ROLES = ["super_admin", "content_admin", "support_admin", "billing_admin"];
 
@@ -55,7 +56,14 @@ export async function requireActiveMembership(contentModuleId?: number | null) {
 
   if (ADMIN_ROLES.includes(profile?.role ?? "")) return;
 
-  const { data: hasMembership } = await supabase.rpc("user_has_active_membership");
+  let { data: hasMembership } = await supabase.rpc("user_has_active_membership");
+  // A launch-condition buyer whose first turma just closed is moved by the daily
+  // rollover cron. If that run was missed, move them here instead of bouncing a
+  // paying student to the store. Only reached by non-members, so it costs nothing
+  // on the normal path.
+  if (!hasMembership && (await applyDueRolloverFor(user.id))) {
+    ({ data: hasMembership } = await supabase.rpc("user_has_active_membership"));
+  }
   if (!hasMembership) redirect("/loja");
 
   if (contentModuleId) {

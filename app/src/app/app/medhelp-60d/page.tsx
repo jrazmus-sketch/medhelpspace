@@ -4,13 +4,14 @@ import { get60dAccess } from "@/lib/medhelp-60d";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { Medhelp60Accordion } from "@/components/content/medhelp-60d-accordion";
+import { Medhelp60NextCycle } from "@/components/content/medhelp-60d-next-cycle";
 import { Coachmark } from "@/components/onboarding/coachmark";
 
 export const metadata = { title: "MedHelp 60D" };
 
 export default async function Medhelp60dPage() {
   await requireActiveMembership();
-  const { unlocked, daysUntilUnlock } = await get60dAccess();
+  const { unlocked, daysUntilUnlock, nextCycle } = await get60dAccess();
 
   return (
     <div style={{ maxWidth: 880, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
@@ -45,6 +46,11 @@ export default async function Medhelp60dPage() {
 
       {unlocked ? (
         <Medhelp60Accordion />
+      ) : nextCycle ? (
+        <Medhelp60NextCycle
+          cohortName={nextCycle.cohortName}
+          unlockDateLabel={nextCycle.unlockDateLabel}
+        />
       ) : (
         <LockedNotice daysUntilUnlock={daysUntilUnlock} />
       )}

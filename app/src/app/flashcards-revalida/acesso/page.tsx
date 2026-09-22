@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getActivePromotions } from "@/lib/cohort-promotions";
+import { offeredCoupon, pausedCouponCohorts } from "@/lib/cohort-promotions-shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWeightedRevalidaDeck } from "@/lib/magnet/flashcards";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
@@ -91,7 +93,8 @@ export default async function FlashcardsAcessoPage({
 
   // Build the sales offer for the reward screen (skipped gracefully if the turma
   // isn't purchasable). Welcome coupon comes from the per-turma map.
-  const welcome = WELCOME_COUPONS[cohort] ?? null;
+  // Withheld while the turma's launch condition closes coupons (lib/cohort-promotions).
+  const welcome = offeredCoupon(WELCOME_COUPONS, cohort, pausedCouponCohorts(await getActivePromotions()));
   let offer: SessionOffer | null = null;
   if (product) {
     offer = {

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getRewardByToken } from "@/lib/magnet/result";
 import { MagnetReward } from "@/components/magnet/magnet-reward";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
+import { getActivePromotions } from "@/lib/cohort-promotions";
+import { pausedCouponCohorts } from "@/lib/cohort-promotions-shared";
 
 // Durable "meu material" page — the fix for the original bug where the D0 email
 // button dumped leads back to Q1 with only the 5 free questions. Resolves the lead
@@ -28,6 +30,7 @@ export default async function ResultadoPage({
   const reward = token ? await getRewardByToken(token) : null;
   // Live storefront price for this turma → real price + welcome discount in the offer.
   const product = reward ? await getCohortProduct(reward.cohort) : null;
+  const pausedCoupons = pausedCouponCohorts(await getActivePromotions());
   const offer = product
     ? { priceCents: product.priceCents, compareAtPriceCents: product.compareAtPriceCents }
     : null;
@@ -63,6 +66,7 @@ export default async function ResultadoPage({
               cohort={reward.cohort}
               offer={offer}
               token={token}
+              couponPaused={pausedCoupons.has(reward.cohort)}
             />
           </>
         ) : (

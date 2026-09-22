@@ -12,6 +12,8 @@ import {
   DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
+import { getCouponOfferPause } from "@/lib/cohort-promotions";
+import { offeredCoupon } from "@/lib/cohort-promotions-shared";
 
 // Lead-magnet email drip (FREE-FUNNEL-V2-SCOPE.md Group 6). Advances each lead by
 // AT MOST one step per run; the per-step offsetDays gate enforces the real schedule
@@ -119,6 +121,8 @@ export async function GET(request: NextRequest) {
   let skippedBuyer = 0;
   let skippedClaimed = 0;
   let failed = 0;
+  let heldForPromotion = 0;
+  const couponPause = await getCouponOfferPause();
 
   for (const lead of leads) {
     const email = (lead.email as string).toLowerCase();
@@ -152,8 +156,21 @@ export async function GET(request: NextRequest) {
       .filter(Boolean)
       .join(", ");
 
+    // Launch condition: while coupons are closed on this turma, never mail a code
+    // the checkout would refuse. An email whose copy SHOWS the coupon waits (no
+    // claim, so it goes out once the window closes); any other email just loses the
+    // code from its checkout link.
+    const couponPaused = couponPause.paused.has(targetCohort);
+    if (couponPaused && (await couponPause.templateShowsCoupon(nextStep.kind))) {
+      heldForPromotion++;
+      continue;
+    }
+
     // Welcome discount on D2 only; the code is the turma's own (REVALIDA5 / REVALIDA10).
-    const coupon = nextStep.step === 2 ? (WELCOME_COUPONS[targetCohort]?.code ?? null) : null;
+    const coupon =
+      nextStep.step === 2
+        ? (offeredCoupon(WELCOME_COUPONS, targetCohort, couponPause.paused)?.code ?? null)
+        : null;
 
     const vars: Record<string, string> = {
       greeting: greetingFor(lead.first_name as string | null),
@@ -234,6 +251,7 @@ export async function GET(request: NextRequest) {
     failed,
     skippedBuyer,
     skippedClaimed,
+    heldForPromotion,
     scanned: leads.length,
   });
   } catch (err) {

@@ -13,6 +13,8 @@ import {
   REVALIDA_2027_1_SLUG,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
+import { getCouponOfferPause } from "@/lib/cohort-promotions";
+import { offeredCoupon } from "@/lib/cohort-promotions-shared";
 
 // Welcome + finish drip for the gift-first flashcards funnel (drip_funnel='flashcards').
 // The D0 delivery (magic access link, lead-fc-access) is sent inline at capture
@@ -97,6 +99,8 @@ export async function GET(request: NextRequest) {
     let skippedBuyer = 0;
     let skippedClaimed = 0;
     let failed = 0;
+    let heldForPromotion = 0;
+    const couponPause = await getCouponOfferPause();
 
     for (const lead of leads) {
       const email = (lead.email as string).toLowerCase();
@@ -115,11 +119,19 @@ export async function GET(request: NextRequest) {
       if (elapsedDays < nextStep.offsetDays) continue; // not due yet
 
       const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2027_1_SLUG;
-      const welcome = WELCOME_COUPONS[cohort] ?? WELCOME_COUPONS[REVALIDA_2027_1_SLUG];
 
       // Template branches on whether they finished the 50-card deck (at send time).
       const finished = lead.fc_completed_at != null;
       const kind = finished ? nextStep.finished : nextStep.unfinished;
+
+      // Launch condition: while coupons are closed on this turma, an email whose copy
+      // SHOWS the coupon waits (no claim — it goes out after the window), and every
+      // other email drops the code from its checkout link. See lib/cohort-promotions.
+      const welcome = offeredCoupon(WELCOME_COUPONS, cohort, couponPause.paused, REVALIDA_2027_1_SLUG);
+      if (!welcome && (await couponPause.templateShowsCoupon(kind))) {
+        heldForPromotion++;
+        continue;
+      }
       const answered = lead.fc_progress
         ? Object.keys(lead.fc_progress as Record<string, unknown>).length
         : 0;
@@ -127,12 +139,12 @@ export async function GET(request: NextRequest) {
 
       const vars: Record<string, string> = {
         greeting: greetingFor(lead.first_name as string | null),
-        coupon: welcome.code,
-        couponPercent: `${welcome.percent}%`,
+        coupon: welcome?.code ?? "",
+        couponPercent: welcome ? `${welcome.percent}%` : "",
         cardsLeft: String(cardsLeft),
         checkoutUrl: offerCheckoutUrl({
           email,
-          coupon: welcome.code,
+          coupon: welcome?.code ?? null,
           cohort,
           utmCampaign: kind,
         }),
@@ -184,7 +196,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, sent, failed, skippedBuyer, skippedClaimed, scanned: leads.length });
+    return NextResponse.json({ ok: true, sent, failed, skippedBuyer, skippedClaimed, heldForPromotion, scanned: leads.length });
   } catch (err) {
     await alertCronFailure("flashcards-drip", err);
     return NextResponse.json({ error: "cron_failed" }, { status: 500 });

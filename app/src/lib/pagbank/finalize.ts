@@ -34,7 +34,7 @@ export async function finalizePaidOrder(
   // flipping state so the order stays un-granted for manual review.
   const { data: orderRow, error: loadErr } = await admin
     .from("orders")
-    .select("amount_cents")
+    .select("amount_cents, promotion_id")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -95,12 +95,48 @@ export async function finalizePaidOrder(
   //      short-circuits on `status != 'paid'`, so a paid-but-ungranted order
   //      would previously never be retried — the buyer paid with no access and
   //      no way back in. Leaving status alone here keeps the door open.
+  //
+  // A launch-condition order (orders.promotion_id, frozen at charge time) carries
+  // its rollover in the SAME upsert, so the promise can never be lost separately
+  // from the grant: either the buyer gets access with the rollover flag, or neither
+  // is written and the retry paths try again. Non-promo orders leave the promo
+  // columns out entirely, so a later plain purchase never clears an existing flag.
+  const membershipRow: Record<string, unknown> = { user_id: userId, cohort_id: cohortId };
+  const promotionId = (orderRow.promotion_id as number | null) ?? null;
+  if (promotionId != null) {
+    const { data: promo, error: promoErr } = await admin
+      .from("cohort_promotions")
+      .select("rollover_to_cohort_id")
+      .eq("id", promotionId)
+      .maybeSingle();
+    if (promoErr || !promo) {
+      // Fail safe like the grant itself: without the promo row we cannot honour
+      // the rollover, so keep the order pending for retry instead of granting a
+      // membership that silently lacks what the buyer paid for.
+      console.error("finalizePaidOrder: promotion load failed — refusing to grant", orderId, promoErr);
+      await recordAdminAlert({
+        event: "payment_problem",
+        title: `Pagamento retido — condição especial não encontrada (pedido ${orderId})`,
+        body: "O pedido foi feito na condição especial de lançamento, mas a promoção não pôde ser lida. Pedido mantido pendente para nova tentativa automática.",
+        metadata: { order_id: orderId, user_id: userId, promotion_id: promotionId, stage: "promotion_load_failed" },
+        contextId: orderId,
+        emailVars: {
+          buyerEmail: "—",
+          cohortName: "—",
+          expectedAmount: formatBRL(expectedCents),
+          paidAmount: formatBRL(paidCents ?? 0),
+          orderId,
+        },
+      }).catch((e) => console.error("admin promotion_load_failed alert failed", orderId, e));
+      return { wonRace: false };
+    }
+    membershipRow.promotion_id = promotionId;
+    membershipRow.rollover_to_cohort_id = promo.rollover_to_cohort_id as number;
+  }
+
   const { error: membershipErr } = await admin
     .from("user_cohort_memberships")
-    .upsert(
-      { user_id: userId, cohort_id: cohortId },
-      { onConflict: "user_id,cohort_id" },
-    );
+    .upsert(membershipRow, { onConflict: "user_id,cohort_id" });
 
   if (membershipErr) {
     console.error(

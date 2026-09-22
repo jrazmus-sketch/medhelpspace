@@ -14,6 +14,7 @@ import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
+import { getPromoBanner } from "@/lib/cohort-promotions";
 import { getLandingStats } from "@/lib/landing/stats";
 
 export const metadata = {
@@ -31,6 +32,7 @@ export default async function LandingPage() {
   // site_content is provided by the root layout's SiteContentProvider, so every
   // <SiteText> below is wired without a local provider here.
   const [cohorts, stats] = await Promise.all([getCohortsForSale(), getLandingStats()]);
+  const promo = await getPromoBanner(cohorts);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
@@ -47,7 +49,7 @@ export default async function LandingPage() {
         <PlanoSection />
         <DesktopShowcase />
         <FounderSection stats={stats} />
-        <PricingCTA cohorts={cohorts} />
+        <PricingCTA cohorts={cohorts} promo={promo} />
         <FaqSection />
       </main>
       <LandingFooter />

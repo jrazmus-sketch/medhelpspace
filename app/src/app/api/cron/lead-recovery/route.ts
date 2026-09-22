@@ -14,6 +14,8 @@ import {
   DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
+import { getCouponOfferPause } from "@/lib/cohort-promotions";
+import { offeredCoupon } from "@/lib/cohort-promotions-shared";
 
 // Pre-verify lead recovery — the counterpart to lead-drip, which only ever touches
 // VERIFIED leads. This job re-engages the two UNVERIFIED segments (schema-patch-
@@ -90,6 +92,8 @@ export async function GET(request: NextRequest) {
     let failed = 0;
     let skippedBuyer = 0;
     let skippedClaimed = 0;
+    let heldForPromotion = 0;
+    const couponPause = await getCouponOfferPause();
 
     // ── Segment A — finished, never verified ────────────────────────────────────
     const { data: segA } = await admin
@@ -204,6 +208,20 @@ export async function GET(request: NextRequest) {
       }
       if (!kind) continue; // not due yet
 
+      // Segment-B leads never completed the cohort picker, so target_cohort is the DB
+      // default (revalida-2027-1) → the turma-scoped recovery coupon (VOLTA10, 10%). The
+      // fallback keeps an unknown/future cohort on the 2027-1 code rather than crashing.
+      //
+      // Launch condition: while coupons are closed on that turma the code is withheld,
+      // and a nudge whose copy SHOWS it waits — decided BEFORE the claim below, so a
+      // held lead keeps its step and is retried once the window closes.
+      const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2027_1_SLUG;
+      const recovery = offeredCoupon(RECOVERY_COUPONS, cohort, couponPause.paused, REVALIDA_2027_1_SLUG);
+      if (!recovery && (await couponPause.templateShowsCoupon(kind))) {
+        heldForPromotion++;
+        continue;
+      }
+
       const nextStep = currentStep + 1;
       const { data: claimed } = await admin
         .from("leads")
@@ -216,23 +234,18 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      // Segment-B leads never completed the cohort picker, so target_cohort is the DB
-      // default (revalida-2027-1) → the turma-scoped recovery coupon (VOLTA10, 10%). The
-      // fallback keeps an unknown/future cohort on the 2027-1 code rather than crashing.
-      const cohort = (lead.target_cohort as string | null) ?? REVALIDA_2027_1_SLUG;
-      const recovery = RECOVERY_COUPONS[cohort] ?? RECOVERY_COUPONS[REVALIDA_2027_1_SLUG];
       const vars: Record<string, string> = {
         greeting: greetingFor(lead.first_name as string | null),
         resumeUrl: resumeUrl((lead.result_token as string) ?? ""),
-        coupon: recovery.code,
-        couponPercent: `${recovery.percent}%`,
+        coupon: recovery?.code ?? "",
+        couponPercent: recovery ? `${recovery.percent}%` : "",
         unsubscribeUrl: unsubscribeUrl((lead.unsubscribe_token as string) ?? ""),
       };
       // Nudge 2 also offers a direct path to checkout with the recovery coupon.
       if (kind === "lead-recover-unfinished-2") {
         vars.checkoutUrl = offerCheckoutUrl({
           email,
-          coupon: recovery.code,
+          coupon: recovery?.code ?? null,
           cohort,
           utmCampaign: "lead-recover-unfinished-2",
         });
@@ -262,6 +275,7 @@ export async function GET(request: NextRequest) {
       failed,
       skippedBuyer,
       skippedClaimed,
+      heldForPromotion,
       scannedA: segA?.length ?? 0,
       scannedB: segB?.length ?? 0,
     });

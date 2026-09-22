@@ -60,6 +60,7 @@ export function MagnetReward({
   offer = null,
   showDeliveredNote = false,
   token = null,
+  couponPaused = false,
 }: {
   score: number;
   plan: PlanPreview | null;
@@ -73,6 +74,8 @@ export function MagnetReward({
   showDeliveredNote?: boolean;
   /** Lead's result_token — enables per-lead tracking of the "ver recursos" click. */
   token?: string | null;
+  /** True while this turma's launch condition closes coupons — no code is shown or applied. */
+  couponPaused?: boolean;
 }) {
   const pct = Math.round((score / 15) * 100);
   const weak = plan?.weakSpecialties ?? [];
@@ -84,7 +87,7 @@ export function MagnetReward({
   // code is auto-applied at checkout; the percent is computed off the LIVE price so
   // the display can never undercut or exceed the public storefront number. Discount
   // math mirrors the redeem_coupon RPC exactly (integer division) → same final cent.
-  const welcome = WELCOME_COUPONS[cohort] ?? null;
+  const welcome = couponPaused ? null : (WELCOME_COUPONS[cohort] ?? null);
   const effCents = offer?.priceCents ?? null;
   const baseCents = offer?.compareAtPriceCents ?? effCents;
   const discountCents =

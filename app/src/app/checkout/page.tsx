@@ -7,6 +7,7 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { CheckoutClient } from "./checkout-client";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getInstallmentOptions } from "@/lib/pagbank/api";
+import { getActivePromotionForCohort } from "@/lib/cohort-promotions";
 
 export const metadata = { title: "Finalizar compra — MedHelpSpace" };
 
@@ -27,6 +28,13 @@ export default async function CheckoutPage({
   if (!config) {
     redirect("/loja");
   }
+
+  // Launch condition on this turma, if open. Shown in the summary; while it runs
+  // coupons are closed on the turma, so a ?cupom= from an older email is dropped
+  // here rather than auto-applied and refused (the charge route and the DB enforce
+  // the same rule).
+  const promotion = await getActivePromotionForCohort(config.slug);
+  const couponsBlocked = promotion?.blocksCoupons ?? false;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -151,7 +159,16 @@ export default async function CheckoutPage({
             initialBilling={initialBilling}
             initialPixResult={initialPixResult}
             initialEmail={prefillEmail}
-            initialCoupon={prefillCoupon ?? null}
+            initialCoupon={couponsBlocked ? null : (prefillCoupon ?? null)}
+            couponsBlocked={couponsBlocked}
+            launchCondition={
+              promotion
+                ? {
+                    rolloverToCohortName: promotion.rolloverToCohortName,
+                    lastDayLabel: promotion.lastDayLabel,
+                  }
+                : null
+            }
           />
         </div>
       </main>

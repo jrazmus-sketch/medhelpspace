@@ -15,6 +15,8 @@ import {
   DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
+import { getCouponOfferPause } from "@/lib/cohort-promotions";
+import { offeredCoupon } from "@/lib/cohort-promotions-shared";
 // Shared with the exam + report so the reminder copy can never drift from the
 // rules actually enforced on the site.
 import { SIMULADO_MIN_ANSWERS, SIMULADO_TOTAL } from "@/lib/magnet/simulado";
@@ -186,6 +188,7 @@ export async function GET(request: NextRequest) {
     let failed = 0;
     const held: Record<string, number> = {};
     const byStage: Record<string, number> = {};
+    const couponPause = await getCouponOfferPause();
 
     for (const lead of leads) {
       const email = (lead.email as string).toLowerCase();
@@ -280,13 +283,22 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const welcome = WELCOME_COUPONS[slug] ?? WELCOME_COUPONS[REVALIDA_2027_1_SLUG];
       const kind = resolveKind(plan.kind, timing.phase, availableKinds);
+
+      // Launch condition: while coupons are closed on this turma the welcome code is
+      // withheld, and an email whose copy SHOWS it (d2, d5, finish-2, sales-2/3/4)
+      // waits — before the claim, so the lead keeps its rung and gets it after the
+      // window. Everything else goes out with a coupon-free checkout link.
+      const welcome = offeredCoupon(WELCOME_COUPONS, slug, couponPause.paused, REVALIDA_2027_1_SLUG);
+      if (!welcome && (await couponPause.templateShowsCoupon(kind))) {
+        held["promotion-coupon"] = (held["promotion-coupon"] ?? 0) + 1;
+        continue;
+      }
 
       const vars: Record<string, string> = {
         greeting: greetingFor(lead.first_name as string | null),
-        coupon: welcome.code,
-        couponPercent: `${welcome.percent}%`,
+        coupon: welcome?.code ?? "",
+        couponPercent: welcome ? `${welcome.percent}%` : "",
         // The ONLY performance fact a non-finisher may ever receive.
         progressLine: progressLineFor(answered, {
           total: SIMULADO_TOTAL,
@@ -310,7 +322,7 @@ export async function GET(request: NextRequest) {
         turmaOptions: turmaOptionsHtml(cohorts, (lead.result_token as string) ?? ""),
         checkoutUrl: offerCheckoutUrl({
           email,
-          coupon: welcome.code,
+          coupon: welcome?.code ?? null,
           cohort: slug,
           utmCampaign: kind,
         }),

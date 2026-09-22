@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
+import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
 
 // Read-only preview of a coupon. Anonymous-callable so guests can validate a
 // code before signing up. The per-user limit check (coupons.max_uses_per_user)
@@ -16,6 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   COUPON_EXPIRED: "Cupom expirado.",
   COUPON_FULLY_REDEEMED: "Cupom esgotado.",
   COUPON_NOT_VALID_FOR_COHORT: "Cupom não é válido para esta turma.",
+  COUPON_BLOCKED_BY_PROMOTION: COUPON_BLOCKED_MESSAGE,
 };
 
 export async function POST(request: NextRequest) {

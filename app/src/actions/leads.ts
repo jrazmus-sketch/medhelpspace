@@ -12,6 +12,8 @@ import {
   FLASHCARDS_SOURCE,
 } from "@/lib/magnet/links";
 import { isValidTargetCohort } from "@/lib/magnet/cohort-rollover";
+import { getCouponOfferPause } from "@/lib/cohort-promotions";
+import { offeredCoupon } from "@/lib/cohort-promotions-shared";
 
 // Server action backing the /admin/leads detail drawer. Leads carry PII + are
 // commercial data, so this is gated to the SAME roles as the Leads page + OCI panel
@@ -314,7 +316,12 @@ async function specialtyNames(ids: number[]): Promise<string[]> {
 // identically to an automated one. The coupon lands ONLY on the D2 step (the
 // turma's WELCOME coupon), exactly like the cron. examLabel comes from the
 // cohort's real test_date (fallback: "a sua prova").
-async function buildDripVars(lead: LeadForDrip, kind: string, step: number): Promise<Record<string, string>> {
+async function buildDripVars(
+  lead: LeadForDrip,
+  kind: string,
+  step: number,
+  pausedCoupons: Set<string>,
+): Promise<Record<string, string>> {
   const firstName = (lead.firstName ?? "").trim();
   const weakSpecs = await specialtyNames(lead.weakSpecialties ?? []);
   const cohort = lead.targetCohort ?? "revalida-2027-1";
@@ -336,7 +343,8 @@ async function buildDripVars(lead: LeadForDrip, kind: string, step: number): Pro
     }
   }
 
-  const coupon = step === 2 ? (WELCOME_COUPONS[cohort]?.code ?? null) : null;
+  // Withheld while the turma's launch condition closes coupons (lib/cohort-promotions).
+  const coupon = step === 2 ? (offeredCoupon(WELCOME_COUPONS, cohort, pausedCoupons)?.code ?? null) : null;
 
   return {
     greeting: firstName ? `Oi, ${firstName}! ` : "Oi! ",
@@ -420,6 +428,7 @@ export async function bulkResendDripEmail(
   let sent = 0;
 
   const admin = createAdminClient();
+  const couponPause = await getCouponOfferPause();
 
   for (const lead of leads) {
     const targetStep = step ?? lead.dripStep + 1;
@@ -434,8 +443,20 @@ export async function bulkResendDripEmail(
       continue;
     }
 
+    // Same rule as the crons: never hand-send copy that shows a coupon the
+    // checkout would refuse while the turma's launch condition is open.
+    const cohortForCoupon = lead.targetCohort ?? "revalida-2027-1";
+    if (couponPause.paused.has(cohortForCoupon) && (await couponPause.templateShowsCoupon(kind))) {
+      failed.push({
+        id: lead.id,
+        email: lead.email,
+        reason: "Coupon paused during the launch condition (condição especial)",
+      });
+      continue;
+    }
+
     try {
-      const vars = await buildDripVars(lead, kind, targetStep);
+      const vars = await buildDripVars(lead, kind, targetStep, couponPause.paused);
 
       const result = await sendTemplateEmail({
         kind,

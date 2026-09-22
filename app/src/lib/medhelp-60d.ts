@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import type { Cohort } from "@/types/supabase";
+import { formatDateKeyBR } from "@/lib/cohort-promotions-shared";
 
 export const MEDHELP_60D_MODULE_ID = 1;
 
@@ -15,6 +16,15 @@ export type Medhelp60Access = {
   unlocked: boolean;
   /** Days remaining until unlock (0 when unlocked, null when access is unknown). */
   daysUntilUnlock: number | null;
+  /**
+   * Set only for a launch-condition student who was moved onto their next turma
+   * (user_cohort_memberships.rolled_over_from_cohort_id) while that turma's 60D is
+   * still closed — the gap between the two cycles. Drives the "o restante do
+   * conteúdo continua disponível; o próximo MedHelp 60D será liberado em …" notice
+   * (Karina, 2026-09-21). `unlockDateLabel` follows the same leak rule as the
+   * countdown: withheld until the exam date is confirmed.
+   */
+  nextCycle: { cohortName: string; unlockDateLabel: string | null } | null;
 };
 
 /**
@@ -28,13 +38,14 @@ export type Medhelp60Access = {
  *       · everyone else     → their own active cohort's unlock date
  */
 export async function get60dAccess(): Promise<Medhelp60Access> {
-  if (USE_MOCK_DATA) return { unlocked: true, daysUntilUnlock: 0 };
+  if (USE_MOCK_DATA) return { unlocked: true, daysUntilUnlock: 0, nextCycle: null };
 
   const viewas = parseViewAs((await cookies()).get(VIEWAS_COOKIE)?.value);
-  if (viewas.type === "unlocked") return { unlocked: true, daysUntilUnlock: 0 };
+  if (viewas.type === "unlocked") return { unlocked: true, daysUntilUnlock: 0, nextCycle: null };
 
   const admin = createAdminClient();
   let cohort: Cohort | null = null;
+  let rolledOver = false;
 
   if (viewas.type === "cohort") {
     const { data } = await admin.from("cohorts").select("*").eq("slug", viewas.slug).single();
@@ -44,7 +55,7 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return { unlocked: false, daysUntilUnlock: null };
+    if (!user) return { unlocked: false, daysUntilUnlock: null, nextCycle: null };
 
     // Staff see the module open without needing a membership (matches the
     // requireActiveMembership admin bypass). They preview the real member
@@ -55,23 +66,28 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
       .eq("id", user.id)
       .single();
     if (ADMIN_ROLES.includes(profile?.role ?? "")) {
-      return { unlocked: true, daysUntilUnlock: 0 };
+      return { unlocked: true, daysUntilUnlock: 0, nextCycle: null };
     }
 
     const { data: memberships } = await admin
       .from("user_cohort_memberships")
-      .select("cohort:cohorts(*)")
+      .select("rolled_over_from_cohort_id, cohort:cohorts(*)")
       .eq("user_id", user.id);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cohorts: Cohort[] = ((memberships ?? []) as any[]).map((m) => m.cohort as Cohort).filter(Boolean);
+    const rows = ((memberships ?? []) as any[]).filter((m) => m.cohort) as {
+      rolled_over_from_cohort_id: number | null;
+      cohort: Cohort;
+    }[];
     const today = new Date().toISOString();
-    cohort =
-      cohorts.find((c) => c.membership_starts_at <= today && c.membership_ends_at >= today) ??
-      cohorts[cohorts.length - 1] ??
+    const row =
+      rows.find((m) => m.cohort.membership_starts_at <= today && m.cohort.membership_ends_at >= today) ??
+      rows[rows.length - 1] ??
       null;
+    cohort = row?.cohort ?? null;
+    rolledOver = row?.rolled_over_from_cohort_id != null;
   }
 
-  if (!cohort) return { unlocked: false, daysUntilUnlock: null };
+  if (!cohort) return { unlocked: false, daysUntilUnlock: null, nextCycle: null };
 
   const { data: access } = await admin
     .from("cohort_module_access")
@@ -79,7 +95,7 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
     .eq("cohort_id", cohort.id)
     .eq("content_module_id", MEDHELP_60D_MODULE_ID)
     .maybeSingle();
-  if (!access) return { unlocked: false, daysUntilUnlock: null };
+  if (!access) return { unlocked: false, daysUntilUnlock: null, nextCycle: null };
 
   const days = Math.max(
     0,
@@ -90,5 +106,14 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
   // The pre-open countdown is what leaks the guessed exam date (unlock = exam - 60),
   // so it's withheld until the exam board actually confirms cohort.test_date.
   const daysUntilUnlock = unlocked || cohort.date_confirmed ? days : null;
-  return { unlocked, daysUntilUnlock };
+  const nextCycle =
+    rolledOver && !unlocked
+      ? {
+          cohortName: cohort.name,
+          unlockDateLabel: cohort.date_confirmed
+            ? formatDateKeyBR(String(access.unlock_date).slice(0, 10))
+            : null,
+        }
+      : null;
+  return { unlocked, daysUntilUnlock, nextCycle };
 }

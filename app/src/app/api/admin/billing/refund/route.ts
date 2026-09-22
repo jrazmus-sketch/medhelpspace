@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
   const { data: order } = await admin
     .from("orders")
-    .select("id, status, pagbank_charge_id, pagbank_response, user_id, cohort_id, amount_cents")
+    .select("id, status, pagbank_charge_id, pagbank_response, user_id, cohort_id, amount_cents, promotion_id")
     .eq("id", orderId)
     .single();
 
@@ -117,6 +117,17 @@ export async function POST(request: NextRequest) {
       .delete()
       .eq("user_id", order.user_id as string)
       .eq("cohort_id", order.cohort_id as number),
+    // A launch-condition order whose membership was already moved onto the next
+    // turma no longer sits on order.cohort_id — revoke the moved row too. Scoped by
+    // provenance, so a turma the buyer paid for separately is never touched.
+    order.promotion_id != null
+      ? admin
+          .from("user_cohort_memberships")
+          .delete()
+          .eq("user_id", order.user_id as string)
+          .eq("promotion_id", order.promotion_id as number)
+          .eq("rolled_over_from_cohort_id", order.cohort_id as number)
+      : Promise.resolve(),
   ]);
 
   // Audit trail (best-effort — the money has already moved, so a failed log

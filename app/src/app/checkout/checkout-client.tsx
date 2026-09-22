@@ -67,6 +67,10 @@ interface Props {
     pixQrImageUrl: string | null;
     pixExpiresAt: string | null;
   } | null;
+  /** True while this turma's launch condition closes coupons — the coupon field is hidden. */
+  couponsBlocked?: boolean;
+  /** Open launch condition on this turma (lib/cohort-promotions), shown in the summary. */
+  launchCondition?: { rolloverToCohortName: string; lastDayLabel: string } | null;
 }
 
 type AccountMode = "signup" | "login";
@@ -88,6 +92,8 @@ export function CheckoutClient({
   initialPixResult,
   initialEmail,
   initialCoupon,
+  couponsBlocked = false,
+  launchCondition = null,
 }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [loading, setLoading] = useState(false);
@@ -466,7 +472,30 @@ export function CheckoutClient({
             </div>
           )}
 
-          {/* Coupon input / applied-state */}
+          {/* Launch condition — what this purchase includes beyond the turma. */}
+          {launchCondition && (
+            <div className="mt-4 rounded-lg border border-brand/35 bg-brand/[0.06] px-4 py-3">
+              <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-brand sm:tracking-widest">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                Condição especial de lançamento
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-foreground/80">
+                Se precisar continuar sua preparação, seu acesso é prorrogado automaticamente
+                até o {launchCondition.rolloverToCohortName},{" "}
+                <strong className="font-semibold text-foreground">sem uma nova matrícula</strong>,
+                com um novo ciclo do MedHelp 60D. Válido para matrículas até{" "}
+                {launchCondition.lastDayLabel}.
+              </p>
+              {couponsBlocked && (
+                <p className="mt-1.5 text-sm text-foreground/60">
+                  Cupons de desconto não se aplicam durante a condição especial.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Coupon input / applied-state — closed while a launch condition runs. */}
+          {!couponsBlocked && (
           <div className="mt-4">
             {appliedCoupon ? (
               <div className="flex items-center justify-between rounded-lg border border-brand/30 bg-brand/5 px-3 py-2 text-sm">
@@ -526,6 +555,7 @@ export function CheckoutClient({
               </button>
             )}
           </div>
+          )}
 
           <div className="mt-5 space-y-2">
             {[

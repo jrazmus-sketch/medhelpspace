@@ -92,6 +92,7 @@ export function MagnetQuiz({
   offers = {},
   resume,
   startImmediately = false,
+  pausedCouponCohorts = [],
 }: {
   freeQuestions: MagnetQuestion[];
   utm: MagnetUtm;
@@ -106,6 +107,8 @@ export function MagnetQuiz({
    * the hero above.
    */
   startImmediately?: boolean;
+  /** Turma slugs whose welcome coupon is withheld right now (launch condition). */
+  pausedCouponCohorts?: string[];
 }) {
   // On resume, the full 15-question set is known up front (free + gated) and we jump
   // to the first still-unanswered question. Otherwise the classic flow: 5 free
@@ -275,6 +278,7 @@ export function MagnetQuiz({
         cohort={cohort}
         offer={offers[cohort] ?? null}
         token={resultToken}
+        couponPaused={pausedCouponCohorts.includes(cohort)}
         showDeliveredNote
       />
     );

@@ -15,6 +15,7 @@ import { Coachmark } from "@/components/onboarding/coachmark";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 import { todayKeyBR, toDateKeyBR, addDaysKey, dayOfWeekForKey, hourBR } from "@/lib/br-date";
 import { get60dAccess } from "@/lib/medhelp-60d";
+import { Medhelp60NextCycle } from "@/components/content/medhelp-60d-next-cycle";
 import { getAudiocardsPlaylist } from "@/lib/audiocards/discovery";
 import { SiteText } from "@/components/landing/site-text";
 import type { Cohort } from "@/types/supabase";
@@ -361,7 +362,7 @@ export default async function MemberDashboardPage() {
     if (simCohort) activeCohort = simCohort as Cohort;
   }
 
-  const { daysUntilUnlock } = await get60dAccess();
+  const { daysUntilUnlock, nextCycle } = await get60dAccess();
 
   // Exam dates are often a guess (Revalida dates shift by up to 60 days) — never
   // show a countdown/date until the exam board has actually confirmed it. An
@@ -601,6 +602,17 @@ export default async function MemberDashboardPage() {
 
       {/* ── NOTIFICATIONS ── */}
       <NotificationStrip />
+
+      {/* Launch-condition student between two 60D cycles (see get60dAccess). */}
+      {nextCycle && (
+        <div className="mb-[10px] sm:mb-[14px]">
+          <Medhelp60NextCycle
+            variant="banner"
+            cohortName={nextCycle.cohortName}
+            unlockDateLabel={nextCycle.unlockDateLabel}
+          />
+        </div>
+      )}
 
       {/* ── PLAN + CONTINUE ── */}
       <section className="grid md:grid-cols-[1fr_2fr] gap-[10px] sm:gap-[14px] mb-[10px] sm:mb-[14px]">

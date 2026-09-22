@@ -1,6 +1,7 @@
 import { ClipboardCheck, Lock } from "lucide-react";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { get60dAccess } from "@/lib/medhelp-60d";
+import { Medhelp60NextCycle } from "@/components/content/medhelp-60d-next-cycle";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { Simulados100qGrid } from "@/components/content/simulados-100q-grid";
@@ -16,7 +17,7 @@ export const metadata = { title: "Simulados 100Q" };
 
 export default async function Simulados100qPage() {
   await requireActiveMembership();
-  const { unlocked, daysUntilUnlock } = await get60dAccess();
+  const { unlocked, daysUntilUnlock, nextCycle } = await get60dAccess();
 
   return (
     <div style={{ maxWidth: 880, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
@@ -47,7 +48,16 @@ export default async function Simulados100qPage() {
         </p>
       </header>
 
-      {unlocked ? <Simulados100qGrid /> : <LockedNotice daysUntilUnlock={daysUntilUnlock} />}
+      {unlocked ? (
+        <Simulados100qGrid />
+      ) : nextCycle ? (
+        <Medhelp60NextCycle
+          cohortName={nextCycle.cohortName}
+          unlockDateLabel={nextCycle.unlockDateLabel}
+        />
+      ) : (
+        <LockedNotice daysUntilUnlock={daysUntilUnlock} />
+      )}
     </div>
   );
 }

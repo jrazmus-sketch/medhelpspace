@@ -7,6 +7,7 @@ import { Check, Clock, Lock, Unlock, CalendarClock } from "lucide-react";
 import type { CohortProduct } from "@/types/supabase";
 import { getCohortTiming } from "@/lib/cohort-timing";
 import { SiteText } from "./site-text";
+import { PromoBanner, type PromoBannerData } from "./promo-banner";
 
 // The generic 60D feature line states the rule ("liberado 60 dias antes"); the
 // selected turma's live unlock status is shown separately below the price.
@@ -25,7 +26,14 @@ const INCLUDED: { key: string; text: string }[] = [
   { key: "7", text: "Atualizações contínuas" },
 ];
 
-export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
+export function PricingCTA({
+  cohorts,
+  promo = null,
+}: {
+  cohorts: CohortProduct[];
+  /** Open launch condition, if any — shown above the card (lib/cohort-promotions). */
+  promo?: PromoBannerData | null;
+}) {
   const ref = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState(0);
   const cohort = cohorts[selected] ?? cohorts[0];
@@ -112,6 +120,8 @@ export function PricingCTA({ cohorts }: { cohorts: CohortProduct[] }) {
             <SiteText as="span" multiline k="pricing.subhead" fallback="O sistema é o mesmo — a turma define o seu calendário de preparação." />
           </p>
         </div>
+
+        {promo && <PromoBanner promo={promo} stacked className="mb-6" />}
 
         {/* Single card */}
         <div

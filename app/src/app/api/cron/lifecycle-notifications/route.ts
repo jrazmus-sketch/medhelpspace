@@ -245,9 +245,15 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  async function getCohortMembers(cohortId: number) {
-    const { data: memberships } = await supabase
+  // `excludeRollingOver`: for the expiry emails. A launch-condition buyer
+  // (rollover_to_cohort_id set) is NOT losing access when this turma closes — the
+  // rollover cron moves them onto the next turma first — so "seu acesso termina"
+  // would be false for them (Karina, 2026-09-21).
+  async function getCohortMembers(cohortId: number, opts: { excludeRollingOver?: boolean } = {}) {
+    let query = supabase
       .from("user_cohort_memberships").select("user_id").eq("cohort_id", cohortId);
+    if (opts.excludeRollingOver) query = query.is("rollover_to_cohort_id", null);
+    const { data: memberships } = await query;
     const userIds = (memberships ?? []).map((m) => m.user_id as string);
     if (userIds.length === 0) return [];
     const { data: profiles } = await supabase
@@ -389,7 +395,7 @@ export async function GET(request: NextRequest) {
     if (!cohorts || cohorts.length === 0) push("  None.");
     else for (const cohort of cohorts) {
       push(`  Cohort: ${cohort.name} (${cohort.id})`);
-      const members = await getCohortMembers(cohort.id);
+      const members = await getCohortMembers(cohort.id, { excludeRollingOver: true });
       for (const m of members) {
         try {
           const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
@@ -429,7 +435,7 @@ export async function GET(request: NextRequest) {
     if (!cohorts || cohorts.length === 0) push("  None.");
     else for (const cohort of cohorts) {
       push(`  Cohort: ${cohort.name} (${cohort.id})`);
-      const members = await getCohortMembers(cohort.id);
+      const members = await getCohortMembers(cohort.id, { excludeRollingOver: true });
       for (const m of members) {
         try {
           const displayName = (m.display_name || m.email.split("@")[0]).split(" ")[0];
