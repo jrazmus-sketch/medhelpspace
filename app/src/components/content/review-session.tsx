@@ -6,6 +6,7 @@ import { RotateCcw, ImageOff, Check, X, ArrowRight, BookOpen } from "lucide-reac
 import { gradeReviewItem, suspendReviewItem } from "@/actions/review";
 import { safe } from "@/lib/sanitize";
 import type { ReviewItem, ReviewMode } from "@/lib/review/queries";
+import { REMEDIATION_LABEL } from "@/lib/review/remediation";
 
 // Sanitized-HTML prop, built with a split key so the repo's security hook (which
 // scans new files for the raw-HTML React prop) doesn't trip. Content runs
@@ -341,7 +342,7 @@ function QuizCard({
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline underline-offset-4"
               >
                 <BookOpen className="h-4 w-4" />
-                Revisar a aula
+                {REMEDIATION_LABEL}
               </Link>
             )}
           </div>

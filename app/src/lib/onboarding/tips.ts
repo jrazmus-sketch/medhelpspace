@@ -162,7 +162,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     body:
       "Os pontos-chave de cada tema em cartões visuais, na mesma organização do **Revalida Up**. Escolha a especialidade e avance no seu ritmo — pelo botão **Próximo**, pelas setas do teclado ou deslizando no celular. Quando um tema termina, o seguinte começa em sequência; em **Temas** você vai direto a qualquer um.",
     reviewNote:
-      "Ao terminar um tema, ele entra num ciclo de **releitura espaçada** na Revisão (em 7, 21, 60 e 120 dias).",
+      "Ao terminar um tema, ele entra num ciclo de **releitura espaçada** na Revisão (em 3, 7, 14 e 30 dias), sempre antes da data da sua prova.",
     href: "/app/memorecards",
     hrefLabel: "Abrir MemoreCards",
   },

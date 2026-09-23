@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { nextSm2, dueDateAfter, SM2_DEFAULTS, type ReviewResult } from "@/lib/review/sm2";
 import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
+import { memorecardRereadDue } from "@/lib/review/memorecard-reread";
 
 export type ReviewItemType = "flashcard" | "quiz_question" | "memorecard";
 
@@ -78,11 +79,6 @@ export async function gradeReviewItem(
   );
 }
 
-// Re-read cadence for MemoreCards. They're passive presentation slides (no
-// front/back), so there's no correct/incorrect to grade — instead a deck just
-// resurfaces on an expanding "see it again" schedule. Indexed by repetitions.
-const MEMORECARD_REREAD_INTERVALS = [7, 21, 60, 120];
-
 /**
  * Schedule (or reschedule) a MemoreCards deck for re-reading. Called when a
  * student finishes a deck. `itemId` is the deck's PAGE id — memorecards are
@@ -112,9 +108,22 @@ export async function enrollMemorecardReread(
   // out to 120 days. An early re-read leaves the schedule as it was.
   if (current?.due_date && toDateKeyBR(current.due_date as string) > todayKeyBR()) return;
 
+  // The cadence (3 → 7 → 14 → 30 days) fits MedHelp 60D's window and never lands
+  // after the student's exam — see lib/review/memorecard-reread.ts.
+  const { data: memberships } = await supabase
+    .from("user_cohort_memberships")
+    .select("cohort:cohorts(test_date)")
+    .eq("user_id", user.id);
+  const today = todayKeyBR();
+  const examDate =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((memberships ?? []) as any[])
+      .map((m) => (m.cohort?.test_date ? toDateKeyBR(m.cohort.test_date as string) : ""))
+      .filter((d) => d && d > today)
+      .sort()[0] ?? null;
+
   const reps = current?.repetitions ?? 0;
-  const interval =
-    MEMORECARD_REREAD_INTERVALS[Math.min(reps, MEMORECARD_REREAD_INTERVALS.length - 1)];
+  const { interval, due } = memorecardRereadDue(reps, today, examDate);
 
   await supabase.from("review_schedule").upsert(
     {
@@ -124,7 +133,7 @@ export async function enrollMemorecardReread(
       ...(specialtyId != null ? { specialty_id: specialtyId } : {}),
       repetitions: reps + 1,
       interval_days: interval,
-      due_date: dueDateAfter(interval),
+      due_date: due,
       last_reviewed_at: new Date().toISOString(),
     },
     { onConflict: "user_id,item_type,item_id" },

@@ -1,6 +1,7 @@
 import { themeSlug, themeTitle } from "@/lib/memorecards-shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayKeyBR } from "@/lib/br-date";
+import { revalidaUpSlugFor } from "@/lib/review/remediation";
 
 /**
  * Server-side review queries. Per the project's data-fetching invariant these
@@ -102,7 +103,10 @@ export type ReviewItem =
       answers: { text: string; correct: boolean; feedback: string }[];
       explanation_html: string | null;
       media_url: string | null;
-      /** Deep-link to the source page so a missed question links back to the lesson. */
+      /**
+       * Where to study the topic after a miss: its Revalida Up page. Null when the
+       * topic has none — the link is then hidden (never a link to more questions).
+       */
       remediationHref: string | null;
     };
 
@@ -168,22 +172,9 @@ export async function getReviewItems(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const quizById = new Map((quizRes.data ?? []).map((qq: any) => [qq.id as number, qq]));
 
-  // Remediation hrefs: quiz page → /app/<specialtySlug>/<pageSlug>.
-  const hrefByPage = new Map<number, string>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pageIds = [...new Set((quizRes.data ?? []).map((qq: any) => qq.page_id as number).filter(Boolean))];
-  if (pageIds.length) {
-    const { data: pages } = await admin.from("pages").select("id, slug, specialty_id").in("id", pageIds);
-    const specIds = [...new Set((pages ?? []).map((p) => p.specialty_id).filter(Boolean))] as number[];
-    const { data: specs } = specIds.length
-      ? await admin.from("specialties").select("id, slug").in("id", specIds)
-      : { data: [] as { id: number; slug: string }[] };
-    const specSlug = new Map((specs ?? []).map((s) => [s.id as number, s.slug as string]));
-    for (const p of pages ?? []) {
-      const ss = p.specialty_id ? specSlug.get(p.specialty_id as number) : null;
-      hrefByPage.set(p.id as number, ss ? `/app/${ss}/${p.slug}` : `/app/${p.slug}`);
-    }
-  }
+  const quizPageIds = [...new Set((quizRes.data ?? []).map((qq: any) => qq.page_id as number).filter(Boolean))];
+  const hrefByPage = await revalidaUpHrefs(admin, quizPageIds);
 
   const items: ReviewItem[] = [];
   for (const r of sched) {
@@ -242,11 +233,7 @@ export async function getPageReviewItems(pageId: number, limit = 60): Promise<Re
   if (!page) return [];
 
   const specialtyId = (page.specialty_id as number | null) ?? null;
-  let href = `/app/${page.slug}`;
-  if (specialtyId) {
-    const { data: spec } = await admin.from("specialties").select("slug").eq("id", specialtyId).single();
-    if (spec?.slug) href = `/app/${spec.slug}/${page.slug}`;
-  }
+  const href = (await revalidaUpHrefs(admin, [pageId])).get(pageId) ?? null;
 
   const [quizRes, flashRes] = await Promise.all([
     admin
@@ -467,4 +454,83 @@ export async function getReviewStats(userId: string): Promise<ReviewStats> {
     wrong: wrong ?? 0,
     mastered: mastered ?? 0,
   };
+}
+
+// ── Remediation: a missed question → the topic's Revalida Up page ──────────────
+
+/**
+ * For each Questões page, the Revalida Up page of the same topic, as an /app href.
+ * Karina (2026-09-23): the old link went back to the question page itself, i.e. to
+ * more questions — the student needs the topic's study material instead.
+ *
+ * Resolved through the study-plan map (topic_content: topic → its question page AND
+ * its Revalida Up page), then by slug (`<topic>-revalida-up`) for pages the map does
+ * not cover. A page with no Revalida Up (e.g. a multi-topic mini simulado) gets no
+ * entry, and the link is hidden.
+ */
+async function revalidaUpHrefs(
+  admin: ReturnType<typeof createAdminClient>,
+  pageIds: number[],
+): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  if (pageIds.length === 0) return out;
+
+  const [{ data: sources }, { data: links }] = await Promise.all([
+    admin.from("pages").select("id, slug").in("id", pageIds),
+    admin.from("topic_content").select("topic_id, page_id").in("page_id", pageIds),
+  ]);
+  const topicIds = [...new Set((links ?? []).map((l) => l.topic_id as number))];
+  const candidateSlugs = (sources ?? []).map((p) => revalidaUpSlugFor(p.slug as string));
+
+  const [{ data: siblings }, { data: bySlug }] = await Promise.all([
+    topicIds.length
+      ? admin.from("topic_content").select("topic_id, page_id").in("topic_id", topicIds)
+      : Promise.resolve({ data: [] as { topic_id: number; page_id: number }[] }),
+    admin
+      .from("pages")
+      .select("id, slug, specialty_id")
+      .eq("view", "revalida-up")
+      .eq("status", "publish")
+      .in("slug", candidateSlugs),
+  ]);
+  const siblingIds = [...new Set((siblings ?? []).map((l) => l.page_id as number))];
+  const { data: upByTopic } = siblingIds.length
+    ? await admin
+        .from("pages")
+        .select("id, slug, specialty_id")
+        .eq("view", "revalida-up")
+        .eq("status", "publish")
+        .in("id", siblingIds)
+    : { data: [] as { id: number; slug: string; specialty_id: number | null }[] };
+
+  const upPages = [...(upByTopic ?? []), ...(bySlug ?? [])];
+  const specIds = [...new Set(upPages.map((p) => p.specialty_id).filter(Boolean))] as number[];
+  const { data: specs } = specIds.length
+    ? await admin.from("specialties").select("id, slug").in("id", specIds)
+    : { data: [] as { id: number; slug: string }[] };
+  const specSlug = new Map((specs ?? []).map((sp) => [sp.id as number, sp.slug as string]));
+  const hrefOf = (p: { slug: string; specialty_id: number | null }) => {
+    const ss = p.specialty_id ? specSlug.get(p.specialty_id) : null;
+    return ss ? `/app/${ss}/${p.slug}` : `/app/${p.slug}`;
+  };
+
+  // topic → its Revalida Up page
+  const upIdSet = new Map((upByTopic ?? []).map((p) => [p.id as number, p]));
+  const upByTopicId = new Map<number, (typeof upPages)[number]>();
+  for (const l of siblings ?? []) {
+    const up = upIdSet.get(l.page_id as number);
+    if (up && !upByTopicId.has(l.topic_id as number)) upByTopicId.set(l.topic_id as number, up);
+  }
+  for (const l of links ?? []) {
+    const up = upByTopicId.get(l.topic_id as number);
+    if (up && !out.has(l.page_id as number)) out.set(l.page_id as number, hrefOf(up));
+  }
+  // slug fallback for the rest
+  const upBySlug = new Map((bySlug ?? []).map((p) => [p.slug as string, p]));
+  for (const p of sources ?? []) {
+    if (out.has(p.id as number)) continue;
+    const up = upBySlug.get(revalidaUpSlugFor(p.slug as string));
+    if (up) out.set(p.id as number, hrefOf(up));
+  }
+  return out;
 }
