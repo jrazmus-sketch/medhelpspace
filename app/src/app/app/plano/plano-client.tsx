@@ -18,6 +18,7 @@ import type {
   Intensity, ContentType, WeaknessSensitivity,
 } from "@/lib/study-plan/derive";
 import { CalibrateWizard } from "./calibrate-wizard";
+import { useAutosave, type SaveStatus } from "@/lib/use-autosave";
 
 const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
   quiz: ClipboardList,
@@ -499,118 +500,127 @@ function CollapsibleSection({
 // ── Availability editor (days + hours + pauses + recurring off) ──────────────
 
 function AvailabilityEditor({ prefs, pauses }: { prefs: StudyPlanPrefs; pauses: PauseRow[] }) {
-  const [pending, startTransition] = useTransition();
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
-
-  function fire(action: () => Promise<void>, msg: string) {
-    startTransition(async () => {
-      await action();
-      setSavedMsg(msg);
-      setTimeout(() => setSavedMsg(null), 2000);
-    });
-  }
+  // Each control changes on screen at once and saves in the background — never
+  // locked while the plan re-renders (see lib/use-autosave.ts).
+  const hours = useAutosave<number | null>(prefs.weekly_hours, (h) => setWeeklyHours(h), 600);
+  const days = useAutosave(prefs.available_days, (m) => setAvailableDays(m));
+  const offDays = useAutosave(prefs.recurring_off_days, (m) => setRecurringOffDays(m));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Weekly hours */}
       <div>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-          <label style={{ fontSize: 13, fontWeight: 600 }}>Horas por semana</label>
+          <label htmlFor="plano-horas" style={{ fontSize: 13, fontWeight: 600 }}>Horas por semana</label>
           <span style={{ fontSize: 18, fontWeight: 700, color: "var(--brand)", fontFamily: "var(--font-geist-mono)" }}>
-            {prefs.weekly_hours ?? "—"}{prefs.weekly_hours ? "h" : ""}
+            {hours.value ?? "—"}{hours.value ? "h" : ""}
           </span>
         </div>
         <input
+          id="plano-horas"
           type="range"
           min={3} max={40} step={1}
-          defaultValue={prefs.weekly_hours ?? 15}
-          onChange={(e) => fire(() => setWeeklyHours(Number(e.target.value)), "Horas salvas")}
-          disabled={pending}
+          value={hours.value ?? 15}
+          onChange={(e) => hours.setValue(Number(e.target.value))}
           style={{ width: "100%", accentColor: "var(--brand)" }}
+          className="min-h-11"
         />
-        <p style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 4 }}>
-          {prefs.weekly_hours == null ? "Usando intensidade padrão" : `Distribuído nos dias disponíveis`}
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
+          <p style={{ fontSize: 11, color: "var(--muted-foreground)" }}>
+            {hours.value == null ? "Usando intensidade padrão" : `Distribuído nos dias disponíveis`}
+          </p>
+          <SaveNote status={hours.status} />
+        </div>
       </div>
 
       {/* Available days */}
-      <div>
-        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, display: "block" }}>
-          Dias disponíveis para estudar
-        </label>
-        <div style={{ display: "flex", gap: 6 }}>
-          {DAY_LABELS.map((label, i) => {
-            const bit = 1 << i;
-            const active = (prefs.available_days & bit) !== 0;
-            return (
-              <button
-                key={i}
-                onClick={() => fire(() => setAvailableDays(prefs.available_days ^ bit), active ? `${label} desabilitado` : `${label} habilitado`)}
-                disabled={pending}
-                style={{
-                  flex: 1, padding: "10px 0",
-                  borderRadius: "var(--radius-sm)",
-                  border: active ? "1px solid var(--brand)" : "1px solid var(--surface-2)",
-                  background: active ? "color-mix(in srgb, var(--brand) 15%, transparent)" : "transparent",
-                  color: active ? "var(--brand)" : "var(--muted-foreground)",
-                  fontSize: 12, fontWeight: active ? 700 : 500,
-                  cursor: pending ? "not-allowed" : "pointer",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <DayToggles
+        label="Dias disponíveis para estudar"
+        mask={days.value}
+        onToggle={(bit) => days.setValue((m) => m ^ bit)}
+        color="var(--brand)"
+        status={days.status}
+      />
 
       {/* Recurring off-days (plantão) */}
-      <div>
-        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: "block" }}>
-          Folga recorrente (plantão)
-        </label>
-        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 8 }}>
-          Dias da semana que você normalmente não consegue estudar (ex: dias de plantão 24h).
-        </p>
-        <div style={{ display: "flex", gap: 6 }}>
-          {DAY_LABELS.map((label, i) => {
-            const bit = 1 << i;
-            const active = (prefs.recurring_off_days & bit) !== 0;
-            return (
-              <button
-                key={i}
-                onClick={() => fire(() => setRecurringOffDays(prefs.recurring_off_days ^ bit), active ? `${label} sem plantão` : `${label} marcado como plantão`)}
-                disabled={pending}
-                style={{
-                  flex: 1, padding: "10px 0",
-                  borderRadius: "var(--radius-sm)",
-                  border: active ? "1px solid #f59e0b" : "1px solid var(--surface-2)",
-                  background: active ? "color-mix(in srgb, #f59e0b 15%, transparent)" : "transparent",
-                  color: active ? "#f59e0b" : "var(--muted-foreground)",
-                  fontSize: 12, fontWeight: active ? 700 : 500,
-                  cursor: pending ? "not-allowed" : "pointer",
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <DayToggles
+        label="Folga recorrente (plantão)"
+        description="Dias da semana que você normalmente não consegue estudar (ex: dias de plantão 24h)."
+        mask={offDays.value}
+        onToggle={(bit) => offDays.setValue((m) => m ^ bit)}
+        color="#f59e0b"
+        status={offDays.status}
+      />
 
       {/* Date-range pauses */}
       <DateRangePauses pauses={pauses} />
 
       {/* Intensity (lives here because it interacts with availability) */}
       <IntensityEditor currentIntensity={prefs.intensity} tempIntensity={prefs.temp_intensity} tempUntil={prefs.temp_intensity_until} />
-
-      {savedMsg && (
-        <span style={{ fontSize: 12, color: "var(--brand)", display: "flex", alignItems: "center", gap: 4 }}>
-          <Check size={12} />
-          {savedMsg}
-        </span>
-      )}
     </div>
+  );
+}
+
+function DayToggles({
+  label, description, mask, onToggle, color, status,
+}: {
+  label: string;
+  description?: string;
+  mask: number;
+  onToggle: (bit: number) => void;
+  color: string;
+  status: SaveStatus;
+}) {
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: description ? 4 : 8 }}>
+        <label style={{ fontSize: 13, fontWeight: 600 }}>{label}</label>
+        <SaveNote status={status} />
+      </div>
+      {description && (
+        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 8 }}>{description}</p>
+      )}
+      <div style={{ display: "flex", gap: 6 }}>
+        {DAY_LABELS.map((d, i) => {
+          const bit = 1 << i;
+          const active = (mask & bit) !== 0;
+          return (
+            <button
+              key={i}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onToggle(bit)}
+              className="min-h-11"
+              style={{
+                flex: 1, minWidth: 0, padding: "10px 0",
+                borderRadius: "var(--radius-sm)",
+                border: active ? `1px solid ${color}` : "1px solid var(--surface-2)",
+                background: active ? `color-mix(in srgb, ${color} 15%, transparent)` : "transparent",
+                color: active ? color : "var(--muted-foreground)",
+                fontSize: 12, fontWeight: active ? 700 : 500,
+                cursor: "pointer",
+              }}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** "Salvando… / Salvo / não foi possível salvar" next to a setting. */
+function SaveNote({ status }: { status: SaveStatus }) {
+  if (status === "idle") return null;
+  const text =
+    status === "saving" ? "Salvando…" : status === "saved" ? "Salvo" : "Não foi possível salvar. Tente de novo.";
+  const color = status === "error" ? "var(--destructive)" : status === "saved" ? "var(--brand)" : "var(--muted-foreground)";
+  return (
+    <span role="status" aria-live="polite" style={{ fontSize: 11, color, display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>
+      {status === "saved" && <Check size={10} />}
+      {text}
+    </span>
   );
 }
 
@@ -725,29 +735,32 @@ function IntensityEditor({
   tempUntil: string | null;
 }) {
   const [pending, startTransition] = useTransition();
+  const base = useAutosave(currentIntensity, (v) => setIntensity(v), 300);
   const [showTemp, setShowTemp] = useState(!!tempIntensity);
   const [tempVal, setTempVal] = useState<Intensity>(tempIntensity ?? "leve");
   const [tempUntilVal, setTempUntilVal] = useState<string>(tempUntil ?? "");
 
   return (
     <div>
-      <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, display: "block" }}>
-        Intensidade base
-      </label>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <label style={{ fontSize: 13, fontWeight: 600 }}>Intensidade base</label>
+        <SaveNote status={base.status} />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" style={{ marginBottom: 12 }}>
         {(["leve", "padrao", "intenso"] as const).map((i) => {
-          const active = currentIntensity === i;
+          const active = base.value === i;
           return (
             <button
               key={i}
-              onClick={() => startTransition(() => setIntensity(i))}
-              disabled={pending}
+              type="button"
+              aria-pressed={active}
+              onClick={() => base.setValue(i)}
               style={{
                 padding: "12px 14px",
                 borderRadius: "var(--radius)",
                 border: active ? "2px solid var(--brand)" : "1px solid var(--surface-2)",
                 background: active ? "color-mix(in srgb, var(--brand) 10%, transparent)" : "var(--background)",
-                cursor: pending ? "not-allowed" : "pointer",
+                cursor: "pointer",
                 textAlign: "left",
               }}
             >
@@ -876,36 +889,31 @@ function SpecialtyMultiSelect({
   chipColor: string;
   emptyText: string;
 }) {
-  const [selected, setSelected] = useState<Set<number>>(new Set(currentIds));
-  const [pending, startTransition] = useTransition();
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+  // The chip flips at once and the list saves itself; quick clicks are coalesced
+  // into one save of the final selection. (It used to start the save INSIDE the
+  // state updater, which React refuses, so a click neither selected nor saved.)
+  const { value: ids, setValue, status } = useAutosave<number[]>(currentIds, (next) => onSave(next));
+  const selected = new Set(ids);
 
   function toggle(id: number) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      startTransition(async () => {
-        await onSave([...next]);
-        setSavedMsg("Salvo");
-        setTimeout(() => setSavedMsg(null), 1500);
-      });
-      return next;
-    });
+    setValue((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   return (
     <div>
       <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: "block" }}>{label}</label>
       <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 6, lineHeight: 1.4 }}>{description}</p>
-      <p style={{ fontSize: 11, color: "var(--muted-foreground)", opacity: 0.7, marginBottom: 10 }}>{helpText}</p>
+      <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10 }}>{helpText}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {specialties.map((s) => {
           const active = selected.has(s.id);
           return (
             <button
               key={s.id}
+              type="button"
+              aria-pressed={active}
               onClick={() => toggle(s.id)}
-              disabled={pending}
+              className="min-h-11"
               style={{
                 padding: "6px 12px",
                 borderRadius: 999,
@@ -913,7 +921,7 @@ function SpecialtyMultiSelect({
                 background: active ? `color-mix(in srgb, ${chipColor} 15%, transparent)` : "transparent",
                 color: active ? chipColor : "var(--foreground)",
                 fontSize: 12, fontWeight: active ? 600 : 500,
-                cursor: pending ? "not-allowed" : "pointer",
+                cursor: "pointer",
               }}
             >
               {active && <Check size={11} style={{ display: "inline", marginRight: 4 }} />}
@@ -922,34 +930,33 @@ function SpecialtyMultiSelect({
           );
         })}
       </div>
-      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
         <span style={{ color: "var(--muted-foreground)" }}>
           {selected.size === 0 ? emptyText : `${selected.size} selecionada${selected.size !== 1 ? "s" : ""}`}
         </span>
-        {savedMsg && <span style={{ color: "var(--brand)", display: "flex", alignItems: "center", gap: 3 }}><Check size={10} />{savedMsg}</span>}
+        <SaveNote status={status} />
       </div>
     </div>
   );
 }
 
 function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
-  const [selected, setSelected] = useState<Set<ContentType>>(new Set(prefs.preferred_content_types));
-  const [pending, startTransition] = useTransition();
+  const { value: types, setValue, status } = useAutosave<ContentType[]>(
+    prefs.preferred_content_types,
+    (next) => setContentTypes(next),
+  );
+  const selected = new Set(types);
 
   function toggle(type: ContentType) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type); else next.add(type);
-      startTransition(() => setContentTypes([...next]));
-      return next;
-    });
+    setValue((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
   }
 
   return (
     <div>
-      <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: "block" }}>
-        Tipos de conteúdo que você quer no plano
-      </label>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+        <label style={{ fontSize: 13, fontWeight: 600 }}>Tipos de conteúdo que você quer no plano</label>
+        <SaveNote status={status} />
+      </div>
       <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.4 }}>
         Desmarque tipos que você não gosta (ex: se você não estuda por áudio, desmarque MedVoice).
       </p>
@@ -961,6 +968,7 @@ function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
           return (
             <label
               key={type}
+              className="min-h-11"
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "10px 14px",
@@ -974,7 +982,6 @@ function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
                 type="checkbox"
                 checked={active}
                 onChange={() => toggle(type)}
-                disabled={pending}
                 style={{ width: 16, height: 16, accentColor: color }}
               />
               <Icon size={16} style={{ color: active ? color : "var(--muted-foreground)" }} />
@@ -992,49 +999,43 @@ function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
 // ── Notifications editor ──────────────────────────────────────────────────────
 
 function NotificationsEditor({ prefs }: { prefs: StudyPlanPrefs }) {
-  const [pending, startTransition] = useTransition();
-  // Initialize from the saved DB prefs so the toggles reflect the user's actual
-  // choice on load (not a hardcoded default that ignored what they'd saved).
-  const [weeklySummary, setWeeklySummary] = useState(prefs.email_weekly_summary);
-  const [dailyPlan, setDailyPlan] = useState(prefs.email_daily_plan);
-
-  function update(patch: { email_weekly_summary?: boolean; email_daily_plan?: boolean }) {
-    startTransition(() => setEmailPrefs(patch));
-  }
+  // Initialized from the saved DB prefs so the toggles reflect the user's actual choice.
+  const weekly = useAutosave(prefs.email_weekly_summary, (v) => setEmailPrefs({ email_weekly_summary: v }), 300);
+  const daily = useAutosave(prefs.email_daily_plan, (v) => setEmailPrefs({ email_daily_plan: v }), 300);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      <label style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, cursor: "pointer" }}>
+      <label className="min-h-11" style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, cursor: "pointer" }}>
         <input
           type="checkbox"
-          checked={weeklySummary}
-          onChange={(e) => { setWeeklySummary(e.target.checked); update({ email_weekly_summary: e.target.checked }); }}
-          disabled={pending}
+          checked={weekly.value}
+          onChange={(e) => weekly.setValue(e.target.checked)}
           className="accent-brand"
           style={{ width: 16, height: 16 }}
         />
         <Mail size={14} style={{ color: "var(--muted-foreground)" }} />
-        <div>
+        <div style={{ flex: 1 }}>
           <div>Resumo semanal por email</div>
-          <div style={{ fontSize: 11, color: "var(--muted-foreground)" }}>Toda segunda de manhã com o resumo da semana</div>
+          <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Toda segunda de manhã com o resumo da semana</div>
         </div>
+        <SaveNote status={weekly.status} />
       </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, cursor: "pointer" }}>
+      <label className="min-h-11" style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, cursor: "pointer" }}>
         <input
           type="checkbox"
-          checked={dailyPlan}
-          onChange={(e) => { setDailyPlan(e.target.checked); update({ email_daily_plan: e.target.checked }); }}
-          disabled={pending}
+          checked={daily.value}
+          onChange={(e) => daily.setValue(e.target.checked)}
           className="accent-brand"
           style={{ width: 16, height: 16 }}
         />
         <Calendar size={14} style={{ color: "var(--muted-foreground)" }} />
-        <div>
+        <div style={{ flex: 1 }}>
           <div>Plano diário por email</div>
-          <div style={{ fontSize: 11, color: "var(--muted-foreground)" }}>Receba o plano do dia todo dia de manhã</div>
+          <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>Receba o plano do dia todo dia de manhã</div>
         </div>
+        <SaveNote status={daily.status} />
       </label>
-      <p style={{ fontSize: 11, color: "var(--muted-foreground)", fontStyle: "italic", marginTop: 8, padding: "10px 14px", background: "color-mix(in srgb, var(--brand) 5%, transparent)", borderRadius: "var(--radius-sm)" }}>
+      <p style={{ fontSize: 12, color: "var(--muted-foreground)", fontStyle: "italic", marginTop: 8, padding: "10px 14px", background: "color-mix(in srgb, var(--brand) 5%, transparent)", borderRadius: "var(--radius-sm)" }}>
         WhatsApp em breve. Notificações no app aparecem no sino do header.
       </p>
     </div>
@@ -1044,25 +1045,38 @@ function NotificationsEditor({ prefs }: { prefs: StudyPlanPrefs }) {
 // ── Advanced editor ───────────────────────────────────────────────────────────
 
 function AdvancedEditor({ prefs }: { prefs: StudyPlanPrefs }) {
-  const [pending, startTransition] = useTransition();
-
-  function update(patch: Parameters<typeof setAdvancedPrefs>[0]) {
-    startTransition(() => setAdvancedPrefs(patch));
-  }
+  const sensitivity = useAutosave<WeaknessSensitivity>(
+    prefs.weakness_sensitivity,
+    (v) => setAdvancedPrefs({ weakness_sensitivity: v }),
+    300,
+  );
+  const include60d = useAutosave(prefs.include_60d, (v) => setAdvancedPrefs({ include_60d: v }), 300);
+  // The box holds what is TYPED; only a valid number (5 to 500) or an empty box
+  // ("sem limite") is saved, after a pause, so "30" is never saved as "3" first.
+  const [capText, setCapText] = useState(prefs.flashcard_daily_cap == null ? "" : String(prefs.flashcard_daily_cap));
+  const cap = useAutosave<number | null>(prefs.flashcard_daily_cap, (v) => setAdvancedPrefs({ flashcard_daily_cap: v }), 800);
+  const capNum = capText.trim() === "" ? null : Number(capText);
+  const capInvalid = capNum != null && (!Number.isInteger(capNum) || capNum < 5 || capNum > 500);
+  // Only complain once the student leaves the box — "3" is a normal step towards "30".
+  const [capLeft, setCapLeft] = useState(false);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div>
-        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: "block" }}>
-          Sensibilidade a especialidades fracas
-        </label>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+          <label htmlFor="plano-sensibilidade" style={{ fontSize: 13, fontWeight: 600 }}>
+            Sensibilidade a especialidades fracas
+          </label>
+          <SaveNote status={sensitivity.status} />
+        </div>
         <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10 }}>
           Quanto o algoritmo prioriza especialidades onde você tem desempenho baixo.
         </p>
         <select
-          defaultValue={prefs.weakness_sensitivity}
-          onChange={(e) => update({ weakness_sensitivity: e.target.value as WeaknessSensitivity })}
-          disabled={pending}
+          id="plano-sensibilidade"
+          value={sensitivity.value}
+          onChange={(e) => sensitivity.setValue(e.target.value as WeaknessSensitivity)}
+          className="min-h-11"
           style={selectStyle}
         >
           <option value="strict">Estrita — fortemente prioriza fracas</option>
@@ -1072,42 +1086,57 @@ function AdvancedEditor({ prefs }: { prefs: StudyPlanPrefs }) {
       </div>
 
       <div>
-        <label style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, cursor: "pointer" }}>
+        <label className="min-h-11" style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, cursor: "pointer" }}>
           <input
             type="checkbox"
-            defaultChecked={prefs.include_60d}
-            onChange={(e) => update({ include_60d: e.target.checked })}
-            disabled={pending}
+            checked={include60d.value}
+            onChange={(e) => include60d.setValue(e.target.checked)}
             style={{ width: 16, height: 16, accentColor: "var(--brand)" }}
           />
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600 }}>Incluir MedHelp 60D no plano</div>
-            <div style={{ fontSize: 11, color: "var(--muted-foreground)" }}>
+            <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
               Quando o módulo desbloquear, ele entra automaticamente na sua rotina diária.
             </div>
           </div>
+          <SaveNote status={include60d.status} />
         </label>
       </div>
 
       <div>
-        <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: "block" }}>
-          Limite diário de flashcards
-        </label>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+          <label htmlFor="plano-limite-flashcards" style={{ fontSize: 13, fontWeight: 600 }}>
+            Limite diário de flashcards
+          </label>
+          <SaveNote status={cap.status} />
+        </div>
         <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10 }}>
           Útil quando você volta de uma pausa e tem 300 cartas atrasadas. Limita o que aparece no plano.
         </p>
         <input
+          id="plano-limite-flashcards"
           type="number"
+          inputMode="numeric"
           min={5} max={500}
-          defaultValue={prefs.flashcard_daily_cap ?? ""}
+          value={capText}
           placeholder="Sem limite"
+          aria-invalid={capInvalid && capLeft}
+          onBlur={() => setCapLeft(true)}
+          onFocus={() => setCapLeft(false)}
           onChange={(e) => {
-            const v = e.target.value ? Number(e.target.value) : null;
-            update({ flashcard_daily_cap: v });
+            const t = e.target.value;
+            setCapText(t);
+            const n = t.trim() === "" ? null : Number(t);
+            if (n == null || (Number.isInteger(n) && n >= 5 && n <= 500)) cap.setValue(n);
           }}
-          disabled={pending}
+          className="min-h-11"
           style={{ ...inputStyle, maxWidth: 160 }}
         />
+        {capInvalid && capLeft && (
+          <p role="alert" style={{ fontSize: 12, color: "var(--destructive)", marginTop: 6 }}>
+            Use um número entre 5 e 500, ou deixe em branco para não limitar.
+          </p>
+        )}
       </div>
     </div>
   );
