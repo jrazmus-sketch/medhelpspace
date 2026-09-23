@@ -17,6 +17,7 @@ import { EditableText } from "@/components/admin/editable-text";
 import { buildCrumbsForPage, findSpecialtyHub, type Crumb } from "@/lib/breadcrumbs";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { legacyMemorecardsHref } from "@/lib/memorecards-shared";
 
 export default async function ContentPage({
   params,
@@ -41,6 +42,12 @@ export default async function ContentPage({
   // bypassed), so members would otherwise see a draft via its direct URL even
   // though it never appears in any navigation. Treat it as not-found for them.
   if (page.status !== "publish" && !(await isViewerAdmin())) notFound();
+
+  // The legacy MemoreCards pages (the hub + 18 per-specialty decks, H5P shells
+  // and plain-content alike) were replaced by MemoreCards v2. Old links, bookmarks
+  // and Revisão entries land on the new section, which does its own 60D check.
+  const legacyMemorecards = legacyMemorecardsHref(page.slug, page.content_module_id);
+  if (legacyMemorecards) redirect(legacyMemorecards);
 
   await requireActiveMembership(page.content_module_id);
 
@@ -167,7 +174,6 @@ function isAudioLessonPage(page: { type: string; track_id: number | null }) {
 }
 
 const FLASHCARDS_TRACK_ID = 3;
-const MEDHELP_60D_MODULE_ID = 1;
 const MEDVOICE_TRACK_ID = 1;
 const AUDIOCARDS_TRACK_ID = 2;
 
@@ -200,7 +206,6 @@ function coachmarkKeyForPage(page: {
       return "lesson";
     case "h5p-quiz":
       if (page.track_id === FLASHCARDS_TRACK_ID) return "flashcards";
-      if (page.content_module_id === MEDHELP_60D_MODULE_ID) return "memorecards";
       if (page.view === "simulados") return "simulados";
       return "quiz";
     case "plain-content":
@@ -257,16 +262,6 @@ function PageBody({
             grupo={grupo}
           />
         );
-      // MemoreCards are the 60D module's OTHER h5p-quiz content and carry
-      // view='quiz'. The 60D "Simulados 100Q" are also h5p-quiz + module 1, so
-      // this branch must not claim them — check the simulado view first or every
-      // 60D simulado renders as an empty memorecard deck.
-      // Replaced by MemoreCards v2 (Karina 2026-09-23): the legacy per-specialty
-      // decks were H5P shells (16 of 18 empty). Any old link, bookmark or Revisão
-      // entry lands on the new viewer for the same specialty instead.
-      if (page.content_module_id === MEDHELP_60D_MODULE_ID && !isSimulado(page)) {
-        redirect(`/app/memorecards/${specialtySlug}`);
-      }
       return <QuizRenderer pageId={page.id} />;
     case "blurb-nav-hub":
       return <BlurbNavHubRenderer pageId={page.id} />;

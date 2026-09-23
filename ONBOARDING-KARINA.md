@@ -47,8 +47,9 @@ As dicas também explicam **como cada seção conversa com a Revisão** (ver
 | **Revisão** | A central de repetição espaçada (revisar hoje / só as que errei / pontos fracos). |
 | **Meu Plano** | O roteiro diário com links diretos. |
 | **MedHelp 60D** | Que abre sozinho ~60 dias antes da prova. |
+| **MemoreCards** (dentro do 60D) | Cartões visuais por tema, na organização do Revalida Up; avançar pelo botão, pelas setas ou deslizando, com os temas em sequência. **+ cada tema concluído volta na Revisão para releitura.** |
 
-> As dicas de **Questões, Flashcards, MedVoice/AudioCards, Revisão e Plano** sempre
+> As dicas de **Questões, Flashcards, MedVoice/AudioCards, MemoreCards, Revisão e Plano** sempre
 > trazem uma linha **"Como entra na Revisão"**, para o aluno entender o ciclo
 > *estudar → revisar* desde o começo.
 

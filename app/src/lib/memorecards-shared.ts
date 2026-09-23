@@ -79,3 +79,15 @@ export function isThemeFinished(seq: MemorecardTheme[], at: SequencePosition): b
   const theme = seq[at.theme];
   return !!theme && at.card === theme.cards.length - 1;
 }
+
+/**
+ * Where a legacy MemoreCards page now lives, or null for any other page. The old
+ * section was the `memorecards` hub plus one `<specialty>-memorecards` deck per
+ * specialty, all in MedHelp 60D (module 1); both kinds point at v2.
+ */
+export function legacyMemorecardsHref(slug: string, contentModuleId: number | null): string | null {
+  if (contentModuleId !== 1) return null;
+  if (slug === "memorecards") return "/app/memorecards";
+  const m = /^(.+)-memorecards$/.exec(slug);
+  return m ? `/app/memorecards/${m[1]}` : null;
+}

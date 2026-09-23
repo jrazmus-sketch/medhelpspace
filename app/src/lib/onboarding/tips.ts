@@ -160,9 +160,11 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "memorecards",
     title: "Como usar os MemoreCards",
     body:
-      "Cartões de memorização para revisão rápida dentro do MedHelp 60D. Avance pelo conjunto no seu ritmo.",
+      "Os pontos-chave de cada tema em cartões visuais, na mesma organização do **Revalida Up**. Escolha a especialidade e avance no seu ritmo — pelo botão **Próximo**, pelas setas do teclado ou deslizando no celular. Quando um tema termina, o seguinte começa em sequência; em **Temas** você vai direto a qualquer um.",
     reviewNote:
-      "Ao terminar um conjunto, ele entra num ciclo de **releitura espaçada** na Revisão (em 7, 21, 60 e 120 dias).",
+      "Ao terminar um tema, ele entra num ciclo de **releitura espaçada** na Revisão (em 7, 21, 60 e 120 dias).",
+    href: "/app/memorecards",
+    hrefLabel: "Abrir MemoreCards",
   },
 
   "revalida-up": {
@@ -178,7 +180,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "revisao",
     title: "Sua central de Revisão",
     body:
-      "Aqui voltam, na hora certa, as questões e flashcards que você já estudou. **Revisar hoje** traz o que está no ponto; **Só as que errei** recupera os erros; **Pontos fracos** foca nas especialidades mais frágeis; e **Reler memorecards** traz os conjuntos do MedHelp 60D na hora da releitura.",
+      "Aqui voltam, na hora certa, as questões e flashcards que você já estudou. **Revisar hoje** traz o que está no ponto; **Só as que errei** recupera os erros; **Pontos fracos** foca nas especialidades mais frágeis; e **Reler memorecards** traz de volta os temas dos MemoreCards (MedHelp 60D) na hora da releitura.",
     reviewNote:
       "O número ao lado de *Revisão* no menu mostra quantos itens estão prontos para hoje.",
     href: "/app/revisao",
@@ -246,7 +248,7 @@ export const GUIDE_GROUPS: { title: string; keys: CoachKey[] }[] = [
     title: "Como estudar",
     keys: ["dash-study-types", "dash-specialties", "quiz", "simulados", "flashcards", "lesson", "audio", "audiocards", "revalida-up"],
   },
-  { title: "A Revisão espaçada", keys: ["revisao", "memorecards"] },
+  { title: "A Revisão espaçada", keys: ["revisao"] },
   { title: "Planejamento", keys: ["plano", "roteiro"] },
-  { title: "MedHelp 60D", keys: ["medhelp-60d"] },
+  { title: "MedHelp 60D", keys: ["medhelp-60d", "memorecards"] },
 ];

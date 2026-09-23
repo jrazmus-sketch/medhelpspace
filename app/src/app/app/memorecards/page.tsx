@@ -5,6 +5,7 @@ import { getMemorecardsIndex } from "@/lib/memorecards";
 import { Medhelp60NextCycle } from "@/components/content/medhelp-60d-next-cycle";
 import { Medhelp60Locked } from "@/components/content/medhelp-60d-locked";
 import { TrackHubAccordion } from "@/components/content/track-hub-accordion";
+import { Coachmark } from "@/components/onboarding/coachmark";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import type { Crumb } from "@/lib/breadcrumbs";
@@ -59,6 +60,10 @@ export default async function MemorecardsIndexPage() {
           temas da especialidade em uma sequência contínua.
         </p>
       </header>
+
+      {/* The how-to lives here, not on the viewer: on a phone the tip would push the
+          card and its controls below the first screen. */}
+      {unlocked && <Coachmark coachKey="memorecards" className="mb-6 mt-0" />}
 
       {unlocked ? (
         <MemorecardsIndex />

@@ -120,3 +120,36 @@ test("the specialty page checks the 60D unlock before reading any card", () => {
 test("the 60D accordion links to the new section", () => {
   assert.match(read("components/content/medhelp-60d-accordion.tsx"), /href: "\/app\/memorecards"/);
 });
+
+// ── Legacy pages ─────────────────────────────────────────────────────────────
+
+test("every legacy MemoreCards page points at v2, whatever its page type", async () => {
+  const { legacyMemorecardsHref } = await import("@/lib/memorecards-shared");
+  assert.equal(legacyMemorecardsHref("memorecards", 1), "/app/memorecards");
+  assert.equal(legacyMemorecardsHref("gastroenterologia-memorecards", 1), "/app/memorecards/gastroenterologia");
+  assert.equal(legacyMemorecardsHref("emergencia-memorecards", 1), "/app/memorecards/emergencia");
+});
+
+test("nothing else in 60D is redirected — Fórmula and Simulados 100Q stay put", async () => {
+  const { legacyMemorecardsHref } = await import("@/lib/memorecards-shared");
+  assert.equal(legacyMemorecardsHref("cirrose-formula", 1), null);
+  assert.equal(legacyMemorecardsHref("simulado-100q-3", 1), null);
+  assert.equal(legacyMemorecardsHref("medhelp-60d", 1), null);
+  assert.equal(legacyMemorecardsHref("memorecards", null), null, "outside 60D a slug is not a legacy deck");
+});
+
+test("the content route redirects legacy decks before choosing a renderer", () => {
+  const route = read("app/app/[specialty]/[slug]/page.tsx");
+  assert.ok(route.indexOf("legacyMemorecardsHref(") < route.indexOf("function PageBody"),
+    "the redirect must not depend on the page type (16 of the 18 old decks are plain-content)");
+});
+
+test("Simulados 100Q no longer get the MemoreCards tip", () => {
+  const route = read("app/app/[specialty]/[slug]/page.tsx");
+  assert.doesNotMatch(route, /return "memorecards"/);
+});
+
+test("the MemoreCards tip is on the index, never over the viewer", () => {
+  assert.match(read("app/app/memorecards/page.tsx"), /coachKey="memorecards"/);
+  assert.doesNotMatch(read("app/app/memorecards/[specialty]/page.tsx"), /Coachmark/);
+});
