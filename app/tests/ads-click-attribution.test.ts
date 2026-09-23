@@ -49,3 +49,13 @@ test("a sale reported from the order is never re-reported from the lead", () => 
   assert.match(oci, /emailsCoveredByOrder\.has\(email\)/);
   assert.match(oci, /OCI_CONVERSION_CHECKOUT = "Checkout started"/);
 });
+
+test("the Google Ads feed is password-protected and never cached", () => {
+  const route = read("app/src/app/api/ads/conversions/route.ts");
+  assert.match(route, /startsWith\("Basic "\)/);
+  assert.match(route, /timingSafeEqual/);
+  assert.match(route, /"Cache-Control": "no-store"/);
+  assert.match(route, /feedSinceIso: since/);
+  // Only a hash is stored — never the password.
+  assert.match(read("schema-patch-integration-credentials.sql"), /secret_sha256/);
+});

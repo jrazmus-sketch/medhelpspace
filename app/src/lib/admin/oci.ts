@@ -117,19 +117,30 @@ function csvEsc(s: string): string {
  * what was downloaded). Format: a Parameters line declaring the time zone, the
  * column header, then one row per conversion.
  */
-export async function buildOciExport(): Promise<OciExport> {
+export async function buildOciExport(opts: { feedSinceIso?: string } = {}): Promise<OciExport> {
   const admin = createAdminClient();
+  // FEED mode (Google Ads scheduled upload, /api/ads/conversions): every
+  // conversion since `feedSinceIso`, uploaded or not. Google treats a row with the
+  // same click id + conversion name + time as a duplicate and ignores it, so the
+  // daily fetch can always send the whole window — no "mark uploaded" step.
+  const since = opts.feedSinceIso ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pending = <Q extends { is: any; gte: any }>(q: Q, markerCol: string, timeCol: string): Q =>
+    since ? q.gte(timeCol, since) : q.is(markerCol, null);
 
   // Zero-value conversions all share a shape: one timestamp column gating one
   // upload marker. Only Purchase needs the extra order-value join below.
   const zeroValue = (timeCol: string, markerCol: string) =>
-    admin
-      .from("leads")
-      .select(`id, gclid, ${timeCol}`)
-      .not("gclid", "is", null)
-      .not(timeCol, "is", null)
-      .is(markerCol, null)
-      .eq("is_test", false);
+    pending(
+      admin
+        .from("leads")
+        .select(`id, gclid, ${timeCol}`)
+        .not("gclid", "is", null)
+        .not(timeCol, "is", null)
+        .eq("is_test", false),
+      markerCol,
+      timeCol,
+    );
 
   const [
     { data: verifiedLeads },
@@ -138,30 +149,36 @@ export async function buildOciExport(): Promise<OciExport> {
     { data: simSubmittedLeads },
   ] = await Promise.all([
     zeroValue("verified_at", "oci_verified_uploaded_at"),
-    admin
-      .from("leads")
-      .select("id, email, gclid, converted_at")
-      .not("gclid", "is", null)
-      .not("converted_at", "is", null)
-      .is("oci_purchase_uploaded_at", null)
-      .eq("is_test", false),
+    pending(
+      admin
+        .from("leads")
+        .select("id, email, gclid, converted_at")
+        .not("gclid", "is", null)
+        .not("converted_at", "is", null)
+        .eq("is_test", false),
+      "oci_purchase_uploaded_at",
+      "converted_at",
+    ),
     zeroValue("sim_entered_at", "oci_sim_started_uploaded_at"),
     zeroValue("sim_completed_at", "oci_sim_submitted_uploaded_at"),
   ]);
 
   // Orders that came from an ad click (cookie frozen at checkout).
   const [{ data: checkoutOrders }, { data: paidAdOrders }, { data: allPaidAdOrders }] = await Promise.all([
-    admin
-      .from("orders")
-      .select("id, gclid, created_at")
-      .not("gclid", "is", null)
-      .is("oci_checkout_uploaded_at", null),
-    admin
-      .from("orders")
-      .select("id, user_id, gclid, created_at, base_amount_cents, amount_cents")
-      .not("gclid", "is", null)
-      .eq("status", "paid")
-      .is("oci_purchase_uploaded_at", null),
+    pending(
+      admin.from("orders").select("id, gclid, created_at").not("gclid", "is", null),
+      "oci_checkout_uploaded_at",
+      "created_at",
+    ),
+    pending(
+      admin
+        .from("orders")
+        .select("id, user_id, gclid, created_at, base_amount_cents, amount_cents")
+        .not("gclid", "is", null)
+        .eq("status", "paid"),
+      "oci_purchase_uploaded_at",
+      "created_at",
+    ),
     // Every paid ad order, uploaded or not — to skip the lead-based duplicate.
     admin.from("orders").select("user_id").not("gclid", "is", null).eq("status", "paid"),
   ]);
