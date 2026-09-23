@@ -1,3 +1,4 @@
+import { themeSlug, themeTitle } from "@/lib/memorecards-shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayKeyBR } from "@/lib/br-date";
 
@@ -402,7 +403,7 @@ export async function getMemorecardRereadDue(userId: string): Promise<RereadDeck
 
   const { data: pages } = await admin
     .from("pages")
-    .select("id, slug, title, specialty_id")
+    .select("id, slug, title, specialty_id, view")
     .in("id", ids);
 
   const specIds = [...new Set((pages ?? []).map((p) => p.specialty_id).filter(Boolean))] as number[];
@@ -413,6 +414,15 @@ export async function getMemorecardRereadDue(userId: string): Promise<RereadDeck
 
   return (pages ?? []).map((p) => {
     const ss = p.specialty_id ? specSlug.get(p.specialty_id as number) : null;
+    // MemoreCards v2 enrol a THEME, keyed by its Revalida Up page: re-reading it
+    // means reopening the viewer on that theme, not the Revalida Up text.
+    if (p.view === "revalida-up" && ss) {
+      return {
+        pageId: p.id as number,
+        title: themeTitle(p.title as string),
+        href: `/app/memorecards/${ss}?tema=${themeSlug(p.slug as string)}`,
+      };
+    }
     return {
       pageId: p.id as number,
       title: (p.title as string) ?? "Memorecards",

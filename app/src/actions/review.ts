@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { nextSm2, dueDateAfter, SM2_DEFAULTS, type ReviewResult } from "@/lib/review/sm2";
+import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
 
 export type ReviewItemType = "flashcard" | "quiz_question" | "memorecard";
 
@@ -99,11 +100,17 @@ export async function enrollMemorecardReread(
 
   const { data: current } = await supabase
     .from("review_schedule")
-    .select("repetitions")
+    .select("repetitions, due_date")
     .eq("user_id", user.id)
     .eq("item_type", "memorecard")
     .eq("item_id", pageId)
     .maybeSingle();
+
+  // Only a re-read that was DUE climbs the ladder. MemoreCards run as one continuous
+  // sequence, so a student passes a theme's last card again by stepping back or
+  // restarting the specialty; counting each pass pushed a theme read once today
+  // out to 120 days. An early re-read leaves the schedule as it was.
+  if (current?.due_date && toDateKeyBR(current.due_date as string) > todayKeyBR()) return;
 
   const reps = current?.repetitions ?? 0;
   const interval =

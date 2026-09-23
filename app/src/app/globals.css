@@ -1477,3 +1477,17 @@
   user-select: all;
   cursor: default;
 }
+
+/* MemoreCards v2 — a short cross-fade when the card changes (the viewer re-keys the
+   <img> on every card, so this plays once per card). Nothing moves for anyone who
+   asked the OS for reduced motion. */
+@keyframes mc-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.mc-fade {
+  animation: mc-fade 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mc-fade { animation: none; }
+}

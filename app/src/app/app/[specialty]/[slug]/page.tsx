@@ -7,7 +7,6 @@ import { RevalidaUpRenderer } from "@/components/content/revalida-up-renderer";
 import { TextLessonRenderer } from "@/components/content/text-lesson-renderer";
 import { QuizRenderer } from "@/components/content/quiz-renderer";
 import { FlashcardRenderer } from "@/components/content/flashcard-renderer";
-import { MemorecardsRenderer } from "@/components/content/memorecards-renderer";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { PageTracker } from "@/components/content/page-tracker";
 import { Coachmark } from "@/components/onboarding/coachmark";
@@ -17,7 +16,7 @@ import { TypeChip } from "@/components/content/type-chip";
 import { EditableText } from "@/components/admin/editable-text";
 import { buildCrumbsForPage, findSpecialtyHub, type Crumb } from "@/lib/breadcrumbs";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export default async function ContentPage({
   params,
@@ -262,8 +261,11 @@ function PageBody({
       // view='quiz'. The 60D "Simulados 100Q" are also h5p-quiz + module 1, so
       // this branch must not claim them — check the simulado view first or every
       // 60D simulado renders as an empty memorecard deck.
+      // Replaced by MemoreCards v2 (Karina 2026-09-23): the legacy per-specialty
+      // decks were H5P shells (16 of 18 empty). Any old link, bookmark or Revisão
+      // entry lands on the new viewer for the same specialty instead.
       if (page.content_module_id === MEDHELP_60D_MODULE_ID && !isSimulado(page)) {
-        return <MemorecardsRenderer pageId={page.id} />;
+        redirect(`/app/memorecards/${specialtySlug}`);
       }
       return <QuizRenderer pageId={page.id} />;
     case "blurb-nav-hub":
