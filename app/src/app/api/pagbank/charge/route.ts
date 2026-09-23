@@ -11,6 +11,7 @@ import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
 import { validateBilling, onlyDigits, type BillingDetails } from "@/lib/br";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { REF_COOKIE, resolveAttribution } from "@/lib/ambassadors/attribution";
+import { ADS_CLICK_COOKIE, decodeAdsClick } from "@/lib/ads-click";
 
 // pt-BR error for both the credit-card in-flight guard (app-layer) and the
 // idx_orders_one_pending_card_per_user_cohort unique-violation (DB-layer) —
@@ -405,6 +406,11 @@ export async function POST(request: NextRequest) {
     console.error("ambassador attribution lookup failed", err);
   }
 
+  // Google Ads click (set by the proxy when the visitor landed from an ad). Frozen
+  // on the order so the sale can be reported back to Google even when the buyer
+  // never passed through a lead form. Malformed or >90-day-old values are ignored.
+  const adsClick = decodeAdsClick(request.cookies.get(ADS_CLICK_COOKIE)?.value, Date.now());
+
   // Create pending order. For 100%-off, we insert it as 'paid' immediately
   // (no PagBank round-trip below) and short-circuit to finalizePaidOrder.
   const initialStatus = isFullDiscount ? "pending" : "pending"; // both start pending; full-discount transitions below
@@ -422,6 +428,8 @@ export async function POST(request: NextRequest) {
       ambassador_attribution_source: attribution?.source ?? null,
       ambassador_attributed_at: attribution ? new Date().toISOString() : null,
       promotion_id: promotion?.id ?? null,
+      gclid: adsClick?.gclid ?? null,
+      ad_click_at: adsClick ? adsClick.landedAt.toISOString() : null,
       currency: "BRL",
       payment_method: paymentMethod,
       status: initialStatus,

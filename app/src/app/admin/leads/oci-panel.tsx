@@ -34,12 +34,14 @@ export function OciPanel({ counts }: Props) {
     purchaseIds: string[];
     simStartedIds: string[];
     simSubmittedIds: string[];
+    orderCheckoutIds: string[];
+    orderPurchaseIds: string[];
     rowCount: number;
   } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const totalReady =
-    counts.verified + counts.purchase + counts.simStarted + counts.simSubmitted;
+    counts.verified + counts.purchase + counts.simStarted + counts.simSubmitted + counts.checkout;
 
   function onDownload() {
     setErr(null);
@@ -56,6 +58,8 @@ export function OciPanel({ counts }: Props) {
           purchaseIds: res.purchaseIds,
           simStartedIds: res.simStartedIds,
           simSubmittedIds: res.simSubmittedIds,
+          orderCheckoutIds: res.orderCheckoutIds,
+          orderPurchaseIds: res.orderPurchaseIds,
           rowCount: res.rowCount,
         });
       } catch {
@@ -74,6 +78,8 @@ export function OciPanel({ counts }: Props) {
           purchaseIds: downloaded.purchaseIds,
           simStartedIds: downloaded.simStartedIds,
           simSubmittedIds: downloaded.simSubmittedIds,
+          orderCheckoutIds: downloaded.orderCheckoutIds,
+          orderPurchaseIds: downloaded.orderPurchaseIds,
         });
         setDownloaded(null);
         router.refresh();
@@ -133,6 +139,7 @@ export function OciPanel({ counts }: Props) {
                   purchase: counts.purchase,
                   simStarted: counts.simStarted,
                   simSubmitted: counts.simSubmitted,
+                  checkout: counts.checkout,
                 })}
               </p>
             ) : (

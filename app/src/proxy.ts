@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { ADS_CLICK_COOKIE, ADS_CLICK_MAX_AGE_S, encodeAdsClick, isValidGclid } from "@/lib/ads-click";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -81,6 +82,22 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/app";
     return NextResponse.redirect(url);
+  }
+
+  // ── Google Ads click id ─────────────────────────────────────────────────
+  // An ad click lands with ?gclid=… on whatever page the ad points at (the Search
+  // campaign sends people straight to the sales page). Keep it for 90 days so the
+  // order created at checkout can carry it — the funnels keep their own copy on
+  // `leads`. Last click wins. No network call: a cookie write on the response.
+  const gclid = request.nextUrl.searchParams.get("gclid");
+  if (isValidGclid(gclid)) {
+    response.cookies.set(ADS_CLICK_COOKIE, encodeAdsClick(gclid, Date.now()), {
+      maxAge: ADS_CLICK_MAX_AGE_S,
+      path: "/",
+      sameSite: "lax",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
   }
 
   // ── Internal-traffic marker ─────────────────────────────────────────────

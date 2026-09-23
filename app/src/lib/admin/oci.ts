@@ -11,6 +11,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 //   • "Purchase"           — time converted_at,     value = the paid order amount (BRL)
 // Each is stamped (oci_*_uploaded_at) once uploaded so it never exports twice.
 //
+// ORDERS also carry a gclid (schema-patch-orders-gclid.sql) for buyers who came
+// straight from an ad to the sales page without ever being a lead:
+//   • "Checkout started" — every order with a gclid, time created_at, value 0
+//   • "Purchase"         — every PAID order with a gclid, value = base price
+// A paid order that carries a gclid is reported from the ORDER; the lead-based
+// Purchase row for the same buyer is then skipped, so a sale is never counted twice.
+//
 // Why the simulado gets its own two: "Lead verified" fires on verified_at, which
 // is only stamped by a CLICK on an emailed link. The /simulado-revalida exam
 // starts immediately on-site, so a lead can sign up, answer 100 questions and
@@ -25,6 +32,7 @@ export const OCI_CONVERSION_VERIFIED = "Lead verified";
 export const OCI_CONVERSION_PURCHASE = "Purchase";
 export const OCI_CONVERSION_SIM_STARTED = "Simulado started";
 export const OCI_CONVERSION_SIM_SUBMITTED = "Simulado submitted";
+export const OCI_CONVERSION_CHECKOUT = "Checkout started";
 const OCI_TIMEZONE = "America/Sao_Paulo"; // the Ads account time zone (BRT)
 const OCI_CURRENCY = "BRL";
 
@@ -33,9 +41,10 @@ export type OciReadyCounts = {
   purchase: number;
   simStarted: number;
   simSubmitted: number;
+  checkout: number;
 };
 
-/** Counts of not-yet-uploaded conversions from gclid-sourced leads. */
+/** Counts of not-yet-uploaded conversions from gclid-sourced leads and orders. */
 export async function getOciReadyCounts(): Promise<OciReadyCounts> {
   const admin = createAdminClient();
   const base = () =>
@@ -44,18 +53,31 @@ export async function getOciReadyCounts(): Promise<OciReadyCounts> {
       .select("*", { count: "exact", head: true })
       .not("gclid", "is", null)
       .eq("is_test", false);
-  const [{ count: verified }, { count: purchase }, { count: simStarted }, { count: simSubmitted }] =
-    await Promise.all([
-      base().not("verified_at", "is", null).is("oci_verified_uploaded_at", null),
-      base().not("converted_at", "is", null).is("oci_purchase_uploaded_at", null),
-      base().not("sim_entered_at", "is", null).is("oci_sim_started_uploaded_at", null),
-      base().not("sim_completed_at", "is", null).is("oci_sim_submitted_uploaded_at", null),
-    ]);
+  const orders = () =>
+    admin.from("orders").select("*", { count: "exact", head: true }).not("gclid", "is", null);
+  const [
+    { count: verified },
+    { count: purchase },
+    { count: simStarted },
+    { count: simSubmitted },
+    { count: checkout },
+    { count: orderPurchase },
+  ] = await Promise.all([
+    base().not("verified_at", "is", null).is("oci_verified_uploaded_at", null),
+    base().not("converted_at", "is", null).is("oci_purchase_uploaded_at", null),
+    base().not("sim_entered_at", "is", null).is("oci_sim_started_uploaded_at", null),
+    base().not("sim_completed_at", "is", null).is("oci_sim_submitted_uploaded_at", null),
+    orders().is("oci_checkout_uploaded_at", null),
+    orders().eq("status", "paid").is("oci_purchase_uploaded_at", null),
+  ]);
   return {
     verified: verified ?? 0,
-    purchase: purchase ?? 0,
+    // Approximate before dedupe (a buyer can be both a gclid lead and a gclid
+    // order); the export itself never double-counts.
+    purchase: (purchase ?? 0) + (orderPurchase ?? 0),
     simStarted: simStarted ?? 0,
     simSubmitted: simSubmitted ?? 0,
+    checkout: checkout ?? 0,
   };
 }
 
@@ -65,6 +87,10 @@ export type OciExport = {
   purchaseIds: string[];
   simStartedIds: string[];
   simSubmittedIds: string[];
+  /** Orders reported as "Checkout started". */
+  orderCheckoutIds: string[];
+  /** Paid orders reported as "Purchase". */
+  orderPurchaseIds: string[];
   rowCount: number;
 };
 
@@ -123,9 +149,28 @@ export async function buildOciExport(): Promise<OciExport> {
     zeroValue("sim_completed_at", "oci_sim_submitted_uploaded_at"),
   ]);
 
+  // Orders that came from an ad click (cookie frozen at checkout).
+  const [{ data: checkoutOrders }, { data: paidAdOrders }, { data: allPaidAdOrders }] = await Promise.all([
+    admin
+      .from("orders")
+      .select("id, gclid, created_at")
+      .not("gclid", "is", null)
+      .is("oci_checkout_uploaded_at", null),
+    admin
+      .from("orders")
+      .select("id, user_id, gclid, created_at, base_amount_cents, amount_cents")
+      .not("gclid", "is", null)
+      .eq("status", "paid")
+      .is("oci_purchase_uploaded_at", null),
+    // Every paid ad order, uploaded or not — to skip the lead-based duplicate.
+    admin.from("orders").select("user_id").not("gclid", "is", null).eq("status", "paid"),
+  ]);
+  const usersWithAdOrder = new Set((allPaidAdOrders ?? []).map((o) => o.user_id as string));
+
   // Purchase value: lead.email → profiles.email → orders(user_id, status='paid').
   // Mirrors how finalize.ts flips the lead to converted (matched by account email).
   const emailToValue = new Map<string, number>();
+  const emailsCoveredByOrder = new Set<string>();
   const emails = [
     ...new Set((purchaseLeads ?? []).map((l) => (l.email as string).toLowerCase())),
   ];
@@ -135,6 +180,9 @@ export async function buildOciExport(): Promise<OciExport> {
       (profs ?? []).map((p) => [p.id as string, (p.email as string).toLowerCase()]),
     );
     const userIds = [...idToEmail.keys()];
+    for (const uid of userIds) {
+      if (usersWithAdOrder.has(uid)) emailsCoveredByOrder.add(idToEmail.get(uid)!);
+    }
     if (userIds.length) {
       const { data: orders } = await admin
         .from("orders")
@@ -192,8 +240,37 @@ export async function buildOciExport(): Promise<OciExport> {
     OCI_CONVERSION_SIM_SUBMITTED,
   );
 
+  // Order-based conversions first (direct buyers from an ad).
+  const orderCheckoutIds: string[] = [];
+  for (const o of checkoutOrders ?? []) {
+    rows.push(
+      [csvEsc(o.gclid as string), OCI_CONVERSION_CHECKOUT, fmtTime(o.created_at as string), "0", OCI_CURRENCY].join(","),
+    );
+    orderCheckoutIds.push(o.id as string);
+  }
+  const orderPurchaseIds: string[] = [];
+  for (const o of paidAdOrders ?? []) {
+    const cents = (o.base_amount_cents as number | null) ?? (o.amount_cents as number | null) ?? 0;
+    rows.push(
+      [
+        csvEsc(o.gclid as string),
+        OCI_CONVERSION_PURCHASE,
+        fmtTime(o.created_at as string),
+        (cents / 100).toFixed(2),
+        OCI_CURRENCY,
+      ].join(","),
+    );
+    orderPurchaseIds.push(o.id as string);
+  }
+
   for (const l of purchaseLeads ?? []) {
-    const val = emailToValue.get((l.email as string).toLowerCase()) ?? 0;
+    const email = (l.email as string).toLowerCase();
+    // Already reported from the order itself — stamp it, never send it twice.
+    if (emailsCoveredByOrder.has(email)) {
+      purchaseIds.push(l.id as string);
+      continue;
+    }
+    const val = emailToValue.get(email) ?? 0;
     rows.push(
       [
         csvEsc(l.gclid as string),
@@ -213,5 +290,14 @@ export async function buildOciExport(): Promise<OciExport> {
       ...rows,
     ].join("\n") + "\n";
 
-  return { csv, verifiedIds, purchaseIds, simStartedIds, simSubmittedIds, rowCount: rows.length };
+  return {
+    csv,
+    verifiedIds,
+    purchaseIds,
+    simStartedIds,
+    simSubmittedIds,
+    orderCheckoutIds,
+    orderPurchaseIds,
+    rowCount: rows.length,
+  };
 }

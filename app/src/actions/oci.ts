@@ -41,6 +41,8 @@ export async function markOciUploaded(input: {
   purchaseIds: string[];
   simStartedIds?: string[];
   simSubmittedIds?: string[];
+  orderCheckoutIds?: string[];
+  orderPurchaseIds?: string[];
 }): Promise<{ ok: true }> {
   await requireBillingRole();
   const admin = createAdminClient();
@@ -55,5 +57,12 @@ export async function markOciUploaded(input: {
   await stamp("oci_purchase_uploaded_at", input.purchaseIds);
   await stamp("oci_sim_started_uploaded_at", input.simStartedIds);
   await stamp("oci_sim_submitted_uploaded_at", input.simSubmittedIds);
+
+  const stampOrders = async (column: string, ids: string[] | undefined) => {
+    if (!ids?.length) return;
+    await admin.from("orders").update({ [column]: now }).in("id", ids);
+  };
+  await stampOrders("oci_checkout_uploaded_at", input.orderCheckoutIds);
+  await stampOrders("oci_purchase_uploaded_at", input.orderPurchaseIds);
   return { ok: true };
 }

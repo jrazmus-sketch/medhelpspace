@@ -1648,7 +1648,7 @@
     "collapsedNone": "No conversions waiting for Google Ads",
     "expand": "Open",
     "collapse": "Close",
-    "ready": "{{verified}} verifications · {{simStarted}} simulados started · {{simSubmitted}} simulados submitted · {{purchase}} purchases ready to upload",
+    "ready": "{{verified}} verifications · {{simStarted}} simulados started · {{simSubmitted}} simulados submitted · {{checkout}} checkouts started · {{purchase}} purchases ready to upload",
     "readyNone": "Nothing to upload yet. Appears when a Google-ad lead verifies their email, starts or submits the simulado, or buys.",
     "download": "Download CSV",
     "building": "Generating…",
@@ -1657,7 +1657,7 @@
     "markUploaded": "Mark as uploaded",
     "marking": "Marking…",
     "error": "Something went wrong. Try again.",
-    "help": "Requires the “Lead verified”, “Simulado started”, “Simulado submitted” and “Purchase” conversion actions in the Google Ads account."
+    "help": "Requires the “Lead verified”, “Simulado started”, “Simulado submitted”, “Checkout started” and “Purchase” conversion actions in the Google Ads account."
   },
   "emailTemplates": {
     "title": "Email templates",
