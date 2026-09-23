@@ -14,6 +14,34 @@ import type { PagBankCharge } from "./types";
 //      the winner runs provisioning + email.
 //   2. INSERT into email_log (UNIQUE on user_id+kind+context_id) makes a
 //      duplicate purchase email impossible even if (1) is bypassed.
+// Did this buyer actually end up with access? The ONLY honest answer to "is the
+// purchase done", and the reason it is asked separately: finalizePaidOrder has
+// several fail-safe bail-outs (amount mismatch, promotion missing, membership
+// upsert failed) and its `wonRace: false` ALSO means the perfectly normal "the
+// webhook got there first". So neither the return value nor PagBank's own
+// charge.status can tell a checkout screen whether to say "aprovado" — only the
+// membership row can. Callers that report success to a buyer must use this.
+export async function buyerHasAccess(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  admin: any,
+  userId: string,
+  cohortId: number,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("user_cohort_memberships")
+    .select("user_id")
+    .eq("user_id", userId)
+    .eq("cohort_id", cohortId)
+    .maybeSingle();
+  if (error) {
+    // Unknown, so claim nothing: the caller shows "processing", the webhook and
+    // the reconcile cron keep working, and the buyer is never told a lie.
+    console.error("buyerHasAccess: membership read failed", userId, cohortId, error);
+    return false;
+  }
+  return !!data;
+}
+
 export async function finalizePaidOrder(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   admin: any,

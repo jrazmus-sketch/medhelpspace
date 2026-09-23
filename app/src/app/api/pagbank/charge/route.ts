@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createCharge, createPixOrder, getWebhookBaseUrl, getInstallmentOptions } from "@/lib/pagbank/api";
 import type { PagBankChargeRequest, PagBankCustomer, PagBankOrderRequest } from "@/lib/pagbank/types";
-import { finalizePaidOrder } from "@/lib/pagbank/finalize";
+import { finalizePaidOrder, buyerHasAccess } from "@/lib/pagbank/finalize";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getActivePromotionForCohort } from "@/lib/cohort-promotions";
 import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
@@ -626,10 +626,19 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  // PagBank saying PAID is not the same as the buyer having access: finalize can
+  // bail (amount mismatch, promotion missing, membership upsert failed) and the
+  // admin alert it raises is not visible to the customer. Report what is true, so
+  // the success screen can never appear over a charge that granted nothing.
+  const granted = willFinalize
+    ? await buyerHasAccess(admin, user.id, product.id)
+    : false;
+
   return NextResponse.json({
     orderId: order.id,
     chargeId: charge.id,
     status: charge.status,
+    granted,
     pixQrText: null,
     pixQrImageUrl: null,
     pixExpiresAt: null,

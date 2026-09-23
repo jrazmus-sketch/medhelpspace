@@ -36,6 +36,8 @@ interface ChargeResult {
   orderId: string;
   chargeId: string;
   status: string;
+  /** Access really exists (membership row), not just PagBank's PAID. */
+  granted?: boolean;
   pixQrText: string | null;
   pixQrImageUrl: string | null;
   pixExpiresAt: string | null;
@@ -401,8 +403,17 @@ export function CheckoutClient({
       if (!res.ok) throw new Error(data.error ?? "Erro ao processar pagamento");
       const chargeResult = data as ChargeResult;
       setResult(chargeResult);
-      if (chargeResult.status === "PAID") {
+      if (chargeResult.status === "PAID" && chargeResult.granted) {
         setPaid(true);
+      } else if (chargeResult.status === "PAID") {
+        // Charged, but the grant did not land (the API tells us so). Never show the
+        // success screen here: the buyer would click "Entrar no sistema" into an
+        // account with no access. An admin alert has already been raised, and the
+        // webhook/reconcile paths keep retrying the grant.
+        setError(
+          "Pagamento aprovado, mas a liberação do acesso ainda está sendo concluída. " +
+            "Você receberá um e-mail assim que estiver tudo pronto — não é necessário pagar de novo.",
+        );
       } else if (chargeResult.status === "DECLINED") {
         setError("Cartão recusado. Verifique os dados e tente novamente.");
       } else {

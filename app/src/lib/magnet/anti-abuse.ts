@@ -174,3 +174,30 @@ export async function guardCodeRequest(opts: {
     return { ok: false, reason: "undeliverable_domain" };
   return { ok: true };
 }
+
+// Same guard for a funnel step that SENDS mail but renders no Turnstile widget —
+// the "escolha a sua turma" step of the flashcards and simulado gates, which mails
+// the access link. Those actions are independently callable, so the step-1 guards
+// do not protect them: without this, they are an open relay for branded mail to
+// any address (the failure requestClaimCode and correctSimuladoEmail already guard).
+//
+// Turnstile is verified ONLY when the caller actually supplies a token. These steps
+// have no widget to produce one, and guardCodeRequest fails closed on a missing
+// token once keys exist — using it here would silently break the funnel the day
+// the keys are set. Every other layer applies, and the per-IP bucket is shared with
+// the code sends, so an abuser hits the same wall either way.
+export async function guardMagnetSend(opts: {
+  email: string;
+  ip: string;
+  honeypot?: string | null;
+  turnstileToken?: string | null;
+}): Promise<AbuseVerdict> {
+  if (honeypotTripped(opts.honeypot)) return { ok: false, reason: "honeypot" };
+  if (isDisposableEmail(opts.email)) return { ok: false, reason: "disposable_email" };
+  if (!checkCodeRateLimit(opts.ip)) return { ok: false, reason: "rate_limited" };
+  if (opts.turnstileToken && !(await verifyTurnstile(opts.turnstileToken, opts.ip)))
+    return { ok: false, reason: "turnstile_failed" };
+  if (!(await domainCanReceiveMail(emailDomain(opts.email))))
+    return { ok: false, reason: "undeliverable_domain" };
+  return { ok: true };
+}

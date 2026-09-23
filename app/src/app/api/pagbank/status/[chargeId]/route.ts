@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCharge, getOrder } from "@/lib/pagbank/api";
 import type { PagBankCharge } from "@/lib/pagbank/types";
-import { finalizePaidOrder } from "@/lib/pagbank/finalize";
+import { finalizePaidOrder, buyerHasAccess } from "@/lib/pagbank/finalize";
 
 // Lightweight polling endpoint for the Pix waiting screen.
 // Returns { status, paid } so the client knows when to redirect to /app.
@@ -73,5 +73,13 @@ export async function GET(
     });
   }
 
-  return NextResponse.json({ status: charge.status, paid: charge.status === "PAID" });
+  // `paid` drives the Pix screen's success state, so it must mean "access is
+  // live", not merely "PagBank settled it". If finalize bailed, this stays false
+  // and the client keeps polling — the webhook retry or the reconcile cron flips
+  // it as soon as the grant really lands.
+  const granted =
+    charge.status === "PAID" &&
+    (await buyerHasAccess(admin, user.id, order.cohort_id as number));
+
+  return NextResponse.json({ status: charge.status, paid: granted });
 }

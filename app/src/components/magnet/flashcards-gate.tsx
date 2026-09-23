@@ -85,6 +85,7 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
         email: email.trim().toLowerCase(),
         targetCohort: slug,
         utm,
+        honeypot: hp,
       });
       if (!res.ok) {
         setSelecting(null);

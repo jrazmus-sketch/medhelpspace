@@ -31,6 +31,7 @@ import {
 import { resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
 import {
   guardCodeRequest,
+  guardMagnetSend,
   honeypotTripped,
   isDisposableEmail,
 } from "@/lib/magnet/anti-abuse";
@@ -835,9 +836,21 @@ export async function chooseFlashcardsCohortAndSend(input: {
   targetCohort: string;
   firstName?: string | null;
   utm?: Utm;
+  honeypot?: string | null;
+  turnstileToken?: string | null;
 }): Promise<{ ok: boolean; reason?: string; maskedEmail?: string; emailed?: boolean; devLink?: string }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
+
+  // This step MAILS the access link to whatever address it is handed, and it can be
+  // called without step 1 ever running — so it carries its own guard, not step 1's.
+  const fcVerdict = await guardMagnetSend({
+    email,
+    ip: await clientIp(),
+    honeypot: input.honeypot,
+    turnstileToken: input.turnstileToken,
+  });
+  if (!fcVerdict.ok) return { ok: false, reason: fcVerdict.reason };
   const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
   const firstName = cleanFirstName(input.firstName);
 
@@ -1088,9 +1101,21 @@ export async function chooseSimuladoCohortAndSend(input: {
   targetCohort: string;
   firstName?: string | null;
   utm?: Utm;
+  honeypot?: string | null;
+  turnstileToken?: string | null;
 }): Promise<{ ok: boolean; reason?: string; maskedEmail?: string; emailed?: boolean; devLink?: string }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
+
+  // Mails the access link to a caller-supplied address, callable without step 1 —
+  // same open-relay surface as the flashcards gate, same guard.
+  const simVerdict = await guardMagnetSend({
+    email,
+    ip: await clientIp(),
+    honeypot: input.honeypot,
+    turnstileToken: input.turnstileToken,
+  });
+  if (!simVerdict.ok) return { ok: false, reason: simVerdict.reason };
   const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
   const firstName = cleanFirstName(input.firstName);
 
