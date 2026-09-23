@@ -23,33 +23,33 @@ type Card = { src: string; title: string; specialty: string; grito: string };
 const CARDS: Card[] = [
   {
     src: "/landing/memorecards/card-1.webp",
-    title: "DRGE sem Alarme",
+    title: "Diarreia Crônica com Sangue",
     specialty: "Clínica Médica",
-    grito: "Sintomas típicos e sem alarme = IBP por 8 semanas antes de investigar.",
+    grito: "Suspeite de DII: avaliação clínica + endoscopia com biópsias.",
   },
   {
     src: "/landing/memorecards/card-2.webp",
-    title: "Glicemia no Pré-natal",
+    title: "Gestação Ectópica",
     specialty: "Obstetrícia",
-    grito: "Jejum 92–125 no início = diabetes gestacional; ≥ 126 = diabetes na gestação.",
+    grito: "Atraso + dor pélvica → investigue gestação ectópica.",
   },
   {
     src: "/landing/memorecards/card-3.webp",
-    title: "Amenorreia Primária",
+    title: "Amenorreia + Galactorreia",
     specialty: "Ginecologia",
-    grito: "Sem menstruar aos 15–16 anos = avalie primeiro o desenvolvimento puberal.",
+    grito: "β-hCG negativo? Dose prolactina — é o exame-chave.",
   },
   {
     src: "/landing/memorecards/card-4.webp",
-    title: "Doença de Kawasaki",
+    title: "Bronquiolite",
     specialty: "Pediatria",
-    grito: "Criança pequena + febre ≥ 5 dias = procure os critérios de Kawasaki.",
+    grito: "Quadro típico + pergunta sobre etiologia? VSR é a resposta mais provável.",
   },
   {
     src: "/landing/memorecards/card-5.webp",
-    title: "Diverticulite Aguda",
+    title: "Abscesso na Diverticulite",
     specialty: "Cirurgia Geral",
-    grito: "Dor na fossa ilíaca esquerda + febre = pense em diverticulite.",
+    grito: "Estável + abscesso drenável = antibiótico + drenagem percutânea.",
   },
 ];
 

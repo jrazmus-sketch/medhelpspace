@@ -122,7 +122,7 @@ function MemorecardMockup() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/landing/memorecards/card-3.webp"
-        alt="MemoreCard — Amenorreia Primária (Ginecologia)"
+        alt="MemoreCard — Amenorreia + Galactorreia (Ginecologia)"
         width={640}
         height={800}
         draggable={false}
