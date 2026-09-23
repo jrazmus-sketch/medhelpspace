@@ -153,3 +153,73 @@ test("the MemoreCards tip is on the index, never over the viewer", () => {
   assert.match(read("app/app/memorecards/page.tsx"), /coachKey="memorecards"/);
   assert.doesNotMatch(read("app/app/memorecards/[specialty]/page.tsx"), /Coachmark/);
 });
+
+// ── Full screen + zoom (Justin, 2026-09-23) ─────────────────────────────────
+
+test("full screen fits a 4:5 card to the screen's height on a laptop, width on a phone", async () => {
+  const { fitCard } = await import("@/lib/memorecards-zoom");
+  const laptop = fitCard({ w: 1280, h: 700 }, 4 / 5);
+  assert.equal(Math.round(laptop.h), 700);
+  assert.equal(Math.round(laptop.w), 560);
+  const phone = fitCard({ w: 375, h: 650 }, 4 / 5);
+  assert.equal(Math.round(phone.w), 375);
+});
+
+test("zoom stays between 1× and 4×", async () => {
+  const { zoomAt, IDENTITY } = await import("@/lib/memorecards-zoom");
+  const card = { w: 375, h: 469 }, stage = { w: 375, h: 650 };
+  assert.equal(zoomAt(IDENTITY, 10, { x: 0, y: 0 }, card, stage).s, 4);
+  assert.equal(zoomAt(IDENTITY, 0.2, { x: 0, y: 0 }, card, stage).s, 1);
+});
+
+test("zooming keeps the point under the finger in place", async () => {
+  const { zoomAt, IDENTITY } = await import("@/lib/memorecards-zoom");
+  const card = { w: 400, h: 500 }, stage = { w: 400, h: 500 };
+  const at = { x: 100, y: -120 };
+  const z = zoomAt(IDENTITY, 2, at, card, stage);
+  // content point under `at` before: (at - t)/s = at; after: t + at*s must equal at
+  assert.equal(z.x + at.x * z.s, at.x);
+  assert.equal(z.y + at.y * z.s, at.y);
+});
+
+test("an enlarged card can never be dragged off the screen", async () => {
+  const { clampZoom } = await import("@/lib/memorecards-zoom");
+  const card = { w: 400, h: 500 }, stage = { w: 400, h: 500 };
+  const z = clampZoom({ s: 2, x: 9999, y: -9999 }, card, stage);
+  assert.equal(z.x, 200); // (400·2 − 400) / 2
+  assert.equal(z.y, -250);
+  assert.deepEqual(clampZoom({ s: 1, x: 50, y: 50 }, card, stage), { s: 1, x: 0, y: 0 });
+});
+
+test("a pinch zooms around the fingers and follows them", async () => {
+  const { pinch, IDENTITY } = await import("@/lib/memorecards-zoom");
+  const card = { w: 400, h: 500 }, stage = { w: 400, h: 500 };
+  const z = pinch(IDENTITY, { x: 0, y: 0 }, 100, { x: 0, y: 0 }, 200, card, stage);
+  assert.equal(z.s, 2);
+  assert.deepEqual([z.x, z.y], [0, 0]);
+});
+
+test("double-tap zooms in, and a second double-tap returns to the whole card", async () => {
+  const { toggleZoom, IDENTITY, TAP_SCALE } = await import("@/lib/memorecards-zoom");
+  const card = { w: 400, h: 500 }, stage = { w: 400, h: 500 };
+  const inZ = toggleZoom(IDENTITY, { x: 50, y: 50 }, card, stage);
+  assert.equal(inZ.s, TAP_SCALE);
+  assert.deepEqual(toggleZoom(inZ, { x: 0, y: 0 }, card, stage), IDENTITY);
+});
+
+test("a swipe changes card only while the card is NOT enlarged", async () => {
+  const { isSwipe, IDENTITY } = await import("@/lib/memorecards-zoom");
+  assert.equal(isSwipe(IDENTITY, -80, 5), 1);
+  assert.equal(isSwipe(IDENTITY, 80, 5), -1);
+  assert.equal(isSwipe(IDENTITY, 30, 0), 0, "too short");
+  assert.equal(isSwipe(IDENTITY, 60, 80), 0, "mostly vertical");
+  assert.equal(isSwipe({ s: 2, x: 0, y: 0 }, -200, 0), 0, "zoomed in: that drag was a pan");
+});
+
+test("full screen stops the page from pinch-zooming and closes on Esc", () => {
+  const fs = read("components/content/memorecards-fullscreen.tsx");
+  assert.match(fs, /touchAction: "none"/);
+  assert.match(fs, /"Escape"/);
+  assert.match(fs, /requestFullscreen/);
+  assert.doesNotMatch(fs, /setInterval|setTimeout/, "still no timer");
+});

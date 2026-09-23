@@ -35,6 +35,9 @@
   /* Layered dark surfaces */
   --color-surface-0:  var(--surface-0);
   --color-surface-1:  var(--surface-1);
+  --color-mc-stage:     var(--mc-stage);
+  --color-mc-stage-fg:  var(--mc-stage-fg);
+  --color-mc-stage-bar: var(--mc-stage-bar);
   --color-surface-2:  var(--surface-2);
   --color-surface-3:  var(--surface-3);
 
@@ -720,6 +723,11 @@
 
 /* ── Track signature colors ───────────────────────────────────────────────── */
 :root {
+  /* MemoreCards full-screen stage. Dark in BOTH themes on purpose: a picture viewer
+     reads best on a dark surround, and the cards are designed on dark backgrounds. */
+  --mc-stage:     #0b0b10;
+  --mc-stage-fg:  #f4f4f7;   /* AAA on the stage */
+  --mc-stage-bar: #16161e;
   --c-questoes:    #7a1d91;
   --c-simulados:   #0284c7;   /* azure — distinct from the dark-purple Questões box */
   --c-resumos:     #6d28d9;
@@ -1481,6 +1489,11 @@
 /* MemoreCards v2 — a short cross-fade when the card changes (the viewer re-keys the
    <img> on every card, so this plays once per card). Nothing moves for anyone who
    asked the OS for reduced motion. */
+@keyframes mc-fs-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.mc-fs-in { animation: mc-fs-in 0.18s ease-out; }
 @keyframes mc-fade {
   from { opacity: 0; }
   to   { opacity: 1; }
@@ -1489,5 +1502,5 @@
   animation: mc-fade 0.18s ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .mc-fade { animation: none; }
+  .mc-fade, .mc-fs-in { animation: none; }
 }

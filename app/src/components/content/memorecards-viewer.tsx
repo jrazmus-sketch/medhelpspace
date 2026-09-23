@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ChevronLeft, ChevronRight, List, RotateCcw, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, List, Maximize2, RotateCcw, X } from "lucide-react";
 import { enrollMemorecardReread } from "@/actions/review";
+import { MemorecardsFullscreen } from "@/components/content/memorecards-fullscreen";
 import {
   availableThemes,
   isThemeFinished,
@@ -25,6 +26,8 @@ import {
 //   · a theme without cards stays visible as "em breve" but is never in the sequence;
 //   · the end of the specialty is a closing screen, not a jump to another specialty;
 //   · the image is shown whole, at its own proportions, never cropped or stretched.
+// Tapping the card (or the expand button, or F) opens it full screen with zoom —
+// see memorecards-fullscreen.tsx; the sequence and its counters carry on in there.
 
 export function MemorecardsViewer({
   specialty,
@@ -41,6 +44,8 @@ export function MemorecardsViewer({
   const [pos, setPos] = useState<SequencePosition>(() => startPosition(seq, initialSlug));
   const [done, setDone] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const expandBtn = useRef<HTMLButtonElement>(null);
   const enrolled = useRef(new Set<number>());
   const viewerTop = useRef<HTMLDivElement>(null);
 
@@ -84,9 +89,16 @@ export function MemorecardsViewer({
   const goNext = useCallback(() => {
     if (done) return;
     const n = nextPosition(seq, pos);
-    if (n === "end") setDone(true);
-    else setPos(n);
+    if (n === "end") {
+      setDone(true);
+      setFullscreen(false); // the closing screen belongs to the page
+    } else setPos(n);
   }, [seq, pos, done]);
+
+  const closeFullscreen = useCallback(() => {
+    setFullscreen(false);
+    expandBtn.current?.focus({ preventScroll: true });
+  }, []);
 
   const goPrev = useCallback(() => {
     if (done) {
@@ -122,11 +134,14 @@ export function MemorecardsViewer({
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         goPrev();
+      } else if ((e.key === "f" || e.key === "F") && !done) {
+        e.preventDefault();
+        setFullscreen((o) => !o);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev]);
+  }, [goNext, goPrev, done]);
 
   // Horizontal swipe on a phone. A mostly-vertical gesture is a scroll, not a swipe.
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -193,6 +208,8 @@ export function MemorecardsViewer({
   );
 
   const ratio = card.width / card.height;
+  const nextLabel =
+    pos.card === theme.cards.length - 1 && pos.theme < seq.length - 1 ? "Próximo tema" : "Próximo";
 
   return (
     <div className="grid gap-6 md:grid-cols-[260px_minmax(0,1fr)] md:items-start">
@@ -245,6 +262,7 @@ export function MemorecardsViewer({
                 style={{ aspectRatio: `${card.width} / ${card.height}`, touchAction: "pan-y" }}
                 onTouchStart={onTouchStart}
                 onTouchEnd={onTouchEnd}
+                onClick={() => setFullscreen(true)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element -- CDN image at intrinsic size; next/image adds nothing here */}
                 <img
@@ -255,8 +273,22 @@ export function MemorecardsViewer({
                   alt={`MemoreCard ${pos.card + 1} de ${theme.cards.length} — ${theme.title}`}
                   draggable={false}
                   decoding="async"
-                  className="mc-fade absolute inset-0 h-full w-full object-contain"
+                  className="mc-fade absolute inset-0 h-full w-full cursor-zoom-in object-contain"
                 />
+                <button
+                  ref={expandBtn}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFullscreen(true);
+                  }}
+                  aria-label="Ver em tela cheia"
+                  title="Tela cheia (F)"
+                  className="absolute right-2 top-2 flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full bg-mc-stage/70 px-3 text-sm font-medium text-mc-stage-fg backdrop-blur-sm transition-colors hover:bg-mc-stage/85"
+                >
+                  <Maximize2 size={18} />
+                  <span className="hidden md:inline">Tela cheia</span>
+                </button>
               </div>
             </div>
 
@@ -279,15 +311,28 @@ export function MemorecardsViewer({
                 onClick={goNext}
                 className="flex min-h-11 min-w-11 items-center gap-1 rounded-lg bg-brand px-4 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
               >
-                <span className="hidden sm:inline">
-                  {pos.card === theme.cards.length - 1 && pos.theme < seq.length - 1 ? "Próximo tema" : "Próximo"}
-                </span>
+                <span className="hidden sm:inline">{nextLabel}</span>
                 <ChevronRight size={18} />
               </button>
             </div>
           </>
         )}
       </div>
+
+      {fullscreen && !done && (
+        <MemorecardsFullscreen
+          card={card}
+          alt={`MemoreCard ${pos.card + 1} de ${theme.cards.length} — ${theme.title}`}
+          themeTitle={theme.title}
+          themeLabel={`Tema ${pos.theme + 1} / ${seq.length}`}
+          counter={`${pos.card + 1} / ${theme.cards.length}`}
+          nextLabel={nextLabel}
+          canPrev={!(pos.theme === 0 && pos.card === 0)}
+          onPrev={goPrev}
+          onNext={goNext}
+          onClose={closeFullscreen}
+        />
+      )}
     </div>
   );
 }
