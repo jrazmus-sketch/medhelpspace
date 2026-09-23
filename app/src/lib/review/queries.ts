@@ -1,7 +1,7 @@
 import { themeSlug, themeTitle } from "@/lib/memorecards-shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayKeyBR } from "@/lib/br-date";
-import { revalidaUpSlugFor } from "@/lib/review/remediation";
+import { REMEDIATION_LABELS, resumoSlugFor, revalidaUpSlugFor, type Remediation } from "@/lib/review/remediation";
 
 /**
  * Server-side review queries. Per the project's data-fetching invariant these
@@ -104,10 +104,11 @@ export type ReviewItem =
       explanation_html: string | null;
       media_url: string | null;
       /**
-       * Where to study the topic after a miss: its Revalida Up page. Null when the
-       * topic has none — the link is then hidden (never a link to more questions).
+       * Where to study the topic after a miss: its Resumo, else its Revalida Up
+       * page. Null when it has neither — the link is then hidden (never a link to
+       * more questions).
        */
-      remediationHref: string | null;
+      remediation: Remediation | null;
     };
 
 export type ReviewMode = "due" | "wrong" | "weak";
@@ -174,7 +175,7 @@ export async function getReviewItems(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const quizPageIds = [...new Set((quizRes.data ?? []).map((qq: any) => qq.page_id as number).filter(Boolean))];
-  const hrefByPage = await revalidaUpHrefs(admin, quizPageIds);
+  const remediationByPage = await remediationFor(admin, quizPageIds);
 
   const items: ReviewItem[] = [];
   for (const r of sched) {
@@ -202,7 +203,7 @@ export async function getReviewItems(
           answers: Array.isArray(qq.answers) ? qq.answers : [],
           explanation_html: qq.explanation_html ?? null,
           media_url: qq.media_url ?? null,
-          remediationHref: hrefByPage.get(qq.page_id as number) ?? null,
+          remediation: remediationByPage.get(qq.page_id as number) ?? null,
         });
       }
     }
@@ -233,7 +234,7 @@ export async function getPageReviewItems(pageId: number, limit = 60): Promise<Re
   if (!page) return [];
 
   const specialtyId = (page.specialty_id as number | null) ?? null;
-  const href = (await revalidaUpHrefs(admin, [pageId])).get(pageId) ?? null;
+  const remediation = (await remediationFor(admin, [pageId])).get(pageId) ?? null;
 
   const [quizRes, flashRes] = await Promise.all([
     admin
@@ -262,7 +263,7 @@ export async function getPageReviewItems(pageId: number, limit = 60): Promise<Re
       answers: Array.isArray(qq.answers) ? qq.answers : [],
       explanation_html: qq.explanation_html ?? null,
       media_url: qq.media_url ?? null,
-      remediationHref: href,
+      remediation,
     });
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -456,7 +457,54 @@ export async function getReviewStats(userId: string): Promise<ReviewStats> {
   };
 }
 
-// ── Remediation: a missed question → the topic's Revalida Up page ──────────────
+// ── Remediation: a missed question → the topic's Resumo (else Revalida Up) ─────
+
+/**
+ * For each Questões page: its topic's Resumo page (Karina's choice), else its
+ * Revalida Up page, as an /app href + the matching label. Pages with neither get
+ * no entry and the link is hidden.
+ */
+async function remediationFor(
+  admin: ReturnType<typeof createAdminClient>,
+  pageIds: number[],
+): Promise<Map<number, Remediation>> {
+  const out = new Map<number, Remediation>();
+  if (pageIds.length === 0) return out;
+
+  const { data: sources } = await admin.from("pages").select("id, slug").in("id", pageIds);
+  const wanted = (sources ?? []).map((p) => resumoSlugFor(p.slug as string));
+  const [{ data: resumos }, upHrefs] = await Promise.all([
+    wanted.length
+      ? admin
+          .from("pages")
+          .select("slug, specialty_id")
+          .eq("view", "resumos")
+          .eq("status", "publish")
+          .neq("type", "blurb-nav-hub")
+          .in("slug", wanted)
+      : Promise.resolve({ data: [] as { slug: string; specialty_id: number | null }[] }),
+    revalidaUpHrefs(admin, pageIds),
+  ]);
+
+  const specIds = [...new Set((resumos ?? []).map((r) => r.specialty_id).filter(Boolean))] as number[];
+  const { data: specs } = specIds.length
+    ? await admin.from("specialties").select("id, slug").in("id", specIds)
+    : { data: [] as { id: number; slug: string }[] };
+  const specSlug = new Map((specs ?? []).map((sp) => [sp.id as number, sp.slug as string]));
+  const resumoBySlug = new Map((resumos ?? []).map((r) => [r.slug as string, r]));
+
+  for (const p of sources ?? []) {
+    const r = resumoBySlug.get(resumoSlugFor(p.slug as string));
+    if (r) {
+      const ss = r.specialty_id ? specSlug.get(r.specialty_id as number) : null;
+      out.set(p.id as number, { href: ss ? `/app/${ss}/${r.slug}` : `/app/${r.slug}`, label: REMEDIATION_LABELS.resumo });
+      continue;
+    }
+    const up = upHrefs.get(p.id as number);
+    if (up) out.set(p.id as number, { href: up, label: REMEDIATION_LABELS.revalidaUp });
+  }
+  return out;
+}
 
 /**
  * For each Questões page, the Revalida Up page of the same topic, as an /app href.

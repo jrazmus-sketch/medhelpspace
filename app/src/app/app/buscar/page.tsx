@@ -21,7 +21,7 @@ type SearchResult = {
 
 const TYPE_LABEL: Record<string, string> = {
   "plain-content": "Conteúdo",
-  "text-lesson": "Aula",
+  "text-lesson": "Conteúdo",
   "audio-lesson": "Áudio",
   "h5p-quiz": "Questões",
   "blurb-nav-hub": "Hub",
@@ -227,7 +227,7 @@ function EmptyState() {
         Busque por qualquer termo médico.
       </p>
       <p style={{ fontSize: 13, color: "var(--muted-foreground)", opacity: 0.7 }}>
-        Procura entre títulos de páginas e conteúdo das aulas.
+        Procura nos títulos e no texto de todos os conteúdos.
       </p>
     </div>
   );

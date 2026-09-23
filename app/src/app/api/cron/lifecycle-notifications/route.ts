@@ -503,7 +503,7 @@ export async function GET(request: NextRequest) {
         const displayName = (s.display_name || s.email.split("@")[0]).split(" ")[0];
         const body = totalQ === 0 && lessonsDone === 0
           ? `Esta semana foi corrida — sem registros de estudo. Sem culpa. Comece com uma sessão curta hoje, mesmo que sejam 15 minutos.`
-          : `Esta semana: <strong>${totalQ} questões</strong> respondidas${accuracy != null ? ` com <strong>${accuracy}% de acerto</strong>` : ""}, <strong>${lessonsDone} aulas</strong> concluídas, em <strong>${daysActive} dia${daysActive !== 1 ? "s" : ""}</strong> ativos.${daysToExam != null ? ` Faltam ${daysToExam} dias para a prova.` : ""}`;
+          : `Esta semana: <strong>${totalQ} questões</strong> respondidas${accuracy != null ? ` com <strong>${accuracy}% de acerto</strong>` : ""}, <strong>${lessonsDone} ${lessonsDone === 1 ? "conteúdo" : "conteúdos"}</strong> ${lessonsDone === 1 ? "concluído" : "concluídos"}, em <strong>${daysActive} dia${daysActive !== 1 ? "s" : ""}</strong> ativos.${daysToExam != null ? ` Faltam ${daysToExam} dias para a prova.` : ""}`;
         const { subject, html } = renderEmail(templates["weekly-summary"], settings, {
           displayName, summaryBody: body,
         });
@@ -514,7 +514,7 @@ export async function GET(request: NextRequest) {
         await insertNotification({
           userId: s.user_id, kind: "weekly-summary",
           title: "Resumo da semana disponível",
-          body: totalQ > 0 ? `${totalQ} questões · ${accuracy ?? 0}% acerto · ${lessonsDone} aulas` : "Veja o que você pode estudar essa semana.",
+          body: totalQ > 0 ? `${totalQ} questões · ${accuracy ?? 0}% acerto · ${lessonsDone} ${lessonsDone === 1 ? "conteúdo" : "conteúdos"}` : "Veja o que você pode estudar essa semana.",
           href: "/app/plano", icon: "calendar", contextId: weekKey,
         });
       } catch (e) {

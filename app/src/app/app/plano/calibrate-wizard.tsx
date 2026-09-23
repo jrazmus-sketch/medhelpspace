@@ -12,10 +12,10 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 // The four student-facing resources the plan can schedule (memorecards is a 60D
 // auto-feature, not a picker toggle; narrative summaries stay out of the schedule).
 const PICKER_RESOURCES: { type: ContentType; label: string; desc: string }[] = [
-  { type: "quiz", label: "Questões Revalida", desc: "Provas reais 2020–2025" },
+  { type: "quiz", label: "Questões Revalida", desc: "Provas reais 2020–2026" },
   { type: "simulado", label: "Simulados", desc: "Simulados originais MedHelp" },
   { type: "flashcards", label: "Flashcards", desc: "Memorização com repetição espaçada" },
-  { type: "audio", label: "MedVoice", desc: "Áudio-aulas por tema" },
+  { type: "audio", label: "MedVoice", desc: "Áudios por tema" },
 ];
 
 type Specialty = { id: number; name: string };

@@ -536,7 +536,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
       {
         tag: "summaryBody",
         description:
-          "Frase de estatísticas gerada automaticamente (questões, acerto, aulas, dias ativos)",
+          "Frase de estatísticas gerada automaticamente (questões, acerto, conteúdos, dias ativos)",
       },
     ],
     active: true,
@@ -1635,7 +1635,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   testDate: " (15 de novembro de 2026)",
   endsAt: "30 de novembro de 2026",
   summaryBody:
-    "Esta semana: <strong>42 questões</strong> respondidas com <strong>78% de acerto</strong>, <strong>5 aulas</strong> concluídas, em <strong>4 dias</strong> ativos. Faltam 120 dias para a prova.",
+    "Esta semana: <strong>42 questões</strong> respondidas com <strong>78% de acerto</strong>, <strong>5 conteúdos</strong> concluídos, em <strong>4 dias</strong> ativos. Faltam 120 dias para a prova.",
   // No leading <br/><br/> — this sentence now CLOSES the daily-plan intro
   // paragraph rather than standing alone. The preview and "Enviar teste" must
   // show what the cron actually sends.

@@ -45,13 +45,20 @@ const INTENSITY_LABEL: Record<Intensity, { label: string; sub: string }> = {
 };
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+// What the plan can actually schedule. "lesson" (Resumos / Fórmula) is NOT here:
+// the plan keeps narrative summaries out of the schedule (Karina's rule), so a
+// checkbox for it changed nothing. AudioCards are never scheduled either — audio
+// is passive and repeats the Flashcards (Karina, 2026-06-30). Same list as the
+// calibration wizard, plus the 60D MemoreCards.
+const PLAN_CONTENT_TYPES: ContentType[] = ["quiz", "simulado", "flashcards", "audio", "memorecards"];
+
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   quiz: "Questões",
   simulado: "Simulados",
   lesson: "Resumos / Fórmula",
   audio: "MedVoice (áudio)",
   flashcards: "Flashcards",
-  memorecards: "Memorecards (60D)",
+  memorecards: "MemoreCards (60D)",
 };
 
 type PauseRow = { id: number; pause_from: string; pause_until: string; reason: string | null };
@@ -127,7 +134,7 @@ export function PlanoClient({
               Hoje · ~{plan.totalEstimatedMinutes} min
             </h2>
             <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
-              {plan.progressToday.questionsAnswered} questões · {plan.progressToday.lessonsCompleted} aulas
+              {plan.progressToday.questionsAnswered} questões · {plan.progressToday.lessonsCompleted} {plan.progressToday.lessonsCompleted === 1 ? "conteúdo" : "conteúdos"}
             </span>
           </div>
           {plan.paused ? (
@@ -961,7 +968,7 @@ function ContentTypesEditor({ prefs }: { prefs: StudyPlanPrefs }) {
         Desmarque tipos que você não gosta (ex: se você não estuda por áudio, desmarque MedVoice).
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {(["quiz", "simulado", "lesson", "audio", "flashcards", "memorecards"] as ContentType[]).map((type) => {
+        {PLAN_CONTENT_TYPES.map((type) => {
           const active = selected.has(type);
           const Icon = ICON_MAP[type];
           const color = ITEM_COLOR[type];

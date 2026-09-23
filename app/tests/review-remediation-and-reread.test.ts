@@ -1,14 +1,14 @@
 /**
  * Karina, 2026-09-23 — two Revisão fixes:
- *  1. a missed question links to the topic's Revalida Up page ("Revisar o tema no
- *     Revalida Up"), never back to more questions, and never says "aula";
+ *  1. a missed question links to the topic's Resumo (her choice), else its Revalida
+ *     Up page — never back to more questions, and never says "aula";
  *  2. MemoreCards re-reads fit MedHelp 60D: 3 → 7 → 14 → 30 days, never after the exam.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { revalidaUpSlugFor, REMEDIATION_LABEL } from "@/lib/review/remediation";
+import { resumoSlugFor, revalidaUpSlugFor, REMEDIATION_LABELS } from "@/lib/review/remediation";
 import { memorecardRereadDue, MEMORECARD_REREAD_INTERVALS } from "@/lib/review/memorecard-reread";
 
 const SRC = join(import.meta.dirname, "..", "src");
@@ -20,8 +20,18 @@ test("the fallback maps a Questões slug to its Revalida Up slug", () => {
   assert.equal(revalidaUpSlugFor("manejo-inicial-x-quiz"), "manejo-inicial-x-revalida-up");
 });
 
+test("the Resumo is the first destination; its slug follows the topic", () => {
+  assert.equal(resumoSlugFor("pancreatite"), "pancreatite-resumos");
+  assert.equal(resumoSlugFor("abscesso-pulmonar-simulados"), "abscesso-pulmonar-resumos");
+  const q = read("lib/review/queries.ts");
+  const fn = q.slice(q.indexOf("async function remediationFor("));
+  assert.ok(fn.indexOf("REMEDIATION_LABELS.resumo") < fn.indexOf("REMEDIATION_LABELS.revalidaUp"),
+    "Resumo must be tried before Revalida Up");
+});
+
 test("the platform never tells a student to review an 'aula'", () => {
-  assert.equal(REMEDIATION_LABEL, "Revisar o tema no Revalida Up");
+  assert.equal(REMEDIATION_LABELS.resumo, "Revisar o resumo do tema");
+  assert.equal(REMEDIATION_LABELS.revalidaUp, "Revisar o tema no Revalida Up");
   assert.doesNotMatch(read("components/content/review-session.tsx"), /Revisar a aula/);
 });
 
