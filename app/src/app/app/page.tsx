@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import Link from "next/link";
@@ -19,6 +18,7 @@ import { Medhelp60NextCycle } from "@/components/content/medhelp-60d-next-cycle"
 import { getAudiocardsPlaylist } from "@/lib/audiocards/discovery";
 import { SiteText } from "@/components/landing/site-text";
 import type { Cohort } from "@/types/supabase";
+import { getAuthUser } from "@/lib/viewer";
 
 type StudyType = {
   id: string;
@@ -287,10 +287,9 @@ const LABEL_STYLE: React.CSSProperties = {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default async function MemberDashboardPage() {
-  const supabase = await createClient();
   const admin = createAdminClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   let firstName = "Médico";
   let lastPageId: number | null = null;

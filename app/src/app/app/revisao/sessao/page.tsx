@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireActiveMembership, isViewerAdmin } from "@/lib/membership-gate";
 import { getReviewItems, getPageReviewItems, type ReviewMode } from "@/lib/review/queries";
 import { ReviewSession } from "@/components/content/review-session";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "Revisão — Sessão" };
 
@@ -13,10 +13,7 @@ export default async function RevisaoSessaoPage({
 }: {
   searchParams: Promise<{ mode?: string; page?: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/app/revisao");
 
   const { mode, page } = await searchParams;

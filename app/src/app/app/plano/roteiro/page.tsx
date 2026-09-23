@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getRoadmapForUser } from "@/lib/study-plan/roadmap";
@@ -6,6 +5,7 @@ import { RoteiroClient } from "./roteiro-client";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "Roteiro de Estudos — MedHelpSpace" };
 
@@ -21,8 +21,7 @@ export default async function RoteiroPage() {
     );
   }
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const roadmap = await getRoadmapForUser(user.id);

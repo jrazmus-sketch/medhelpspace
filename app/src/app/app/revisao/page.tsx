@@ -1,16 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { ArrowRight, Layers, CalendarCheck, RotateCcw, ClipboardList, Target, Brain } from "lucide-react";
 import { getReviewCounts, getWeakAreaForReview, getMemorecardRereadDue } from "@/lib/review/queries";
 import { Coachmark } from "@/components/onboarding/coachmark";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "Revisão" };
 
 export default async function RevisaoHubPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   const [counts, weakArea, rereadDecks] = user
     ? await Promise.all([

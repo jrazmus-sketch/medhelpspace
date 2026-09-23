@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
-import { applyDueRolloverFor } from "@/lib/cohort-promotions";
+import {
+  getAuthUser,
+  isViewerStaff,
+  viewerHasActiveMembership,
+  viewerHasModuleAccess,
+} from "@/lib/viewer";
 
-const ADMIN_ROLES = ["super_admin", "content_admin", "support_admin", "billing_admin"];
+// The answers (who is this, which role, is there a membership) come from
+// lib/viewer.ts, memoized per request: the /app layout and the page both call
+// requireActiveMembership(), and get60dAccess() asks the same questions — they
+// now share one round trip each instead of repeating them.
 
 /**
  * Returns true if the current viewer holds any admin role. Used to gate
@@ -14,20 +21,8 @@ const ADMIN_ROLES = ["super_admin", "content_admin", "support_admin", "billing_a
  */
 export async function isViewerAdmin(): Promise<boolean> {
   if (USE_MOCK_DATA) return true;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  return ADMIN_ROLES.includes(profile?.role ?? "");
+  if (!(await getAuthUser())) return false;
+  return isViewerStaff();
 }
 
 /**
@@ -41,36 +36,18 @@ export async function isViewerAdmin(): Promise<boolean> {
 export async function requireActiveMembership(contentModuleId?: number | null) {
   if (USE_MOCK_DATA) return;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  if (await isViewerStaff()) return;
 
-  if (ADMIN_ROLES.includes(profile?.role ?? "")) return;
-
-  let { data: hasMembership } = await supabase.rpc("user_has_active_membership");
-  // A launch-condition buyer whose first turma just closed is moved by the daily
-  // rollover cron. If that run was missed, move them here instead of bouncing a
-  // paying student to the store. Only reached by non-members, so it costs nothing
-  // on the normal path.
-  if (!hasMembership && (await applyDueRolloverFor(user.id))) {
-    ({ data: hasMembership } = await supabase.rpc("user_has_active_membership"));
-  }
-  if (!hasMembership) redirect("/loja");
+  // Includes the launch-condition rollover fallback (see lib/viewer.ts).
+  if (!(await viewerHasActiveMembership())) redirect("/loja");
 
   if (contentModuleId) {
-    const { data: hasModuleAccess } = await supabase.rpc("user_has_module_access", {
-      mod_id: contentModuleId,
-    });
     // The buyer is a member, so this lives inside the /app layout (no redirect loop).
-    if (!hasModuleAccess) redirect("/app/acesso-encerrado?motivo=modulo-bloqueado");
+    if (!(await viewerHasModuleAccess(contentModuleId))) {
+      redirect("/app/acesso-encerrado?motivo=modulo-bloqueado");
+    }
   }
 }

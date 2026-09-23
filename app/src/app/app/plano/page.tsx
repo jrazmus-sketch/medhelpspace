@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
@@ -7,6 +6,7 @@ import { PlanoClient } from "./plano-client";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ListOrdered } from "lucide-react";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "Meu Plano de Estudos — MedHelpSpace" };
 
@@ -22,8 +22,7 @@ export default async function PlanoPage() {
     );
   }
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
   const admin = createAdminClient();

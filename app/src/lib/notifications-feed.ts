@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/viewer";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getLiveAnnouncementsForUser } from "@/lib/announcements";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
@@ -51,8 +51,8 @@ function htmlToText(html: string | null): string | null {
 export async function getBellFeed(): Promise<BellFeed> {
   if (USE_MOCK_DATA) return EMPTY_FEED;
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Shared per-request answer (lib/viewer.ts): the layout already asked.
+  const user = await getAuthUser();
   if (!user) return EMPTY_FEED;
 
   const admin = createAdminClient();

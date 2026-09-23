@@ -1,15 +1,14 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import type { Cohort } from "@/types/supabase";
 import { formatDateKeyBR } from "@/lib/cohort-promotions-shared";
+import { getAuthUser, isViewerStaff } from "@/lib/viewer";
 
 export const MEDHELP_60D_MODULE_ID = 1;
-
-const ADMIN_ROLES = ["super_admin", "content_admin", "support_admin", "billing_admin"];
 
 export type Medhelp60Access = {
   /** True when the module is open for the current viewing context. */
@@ -37,7 +36,7 @@ export type Medhelp60Access = {
  *       · admin roles       → open (staff have full content access)
  *       · everyone else     → their own active cohort's unlock date
  */
-export async function get60dAccess(): Promise<Medhelp60Access> {
+export const get60dAccess = cache(async (): Promise<Medhelp60Access> => {
   if (USE_MOCK_DATA) return { unlocked: true, daysUntilUnlock: 0, nextCycle: null };
 
   const viewas = parseViewAs((await cookies()).get(VIEWAS_COOKIE)?.value);
@@ -51,21 +50,15 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
     const { data } = await admin.from("cohorts").select("*").eq("slug", viewas.slug).single();
     cohort = (data as Cohort) ?? null;
   } else {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Same per-request answers as the membership gate (lib/viewer.ts) — no second
+    // trip to Supabase Auth or the profile.
+    const user = await getAuthUser();
     if (!user) return { unlocked: false, daysUntilUnlock: null, nextCycle: null };
 
     // Staff see the module open without needing a membership (matches the
     // requireActiveMembership admin bypass). They preview the real member
     // experience with the "Ver como" view-as toggle.
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    if (ADMIN_ROLES.includes(profile?.role ?? "")) {
+    if (await isViewerStaff()) {
       return { unlocked: true, daysUntilUnlock: 0, nextCycle: null };
     }
 
@@ -116,4 +109,4 @@ export async function get60dAccess(): Promise<Medhelp60Access> {
         }
       : null;
   return { unlocked, daysUntilUnlock, nextCycle };
-}
+});

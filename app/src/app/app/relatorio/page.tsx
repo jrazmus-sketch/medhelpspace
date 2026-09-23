@@ -1,6 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayKeyBR, toDateKeyBR, addDaysKey } from "@/lib/br-date";
-import { createClient } from "@/lib/supabase/server";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getReviewStats, type ReviewStats } from "@/lib/review/queries";
@@ -11,6 +10,7 @@ import {
 } from "@/lib/quiz-errors";
 import Link from "next/link";
 import { ChevronLeft, Target, Flame, BookOpen, Calendar, RotateCcw } from "lucide-react";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "Relatório de Desempenho — MedHelpSpace" };
 
@@ -69,9 +69,8 @@ export default async function RelatorioPage() {
     return <RelatorioShell mockMode />;
   }
 
-  const supabase = await createClient();
   const admin = createAdminClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (!user) return null;
 

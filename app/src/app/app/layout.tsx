@@ -8,10 +8,10 @@ import { OnboardingProvider } from "@/providers/onboarding-provider";
 import { getOnboardingContent } from "@/lib/queries/onboarding-content";
 import { get60dAccess } from "@/lib/medhelp-60d";
 import { requireActiveMembership } from "@/lib/membership-gate";
-import { createClient } from "@/lib/supabase/server";
 import { getDueReviewCount } from "@/lib/review/queries";
 import { getSiteCompletion } from "@/lib/progress/site-completion";
 import { getMyUnreadSupportCount } from "@/lib/support-data";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: { template: "%s | MedHelpSpace", default: "Dashboard" } };
 
@@ -27,8 +27,7 @@ export default async function MemberLayout({ children }: { children: React.React
   const { unlocked: show60d } = await get60dAccess();
 
   // Review due-count for the nav badge (re-evaluated per navigation).
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   const [reviewDueCount, completion, supportUnreadCount] = await Promise.all([
     user ? getDueReviewCount(user.id) : Promise.resolve(0),
     // In mock mode the id is ignored (returns sample data); in real mode a member

@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import Link from "next/link";
 import { Lock, Clock, ArrowRight, BookOpen } from "lucide-react";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "Acesso Encerrado — MedHelpSpace" };
 
@@ -23,9 +23,8 @@ export default async function AcessoEncerradoPage({
 
   if (!USE_MOCK_DATA) {
     try {
-      const supabase = await createClient();
       const admin = createAdminClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const user = await getAuthUser();
 
       if (user) {
         const { data: profile } = await admin
