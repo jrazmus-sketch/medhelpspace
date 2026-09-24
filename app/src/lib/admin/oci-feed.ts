@@ -82,8 +82,22 @@ export async function serveOciFeed(request: NextRequest, actionKey: string | nul
   // Header = first two lines (Parameters + column names); rows follow. The
   // conversion name is the 2nd column and never contains a comma.
   const lines = full.split("\n").filter(Boolean);
+  // Per-action files are for Google Ads Data manager, which reads a PLAIN CSV:
+  // column names on line 1 (no "Parameters:TimeZone=…" line — that is the old
+  // uploader's format) and the time zone inside each time. Brazil has had no DST
+  // since 2019, so São Paulo is a fixed -03:00.
   const csv = only
-    ? [...lines.slice(0, 2), ...lines.slice(2).filter((l) => l.split(",")[1] === only)].join("\n") + "\n"
+    ? [
+        lines[1],
+        ...lines
+          .slice(2)
+          .filter((l) => l.split(",")[1] === only)
+          .map((l) => {
+            const c = l.split(",");
+            c[2] = `${c[2]}-03:00`;
+            return c.join(",");
+          }),
+      ].join("\n") + "\n"
     : full;
   return new NextResponse(csv, {
     status: 200,
