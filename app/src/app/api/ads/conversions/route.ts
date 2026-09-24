@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildOciExport } from "@/lib/admin/oci";
+import { buildOciExport, OCI_CONVERSION_CHECKOUT, OCI_CONVERSION_PURCHASE } from "@/lib/admin/oci";
 
 // Google Ads scheduled conversion upload (2026-09-23 — "I don't want to download
 // CSVs"). Google Ads → Goals → Conversions → Uploads → Schedules → source HTTPS
@@ -18,6 +18,15 @@ export const dynamic = "force-dynamic";
 
 const CREDENTIAL = "google_ads_oci_feed";
 const WINDOW_DAYS = 90;
+
+// Google Ads Data manager binds ONE conversion action per HTTPS connection, so
+// each action gets its own URL: ?action=purchase / ?action=checkout returns only
+// that action's rows (a connection must never receive another action's rows).
+// Without the parameter: every row (the original combined file).
+const ACTION_FILTER: Record<string, string> = {
+  purchase: OCI_CONVERSION_PURCHASE,
+  checkout: OCI_CONVERSION_CHECKOUT,
+};
 
 function sha256Hex(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
@@ -61,8 +70,18 @@ export async function GET(request: NextRequest) {
     return unauthorized();
   }
 
+  const actionParam = request.nextUrl.searchParams.get("action");
+  const only = actionParam ? ACTION_FILTER[actionParam] : null;
+  if (actionParam && !only) return new NextResponse("Unknown action", { status: 400 });
+
   const since = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { csv } = await buildOciExport({ feedSinceIso: since });
+  const { csv: full } = await buildOciExport({ feedSinceIso: since });
+  // Header = first two lines (Parameters + column names); rows follow. The
+  // conversion name is the 2nd column and never contains a comma.
+  const lines = full.split("\n").filter(Boolean);
+  const csv = only
+    ? [...lines.slice(0, 2), ...lines.slice(2).filter((l) => l.split(",")[1] === only)].join("\n") + "\n"
+    : full;
   return new NextResponse(csv, {
     status: 200,
     headers: {
