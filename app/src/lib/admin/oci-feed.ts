@@ -28,6 +28,15 @@ const ACTION_FILTER: Record<string, string> = {
   checkout: OCI_CONVERSION_CHECKOUT,
 };
 
+/** Not a real Google click id (real ones are base64-like and never say this). */
+const PLACEHOLDER_GCLID = "MEDHELPSPACE_PLACEHOLDER_NOT_A_REAL_CLICK";
+
+/** Yesterday 12:00 in São Paulo, "YYYY-MM-DD HH:mm:ss-03:00". */
+function placeholderTime(): string {
+  const d = new Date(Date.now() - 24 * 60 * 60 * 1000 - 3 * 60 * 60 * 1000);
+  return `${d.toISOString().slice(0, 10)} 12:00:00-03:00`;
+}
+
 function sha256Hex(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
 }
@@ -86,19 +95,25 @@ export async function serveOciFeed(request: NextRequest, actionKey: string | nul
   // column names on line 1 (no "Parameters:TimeZone=…" line — that is the old
   // uploader's format) and the time zone inside each time. Brazil has had no DST
   // since 2019, so São Paulo is a fixed -03:00.
-  const csv = only
-    ? [
-        lines[1],
-        ...lines
-          .slice(2)
-          .filter((l) => l.split(",")[1] === only)
-          .map((l) => {
-            const c = l.split(",");
-            c[2] = `${c[2]}-03:00`;
-            return c.join(",");
-          }),
-      ].join("\n") + "\n"
-    : full;
+  let rows = only
+    ? lines
+        .slice(2)
+        .filter((l) => l.split(",")[1] === only)
+        .map((l) => {
+          const c = l.split(",");
+          c[2] = `${c[2]}-03:00`;
+          return c.join(",");
+        })
+    : [];
+  // Data manager refuses a file with no data row ("failed to determine the data
+  // type or schema… at least one row of valid data"). Until the first real
+  // conversion exists, send ONE placeholder row whose click id cannot belong to
+  // any real ad click: Google learns the columns from it and then rejects it as an
+  // unknown GCLID — it can never be counted as a conversion.
+  if (only && rows.length === 0) {
+    rows = [`${PLACEHOLDER_GCLID},${only},${placeholderTime()},0,BRL`];
+  }
+  const csv = only ? [lines[1], ...rows].join("\n") + "\n" : full;
   return new NextResponse(csv, {
     status: 200,
     headers: {
