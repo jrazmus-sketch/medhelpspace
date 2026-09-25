@@ -7,12 +7,14 @@ import {
   createPlan,
   createSubscription,
   customerCardToken,
+  findCustomersByDocument,
   findSubscriptionByReference,
   getSubscriptionsEnv,
   isIdempotencyConflict,
   listInvoices,
   listPlans,
   reconcileByReference,
+  setCustomerCard,
   PagBankSubscriptionsError,
   type PagBankAuditEntry,
   type PagBankSubscription,
@@ -243,31 +245,70 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
   }
 
   // ── The subscriber, with the card encrypted in their browser ──────────────
-  let customerId: string;
-  let cardToken: string | null;
+  //
+  // NOT always a create. PagBank refuses a second customer with the same CPF,
+  // so a student who cancelled and came back would be told their own CPF is
+  // already registered and could never subscribe again. Three ways in, in order
+  // of certainty:
+  //
+  //   1. the customer id we already stored for this user;
+  //   2. a create, for a genuinely new subscriber;
+  //   3. on 409, a lookup by CPF — someone else's row, an old test, a deleted
+  //      local record: the customer exists at PagBank and must be found.
+  //
+  // Reusing a customer means the card they just typed has to replace the one on
+  // file, which is what setCustomerCard does — and it returns the new token.
+  let customerId: string | null = null;
+  let cardToken: string | null = null;
   let card: { brand?: string; last?: string } | null = null;
+
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("clinact_subscriptions")
+    .select("pagbank_customer_id")
+    .eq("user_id", input.userId)
+    .maybeSingle();
+  if (existing?.pagbank_customer_id) customerId = existing.pagbank_customer_id as string;
+
   try {
-    const customer = await createCustomer({
-      reference_id: referenceId,
-      name: input.name,
-      email: input.email,
-      tax_id: input.taxId,
-      phone: input.phone,
-      encrypted_card: input.encryptedCard,
-      idempotency_key: key(input.attemptId, "cust"),
-      audit,
-    });
-    customerId = customer.id;
-    cardToken = customerCardToken(customer);
-    const registered = customer.billing_info?.[0]?.card;
-    card = registered ? { brand: registered.brand, last: registered.last_digits } : null;
-  } catch (err) {
-    if (err instanceof PagBankSubscriptionsError && err.status === 409) {
-      return { ok: false, error: DUPLICATE_CUSTOMER_ERROR };
+    if (!customerId) {
+      try {
+        const created = await createCustomer({
+          reference_id: referenceId,
+          name: input.name,
+          email: input.email,
+          tax_id: input.taxId,
+          phone: input.phone,
+          encrypted_card: input.encryptedCard,
+          idempotency_key: key(input.attemptId, "cust"),
+          audit,
+        });
+        customerId = created.id;
+        cardToken = customerCardToken(created);
+        const registered = created.billing_info?.[0]?.card;
+        card = registered ? { brand: registered.brand, last: registered.last_digits } : null;
+      } catch (err) {
+        // 409 here means the CPF is already a subscriber — find them.
+        if (!(err instanceof PagBankSubscriptionsError && err.status === 409)) throw err;
+        const { customers } = await findCustomersByDocument(input.taxId);
+        const match = customers?.[0];
+        if (!match) return { ok: false, error: DUPLICATE_CUSTOMER_ERROR };
+        customerId = match.id;
+      }
     }
+
+    // Reused customer (stored or found): put the card they just typed on file.
+    if (customerId && !cardToken) {
+      const updated = await setCustomerCard(customerId, input.encryptedCard, audit);
+      cardToken = customerCardToken(updated);
+      const registered = updated.billing_info?.[0]?.card;
+      card = registered ? { brand: registered.brand, last: registered.last_digits } : null;
+    }
+  } catch {
     return { ok: false, error: GENERIC_ERROR };
   }
 
+  if (!customerId) return { ok: false, error: GENERIC_ERROR };
   if (!cardToken) return { ok: false, error: GENERIC_ERROR };
 
   // ── The subscription. This is the call that charges. ──────────────────────

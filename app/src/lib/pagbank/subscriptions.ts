@@ -136,6 +136,7 @@ async function request<T>(
   body?: unknown,
   idempotency?: string,
   audit?: PagBankAuditSink,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
   const env = getSubscriptionsEnv();
   const headers: Record<string, string> = {
@@ -145,6 +146,7 @@ async function request<T>(
     "User-Agent": USER_AGENT,
   };
   if (idempotency) headers[IDEMPOTENCY_HEADER] = idempotency;
+  Object.assign(headers, extraHeaders ?? {});
 
   const res = await fetch(`${baseUrl(env)}${path}`, {
     method,
@@ -323,10 +325,33 @@ export function getCustomer(customerId: string): Promise<PagBankCustomer> {
  * NOTE the payload is a BARE ARRAY; wrapping it in an object returns
  * "invalid_payload_format", which is not an obvious error message.
  */
-export function setCustomerCard(customerId: string, encryptedCard: string): Promise<PagBankCustomer> {
-  return request("PUT", `/customers/${customerId}/billing_info`, [
-    { type: "CREDIT_CARD", card: { encrypted: encryptedCard } },
-  ]);
+export function setCustomerCard(
+  customerId: string,
+  encryptedCard: string,
+  audit?: PagBankAuditSink,
+): Promise<PagBankCustomer> {
+  return request(
+    "PUT",
+    `/customers/${customerId}/billing_info`,
+    [{ type: "CREDIT_CARD", card: { encrypted: encryptedCard } }],
+    undefined,
+    audit,
+  );
+}
+
+/**
+ * Finds a subscriber by CPF/CNPJ, name or e-mail.
+ *
+ * GOTCHA: `q` is a HEADER, not a query parameter. Verified 2026-09-24 —
+ * `?q=` and `?tax_id=` are both ignored and return the whole list, which reads
+ * like "no filtering exists" and would send you building one. As a header it
+ * matches exactly: one customer for a known CPF, none for an unknown one.
+ *
+ * This is what makes re-subscribing possible: PagBank refuses a second
+ * customer with the same tax_id, so a returning student has to be FOUND.
+ */
+export function findCustomersByDocument(document: string): Promise<{ customers: PagBankCustomer[] }> {
+  return request("GET", "/customers", undefined, undefined, undefined, { q: document });
 }
 
 /** The card token on a customer, if one is registered. */
