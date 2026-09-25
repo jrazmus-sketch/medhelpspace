@@ -126,3 +126,47 @@ export function reconcileOutcome(
 export function canRetryWithNewKey(outcome: ReconciliationOutcome): boolean {
   return outcome.kind === "absent";
 }
+
+/**
+ * Whether a subscription's current state should EXTEND access, and until when.
+ *
+ * The renewal problem this solves: PagBank charges month two on its own, and
+ * nothing tells us in a way we can rely on. There is no payment-level webhook —
+ * observed in sandbox, a charge produces no "paid" event, and a recovered one
+ * arrives as a second subscription.initial. So access is extended by reading
+ * the subscription and its invoices back, and deciding here.
+ *
+ * THE RULES, each for a reason:
+ *
+ *  - Only the LATEST invoice counts. An old paid invoice says nothing about
+ *    this month; extending on it would hand out a free period whenever the
+ *    renewal failed.
+ *  - A cancelled or expired subscription is never extended. The student keeps
+ *    what they already paid for (paid_until only moves forward, so nothing
+ *    here can take it away) and simply is not given more.
+ *  - The new horizon is PagBank's own next_invoice_at, not now + a month. If we
+ *    computed it ourselves, a late run would push access past the next charge
+ *    date and grant days nobody paid for.
+ */
+export type RenewalDecision =
+  | { action: "extend"; until: string }
+  | { action: "hold"; reason: "ended" | "unpaid" | "no-next-invoice" };
+
+export function renewalDecision(
+  subscription: { status: string; next_invoice_at?: string | null },
+  invoices: { status: string; occurrence?: number | null }[],
+): RenewalDecision {
+  if (subscription.status === "CANCELED" || subscription.status === "EXPIRED") {
+    return { action: "hold", reason: "ended" };
+  }
+
+  const latest = [...invoices].sort((a, b) => (b.occurrence ?? 0) - (a.occurrence ?? 0))[0];
+  if (!latest || latest.status !== "PAID") return { action: "hold", reason: "unpaid" };
+
+  if (!subscription.next_invoice_at) return { action: "hold", reason: "no-next-invoice" };
+  // PagBank sends a bare date (YYYY-MM-DD). Noon in Brasília keeps it on the
+  // right calendar day whichever timezone reads it later.
+  const until = new Date(`${subscription.next_invoice_at}T12:00:00-03:00`);
+  if (Number.isNaN(until.getTime())) return { action: "hold", reason: "no-next-invoice" };
+  return { action: "extend", until: until.toISOString() };
+}

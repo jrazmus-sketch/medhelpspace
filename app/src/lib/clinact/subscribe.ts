@@ -188,7 +188,7 @@ async function anyInvoicePaid(subscriptionId: string): Promise<boolean> {
  * schema-patch-clinact.sql — so a slow webhook arriving after a renewal can
  * never shorten what a student already paid for.
  */
-async function grantAccess(userId: string, paidUntil: string): Promise<void> {
+export async function grantAccess(userId: string, paidUntil: string): Promise<void> {
   const admin = createAdminClient();
   const { data: current } = await admin
     .from("user_product_access")

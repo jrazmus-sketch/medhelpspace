@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { getSubscription } from "@/lib/pagbank/subscriptions";
+import { findClinactSubscription, reconcileClinactSubscription } from "@/lib/clinact/renewals";
 import {
   readSignatureHeader,
   verifySubscriptionsWebhookSignature,
@@ -12,7 +13,8 @@ import {
 //
 // SEPARATE FROM /api/pagbank/webhook ON PURPOSE. That route serves the live
 // Revalida checkout (Orders API) and must not change because of anything here.
-// This one is new, additive, and touches no existing table.
+// This one is additive: the only existing table it writes is
+// user_product_access, and only through the forward-only grant in point 4.
 //
 // What it does, and deliberately does not do:
 //   1. Per-IP rate limit, same helper as the Orders route.
@@ -22,18 +24,25 @@ import {
 //      the check reports while we identify it.
 //   3. NEVER trusts the payload's status: it re-reads the subscription from the
 //      authenticated API, which a forged body cannot influence.
-//   4. GRANTS NOTHING. No access is written anywhere. When the subscription
-//      checkout lands and this route starts moving `user_product_access`, the
-//      signature check MUST be made to fail closed first, exactly like the
-//      Orders route does today.
+//   4. EXTENDS ACCESS — but only from what PagBank's authenticated API says,
+//      never from the body. For a subscription that is one of ours, it runs
+//      the same reconciliation as the daily cron (lib/clinact/renewals.ts):
+//      read the subscription and its invoices back, decide with the tested
+//      renewalDecision rule, extend forward-only. A forged event can therefore
+//      only make us re-check a real subscription — it cannot create a paid
+//      state or a grant. That is the same reasoning the Orders route documents
+//      (its re-fetch, not its signature, is the real gate), and it is why the
+//      unverifiable ECDSA signature does not block this.
+//      The cron is the source of truth; this is the fast path, so a renewal
+//      shows up in minutes instead of the next morning.
 //   5. Always answers 200 {ok:true}: a uniform reply reveals nothing about
 //      which subscription ids are ours, and stops PagBank retrying a delivery
 //      we have already stored.
 //
-// Events seen so far include two PagBank does not document: `customer.created`
-// and `customer.billing_info.updated`. `resource.id` is therefore not always a
-// subscription id — for customer events it is a CUST_… id, so the API re-read
-// is skipped for those.
+// Customer and plan events arrive here too (`customer.created`,
+// `customer.billing_info.updated`, `plan.created`), so `resource.id` is not
+// always a subscription id — it can be a CUST_… or PLAN_… id, and the API
+// re-read and reconciliation are skipped for those.
 //
 // Node runtime: the admin Supabase client uses the service-role key and the
 // signature check uses node:crypto.
@@ -96,6 +105,18 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     // Recording is best-effort; PagBank must still get its 200.
     console.error("assinaturas webhook: insert failed", event, resourceId, err);
+  }
+
+  // Fast path for renewals. Only for subscriptions we actually own, and only
+  // ever from an authenticated re-read — see point 4 above.
+  if (resourceId?.startsWith("SUBS_")) {
+    try {
+      const row = await findClinactSubscription(resourceId);
+      if (row) await reconcileClinactSubscription(row);
+    } catch (err) {
+      // The daily cron will catch it; PagBank must still get its 200.
+      console.error("assinaturas webhook: reconcile failed", resourceId, err);
+    }
   }
 
   return NextResponse.json({ ok: true });

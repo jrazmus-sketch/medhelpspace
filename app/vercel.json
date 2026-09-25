@@ -38,6 +38,10 @@
     {
       "path": "/api/cron/promotion-rollovers",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/clinact-subscriptions",
+      "schedule": "0 7 * * *"
     }
   ]
 }
