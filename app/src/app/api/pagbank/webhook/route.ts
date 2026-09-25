@@ -165,11 +165,25 @@ export async function POST(request: NextRequest) {
         if (refundUpdErr) {
           console.error("Webhook: refund order update failed", order.id, refundUpdErr);
         } else if (flipped && flipped.length > 0) {
-          const { error: membershipDelErr } = await admin
-            .from("user_cohort_memberships")
-            .delete()
+          // Same rule as the admin refund route: when ANOTHER paid order still
+          // covers this turma (this one was a duplicate payment), the refund
+          // returns the extra money but must not take the access away.
+          const { data: stillPaid } = await admin
+            .from("orders")
+            .select("id")
             .eq("user_id", order.user_id)
-            .eq("cohort_id", order.cohort_id);
+            .eq("cohort_id", order.cohort_id)
+            .eq("status", "paid")
+            .neq("id", order.id)
+            .limit(1)
+            .maybeSingle();
+          const { error: membershipDelErr } = stillPaid
+            ? { error: null }
+            : await admin
+                .from("user_cohort_memberships")
+                .delete()
+                .eq("user_id", order.user_id)
+                .eq("cohort_id", order.cohort_id);
 
           if (membershipDelErr) {
             console.error(
@@ -241,7 +255,10 @@ export async function POST(request: NextRequest) {
           pagbank_response: charge as unknown as Record<string, unknown>,
         })
         .eq("id", order.id)
-        .neq("status", "paid");
+        // Never overwrite a settled outcome: 'paid' is handled above, and a
+        // 'refunded' order must not be relabelled 'declined'/'cancelled' by a
+        // late event (it would hide the refund in reports).
+        .not("status", "in", "(paid,refunded)");
       if (statusUpdErr) {
         console.error("Webhook: order status update failed", order.id, statusUpdErr);
       }

@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createCharge, createPixOrder, getWebhookBaseUrl, getInstallmentOptions } from "@/lib/pagbank/api";
 import type { PagBankChargeRequest, PagBankCustomer, PagBankOrderRequest } from "@/lib/pagbank/types";
 import { finalizePaidOrder, buyerHasAccess } from "@/lib/pagbank/finalize";
+import { livePixBlocksCardMessage } from "@/lib/pagbank/order-rules";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getActivePromotionForCohort } from "@/lib/cohort-promotions";
 import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
@@ -254,6 +255,23 @@ export async function POST(request: NextRequest) {
     // correctly-priced order below.
     // Same for the promotion: a QR minted before the launch condition opened (or
     // after it closed) must not be reused, or the order would carry the wrong promise.
+    // Cross-method guard: a card charge for this turma is still in flight. Minting
+    // a QR now would let the buyer pay by Pix while the card settles — twice.
+    const cardFreshSince = new Date(Date.now() - CARD_ORDER_STALE_MS).toISOString();
+    const { data: cardInFlight } = await admin
+      .from("orders")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("cohort_id", product.id)
+      .eq("payment_method", "credit_card")
+      .eq("status", "pending")
+      .gte("created_at", cardFreshSince)
+      .limit(1)
+      .maybeSingle();
+    if (cardInFlight) {
+      return NextResponse.json({ error: CARD_ORDER_IN_PROGRESS_ERROR }, { status: 409 });
+    }
+
     const reusable = await findReusablePixOrder(admin, user.id, product.id, nowIso);
     if (reusable) {
       const { promotionId: reusablePromotionId, ...reusableBody } = reusable;
@@ -306,6 +324,27 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (inFlightCard) {
       return NextResponse.json({ error: CARD_ORDER_IN_PROGRESS_ERROR }, { status: 409 });
+    }
+
+    // Cross-method guard: a Pix QR for this turma can still be paid. We cannot
+    // void it at PagBank, and our own "cancelled" does not stop the bank from
+    // settling it — so a card charge now is one scan away from a double payment
+    // (two receipts, two ambassador commissions). Refuse until the QR expires
+    // (30 min at most); expired rows were already swept by the Pix branch's
+    // cleanup or will be by the next Pix request.
+    const { data: livePix } = await admin
+      .from("orders")
+      .select("pix_expires_at")
+      .eq("user_id", user.id)
+      .eq("cohort_id", product.id)
+      .eq("payment_method", "pix")
+      .eq("status", "pending")
+      .gt("pix_expires_at", new Date().toISOString())
+      .order("pix_expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (livePix?.pix_expires_at) {
+      return NextResponse.json({ error: livePixBlocksCardMessage(livePix.pix_expires_at as string) }, { status: 409 });
     }
   }
 

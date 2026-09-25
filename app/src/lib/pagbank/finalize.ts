@@ -1,6 +1,7 @@
 import { sendPurchaseConfirmation } from "@/lib/email";
 import { recordAdminAlert, formatBRL, paymentMethodLabel } from "@/lib/admin-notify";
 import type { PagBankCharge } from "./types";
+import { FINALIZABLE_STATUSES, isFinalizable } from "./order-rules";
 
 // Race-safe transition of an order to 'paid' with idempotent membership
 // provisioning and one-and-only-one purchase email. Safe to invoke concurrently
@@ -62,12 +63,23 @@ export async function finalizePaidOrder(
   // flipping state so the order stays un-granted for manual review.
   const { data: orderRow, error: loadErr } = await admin
     .from("orders")
-    .select("amount_cents, promotion_id")
+    .select("amount_cents, promotion_id, status")
     .eq("id", orderId)
     .maybeSingle();
 
   if (loadErr || !orderRow) {
     console.error("finalizePaidOrder: order load failed", orderId, loadErr);
+    return { wonRace: false };
+  }
+
+  // A refunded order stays refunded. The status flip below used to match
+  // `status != 'paid'`, which includes 'refunded' — so a late or replayed PAID
+  // notification re-granted access (the grant runs BEFORE the flip) and turned
+  // the refund back into a sale. 'paid' is simply "already done".
+  if (!isFinalizable(orderRow.status as string)) {
+    if (orderRow.status === "refunded") {
+      console.warn("finalizePaidOrder: PAID settlement for a refunded order ignored", orderId);
+    }
     return { wonRace: false };
   }
 
@@ -129,6 +141,57 @@ export async function finalizePaidOrder(
   // from the grant: either the buyer gets access with the rollover flag, or neither
   // is written and the retry paths try again. Non-promo orders leave the promo
   // columns out entirely, so a later plain purchase never clears an existing flag.
+  // Second payment for a turma this buyer already paid for (e.g. a Pix QR paid
+  // after a card went through — the checkout refuses that combination, but a QR
+  // stays payable at PagBank for its whole window). The money is real, so the
+  // order is recorded as paid; but the access already exists and must not be
+  // rewritten (a promo upsert would overwrite the paid order's promise), no
+  // second receipt goes out, and an admin is told to refund it.
+  const { data: otherPaid } = await admin
+    .from("orders")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("cohort_id", cohortId)
+    .eq("status", "paid")
+    .neq("id", orderId)
+    .limit(1)
+    .maybeSingle();
+  if (otherPaid) {
+    const { data: flipped } = await admin
+      .from("orders")
+      .update({ status: "paid", pagbank_charge_id: charge.id, pagbank_response: charge as unknown as Record<string, unknown> })
+      .eq("id", orderId)
+      .in("status", FINALIZABLE_STATUSES as unknown as string[])
+      .select("id");
+    if (flipped && flipped.length > 0) {
+      const [{ data: mp }, { data: mc }] = await Promise.all([
+        admin.from("profiles").select("email").eq("id", userId).maybeSingle(),
+        admin.from("cohorts").select("name").eq("id", cohortId).maybeSingle(),
+      ]);
+      await recordAdminAlert({
+        event: "payment_problem",
+        title: `Pagamento em duplicidade — estorne o pedido ${orderId} (${formatBRL(paidCents ?? 0)})`,
+        body: `O aluno já tinha um pedido pago para esta turma (${otherPaid.id as string}) e pagou de novo. O acesso continua o mesmo; estorne este pedido em Admin → Financeiro. O estorno não remove o acesso pago pelo outro pedido.`,
+        metadata: {
+          order_id: orderId,
+          other_paid_order_id: otherPaid.id,
+          user_id: userId,
+          cohort_id: cohortId,
+          stage: "duplicate_payment",
+        },
+        contextId: orderId,
+        emailVars: {
+          buyerEmail: (mp?.email as string | null) ?? "—",
+          cohortName: (mc?.name as string | null) ?? "—",
+          expectedAmount: formatBRL(expectedCents),
+          paidAmount: formatBRL(paidCents ?? 0),
+          orderId,
+        },
+      }).catch((e) => console.error("admin duplicate_payment alert failed", orderId, e));
+    }
+    return { wonRace: false };
+  }
+
   const membershipRow: Record<string, unknown> = { user_id: userId, cohort_id: cohortId };
   const promotionId = (orderRow.promotion_id as number | null) ?? null;
   if (promotionId != null) {
@@ -213,7 +276,7 @@ export async function finalizePaidOrder(
       pagbank_response: charge as unknown as Record<string, unknown>,
     })
     .eq("id", orderId)
-    .neq("status", "paid")
+    .in("status", FINALIZABLE_STATUSES as unknown as string[])
     .select("id");
 
   if (updErr) {
