@@ -40,6 +40,19 @@ import {
  * and never attached to an error.
  */
 
+/**
+ * Refuses the one combination that would hand out real access for a test card:
+ * the LIVE site talking to the PagBank SANDBOX. Vercel already holds the
+ * sandbox token, so without this a logged-in visitor who found the URL could
+ * "pay" with 5555666677778884 and be granted a subscription.
+ *
+ * Production hosting must be pointed at production PagBank, or the checkout
+ * stays shut.
+ */
+export function subscriptionsUnavailable(): boolean {
+  return process.env.VERCEL_ENV === "production" && getSubscriptionsEnv() !== "production";
+}
+
 export type SubscribeInput = {
   userId: string;
   email: string;

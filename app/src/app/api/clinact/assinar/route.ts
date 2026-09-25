@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { onlyDigits } from "@/lib/br";
 import { CLINACT_PLANS, type ClinactPlanKey } from "@/lib/clinact/plans";
-import { subscribeToClinact } from "@/lib/clinact/subscribe";
+import { subscribeToClinact, subscriptionsUnavailable } from "@/lib/clinact/subscribe";
 
 // ClinAct subscription checkout.
 //
@@ -23,6 +23,15 @@ export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ error: "Muitas tentativas. Aguarde um instante." }, { status: 429 });
+  }
+
+  // The live site must never charge against the sandbox — see
+  // subscriptionsUnavailable().
+  if (subscriptionsUnavailable()) {
+    return NextResponse.json(
+      { error: "Assinatura indisponível no momento." },
+      { status: 503 },
+    );
   }
 
   let body: {
