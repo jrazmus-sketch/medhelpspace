@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   // (supabase/templates/confirmation.html). It also survives a resend from
   // /verify. Only values that sit safely in a query string unescaped are
   // stored — the template engine's escaping is not something we control.
-  const confirmNext = next && /^[A-Za-z0-9/_.=?-]+$/.test(next) ? next : null;
+  const confirmNext = next && /^\/(?!\/)[A-Za-z0-9/_.=?-]*$/.test(next) ? next : null;
 
   const { data, error } = await supabase.auth.signUp({
     email,
