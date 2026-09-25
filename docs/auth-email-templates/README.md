@@ -1,12 +1,12 @@
 # Supabase auth e-mails (pt-BR)
 
-Production does NOT read these files. Paste them into
+Production does NOT read these files. They mirror what is in
 Supabase dashboard → Authentication → Email Templates:
 
 | Template        | Subject                                   | Body                |
 |-----------------|-------------------------------------------|---------------------|
 | Confirm signup  | Confirme seu cadastro na MedHelpSpace     | `confirmation.html` |
-| Reset password  | Redefina sua senha da MedHelpSpace        | `recovery.html`     |
+| Reset password  | Redefinir sua senha *(already live — do not replace)* | `recovery.html` |
 
 Local Supabase reads a copy from `supabase/templates/` (gitignored), wired in
 `supabase/config.toml`. Keep the three copies identical.
@@ -20,3 +20,6 @@ Local Supabase reads a copy from `supabase/templates/` (gitignored), wired in
 - Verified end to end on local (2026-09-25): signup with
   `next=/clinact/assinar?plano=anual` → 307 to that page; without `next` → no
   stray parameter; recovery → `/reset-password`.
+- `recovery.html` is a COPY of the template that was already live on prod
+  (captured 2026-09-25), not a new design. Only the confirmation template was
+  changed.
