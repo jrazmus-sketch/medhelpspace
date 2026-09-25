@@ -579,8 +579,18 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   the plan config, never an editable string; renewal/billing text exempt from the
   visibility toggle; screenshots admin-replaceable; case count computed, never typed; and
   **the page ships behind a page-level published flag — public only once signup + 4 free
-  cases + subscription work end to end** (her call, overriding my "publish early" advice). Nothing writes `user_product_access` yet: grant access by
-  inserting a row (`source='grant'`).
+  cases + subscription work end to end** (her call, overriding my "publish early" advice).
+  **SUPERSEDED 2026-09-25 — the commercial flow is LIVE on production (gated only by the unpublished page):**
+  PagBank production enabled (the EXISTING iBanking token works on the recurrence API — NEVER press "Gerar token", it
+  invalidates the live Revalida token). Checkout `/clinact/assinar?plano=` (card encrypted in the browser; CVV transits
+  once), `/clinact/assinatura` (cancel + card change, no ids accepted), renewals via cron `/api/cron/clinact-subscriptions`
+  + webhook fast path; `grantAccess` writes `user_product_access` (`source='subscription'`, forward-only).
+  Karina's real R$ 29,90 run + cancel PASSED; prod retries 3/5/7+SUSPEND and webhook URL set. Admins bypass the access gate,
+  so test the checkout with a plain account. Signup confirmation e-mail is pt-BR and returns to `next` via
+  `user_metadata.confirm_next` (source: `docs/auth-email-templates/`; `{{ .Type }}` renders empty — hardcode it).
+  `/admin/clinact/pagina`: publish gate (super_admin), section order/visibility (Planos never hideable), two screenshot
+  slots (`clinact.{casos,evolucao}.image`, set). Sandbox webhooks hit prod as `?ambiente=sandbox` and are dropped.
+  OPEN (Karina): publish the page; logs to Nathalia (~01/10); refund; Pix-key check; Pix one-off for ClinAct yes/no.
 
 ## Theme requirements (non-negotiable)
 - Light and dark mode supported from day one
