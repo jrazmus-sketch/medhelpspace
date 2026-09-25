@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 const SRC = path.join(process.cwd(), "src");
-const read = (p: string) => readFileSync(path.join(SRC, p), "utf8");
+// Line endings normalised: git may check files out with CRLF on Windows.
+const read = (p: string) => readFileSync(path.join(SRC, p), "utf8").split("\r\n").join("\n");
 
 // The first permission call inside an exported server action.
 function gateOf(src: string, fn: string): string {

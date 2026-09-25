@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/report-client-error";
 import Link from "next/link";
 
 export default function Error({
@@ -12,6 +13,9 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error(error);
+    // Recorded in app_errors (see /admin/erros) — until now a crash on a
+    // student's phone left no trace anywhere we could see.
+    reportClientError(error);
   }, [error]);
 
   return (

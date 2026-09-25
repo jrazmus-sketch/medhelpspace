@@ -9,15 +9,10 @@
 //   (a) ALWAYS: one structured `console.error` line so Vercel's log pipeline
 //       captures every server error. Must never throw — this is the baseline
 //       observability and cannot be allowed to fail.
-//   (b) BEST-EFFORT, Node runtime only: insert a deduplicated row into the
-//       existing `admin_alerts` table so errors are visible from the admin
-//       panel's data (same table used by lib/admin-notify.ts). This intentionally
-//       does NOT call recordAdminAlert() — that helper fires "instant" emails to
-//       admins on first-seen events, and an error storm must never become an
-//       email storm. We insert directly via the service-role client instead, and
-//       rely on the existing UNIQUE(event_type, context_id) constraint on
-//       `admin_alerts` (schema-patch-admin-notifications.sql) for dedup: repeat
-//       inserts with the same context_id hit a 23505 conflict, which we swallow.
+//   (b) BEST-EFFORT, Node runtime only: record the occurrence in `app_errors`
+//       (schema-patch-app-errors.sql) — one row per distinct error, with a
+//       count and first/last seen. Shown on /admin/erros and in the daily
+//       digest. Browser crashes land in the same table via /api/client-error.
 //
 // Fail-open contract: nothing in this file may throw in a way that affects the
 // request that triggered the error. Every step is wrapped defensively.
@@ -25,7 +20,6 @@
 import type { Instrumentation } from "next";
 
 const MAX_STACK_LINES = 10;
-const MAX_MESSAGE_CHARS_FOR_DEDUP = 40;
 
 export const onRequestError: Instrumentation.onRequestError = async (
   error,
@@ -77,43 +71,31 @@ export const onRequestError: Instrumentation.onRequestError = async (
     // propagate — swallow and move on.
   }
 
-  // (b) BEST-EFFORT — dedup'd admin_alerts row, Node runtime only (the admin
-  // Supabase client uses the service-role key and isn't meaningful/available on
-  // the Edge runtime). Wrapped in its own try/catch that swallows everything.
+  // (b) BEST-EFFORT — one occurrence in app_errors (grouped by fingerprint, with
+  // a count), Node runtime only: the admin Supabase client uses the service-role
+  // key and is not available on the Edge runtime. /admin/erros lists them and
+  // the daily digest summarises them; nothing here sends an e-mail, so an error
+  // storm can never become an e-mail storm. Only the PATH is stored — query
+  // strings on this site carry lead tokens and magic links.
   if (process.env.NEXT_RUNTIME === "nodejs") {
     try {
       // Dynamic import per the docs' "Importing runtime-specific code" pattern —
-      // keeps this out of any Edge bundle of instrumentation.ts. lib/supabase/admin.ts
-      // has no `server-only` guard, so it's safe to import here.
-      const { createAdminClient } = await import("@/lib/supabase/admin");
-      const admin = createAdminClient();
-
-      const routePath = context?.routePath ?? "unknown-route";
-      const dedupKey = digest ?? message.slice(0, MAX_MESSAGE_CHARS_FOR_DEDUP);
-      const contextId = `${routePath}:${dedupKey}`;
-
-      // Direct table insert — intentionally NOT recordAdminAlert(), which would
-      // also trigger "instant" emails to admins on first-seen events. We only
-      // want a passive log row here.
-      await admin.from("admin_alerts").insert({
-        event_type: "server_error",
-        title: `Erro no servidor — ${routePath}`,
-        body: message,
-        metadata: {
-          digest: digest ?? null,
-          routePath,
-          routerKind: context?.routerKind ?? null,
-          routeType: context?.routeType ?? null,
-          method: request?.method ?? null,
-          stack: truncatedStack ?? null,
-        },
-        context_id: contextId,
+      // keeps the service-role client out of any Edge bundle of this file.
+      const [{ recordAppError }, { pathOnly, trimStack }] = await Promise.all([
+        import("@/lib/app-errors-server"),
+        import("@/lib/app-errors"),
+      ]);
+      await recordAppError({
+        kind: "server",
+        message,
+        route: context?.routePath ?? null,
+        digest: digest ?? null,
+        stack: trimStack(stack),
+        path: pathOnly(request?.path),
+        userAgent: request?.headers?.["user-agent"]?.toString() ?? null,
       });
-      // Any error from the insert (including a 23505 dedup conflict when the
-      // same context_id was already recorded) is intentionally ignored — this
-      // is a passive log, not a control-flow signal.
     } catch {
-      // Best-effort only — never let admin-alert logging affect the request.
+      // Best-effort only — never let error recording affect the request.
     }
   }
 };

@@ -28,7 +28,8 @@
       "commerce": "Comercial",
       "system": "Sistema"
     },
-    "clinact": "ClinAct"
+    "clinact": "ClinAct",
+    "errors": "Erros"
   },
   "simReview": {
     "title": "Revisão do Simulado 100Q",
@@ -734,15 +735,25 @@
       "module_unlock_soon": "Módulo abrindo em breve",
       "module_unlock_soonDesc": "Resumo diário dos módulos com conteúdo gated que abrem hoje ou amanhã para alguma turma.",
       "coupon_exhausted": "Cupom esgotado",
-      "coupon_exhaustedDesc": "Resumo diário dos cupons ativos que atingiram o limite de usos."
+      "coupon_exhaustedDesc": "Resumo diário dos cupons ativos que atingiram o limite de usos.",
+      "app_error": "Erros no site",
+      "app_errorDesc": "Erros do servidor e do navegador nas últimas 24h (só no resumo diário). Detalhes em Admin → Erros."
     }
   },
   "errors": {
-    "generic": "Algo deu errado. Tente novamente.",
-    "notFound": "Não encontrado.",
-    "unauthorized": "Você não tem permissão para isso.",
-    "network": "Erro de rede. Verifique sua conexão.",
-    "validation": "Verifique os erros no formulário."
+    "title": "Erros do site",
+    "subtitle": "Erros do servidor e do navegador, agrupados: cada linha é um erro diferente, com quantas vezes aconteceu. Toque para ver os detalhes. Marque como resolvido depois de corrigir — se voltar a acontecer, reaparece como novo.",
+    "empty": "Nenhum erro registrado.",
+    "kind": {
+      "server": "Servidor",
+      "client": "Navegador"
+    },
+    "count_one": "{{count}} ocorrência",
+    "count_other": "{{count}} ocorrências",
+    "last": "última em {{when}}",
+    "first": "Primeira:",
+    "path": "Página:",
+    "resolve": "Marcar como resolvido"
   },
   "auditLog": {
     "title": "Log de auditoria",

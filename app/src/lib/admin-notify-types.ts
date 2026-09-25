@@ -19,6 +19,7 @@ export const ADMIN_ALERT_EVENTS = [
   "cron_failure",
   "module_unlock_soon",
   "coupon_exhausted",
+  "app_error",
 ] as const;
 
 export type AdminAlertEvent = (typeof ADMIN_ALERT_EVENTS)[number];
@@ -32,6 +33,9 @@ export const DAILY_ONLY_EVENTS = new Set<AdminAlertEvent>([
   "nfse_ready",
   "module_unlock_soon",
   "coupon_exhausted",
+  // Errors are summarised once a day from app_errors, never sent one by one:
+  // an error storm must not become an e-mail storm.
+  "app_error",
 ]);
 
 // Effective frequency when an admin has no saved pref row for an event.
@@ -48,6 +52,7 @@ export const ADMIN_NOTIFY_DEFAULTS: Record<AdminAlertEvent, AdminNotifyFrequency
   cron_failure: "instant",
   module_unlock_soon: "daily",
   coupon_exhausted: "daily",
+  app_error: "daily",
 };
 
 // Roles eligible to receive each event AT ALL — gating is PER EVENT so a
@@ -65,6 +70,8 @@ export const ADMIN_NOTIFY_ELIGIBLE_ROLES: Record<AdminAlertEvent, readonly strin
   // call, not a billing/support concern.
   module_unlock_soon: ["super_admin", "content_admin"],
   coupon_exhausted: ["super_admin", "billing_admin"],
+  // Stack traces and routes are an engineering concern.
+  app_error: ["super_admin"],
 };
 
 // Union of every role eligible for at least one event — for the broad profiles
@@ -91,6 +98,7 @@ export const EVENT_EMAIL_KIND: Record<AdminAlertEvent, string> = {
   // Digest/bell-only, same as nfse_ready — these kinds are never sent.
   module_unlock_soon: "admin-module-unlock-soon",
   coupon_exhausted: "admin-coupon-exhausted",
+  app_error: "admin-app-error",
 };
 
 export const ADMIN_DIGEST_EMAIL_KIND = "admin-digest";

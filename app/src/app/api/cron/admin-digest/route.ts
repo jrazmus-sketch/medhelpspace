@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
     cron_failure: { n: 0, cents: 0 },
     module_unlock_soon: { n: 0, cents: 0 },
     coupon_exhausted: { n: 0, cents: 0 },
+    app_error: { n: 0, cents: 0 },
   };
   for (const row of alerts ?? []) {
     const e = row.event_type as AdminAlertEvent;
@@ -93,6 +94,15 @@ export async function GET(request: NextRequest) {
   counts.nfse_ready.n = nfse.ready;
   counts.module_unlock_soon.n = modulesUnlocking.length;
   counts.coupon_exhausted.n = couponsExhausted.length;
+
+  // Errors come from app_errors (one row per distinct error), not admin_alerts.
+  // n = distinct errors seen in the window; "new" = first seen in it.
+  const { data: recentErrors } = await supabase
+    .from("app_errors")
+    .select("first_seen")
+    .gte("last_seen", since);
+  counts.app_error.n = (recentErrors ?? []).length;
+  const newErrors = (recentErrors ?? []).filter((r) => (r.first_seen as string) >= since).length;
 
   function lineFor(e: AdminAlertEvent): string | null {
     const c = counts[e];
@@ -120,6 +130,8 @@ export async function GET(request: NextRequest) {
       const codes = couponsExhausted.map((cp) => cp.code).join(", ");
       return `<p style="margin:0 0 10px;font-size:14px;color:#374151;">🎟️ <strong>${c.n} cupom(ns) esgotado(s)</strong> — ${codes}</p>`;
     }
+    if (e === "app_error")
+      return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">🐞 <strong>${c.n} erro(s) no site</strong> nas últimas 24h${newErrors > 0 ? ` — ${newErrors} novo(s)` : ""} · veja em Admin → Erros</p>`;
     if (e === "cron_failure")
       return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">🛑 <strong>${c.n} rotina(s) automática(s) falharam</strong></p>`;
     return `<p style="margin:0 0 10px;font-size:14px;color:#b91c1c;">⚠️ <strong>${c.n} pagamento(s) retido(s)</strong> para revisão</p>`;

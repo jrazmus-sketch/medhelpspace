@@ -121,6 +121,7 @@ export function AdminHeader() {
       label: t("nav.group.system"),
       items: [
         { href: "/admin/audit-log", label: t("nav.auditLog"), show: isSuperAdmin() },
+        { href: "/admin/erros", label: t("nav.errors"), show: isSuperAdmin() },
         { href: "/admin/settings", label: t("nav.settings") },
       ],
     },

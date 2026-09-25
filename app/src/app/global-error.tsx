@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportClientError } from "@/lib/report-client-error";
 
 export default function GlobalError({
   error,
@@ -11,6 +12,9 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error(error);
+    // Recorded in app_errors (see /admin/erros) — until now a crash on a
+    // student's phone left no trace anywhere we could see.
+    reportClientError(error);
   }, [error]);
 
   return (

@@ -28,7 +28,8 @@
       "commerce": "Commerce",
       "system": "System"
     },
-    "clinact": "ClinAct"
+    "clinact": "ClinAct",
+    "errors": "Errors"
   },
   "simReview": {
     "title": "Simulado 100Q review",
@@ -734,15 +735,25 @@
       "module_unlock_soon": "Module unlocking soon",
       "module_unlock_soonDesc": "Daily summary of gated modules opening today or tomorrow for any cohort.",
       "coupon_exhausted": "Coupon exhausted",
-      "coupon_exhaustedDesc": "Daily summary of active coupons that hit their redemption limit."
+      "coupon_exhaustedDesc": "Daily summary of active coupons that hit their redemption limit.",
+      "app_error": "Site errors",
+      "app_errorDesc": "Server and browser errors from the last 24h (daily digest only). Details in Admin → Errors."
     }
   },
   "errors": {
-    "generic": "Something went wrong. Please try again.",
-    "notFound": "Not found.",
-    "unauthorized": "You don't have permission to do that.",
-    "network": "Network error. Check your connection.",
-    "validation": "Please check the form for errors."
+    "title": "Site errors",
+    "subtitle": "Server and browser errors, grouped: each row is a different error, with how many times it happened. Tap for details. Mark it resolved after a fix — if it happens again it comes back as new.",
+    "empty": "No errors recorded.",
+    "kind": {
+      "server": "Server",
+      "client": "Browser"
+    },
+    "count_one": "{{count}} occurrence",
+    "count_other": "{{count}} occurrences",
+    "last": "last at {{when}}",
+    "first": "First:",
+    "path": "Page:",
+    "resolve": "Mark resolved"
   },
   "auditLog": {
     "title": "Audit Log",
