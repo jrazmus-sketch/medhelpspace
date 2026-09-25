@@ -773,7 +773,10 @@
       "clinact_unpublish": "ClinAct: case unpublished",
       "clinact_archive": "ClinAct: case archived",
       "clinact_delete_draft": "ClinAct: draft deleted",
-      "clinact_import": "ClinAct: bulk import"
+      "clinact_import": "ClinAct: bulk import",
+      "clinact_page_sections": "ClinAct: sales page sections changed",
+      "clinact_page_publish": "ClinAct: sales page published",
+      "clinact_page_unpublish": "ClinAct: sales page unpublished"
     }
   },
   "pageNew": {
@@ -1952,6 +1955,61 @@
       "mixedNote": "New cases landed as drafts. Already-published ones were updated live, with a new revision."
     },
     "all": "All",
-    "freeBadge": "Free"
+    "freeBadge": "Free",
+    "page": {
+      "title": "Sales page",
+      "subtitle": "Publishing, section order and visibility. The copy is edited on the page itself, in edit mode.",
+      "open": "Sales page",
+      "view": "View page",
+      "visibility": "Visibility",
+      "isPublished": "Published",
+      "isUnpublished": "Not published",
+      "publishedHelp": "The public sees the full sales page.",
+      "unpublishedHelp": "Only admins see the sales page. The public sees \"Em breve\".",
+      "publish": "Publish page",
+      "unpublish": "Unpublish",
+      "confirmPublish": "Publish now? Anyone who opens /clinact will see the sales page and can subscribe.",
+      "confirmUnpublish": "Unpublish? The public goes back to seeing \"Em breve\". Existing subscribers keep their access.",
+      "publishYes": "Yes, publish",
+      "unpublishYes": "Yes, unpublish",
+      "cancel": "Cancel",
+      "publishSuperOnly": "Only a super admin can publish or unpublish the page.",
+      "publishedNow": "Page published.",
+      "unpublishedNow": "Page unpublished.",
+      "sectionsTitle": "Sections",
+      "sectionsHelp": "Use the arrows to reorder and the eye to show or hide. Nothing changes on the page until you save.",
+      "locked": "Always visible — prices and renewal terms",
+      "hidden": "Hidden",
+      "hide": "Hide section",
+      "show": "Show section",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "save": "Save",
+      "saving": "Saving…",
+      "discard": "Discard",
+      "unsaved": "Unsaved changes.",
+      "saved": "Sections saved.",
+      "errors": {
+        "forbidden": "You don't have permission for this action.",
+        "invalid": "The section list changed. Reload the page and try again.",
+        "failed": "Couldn't save. Please try again."
+      },
+      "sections": {
+        "hero": "Opening",
+        "problema": "The problem",
+        "competencias": "Four skills",
+        "casos": "Interactive cases",
+        "midia": "Media (audio, image, video)",
+        "confianca": "Confidence",
+        "evolucao": "Minha Evolução (progress)",
+        "revisao": "Review",
+        "leve-deste-caso": "Take-away rule",
+        "biblioteca": "Library",
+        "gratuitos": "Free cases",
+        "para-quem": "Who it's for",
+        "o-que-e-nao-e": "What it is and isn't",
+        "planos": "Plans and renewal"
+      }
+    }
   }
 }

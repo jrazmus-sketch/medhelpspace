@@ -773,7 +773,10 @@
       "clinact_unpublish": "ClinAct: caso despublicado",
       "clinact_archive": "ClinAct: caso arquivado",
       "clinact_delete_draft": "ClinAct: rascunho excluído",
-      "clinact_import": "ClinAct: importação em lote"
+      "clinact_import": "ClinAct: importação em lote",
+      "clinact_page_sections": "ClinAct: seções da página de vendas alteradas",
+      "clinact_page_publish": "ClinAct: página de vendas publicada",
+      "clinact_page_unpublish": "ClinAct: página de vendas tirada do ar"
     }
   },
   "pageNew": {
@@ -1952,6 +1955,61 @@
       "mixedNote": "Os casos novos entraram como rascunho. Os já publicados foram atualizados no ar, com nova revisão."
     },
     "all": "Todos",
-    "freeBadge": "Grátis"
+    "freeBadge": "Grátis",
+    "page": {
+      "title": "Página de vendas",
+      "subtitle": "Publicação, ordem e visibilidade das seções. Os textos são editados na própria página, com o modo de edição.",
+      "open": "Página de vendas",
+      "view": "Ver página",
+      "visibility": "Visibilidade",
+      "isPublished": "Publicada",
+      "isUnpublished": "Não publicada",
+      "publishedHelp": "O público vê a página de vendas completa.",
+      "unpublishedHelp": "Só administradores veem a página de vendas. O público vê \"Em breve\".",
+      "publish": "Publicar página",
+      "unpublish": "Tirar do ar",
+      "confirmPublish": "Publicar agora? Qualquer pessoa que abrir /clinact passa a ver a página de vendas e pode assinar.",
+      "confirmUnpublish": "Tirar do ar? O público volta a ver \"Em breve\". Quem já assina continua com acesso.",
+      "publishYes": "Sim, publicar",
+      "unpublishYes": "Sim, tirar do ar",
+      "cancel": "Cancelar",
+      "publishSuperOnly": "Só super admin pode publicar ou tirar a página do ar.",
+      "publishedNow": "Página publicada.",
+      "unpublishedNow": "Página tirada do ar.",
+      "sectionsTitle": "Seções",
+      "sectionsHelp": "Use as setas para mudar a ordem e o olho para mostrar ou esconder. Nada muda na página até você salvar.",
+      "locked": "Sempre visível — preços e renovação",
+      "hidden": "Oculta",
+      "hide": "Esconder seção",
+      "show": "Mostrar seção",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "save": "Salvar",
+      "saving": "Salvando…",
+      "discard": "Desfazer",
+      "unsaved": "Alterações não salvas.",
+      "saved": "Seções salvas.",
+      "errors": {
+        "forbidden": "Você não tem permissão para esta ação.",
+        "invalid": "A lista de seções mudou. Recarregue a página e tente de novo.",
+        "failed": "Não foi possível salvar. Tente novamente."
+      },
+      "sections": {
+        "hero": "Abertura",
+        "problema": "O problema",
+        "competencias": "Quatro competências",
+        "casos": "Casos interativos",
+        "midia": "Mídia (áudio, imagem, vídeo)",
+        "confianca": "Confiança",
+        "evolucao": "Minha Evolução",
+        "revisao": "Revisão",
+        "leve-deste-caso": "Leve deste caso",
+        "biblioteca": "Biblioteca",
+        "gratuitos": "Casos gratuitos",
+        "para-quem": "Para quem é",
+        "o-que-e-nao-e": "O que é e o que não é",
+        "planos": "Planos e renovação"
+      }
+    }
   }
 }

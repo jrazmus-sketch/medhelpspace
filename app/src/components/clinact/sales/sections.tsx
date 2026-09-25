@@ -412,6 +412,13 @@ function Planos({ hasAccess, isLoggedIn }: SectionProps) {
 }
 
 /**
+ * Sections that can be moved but never hidden. Planos carries the prices AND
+ * the renewal terms (her decision 3): a public sales page without them is a CDC
+ * problem, and it would leave no way to subscribe.
+ */
+export const CLINACT_ALWAYS_VISIBLE = ["planos"];
+
+/**
  * The sections, in their default order. `site_sections` only reorders and hides
  * them — a section with no row keeps the position it has here, so adding one is
  * never a database migration.

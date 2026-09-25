@@ -24,3 +24,28 @@ export function orderSections<T extends { key: string }>(sections: T[], layout: 
     .sort((a, b) => a.at - b.at)
     .map(({ s }) => s);
 }
+
+/**
+ * Validate an admin's submitted section list against the sections declared in
+ * code. Returns the rows to store, or null when the list is not exactly the
+ * known keys (a missing, unknown or duplicated key means a stale or tampered
+ * form — refuse rather than guess). Keys in `alwaysVisible` are forced visible
+ * whatever was submitted.
+ */
+export function normalizeSectionRows(
+  knownKeys: readonly string[],
+  submitted: readonly { key: string; visible: boolean }[],
+  alwaysVisible: readonly string[] = [],
+): { key: string; visible: boolean; position: number }[] | null {
+  if (submitted.length !== knownKeys.length) return null;
+  const seen = new Set<string>();
+  for (const s of submitted) {
+    if (!knownKeys.includes(s.key) || seen.has(s.key)) return null;
+    seen.add(s.key);
+  }
+  return submitted.map((s, i) => ({
+    key: s.key,
+    visible: alwaysVisible.includes(s.key) ? true : s.visible === true,
+    position: i + 1,
+  }));
+}
