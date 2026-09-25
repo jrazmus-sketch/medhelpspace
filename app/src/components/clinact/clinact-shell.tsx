@@ -23,6 +23,17 @@ export function ClinactShell({ children, isAdmin }: { children: React.ReactNode;
         </div>
       </header>
       <main className="flex-1">{children}</main>
+      {/* Account links live here, not in the header: at 375px the header already
+          holds the logo, two links and the theme toggle (plus Admin), and the
+          wrapper clips overflow — a fifth item would be silently cut off rather
+          than wrap. A subscriber must always be able to reach cancellation. */}
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 px-4 py-2 text-sm">
+          <Link href="/clinact/assinatura" className="flex min-h-11 items-center text-muted-foreground hover:text-foreground">
+            Minha assinatura
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }
