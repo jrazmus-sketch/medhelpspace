@@ -16,11 +16,19 @@ export async function POST(request: NextRequest) {
   const confirmUrl = new URL("/auth/confirm", new URL(request.url).origin);
   if (next) confirmUrl.searchParams.set("next", next);
 
+  // The confirmation e-mail template builds its link from {{ .SiteURL }}, not
+  // from emailRedirectTo, so the destination rides on the user instead:
+  // `{{ if .Data.confirm_next }}&next={{ .Data.confirm_next }}{{ end }}`
+  // (supabase/templates/confirmation.html). It also survives a resend from
+  // /verify. Only values that sit safely in a query string unescaped are
+  // stored — the template engine's escaping is not something we control.
+  const confirmNext = next && /^[A-Za-z0-9/_.=?-]+$/.test(next) ? next : null;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { display_name: displayName || null },
+      data: { display_name: displayName || null, ...(confirmNext ? { confirm_next: confirmNext } : {}) },
       emailRedirectTo: confirmUrl.toString(),
     },
   });
