@@ -57,6 +57,19 @@ async function requireMemberAccessRole() {
   return ctx;
 }
 
+// Editing content (pages, lessons, quizzes, flashcards, audio, announcements,
+// site settings) is the content tier. requireAdmin() alone only rejects
+// 'member', and these writes go through the service-role client, which
+// bypasses the database's own role policies — so without this check a support
+// or billing admin could rewrite course content.
+const CONTENT_ROLES = ["super_admin", "content_admin"];
+
+async function requireContentRole() {
+  const ctx = await requireAdmin();
+  if (!CONTENT_ROLES.includes(ctx.role)) throw new Error("Unauthorized");
+  return ctx;
+}
+
 // Cohort commerce/catalog fields (price + storefront), shared by create/update.
 // sale_price_cents is a manual on/off promo price: NULL = no sale; else the
 // discounted price (< price_cents) that becomes the effective price everywhere.
@@ -410,7 +423,7 @@ export async function changeUserRole(targetUserId: string, newRole: string) {
 }
 
 export async function sendPasswordReset(email: string) {
-  const { user } = await requireAdmin();
+  const { user } = await requireMemberAccessRole();
   // Mirror the member-facing flow at app/auth/recover/route.ts: route the
   // recovery link through /auth/confirm so the token is verified and a session
   // is established before the user lands on /reset-password.
@@ -425,7 +438,7 @@ export async function sendPasswordReset(email: string) {
 }
 
 export async function revokeUserSessions(targetUserId: string) {
-  const { user } = await requireAdmin();
+  const { user } = await requireMemberAccessRole();
   const admin = createAdminClient();
   // auth.admin.signOut() only accepts a JWT, not a user id, so it can't revoke
   // another user's sessions. Delete the target's sessions directly via a
@@ -894,7 +907,7 @@ export type PageMetadataInput = {
 // UI falls back to the generic error. A returned value crosses the boundary
 // intact. Genuine DB errors still throw → the client shows the generic error.
 export async function updatePageMetadata(pageId: number, data: PageMetadataInput) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
 
   // Ensure slug is unique (ignore current page's own row)
@@ -940,7 +953,7 @@ export type LessonInput = {
 };
 
 export async function updateLessons(pageId: number, lessons: LessonInput[]) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
 
   const { data: existing } = await admin
@@ -993,7 +1006,7 @@ export async function updateLessons(pageId: number, lessons: LessonInput[]) {
 // sibling rows, so an anomalous multi-row page is left otherwise intact.
 
 export async function savePageBody(pageId: number, bodyHtml: string, title: string) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
 
   const { data: existing } = await admin
@@ -1040,7 +1053,7 @@ export type QuizQuestionInput = {
 };
 
 export async function updateQuizQuestions(pageId: number, questions: QuizQuestionInput[]) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
 
   const { data: existing } = await admin
@@ -1103,7 +1116,7 @@ export type FlashcardInput = {
 };
 
 export async function updateFlashcards(pageId: number, cards: FlashcardInput[]) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
 
   const { data: existing } = await admin
@@ -1177,7 +1190,7 @@ async function clearOtherWelcomes(admin: ReturnType<typeof createAdminClient>, e
 }
 
 export async function createAnnouncement(data: AnnouncementInput) {
-  const { user } = await requireAdmin();
+  const { user } = await requireContentRole();
   const admin = createAdminClient();
   if (data.is_welcome) await clearOtherWelcomes(admin);
   const { error } = await admin.from("announcements").insert({
@@ -1191,7 +1204,7 @@ export async function createAnnouncement(data: AnnouncementInput) {
 }
 
 export async function updateAnnouncement(id: number, data: AnnouncementInput) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
   if (data.is_welcome) await clearOtherWelcomes(admin, id);
   const { error } = await admin
@@ -1208,7 +1221,7 @@ export async function updateAnnouncement(id: number, data: AnnouncementInput) {
 }
 
 export async function deleteAnnouncement(id: number) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
   const { error } = await admin.from("announcements").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -1217,7 +1230,7 @@ export async function deleteAnnouncement(id: number) {
 }
 
 export async function createAnnouncementCategory(data: { slug: string; label: string; color: string }) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
   const { data: existing } = await admin
     .from("announcement_categories")
@@ -1234,7 +1247,7 @@ export async function createAnnouncementCategory(data: { slug: string; label: st
 }
 
 export async function deleteAnnouncementCategory(id: number) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
   const { error } = await admin.from("announcement_categories").delete().eq("id", id);
   if (error) throw new Error(error.message);
@@ -1242,7 +1255,7 @@ export async function deleteAnnouncementCategory(id: number) {
 }
 
 export async function updateSiteSetting(key: string, value: string) {
-  await requireAdmin();
+  await requireContentRole();
   const admin = createAdminClient();
   const { error } = await admin
     .from("site_settings")
@@ -1903,7 +1916,7 @@ function sanitizeAudioFilename(name: string): string {
 export async function uploadLessonAudio(
   formData: FormData,
 ): Promise<{ url: string } | { error: string }> {
-  await requireAdmin();
+  await requireContentRole();
 
   const file = formData.get("file");
   const pageSlugRaw = formData.get("pageSlug");

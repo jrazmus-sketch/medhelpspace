@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { MembersClient } from "./members-client";
 import {
   EXPIRING_SOON_DAYS,
@@ -10,6 +11,10 @@ import {
 export const metadata = { title: "Membros" };
 
 const BILLING_ROLES = ["super_admin", "billing_admin"];
+// Member management is the support/billing tier's job. content_admin has no
+// business with member PII (role matrix in CLAUDE.md), and hiding columns in the
+// UI is not enough: the rows are serialized to the browser either way.
+const MEMBER_ACCESS_ROLES = ["super_admin", "support_admin", "billing_admin"];
 const DAY_MS = 86_400_000;
 
 // Derive the membership lifecycle from the user's cohort window so the table can
@@ -36,6 +41,9 @@ export default async function MembersPage() {
   const { data: currentProfile } = user
     ? await admin.from("profiles").select("role").eq("id", user.id).single()
     : { data: null };
+  const currentUserRole = (currentProfile?.role as string) ?? "member";
+  if (!MEMBER_ACCESS_ROLES.includes(currentUserRole)) redirect("/admin");
+  const canSeeBilling = BILLING_ROLES.includes(currentUserRole);
 
   const [{ data: profiles }, { data: memberships }, { data: cohorts }, { data: paidOrders }] =
     await Promise.all([
@@ -50,7 +58,10 @@ export default async function MembersPage() {
         .order("id"),
       // Lifetime paid = sum of paid orders. Only the paid rows are needed for the
       // column total; the drawer fetches the full per-user order history on open.
-      admin.from("orders").select("user_id, amount_cents").eq("status", "paid"),
+      // Revenue never leaves the server for a non-billing admin.
+      canSeeBilling
+        ? admin.from("orders").select("user_id, amount_cents").eq("status", "paid")
+        : Promise.resolve({ data: [] as { user_id: string; amount_cents: number }[] }),
     ]);
 
   const userIds = (profiles ?? []).map((p) => p.id as string);
@@ -105,15 +116,13 @@ export default async function MembersPage() {
     };
   });
 
-  const currentUserRole = (currentProfile?.role as string) ?? "member";
-
   return (
     <MembersClient
       rows={rows}
       cohorts={(cohorts ?? []).map((c) => ({ id: c.id as number, name: c.name as string }))}
       currentUserRole={currentUserRole}
       currentUserId={user?.id ?? ""}
-      canSeeBilling={BILLING_ROLES.includes(currentUserRole)}
+      canSeeBilling={canSeeBilling}
     />
   );
 }

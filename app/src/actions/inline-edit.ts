@@ -49,7 +49,9 @@ async function requireAdmin() {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (!profile || profile.role === "member") throw new Error("Sem permissão");
+  // Inline edits rewrite course and landing content through the service-role
+  // client — content tier only, like the rest of the content editors.
+  if (!profile || !["super_admin", "content_admin"].includes(profile.role as string)) throw new Error("Sem permissão");
   return { user, role: profile.role as string };
 }
 

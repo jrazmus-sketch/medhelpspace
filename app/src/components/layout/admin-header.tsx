@@ -98,7 +98,8 @@ export function AdminHeader() {
       id: "people",
       label: t("nav.group.people"),
       items: [
-        { href: "/admin/members", label: t("nav.members") },
+        // Member PII is the support/billing tier's; the page itself redirects others.
+        { href: "/admin/members", label: t("nav.members"), show: isSupportAdmin() || isBillingAdmin() },
         { href: "/admin/suporte", label: t("nav.support"), show: isSupportAdmin() || isBillingAdmin() },
       ],
     },
