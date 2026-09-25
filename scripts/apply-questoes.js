@@ -109,6 +109,12 @@ function connUrl() {
       await sql`CREATE TABLE quiz_questions_bk_questoes AS SELECT q.* FROM quiz_questions q JOIN pages p ON p.id=q.page_id WHERE p.view='quiz'`;
       await sql`CREATE TABLE nav_items_bk_questoes    AS SELECT n.* FROM nav_items n WHERE n.source_page_id IN (SELECT id FROM pages WHERE view='quiz') OR n.target_page_id IN (SELECT id FROM pages WHERE view='quiz')`;
       await sql`CREATE TABLE quiz_attempts_bk_questoes AS SELECT a.* FROM quiz_attempts a WHERE a.page_id IN (SELECT id FROM pages WHERE view='quiz')`;
+      // Backup copies hold member data (answers, attempts). Lock them like every other table:
+      // RLS on, nothing for anon/authenticated (Supabase grants them by default).
+      for (const t of ["pages_bk_questoes", "quiz_questions_bk_questoes", "nav_items_bk_questoes", "quiz_attempts_bk_questoes"]) {
+        await sql.unsafe(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`);
+        await sql.unsafe(`REVOKE ALL ON ${t} FROM anon, authenticated`);
+      }
 
       // 1. in-place refresh/rename/moved
       for (const r of inPlace) {

@@ -741,19 +741,11 @@
     }
   },
   "errors": {
-    "title": "Site errors",
-    "subtitle": "Server and browser errors, grouped: each row is a different error, with how many times it happened. Tap for details. Mark it resolved after a fix — if it happens again it comes back as new.",
-    "empty": "No errors recorded.",
-    "kind": {
-      "server": "Server",
-      "client": "Browser"
-    },
-    "count_one": "{{count}} occurrence",
-    "count_other": "{{count}} occurrences",
-    "last": "last at {{when}}",
-    "first": "First:",
-    "path": "Page:",
-    "resolve": "Mark resolved"
+    "generic": "Something went wrong. Please try again.",
+    "notFound": "Not found.",
+    "unauthorized": "You don't have permission to do that.",
+    "network": "Network error. Check your connection.",
+    "validation": "Please check the form for errors."
   },
   "auditLog": {
     "title": "Audit Log",
@@ -2034,5 +2026,20 @@
       "imageSaved": "Image saved.",
       "imageRemoved": "Image removed."
     }
+  },
+  "appErrors": {
+    "title": "Site errors",
+    "subtitle": "Server and browser errors, grouped: each row is a different error, with how many times it happened. Tap for details. Mark it resolved after a fix — if it happens again it comes back as new.",
+    "empty": "No errors recorded.",
+    "kind": {
+      "server": "Server",
+      "client": "Browser"
+    },
+    "count_one": "{{count}} occurrence",
+    "count_other": "{{count}} occurrences",
+    "last": "last at {{when}}",
+    "first": "First:",
+    "path": "Page:",
+    "resolve": "Mark resolved"
   }
 }

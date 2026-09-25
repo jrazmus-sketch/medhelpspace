@@ -79,6 +79,12 @@ function cleanH4(html) {
         PRIMARY KEY (question_id)
       )
     `;
+    // Backup copies hold member data (answers, attempts). Lock them like every other table:
+    // RLS on, nothing for anon/authenticated (Supabase grants them by default).
+    for (const t of ["quiz_questions_h4_emoji_backup"]) {
+      await db.unsafe(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`);
+      await db.unsafe(`REVOKE ALL ON ${t} FROM anon, authenticated`);
+    }
     for (const u of updates) {
       await db`
         INSERT INTO quiz_questions_h4_emoji_backup (question_id, original_explanation_html)

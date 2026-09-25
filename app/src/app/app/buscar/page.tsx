@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
+import { recordAppError } from "@/lib/app-errors-server";
 import Link from "next/link";
 import { Search as SearchIcon, ChevronRight } from "lucide-react";
 
@@ -37,16 +38,27 @@ export default async function BuscarPage({
   const query = (q ?? "").trim();
 
   let results: SearchResult[] = [];
-  let queryError: string | null = null;
+  // The database's own message is for us (Admin → Erros), never for the
+  // student: it can expose table and function names.
+  let searchFailed = false;
 
   if (query && !USE_MOCK_DATA) {
     try {
       const admin = createAdminClient();
       const { data, error } = await admin.rpc("search_content", { q: query, max_results: 30 });
-      if (error) queryError = error.message;
+      if (error) throw new Error(error.message);
       results = (data ?? []) as SearchResult[];
     } catch (e) {
-      queryError = e instanceof Error ? e.message : "Erro ao buscar";
+      searchFailed = true;
+      await recordAppError({
+        kind: "server",
+        message: `search_content: ${e instanceof Error ? e.message : String(e)}`,
+        route: "/app/buscar",
+        digest: null,
+        stack: e instanceof Error ? (e.stack ?? null) : null,
+        path: "/app/buscar",
+        userAgent: null,
+      });
     }
   }
 
@@ -121,9 +133,11 @@ export default async function BuscarPage({
       {/* Body */}
       {!query ? (
         <EmptyState />
-      ) : queryError ? (
+      ) : searchFailed ? (
         <div style={{ padding: 20, borderRadius: "var(--radius)", background: "var(--surface-1)", border: "1px solid #ef4444" }}>
-          <p style={{ fontSize: 14, color: "#ef4444" }}>Erro ao buscar: {queryError}</p>
+          <p className="text-sm text-destructive">
+            Não foi possível buscar agora. Tente de novo em alguns instantes.
+          </p>
         </div>
       ) : results.length === 0 ? (
         <div

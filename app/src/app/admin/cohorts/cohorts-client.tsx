@@ -173,7 +173,7 @@ export function CohortsClient({ rows, modules, access }: Props) {
     const d = confirmSave.data;
     startTransition(async () => {
       try {
-        await updateCohort(confirmSave.cohortId, {
+        const res = await updateCohort(confirmSave.cohortId, {
           name: d.name,
           test_date: d.test_date,
           date_confirmed: d.date_confirmed,
@@ -185,6 +185,8 @@ export function CohortsClient({ rows, modules, access }: Props) {
           display_order: Number(d.display_order) || 0,
           sale_ends_at: d.sale_ends_at ? `${d.sale_ends_at}T23:59:59` : null,
         });
+        // Errors come back as values (thrown messages are redacted in production).
+        if (!res.ok) throw new Error(res.error);
         setConfirmSave(null);
         setEditingId(null);
         setEditState(null);
@@ -213,7 +215,8 @@ export function CohortsClient({ rows, modules, access }: Props) {
     setSaleError(null);
     startTransition(async () => {
       try {
-        await setCohortForSale(row.id, !row.is_for_sale);
+        const res = await setCohortForSale(row.id, !row.is_for_sale);
+        if (!res.ok) throw new Error(res.error);
       } catch (e) {
         setSaleError({ id: row.id, msg: mapCohortError(e, t) });
       }
@@ -239,7 +242,8 @@ export function CohortsClient({ rows, modules, access }: Props) {
     if (dateErr) { setCreateError(dateErr); return; }
     startTransition(async () => {
       try {
-        await createCohort(formData);
+        const res = await createCohort(formData);
+        if (!res.ok) throw new Error(res.error);
         setShowForm(false);
         setSlugValue("");
       } catch (e) {

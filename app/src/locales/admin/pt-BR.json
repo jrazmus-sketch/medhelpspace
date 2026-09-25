@@ -741,19 +741,11 @@
     }
   },
   "errors": {
-    "title": "Erros do site",
-    "subtitle": "Erros do servidor e do navegador, agrupados: cada linha é um erro diferente, com quantas vezes aconteceu. Toque para ver os detalhes. Marque como resolvido depois de corrigir — se voltar a acontecer, reaparece como novo.",
-    "empty": "Nenhum erro registrado.",
-    "kind": {
-      "server": "Servidor",
-      "client": "Navegador"
-    },
-    "count_one": "{{count}} ocorrência",
-    "count_other": "{{count}} ocorrências",
-    "last": "última em {{when}}",
-    "first": "Primeira:",
-    "path": "Página:",
-    "resolve": "Marcar como resolvido"
+    "generic": "Algo deu errado. Tente novamente.",
+    "notFound": "Não encontrado.",
+    "unauthorized": "Você não tem permissão para isso.",
+    "network": "Erro de rede. Verifique sua conexão.",
+    "validation": "Verifique os erros no formulário."
   },
   "auditLog": {
     "title": "Log de auditoria",
@@ -2034,5 +2026,20 @@
       "imageSaved": "Imagem salva.",
       "imageRemoved": "Imagem removida."
     }
+  },
+  "appErrors": {
+    "title": "Erros do site",
+    "subtitle": "Erros do servidor e do navegador, agrupados: cada linha é um erro diferente, com quantas vezes aconteceu. Toque para ver os detalhes. Marque como resolvido depois de corrigir — se voltar a acontecer, reaparece como novo.",
+    "empty": "Nenhum erro registrado.",
+    "kind": {
+      "server": "Servidor",
+      "client": "Navegador"
+    },
+    "count_one": "{{count}} ocorrência",
+    "count_other": "{{count}} ocorrências",
+    "last": "última em {{when}}",
+    "first": "Primeira:",
+    "path": "Página:",
+    "resolve": "Marcar como resolvido"
   }
 }

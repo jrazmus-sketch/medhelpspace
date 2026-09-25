@@ -153,7 +153,7 @@ export async function assignMemberToCohort(userId: string, cohortId: number | nu
   revalidatePath("/admin/members");
 }
 
-export async function createCohort(formData: FormData) {
+async function createCohortImpl(formData: FormData) {
   const { user } = await requireBillingRole();
   const admin = createAdminClient();
 
@@ -249,7 +249,7 @@ function diffCohortFields(
   return changes;
 }
 
-export async function updateCohort(
+async function updateCohortImpl(
   cohortId: number,
   data: {
     name: string;
@@ -295,7 +295,7 @@ export async function updateCohort(
 
 // Quick storefront on/off toggle. Turning a cohort on requires a price (the DB
 // CHECK enforces this too — we pre-check for a friendly error).
-export async function setCohortForSale(cohortId: number, isForSale: boolean) {
+async function setCohortForSaleImpl(cohortId: number, isForSale: boolean) {
   const { user } = await requireBillingRole();
   const admin = createAdminClient();
   const { data: c } = await admin
@@ -323,6 +323,53 @@ export async function setCohortForSale(cohortId: number, isForSale: boolean) {
 
   revalidatePath("/admin/cohorts");
   revalidateStorefront();
+}
+
+// ── Cohort actions as the page calls them ────────────────────────────────────
+// Next.js REDACTS the message of an error thrown by a Server Action in
+// production, so the page's code → message mapping (PRICE_REQUIRED_FOR_SALE,
+// SLUG_TAKEN, END_BEFORE_START…) never matched there and every problem read as
+// "something went wrong". The work stays in the *Impl functions; these return
+// the known codes as values instead of throwing them.
+const COHORT_ERROR_CODES = new Set([
+  "PRICE_REQUIRED_FOR_SALE",
+  "INVALID_PRICE",
+  "INVALID_SALE_PRICE",
+  "SALE_PRICE_NEEDS_BASE",
+  "SALE_PRICE_ABOVE_BASE",
+  "SLUG_TAKEN",
+  "END_BEFORE_START",
+  "TEST_DATE_OUTSIDE_WINDOW",
+  "Unauthorized",
+]);
+
+type CohortActionResult = { ok: true } | { ok: false; error: string };
+
+async function asCohortResult(run: () => Promise<unknown>): Promise<CohortActionResult> {
+  try {
+    await run();
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (COHORT_ERROR_CODES.has(msg)) return { ok: false, error: msg };
+    console.error("cohort action failed", e);
+    return { ok: false, error: "GENERIC" };
+  }
+}
+
+export async function createCohort(formData: FormData): Promise<CohortActionResult> {
+  return asCohortResult(() => createCohortImpl(formData));
+}
+
+export async function updateCohort(
+  cohortId: number,
+  data: Parameters<typeof updateCohortImpl>[1],
+): Promise<CohortActionResult> {
+  return asCohortResult(() => updateCohortImpl(cohortId, data));
+}
+
+export async function setCohortForSale(cohortId: number, isForSale: boolean): Promise<CohortActionResult> {
+  return asCohortResult(() => setCohortForSaleImpl(cohortId, isForSale));
 }
 
 export async function softDeleteCohort(cohortId: number) {

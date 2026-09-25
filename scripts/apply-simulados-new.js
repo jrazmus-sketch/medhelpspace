@@ -116,6 +116,12 @@ function connUrl() {
       await sql`CREATE TABLE quiz_questions_bk_simnew AS SELECT q.* FROM quiz_questions q JOIN pages p ON p.id=q.page_id WHERE p.view='simulados'`;
       await sql`CREATE TABLE nav_items_bk_simnew      AS SELECT n.* FROM nav_items n WHERE n.source_page_id IN (SELECT id FROM pages WHERE view='simulados') OR n.target_page_id IN (SELECT id FROM pages WHERE view='simulados')`;
       await sql`CREATE TABLE quiz_attempts_bk_simnew  AS SELECT a.* FROM quiz_attempts a WHERE a.page_id IN (SELECT id FROM pages WHERE view='simulados')`;
+      // Backup copies hold member data (answers, attempts). Lock them like every other table:
+      // RLS on, nothing for anon/authenticated (Supabase grants them by default).
+      for (const t of ["pages_bk_simnew", "quiz_questions_bk_simnew", "nav_items_bk_simnew", "quiz_attempts_bk_simnew"]) {
+        await sql.unsafe(`ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY`);
+        await sql.unsafe(`REVOKE ALL ON ${t} FROM anon, authenticated`);
+      }
 
       // 1. retire legacy: draft every non-hub publish simulados page; wipe hub nav cards
       await sql`UPDATE pages SET status='draft', updated_at=now() WHERE view='simulados' AND type<>'blurb-nav-hub' AND status='publish'`;
