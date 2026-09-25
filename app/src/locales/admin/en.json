@@ -776,7 +776,8 @@
       "clinact_import": "ClinAct: bulk import",
       "clinact_page_sections": "ClinAct: sales page sections changed",
       "clinact_page_publish": "ClinAct: sales page published",
-      "clinact_page_unpublish": "ClinAct: sales page unpublished"
+      "clinact_page_unpublish": "ClinAct: sales page unpublished",
+      "clinact_page_image": "ClinAct: sales page image changed"
     }
   },
   "pageNew": {
@@ -1992,7 +1993,9 @@
       "errors": {
         "forbidden": "You don't have permission for this action.",
         "invalid": "The section list changed. Reload the page and try again.",
-        "failed": "Couldn't save. Please try again."
+        "failed": "Couldn't save. Please try again.",
+        "bad_type": "Format not accepted. Use JPG, PNG or WebP.",
+        "too_large": "Image too large. The limit is 5 MB."
       },
       "sections": {
         "hero": "Opening",
@@ -2009,7 +2012,16 @@
         "para-quem": "Who it's for",
         "o-que-e-nao-e": "What it is and isn't",
         "planos": "Plans and renewal"
-      }
+      },
+      "imagesTitle": "Images",
+      "imagesHelp": "Sales page screenshots. JPG, PNG or WebP, up to 5 MB. With no image, the section shows text only.",
+      "imageIn": "In the \"{{section}}\" section",
+      "imageEmpty": "No image",
+      "imageUpload": "Upload image",
+      "imageReplace": "Replace image",
+      "imageRemove": "Remove",
+      "imageSaved": "Image saved.",
+      "imageRemoved": "Image removed."
     }
   }
 }

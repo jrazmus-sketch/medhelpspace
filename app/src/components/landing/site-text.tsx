@@ -24,6 +24,11 @@ export function SiteContentProvider({
   return <Ctx.Provider value={rows}>{children}</Ctx.Provider>;
 }
 
+/** The whole site_content map, for components that read a row as data (e.g. an image URL). */
+export function useSiteContent(): SiteContentMap {
+  return useContext(Ctx);
+}
+
 type Props = {
   /** Stable key into `site_content` (e.g. "hero.headline"). */
   k: string;

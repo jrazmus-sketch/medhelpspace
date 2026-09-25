@@ -776,7 +776,8 @@
       "clinact_import": "ClinAct: importação em lote",
       "clinact_page_sections": "ClinAct: seções da página de vendas alteradas",
       "clinact_page_publish": "ClinAct: página de vendas publicada",
-      "clinact_page_unpublish": "ClinAct: página de vendas tirada do ar"
+      "clinact_page_unpublish": "ClinAct: página de vendas tirada do ar",
+      "clinact_page_image": "ClinAct: imagem da página de vendas alterada"
     }
   },
   "pageNew": {
@@ -1992,7 +1993,9 @@
       "errors": {
         "forbidden": "Você não tem permissão para esta ação.",
         "invalid": "A lista de seções mudou. Recarregue a página e tente de novo.",
-        "failed": "Não foi possível salvar. Tente novamente."
+        "failed": "Não foi possível salvar. Tente novamente.",
+        "bad_type": "Formato não aceito. Use JPG, PNG ou WebP.",
+        "too_large": "Imagem muito grande. O limite é 5 MB."
       },
       "sections": {
         "hero": "Abertura",
@@ -2009,7 +2012,16 @@
         "para-quem": "Para quem é",
         "o-que-e-nao-e": "O que é e o que não é",
         "planos": "Planos e renovação"
-      }
+      },
+      "imagesTitle": "Imagens",
+      "imagesHelp": "Screenshots da página de vendas. JPG, PNG ou WebP, até 5 MB. Sem imagem, a seção aparece só com o texto.",
+      "imageIn": "Na seção \"{{section}}\"",
+      "imageEmpty": "Sem imagem",
+      "imageUpload": "Enviar imagem",
+      "imageReplace": "Trocar imagem",
+      "imageRemove": "Remover",
+      "imageSaved": "Imagem salva.",
+      "imageRemoved": "Imagem removida."
     }
   }
 }

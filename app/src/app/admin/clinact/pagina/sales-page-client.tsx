@@ -5,20 +5,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Eye, EyeOff, Lock } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Eye, EyeOff, ImageUp, Lock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { saveClinactSections, setClinactPagePublished } from "@/actions/clinact-page";
+import { removeSalesImage, saveClinactSections, setClinactPagePublished, uploadSalesImage } from "@/actions/clinact-page";
 
 type Section = { key: string; visible: boolean; locked: boolean };
+type ImageSlot = { key: string; section: string; url: string | null };
 
 export function SalesPageClient({
   published,
   canPublish,
   sections: initial,
+  images,
 }: {
   published: boolean;
   canPublish: boolean;
   sections: Section[];
+  images: ImageSlot[];
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -64,6 +67,36 @@ export function SalesPageClient({
       setConfirming(false);
       if (res.ok) {
         setNotice({ tone: "ok", text: t(next ? "clinact.page.publishedNow" : "clinact.page.unpublishedNow") });
+        router.refresh();
+      } else {
+        setNotice({ tone: "error", text: t(`clinact.page.errors.${res.error}`) });
+      }
+    });
+  }
+
+  function upload(slot: string, file: File | undefined) {
+    if (!file) return;
+    setNotice(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("slot", slot);
+      fd.set("file", file);
+      const res = await uploadSalesImage(fd);
+      if (res.ok) {
+        setNotice({ tone: "ok", text: t("clinact.page.imageSaved") });
+        router.refresh();
+      } else {
+        setNotice({ tone: "error", text: t(`clinact.page.errors.${res.error}`) });
+      }
+    });
+  }
+
+  function removeImage(slot: string) {
+    setNotice(null);
+    startTransition(async () => {
+      const res = await removeSalesImage(slot);
+      if (res.ok) {
+        setNotice({ tone: "ok", text: t("clinact.page.imageRemoved") });
         router.refresh();
       } else {
         setNotice({ tone: "error", text: t(`clinact.page.errors.${res.error}`) });
@@ -249,6 +282,61 @@ export function SalesPageClient({
           ) : null}
           {dirty ? <p className="text-sm text-muted-foreground">{t("clinact.page.unsaved")}</p> : null}
         </div>
+      </section>
+
+      {/* Screenshot slots (her decision 4). Empty = the section shows no image. */}
+      <section className="rounded-xl border border-border bg-surface-1">
+        <div className="border-b border-border p-4">
+          <h2 className="font-semibold">{t("clinact.page.imagesTitle")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("clinact.page.imagesHelp")}</p>
+        </div>
+        <ul className="divide-y divide-border">
+          {images.map((img) => (
+            <li key={img.key} className="p-4">
+              <p className="text-sm font-medium">
+                {t("clinact.page.imageIn", { section: t(`clinact.page.sections.${img.section}`) })}
+              </p>
+              {img.url ? (
+                // eslint-disable-next-line @next/next/no-img-element -- admin preview of a CDN upload
+                <img src={img.url} alt="" className="mt-3 max-h-64 w-auto max-w-full rounded-lg border border-border" />
+              ) : (
+                <p className="mt-2 rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                  {t("clinact.page.imageEmpty")}
+                </p>
+              )}
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <label
+                  className={cn(
+                    "inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium hover:bg-accent",
+                    pending && "pointer-events-none opacity-60",
+                  )}
+                >
+                  <ImageUp className="h-4 w-4" />
+                  {t(img.url ? "clinact.page.imageReplace" : "clinact.page.imageUpload")}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    onChange={(e) => {
+                      upload(img.key, e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {img.url ? (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => removeImage(img.key)}
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-destructive/50 px-4 text-sm font-medium text-destructive disabled:opacity-60"
+                  >
+                    <Trash2 className="h-4 w-4" /> {t("clinact.page.imageRemove")}
+                  </button>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
       </section>
     </div>
   );

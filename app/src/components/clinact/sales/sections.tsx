@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check, Sparkles } from "lucide-react";
 import { SiteText } from "@/components/landing/site-text";
+import { SiteImage } from "@/components/clinact/sales/site-image";
 import { FORMATS, FORMAT_COLOR_VARS, FORMAT_LABELS, FORMAT_SKILL, SKILL_LABELS } from "@/lib/clinact/types";
 import { CLINACT_PLAN_LIST, annualInMonthlies, annualPerMonth, formatBRL } from "@/lib/clinact/plans";
 
@@ -177,6 +178,7 @@ function Casos() {
           fallback="A informação não precisa aparecer antes da decisão. Ela pode aparecer porque você decidiu buscá-la."
         />
       </blockquote>
+      <SiteImage k="clinact.casos.image" alt="Um caso de Clínica em Cena em andamento, com o Prontuário Vivo" />
     </section>
   );
 }
@@ -237,6 +239,7 @@ function Evolucao() {
           fallback="A sua primeira tentativa concluída permanece como referência. Refazer treina de novo sem apagar o que aconteceu."
         />
       </p>
+      <SiteImage k="clinact.evolucao.image" alt="A tela Minha Evolução do ClinAct" />
     </section>
   );
 }
