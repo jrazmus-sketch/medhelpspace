@@ -119,9 +119,9 @@ test("guardMagnetSend does not fail closed on a missing Turnstile token", async 
   assert.equal(typeof guardCodeRequest, "function");
 });
 
-test("both step-2 senders run the guard before mailing a link", () => {
+test("the step-2 sender runs the guard before mailing a link", () => {
   const actions = read("actions/magnet.ts");
-  for (const fn of ["chooseFlashcardsCohortAndSend", "chooseSimuladoCohortAndSend"]) {
+  for (const fn of ["chooseFlashcardsCohortAndSend"]) {
     const start = actions.indexOf(`export async function ${fn}`);
     assert.ok(start > 0, `${fn} not found`);
     const body = actions.slice(start, start + 2000);
@@ -130,4 +130,11 @@ test("both step-2 senders run the guard before mailing a link", () => {
     assert.ok(guardAt > 0, `${fn} must call guardMagnetSend`);
     if (sendAt > 0) assert.ok(guardAt < sendAt, `${fn} must guard before sending`);
   }
+});
+
+test("the uncalled simulado step-2 sender stays deleted", () => {
+  // It had no caller anywhere but shipped as a public server action that mails
+  // a magic link to a caller-supplied address. A dead endpoint that can send
+  // e-mail is attack surface with no upside — never bring it back unused.
+  assert.ok(!read("actions/magnet.ts").includes("export async function chooseSimuladoCohortAndSend"));
 });

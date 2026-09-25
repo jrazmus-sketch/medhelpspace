@@ -22,7 +22,6 @@ import {
   resultUrl,
   unsubscribeUrl,
   flashcardsAccessUrl,
-  simuladoAccessUrl,
   REVALIDA_2027_1_SLUG,
   FLASHCARDS_SOURCE,
   SIMULADO_SOURCE,
@@ -1094,109 +1093,6 @@ export async function captureSimuladoLead(input: {
     });
   }
   return { ok: true };
-}
-
-export async function chooseSimuladoCohortAndSend(input: {
-  email: string;
-  targetCohort: string;
-  firstName?: string | null;
-  utm?: Utm;
-  honeypot?: string | null;
-  turnstileToken?: string | null;
-}): Promise<{ ok: boolean; reason?: string; maskedEmail?: string; emailed?: boolean; devLink?: string }> {
-  const email = normalizeEmail(input.email);
-  if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
-
-  // Mails the access link to a caller-supplied address, callable without step 1 —
-  // same open-relay surface as the flashcards gate, same guard.
-  const simVerdict = await guardMagnetSend({
-    email,
-    ip: await clientIp(),
-    honeypot: input.honeypot,
-    turnstileToken: input.turnstileToken,
-  });
-  if (!simVerdict.ok) return { ok: false, reason: simVerdict.reason };
-  const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
-  const firstName = cleanFirstName(input.firstName);
-
-  const admin = createAdminClient();
-
-  // Step 1 SHOULD have created the row; insert-if-missing defends against a
-  // skipped/failed step 1 so we never lose the lead or leave the turma unset.
-  const { data: existing } = await admin
-    .from("leads")
-    .select("id, result_token, unsubscribe_token")
-    .eq("email", email)
-    .maybeSingle();
-
-  let resultToken: string;
-  let unsubscribeToken: string;
-  const completedAt = new Date().toISOString();
-  if (existing) {
-    resultToken = existing.result_token as string;
-    unsubscribeToken = existing.unsubscribe_token as string;
-    await admin
-      .from("leads")
-      .update({
-        target_cohort: targetCohort,
-        completed_at: completedAt,
-        ...(firstName ? { first_name: firstName } : {}),
-      })
-      .eq("id", existing.id);
-  } else {
-    const ctx = await captureContext();
-    const { data: inserted } = await admin
-      .from("leads")
-      .insert({
-        email,
-        source: SIMULADO_SOURCE,
-        target_cohort: targetCohort,
-        completed_at: completedAt,
-        first_name: firstName,
-        utm_source: input.utm?.source ?? null,
-        utm_campaign: input.utm?.campaign ?? null,
-        gclid: input.utm?.gclid ?? null,
-        user_agent: ctx.user_agent,
-        device_type: ctx.device_type,
-        geo_country: ctx.geo_country,
-        geo_region: ctx.geo_region,
-        geo_city: ctx.geo_city,
-      })
-      .select("id, result_token, unsubscribe_token")
-      .single();
-    if (!inserted) return { ok: false, reason: "insert_failed" };
-    resultToken = inserted.result_token as string;
-    unsubscribeToken = inserted.unsubscribe_token as string;
-  }
-
-  // Deliver the magic access link (D0). Awaited (serverless kills fire-and-forget);
-  // non-fatal — a send failure still shows the "check your inbox" state. In dev
-  // (no RESEND_API_KEY) we return the link so the flow is testable.
-  let emailed = true;
-  let devLink: string | undefined;
-  const accessUrl = simuladoAccessUrl(resultToken);
-  try {
-    const res = await sendTemplateEmail({
-      kind: "lead-sim-access",
-      to: email,
-      vars: {
-        greeting: greetingFor(firstName),
-        accessUrl,
-        unsubscribeUrl: unsubscribeUrl(unsubscribeToken),
-      },
-      fromName: FUNNEL_SENDER_NAME,
-    });
-    if (res.reason === "no_api_key") devLink = accessUrl;
-    else if (!res.ok) {
-      emailed = false;
-      console.error("lead-sim-access send failed:", res.reason);
-    }
-  } catch (e) {
-    emailed = false;
-    console.error("lead-sim-access send threw:", e);
-  }
-
-  return { ok: true, maskedEmail: maskEmail(email), emailed, devLink };
 }
 
 // Allowlisted ON-SITE events tracked per known lead (auth = result_token). Keep in
