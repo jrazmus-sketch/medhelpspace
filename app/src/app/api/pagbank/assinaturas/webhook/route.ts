@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
-import { getSubscription } from "@/lib/pagbank/subscriptions";
+import { getSubscription, getSubscriptionsEnv } from "@/lib/pagbank/subscriptions";
 import { findClinactSubscription, reconcileClinactSubscription } from "@/lib/clinact/renewals";
 import {
   readSignatureHeader,
@@ -44,6 +44,12 @@ import {
 // always a subscription id — it can be a CUST_… or PLAN_… id, and the API
 // re-read and reconciliation are skipped for those.
 //
+// The notification URL is account-wide PER PagBank ENVIRONMENT, and the sandbox
+// account can only point at a public URL — i.e. this production route. The
+// sandbox URL is therefore registered with `?ambiente=sandbox`, and a delivery
+// tagged for another environment than the one this deployment runs is dropped
+// before anything is logged. (Untagged deliveries are the production account's.)
+//
 // Node runtime: the admin Supabase client uses the service-role key and the
 // signature check uses node:crypto.
 export const runtime = "nodejs";
@@ -52,6 +58,11 @@ export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ ok: true }, { status: 429 });
+  }
+
+  const ambiente = request.nextUrl.searchParams.get("ambiente");
+  if (ambiente && ambiente !== getSubscriptionsEnv()) {
+    return NextResponse.json({ ok: true });
   }
 
   // Read the raw body once: the signature is over the bytes as sent.
