@@ -25,7 +25,7 @@ import { CLINACT_PLAN_LIST, annualInMonthlies, annualPerMonth, formatBRL } from 
  * adding one is a code change and never a database migration.
  */
 
-type SectionProps = { hasAccess: boolean };
+type SectionProps = { hasAccess: boolean; isLoggedIn: boolean };
 type SectionDef = { key: string; Section: (p: SectionProps) => React.ReactElement };
 
 const WRAP = "mx-auto w-full max-w-3xl px-5";
@@ -34,6 +34,17 @@ const LEAD = "mt-3 text-base leading-relaxed text-muted-foreground";
 
 /** Signup-first: no anonymous play (her decision 1), landing on the free cases. */
 const TRY_HREF = "/signup?next=%2Fclinact%2Ftreinar";
+
+/**
+ * A plan button goes to the checkout with the plan preselected. Someone without
+ * an account signs up first (signup-first, as above) and the confirmation
+ * e-mail brings them back to the checkout; someone signed out WITH an account
+ * uses "Já tem conta? Entrar" on that page, which keeps the same destination.
+ */
+function planHref(planKey: string, isLoggedIn: boolean): string {
+  const checkout = `/clinact/assinar?plano=${planKey}`;
+  return isLoggedIn ? checkout : `/signup?next=${encodeURIComponent(checkout)}`;
+}
 
 function Hero({ hasAccess }: SectionProps) {
   return (
@@ -349,7 +360,7 @@ function OQueENaoE() {
   );
 }
 
-function Planos() {
+function Planos({ hasAccess, isLoggedIn }: SectionProps) {
   return (
     <section className={`${WRAP} border-t border-surface-2 py-14`}>
       <h2 className={H2}>
@@ -357,7 +368,7 @@ function Planos() {
       </h2>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {CLINACT_PLAN_LIST.map((plan) => (
-          <div key={plan.key} className="rounded-xl border border-border bg-surface-1 p-6">
+          <div key={plan.key} className="flex flex-col rounded-xl border border-border bg-surface-1 p-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand">{plan.label}</p>
             {/* Price comes from the plan config, never from an editable string
                 (her decision 2): a price edited out of step with what PagBank
@@ -371,6 +382,20 @@ function Planos() {
                 {`${annualInMonthlies()} mensalidades, doze meses`}
               </p>
             ) : null}
+            {/* mt-auto pins the button to the card's foot, so the two buttons line
+                up side by side even though only the annual card has the extra line. */}
+            <div className="mt-auto pt-5">
+              <Link
+                href={hasAccess ? "/clinact/treinar" : planHref(plan.key, isLoggedIn)}
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-base font-semibold text-brand-fg"
+              >
+                {hasAccess ? (
+                  <SiteText k="clinact.planos.cta_assinante" fallback="Entrar nos casos" />
+                ) : (
+                  <SiteText k={`clinact.planos.cta_${plan.key}`} fallback={`Assinar ${plan.label.toLowerCase()}`} />
+                )}
+              </Link>
+            </div>
           </div>
         ))}
       </div>

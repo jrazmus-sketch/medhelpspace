@@ -18,12 +18,20 @@ type PlanOption = { key: string; label: string; price: string; note: string };
  * this attempt. It becomes the idempotency key, which is what makes a second
  * click — or a resubmit after a timeout — safe instead of a second charge.
  */
-export function SubscribeForm({ publicKey, plans }: { publicKey: string; plans: PlanOption[] }) {
+export function SubscribeForm({
+  publicKey,
+  plans,
+  initialPlan,
+}: {
+  publicKey: string;
+  plans: PlanOption[];
+  initialPlan?: string;
+}) {
   const router = useRouter();
   const [attemptId] = useState(() =>
     (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}${Math.random()}`).replace(/[^a-zA-Z0-9]/g, ""),
   );
-  const [planKey, setPlanKey] = useState(plans[0]?.key ?? "mensal");
+  const [planKey, setPlanKey] = useState(initialPlan ?? plans[0]?.key ?? "mensal");
   const [holder, setHolder] = useState("");
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");

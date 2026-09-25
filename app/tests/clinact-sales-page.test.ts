@@ -89,12 +89,23 @@ test("no price is rendered as an editable string", () => {
 
 test("the renewal terms live inside the plans section", () => {
   const sections = read("components/clinact/sales/sections.tsx");
-  const planos = sections.slice(sections.indexOf("function Planos()"), sections.indexOf("export const CLINACT_SECTIONS"));
+  const planos = sections.slice(sections.indexOf("function Planos("), sections.indexOf("export const CLINACT_SECTIONS"));
   assert.ok(planos.includes("clinact.planos.renovacao"), "renewal text is part of Planos");
   assert.ok(/renovada automaticamente/.test(planos), "and states the auto-renewal plainly");
   // There is no separate hideable section for it, so hiding it is impossible
   // without hiding the prices too.
   assert.ok(!/key: "renovacao"/.test(sections), "renewal must not be its own toggleable section");
+});
+
+test("each plan card leads to the checkout with that plan preselected", () => {
+  const sections = read("components/clinact/sales/sections.tsx");
+  const planos = sections.slice(sections.indexOf("function Planos("), sections.indexOf("export const CLINACT_SECTIONS"));
+  assert.ok(planos.includes("planHref(plan.key, isLoggedIn)"), "the button carries the plan");
+  assert.ok(sections.includes("`/clinact/assinar?plano=${planKey}`"), "into the checkout's ?plano=");
+  // Signed out → signup first, returning to the checkout (decision 1: no anonymous flow).
+  assert.ok(sections.includes("`/signup?next=${encodeURIComponent(checkout)}`"));
+  const form = read("app/clinact/(membro)/assinar/subscribe-form.tsx");
+  assert.ok(form.includes("useState(initialPlan ??"), "the checkout honours ?plano=");
 });
 
 // ── Decision 5: no typed case count ────────────────────────────────────────

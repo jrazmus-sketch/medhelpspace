@@ -104,7 +104,7 @@ export function SignupPageClient({
               <GmailPromotionsNote email={email} className="mt-4" />
               <p className="mt-4 text-xs text-muted-foreground">
                 Já confirmou?{" "}
-                <Link href="/login" className="text-brand hover:underline">
+                <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="text-brand hover:underline">
                   Entrar
                 </Link>
               </p>
@@ -195,7 +195,7 @@ export function SignupPageClient({
             <p className="mt-4 text-center text-sm text-muted-foreground">
               Já tem conta?{" "}
               <Link
-                href="/login"
+                href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
                 className="font-medium text-brand hover:underline"
               >
                 Entrar

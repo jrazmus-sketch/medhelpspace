@@ -3,6 +3,7 @@ import { Eye } from "lucide-react";
 import { hasProductAccess } from "@/lib/clinact/access";
 import { isViewerAdmin } from "@/lib/membership-gate";
 import { getPageLayout, orderSections } from "@/lib/queries/site-sections";
+import { createClient } from "@/lib/supabase/server";
 import { CLINACT_SECTIONS } from "@/components/clinact/sales/sections";
 
 export const metadata = {
@@ -23,11 +24,14 @@ export const dynamic = "force-dynamic";
  * could leak.
  */
 export default async function ClinactSalesPage() {
-  const [has, isAdmin, layout] = await Promise.all([
+  const supabase = await createClient();
+  const [has, isAdmin, layout, { data: auth }] = await Promise.all([
     hasProductAccess("clinact"),
     isViewerAdmin(),
     getPageLayout("clinact"),
+    supabase.auth.getUser(),
   ]);
+  const isLoggedIn = !!auth.user;
 
   if (!layout.published && !isAdmin) return <Placeholder hasAccess={has} />;
 
@@ -47,7 +51,7 @@ export default async function ClinactSalesPage() {
       ) : null}
 
       {sections.map(({ key, Section }) => (
-        <Section key={key} hasAccess={has} />
+        <Section key={key} hasAccess={has} isLoggedIn={isLoggedIn} />
       ))}
     </div>
   );

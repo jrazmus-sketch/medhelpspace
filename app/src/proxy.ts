@@ -77,6 +77,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // ClinAct member area (/clinact/..., not the /clinact sales page): same
+  // redirect, but keeping the query — the checkout's ?plano= must survive the
+  // trip through /login. Without this the (membro) layout redirects first, to
+  // a hardcoded library path, because a layout cannot see the URL.
+  if (!isAuthenticated && pathname.startsWith("/clinact/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    url.searchParams.set("next", pathname + request.nextUrl.search);
+    return NextResponse.redirect(url);
+  }
+
   // Authenticated user hitting login/signup → dashboard
   if (isAuthPage && isAuthenticated) {
     const url = request.nextUrl.clone();

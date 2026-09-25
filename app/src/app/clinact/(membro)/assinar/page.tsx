@@ -18,7 +18,16 @@ export const dynamic = "force-dynamic";
  * where the card gets encrypted: the number never reaches our server. It is
  * this API's OWN key, not the Orders one, and it differs per environment.
  */
-export default async function AssinarPage() {
+export default async function AssinarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plano?: string }>;
+}) {
+  // ?plano= comes from the sales page's plan buttons; only a known key is used.
+  // (A logged-out visitor never gets here: the proxy sends them to /login with
+  // this whole URL, ?plano= included, as `next`.)
+  const { plano } = await searchParams;
+  const initialPlan = CLINACT_PLAN_LIST.find((p) => p.key === plano)?.key;
   const viewer = await getClinactViewer();
 
   if (viewer.hasAccess) {
@@ -71,6 +80,7 @@ export default async function AssinarPage() {
 
       <SubscribeForm
         publicKey={publicKey}
+        initialPlan={initialPlan}
         plans={CLINACT_PLAN_LIST.map((p) => ({
           key: p.key,
           label: p.label,

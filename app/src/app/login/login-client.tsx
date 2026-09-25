@@ -87,7 +87,7 @@ export function LoginPageClient({
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Não tem conta?{" "}
-              <Link href="/signup" className="font-medium text-brand hover:underline">
+              <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="font-medium text-brand hover:underline">
                 Criar conta
               </Link>
             </p>
