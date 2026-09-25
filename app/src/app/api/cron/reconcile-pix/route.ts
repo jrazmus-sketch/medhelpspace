@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getOrder } from "@/lib/pagbank/api";
+import { getCharge, getOrder } from "@/lib/pagbank/api";
 import { finalizePaidOrder } from "@/lib/pagbank/finalize";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 
-// Pending-Pix reconciliation — the closed-tab safety net.
+// Pending-payment reconciliation — the closed-tab safety net for Pix, and (since
+// 2026-09-25) for card charges PagBank left non-final whose webhook was lost.
 //
 // Card payments finalize synchronously in /api/pagbank/charge, and a Pix buyer who
 // keeps the tab open finalizes via the 5s status poll. The ONLY thing that grants a
@@ -40,6 +41,9 @@ const LOOKBACK_HOURS = 72;
 // Pix orders are dominated by abandoned QRs, which we harmlessly re-poll until they age
 // out of the window; the cap keeps that cost flat. Oldest-first so nothing starves.
 const MAX_ORDERS = 100;
+
+// A card order younger than this may still be inside its live /charge request.
+const CARD_SETTLE_MINUTES = 30;
 
 export async function GET(request: NextRequest) {
   // Vercel Cron auth: Bearer header must match CRON_SECRET (timing-safe, mirrors
@@ -109,8 +113,69 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // ── Card orders ────────────────────────────────────────────────────────
+    // A card charge normally settles inside /api/pagbank/charge. One that
+    // PagBank left non-final (e.g. in analysis) is only finished by a later
+    // webhook — and if that webhook's re-read failed, nothing else would ever
+    // look at the order again: the buyer is charged with no access. Re-read
+    // those charges directly. Older than CARD_SETTLE_MINUTES only, so a charge
+    // still being processed by the live checkout is left alone.
+    const cardBefore = new Date(Date.now() - CARD_SETTLE_MINUTES * 60_000).toISOString();
+    const { data: cardOrders, error: cardErr } = await admin
+      .from("orders")
+      .select("id, user_id, cohort_id, pagbank_charge_id, status")
+      .eq("payment_method", "credit_card")
+      // 'cancelled' too: the checkout cancels a card order older than 15 min
+      // when the buyer retries, but PagBank may still settle that charge. If it
+      // did, finalize grants it (or flags it as a duplicate to refund).
+      .in("status", ["pending", "cancelled"])
+      .like("pagbank_charge_id", "CHAR_%")
+      .gte("created_at", sinceIso)
+      .lt("created_at", cardBefore)
+      .order("created_at", { ascending: true })
+      .limit(MAX_ORDERS);
+    if (cardErr) throw cardErr;
+
+    let cardChecked = 0;
+    let cardFinalized = 0;
+    let cardClosed = 0;
+    for (const order of cardOrders ?? []) {
+      cardChecked++;
+      const chargeId = order.pagbank_charge_id as string;
+      try {
+        const charge = await getCharge(chargeId);
+        if (charge.status === "PAID") {
+          const { wonRace } = await finalizePaidOrder(admin, {
+            orderId: order.id as string,
+            userId: order.user_id as string,
+            cohortId: order.cohort_id as number,
+            charge,
+          });
+          if (wonRace) {
+            cardFinalized++;
+            console.warn("reconcile-pix: recovered a paid CARD order missed by the webhook — orderId=", order.id);
+          }
+        } else if (order.status === "pending" && (charge.status === "DECLINED" || charge.status === "CANCELED")) {
+          // Settled as not-paid: close it so it stops blocking a new attempt.
+          const { data: closed } = await admin
+            .from("orders")
+            .update({ status: charge.status === "DECLINED" ? "declined" : "cancelled" })
+            .eq("id", order.id)
+            .eq("status", "pending")
+            .select("id");
+          if (closed?.length) cardClosed++;
+        }
+      } catch (err) {
+        errored++;
+        console.error("reconcile-pix: failed for card order", order.id, chargeId, err);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
+      card_checked: cardChecked,
+      card_finalized: cardFinalized,
+      card_closed: cardClosed,
       window_hours: LOOKBACK_HOURS,
       checked,
       finalized,

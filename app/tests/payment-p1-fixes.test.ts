@@ -93,3 +93,30 @@ test("refunding a duplicate never removes the access another paid order bought",
     assert.ok(src.lastIndexOf("stillPaid", revoke) > 0, `${f}: revoke must depend on it`);
   }
 });
+
+// ── Lost webhooks ────────────────────────────────────────────────────────────
+
+test("a PagBank outage is retried, a 4xx is not", async () => {
+  const { isTransientPagBankError } = await import("@/lib/pagbank/order-rules");
+  assert.equal(isTransientPagBankError(new Error("PagBank API 503: down")), true);
+  assert.equal(isTransientPagBankError(new Error("PagBank API 429: slow down")), true);
+  assert.equal(isTransientPagBankError(new Error("fetch failed")), true);
+  assert.equal(isTransientPagBankError(new Error("PagBank API 404: not found")), false);
+});
+
+test("a failed webhook re-read is recorded and asks PagBank to retry", () => {
+  const src = read("app/api/pagbank/webhook/route.ts");
+  const fail = src.indexOf("Webhook: failed to fetch charge/order");
+  const tail = src.slice(fail, fail + 1800);
+  assert.ok(tail.includes("recordAppError("));
+  assert.match(tail, /isTransientPagBankError\(err\)\)\s*\{\s*return NextResponse\.json\(\{ ok: false \}, \{ status: 503 \}\)/);
+});
+
+test("the reconcile cron also recovers card charges, including locally-cancelled ones", () => {
+  const src = read("app/api/cron/reconcile-pix/route.ts");
+  assert.ok(src.includes('.eq("payment_method", "credit_card")'));
+  assert.ok(src.includes('.in("status", ["pending", "cancelled"])'));
+  assert.ok(src.includes("await getCharge(chargeId)"));
+  // Only still-pending orders are closed; a cancelled one is never relabelled.
+  assert.ok(src.includes('order.status === "pending" && (charge.status === "DECLINED"'));
+});

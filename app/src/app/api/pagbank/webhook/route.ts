@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { recordAppError } from "@/lib/app-errors-server";
+import { isTransientPagBankError } from "@/lib/pagbank/order-rules";
 import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCharge, getOrder } from "@/lib/pagbank/api";
@@ -113,8 +115,26 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("Webhook: failed to fetch charge/order", notifId, err);
-    // Generic 200 even on PagBank fetch failure — they will retry. A 502 here
-    // would reveal whether the id exists on PagBank's side.
+    // A 200 is an ACK: PagBank does not resend what we acknowledged, so a
+    // PagBank outage used to lose the notification silently (only Pix had a
+    // recovery path). Now:
+    //   · the failure is recorded in app_errors (Admin → Erros + daily digest);
+    //   · a TRANSIENT failure (network, 429, 5xx) answers 503 so PagBank retries;
+    //   · a 4xx (unknown id) still answers the uniform 200 — it reveals nothing,
+    //     and retrying it could never succeed.
+    // reconcile-pix re-checks pending Pix AND card orders daily as the last net.
+    await recordAppError({
+      kind: "server",
+      message: `PagBank webhook: falha ao consultar ${notifId.slice(0, 5)}… — ${err instanceof Error ? err.message.slice(0, 200) : String(err)}`,
+      route: "/api/pagbank/webhook",
+      digest: null,
+      stack: null,
+      path: "/api/pagbank/webhook",
+      userAgent: null,
+    });
+    if (isTransientPagBankError(err)) {
+      return NextResponse.json({ ok: false }, { status: 503 });
+    }
     return NextResponse.json({ ok: true });
   }
 

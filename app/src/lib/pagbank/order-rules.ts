@@ -42,3 +42,18 @@ export function livePixBlocksCardMessage(pixExpiresAtIso: string): string {
     "assim não existe risco de pagar duas vezes."
   );
 }
+
+/**
+ * Should a failed PagBank read be retried? Network failures, 429 and 5xx are
+ * PagBank being unavailable — worth another attempt. A 4xx means the id does
+ * not exist or is not ours; retrying cannot help. lib/pagbank/api.ts throws
+ * `PagBank API <status>: <body>`; anything without that shape is a network or
+ * runtime failure.
+ */
+export function isTransientPagBankError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  const m = msg.match(/PagBank API (\d{3})/);
+  if (!m) return true;
+  const status = Number(m[1]);
+  return status === 429 || status >= 500;
+}
