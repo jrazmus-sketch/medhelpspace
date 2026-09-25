@@ -92,11 +92,50 @@ function token(env: SubscriptionsEnv): string {
   );
 }
 
+/**
+ * A record of one call to PagBank, for the caller to persist.
+ *
+ * Why this exists: PagBank's homologation asks for the request and response of
+ * plan, subscriber and subscription creation, and those calls now happen inside
+ * a deployed route that leaves no artifact we can hand over. Afterwards it is
+ * the payments audit trail.
+ *
+ * `request` NEVER contains the card's security code — see stripSecurityCode.
+ */
+export type PagBankAuditEntry = {
+  method: string;
+  path: string;
+  status: number;
+  request: unknown;
+  response: unknown;
+};
+
+export type PagBankAuditSink = (entry: PagBankAuditEntry) => void | Promise<void>;
+
+/**
+ * Removes `security_code` anywhere in the payload, by KEY — not by masking the
+ * value. PagBank requires the CVV on POST /subscriptions; nothing requires us
+ * to write it down, and `pagbank_subscription_api_calls` refuses any row whose
+ * request still mentions the field.
+ */
+function stripSecurityCode(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripSecurityCode);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([k]) => k !== "security_code")
+        .map(([k, v]) => [k, stripSecurityCode(v)]),
+    );
+  }
+  return value;
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
   idempotency?: string,
+  audit?: PagBankAuditSink,
 ): Promise<T> {
   const env = getSubscriptionsEnv();
   const headers: Record<string, string> = {
@@ -116,6 +155,24 @@ async function request<T>(
 
   const text = await res.text();
   const parsed: unknown = text ? JSON.parse(text) : null;
+
+  if (audit) {
+    // Awaited on purpose: a fire-and-forget write gets frozen when the
+    // serverless function returns. Never allowed to break the payment call —
+    // an audit row is worth less than a charge that completes.
+    try {
+      await audit({
+        method,
+        path,
+        status: res.status,
+        request: body === undefined ? null : stripSecurityCode(body),
+        response: parsed,
+      });
+    } catch {
+      // swallowed deliberately
+    }
+  }
+
   if (!res.ok) throw new PagBankSubscriptionsError(res.status, parsed);
   return parsed as T;
 }
@@ -203,6 +260,7 @@ export function createPlan(input: {
   description?: string;
   amount_cents: number;
   interval: { unit: "MONTH" | "YEAR"; length: number };
+  audit?: PagBankAuditSink;
 }): Promise<PagBankPlan> {
   return request("POST", "/plans", {
     reference_id: input.reference_id,
@@ -212,7 +270,7 @@ export function createPlan(input: {
     interval: input.interval,
     trial: { enabled: false },
     payment_method: ["CREDIT_CARD"],
-  });
+  }, undefined, input.audit);
 }
 
 export function listPlans(): Promise<{ plans: PagBankPlan[] }> {
@@ -233,6 +291,7 @@ export function createCustomer(input: {
   birth_date?: string;
   encrypted_card?: string;
   idempotency_key?: string;
+  audit?: PagBankAuditSink;
 }): Promise<PagBankCustomer> {
   return request(
     "POST",
@@ -249,6 +308,7 @@ export function createCustomer(input: {
         : undefined,
     },
     input.idempotency_key,
+    input.audit,
   );
 }
 
@@ -290,6 +350,7 @@ export function createSubscription(input: {
   card_token: string;
   security_code: string;
   idempotency_key?: string;
+  audit?: PagBankAuditSink;
 }): Promise<PagBankSubscription> {
   return request(
     "POST",
@@ -301,6 +362,7 @@ export function createSubscription(input: {
       payment_method: [{ type: "CREDIT_CARD", card: { id: input.card_token, security_code: input.security_code } }],
     },
     input.idempotency_key,
+    input.audit,
   );
 }
 
