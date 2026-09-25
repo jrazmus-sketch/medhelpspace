@@ -88,6 +88,15 @@ const DECLINED_ERROR =
 const DUPLICATE_CUSTOMER_ERROR =
   "Já existe um cadastro no PagBank com este CPF. Fale com o suporte para vincular a sua assinatura.";
 
+/**
+ * The subscriber reference we send to PagBank. Deliberately user-scoped: it is
+ * the only thing that lets us prove later that a customer found by CPF is
+ * really this user's. See resolveCustomer.
+ */
+function customerReference(userId: string): string {
+  return `clinact-user-${userId}`;
+}
+
 /** Alphanumeric only, PagBank's rule for the idempotency key. */
 function key(...parts: string[]): string {
   return parts.join("").replace(/[^a-zA-Z0-9]/g, "").slice(0, 200);
@@ -274,7 +283,7 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
     if (!customerId) {
       try {
         const created = await createCustomer({
-          reference_id: referenceId,
+          reference_id: customerReference(input.userId),
           name: input.name,
           email: input.email,
           tax_id: input.taxId,
@@ -288,12 +297,27 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
         const registered = created.billing_info?.[0]?.card;
         card = registered ? { brand: registered.brand, last: registered.last_digits } : null;
       } catch (err) {
-        // 409 here means the CPF is already a subscriber — find them.
+        // 409 means the CPF already belongs to a subscriber. Finding them is
+        // NOT permission to use them.
+        //
+        // A CPF is not a secret in Brazil. If a found customer were reused on
+        // the strength of the CPF alone, anyone could type someone else's
+        // number and we would overwrite that person's card on file with the
+        // attacker's — their renewals would then charge a stranger's card, and
+        // the attacker's subscription would hang off the victim's record.
+        //
+        // So the customer is only reused when PagBank's own record says it is
+        // this user's: we write the subscriber reference as clinact-user-<id>,
+        // and that is what gets checked here. Anything else — an older
+        // customer, a test, a genuine duplicate CPF — stops and goes to
+        // support, where a human can verify identity.
         if (!(err instanceof PagBankSubscriptionsError && err.status === 409)) throw err;
         const { customers } = await findCustomersByDocument(input.taxId);
-        const match = customers?.[0];
-        if (!match) return { ok: false, error: DUPLICATE_CUSTOMER_ERROR };
-        customerId = match.id;
+        const owned = (customers ?? []).find(
+          (c) => c.reference_id === customerReference(input.userId),
+        );
+        if (!owned) return { ok: false, error: DUPLICATE_CUSTOMER_ERROR };
+        customerId = owned.id;
       }
     }
 
