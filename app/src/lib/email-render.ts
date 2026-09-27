@@ -1712,7 +1712,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   phase: "reta-final",
   phaseLabel: "Reta final",
   urgencyLine:
-    "Faltam 51 dias para a sua prova (15/09/2026). É reta final: o que decide agora é revisar o que mais cai, não começar do zero.",
+    "Faltam 51 dias para a sua prova (15/09/2026). Até lá, você pode organizar sua preparação de acordo com a sua rotina e ajustar suas prioridades ao longo do caminho.",
   previousCohortName: "Revalida 2026.2",
   turmaUrl: "https://medhelpspace.com.br/api/leads/turma?t=sample",
   turmaOptions:

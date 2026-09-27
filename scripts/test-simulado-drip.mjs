@@ -161,6 +161,22 @@ check("an unconfirmed date drives cadence but is never quoted", () => {
 check("urgencyLine is empty when there is nothing to say", () => {
   assert.equal(urgencyLineFor({ phase: "indefinida", daysUntilTest: null, examDateLabel: null, dateConfirmed: false, cohortName: null }), "");
   assert.equal(urgencyLineFor({ phase: "passada", daysUntilTest: -3, examDateLabel: "23/07/2026", dateConfirmed: true, cohortName: "X" }), "");
+  // An unconfirmed date is never quoted, and since 2026-09-27 there is no
+  // alternative sentence either: the tag is simply empty.
+  assert.equal(urgencyLineFor({ phase: "reta-final", daysUntilTest: 45, examDateLabel: "15/09/2026", dateConfirmed: false, cohortName: "X" }), "");
+});
+
+check("urgencyLine is the same neutral sentence in every phase (Karina 2026-09-27)", () => {
+  const neutral = "Até lá, você pode organizar sua preparação de acordo com a sua rotina e ajustar suas prioridades ao longo do caminho.";
+  const at = (phase, days) => urgencyLineFor({ phase, daysUntilTest: days, examDateLabel: "30/05/2027", dateConfirmed: true, cohortName: "Revalida 2027.1" });
+  assert.equal(at("vespera", 12), `Faltam 12 dias para a sua prova (30/05/2027). ${neutral}`);
+  assert.equal(at("reta-final", 51), `Faltam 51 dias para a sua prova (30/05/2027). ${neutral}`);
+  assert.equal(at("preparacao", 120), `Faltam 120 dias para a sua prova (30/05/2027). ${neutral}`);
+  assert.equal(at("distante", 245), `Faltam 245 dias para a sua prova (30/05/2027). ${neutral}`);
+  assert.equal(at("vespera", 1), `Falta 1 dia para a sua prova (30/05/2027). ${neutral}`);
+  for (const phase of ["vespera", "reta-final", "preparacao", "distante"]) {
+    assert.doesNotMatch(at(phase, 40), /reta final|revis|véspera|matéria nova|sem correria/i, `${phase} still assumes a stage of preparation`);
+  }
 });
 
 // ── Gates ────────────────────────────────────────────────────────────────────

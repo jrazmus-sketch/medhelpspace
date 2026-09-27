@@ -103,9 +103,16 @@ export function progressLineFor(
 // A complete sentence (or ""), so a template can drop {{urgencyLine}} into a
 // paragraph without any surrounding text that could dangle when it's empty.
 //
-// An UNCONFIRMED date drives cadence but is never quoted: Revalida dates move,
-// and a funnel email that states a date the board has not announced is a
-// credibility leak. Same rule getCohortTiming applies on the public site.
+// One neutral sentence for every phase (Karina, 2026-09-27, "Ajuste global da
+// variável {{urgencyLine}}"): a lead can enter the simulado many months before the
+// exam, so the line must never assume a final stretch or a revision phase. The
+// countdown and the date stay automatic; the phase still drives the send cadence
+// and the `{{phase}}` tag, just not this sentence.
+//
+// Empty (never a wrong or dangling sentence) when there is no future exam date:
+// no cohort, an unknown date, a date already past — or a date the board has not
+// confirmed, which is never quoted (Revalida dates move; stating an unannounced
+// date in a funnel email is a credibility leak, same rule as getCohortTiming).
 export function urgencyLineFor(input: {
   phase: ExamPhase;
   daysUntilTest: number | null;
@@ -113,29 +120,13 @@ export function urgencyLineFor(input: {
   dateConfirmed: boolean;
   cohortName: string | null;
 }): string {
-  const { phase, daysUntilTest, examDateLabel, dateConfirmed, cohortName } = input;
-  const turma = cohortName ? ` da turma ${cohortName}` : "";
+  const { phase, daysUntilTest, examDateLabel, dateConfirmed } = input;
 
   if (phase === "indefinida" || phase === "passada") return "";
-
-  if (!dateConfirmed || daysUntilTest == null || examDateLabel == null) {
-    return `A data da prova${turma} ainda não foi confirmada pela banca — mas a preparação não espera o edital.`;
-  }
+  if (!dateConfirmed || daysUntilTest == null || daysUntilTest < 0 || examDateLabel == null) return "";
 
   const dias = daysUntilTest === 1 ? "Falta 1 dia" : `Faltam ${daysUntilTest} dias`;
-
-  switch (phase) {
-    case "vespera":
-      return `${dias} para a sua prova (${examDateLabel}). Agora é revisão, sono e cabeça no lugar — nada de matéria nova.`;
-    case "reta-final":
-      return `${dias} para a sua prova (${examDateLabel}). É reta final: o que decide agora é revisar o que mais cai, não começar do zero.`;
-    case "preparacao":
-      return `${dias} para a sua prova (${examDateLabel}). É a janela em que dá para cobrir tudo com calma — e é ela que costuma ser desperdiçada.`;
-    case "distante":
-      return `Sua prova é em ${examDateLabel}. Está longe, e é exatamente por isso que dá para construir base sem correria.`;
-    default:
-      return "";
-  }
+  return `${dias} para a sua prova (${examDateLabel}). Até lá, você pode organizar sua preparação de acordo com a sua rotina e ajustar suas prioridades ao longo do caminho.`;
 }
 
 // ── The plan ─────────────────────────────────────────────────────────────────
