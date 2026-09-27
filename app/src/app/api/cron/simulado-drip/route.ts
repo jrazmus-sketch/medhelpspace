@@ -23,6 +23,7 @@ import { SIMULADO_MIN_ANSWERS, SIMULADO_TOTAL } from "@/lib/magnet/simulado";
 import {
   planSimuladoSend,
   progressLineFor,
+  turmaOptionsHtml,
   urgencyLineFor,
   LAST_LADDER_STEP,
 } from "@/lib/magnet/simulado-drip";
@@ -30,7 +31,6 @@ import {
   cohortInfoFor,
   loadCohortDirectory,
   pickRolloverCohort,
-  type CohortDirectory,
 } from "@/lib/magnet/cohort-rollover";
 import { EXAM_PHASE_LABELS, getExamPhase } from "@/lib/cohort-timing";
 
@@ -70,23 +70,6 @@ const TZ = "America/Sao_Paulo";
 function greetingFor(firstName?: string | null): string {
   const n = (firstName ?? "").trim();
   return n ? `Oi, ${n}! ` : "Oi! ";
-}
-
-// One-click turma buttons for the undecided track. HTML, because interpolate()
-// does not escape — the values are our own cohort rows, never user input.
-function turmaOptionsHtml(dir: CohortDirectory, token: string): string {
-  const options = [...dir.values()]
-    .filter((c) => c.active && c.testDate != null)
-    .sort((a, b) => (a.testDate! < b.testDate! ? -1 : 1));
-
-  return options
-    .map((c) => {
-      const when = c.dateConfirmed
-        ? ` — prova em ${c.testDate!.slice(8, 10)}/${c.testDate!.slice(5, 7)}/${c.testDate!.slice(0, 4)}`
-        : " — data ainda não confirmada";
-      return `<p style="margin:0 0 10px;"><a href="${turmaPickUrl(token, c.slug)}" style="display:inline-block;padding:11px 18px;background:#f3e8ff;color:#7a1d91;font-weight:700;text-decoration:none;border-radius:8px;">${c.name}</a><span style="color:#6b7280;font-size:13px;">${when}</span></p>`;
-    })
-    .join("\n");
 }
 
 // A {kind}--{phase} row, when an editor has written one, wins over the base
@@ -319,7 +302,10 @@ export async function GET(request: NextRequest) {
         phase: timing.phase,
         phaseLabel: EXAM_PHASE_LABELS[timing.phase],
         urgencyLine: urgencyLineFor({ ...timing, cohortName: cohort.name || null }),
-        turmaOptions: turmaOptionsHtml(cohorts, (lead.result_token as string) ?? ""),
+        turmaOptions: turmaOptionsHtml(cohorts, today, {
+          pickUrl: (c) => turmaPickUrl((lead.result_token as string) ?? "", c),
+          undecidedSlug: UNDECIDED_COHORT,
+        }),
         checkoutUrl: offerCheckoutUrl({
           email,
           coupon: welcome?.code ?? null,

@@ -1715,8 +1715,11 @@ export const SAMPLE_VARS: Record<string, string> = {
     "Faltam 51 dias para a sua prova (15/09/2026). Até lá, você pode organizar sua preparação de acordo com a sua rotina e ajustar suas prioridades ao longo do caminho.",
   previousCohortName: "Revalida 2026.2",
   turmaUrl: "https://medhelpspace.com.br/api/leads/turma?t=sample",
+  // Mirrors what turmaOptionsHtml (lib/magnet/simulado-drip) emits for today's
+  // two future turmas, so a test send from /admin/email-templates looks like the
+  // real thing. The dates read "ainda não confirmada" because they ARE unconfirmed.
   turmaOptions:
-    '<p style="margin:0 0 10px;"><a href="#" style="display:inline-block;padding:11px 18px;background:#f3e8ff;color:#7a1d91;font-weight:700;text-decoration:none;border-radius:8px;">Revalida 2027.1</a><span style="color:#6b7280;font-size:13px;"> — prova em 15/01/2027</span></p>',
+    '<span style="display:block;margin:0 0 10px;"><a href="#" style="display:inline-block;padding:11px 18px;background:#f3e8ff;color:#7a1d91;font-weight:700;text-decoration:none;border-radius:8px;">Revalida 2027.1</a><span style="color:#6b7280;font-size:13px;"> — data ainda não confirmada</span></span>\n<span style="display:block;margin:0 0 10px;"><a href="#" style="display:inline-block;padding:11px 18px;background:#f3e8ff;color:#7a1d91;font-weight:700;text-decoration:none;border-radius:8px;">Revalida 2027.2</a><span style="color:#6b7280;font-size:13px;"> — data ainda não confirmada</span></span>\n<span style="display:block;margin:4px 0 0;font-size:13px;color:#6b7280;"><a href="#" style="color:#6b7280;text-decoration:underline;">Ainda não decidi</a> — tudo bem, a gente pergunta de novo mais pra frente.</span>',
   // Recovery-funnel samples
   recoverUrl:
     "https://medhelpspace.com.br/questoes-revalida/recuperar?t=00000000-0000-0000-0000-000000000000",

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { todayKeyBR } from "@/lib/br-date";
 
 // Server-only loaders + grading for the free 100-question simulado
 // (/simulado-revalida). Questions are 100 QUESTÕES INÉDITAS in the style of the
@@ -304,17 +305,31 @@ const MONTHS_SHORT = [
 // nearest exam must be able to say so even when that turma is closed, otherwise
 // every new lead is silently misfiled as a prospect for a later edition and can
 // receive sales mail about an exam that is days away or already past.
+// Only turmas whose exam is still AHEAD: after 13/09/2026, Revalida 2026.2 can no
+// longer be anyone's "próxima prova" (it kept showing, with a past date, until
+// 2026-09-27). Not filtered by is_for_sale — the picker segments, it does not sell.
+// A date the board has not confirmed is never printed: cohorts.test_date is an
+// internal planning reference until date_confirmed flips (Karina's rule).
 export async function getActiveCohortOptions(): Promise<CohortOption[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("cohorts")
-    .select("slug, name, test_date")
+    .select("slug, name, test_date, date_confirmed")
     .eq("active", true)
+    .gt("test_date", todayKeyBR())
     .order("test_date", { ascending: true });
 
   if (error || !data) return [];
 
   return data.map((c) => {
+    if (c.date_confirmed !== true) {
+      return {
+        slug: c.slug as string,
+        label: c.name as string,
+        when: "Data da prova ainda não confirmada",
+        hint: "data a confirmar",
+      };
+    }
     const d = new Date(c.test_date as string);
     return {
       slug: c.slug as string,

@@ -156,11 +156,15 @@ sequence, and selects which content to send:
 
 Requirements this implies:
 
-- The turma picker is **driven from `cohorts`** (`active`, ordered by `test_date`)
-  — deliberately NOT filtered by `is_for_sale`. Karina's reasoning (2026-07-25):
-  the picker segments, it doesn't sell. Without 2026.2 as an option, everyone
-  sitting the September exam is silently misfiled as a 2027 prospect and can
-  receive sales mail about an exam that is days away. **Built in Phase 1.**
+- The turma picker is **driven from `cohorts`** (`active`, `test_date` still
+  ahead, ordered by `test_date`) — deliberately NOT filtered by `is_for_sale`.
+  Karina's reasoning (2026-07-25): the picker segments, it doesn't sell. Without
+  2026.2 as an option, everyone sitting the September exam is silently misfiled as
+  a 2027 prospect and can receive sales mail about an exam that is days away.
+  **Built in Phase 1.** Since 2026-09-27 a turma whose exam has PASSED drops out
+  (it kept being offered as a "próxima prova" for two weeks after 13/09), the
+  e-mail block (`turmaOptionsHtml`, pure, in `simulado-drip.ts`) carries an
+  explicit "Ainda não decidi" link, and no picker prints an unconfirmed date.
 - **2026.2 leads are value-only until after 13/09/2026** — that turma is closed
   for sale and their exam is imminent, so they get content and no offer, then roll
   to 2027.1 afterwards.

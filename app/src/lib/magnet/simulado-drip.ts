@@ -1,4 +1,5 @@
 import type { ExamPhase } from "@/lib/cohort-timing";
+import type { CohortDirectory, CohortInfo } from "@/lib/magnet/cohort-rollover";
 
 // Pure decision layer for the simulado-100 follow-up sequence.
 //
@@ -269,4 +270,50 @@ export function planSimuladoSend(input: SimuladoDripInput): SimuladoDripPlan {
     reminderStep: null,
     salesStep: index,
   };
+}
+
+// ── The turma question ({{turmaOptions}}) ────────────────────────────────────
+//
+// Karina, 2026-09-27 ("Verificar {{turmaOptions}}"): every FUTURE turma, each one
+// clickable, the click recorded on the lead, and an explicit "Ainda não decidi".
+//
+// The choices are deliberately NOT filtered by is_for_sale — the picker segments,
+// it does not sell (her reasoning of 2026-07-25, docs/simulado-drip-design.md) — but
+// a turma whose exam has passed can never be "a sua próxima prova", so it drops
+// out the day after its test_date. Before this, the block listed every ACTIVE
+// turma, which after 13/09/2026 meant offering Revalida 2026.2 as a next exam.
+
+/** Every active turma whose exam is still ahead of `today` (YYYY-MM-DD, BR), soonest first. */
+export function turmaChoicesFor(dir: CohortDirectory, today: string): CohortInfo[] {
+  return [...dir.values()]
+    .filter((c) => c.active && c.testDate != null && c.testDate.slice(0, 10) > today)
+    .sort((a, b) => (a.testDate! < b.testDate! ? -1 : 1));
+}
+
+// DD/MM/AAAA — only ever rendered for a board-confirmed date. An unconfirmed
+// test_date is an internal planning reference and must never reach a lead.
+const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/**
+ * The one-click turma block. HTML, because interpolate() does not escape — the
+ * values are our own cohort rows, never user input. Built from block-level
+ * <span>s rather than <p>s so it survives being wrapped in a paragraph by the
+ * template editor (the live template does exactly that).
+ */
+export function turmaOptionsHtml(
+  dir: CohortDirectory,
+  today: string,
+  links: { pickUrl: (cohortSlug: string) => string; undecidedSlug: string },
+): string {
+  const rows = turmaChoicesFor(dir, today).map((c) => {
+    const when =
+      c.dateConfirmed && c.testDate
+        ? ` — prova em ${brDate(c.testDate)}`
+        : " — data ainda não confirmada";
+    return `<span style="display:block;margin:0 0 10px;"><a href="${links.pickUrl(c.slug)}" style="display:inline-block;padding:11px 18px;background:#f3e8ff;color:#7a1d91;font-weight:700;text-decoration:none;border-radius:8px;">${c.name}</a><span style="color:#6b7280;font-size:13px;">${when}</span></span>`;
+  });
+  rows.push(
+    `<span style="display:block;margin:4px 0 0;font-size:13px;color:#6b7280;"><a href="${links.pickUrl(links.undecidedSlug)}" style="color:#6b7280;text-decoration:underline;">Ainda não decidi</a> — tudo bem, a gente pergunta de novo mais pra frente.</span>`,
+  );
+  return rows.join("\n");
 }

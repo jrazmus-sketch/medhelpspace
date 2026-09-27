@@ -26,6 +26,8 @@ const {
   depthFor,
   planSimuladoSend,
   progressLineFor,
+  turmaChoicesFor,
+  turmaOptionsHtml,
   urgencyLineFor,
   LADDER_OFFSET_DAYS,
   LAST_LADDER_STEP,
@@ -413,6 +415,41 @@ check("every kind the planner can emit exists as a template default", () => {
   for (const kind of new Set([...nonFinisherKinds, ...finisherKinds, "lead-sim-rollover"])) {
     assert.ok(EMAIL_TEMPLATE_DEFAULTS[kind], `${kind} missing from EMAIL_TEMPLATE_DEFAULTS`);
   }
+});
+
+// ── {{turmaOptions}} (Karina 2026-09-27) ─────────────────────────────────────
+// Every FUTURE active turma, soonest first; never a past one; never a date the
+// board has not confirmed; each one a link that records the choice; and an
+// explicit "Ainda não decidi".
+check("turmaOptions lists every future turma, drops a past one, hides unconfirmed dates, offers undecided", () => {
+  const dir = new Map([
+    ["revalida-2026-2", { slug: "revalida-2026-2", name: "Revalida 2026.2", testDate: "2026-09-13", isForSale: false, active: true, dateConfirmed: true }],
+    ["revalida-20272", { slug: "revalida-20272", name: "Revalida 2027.2", testDate: "2027-09-12", isForSale: true, active: true, dateConfirmed: false }],
+    ["revalida-2027-1", { slug: "revalida-2027-1", name: "Revalida 2027.1", testDate: "2027-05-30", isForSale: true, active: true, dateConfirmed: false }],
+    ["test-cohort-2028", { slug: "test-cohort-2028", name: "Test Cohort 2028", testDate: "2028-06-15", isForSale: false, active: false, dateConfirmed: false }],
+    ["no-date", { slug: "no-date", name: "Sem data", testDate: null, isForSale: true, active: true, dateConfirmed: false }],
+  ]);
+  const today = "2026-09-27";
+  assert.deepEqual(turmaChoicesFor(dir, today).map((c) => c.slug), ["revalida-2027-1", "revalida-20272"]);
+  // The day of the exam it is still "a próxima prova"; the day after it is not.
+  assert.equal(turmaChoicesFor(dir, "2026-09-12").length, 3);
+  assert.equal(turmaChoicesFor(dir, "2026-09-13").length, 2);
+
+  const links = { pickUrl: (c) => `https://x/api/leads/turma?t=TOKEN&c=${c}`, undecidedSlug: "undecided" };
+  const html = turmaOptionsHtml(dir, today, links);
+  assert.match(html, /href="https:\/\/x\/api\/leads\/turma\?t=TOKEN&c=revalida-2027-1"[^>]*>Revalida 2027\.1</);
+  assert.match(html, /c=revalida-20272"[^>]*>Revalida 2027\.2</);
+  assert.match(html, /c=undecided"[^>]*>Ainda não decidi</);
+  assert.doesNotMatch(html, /2026\.2/, "a turma whose exam has passed is offered as a next exam");
+  assert.doesNotMatch(html, /\d{2}\/\d{2}\/\d{4}/, "an unconfirmed exam date reached the e-mail");
+  assert.equal((html.match(/data ainda não confirmada/g) ?? []).length, 2);
+  assert.ok(html.indexOf("Revalida 2027.1") < html.indexOf("Revalida 2027.2"), "soonest first");
+  // No <p> — the live template wraps the block in a paragraph of its own.
+  assert.doesNotMatch(html, /<p[\s>]/);
+
+  // A confirmed date IS printed, DD/MM/AAAA.
+  const confirmed = new Map([["c", { slug: "c", name: "Revalida 2027.1", testDate: "2027-05-30", isForSale: true, active: true, dateConfirmed: true }]]);
+  assert.match(turmaOptionsHtml(confirmed, today, links), /prova em 30\/05\/2027/);
 });
 
 // ── Report ───────────────────────────────────────────────────────────────────
