@@ -14,6 +14,8 @@ import {
   DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { isValidTargetCohort, resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
+import { firstTouchLandingPath, firstTouchReferrer, firstTouchUtm } from "@/lib/magnet/first-touch";
+import { readFirstTouch } from "@/lib/magnet/first-touch-server";
 import {
   gradeSimulado,
   SIM_SESSION_COOKIE,
@@ -178,7 +180,9 @@ export async function startSimulado(input: {
   const targetCohort = await resolveTargetCohort(input.targetCohort, REVALIDA_2027_1_SLUG);
 
   const admin = createAdminClient();
-  const utm = input.utm ?? {};
+  // First touch wins (see lib/magnet/first-touch.ts).
+  const firstTouch = await readFirstTouch();
+  const utm = firstTouchUtm(input.utm ?? {}, firstTouch);
   const ctx = await captureContext();
   const now = new Date().toISOString();
 
@@ -240,8 +244,8 @@ export async function startSimulado(input: {
       patch.geo_region = ctx.geo_region;
       patch.geo_city = ctx.geo_city;
     }
-    if (existing.landing_referrer == null) patch.landing_referrer = clamp(input.context?.referrer, 400);
-    if (existing.landing_path == null) patch.landing_path = clamp(input.context?.landingPath, 300);
+    if (existing.landing_referrer == null) patch.landing_referrer = firstTouchReferrer(clamp(input.context?.referrer, 400), firstTouch);
+    if (existing.landing_path == null) patch.landing_path = firstTouchLandingPath(clamp(input.context?.landingPath, 300), firstTouch);
     if (existing.funnel_session_id == null) patch.funnel_session_id = clamp(input.context?.sessionId, 64);
 
     await admin.from("leads").update(patch).eq("id", existing.id);
@@ -268,8 +272,8 @@ export async function startSimulado(input: {
         geo_country: ctx.geo_country,
         geo_region: ctx.geo_region,
         geo_city: ctx.geo_city,
-        landing_referrer: clamp(input.context?.referrer, 400),
-        landing_path: clamp(input.context?.landingPath, 300),
+        landing_referrer: firstTouchReferrer(clamp(input.context?.referrer, 400), firstTouch),
+        landing_path: firstTouchLandingPath(clamp(input.context?.landingPath, 300), firstTouch),
         funnel_session_id: clamp(input.context?.sessionId, 64),
       })
       .select("id, result_token, unsubscribe_token")

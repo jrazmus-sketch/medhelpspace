@@ -28,6 +28,8 @@ import {
   DRIP_FUNNEL,
 } from "@/lib/magnet/links";
 import { resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
+import { firstTouchLandingPath, firstTouchReferrer, firstTouchUtm } from "@/lib/magnet/first-touch";
+import { readFirstTouch } from "@/lib/magnet/first-touch-server";
 import {
   guardCodeRequest,
   guardMagnetSend,
@@ -227,7 +229,10 @@ export async function captureLeadAndUnlock(input: {
   }
 
   const admin = createAdminClient();
-  const utm = input.utm ?? {};
+  // First touch wins: the visitor's FIRST landing (cookie) beats the internal
+  // utm/referrer the funnel page sees at submit time. See lib/magnet/first-touch.ts.
+  const firstTouch = await readFirstTouch();
+  const utm = firstTouchUtm(input.utm ?? {}, firstTouch);
 
   // Manual upsert on lower(email): the unique index is on an expression, so we
   // select-then-insert/update rather than rely on PostgREST onConflict. Never
@@ -247,8 +252,8 @@ export async function captureLeadAndUnlock(input: {
   const progress = answers.length > 0 ? buildProgressPayload(answers) : null;
 
   const ctx = await captureContext();
-  const referrer = clamp(input.context?.referrer, 400);
-  const landingPath = clamp(input.context?.landingPath, 300);
+  const referrer = firstTouchReferrer(clamp(input.context?.referrer, 400), firstTouch);
+  const landingPath = firstTouchLandingPath(clamp(input.context?.landingPath, 300), firstTouch);
   const sessionId = clamp(input.context?.sessionId, 64);
 
   if (existing) {
@@ -331,7 +336,10 @@ export async function saveLeadForLater(input: {
   if (isDisposableEmail(email)) return { ok: false, reason: "disposable_email" };
 
   const admin = createAdminClient();
-  const utm = input.utm ?? {};
+  // First touch wins: the visitor's FIRST landing (cookie) beats the internal
+  // utm/referrer the funnel page sees at submit time. See lib/magnet/first-touch.ts.
+  const firstTouch = await readFirstTouch();
+  const utm = firstTouchUtm(input.utm ?? {}, firstTouch);
 
   const { data: existing } = await admin
     .from("leads")
@@ -340,8 +348,8 @@ export async function saveLeadForLater(input: {
     .maybeSingle();
 
   const ctx = await captureContext();
-  const referrer = clamp(input.context?.referrer, 400);
-  const landingPath = clamp(input.context?.landingPath, 300);
+  const referrer = firstTouchReferrer(clamp(input.context?.referrer, 400), firstTouch);
+  const landingPath = firstTouchLandingPath(clamp(input.context?.landingPath, 300), firstTouch);
   const sessionId = clamp(input.context?.sessionId, 64);
 
   if (existing) {
@@ -769,10 +777,13 @@ export async function captureFlashcardsLead(input: {
   if (isDisposableEmail(email)) return { ok: false, reason: "disposable_email" };
 
   const admin = createAdminClient();
-  const utm = input.utm ?? {};
+  // First touch wins: the visitor's FIRST landing (cookie) beats the internal
+  // utm/referrer the funnel page sees at submit time. See lib/magnet/first-touch.ts.
+  const firstTouch = await readFirstTouch();
+  const utm = firstTouchUtm(input.utm ?? {}, firstTouch);
   const ctx = await captureContext();
-  const referrer = clamp(input.context?.referrer, 400);
-  const landingPath = clamp(input.context?.landingPath, 300);
+  const referrer = firstTouchReferrer(clamp(input.context?.referrer, 400), firstTouch);
+  const landingPath = firstTouchLandingPath(clamp(input.context?.landingPath, 300), firstTouch);
   const sessionId = clamp(input.context?.sessionId, 64);
 
   const { data: existing } = await admin
@@ -896,6 +907,7 @@ export async function chooseFlashcardsCohortAndSend(input: {
     await admin.from("leads").update(patch).eq("id", existing.id);
   } else {
     const ctx = await captureContext();
+    const firstTouch = await readFirstTouch();
     const { data: inserted } = await admin
       .from("leads")
       .insert({
@@ -906,9 +918,10 @@ export async function chooseFlashcardsCohortAndSend(input: {
         completed_at: completedAt,
         fc_entered_at: completedAt,
         first_name: firstName,
-        utm_source: input.utm?.source ?? null,
-        utm_campaign: input.utm?.campaign ?? null,
-        gclid: input.utm?.gclid ?? null,
+        ...(() => {
+          const u = firstTouchUtm(input.utm ?? {}, firstTouch);
+          return { utm_source: u.source, utm_medium: u.medium, utm_campaign: u.campaign, utm_term: u.term, utm_content: u.content, gclid: u.gclid };
+        })(),
         user_agent: ctx.user_agent,
         device_type: ctx.device_type,
         geo_country: ctx.geo_country,
@@ -1034,10 +1047,13 @@ export async function captureSimuladoLead(input: {
   if (isDisposableEmail(email)) return { ok: false, reason: "disposable_email" };
 
   const admin = createAdminClient();
-  const utm = input.utm ?? {};
+  // First touch wins: the visitor's FIRST landing (cookie) beats the internal
+  // utm/referrer the funnel page sees at submit time. See lib/magnet/first-touch.ts.
+  const firstTouch = await readFirstTouch();
+  const utm = firstTouchUtm(input.utm ?? {}, firstTouch);
   const ctx = await captureContext();
-  const referrer = clamp(input.context?.referrer, 400);
-  const landingPath = clamp(input.context?.landingPath, 300);
+  const referrer = firstTouchReferrer(clamp(input.context?.referrer, 400), firstTouch);
+  const landingPath = firstTouchLandingPath(clamp(input.context?.landingPath, 300), firstTouch);
   const sessionId = clamp(input.context?.sessionId, 64);
 
   const { data: existing } = await admin

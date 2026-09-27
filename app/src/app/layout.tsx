@@ -13,6 +13,7 @@ import { PublicEditToggle } from "@/components/layout/public-edit-toggle";
 import { SiteContentProvider } from "@/components/landing/site-text";
 import { getSiteContent } from "@/lib/queries/site-content";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
+import { FirstTouchCapture } from "@/components/analytics/first-touch-capture";
 import { AnalyticsConsentBanner } from "@/components/analytics/consent-banner";
 
 const bricolage = Bricolage_Grotesque({
@@ -85,6 +86,7 @@ export default async function RootLayout({
                   {children}
                   <PublicEditToggle />
                   <AnalyticsProvider />
+                  <FirstTouchCapture />
                   <AnalyticsConsentBanner />
                   <Toaster richColors position="top-right" />
                 </SiteContentProvider>
