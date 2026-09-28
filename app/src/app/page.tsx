@@ -13,6 +13,9 @@ import { PricingCTA } from "@/components/landing/pricing-cta";
 import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
+import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
+import { getSitePagePublished } from "@/lib/queries/site-sections";
+import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
 import { getPromoBanner } from "@/lib/cohort-promotions";
 import { getLandingStats } from "@/lib/landing/stats";
@@ -31,7 +34,11 @@ export const revalidate = 3600;
 export default async function LandingPage() {
   // site_content is provided by the root layout's SiteContentProvider, so every
   // <SiteText> below is wired without a local provider here.
-  const [cohorts, stats] = await Promise.all([getCohortsForSale(), getLandingStats()]);
+  const [cohorts, stats, whatsappPublished] = await Promise.all([
+    getCohortsForSale(),
+    getLandingStats(),
+    getSitePagePublished(WHATSAPP_GATE_KEY.revalida),
+  ]);
   const promo = await getPromoBanner(cohorts);
 
   return (
@@ -54,6 +61,7 @@ export default async function LandingPage() {
       </main>
       <LandingFooter />
       <StickyCTABar />
+      <WhatsAppButton product="revalida" published={whatsappPublished} />
     </div>
   );
 }

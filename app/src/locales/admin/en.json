@@ -738,7 +738,14 @@
       "coupon_exhaustedDesc": "Daily summary of active coupons that hit their redemption limit.",
       "app_error": "Site errors",
       "app_errorDesc": "Server and browser errors from the last 24h (daily digest only). Details in Admin → Errors."
-    }
+    },
+    "siteSection": "Site",
+    "whatsappTitle": "WhatsApp button (homepage and /loja)",
+    "whatsappDesc": "Until it is published, only logged-in admins see the floating button. Publish after Karina confirms her test.",
+    "whatsappStatePublic": "Published: visible to every visitor.",
+    "whatsappStateAdmins": "Test mode: visible to admins only.",
+    "whatsappPublish": "Publish button",
+    "whatsappUnpublish": "Back to test mode"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

@@ -11,6 +11,7 @@ import { useIsMounted } from "@/hooks/use-is-mounted";
 import { createClient } from "@/lib/supabase/client";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import AdminNotificationPrefs from "@/components/admin/notification-prefs";
+import { SiteToggles } from "./site-toggles";
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -48,6 +49,8 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
+
+      {profile?.role === "super_admin" ? <SiteToggles /> : null}
 
       {/* Profile — key remounts form when profile loads so defaultValue is fresh */}
       <Card className="border-border/50">

@@ -738,7 +738,14 @@
       "coupon_exhaustedDesc": "Resumo diário dos cupons ativos que atingiram o limite de usos.",
       "app_error": "Erros no site",
       "app_errorDesc": "Erros do servidor e do navegador nas últimas 24h (só no resumo diário). Detalhes em Admin → Erros."
-    }
+    },
+    "siteSection": "Site",
+    "whatsappTitle": "Botão do WhatsApp (página inicial e /loja)",
+    "whatsappDesc": "Enquanto não estiver publicado, só administradores logados veem o botão flutuante. Publique depois que a Karina confirmar o teste.",
+    "whatsappStatePublic": "Publicado: visível para todos os visitantes.",
+    "whatsappStateAdmins": "Em teste: visível só para administradores.",
+    "whatsappPublish": "Publicar botão",
+    "whatsappUnpublish": "Voltar para modo de teste"
   },
   "errors": {
     "generic": "Algo deu errado. Tente novamente.",

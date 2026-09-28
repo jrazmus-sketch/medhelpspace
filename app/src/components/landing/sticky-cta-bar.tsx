@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics/config";
 import { hasConsentChoice } from "@/lib/analytics/consent";
 
@@ -41,8 +41,32 @@ export function StickyCTABar() {
 
   const visible = pastHero && !consentPending;
 
+  // Publish the bar's measured height as --mhs-bottom-bar-h on <html> while it is
+  // showing, so anything else docked to the bottom corner (the WhatsApp button)
+  // can sit ABOVE it instead of on it. Measured, never hardcoded: the bar's
+  // height depends on the copy wrapping and the safe-area inset. Cleared when
+  // the bar hides or unmounts.
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = barRef.current;
+    if (!visible || !el) {
+      root.style.removeProperty("--mhs-bottom-bar-h");
+      return;
+    }
+    const apply = () => root.style.setProperty("--mhs-bottom-bar-h", el.offsetHeight + "px");
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--mhs-bottom-bar-h");
+    };
+  }, [visible]);
+
   return (
     <div
+      ref={barRef}
       className={`lp-sticky-cta-bar fixed bottom-0 left-0 right-0 z-50 md:hidden ${visible ? "lp-visible" : ""}`}
       style={{
         background: "color-mix(in srgb, var(--background) 92%, transparent)",

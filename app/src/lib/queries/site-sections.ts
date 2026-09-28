@@ -23,6 +23,21 @@ export type { PageLayout } from "@/lib/site-sections-order";
 
 const CLOSED: PageLayout = { published: false, visible: {}, position: {} };
 
+/**
+ * A bare publish gate (no sections) — e.g. the WhatsApp button per product,
+ * keyed by lib/whatsapp WHATSAPP_GATE_KEY. Missing row or unreadable table =
+ * not published, so a database problem can never expose an untested button.
+ */
+export const getSitePagePublished = cache(async (page: string): Promise<boolean> => {
+  if (USE_MOCK_DATA) return true;
+  try {
+    const { data } = await createAdminClient().from("site_pages").select("published").eq("page", page).maybeSingle();
+    return data?.published === true;
+  } catch {
+    return false;
+  }
+});
+
 export const getPageLayout = cache(async (page: string): Promise<PageLayout> => {
   if (USE_MOCK_DATA) return { published: true, visible: {}, position: {} };
   try {

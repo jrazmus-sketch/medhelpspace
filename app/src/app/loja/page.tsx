@@ -2,6 +2,9 @@ import Link from "next/link";
 import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
+import { getSitePagePublished } from "@/lib/queries/site-sections";
+import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
 import { SiteText } from "@/components/landing/site-text";
 import { Check, Lock, Unlock, Clock, CalendarClock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
@@ -52,7 +55,10 @@ export const metadata = {
 export const revalidate = 3600;
 
 export default async function LojaPage() {
-  const cohorts = await getCohortsForSale();
+  const [cohorts, whatsappPublished] = await Promise.all([
+    getCohortsForSale(),
+    getSitePagePublished(WHATSAPP_GATE_KEY.revalida),
+  ]);
   const promo = await getPromoBanner(cohorts);
 
   return (
@@ -256,6 +262,7 @@ export default async function LojaPage() {
       </main>
 
       <LandingFooter />
+      <WhatsAppButton product="revalida" published={whatsappPublished} />
     </div>
   );
 }
