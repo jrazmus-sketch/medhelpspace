@@ -201,7 +201,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "roteiro",
     title: "Seu roteiro de estudos",
     body:
-      "A lista completa dos temas do Revalida, **ordenados pelo que mais cai na prova** (2020–2025) e agrupados por prioridade A→D. Vá de cima para baixo — os temas do topo dão o **maior retorno**. Cada tema mostra se você já **iniciou** ou **dominou**.",
+      "A lista completa dos temas do Revalida, **ordenados pelo que mais cai na prova** (2020–2026.1) e agrupados por prioridade A→D. Vá de cima para baixo — os temas do topo dão o **maior retorno**. Cada tema mostra se você já **iniciou** ou **dominou**.",
     href: "/app/plano/roteiro",
     hrefLabel: "Abrir o roteiro",
   },

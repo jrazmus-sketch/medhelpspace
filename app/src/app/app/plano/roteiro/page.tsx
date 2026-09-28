@@ -41,7 +41,7 @@ export default async function RoteiroPage() {
         Roteiro de Estudos
       </h1>
       <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 20, lineHeight: 1.5 }}>
-        Todos os temas do Revalida, ordenados do mais ao menos cobrado (2020–2025). Priorize de cima para baixo — o seu plano diário já segue esta ordem.
+        Todos os temas do Revalida, ordenados do mais ao menos cobrado (2020–2026.1). Priorize de cima para baixo — o seu plano diário já segue esta ordem.
       </p>
 
       <Coachmark coachKey="roteiro" className="mt-0" />

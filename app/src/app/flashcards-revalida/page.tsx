@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: "50 Flashcards Grátis do Revalida — Os Assuntos que Mais Caem",
   description:
-    "Baixe grátis 50 flashcards da 1ª etapa do Revalida, dos 6 assuntos de altíssima incidência das provas de 2020 a 2025. Com revisão espaçada e correção na hora. Sem cartão.",
+    "Baixe grátis 50 flashcards da 1ª etapa do Revalida, dos 6 assuntos de altíssima incidência das provas de 2020 a 2026.1. Com revisão espaçada e correção na hora. Sem cartão.",
   alternates: { canonical: "/flashcards-revalida" },
 };
 

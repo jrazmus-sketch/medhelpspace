@@ -201,8 +201,9 @@ export async function getSampleFlashcardsForSpecialties(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // Exam-analysis headline stats (real past-exam question incidence, topics table,
-// 2020–2025). Verified against prod: 881 total across 211 topics; the six subjects
-// below hold 553 of them (~63% of the exam). Surfaced in the landing "por que esses
+// 2020–2026.1). Recounted 2026-09-27 after Karina's September question delivery
+// (schema-patch-topics-incidence-2026-1.sql): 988 across 215 topics; the six subjects
+// below hold 622 of them (63.0% of the exam). Surfaced in the landing "por que esses
 // assuntos?" section — keep in sync with the numbers below.
 //
 // CLAIM GUARDRAIL: these six are the 5 standalone exam areas (Cirurgia, Ginecologia,
@@ -214,11 +215,11 @@ export async function getSampleFlashcardsForSpecialties(
 // regardless of how the areas are aggregated. The landing copy is worded accordingly.
 export const WEIGHTED_DECK_STATS = {
   totalCards: 50,
-  examQuestionsAnalyzed: 881,
-  sixSubjectQuestions: 553,
+  examQuestionsAnalyzed: 988,
+  sixSubjectQuestions: 622,
   sixSubjectSharePct: 63,
-  topicsAnalyzed: 211,
-  examYears: "2020–2025",
+  topicsAnalyzed: 215,
+  examYears: "2020–2026.1",
 } as const;
 
 // The six most-tested subjects with a deck, card counts weighted by real past-exam
@@ -230,12 +231,14 @@ export const WEIGHTED_DECK_PLAN: {
   pastExamQuestions: number;
   cards: number;
 }[] = [
-  { specialtyId: 16, slug: "pediatria", name: "Pediatria", pastExamQuestions: 109, cards: 10 },
-  { specialtyId: 13, slug: "cirurgia-geral", name: "Cirurgia Geral", pastExamQuestions: 107, cards: 10 },
-  { specialtyId: 14, slug: "ginecologia", name: "Ginecologia", pastExamQuestions: 98, cards: 9 },
-  { specialtyId: 15, slug: "obstetricia", name: "Obstetrícia", pastExamQuestions: 93, cards: 8 },
-  { specialtyId: 17, slug: "saude-coletiva", name: "Saúde Coletiva", pastExamQuestions: 92, cards: 8 },
-  { specialtyId: 7, slug: "infectologia", name: "Infectologia", pastExamQuestions: 54, cards: 5 },
+  // 50 × share of the six-area total, largest remainder (Pediatria and Cirurgia tie
+  // at 119 → 9.57 each; the tenth card went to Pediatria).
+  { specialtyId: 16, slug: "pediatria", name: "Pediatria", pastExamQuestions: 119, cards: 10 },
+  { specialtyId: 13, slug: "cirurgia-geral", name: "Cirurgia Geral", pastExamQuestions: 119, cards: 9 },
+  { specialtyId: 14, slug: "ginecologia", name: "Ginecologia", pastExamQuestions: 112, cards: 9 },
+  { specialtyId: 17, slug: "saude-coletiva", name: "Saúde Coletiva", pastExamQuestions: 108, cards: 9 },
+  { specialtyId: 15, slug: "obstetricia", name: "Obstetrícia", pastExamQuestions: 104, cards: 8 },
+  { specialtyId: 7, slug: "infectologia", name: "Infectologia", pastExamQuestions: 60, cards: 5 },
 ];
 
 // Within each subject, draw cards round-robin from the N highest-incidence themes.
