@@ -107,6 +107,23 @@ function FallbackContent() {
           momento pelo aviso exibido no site.
         </p>
 
+        <h2>7. Comunicações pelo WhatsApp</h2>
+        <p>
+          Ao deixar seu e-mail em uma de nossas páginas gratuitas, você pode,
+          opcionalmente, informar o seu número de WhatsApp e autorizar o recebimento
+          de mensagens da MedHelpSpace com materiais e conteúdos educacionais,
+          novidades, ofertas, descontos e cupons. O número só é coletado com o seu
+          consentimento expresso, registrado com data, hora e a versão do texto
+          aceito, e é usado exclusivamente para essas comunicações. Não
+          compartilhamos o seu número com terceiros.
+        </p>
+        <p>
+          Você pode cancelar a qualquer momento: basta responder <strong>SAIR</strong> a
+          qualquer mensagem, fazer qualquer pedido claro nesse sentido pelo próprio
+          WhatsApp, ou escrever para contato@medhelpspace.com.br. Registramos a
+          revogação e deixamos de enviar mensagens.
+        </p>
+
         <p className="pt-4 text-xs text-muted-foreground">
           Para exercer seus direitos ou tirar dúvidas, entre em contato em{" "}
           <a href="mailto:contato@medhelpspace.com.br" className="text-brand hover:underline">

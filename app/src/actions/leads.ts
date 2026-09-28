@@ -676,3 +676,33 @@ export async function sendBroadcastTestToSelf(
   const r = results[0];
   return { ok: Boolean(r?.ok), email, reason: r?.ok ? undefined : r?.reason ?? "send_failed" };
 }
+
+// ── WhatsApp opt-in: revocation (Karina 2026-09-28) ───────────────────────────
+// "SAIR" (or any clear request to stop) arrives on WhatsApp Business by hand, so
+// the admin records it here. Sets or clears whatsapp_revoked_at only — the number
+// and the original opt-in stay as history, which is the whole point of the status.
+export async function setLeadWhatsappRevoked(
+  leadId: string,
+  revoked: boolean,
+): Promise<{ ok: boolean; revokedAt: string | null }> {
+  await requireLeadsRole();
+  if (typeof leadId !== "string" || !leadId || typeof revoked !== "boolean") {
+    throw new Error("Invalid input");
+  }
+  const admin = createAdminClient();
+  const revokedAt = revoked ? new Date().toISOString() : null;
+  const { data, error } = await admin
+    .from("leads")
+    .update({ whatsapp_revoked_at: revokedAt })
+    .eq("id", leadId)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) throw new Error("Failed to update lead");
+  const { error: evErr } = await admin.from("lead_events").insert({
+    lead_id: leadId,
+    event_type: revoked ? "whatsapp_revoked" : "whatsapp_revocation_undone",
+    metadata: {},
+  });
+  if (evErr) console.error("whatsapp revoke event failed", evErr);
+  return { ok: true, revokedAt };
+}

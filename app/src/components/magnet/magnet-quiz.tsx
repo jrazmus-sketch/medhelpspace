@@ -16,6 +16,9 @@ import { MagnetReward, scoreFraming, type RewardOffer } from "@/components/magne
 import { TurnstileWidget } from "@/components/magnet/turnstile-widget";
 import { trackFunnel, getFunnelSessionId, markLeadCaptured } from "@/lib/magnet/funnel-track";
 import { SiteText } from "@/components/landing/site-text";
+import { useAuth } from "@/providers/auth-provider";
+import { WhatsappOptinStep } from "@/components/magnet/whatsapp-optin-step";
+import { shouldShowWhatsappStep, type WhatsappStepInfo } from "@/lib/whatsapp-optin";
 import { PayoffPreview } from "@/components/magnet/payoff-preview";
 import { PlatformPeekModal } from "@/components/magnet/platform-peek";
 import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
@@ -128,7 +131,7 @@ export function MagnetQuiz({
     resume ? resumeAnswerMap(resume.answered) : {},
   );
   const [phase, setPhase] = useState<
-    "welcome" | "quiz" | "gate" | "cohort" | "resultsFree" | "reward"
+    "welcome" | "quiz" | "gate" | "whatsapp" | "cohort" | "resultsFree" | "reward"
   >(resume || startImmediately ? "quiz" : "welcome");
   const [email, setEmail] = useState(resume?.email ?? "");
   const [emailErr, setEmailErr] = useState<string | null>(null);
@@ -142,6 +145,8 @@ export function MagnetQuiz({
   // link can track the click per-lead (same as the flashcards funnel).
   const [resultToken, setResultToken] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const { isAnyAdmin } = useAuth();
+  const [wa, setWa] = useState<WhatsappStepInfo | null>(null);
 
   const total = questions.length === FREE_COUNT ? 15 : questions.length;
   const q = questions[idx];
@@ -251,7 +256,9 @@ export function MagnetQuiz({
       setQuestions([...freeQuestions, ...res.gatedQuestions]);
       setIdx(FREE_COUNT);
       setSelectedIdx(null);
-      setPhase("quiz");
+      setWa(res.whatsapp ?? null);
+      // Karina's order (2026-09-28): e-mail → WhatsApp (optional) → questões 6–15.
+      setPhase(shouldShowWhatsappStep(res.whatsapp, isAnyAdmin()) ? "whatsapp" : "quiz");
     });
   }
 
@@ -351,6 +358,15 @@ export function MagnetQuiz({
   }
 
   // ── Email gate (soft capture — NO email sent; the code comes at the reward) ───
+  // ── Optional WhatsApp step — right after the e-mail gate, before Q6 ──────────
+  if (phase === "whatsapp" && wa) {
+    return (
+      <div className="mx-auto max-w-xl">
+        <WhatsappOptinStep funnel="simulado" info={wa} onDone={() => setPhase("quiz")} />
+      </div>
+    );
+  }
+
   if (phase === "gate") {
     return (
       <div className="mx-auto max-w-xl rounded-2xl border border-brand/30 bg-surface-1 p-6 sm:p-8">

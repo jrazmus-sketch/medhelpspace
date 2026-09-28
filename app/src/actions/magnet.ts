@@ -30,6 +30,8 @@ import {
 import { resolveTargetCohort } from "@/lib/magnet/cohort-rollover";
 import { firstTouchLandingPath, firstTouchReferrer, firstTouchUtm } from "@/lib/magnet/first-touch";
 import { readFirstTouch } from "@/lib/magnet/first-touch-server";
+import { buildWhatsappStepInfo } from "@/lib/magnet/whatsapp-step";
+import type { WhatsappStepInfo } from "@/lib/whatsapp-optin";
 import {
   guardCodeRequest,
   guardMagnetSend,
@@ -216,7 +218,7 @@ export async function captureLeadAndUnlock(input: {
   // Client-only context the server can't otherwise see (first-touch). `sessionId` is
   // the mhs_fsid that links this lead ⇄ its funnel_events (landing/quiz_start).
   context?: { referrer?: string | null; landingPath?: string | null; sessionId?: string | null };
-}): Promise<{ ok: boolean; reason?: string; gatedQuestions: MagnetQuestion[] }> {
+}): Promise<{ ok: boolean; reason?: string; gatedQuestions: MagnetQuestion[]; whatsapp?: WhatsappStepInfo }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) {
     return { ok: false, reason: "invalid_email", gatedQuestions: [] };
@@ -311,8 +313,12 @@ export async function captureLeadAndUnlock(input: {
     });
   }
 
-  const gatedQuestions = await getMagnetQuestions(MAGNET_GATED_IDS);
-  return { ok: true, gatedQuestions };
+  // The optional WhatsApp step (Karina 2026-09-28) comes right after this gate.
+  const [gatedQuestions, whatsapp] = await Promise.all([
+    getMagnetQuestions(MAGNET_GATED_IDS),
+    buildWhatsappStepInfo(admin, email, "simulado"),
+  ]);
+  return { ok: true, gatedQuestions, whatsapp };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -770,7 +776,7 @@ export async function captureFlashcardsLead(input: {
   utm?: Utm;
   honeypot?: string | null;
   context?: { referrer?: string | null; landingPath?: string | null; sessionId?: string | null };
-}): Promise<{ ok: boolean; reason?: string }> {
+}): Promise<{ ok: boolean; reason?: string; whatsapp?: WhatsappStepInfo }> {
   const email = normalizeEmail(input.email);
   if (!EMAIL_RE.test(email)) return { ok: false, reason: "invalid_email" };
   if (honeypotTripped(input.honeypot)) return { ok: false, reason: "honeypot" };
@@ -838,7 +844,9 @@ export async function captureFlashcardsLead(input: {
       funnel_session_id: sessionId,
     });
   }
-  return { ok: true };
+  // The optional WhatsApp step (Karina 2026-09-28) comes after the turma pick.
+  const whatsapp = await buildWhatsappStepInfo(admin, email, "flashcards");
+  return { ok: true, whatsapp };
 }
 
 export async function chooseFlashcardsCohortAndSend(input: {

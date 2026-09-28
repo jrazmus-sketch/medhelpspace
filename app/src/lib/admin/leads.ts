@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { whatsappStatusOf, type WhatsappStatus } from "@/lib/whatsapp-optin";
 import { BROADCAST_KIND } from "@/lib/email-render";
 
 // Server-only read model for the /admin/leads viewer. `leads` is deny-all RLS
@@ -99,6 +100,13 @@ export type LeadRow = {
   simCompletedAt: string | null;
   simAnswered: number | null;
   simScore: number | null;
+  // Optional WhatsApp opt-in (schema-patch-leads-whatsapp.sql). Status per
+  // lib/whatsapp-optin whatsappStatusOf; null = the step was never shown.
+  whatsapp: string | null;
+  whatsappStatus: WhatsappStatus | null;
+  whatsappOptInAt: string | null;
+  whatsappOptInSource: string | null;
+  whatsappConsentVersion: string | null;
   isTest: boolean;
   // Soft-archive (schema-patch-leads-archive.sql). Hidden by default in the list;
   // "Mostrar arquivados" reveals. Independent of drip_status.
@@ -122,7 +130,7 @@ export async function getLeadsRows(): Promise<LeadRow[]> {
     admin
       .from("leads")
       .select(
-        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, previous_target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source, is_test, is_archived, drip_funnel, fc_entered_at, fc_started_at, fc_completed_at, sim_entered_at, sim_started_at, sim_completed_at, sim_answered, sim_score",
+        "id, email, first_name, created_at, utm_source, utm_campaign, target_cohort, previous_target_cohort, score, questions_answered, completed_at, weak_specialty_ids, verified_at, drip_step, drip_status, converted_at, last_emailed_at, capture_source, source, is_test, is_archived, drip_funnel, fc_entered_at, fc_started_at, fc_completed_at, sim_entered_at, sim_started_at, sim_completed_at, sim_answered, sim_score, whatsapp, whatsapp_opt_in, whatsapp_opt_in_at, whatsapp_opt_in_source, whatsapp_consent_version, whatsapp_revoked_at, whatsapp_step_shown_at",
       )
       .order("created_at", { ascending: false })
       .limit(1000),
@@ -202,6 +210,15 @@ export async function getLeadsRows(): Promise<LeadRow[]> {
       simCompletedAt: (l.sim_completed_at as string | null) ?? null,
       simAnswered: (l.sim_answered as number | null) ?? null,
       simScore: (l.sim_score as number | null) ?? null,
+      whatsapp: (l.whatsapp as string | null) ?? null,
+      whatsappStatus: whatsappStatusOf({
+        whatsappOptIn: (l.whatsapp_opt_in as boolean | null) ?? null,
+        whatsappRevokedAt: (l.whatsapp_revoked_at as string | null) ?? null,
+        whatsappStepShownAt: (l.whatsapp_step_shown_at as string | null) ?? null,
+      }),
+      whatsappOptInAt: (l.whatsapp_opt_in_at as string | null) ?? null,
+      whatsappOptInSource: (l.whatsapp_opt_in_source as string | null) ?? null,
+      whatsappConsentVersion: (l.whatsapp_consent_version as string | null) ?? null,
       isTest: Boolean(l.is_test),
       isArchived: Boolean(l.is_archived),
     };

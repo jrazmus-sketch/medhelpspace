@@ -12,6 +12,9 @@ import type { MagnetUtm } from "@/components/magnet/magnet-quiz";
 import { SiteText } from "@/components/landing/site-text";
 import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 import { isGmailAddress } from "@/lib/gmail";
+import { useAuth } from "@/providers/auth-provider";
+import { WhatsappOptinStep } from "@/components/magnet/whatsapp-optin-step";
+import { shouldShowWhatsappStep, type WhatsappStepInfo } from "@/lib/whatsapp-optin";
 
 // Gift-first email gate for /flashcards-revalida. Two steps up front, then a
 // "check your inbox" confirmation — the 50-card deck is delivered by a magic link
@@ -27,7 +30,7 @@ const COHORTS: CohortOption[] = [
   { slug: UNDECIDED_COHORT, label: "Ainda não decidi", when: "Escolho a turma depois" },
 ];
 
-type Phase = "email" | "cohort" | "sent";
+type Phase = "email" | "cohort" | "whatsapp" | "sent";
 
 function clientContext() {
   return {
@@ -49,6 +52,8 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
   const [pending, startTransition] = useTransition();
   const [selecting, setSelecting] = useState<string | null>(null);
   const emailId = useId();
+  const { isAnyAdmin } = useAuth();
+  const [wa, setWa] = useState<WhatsappStepInfo | null>(null);
 
   function submitEmail() {
     const em = email.trim().toLowerCase();
@@ -72,6 +77,7 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
         );
         return;
       }
+      setWa(res.whatsapp ?? null);
       setPhase("cohort");
     });
   }
@@ -95,7 +101,8 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
       setMasked(res.maskedEmail ?? email.trim().toLowerCase());
       setEmailed(res.emailed ?? true);
       setDevLink(res.devLink ?? null);
-      setPhase("sent");
+      // Karina's order (2026-09-28): e-mail → turma → WhatsApp (optional) → confirmação.
+      setPhase(shouldShowWhatsappStep(wa, isAnyAdmin()) ? "whatsapp" : "sent");
     });
   }
 
@@ -156,6 +163,11 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
         )}
       </div>
     );
+  }
+
+  // ── Step 3 (optional): WhatsApp — after the turma, before the confirmation ───
+  if (phase === "whatsapp" && wa) {
+    return <WhatsappOptinStep funnel="flashcards" info={wa} onDone={() => setPhase("sent")} />;
   }
 
   // ── Step 2: exam picker ───────────────────────────────────────────────────────

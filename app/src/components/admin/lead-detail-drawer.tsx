@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import {
@@ -19,7 +19,8 @@ import {
   CircleCheck,
   CircleDot,
 } from "lucide-react";
-import { getLeadDetail } from "@/actions/leads";
+import { getLeadDetail, setLeadWhatsappRevoked } from "@/actions/leads";
+import { formatBrMobile, whatsappStatusOf } from "@/lib/whatsapp-optin";
 import type { LeadDetail, LeadEmail, LeadQuizAnswer } from "@/lib/admin/lead-detail";
 import type { FunnelKey, LeadRow } from "@/lib/admin/leads";
 
@@ -102,6 +103,7 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === "en" ? "en-US" : "pt-BR";
   const [detail, setDetail] = useState<LeadDetail | null>(null);
+  const [waPending, startWa] = useTransition();
   // Parent remounts per lead (key={row.id}) → fresh loading state each open.
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -400,6 +402,56 @@ export function LeadDetailDrawer({ row, onClose }: Props) {
                 )}
                 {detail.landingPath && <Field label={t("leads.attrLanding")} value={detail.landingPath} mono />}
               </Section>
+
+              {/* WhatsApp opt-in (Karina 2026-09-28) — only once the step was ever shown */}
+              {(() => {
+                const status = whatsappStatusOf({
+                  whatsappOptIn: detail.whatsappOptIn,
+                  whatsappRevokedAt: detail.whatsappRevokedAt,
+                  whatsappStepShownAt: detail.whatsappStepShownAt,
+                });
+                if (!status && !detail.whatsapp) return null;
+                const canRevoke = status === "autorizou";
+                const canUndo = status === "revogado";
+                const toggle = () => {
+                  if (canRevoke && !window.confirm(t("leads.waRevokeConfirm"))) return;
+                  startWa(async () => {
+                    const r = await setLeadWhatsappRevoked(detail.id, canRevoke);
+                    if (r.ok) setDetail({ ...detail, whatsappRevokedAt: r.revokedAt });
+                  });
+                };
+                return (
+                  <Section
+                    title={t("leads.sectionWhatsapp")}
+                    right={
+                      canRevoke || canUndo ? (
+                        <button
+                          type="button"
+                          disabled={waPending}
+                          onClick={toggle}
+                          className="min-h-[32px] text-xs font-medium text-brand hover:underline disabled:opacity-60"
+                        >
+                          {canRevoke ? t("leads.waRevoke") : t("leads.waUndoRevoke")}
+                        </button>
+                      ) : undefined
+                    }
+                  >
+                    <Field label={t("leads.waNumber")} value={detail.whatsapp ? formatBrMobile(detail.whatsapp) : "—"} />
+                    <Field label={t("leads.waStatus")} value={t(`leads.waStatus_${status ?? "none"}`)} />
+                    {detail.whatsappOptInAt && <Field label={t("leads.waOptInAt")} value={fmt(detail.whatsappOptInAt, true)} />}
+                    {detail.whatsappOptInSource && (
+                      <Field
+                        label={t("leads.waSource")}
+                        value={t(`leads.waSource_${detail.whatsappOptInSource}`, { defaultValue: detail.whatsappOptInSource })}
+                      />
+                    )}
+                    {detail.whatsappConsentVersion && (
+                      <Field label={t("leads.waConsentVersion")} value={detail.whatsappConsentVersion} mono />
+                    )}
+                    {detail.whatsappRevokedAt && <Field label={t("leads.waRevokedAt")} value={fmt(detail.whatsappRevokedAt, true)} />}
+                  </Section>
+                );
+              })()}
 
               {/* Capture context — only render when we have any of it */}
               {(detail.deviceType || detail.geoCity || detail.geoRegion || detail.geoCountry) && (

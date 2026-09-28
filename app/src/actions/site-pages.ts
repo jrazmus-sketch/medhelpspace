@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
+import { WHATSAPP_OPTIN_GATE_KEY } from "@/lib/whatsapp-optin";
 
 // Gate key → the public paths that render it. A key not listed here cannot be
 // flipped from this action, so a typo can never create a stray site_pages row.
@@ -17,6 +18,9 @@ const GATES: Record<string, readonly string[]> = {
   [WHATSAPP_GATE_KEY.revalida]: ["/", "/loja"],
   // The ClinAct chat adds WHATSAPP_GATE_KEY.clinact → ["/clinact"] when it mounts
   // the button on that page (see CLINACT-WHATSAPP-BUTTON-SPEC.md).
+  // Optional WhatsApp step in the lead funnels (both pages are force-dynamic, so
+  // the flip is instant; the revalidate is harmless).
+  [WHATSAPP_OPTIN_GATE_KEY]: ["/flashcards-revalida", "/questoes-revalida"],
 };
 
 export type GateResult = { ok: true; published: boolean } | { ok: false; error: "forbidden" | "invalid" | "failed" };

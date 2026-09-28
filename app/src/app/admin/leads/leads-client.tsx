@@ -190,6 +190,27 @@ function formatCsvValue(value: unknown): string {
   return str;
 }
 
+// Only the people who can actually be messaged: authorised and not revoked. This
+// is the file Karina imports into WhatsApp Business (2026-09-28).
+function generateWhatsappCSV(rows: LeadRow[]): string {
+  const headers = ["email", "firstName", "whatsapp", "optInAt", "optInSource", "consentVersion"];
+  const out = [headers.join(",")];
+  for (const row of rows) {
+    if (row.whatsappStatus !== "autorizou" || !row.whatsapp) continue;
+    out.push(
+      [
+        formatCsvValue(row.email),
+        formatCsvValue(row.firstName),
+        formatCsvValue(row.whatsapp),
+        formatCsvValue(row.whatsappOptInAt ?? ""),
+        formatCsvValue(row.whatsappOptInSource ?? ""),
+        formatCsvValue(row.whatsappConsentVersion ?? ""),
+      ].join(","),
+    );
+  }
+  return out.join("\n");
+}
+
 function generateLeadsCSV(rows: LeadRow[]): string {
   const headers = [
     "email",
@@ -206,6 +227,9 @@ function generateLeadsCSV(rows: LeadRow[]): string {
     "captureSource",
     "source",
     "isTest",
+    "whatsapp",
+    "whatsappStatus",
+    "whatsappOptInAt",
   ];
 
   const csvRows = [headers.join(",")];
@@ -227,6 +251,9 @@ function generateLeadsCSV(rows: LeadRow[]): string {
       formatCsvValue(row.captureSource),
       formatCsvValue(row.source),
       formatCsvValue(row.isTest),
+      formatCsvValue(row.whatsapp ?? ""),
+      formatCsvValue(row.whatsappStatus ?? ""),
+      formatCsvValue(row.whatsappOptInAt ?? ""),
     ];
     csvRows.push(csvRow.join(","));
   }
@@ -256,6 +283,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
   const [status, setStatus] = useState("all");
   const [source, setSource] = useState("all");
   const [capture, setCapture] = useState("all");
+  const [whatsapp, setWhatsapp] = useState("all");
   // Page-level scopes — these narrow EVERY number on the page (funnel bars,
   // tiles, chips, table) identically, so nothing can disagree.
   const [qaMode, setQaMode] = useState(false); // include is_test rows everywhere
@@ -345,6 +373,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
         const cs = r.captureSource === "exit_intent" ? "exit_intent" : "quiz";
         if (cs !== capture) return false;
       }
+      if (whatsapp !== "all" && (r.whatsappStatus ?? "none") !== whatsapp) return false;
       if (!q) return true;
       return (
         r.email.toLowerCase().includes(q) ||
@@ -382,7 +411,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
       });
     }
     return results;
-  }, [rows, search, tier, status, source, capture, qaMode, showArchived, effectiveTab, rangeCutoff, focus, sort, mountedAt]);
+  }, [rows, search, tier, status, source, capture, whatsapp, qaMode, showArchived, effectiveTab, rangeCutoff, focus, sort, mountedAt]);
 
   const hasExitIntent = useMemo(
     () => rows.some((r) => r.captureSource === "exit_intent"),
@@ -390,6 +419,19 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
   );
 
   const hasArchived = useMemo(() => rows.some((r) => r.isArchived), [rows]);
+
+  // WhatsApp step conversion (Karina 2026-09-28): authorised ÷ shown, over the rows
+  // currently in view, so tab / range / filters all apply.
+  const waStats = useMemo(() => {
+    let shown = 0;
+    let optIns = 0;
+    for (const r of filtered) {
+      if (r.whatsappStatus) shown++;
+      if (r.whatsappStatus === "autorizou") optIns++;
+    }
+    return { shown, optIns };
+  }, [filtered]);
+  const hasWhatsapp = useMemo(() => rows.some((r) => r.whatsappStatus != null), [rows]);
 
   const statuses = useMemo(
     () => [...new Set(rows.map(effectiveStatus))],
@@ -1169,7 +1211,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className={`grid grid-cols-2 gap-3 ${hasWhatsapp ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
         <div className="rounded-xl border border-border bg-surface-1 p-4" title={t("leads.statTotalHint")}>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.statTotal")}</p>
           <p className="mt-1 text-2xl font-bold tabular-nums">{headlineTotal}</p>
@@ -1188,6 +1230,15 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
             <span className="text-sm text-muted-foreground">{pct(funnelStats.purchased, headlineTotal)}</span>
           </p>
         </div>
+        {hasWhatsapp && (
+          <div className="rounded-xl border border-border bg-surface-1 p-4" title={t("leads.statWhatsappHint")}>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.statWhatsapp")}</p>
+            <p className="mt-1 flex items-baseline gap-1.5">
+              <span className="text-2xl font-bold tabular-nums">{waStats.optIns}</span>
+              <span className="text-sm text-muted-foreground">/ {waStats.shown} · {pct(waStats.optIns, waStats.shown)}</span>
+            </p>
+          </div>
+        )}
         <div className="col-span-2 rounded-xl border border-border bg-surface-1 p-4 lg:col-span-1">
           <div className="flex items-baseline justify-between gap-2">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("leads.headlineTrend")}</p>
@@ -1376,6 +1427,19 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
             <option value="exit_intent">{t("leads.capture_exit_intent")}</option>
           </select>
         )}
+        {hasWhatsapp && (
+          <select
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            className="min-h-[44px] rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50 sm:min-h-0"
+          >
+            <option value="all">{t("leads.filterWhatsapp")}</option>
+            <option value="autorizou">{t("leads.waStatus_autorizou")}</option>
+            <option value="nao">{t("leads.waStatus_nao")}</option>
+            <option value="nao_informado">{t("leads.waStatus_nao_informado")}</option>
+            <option value="revogado">{t("leads.waStatus_revogado")}</option>
+          </select>
+        )}
         {hasArchived && (
           <label className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm cursor-pointer hover:bg-surface-2/50 min-h-[44px] sm:min-h-0">
             <input
@@ -1409,6 +1473,21 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
           <Download className="h-4 w-4" />
           <span>{t("leads.exportCSV")}</span>
         </button>
+        {hasWhatsapp && (
+          <button
+            onClick={() => {
+              const csv = generateWhatsappCSV(filtered);
+              const dateStr = new Date().toISOString().split("T")[0].replace(/-/g, "");
+              downloadCSV(csv, `leads-whatsapp-${dateStr}.csv`);
+            }}
+            disabled={waStats.optIns === 0}
+            className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm hover:bg-surface-2/50 transition-colors min-h-[44px] sm:min-h-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={t("leads.exportWhatsappHint")}
+          >
+            <Download className="h-4 w-4" />
+            <span>{t("leads.exportWhatsapp")}</span>
+          </button>
+        )}
       </div>
 
       <div className="space-y-2">

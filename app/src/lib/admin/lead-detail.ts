@@ -111,6 +111,15 @@ export type LeadDetail = {
   // Durable links
   resultToken: string | null;
 
+  // Optional WhatsApp opt-in (Karina 2026-09-28) — see lib/whatsapp-optin.
+  whatsapp: string | null;
+  whatsappOptIn: boolean | null;
+  whatsappOptInAt: string | null;
+  whatsappOptInSource: string | null;
+  whatsappConsentVersion: string | null;
+  whatsappRevokedAt: string | null;
+  whatsappStepShownAt: string | null;
+
   // Journey
   funnelSessionId: string | null;
   funnelEvents: LeadFunnelEvent[];
@@ -189,7 +198,7 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
   const { data: lead } = await admin
     .from("leads")
     .select(
-      "id, email, first_name, created_at, source, capture_source, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, device_type, geo_city, geo_region, geo_country, landing_referrer, landing_path, user_agent, funnel_session_id, score, questions_answered, weak_specialty_ids, result, code_sent_at, code_attempts, verified_at, completed_at, drip_step, drip_status, last_emailed_at, converted_at, unsubscribed_at, recovery_a_sent_at, recovery_b_step, recovery_sent_at, target_cohort, result_token, drip_funnel, fc_entered_at, fc_started_at, fc_completed_at, fc_last_activity_at, fc_progress, sim_entered_at, sim_started_at, sim_completed_at, sim_last_activity_at, sim_answered, sim_score",
+      "id, email, first_name, created_at, source, capture_source, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, device_type, geo_city, geo_region, geo_country, landing_referrer, landing_path, user_agent, funnel_session_id, score, questions_answered, weak_specialty_ids, result, code_sent_at, code_attempts, verified_at, completed_at, drip_step, drip_status, last_emailed_at, converted_at, unsubscribed_at, recovery_a_sent_at, recovery_b_step, recovery_sent_at, target_cohort, result_token, drip_funnel, fc_entered_at, fc_started_at, fc_completed_at, fc_last_activity_at, fc_progress, sim_entered_at, sim_started_at, sim_completed_at, sim_last_activity_at, sim_answered, sim_score, whatsapp, whatsapp_opt_in, whatsapp_opt_in_at, whatsapp_opt_in_source, whatsapp_consent_version, whatsapp_revoked_at, whatsapp_step_shown_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -359,6 +368,13 @@ export async function fetchLeadDetail(id: string): Promise<LeadDetail | null> {
     geoCountry: (lead.geo_country as string | null) ?? null,
     landingReferrer: (lead.landing_referrer as string | null) ?? null,
     landingPath: (lead.landing_path as string | null) ?? null,
+    whatsapp: (lead.whatsapp as string | null) ?? null,
+    whatsappOptIn: (lead.whatsapp_opt_in as boolean | null) ?? null,
+    whatsappOptInAt: (lead.whatsapp_opt_in_at as string | null) ?? null,
+    whatsappOptInSource: (lead.whatsapp_opt_in_source as string | null) ?? null,
+    whatsappConsentVersion: (lead.whatsapp_consent_version as string | null) ?? null,
+    whatsappRevokedAt: (lead.whatsapp_revoked_at as string | null) ?? null,
+    whatsappStepShownAt: (lead.whatsapp_step_shown_at as string | null) ?? null,
     userAgent: (lead.user_agent as string | null) ?? null,
 
     score: (lead.score as number | null) ?? null,
