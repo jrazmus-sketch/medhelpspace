@@ -1651,7 +1651,14 @@
     "statWhatsapp": "Opt-ins WhatsApp",
     "statWhatsappHint": "Autorizaram ÷ viram a etapa, nos leads em exibição",
     "exportWhatsapp": "Exportar WhatsApp",
-    "exportWhatsappHint": "CSV só com quem autorizou e não revogou"
+    "exportWhatsappHint": "CSV só com quem autorizou e não revogou",
+    "bulkDelete": "Excluir definitivamente",
+    "bulkDeleteTitle": "Excluir leads definitivamente",
+    "bulkDeleteDescriptionOne": "Vai apagar {{count}} lead com todo o histórico do painel (eventos, e-mails registrados, WhatsApp). Não dá para desfazer. Para tirar da lista sem apagar, use Arquivar.",
+    "bulkDeleteDescriptionOther": "Vai apagar {{count}} leads com todo o histórico do painel (eventos, e-mails registrados, WhatsApp). Não dá para desfazer. Para tirar da lista sem apagar, use Arquivar.",
+    "bulkDeleteConfirm": "Excluir definitivamente",
+    "bulkDeleteSuccessOne": "1 lead excluído.",
+    "bulkDeleteSuccessOther": "{{count}} leads excluídos."
   },
   "funnel": {
     "title": "Funil de aquisição",

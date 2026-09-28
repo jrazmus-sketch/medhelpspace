@@ -16,6 +16,7 @@ import {
   MailX,
   MoreHorizontal,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 import type { FunnelKey, LeadRow, LeadTier } from "@/lib/admin/leads";
@@ -37,6 +38,7 @@ import {
   bulkResendDripEmail,
   bulkSetDripStatus,
   bulkSetArchived,
+  bulkDeleteLeads,
   broadcastToLeads,
   sendBroadcastTestToSelf,
 } from "@/actions/leads";
@@ -309,7 +311,7 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   // Which drip-status change is awaiting confirmation (both have email-flow
   // consequences, so both confirm before firing).
-  const [confirmAction, setConfirmAction] = useState<"unsubscribe" | "reactivate" | null>(null);
+  const [confirmAction, setConfirmAction] = useState<"unsubscribe" | "reactivate" | "delete" | null>(null);
 
   // Render must not call the impure Date.now(); day/hour granularity makes a
   // mount-time stamp fine (same pattern as member-detail-drawer). Declared with
@@ -863,6 +865,29 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
       finishBulk(t(result.count === 1 ? `${base}One` : `${base}Other`, { count: result.count }));
     } catch (error) {
       console.error("Bulk archive error:", error);
+      setErrorMessage(t("leads.bulkActionError"));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Permanent delete (Karina 2026-09-28). Confirmed in the ConfirmModal below;
+  // the server action removes the rows, their events and their email history.
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsProcessing(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
+    try {
+      const result = await bulkDeleteLeads(Array.from(selectedIds));
+      setConfirmAction(null);
+      finishBulk(
+        t(result.count === 1 ? "leads.bulkDeleteSuccessOne" : "leads.bulkDeleteSuccessOther", {
+          count: result.count,
+        }),
+      );
+    } catch (error) {
+      console.error("Bulk delete error:", error);
       setErrorMessage(t("leads.bulkActionError"));
     } finally {
       setIsProcessing(false);
@@ -1699,28 +1724,43 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
       <ConfirmModal
         open={confirmAction !== null}
         title={t(
-          confirmAction === "reactivate" ? "leads.bulkReactivateTitle" : "leads.bulkUnsubscribeTitle",
+          confirmAction === "delete"
+            ? "leads.bulkDeleteTitle"
+            : confirmAction === "reactivate"
+              ? "leads.bulkReactivateTitle"
+              : "leads.bulkUnsubscribeTitle",
         )}
         description={
           <p>
             {t(
-              confirmAction === "reactivate"
+              confirmAction === "delete"
                 ? selectedIds.size === 1
-                  ? "leads.bulkReactivateDescriptionOne"
-                  : "leads.bulkReactivateDescriptionOther"
-                : selectedIds.size === 1
-                  ? "leads.bulkUnsubscribeDescriptionOne"
-                  : "leads.bulkUnsubscribeDescriptionOther",
+                  ? "leads.bulkDeleteDescriptionOne"
+                  : "leads.bulkDeleteDescriptionOther"
+                : confirmAction === "reactivate"
+                  ? selectedIds.size === 1
+                    ? "leads.bulkReactivateDescriptionOne"
+                    : "leads.bulkReactivateDescriptionOther"
+                  : selectedIds.size === 1
+                    ? "leads.bulkUnsubscribeDescriptionOne"
+                    : "leads.bulkUnsubscribeDescriptionOther",
               { count: selectedIds.size },
             )}
           </p>
         }
         confirmLabel={t(
-          confirmAction === "reactivate" ? "leads.bulkReactivateConfirm" : "leads.bulkUnsubscribeConfirm",
+          confirmAction === "delete"
+            ? "leads.bulkDeleteConfirm"
+            : confirmAction === "reactivate"
+              ? "leads.bulkReactivateConfirm"
+              : "leads.bulkUnsubscribeConfirm",
         )}
-        destructive={confirmAction === "unsubscribe"}
+        destructive={confirmAction === "unsubscribe" || confirmAction === "delete"}
         isPending={isProcessing}
-        onConfirm={() => confirmAction && handleBulkDripStatus(confirmAction)}
+        onConfirm={() => {
+          if (confirmAction === "delete") void handleBulkDelete();
+          else if (confirmAction) void handleBulkDripStatus(confirmAction);
+        }}
         onCancel={() => setConfirmAction(null)}
       />
 
@@ -1816,6 +1856,19 @@ export function LeadsClient({ rows, funnelEvents, emailSettings }: Props) {
                         >
                           <ArchiveRestore className="h-4 w-4 text-muted-foreground" />
                           {t("leads.bulkUnarchive")}
+                        </button>
+                        <div className="my-1 border-t border-border/60" />
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            setMoreMenuOpen(false);
+                            setConfirmAction("delete");
+                          }}
+                          disabled={selectedIds.size === 0}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-destructive hover:bg-destructive/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          {t("leads.bulkDelete")}
                         </button>
                       </div>
                     </>

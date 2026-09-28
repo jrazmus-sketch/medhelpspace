@@ -35,6 +35,7 @@ async function requireLeadsRole() {
     .single();
   const role = (profile?.role as string) ?? "member";
   if (!LEADS_ROLES.includes(role)) throw new Error("Unauthorized");
+  return { userId: user.id, role };
 }
 
 /** Full per-lead detail (attribution, quiz breakdown, email timeline, journey). */
@@ -705,4 +706,62 @@ export async function setLeadWhatsappRevoked(
   });
   if (evErr) console.error("whatsapp revoke event failed", evErr);
   return { ok: true, revokedAt };
+}
+
+// ── Permanent delete (Karina 2026-09-28) ──────────────────────────────────────
+// Archive hides; this removes. The row, its event log (FK cascade) and the
+// delivery events keyed by its address all go, so nothing of the lead is left
+// in the panel. Deliberately NOT undoable — that is what "arquivar" is for — and
+// the confirmation lives in the UI. One audit row keeps who/when/how many, with
+// the addresses masked so the audit log itself does not become a copy.
+function maskAddress(email: string): string {
+  const [user, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${user.slice(0, 1)}***@${domain}`;
+}
+
+export async function bulkDeleteLeads(leadIds: string[]): Promise<{ success: boolean; count: number }> {
+  const who = await requireLeadsRole();
+  if (!Array.isArray(leadIds) || leadIds.length === 0) throw new Error("No lead IDs provided");
+  if (leadIds.length > 200) throw new Error("Too many leads in one delete");
+
+  const admin = createAdminClient();
+  const { data: targets, error: readError } = await admin
+    .from("leads")
+    .select("id, email")
+    .in("id", leadIds);
+  if (readError) throw new Error("Failed to read leads");
+  const rows = (targets ?? []) as { id: string; email: string }[];
+  if (rows.length === 0) return { success: true, count: 0 };
+
+  // Delivery/engagement events are keyed by address, not by lead id, so the
+  // cascade does not reach them. Remove them first; if the lead delete then
+  // fails, the lead simply keeps living without its email history.
+  const { error: eventsError } = await admin
+    .from("lead_email_events")
+    .delete()
+    .in("email", rows.map((r) => r.email));
+  if (eventsError) console.error("lead_email_events cleanup failed", eventsError);
+
+  const { data: deleted, error } = await admin
+    .from("leads")
+    .delete()
+    .in("id", rows.map((r) => r.id))
+    .select("id");
+  if (error) {
+    console.error("Bulk delete error:", error);
+    throw new Error("Failed to delete leads");
+  }
+
+  const { error: auditError } = await admin.from("admin_audit_log").insert({
+    actor_user_id: who.userId,
+    action: "lead_delete",
+    details: {
+      count: deleted?.length ?? 0,
+      leads: rows.map((r) => ({ id: r.id, email: maskAddress(r.email) })),
+    },
+  });
+  if (auditError) console.error("lead_delete audit failed", auditError);
+
+  return { success: true, count: deleted?.length ?? 0 };
 }

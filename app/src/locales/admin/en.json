@@ -1651,7 +1651,14 @@
     "statWhatsapp": "WhatsApp opt-ins",
     "statWhatsappHint": "Opted in ÷ saw the step, over the leads in view",
     "exportWhatsapp": "Export WhatsApp",
-    "exportWhatsappHint": "CSV of opted-in, non-revoked numbers only"
+    "exportWhatsappHint": "CSV of opted-in, non-revoked numbers only",
+    "bulkDelete": "Delete permanently",
+    "bulkDeleteTitle": "Delete leads permanently",
+    "bulkDeleteDescriptionOne": "This erases {{count}} lead with its whole panel history (events, recorded e-mails, WhatsApp). It cannot be undone. To hide without erasing, use Archive.",
+    "bulkDeleteDescriptionOther": "This erases {{count}} leads with their whole panel history (events, recorded e-mails, WhatsApp). It cannot be undone. To hide without erasing, use Archive.",
+    "bulkDeleteConfirm": "Delete permanently",
+    "bulkDeleteSuccessOne": "1 lead deleted.",
+    "bulkDeleteSuccessOther": "{{count}} leads deleted."
   },
   "funnel": {
     "title": "Acquisition funnel",
