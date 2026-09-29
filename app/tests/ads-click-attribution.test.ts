@@ -64,5 +64,14 @@ test("Google Ads gets .csv URLs, one per conversion action", () => {
   const files = read("app/src/app/api/ads/[file]/route.ts");
   assert.match(files, /"purchase\.csv": "purchase"/);
   assert.match(files, /"checkout\.csv": "checkout"/);
+  // Lead verified had no feed until 2026-09-29 — Google Ads sat on "Awaiting
+  // conversions" while verified ad-click leads piled up unreported.
+  assert.match(files, /"lead-verified\.csv": "verified"/);
+  assert.match(files, /"simulado-started\.csv": "simulado-started"/);
+  assert.match(files, /"simulado-submitted\.csv": "simulado-submitted"/);
   assert.match(files, /serveOciFeed\(request, key\)/);
+  const feed = read("app/src/lib/admin/oci-feed.ts");
+  assert.match(feed, /verified: OCI_CONVERSION_VERIFIED/);
+  assert.match(feed, /"simulado-started": OCI_CONVERSION_SIM_STARTED/);
+  assert.match(feed, /"simulado-submitted": OCI_CONVERSION_SIM_SUBMITTED/);
 });

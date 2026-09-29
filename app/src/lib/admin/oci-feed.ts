@@ -2,7 +2,14 @@ import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildOciExport, OCI_CONVERSION_CHECKOUT, OCI_CONVERSION_PURCHASE } from "@/lib/admin/oci";
+import {
+  buildOciExport,
+  OCI_CONVERSION_CHECKOUT,
+  OCI_CONVERSION_PURCHASE,
+  OCI_CONVERSION_SIM_STARTED,
+  OCI_CONVERSION_SIM_SUBMITTED,
+  OCI_CONVERSION_VERIFIED,
+} from "@/lib/admin/oci";
 
 // Shared by /api/ads/conversions and /api/ads/{purchase,checkout}.csv.
 // Google Ads scheduled conversion upload (2026-09-23 — "I don't want to download
@@ -23,9 +30,19 @@ const WINDOW_DAYS = 90;
 // each action gets its own URL: ?action=purchase / ?action=checkout returns only
 // that action's rows (a connection must never receive another action's rows).
 // Without the parameter: every row (the original combined file).
+//
+// "verified" was missing until 2026-09-29 (Karina: "Lead verified … Awaiting
+// conversions"): only the two curso-2027 actions got a Data manager connection,
+// and the manual weekly CSV upload that used to carry Lead verified had been
+// retired — so every verified ad-click lead since July stayed unreported. The
+// two simulado actions are exposed the same way so a connection can be added
+// without another deploy.
 const ACTION_FILTER: Record<string, string> = {
   purchase: OCI_CONVERSION_PURCHASE,
   checkout: OCI_CONVERSION_CHECKOUT,
+  verified: OCI_CONVERSION_VERIFIED,
+  "simulado-started": OCI_CONVERSION_SIM_STARTED,
+  "simulado-submitted": OCI_CONVERSION_SIM_SUBMITTED,
 };
 
 /** Not a real Google click id (real ones are base64-like and never say this). */

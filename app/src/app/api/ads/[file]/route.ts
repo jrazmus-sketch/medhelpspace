@@ -3,8 +3,11 @@ import { serveOciFeed } from "@/lib/admin/oci-feed";
 
 // Google Ads Data manager (HTTPS source) refuses any URL that doesn't end in
 // ".csv". One connection = one conversion action, so:
-//   /api/ads/purchase.csv  → "Purchase" rows only
-//   /api/ads/checkout.csv  → "Checkout started" rows only
+//   /api/ads/purchase.csv            → "Purchase" rows only
+//   /api/ads/checkout.csv            → "Checkout started" rows only
+//   /api/ads/lead-verified.csv       → "Lead verified" rows only (funnels; added 2026-09-29)
+//   /api/ads/simulado-started.csv    → "Simulado started" rows only
+//   /api/ads/simulado-submitted.csv  → "Simulado submitted" rows only
 // Same Basic auth and logic as /api/ads/conversions (lib/admin/oci-feed.ts).
 
 export const dynamic = "force-dynamic";
@@ -12,6 +15,9 @@ export const dynamic = "force-dynamic";
 const FILES: Record<string, string> = {
   "purchase.csv": "purchase",
   "checkout.csv": "checkout",
+  "lead-verified.csv": "verified",
+  "simulado-started.csv": "simulado-started",
+  "simulado-submitted.csv": "simulado-submitted",
 };
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ file: string }> }) {
