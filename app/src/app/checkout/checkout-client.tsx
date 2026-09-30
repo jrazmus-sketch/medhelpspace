@@ -8,7 +8,7 @@ import { CardForm } from "./card-form";
 import { BillingForm } from "./billing-form";
 import { validateBilling, formatCpf, formatCep, type BillingDetails } from "@/lib/br";
 import type { InstallmentOption } from "@/lib/pagbank/types";
-import { trackPurchase } from "@/lib/analytics/track";
+import { trackBeginCheckout, trackPurchase } from "@/lib/analytics/track";
 
 const EMPTY_BILLING: BillingDetails = {
   firstName: "",
@@ -208,6 +208,15 @@ export function CheckoutClient({
     if (!initialCoupon || appliedCoupon) return;
     const id = setTimeout(() => applyCoupon(initialCoupon), 0);
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // GA4 `begin_checkout` once per checkout page open (list price, pre-coupon).
+  const beginTracked = useRef(false);
+  useEffect(() => {
+    if (beginTracked.current) return;
+    beginTracked.current = true;
+    trackBeginCheckout({ turma: cohortSlug, turmaName: cohortName, value: amountCents / 100 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

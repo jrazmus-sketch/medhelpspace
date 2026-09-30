@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { SiteText } from "./site-text";
+import { trackBuyClick, trackFreeSimulatorClick } from "@/lib/analytics/track";
 
 function ecgSample(phase: number): number {
   // Flat isoelectric baseline
@@ -301,6 +302,7 @@ export function HeroSection() {
           <div className="flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row">
             <Link
               href="/loja"
+              onClick={() => trackBuyClick("hero")}
               className="w-full rounded-xl px-8 py-4 text-center text-base font-bold text-white transition-all hover:opacity-85 hover:-translate-y-px active:scale-95 sm:w-auto"
               style={{
                 background: "var(--brand)",
@@ -315,6 +317,7 @@ export function HeroSection() {
                 table — the magnet page already plumbs UTM straight into the row. */}
             <Link
               href="/questoes-revalida?utm_source=site&utm_medium=hero&utm_campaign=home"
+              onClick={() => trackFreeSimulatorClick("hero")}
               className="w-full rounded-xl border px-8 py-4 text-center text-base font-semibold text-white transition-all hover:-translate-y-px hover:bg-white/5 active:scale-95 sm:w-auto"
               style={{ borderColor: "rgba(255,255,255,0.22)" }}
             >

@@ -15,6 +15,7 @@ import { isGmailAddress } from "@/lib/gmail";
 import { useAuth } from "@/providers/auth-provider";
 import { WhatsappOptinStep } from "@/components/magnet/whatsapp-optin-step";
 import { shouldShowWhatsappStep, type WhatsappStepInfo } from "@/lib/whatsapp-optin";
+import { trackLeadSubmit } from "@/lib/analytics/track";
 
 // Gift-first email gate for /flashcards-revalida. Two steps up front, then a
 // "check your inbox" confirmation — the 50-card deck is delivered by a magic link
@@ -77,6 +78,7 @@ export function FlashcardsGate({ utm }: { utm: MagnetUtm }) {
         );
         return;
       }
+      trackLeadSubmit("flashcards");
       setWa(res.whatsapp ?? null);
       setPhase("cohort");
     });

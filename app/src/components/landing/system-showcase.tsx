@@ -115,7 +115,7 @@ function FeatureRow({ f, i, vars }: { f: Feature; i: number; vars: Record<string
   const numEdge = reversed ? { right: "-0.75rem" } : { left: "-0.75rem" };
 
   return (
-    <div ref={ref} className="lp-reveal relative isolate overflow-hidden">
+    <div ref={ref} id={`feature-${f.id}`} className="lp-reveal relative isolate overflow-hidden">
       {/* Separator between tools — an accent-tinted glowing hairline (skip the first). */}
       {i > 0 && (
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0">

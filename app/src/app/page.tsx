@@ -14,6 +14,7 @@ import { FaqSection } from "@/components/landing/faq-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { StickyCTABar } from "@/components/landing/sticky-cta-bar";
 import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
+import { LandingEvents } from "@/components/analytics/landing-events";
 import { getSitePagePublished } from "@/lib/queries/site-sections";
 import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
@@ -62,6 +63,8 @@ export default async function LandingPage() {
       <LandingFooter />
       <StickyCTABar />
       <WhatsAppButton product="revalida" published={whatsappPublished} />
+      {/* GA4 funnel: view_<section>_section + scroll_25/50/75/90 (Karina 2026-09-30) */}
+      <LandingEvents />
     </div>
   );
 }

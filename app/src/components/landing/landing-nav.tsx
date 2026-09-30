@@ -1,5 +1,6 @@
 "use client";
 
+import { trackBuyClick } from "@/lib/analytics/track";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/providers/auth-provider";
@@ -115,6 +116,7 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
 
               <Link
                 href="/loja"
+                onClick={() => trackBuyClick("nav")}
                 className="rounded-lg px-3.5 py-2 text-sm font-bold text-white transition-all hover:opacity-85 active:scale-95 sm:px-4"
                 style={{ background: "var(--brand)" }}
               >

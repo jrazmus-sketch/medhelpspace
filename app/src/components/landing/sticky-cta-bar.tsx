@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics/config";
 import { hasConsentChoice } from "@/lib/analytics/consent";
+import { trackBuyClick } from "@/lib/analytics/track";
 
 export function StickyCTABar() {
   const [pastHero, setPastHero] = useState(false);
@@ -81,6 +82,7 @@ export function StickyCTABar() {
         </div>
         <Link
           href="/loja"
+          onClick={() => trackBuyClick("sticky_bar")}
           className="flex-shrink-0 rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-brand/20 transition-all active:scale-95"
         >
           Comprar Agora →

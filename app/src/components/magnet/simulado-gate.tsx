@@ -1,5 +1,6 @@
 "use client";
 
+import { trackLeadSubmit } from "@/lib/analytics/track";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { startSimulado } from "@/actions/simulado";
@@ -69,6 +70,7 @@ export function SimuladoGate({ utm, cohorts }: { utm: MagnetUtm; cohorts: Cohort
 
       if (res.status === "started") {
         trackFunnel("quiz_start", utm, "simulado-100");
+        trackLeadSubmit("simulado100");
         router.push("/simulado-revalida/prova");
         return;
       }

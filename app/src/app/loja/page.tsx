@@ -3,6 +3,7 @@ import { AnnouncementBar } from "@/components/landing/announcement-bar";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
+import { TrackedLink } from "@/components/analytics/tracked-link";
 import { getSitePagePublished } from "@/lib/queries/site-sections";
 import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
 import { SiteText } from "@/components/landing/site-text";
@@ -403,13 +404,15 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
 
             <IncludedList timing={timing} />
 
-            <Link
+            <TrackedLink
               href={`/checkout?cohort=${cohort.slug}`}
+              event="click_buy_now"
+              params={{ location: "loja", turma: cohort.slug }}
               aria-label={`Comprar ${cohort.name}`}
               className="mt-auto block w-full rounded-xl bg-brand py-3.5 text-center text-base font-bold text-white shadow-md shadow-brand/30 transition-all hover:bg-brand/85 hover:-translate-y-0.5 active:scale-95"
             >
               <SiteText as="span" k="loja.card.cta" fallback="Comprar agora" />
-            </Link>
+            </TrackedLink>
           </div>
         </div>
       </div>

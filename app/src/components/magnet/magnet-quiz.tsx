@@ -19,6 +19,7 @@ import { SiteText } from "@/components/landing/site-text";
 import { useAuth } from "@/providers/auth-provider";
 import { WhatsappOptinStep } from "@/components/magnet/whatsapp-optin-step";
 import { shouldShowWhatsappStep, type WhatsappStepInfo } from "@/lib/whatsapp-optin";
+import { trackLeadSubmit } from "@/lib/analytics/track";
 import { PayoffPreview } from "@/components/magnet/payoff-preview";
 import { PlatformPeekModal } from "@/components/magnet/platform-peek";
 import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
@@ -251,6 +252,7 @@ export function MagnetQuiz({
         return;
       }
       setEmail(em);
+      trackLeadSubmit("simulado15");
       // Email now on file — disarm the exit-intent "salvar para depois" modal.
       markLeadCaptured();
       setQuestions([...freeQuestions, ...res.gatedQuestions]);

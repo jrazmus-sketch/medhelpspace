@@ -8,6 +8,7 @@ import type { CohortProduct } from "@/types/supabase";
 import { getCohortTiming } from "@/lib/cohort-timing";
 import { SiteText } from "./site-text";
 import { PromoBanner, type PromoBannerData } from "./promo-banner";
+import { trackBuyClick, trackFreeSimulatorClick, trackTurmaSelect } from "@/lib/analytics/track";
 
 // The generic 60D feature line states the rule ("liberado 60 dias antes"); the
 // selected turma's live unlock status is shown separately below the price.
@@ -141,7 +142,10 @@ export function PricingCTA({
                 {cohorts.map((c, i) => (
                   <button
                     key={c.slug}
-                    onClick={() => setSelected(i)}
+                    onClick={() => {
+                      setSelected(i);
+                      trackTurmaSelect(c.slug);
+                    }}
                     className="inline-flex min-h-[44px] items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-all"
                     style={
                       selected === i
@@ -263,6 +267,7 @@ export function PricingCTA({
           {/* CTA */}
           <Link
             href={`/checkout?cohort=${cohort.slug}`}
+            onClick={() => trackBuyClick("pricing", cohort.slug)}
             className="block w-full rounded-xl py-4 text-center text-base font-bold text-white transition-all hover:opacity-85 active:scale-95"
             style={{
               background: "var(--brand)",
@@ -290,6 +295,7 @@ export function PricingCTA({
         <div className="mt-10 border-t pt-8 text-center" style={{ borderColor: "var(--lp-border)" }}>
           <Link
             href="/questoes-revalida?utm_source=site&utm_medium=pricing_downsell&utm_campaign=home"
+            onClick={() => trackFreeSimulatorClick("pricing_downsell")}
             className="inline-flex min-h-[44px] items-center justify-center rounded-xl border px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-px active:scale-95"
             style={{ borderColor: "var(--lp-border)", color: "var(--lp-fg-55)", background: "var(--lp-fg-05)" }}
           >

@@ -62,7 +62,7 @@ export function WhatsAppButton({ product, published }: { product: WhatsAppProduc
       title={preview ? "Visível só para administradores até ser publicado" : WHATSAPP_ARIA_LABEL}
       data-whatsapp-button={product}
       data-preview={preview ? "1" : undefined}
-      onClick={() => trackEvent("whatsapp_click", { product, page: pathname ?? "" })}
+      onClick={() => trackEvent("click_whatsapp", { product, page: pathname ?? "" })}
       className="fixed right-4 z-[65] flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_6px_20px_rgba(0,0,0,0.28)] transition-[bottom,transform] duration-300 [--wa-gap:1rem] hover:scale-105 active:scale-95 motion-reduce:transition-none motion-reduce:hover:transform-none md:right-6 md:[--wa-gap:1.5rem]"
       style={{
         // edge gap (1rem phone / 1.5rem desktop) + iPhone home-bar inset + whatever

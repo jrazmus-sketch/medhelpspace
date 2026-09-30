@@ -1,5 +1,6 @@
 "use client";
 
+import { trackLeadSubmit } from "@/lib/analytics/track";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { saveLeadForLater } from "@/actions/magnet";
 import {
@@ -139,6 +140,7 @@ export function ExitIntentCapture({ utm }: { utm: MagnetUtm }) {
         setErr("Não foi possível salvar. Confira o e-mail e tente de novo.");
         return;
       }
+      trackLeadSubmit("exit_intent");
       setDone(true);
     });
   }
