@@ -1043,7 +1043,7 @@ function NotificationsEditor({ prefs }: { prefs: StudyPlanPrefs }) {
         <SaveNote status={daily.status} />
       </label>
       <p style={{ fontSize: 12, color: "var(--muted-foreground)", fontStyle: "italic", marginTop: 8, padding: "10px 14px", background: "color-mix(in srgb, var(--brand) 5%, transparent)", borderRadius: "var(--radius-sm)" }}>
-        WhatsApp em breve. Notificações no app aparecem no sino do header.
+        Notificações no app aparecem no sino do header.
       </p>
     </div>
   );
