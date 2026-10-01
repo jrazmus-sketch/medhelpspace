@@ -29,6 +29,10 @@ test("the section list covers Questões, MedVoice, 60D and pricing, with stable 
   assert.match(read("components/landing/sixty-d-section.tsx"), /id="medhelp60d"/);
   assert.match(read("components/landing/pricing-cta.tsx"), /id="precos"/);
   assert.match(read("components/landing/faq-section.tsx"), /id="faq"/);
+  // A block taller than ~2.9 screens can never be 35% visible (pricing on a 375×667
+  // phone is ~1970px), so "fills half the screen" must also count as reached.
+  const events = read("components/analytics/landing-events.tsx");
+  assert.match(events, /e\.intersectionRect\.height < screen \* 0\.5/);
 });
 
 test("the homepage mounts the tracker and every CTA fires its click event", () => {
