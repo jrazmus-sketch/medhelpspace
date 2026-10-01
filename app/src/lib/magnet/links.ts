@@ -95,10 +95,13 @@ export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> 
 // VOLTA5 deactivated 2026-07-11) — kept only for not-yet-reassigned leads. Single
 // source of truth for the cron (code + percent + checkout link) and the email copy
 // ({{coupon}} / {{couponPercent}}). Seeded by schema-patch-lead-recovery.sql — keep in sync.
+// Karina 2026-10-01: the 2027 turmas offer BEMVINDO10 (she created it in /admin/coupons:
+// 10%, 2027.1 + 2027.2, 1 use per person) instead of VOLTA10, which stays active so a
+// code already mailed keeps working.
 export const RECOVERY_COUPONS: Record<string, { code: string; percent: number }> = {
   [REVALIDA_2026_2_SLUG]: { code: "VOLTA5", percent: 5 },
-  [REVALIDA_2027_1_SLUG]: { code: "VOLTA10", percent: 10 },
-  [REVALIDA_20272_SLUG]: { code: "VOLTA10", percent: 10 },
+  [REVALIDA_2027_1_SLUG]: { code: "BEMVINDO10", percent: 10 },
+  [REVALIDA_20272_SLUG]: { code: "BEMVINDO10", percent: 10 },
 };
 
 export function magnetUrl(): string {

@@ -209,7 +209,7 @@ export async function GET(request: NextRequest) {
       if (!kind) continue; // not due yet
 
       // Segment-B leads never completed the cohort picker, so target_cohort is the DB
-      // default (revalida-2027-1) → the turma-scoped recovery coupon (VOLTA10, 10%). The
+      // default (revalida-2027-1) → the turma-scoped recovery coupon (BEMVINDO10, 10%). The
       // fallback keeps an unknown/future cohort on the 2027-1 code rather than crashing.
       //
       // Launch condition: while coupons are closed on that turma the code is withheld,

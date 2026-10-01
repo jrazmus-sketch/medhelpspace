@@ -12,6 +12,7 @@
 
 // Pure constants only — keeps this module client-importable (see above).
 import { SOCIAL_PROFILES, SOCIAL_TAGLINE } from "@/lib/social";
+import { RECOVERY_COUPONS, REVALIDA_2027_1_SLUG, WELCOME_COUPONS } from "@/lib/magnet/links";
 
 export type EmailVariable = { tag: string; description: string };
 
@@ -1584,7 +1585,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     variables: [
       { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "resumeUrl", description: "Link que retoma o simulado de onde parou (token)" },
-      { tag: "coupon", description: "Cupom de recuperação (ex.: VOLTA10)" },
+      { tag: "coupon", description: "Cupom de recuperação (ex.: BEMVINDO10)" },
       { tag: "couponPercent", description: "Percentual do cupom (ex.: 10%)" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
     ],
@@ -1611,7 +1612,7 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     variables: [
       { tag: "greeting", description: "Saudação pré-montada (ex.: 'Oi, Maria! ' ou vazio)" },
       { tag: "resumeUrl", description: "Link que retoma o simulado de onde parou (token)" },
-      { tag: "coupon", description: "Cupom de recuperação (ex.: VOLTA10)" },
+      { tag: "coupon", description: "Cupom de recuperação (ex.: BEMVINDO10)" },
       { tag: "couponPercent", description: "Percentual do cupom (ex.: 10%)" },
       { tag: "checkoutUrl", description: "Link de checkout com cupom + e-mail" },
       { tag: "unsubscribeUrl", description: "Link de cancelamento (one-click)" },
@@ -1725,12 +1726,26 @@ export const SAMPLE_VARS: Record<string, string> = {
     "https://medhelpspace.com.br/questoes-revalida/recuperar?t=00000000-0000-0000-0000-000000000000",
   resumeUrl:
     "https://medhelpspace.com.br/questoes-revalida?retomar=00000000-0000-0000-0000-000000000000",
-  coupon: "VOLTA10",
-  couponPercent: "10%",
+  coupon: WELCOME_COUPONS[REVALIDA_2027_1_SLUG].code,
+  couponPercent: `${WELCOME_COUPONS[REVALIDA_2027_1_SLUG].percent}%`,
 };
 
+// {{coupon}} is filled by the cron from WELCOME_COUPONS or RECOVERY_COUPONS depending on
+// the e-mail, so the preview and the test send show the code that template really sends
+// (a single sample once showed the recovery code in every welcome e-mail).
+function sampleCouponFor(kind: string): { code: string; percent: number } {
+  return (kind.startsWith("lead-recover-") ? RECOVERY_COUPONS : WELCOME_COUPONS)[REVALIDA_2027_1_SLUG];
+}
+
 export function sampleVarsFor(template: EmailTemplateRow): Record<string, string> {
+  const coupon = sampleCouponFor(template.kind);
+  const vars: Record<string, string> = {
+    ...SAMPLE_VARS,
+    coupon: coupon.code,
+    couponPercent: `${coupon.percent}%`,
+    checkoutUrl: `https://medhelpspace.com.br/checkout?cohort=${REVALIDA_2027_1_SLUG}&cupom=${coupon.code}`,
+  };
   const out: Record<string, string> = {};
-  for (const v of template.variables) out[v.tag] = SAMPLE_VARS[v.tag] ?? `[${v.tag}]`;
+  for (const v of template.variables) out[v.tag] = vars[v.tag] ?? `[${v.tag}]`;
   return out;
 }

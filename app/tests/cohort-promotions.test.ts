@@ -112,6 +112,7 @@ test("no raw coupon-table lookups outside the allowed places", () => {
   const allowed = new Set([
     "lib/magnet/links.ts",                  // the tables themselves
     "components/magnet/magnet-reward.tsx",  // client: gated by its couponPaused prop
+    "lib/email-render.ts",                  // editor preview / test-send sample only — never reaches a lead
   ]);
   const offenders: string[] = [];
   const walk = (dir: string) => {
