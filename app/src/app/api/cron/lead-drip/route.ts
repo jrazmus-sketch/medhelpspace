@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // The discount lives ONLY on the D2 step (the turma's WELCOME coupon — REVALIDA5 /
-// REVALIDA10, see WELCOME_COUPONS). D1/D4/D7 are pure nurture (no coupon → checkout
+// BEMVINDO10, see WELCOME_COUPONS). D1/D4/D7 are pure nurture (no coupon → checkout
 // lands on the live storefront price). The old large-discount cycle (RETA2026 on
 // every step + ULTIMA2026 final) was removed 2026-07-02: step 5 (lead-final) is now
 // skipped for ALL turmas — the entry is kept so re-enabling a final push is a
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    // Welcome discount on D2 only; the code is the turma's own (REVALIDA5 / REVALIDA10).
+    // Welcome discount on D2 only; the code is the turma's own (REVALIDA5 / BEMVINDO10).
     const coupon =
       nextStep.step === 2
         ? (offeredCoupon(WELCOME_COUPONS, targetCohort, couponPause.paused)?.code ?? null)

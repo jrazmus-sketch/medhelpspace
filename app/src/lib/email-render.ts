@@ -1694,8 +1694,7 @@ export const SAMPLE_VARS: Record<string, string> = {
   deckUrl: "https://medhelpspace.com.br/flashcards-gratis",
   resultUrl:
     "https://medhelpspace.com.br/questoes-revalida/resultado?lead=00000000-0000-0000-0000-000000000000",
-  checkoutUrl:
-    "https://medhelpspace.com.br/checkout?cohort=revalida-2027-1&cupom=REVALIDA10",
+  checkoutUrl: `https://medhelpspace.com.br/checkout?cohort=${REVALIDA_2027_1_SLUG}&cupom=${WELCOME_COUPONS[REVALIDA_2027_1_SLUG].code}`,
   unsubscribeUrl: "https://medhelpspace.com.br/api/leads/unsubscribe?t=sample",
   // Simulado-funnel samples. `simScore` is deliberately NOT `score`: the quiz
   // funnel's score is out of 15 and this one is out of 100, and sharing a tag made

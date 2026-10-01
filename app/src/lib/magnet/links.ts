@@ -75,16 +75,17 @@ export const UNDECIDED_COHORT = "undecided";
 // The slug constants above are still the right way to REFER to a specific turma.
 
 // Per-turma WELCOME coupon: a small discount auto-applied at the end of the free
-// test and delivered in ONE follow-up drip email (D2). Each code is locked to its
-// turma(s) in the DB (coupons.applies_to_cohort_slugs): REVALIDA10 (10%) redeems on
-// the two live turmas (2027.1 + 2027.2). The 2026-2 entry is legacy — that turma
-// went off sale 2026-07-11 and its REVALIDA5 coupon was deactivated; the entry stays
-// so a not-yet-reassigned 2026-2 lead renders a stable (if unredeemable) code instead
-// of crashing. Keep in sync with schema-patch-retire-cohort-2026-2.sql.
+// test and delivered in the funnels' drip emails ({{coupon}}). Each code is locked to
+// its turma(s) in the DB (coupons.applies_to_cohort_slugs): BEMVINDO10 (10%) redeems
+// on the two live turmas (2027.1 + 2027.2) — Karina's own code (2026-10-01), replacing
+// REVALIDA10, which stays active so a code already mailed keeps working. The 2026-2
+// entry is legacy — that turma went off sale 2026-07-11 and its REVALIDA5 coupon was
+// deactivated; the entry stays so a not-yet-reassigned 2026-2 lead renders a stable (if
+// unredeemable) code instead of crashing. Keep in sync with schema-patch-retire-cohort-2026-2.sql.
 export const WELCOME_COUPONS: Record<string, { code: string; percent: number }> = {
   [REVALIDA_2026_2_SLUG]: { code: "REVALIDA5", percent: 5 },
-  [REVALIDA_2027_1_SLUG]: { code: "REVALIDA10", percent: 10 },
-  [REVALIDA_20272_SLUG]: { code: "REVALIDA10", percent: 10 },
+  [REVALIDA_2027_1_SLUG]: { code: "BEMVINDO10", percent: 10 },
+  [REVALIDA_20272_SLUG]: { code: "BEMVINDO10", percent: 10 },
   // Undecided leads: the all-turma FLASH5 (5%), applied at checkout after they pick.
   [UNDECIDED_COHORT]: { code: "FLASH5", percent: 5 },
 };
