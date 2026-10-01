@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { Plus, Search, Pencil, Users, Power, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Users, Power, Trash2, RotateCcw } from "lucide-react";
 
 interface Coupon {
   id: number;
@@ -19,6 +19,8 @@ interface Coupon {
   active: boolean;
   cohortSlugs: string[] | null;
   notes: string | null;
+  /** Set = "excluído": hidden from the list unless "Ver excluídos" is on. */
+  archivedAt: string | null;
 }
 
 interface Redemption {
@@ -34,6 +36,12 @@ interface CohortOption {
   slug: string;
   name: string;
 }
+
+// Row icon buttons: a full 44px tap target on phones, compact on desktop.
+const ROW_ACTION_BASE =
+  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground transition-colors sm:min-h-0 sm:min-w-0 sm:p-1.5";
+const ROW_ACTION = `${ROW_ACTION_BASE} hover:bg-accent hover:text-foreground`;
+const ROW_ACTION_DANGER = `${ROW_ACTION_BASE} hover:bg-destructive/10 hover:text-destructive`;
 
 function fmtMoney(cents: number) {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -117,14 +125,20 @@ export function CouponsClient({
   const [redemptionsTarget, setRedemptionsTarget] = useState<Coupon | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [rowError, setRowError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const cohortName = (slug: string) => cohortOptions.find((c) => c.slug === slug)?.name ?? slug;
 
-  const filtered = coupons.filter((c) => {
-    const q = search.trim().toLowerCase();
-    return !q || c.code.toLowerCase().includes(q);
-  });
+  // Archived ("excluídos") coupons sit at the end of the list, only when asked for.
+  const archivedCount = coupons.filter((c) => c.archivedAt).length;
+  const filtered = coupons
+    .filter((c) => {
+      const q = search.trim().toLowerCase();
+      return (showArchived || !c.archivedAt) && (!q || c.code.toLowerCase().includes(q));
+    })
+    .sort((a, b) => Number(!!a.archivedAt) - Number(!!b.archivedAt));
 
   function fmtDiscount(c: Coupon) {
     return c.discountType === "percent" ? `${c.discountValue}%` : fmtMoney(c.discountValue);
@@ -221,6 +235,25 @@ export function CouponsClient({
     });
   }
 
+  // Brings an archived coupon back to the list — inactive; switching it on is a
+  // separate click, so a restore never puts a code back in circulation by itself.
+  function restore(c: Coupon) {
+    startTransition(async () => {
+      setRowError(null);
+      const res = await fetch("/api/admin/coupons", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: c.id, archived: false }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setRowError(data.errorKey ? t(`coupons.${data.errorKey}`) : (data.error ?? t("errors.generic")));
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   function confirmDelete() {
     if (!deleteTarget) return;
     startTransition(async () => {
@@ -254,24 +287,42 @@ export function CouponsClient({
         <button
           type="button"
           onClick={() => { setForm(emptyForm()); setFormError(null); }}
-          className="flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand/85"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand/85 sm:min-h-0"
         >
           <Plus className="h-4 w-4" />
           {t("coupons.create")}
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("coupons.searchPlaceholder")}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
-        />
+      {/* Search + archived toggle */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("coupons.searchPlaceholder")}
+            className="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+          />
+        </div>
+        {archivedCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowArchived((v) => !v)}
+            aria-pressed={showArchived}
+            className="min-h-11 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:min-h-0"
+          >
+            {showArchived ? t("coupons.hideArchived") : t("coupons.showArchived", { count: archivedCount })}
+          </button>
+        )}
       </div>
+
+      {rowError && (
+        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {rowError}
+        </p>
+      )}
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-border">
@@ -302,54 +353,78 @@ export function CouponsClient({
               </tr>
             )}
             {filtered.map((c) => (
-              <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-1/50 transition-colors">
-                <td className="px-4 py-3 font-mono font-semibold text-foreground whitespace-nowrap">{c.code}</td>
-                <td className="px-4 py-3 text-foreground whitespace-nowrap">{fmtDiscount(c)}</td>
+              <tr
+                key={c.id}
+                className={`border-b border-border last:border-0 hover:bg-surface-1/50 transition-colors ${c.archivedAt ? "text-muted-foreground" : ""}`}
+              >
+                <td className={`px-4 py-3 font-mono font-semibold whitespace-nowrap ${c.archivedAt ? "line-through" : "text-foreground"}`}>{c.code}</td>
+                <td className={`px-4 py-3 whitespace-nowrap ${c.archivedAt ? "" : "text-foreground"}`}>{fmtDiscount(c)}</td>
                 <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{fmtUses(c)}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{fmtWindow(c)}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground max-w-[14rem] truncate" title={fmtCohorts(c)}>
                   {fmtCohorts(c)}
                 </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    c.active
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  }`}>
-                    {c.active ? t("coupons.active") : t("coupons.inactive")}
-                  </span>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {c.archivedAt ? (
+                    <span className="inline-flex items-center rounded-full border border-dashed border-border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                      {t("coupons.archived")}
+                    </span>
+                  ) : (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      c.active
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    }`}>
+                      {c.active ? t("coupons.active") : t("coupons.inactive")}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-end gap-1">
                     <button
-                      type="button" title={t("coupons.redemptions")}
+                      type="button" title={t("coupons.redemptions")} aria-label={t("coupons.redemptions")}
                       onClick={() => setRedemptionsTarget(c)}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      className={ROW_ACTION}
                     >
                       <Users className="h-4 w-4" />
                     </button>
-                    <button
-                      type="button" title={t("common.edit")}
-                      onClick={() => { setForm(couponToForm(c)); setFormError(null); }}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button" title={c.active ? t("coupons.deactivate") : t("coupons.activate")}
-                      onClick={() => toggleActive(c)}
-                      disabled={isPending}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
-                    >
-                      <Power className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button" title={t("coupons.delete")}
-                      onClick={() => { setDeleteTarget(c); setDeleteError(null); }}
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {c.archivedAt ? (
+                      <button
+                        type="button" title={t("coupons.restore")} aria-label={t("coupons.restore")}
+                        onClick={() => restore(c)}
+                        disabled={isPending}
+                        className={`${ROW_ACTION} disabled:opacity-50`}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button" title={t("common.edit")} aria-label={t("common.edit")}
+                          onClick={() => { setForm(couponToForm(c)); setFormError(null); }}
+                          className={ROW_ACTION}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title={c.active ? t("coupons.deactivate") : t("coupons.activate")}
+                          aria-label={c.active ? t("coupons.deactivate") : t("coupons.activate")}
+                          onClick={() => toggleActive(c)}
+                          disabled={isPending}
+                          className={`${ROW_ACTION} disabled:opacity-50`}
+                        >
+                          <Power className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button" title={t("coupons.delete")} aria-label={t("coupons.delete")}
+                          onClick={() => { setDeleteTarget(c); setDeleteError(null); }}
+                          className={ROW_ACTION_DANGER}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -595,7 +670,9 @@ export function CouponsClient({
           <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-6 shadow-xl">
             <h2 className="mb-2 text-base font-semibold text-foreground">{t("coupons.deleteTitle")}</h2>
             <p className="mb-4 text-sm text-muted-foreground">
-              {t("coupons.deleteDesc", { code: deleteTarget.code })}
+              {deleteTarget.redemptionsUsed > 0
+                ? t("coupons.deleteDescUsed", { code: deleteTarget.code, count: deleteTarget.redemptionsUsed })
+                : t("coupons.deleteDesc", { code: deleteTarget.code })}
             </p>
             {deleteError && (
               <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">

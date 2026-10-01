@@ -52,6 +52,7 @@ export default async function CouponsPage() {
     active: c.active as boolean,
     cohortSlugs: (c.applies_to_cohort_slugs as string[] | null) ?? null,
     notes: c.notes as string | null,
+    archivedAt: (c.archived_at as string | null) ?? null,
   }));
 
   const redemptionRows = (redemptions ?? []).map((r) => ({

@@ -40,6 +40,8 @@ type CouponInput = {
   cohortSlugs?: string[] | null;
   notes?: string | null;
   active?: boolean;
+  /** false = restore an archived ("excluído") coupon. It comes back inactive. */
+  archived?: boolean;
 };
 
 // Validate + normalize the mutable fields. Returns a clean row patch or an error key.
@@ -109,11 +111,22 @@ function buildPatch(b: CouponInput, requireAll: boolean, validSlugs: Set<string>
 
   if (b.notes !== undefined) patch.notes = (b.notes ?? "").trim() || null;
   if (b.active !== undefined) patch.active = !!b.active;
+  if (b.archived === false) patch.archived_at = null;
 
   return { patch };
 }
 
 const ERROR_STATUS_OK = 400;
+
+// A code is unique across live AND archived coupons (coupons_code_upper_uniq), so a
+// clash with an archived one gets its own message: restore it rather than recreate it.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function codeTakenKey(admin: any, code: unknown): Promise<string> {
+  if (typeof code !== "string" || !code) return "errCodeTaken";
+  const exact = code.replace(/[%_\\]/g, "\\$&"); // ilike = case-insensitive equality here
+  const { data } = await admin.from("coupons").select("archived_at").ilike("code", exact).maybeSingle();
+  return data?.archived_at ? "errCodeArchived" : "errCodeTaken";
+}
 
 export async function POST(request: NextRequest) {
   const gate = await requireBillingAdmin();
@@ -131,7 +144,9 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await admin.from("coupons").insert(built.patch).select("*").single();
   if (error) {
-    if (error.code === "23505") return NextResponse.json({ errorKey: "errCodeTaken" }, { status: 409 });
+    if (error.code === "23505") {
+      return NextResponse.json({ errorKey: await codeTakenKey(admin, built.patch.code) }, { status: 409 });
+    }
     console.error("coupon create failed:", error);
     return NextResponse.json({ error: "Erro ao criar cupom." }, { status: 500 });
   }
@@ -158,7 +173,13 @@ export async function PATCH(request: NextRequest) {
 
   const { data, error } = await admin.from("coupons").update(built.patch).eq("id", body.id).select("*").single();
   if (error) {
-    if (error.code === "23505") return NextResponse.json({ errorKey: "errCodeTaken" }, { status: 409 });
+    if (error.code === "23505") {
+      return NextResponse.json({ errorKey: await codeTakenKey(admin, built.patch.code) }, { status: 409 });
+    }
+    // coupons_archived_inactive: an archived coupon cannot be switched on.
+    if (error.code === "23514" && String(error.message).includes("coupons_archived_inactive")) {
+      return NextResponse.json({ errorKey: "errArchived" }, { status: 409 });
+    }
     console.error("coupon update failed:", error);
     return NextResponse.json({ error: "Erro ao atualizar cupom." }, { status: 500 });
   }
@@ -173,17 +194,42 @@ export async function DELETE(request: NextRequest) {
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!id) return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
 
-  // Refuse to hard-delete a coupon that's been used — preserve the redemption
-  // audit trail. The UI offers "deactivate" for that case instead.
-  const { data: coupon } = await admin.from("coupons").select("redemptions_used").eq("id", id).single();
-  if (coupon && (coupon.redemptions_used as number) > 0) {
-    return NextResponse.json({ errorKey: "deleteBlocked" }, { status: 409 });
-  }
+  const { data: coupon } = await admin.from("coupons").select("redemptions_used").eq("id", id).maybeSingle();
+  if (!coupon) return NextResponse.json({ error: "Cupom não encontrado." }, { status: 404 });
+
+  // An embaixador's code is their attribution link: archiving it would silently stop
+  // their sales from being credited. Swap the coupon on the ambassador first.
+  const { count: ambassadorRefs } = await admin
+    .from("ambassadors")
+    .select("id", { count: "exact", head: true })
+    .eq("coupon_id", id)
+    .neq("status", "terminated");
+  if ((ambassadorRefs ?? 0) > 0) return NextResponse.json({ errorKey: "deleteAmbassador" }, { status: 409 });
+
+  // A used coupon is ARCHIVED, never deleted (schema-patch-coupon-archive.sql): orders
+  // point at it, and coupon_redemptions would cascade away with it. Archived = gone from
+  // the list and switched off for good (the DB keeps it inactive); history intact.
+  if ((coupon.redemptions_used as number) > 0) return archive(admin, id);
 
   const { error } = await admin.from("coupons").delete().eq("id", id);
   if (error) {
+    // Unused but still referenced (e.g. an order that never completed) → archive too.
+    if (error.code === "23503") return archive(admin, id);
     console.error("coupon delete failed:", error);
     return NextResponse.json({ error: "Erro ao excluir cupom." }, { status: 500 });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, archived: false });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function archive(admin: any, id: number): Promise<NextResponse> {
+  const { error } = await admin
+    .from("coupons")
+    .update({ archived_at: new Date().toISOString(), active: false })
+    .eq("id", id);
+  if (error) {
+    console.error("coupon archive failed:", error);
+    return NextResponse.json({ error: "Erro ao excluir cupom." }, { status: 500 });
+  }
+  return NextResponse.json({ ok: true, archived: true });
 }

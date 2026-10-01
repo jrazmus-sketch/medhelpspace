@@ -1336,7 +1336,14 @@
     "redemptionDate": "Data",
     "deleteTitle": "Excluir cupom",
     "deleteDesc": "Excluir o cupom \"{{code}}\"? Esta ação não pode ser desfeita.",
-    "deleteBlocked": "Não é possível excluir um cupom já utilizado. Desative-o.",
+    "deleteDescUsed_one": "O cupom \"{{code}}\" já foi usado 1 vez. Ao excluir, ele sai da lista e não pode mais ser usado. O histórico da compra feita com ele continua guardado.",
+    "deleteDescUsed_other": "O cupom \"{{code}}\" já foi usado {{count}} vezes. Ao excluir, ele sai da lista e não pode mais ser usado. O histórico das compras feitas com ele continua guardado.",
+    "deleteAmbassador": "Este cupom é de um embaixador. Troque o cupom do embaixador antes de excluí-lo.",
+    "showArchived_one": "Ver 1 cupom excluído",
+    "showArchived_other": "Ver {{count}} cupons excluídos",
+    "hideArchived": "Ocultar excluídos",
+    "archived": "Excluído",
+    "restore": "Restaurar (volta inativo)",
     "delete": "Excluir",
     "deactivate": "Desativar",
     "activate": "Ativar",
@@ -1345,7 +1352,9 @@
     "errPercentRange": "A porcentagem deve estar entre 1 e 100.",
     "errFixedPositive": "O valor deve ser maior que zero.",
     "errWindow": "A data de início deve ser anterior à expiração.",
-    "errCodeTaken": "Já existe um cupom com este código."
+    "errCodeTaken": "Já existe um cupom com este código.",
+    "errCodeArchived": "Já existe um cupom excluído com este código. Abra \"Ver cupons excluídos\" e restaure-o.",
+    "errArchived": "Este cupom foi excluído. Restaure-o antes de ativá-lo."
   },
   "emailClicks": {
     "title": "Cliques de e-mail",

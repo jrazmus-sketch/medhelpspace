@@ -1336,7 +1336,14 @@
     "redemptionDate": "Date",
     "deleteTitle": "Delete coupon",
     "deleteDesc": "Delete coupon \"{{code}}\"? This cannot be undone.",
-    "deleteBlocked": "Can't delete a coupon that's already been used. Deactivate it instead.",
+    "deleteDescUsed_one": "Coupon \"{{code}}\" has been used once. Deleting removes it from the list and it can no longer be used. The purchase made with it stays on record.",
+    "deleteDescUsed_other": "Coupon \"{{code}}\" has been used {{count}} times. Deleting removes it from the list and it can no longer be used. The purchases made with it stay on record.",
+    "deleteAmbassador": "This coupon belongs to an ambassador. Change the ambassador's coupon before deleting it.",
+    "showArchived_one": "Show 1 deleted coupon",
+    "showArchived_other": "Show {{count}} deleted coupons",
+    "hideArchived": "Hide deleted",
+    "archived": "Deleted",
+    "restore": "Restore (comes back inactive)",
     "delete": "Delete",
     "deactivate": "Deactivate",
     "activate": "Activate",
@@ -1345,7 +1352,9 @@
     "errPercentRange": "Percentage must be between 1 and 100.",
     "errFixedPositive": "Amount must be greater than zero.",
     "errWindow": "Start date must be before the expiry date.",
-    "errCodeTaken": "A coupon with this code already exists."
+    "errCodeTaken": "A coupon with this code already exists.",
+    "errCodeArchived": "A deleted coupon already uses this code. Open \"Show deleted coupons\" and restore it.",
+    "errArchived": "This coupon was deleted. Restore it before activating it."
   },
   "emailClicks": {
     "title": "Email clicks",
