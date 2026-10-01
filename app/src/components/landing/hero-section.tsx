@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { SiteText } from "./site-text";
+import { HeroVideo } from "./hero-video";
 import { trackBuyClick, trackFreeSimulatorClick } from "@/lib/analytics/track";
 
 function ecgSample(phase: number): number {
@@ -176,8 +177,20 @@ function EcgBackground() {
   }, []);
 
   return (
-    // Outer clip: keeps rotated corners inside the section
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: 1 }} aria-hidden="true">
+    // Outer clip: keeps rotated corners inside the section. Pinned to the first
+    // screen (100svh), not the whole section: the hero grew taller with the sales
+    // video, and a full-height canvas moved the trace (MID = 48% of the height) down
+    // through the CTA / trust line instead of behind the subhead's scrim. The mask
+    // fades the grid out instead of cutting it at the 100svh edge.
+    <div
+      className="pointer-events-none absolute inset-x-0 top-0 h-[100svh] overflow-hidden"
+      style={{
+        zIndex: 1,
+        maskImage: "linear-gradient(to bottom, black 72%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 72%, transparent 100%)",
+      }}
+      aria-hidden="true"
+    >
       {/* Inner: 15% oversized so rotated corners don't peek through, centered transform */}
       <div
         style={{
@@ -201,7 +214,7 @@ function EcgBackground() {
 }
 
 /* The old fabricated QuizCard / MedVoiceCard previews were replaced by a real
-   in-hand app screenshot (public/landing/hero-medvoice.webp). */
+   in-hand app screenshot, and that by the sales video (hero-video.tsx). */
 
 export function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -349,35 +362,9 @@ export function HeroSection() {
 
       </div>
 
-      {/* Real app — MedVoice player in-hand. Kept in NORMAL FLOW (not absolute)
-          as the last flex child, with the SAME treatment at every width so it
-          always cuts at the section break (phone, tablet, desktop alike):
-          - `mt-auto` parks it against the section bottom, soaking up any leftover
-            height — critical on tall tablets where the copy is short and an
-            absolute/fixed-margin phone would leave a big gap above the break.
-          - the img's `translate-y-[15%]` bleeds it past the section edge where
-            `overflow-hidden` clips it, so it reads as going behind the next section.
-          In-flow means the copy can NEVER overlap it, no matter how short the
-          viewport (mobile Safari's url-bar shrinks 100svh) — which is why this
-          replaced the earlier `absolute bottom-0` version that overlapped the CTA. */}
-      <div
-        className="pointer-events-none mt-auto w-[84vw] max-w-[300px] sm:max-w-[360px]"
-        style={{ zIndex: 6 }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 44 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/landing/hero-medvoice.webp"
-            alt="MedHelpSpace no celular — player MedVoice em tela cheia"
-            className="block w-full translate-y-[15%]"
-            style={{ height: "auto", filter: "drop-shadow(0 6px 40px rgba(0,0,0,0.5))" }}
-          />
-        </motion.div>
-      </div>
+      {/* The sales video (replaced the in-hand MedVoice phone, 2026-10-01). In normal
+          flow under the copy, so the CTA can never be overlapped on short viewports. */}
+      <HeroVideo />
 
     </section>
   );

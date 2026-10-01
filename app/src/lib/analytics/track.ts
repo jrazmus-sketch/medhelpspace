@@ -89,6 +89,20 @@ export function trackBeginCheckout(input: { turma: string; turmaName: string; va
   });
 }
 
+/** The sales video's play button clicked (the YouTube player loads only after this). */
+export function trackVideoPlay(location: string): void {
+  trackEvent("click_play_video", { location });
+}
+
+/**
+ * Sales video watched to a milestone → watch_video_25 | _50 | _75 | _100. Own names on
+ * purpose: GA4's enhanced measurement uses video_start / video_progress / video_complete
+ * and may also pick up the YouTube iframe, so sharing those names would double-count.
+ */
+export function trackVideoProgress(percent: 25 | 50 | 75 | 100, location: string): void {
+  trackEvent(`watch_video_${percent}`, { video_percent: percent, location });
+}
+
 /** Push a Consent Mode v2 update when the visitor accepts/declines the banner. */
 export function updateConsent(granted: boolean): void {
   gtag("consent", "update", {

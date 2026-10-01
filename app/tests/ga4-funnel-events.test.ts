@@ -60,3 +60,19 @@ test("checkout, leads and WhatsApp use Karina's event names", () => {
   }
   assert.match(track, /`select_\$\{slug\.replace\(\/-\/g, "_"\)\}`/, "select_revalida_2027_1 shape");
 });
+
+test("the hero sales video: section id, click + watch milestones, YouTube only after the click", () => {
+  const video = read("components/landing/hero-video.tsx");
+  assert.ok(LANDING_SECTIONS.some((s) => s.id === "video-vendas" && s.section === "video"), "view_video_section");
+  assert.match(video, /id="video-vendas"/);
+  assert.match(video, /trackVideoPlay\("hero"\)/);
+  assert.match(video, /trackVideoProgress\(m, "hero"\)/);
+  assert.match(video, /trackVideoProgress\(100, "hero"\)/);
+  assert.match(read("components/landing/hero-section.tsx"), /<HeroVideo \/>/);
+  const track = read("lib/analytics/track.ts");
+  assert.ok(track.includes('"click_play_video"'), "click_play_video");
+  assert.match(track, /`watch_video_\$\{percent\}`/, "watch_video_25 … watch_video_100");
+  // privacy-enhanced host, and nothing YouTube in the markup until mode leaves "poster"
+  assert.match(video, /host: "https:\/\/www\.youtube-nocookie\.com"/);
+  assert.match(video, /mode === "poster" \? \(/);
+});
