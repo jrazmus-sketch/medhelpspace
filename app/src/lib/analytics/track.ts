@@ -71,7 +71,16 @@ export function trackFreeSimulatorClick(location: string): void {
 
 /** A turma chosen in the pricing selector → e.g. select_revalida_2027_1. */
 export function trackTurmaSelect(slug: string): void {
-  trackEvent(`select_${slug.replace(/-/g, "_")}`, { turma: slug });
+  trackEvent(turmaSelectEventName(slug), { turma: slug });
+}
+
+/**
+ * Event name for a turma pick. The 2027.2 slug is `revalida-20272` (no separator), so
+ * the year and the edition are split back apart → select_revalida_2027_2, matching
+ * select_revalida_2027_1 (Karina 2026-10-01). The `turma` parameter keeps the real slug.
+ */
+export function turmaSelectEventName(slug: string): string {
+  return `select_${slug.replace(/-/g, "_").replace(/_(\d{4})(\d)$/, "_$1_$2")}`;
 }
 
 /** A lead left an e-mail. `funnel` = flashcards | simulado15 | simulado100 | exit_intent. */
@@ -95,11 +104,23 @@ export function trackVideoPlay(location: string): void {
 }
 
 /**
- * Sales video watched to a milestone → watch_video_25 | _50 | _75 | _100. Own names on
+ * The video actually started playing (the player's first PLAYING state) → watch_video_start.
+ * Not the same as click_play_video: a click can end without playback (YouTube blocked or
+ * slow, a phone that wants a second tap), so the gap between the two is a real drop-off.
+ */
+export function trackVideoStart(location: string): void {
+  trackEvent("watch_video_start", { video_percent: 0, location });
+}
+
+/** Milestones the sales video reports while playing; 100 = reached the end. */
+export const VIDEO_MILESTONES = [25, 50, 75, 90] as const;
+
+/**
+ * Sales video watched to a milestone → watch_video_25 | _50 | _75 | _90 | _100. Own names on
  * purpose: GA4's enhanced measurement uses video_start / video_progress / video_complete
  * and may also pick up the YouTube iframe, so sharing those names would double-count.
  */
-export function trackVideoProgress(percent: 25 | 50 | 75 | 100, location: string): void {
+export function trackVideoProgress(percent: (typeof VIDEO_MILESTONES)[number] | 100, location: string): void {
   trackEvent(`watch_video_${percent}`, { video_percent: percent, location });
 }
 

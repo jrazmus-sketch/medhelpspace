@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { Play } from "lucide-react";
 import { SiteText } from "./site-text";
-import { trackVideoPlay, trackVideoProgress } from "@/lib/analytics/track";
+import { VIDEO_MILESTONES, trackVideoPlay, trackVideoProgress, trackVideoStart } from "@/lib/analytics/track";
 
 /*
  * The sales video (Karina's narration, 2:42) in the hero, where the in-hand phone
@@ -159,7 +159,7 @@ export function HeroVideo() {
       const d = player.getDuration();
       if (!d) return;
       const pct = (player.getCurrentTime() / d) * 100;
-      for (const m of [25, 50, 75] as const) {
+      for (const m of VIDEO_MILESTONES) {
         if (pct >= m && !sent.has(m)) {
           sent.add(m);
           trackVideoProgress(m, "hero");
@@ -189,6 +189,10 @@ export function HeroVideo() {
             onReady: (e) => e.target.playVideo(),
             onStateChange: (e) => {
               if (e.data === YT.PlayerState.PLAYING) {
+                if (!sent.has(0)) {
+                  sent.add(0); // first real playback, once per load
+                  trackVideoStart("hero");
+                }
                 window.clearInterval(timer);
                 timer = window.setInterval(tick, 1000);
               } else {

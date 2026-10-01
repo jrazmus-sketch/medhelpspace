@@ -9,7 +9,7 @@
 export type LandingSection = { id: string; section: string };
 
 export const LANDING_SECTIONS: readonly LandingSection[] = [
-  { id: "video-vendas", section: "video" },
+  { id: "video-vendas", section: "sales_video" }, // view_sales_video_section (Karina 2026-10-01)
   { id: "feature-questoes", section: "questions" },
   { id: "feature-resumos", section: "resumos" },
   { id: "feature-medvoice", section: "medvoice" },

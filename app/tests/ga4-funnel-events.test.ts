@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { LANDING_SECTIONS, SCROLL_MILESTONES, sectionViewEventName } from "@/lib/analytics/landing-sections";
+import { VIDEO_MILESTONES, turmaSelectEventName } from "@/lib/analytics/track";
 
 // GA4 sales-page funnel (Karina 2026-09-30). Every event she asked for has a
 // single, stable name, and every place it must fire is wired.
@@ -58,19 +59,27 @@ test("checkout, leads and WhatsApp use Karina's event names", () => {
   for (const name of ["click_buy_now", "click_free_simulator", "lead_submit", "begin_checkout", "purchase"]) {
     assert.ok(track.includes(`"${name}"`), `track.ts must emit ${name}`);
   }
-  assert.match(track, /`select_\$\{slug\.replace\(\/-\/g, "_"\)\}`/, "select_revalida_2027_1 shape");
+  // Karina 2026-10-01: both turmas read the same way in GA4, whatever the slug looks like.
+  assert.equal(turmaSelectEventName("revalida-2027-1"), "select_revalida_2027_1");
+  assert.equal(turmaSelectEventName("revalida-20272"), "select_revalida_2027_2");
+  assert.equal(turmaSelectEventName("revalida-2026-2"), "select_revalida_2026_2");
 });
 
 test("the hero sales video: section id, click + watch milestones, YouTube only after the click", () => {
   const video = read("components/landing/hero-video.tsx");
-  assert.ok(LANDING_SECTIONS.some((s) => s.id === "video-vendas" && s.section === "video"), "view_video_section");
+  const section = LANDING_SECTIONS.find((s) => s.id === "video-vendas");
+  assert.equal(section && sectionViewEventName(section.section), "view_sales_video_section");
   assert.match(video, /id="video-vendas"/);
   assert.match(video, /trackVideoPlay\("hero"\)/);
+  assert.match(video, /trackVideoStart\("hero"\)/);
+  assert.match(video, /for \(const m of VIDEO_MILESTONES\)/);
   assert.match(video, /trackVideoProgress\(m, "hero"\)/);
   assert.match(video, /trackVideoProgress\(100, "hero"\)/);
+  assert.deepEqual([...VIDEO_MILESTONES], [25, 50, 75, 90]);
   assert.match(read("components/landing/hero-section.tsx"), /<HeroVideo \/>/);
   const track = read("lib/analytics/track.ts");
   assert.ok(track.includes('"click_play_video"'), "click_play_video");
+  assert.ok(track.includes('"watch_video_start"'), "watch_video_start");
   assert.match(track, /`watch_video_\$\{percent\}`/, "watch_video_25 … watch_video_100");
   // privacy-enhanced host, and nothing YouTube in the markup until mode leaves "poster"
   assert.match(video, /host: "https:\/\/www\.youtube-nocookie\.com"/);
