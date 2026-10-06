@@ -1855,7 +1855,8 @@
       "cronometro": "Timer",
       "leve_deste_caso": "Takeaway",
       "prontuario": "Living chart",
-      "codigo_decifrado": "Decoded map"
+      "codigo_decifrado": "Decoded map",
+      "investigacao": "Investigation"
     },
     "fields": {
       "format": "Format",
@@ -1896,7 +1897,8 @@
       "redHerring": "Red herring (does not close the case)",
       "redHerringReason": "Why it does not close",
       "isFree": "Free sample case",
-      "isFreeHint": "Fully open to any signed-in user, no subscription. The plan is ONE free case per format."
+      "isFreeHint": "Fully open to any signed-in user, no subscription. The plan is ONE free case per format.",
+      "exams": "Exams and actions"
     },
     "media": {
       "add": "Add media",
@@ -1965,7 +1967,8 @@
       "unmatched": "\"{{value}}\" is not in the list — link it manually.",
       "republished": "Changes published — new revision created.",
       "deleteRefusedAttempts": "This case has real student attempts — it can only be archived, never deleted.",
-      "deleteRefusedPublished": "Unpublish the case before deleting."
+      "deleteRefusedPublished": "Unpublish the case before deleting.",
+      "investigationHint": "Multiple selection: the student orders as many items as they like and confirms once. Every option needs a quality — that is what scores — and two interchangeable options must not both be Ideal. Each item's result goes in \"Reveals\" and only appears if it was ordered; the feedback must not contain the result."
     },
     "importer": {
       "title": "Import cases",

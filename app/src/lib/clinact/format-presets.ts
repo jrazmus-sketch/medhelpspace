@@ -8,7 +8,7 @@
  * case — the format is a starting point, not a cage).
  */
 
-import { FORMAT_SKILL, type CaseFormat, type StepDoc, type StepKind } from "./types";
+import { DECISION_KINDS, FORMAT_SKILL, type CaseFormat, type StepDoc, type StepKind } from "./types";
 
 type Preset = { default: StepKind[]; optional: StepKind[] };
 
@@ -27,7 +27,9 @@ export const FORMAT_PRESETS: Record<CaseFormat, Preset> = {
   },
   clinica_em_cena: {
     default: ["narrativa", "cena_conduta", "feedback", "leve_deste_caso"],
-    optional: ["pergunta", "novo_dado", "confianca", "custo_do_atraso", "midia"],
+    // INVESTIGAÇÃO belongs to CONDUZIR only (Karina 2026-09-03): offered here,
+    // accepted with a warning anywhere else.
+    optional: ["pergunta", "investigacao", "novo_dado", "confianca", "custo_do_atraso", "midia"],
   },
 };
 
@@ -43,6 +45,8 @@ export function emptyContentFor(kind: StepKind): Record<string, unknown> {
     case "pergunta":
     case "reavaliacao":
       return { prompt: "" };
+    case "investigacao":
+      return { prompt: "", media: [] };
     case "ordenar":
       return { prompt: "", items: [] };
     case "custo_do_atraso":
@@ -57,7 +61,13 @@ export function emptyContentFor(kind: StepKind): Record<string, unknown> {
 }
 
 const DEFAULT_OPTIONS = (kind: StepKind) =>
-  kind === "pergunta" || kind === "reavaliacao" || kind === "cena_conduta"
+  kind === "investigacao"
+    ? [
+        // No "correct" option: the quality of the SET is the score.
+        { position: 0, label: "", is_correct: false, quality: null, effect: {} },
+        { position: 1, label: "", is_correct: false, quality: null, effect: {} },
+      ]
+    : kind === "pergunta" || kind === "reavaliacao" || kind === "cena_conduta"
     ? [
         { position: 0, label: "", is_correct: true, effect: {} },
         { position: 1, label: "", is_correct: false, effect: {} },
@@ -89,8 +99,10 @@ export function newStep(kind: StepKind, position: number, format: CaseFormat): S
   };
 }
 
+// Derived from the shared list: a hardcoded copy here is how `investigacao` was
+// left without a skill when added in the editor.
 export function isDecision(kind: StepKind): boolean {
-  return kind === "pergunta" || kind === "reavaliacao" || kind === "ordenar" || kind === "cena_conduta";
+  return DECISION_KINDS.includes(kind);
 }
 
 /** Kinds an author may add by hand (generated ones are excluded). */
@@ -100,6 +112,7 @@ export const AUTHORABLE_KINDS: StepKind[] = [
   "pergunta",
   "ordenar",
   "cena_conduta",
+  "investigacao",
   "novo_dado",
   "reavaliacao",
   "confianca",

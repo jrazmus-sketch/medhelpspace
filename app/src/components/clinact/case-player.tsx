@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, Check, Clock, Loader2, RotateCcw, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Clock, Loader2, RotateCcw, Square, SquareCheck, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { submitDecision, advanceAttempt, restartAttempt } from "@/actions/clinact";
 import type { PlayerPayload, PublicScreen } from "@/lib/clinact/player-load";
@@ -57,7 +57,7 @@ export function CasePlayer({ payload, subscribeCta = false }: { payload: PlayerP
   const key = screen.decision ? String(screen.decision.id ?? screen.decision.position) : null;
   const reveal = key ? reveals[key] : undefined;
 
-  function onDecision(decision: { option_id?: number; order?: number[]; confidence: Confidence | null; time_ms: number }) {
+  function onDecision(decision: { option_id?: number; order?: number[]; selected?: number[]; confidence: Confidence | null; time_ms: number }) {
     if (!screen.decision) return;
     setError(null);
     startTransition(async () => {
@@ -169,13 +169,14 @@ function ScreenView({
   screen: PublicScreen;
   reveal: Reveal | undefined;
   clues: PlayerPayload["clues"];
-  onDecision: (d: { option_id?: number; order?: number[]; confidence: Confidence | null; time_ms: number }) => void;
+  onDecision: (d: { option_id?: number; order?: number[]; selected?: number[]; confidence: Confidence | null; time_ms: number }) => void;
   onContinue: () => void;
   pending: boolean;
   error: string | null;
 }) {
   const [chosen, setChosen] = useState<number | null>(null);
   const [order, setOrder] = useState<number[] | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   // Wall-clock start of this screen (time_ms). Set in an effect so render
   // stays pure; the component is keyed by screen index so it remounts per screen.
@@ -187,14 +188,18 @@ function ScreenView({
 
   const needsConfidence = screen.askConfidence && !confidence;
   const isOrder = decision?.kind === "ordenar";
+  // Investigation: several options, ONE decision. No minimum and no maximum —
+  // the score teaches the strategy (Karina, 2026-09-03).
+  const isMulti = decision?.kind === "investigacao";
   const items = isOrder ? (((decision!.content as { items?: string[] }).items ?? []) as string[]) : [];
   const currentOrder = order ?? items.map((_, i) => i);
-  const canSubmit = !reveal && !pending && (isOrder ? !!order || items.length > 0 : chosen !== null) && !needsConfidence;
+  const canSubmit = !reveal && !pending && (isMulti ? true : isOrder ? !!order || items.length > 0 : chosen !== null) && !needsConfidence;
 
   function submit() {
     if (!decision) return;
     const time_ms = startedAt.current ? Date.now() - startedAt.current : 0;
-    if (isOrder) onDecision({ order: currentOrder, confidence, time_ms });
+    if (isMulti) onDecision({ selected, confidence, time_ms });
+    else if (isOrder) onDecision({ order: currentOrder, confidence, time_ms });
     else if (chosen !== null) onDecision({ option_id: chosen, confidence, time_ms });
   }
 
@@ -212,7 +217,15 @@ function ScreenView({
             <StepMedia step={decision} />
           </div>
 
-          {isOrder ? (
+          {isMulti ? (
+            <Investigation
+              options={decision.options}
+              selected={selected}
+              onToggle={(id) => setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))}
+              reveal={reveal}
+              pending={pending}
+            />
+          ) : isOrder ? (
             <ol className="space-y-2">
               {currentOrder.map((idx, pos) => (
                 <li key={idx} className="flex items-center gap-2 rounded-lg border border-border bg-surface-1 p-2 pl-3">
@@ -278,7 +291,9 @@ function ScreenView({
 
           {screen.askConfidence && !reveal ? (
             <div className="rounded-xl border border-border bg-surface-1 p-3.5">
-              <p className="text-sm font-medium">Quanta segurança você tem nessa decisão?</p>
+              <p className="text-sm font-medium">
+                {isMulti ? "Quanta segurança você tem nessa investigação?" : "Quanta segurança você tem nessa decisão?"}
+              </p>
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {CONF.map((c) => (
                   <button key={c.v} type="button" onClick={() => setConfidence(c.v)} aria-pressed={confidence === c.v} className={cn("min-h-11 rounded-lg border text-sm font-medium", confidence === c.v ? "border-brand bg-brand/10" : "border-border")}>
@@ -294,12 +309,17 @@ function ScreenView({
           {!reveal ? (
             <BottomBar>
               <button type="button" disabled={!canSubmit} onClick={submit} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-base font-semibold text-brand-fg disabled:opacity-40 sm:w-auto sm:px-8">
-                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Confirmar decisão
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{" "}
+                {isMulti
+                  ? selected.length
+                    ? `Confirmar solicitação (${selected.length})`
+                    : "Confirmar sem solicitar nada"
+                  : "Confirmar decisão"}
               </button>
             </BottomBar>
           ) : (
             <>
-              {reveal.revealed.length ? (
+              {!isMulti && reveal.revealed.length ? (
                 <div className="space-y-2 rounded-xl border border-border bg-surface-1 p-4">
                   {reveal.revealed.map((r, i) => (
                     <div key={i}>
@@ -325,6 +345,146 @@ function ScreenView({
           <button type="button" disabled={pending} onClick={onContinue} className="flex min-h-12 w-full items-center justify-center rounded-xl bg-brand text-base font-semibold text-brand-fg sm:w-auto sm:px-8">Continuar</button>
         </BottomBar>
       )}
+    </div>
+  );
+}
+
+/**
+ * The investigation block (Clínica em Cena only). Before confirming: a menu of
+ * checkboxes and NO results anywhere. After: what was ordered, each with its
+ * own result (text, image or audio) and verdict; then what was not ordered,
+ * with its verdict and feedback but never its result — that never left the
+ * server. One decision, so one confirmation and no going back.
+ */
+function Investigation({
+  options,
+  selected,
+  onToggle,
+  reveal,
+  pending,
+}: {
+  options: { id: number; label: string }[];
+  selected: number[];
+  onToggle: (id: number) => void;
+  reveal: Reveal | undefined;
+  pending: boolean;
+}) {
+  if (!reveal) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Selecione quantos itens quiser. Os resultados aparecem só depois que você confirmar, e a escolha não pode ser
+          alterada depois.
+        </p>
+        <ul className="space-y-2">
+          {options.map((o) => {
+            const on = selected.includes(o.id);
+            return (
+              <li key={o.id}>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={on}
+                  disabled={pending}
+                  onClick={() => onToggle(o.id)}
+                  className={cn(
+                    "flex min-h-12 w-full items-start gap-3 rounded-xl border p-3.5 text-left text-[15px] leading-snug transition-colors sm:p-4",
+                    on ? "border-brand bg-brand/10" : "border-border bg-surface-1 hover:border-brand/50",
+                  )}
+                >
+                  {on ? (
+                    <SquareCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand" />
+                  ) : (
+                    <Square className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="flex-1">{o.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  }
+
+  const chosen = new Set(reveal.selected ?? []);
+  const verdict = (id: number) => reveal.options.find((x) => x.id === id);
+  const essential = reveal.options.filter((x) => x.quality === "ideal");
+  const essentialOrdered = essential.filter((x) => chosen.has(x.id)).length;
+  const extras = [...chosen].filter((id) => verdict(id)?.quality !== "ideal").length;
+  const ordered = options.filter((o) => chosen.has(o.id));
+  const notOrdered = options.filter((o) => !chosen.has(o.id));
+  // The "fizemos" line only repeats the item's own name ("Radiografia de
+  // tórax.") — it belongs in the Prontuário Vivo, not under the item.
+  const resultsFor = (id: number) => (reveal.results?.find((r) => r.option_id === id)?.items ?? []).filter((r) => r.cat !== "fizemos");
+  const summary =
+    chosen.size === 0
+      ? "Você não solicitou nenhum item."
+      : `Você solicitou ${essentialOrdered} de ${essential.length} ${essential.length === 1 ? "item essencial" : "itens essenciais"}${
+          extras ? ` e mais ${extras} ${extras === 1 ? "item" : "itens"} além ${essential.length === 1 ? "do essencial" : "dos essenciais"}` : ""
+        }.`;
+
+  const badge = (quality: string | null | undefined) =>
+    quality ? (
+      <span className={cn("ml-2 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium", QUALITY_BADGE[quality] ?? "bg-muted text-muted-foreground")}>
+        {QUALITY_LABEL[quality] ?? quality}
+      </span>
+    ) : null;
+
+  return (
+    <div className="space-y-4">
+      <p className="rounded-xl border border-border bg-surface-1 p-3.5 text-sm font-medium">{summary}</p>
+
+      {ordered.length ? (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">O que você solicitou</h3>
+          <ul className="space-y-2">
+            {ordered.map((o) => {
+              const v = verdict(o.id);
+              const items = resultsFor(o.id);
+              return (
+                <li key={o.id} className={cn("rounded-xl border p-3.5 sm:p-4", v?.quality ? QUALITY_TONE[v.quality] : "border-border bg-surface-1")}>
+                  <p className="text-[15px] font-medium leading-snug">
+                    {o.label}
+                    {badge(v?.quality)}
+                  </p>
+                  {items.length ? (
+                    <div className="mt-2 space-y-2 rounded-lg bg-background/70 p-3 text-sm">
+                      {items.map((r, i) => (
+                        <div key={i}>
+                          {r.texto ? <p>{r.texto}</p> : null}
+                          {r.midia ? <MediaView media={r.midia} className="mt-2" /> : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {v?.feedback ? <p className="mt-2 text-sm text-muted-foreground">{v.feedback}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {notOrdered.length ? (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">O que você não solicitou</h3>
+          <ul className="space-y-2">
+            {notOrdered.map((o) => {
+              const v = verdict(o.id);
+              return (
+                <li key={o.id} className="rounded-xl border border-border bg-surface-1 p-3.5 sm:p-4">
+                  <p className="text-[15px] leading-snug">
+                    {o.label}
+                    {badge(v?.quality)}
+                  </p>
+                  {v?.feedback ? <p className="mt-2 text-sm text-muted-foreground">{v.feedback}</p> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

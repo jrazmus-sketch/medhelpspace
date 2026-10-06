@@ -280,6 +280,60 @@ acontece na história, como no modelo; quem não desviou nunca passa por ele.
 voltar ao caminho comum. Isso é proposital: oito cenas com três condutas cada dão
 24 blocos de texto para escrever — não 6.561 histórias.
 
+### Investigação — o aluno escolhe o que pedir
+
+> **Em teste.** Não use em caso oficial até a validação no caso de teste
+> `CEC-INV-TESTE-01`.
+
+Em alguns casos, em vez de escolher uma conduta, o aluno escolhe **quais exames ou
+ações** quer realizar — quantos quiser — e confirma uma vez. Só recebe o resultado
+do que pediu. É exclusivo da Clínica em Cena.
+
+```
+## INVESTIGAÇÃO
+Com oxigênio em uso, Antônio permanece estável. É preciso confirmar a suspeita
+e reunir dados para definir a gravidade.
+
+Quais exames você deseja solicitar neste momento?
+
+- Radiografia de tórax
+  qualidade: ideal
+  feedback: Testa a hipótese construída à beira-leito.
+  fizemos: Radiografia de tórax.
+  encontramos: Radiografia de tórax disponível para interpretação.
+  [imagem: CEC-01_img1.jpg]
+  legenda: Radiografia de tórax obtida durante a investigação.
+  relógio: 8
+- D-dímero
+  qualidade: inadequada
+  feedback: Tende a vir elevado pelo próprio processo infeccioso.
+  fizemos: D-dímero.
+  encontramos: D-dímero de 1.150 ng/mL, elevado e inespecífico.
+  relógio: 4
+```
+
+- **De 2 a 8 opções**, escolhidas para o caso — não um catálogo de exames.
+- **`qualidade:` é obrigatória em todas.** Aqui não existe `*`: o que vale a nota é
+  a qualidade do **conjunto** pedido. Sem qualidade, o importador recusa.
+- **O resultado de cada opção** vai nas gavetas de sempre (`encontramos:`,
+  `fizemos:`…), com imagem ou áudio logo abaixo. Só aparece — na tela e no
+  Prontuário Vivo — se o aluno pedir aquela opção. O relógio soma só o que foi pedido.
+- **A nota:** soma da qualidade do que foi pedido ÷ (opções `ideal` + opções pedidas
+  além das ideais). Pedir tudo "para garantir" e deixar de pedir o essencial custam,
+  cada um à sua maneira.
+- **Duas opções substituíveis não podem ser ambas `ideal`** — senão a nota máxima
+  passa a exigir as duas.
+- **O feedback nunca contém o resultado.** O aluno lê o feedback também das opções
+  que **não** pediu; ali vai o porquê, nunca o valor.
+- **A cena seguinte não repete resultados.** Se a próxima cena disser "a ureia é 54",
+  entrega ao aluno um dado que ele talvez não tenha pedido. Escreva-a a partir do
+  que ele reuniu ("Com os dados que você reuniu…").
+- **Sem `vai para:`** dentro da investigação: o aluno escolhe um conjunto, não um
+  caminho.
+- **Confiança continua seletiva.** Um `## CONFIANÇA` logo depois pergunta sobre a
+  estratégia de investigação como um todo — uma vez só.
+- A investigação inteira conta como **uma** decisão, com uma nota e uma confiança.
+
 ---
 
 ## 8. Imagem e áudio

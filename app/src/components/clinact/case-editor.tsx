@@ -527,7 +527,7 @@ function StepCard(props: {
   const fields = KIND_FIELDS[step.kind];
   const content = step.content as Record<string, unknown>;
   const setContent = (k: string, v: unknown) => onChange({ content: { ...content, [k]: v } });
-  const decision = step.kind === "pergunta" || step.kind === "reavaliacao" || step.kind === "cena_conduta";
+  const decision = step.kind === "pergunta" || step.kind === "reavaliacao" || step.kind === "cena_conduta" || step.kind === "investigacao";
 
   return (
     <div className={cn("rounded-xl border border-border bg-surface-1", !step.enabled && "opacity-60")}>
@@ -551,6 +551,7 @@ function StepCard(props: {
           </Field>
         ) : null}
         {step.kind === "confianca" ? <p className="text-sm text-muted-foreground">{t("clinact.editor.confidenceHint")}</p> : null}
+        {step.kind === "investigacao" ? <p className="text-sm text-muted-foreground">{t("clinact.editor.investigationHint")}</p> : null}
         {step.kind === "cronometro" ? <p className="text-sm text-muted-foreground">{t("clinact.editor.timerHint")}</p> : null}
         {fields.map((f) => (
           <Field key={f.key} label={t(`clinact.fields.${f.labelKey}`)} group={f.kind === "media" || f.kind === "items"}>
@@ -572,6 +573,7 @@ function StepCard(props: {
           <OptionsEditor
             options={step.options}
             scene={step.kind === "cena_conduta"}
+            investigation={step.kind === "investigacao"}
             sceneKeys={props.sceneKeys.filter((k) => k !== step.scene_key)}
             onChange={(options) => onChange({ options: options.map((o, i) => ({ ...o, position: i })) })}
           />
@@ -600,24 +602,42 @@ function ItemsField({ value, onChange }: { value: string[]; onChange: (v: string
   );
 }
 
-function OptionsEditor({ options, scene, sceneKeys, onChange }: { options: OptionDoc[]; scene: boolean; sceneKeys: string[]; onChange: (o: OptionDoc[]) => void }) {
+function OptionsEditor({
+  options,
+  scene,
+  investigation = false,
+  sceneKeys,
+  onChange,
+}: {
+  options: OptionDoc[];
+  scene: boolean;
+  /** INVESTIGAÇÃO: no single correct option, quality required, up to 8, no "vai para". */
+  investigation?: boolean;
+  sceneKeys: string[];
+  onChange: (o: OptionDoc[]) => void;
+}) {
+  const maxOptions = investigation ? 8 : 5;
   const { t } = useTranslation();
   const upd = (i: number, p: Partial<OptionDoc>) => onChange(options.map((o, j) => (j === i ? { ...o, ...p } : o)));
   const setCorrect = (i: number) => onChange(options.map((o, j) => ({ ...o, is_correct: j === i })));
   return (
     <div className="space-y-2">
-      <span className="block text-xs font-medium text-muted-foreground">{scene ? t("clinact.fields.conducts") : t("clinact.fields.options")}</span>
+      <span className="block text-xs font-medium text-muted-foreground">
+        {investigation ? t("clinact.fields.exams") : scene ? t("clinact.fields.conducts") : t("clinact.fields.options")}
+      </span>
       {options.map((o, i) => (
-        <div key={i} className={cn("space-y-2 rounded-lg border p-3", o.is_correct ? "border-emerald-500/50 bg-emerald-500/5" : "border-border")}>
+        <div key={i} className={cn("space-y-2 rounded-lg border p-3", !investigation && o.is_correct ? "border-emerald-500/50 bg-emerald-500/5" : "border-border")}>
           <div className="flex items-start gap-2">
-            <label className="mt-2.5 flex items-center gap-1 text-xs" title={t("clinact.fields.correct")}>
-              <input type="radio" name={`correct-${i}`} checked={o.is_correct} onChange={() => setCorrect(i)} className="h-4 w-4" />
-            </label>
+            {!investigation ? (
+              <label className="mt-2.5 flex items-center gap-1 text-xs" title={t("clinact.fields.correct")}>
+                <input type="radio" name={`correct-${i}`} checked={o.is_correct} onChange={() => setCorrect(i)} className="h-4 w-4" />
+              </label>
+            ) : null}
             <textarea value={o.label} onChange={(e) => upd(i, { label: e.target.value })} rows={2} placeholder={t("clinact.fields.optionLabel")} className={inputCls} />
             <button className={`${iconBtn} mt-1 hover:text-destructive`} onClick={() => onChange(options.filter((_, j) => j !== i))} aria-label={t("common.delete")}><Trash2 className="h-4 w-4" /></button>
           </div>
-          {scene ? (
-            <div className="grid gap-2 sm:grid-cols-3">
+          {scene || investigation ? (
+            <div className={cn("grid gap-2", investigation ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
               <select value={o.quality ?? ""} onChange={(e) => upd(i, { quality: (e.target.value || null) as OptionDoc["quality"] })} className={inputCls}>
                 <option value="">{t("clinact.fields.quality")}: —</option>
                 {QUALITIES.map((q) => (
@@ -625,23 +645,33 @@ function OptionsEditor({ options, scene, sceneKeys, onChange }: { options: Optio
                 ))}
               </select>
               <input type="number" value={o.effect?.relogio ?? ""} onChange={(e) => upd(i, { effect: { ...o.effect, relogio: e.target.value ? Number(e.target.value) : undefined } })} placeholder={t("clinact.fields.clock")} className={inputCls} />
-              <select value={o.next_scene_key ?? ""} onChange={(e) => upd(i, { next_scene_key: e.target.value || null })} className={inputCls}>
-                <option value="">{t("clinact.fields.nextSceneDefault")}</option>
-                {sceneKeys.map((k) => (
-                  <option key={k} value={k}>{t("clinact.fields.goesTo")} {k}</option>
-                ))}
-              </select>
+              {!investigation ? (
+                <select value={o.next_scene_key ?? ""} onChange={(e) => upd(i, { next_scene_key: e.target.value || null })} className={inputCls}>
+                  <option value="">{t("clinact.fields.nextSceneDefault")}</option>
+                  {sceneKeys.map((k) => (
+                    <option key={k} value={k}>{t("clinact.fields.goesTo")} {k}</option>
+                  ))}
+                </select>
+              ) : null}
             </div>
           ) : null}
           <textarea value={o.feedback ?? ""} onChange={(e) => upd(i, { feedback: e.target.value })} rows={2} placeholder={t("clinact.fields.feedback")} className={inputCls} />
-          {!o.is_correct ? (
+          {!o.is_correct && !investigation ? (
             <textarea value={o.seduction ?? ""} onChange={(e) => upd(i, { seduction: e.target.value })} rows={2} placeholder={t("clinact.fields.seduction")} className={inputCls} />
           ) : null}
           <RevealsEditor option={o} onChange={(p) => upd(i, p)} />
         </div>
       ))}
-      {options.length < 5 ? (
-        <button onClick={() => onChange([...options, { position: options.length, label: "", is_correct: options.length === 0, effect: {} }])} className="inline-flex min-h-11 sm:min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      {options.length < maxOptions ? (
+        <button
+          onClick={() =>
+            onChange([
+              ...options,
+              investigation
+                ? { position: options.length, label: "", is_correct: false, quality: null, effect: {} }
+                : { position: options.length, label: "", is_correct: options.length === 0, effect: {} },
+            ])
+          } className="inline-flex min-h-11 sm:min-h-9 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <Plus className="h-4 w-4" /> {t("clinact.editor.addOption")}
         </button>
       ) : null}

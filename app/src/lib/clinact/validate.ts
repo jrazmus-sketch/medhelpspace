@@ -13,13 +13,15 @@
  */
 
 import { collectMedia } from "./media";
-import { type CaseDoc, type StepDoc } from "./types";
+import { DECISION_KINDS, type CaseDoc, type StepDoc } from "./types";
 
 export type Check = { ok: boolean; message: string; blocking: boolean };
 
 export type MediaProbe = (url: string) => boolean | null; // null = unknown
 
-const DECISION = new Set(["pergunta", "reavaliacao", "ordenar", "cena_conduta"]);
+// Derived from the shared list — this was the fourth hardcoded copy, and a case
+// whose only decision was an INVESTIGAÇÃO read as having no decision at all.
+const DECISION = new Set<string>(DECISION_KINDS);
 
 function label(s: StepDoc, i: number): string {
   if (s.kind === "cena_conduta") return `Cena "${s.scene_key ?? i + 1}"`;
@@ -37,7 +39,7 @@ export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null)
   add(steps.length > 0, steps.length ? `${steps.length} bloco(s) ativo(s)` : "O caso não tem blocos ativos");
 
   const decisions = steps.filter((s) => DECISION.has(s.kind));
-  add(decisions.length > 0, decisions.length ? `${decisions.length} decisão(ões)` : "Nenhuma decisão (PERGUNTA, REAVALIAÇÃO, ORDENAR ou CENA)");
+  add(decisions.length > 0, decisions.length ? `${decisions.length} decisão(ões)` : "Nenhuma decisão (PERGUNTA, REAVALIAÇÃO, ORDENAR, CENA ou INVESTIGAÇÃO)");
 
   steps.forEach((s, i) => {
     const c = s.content as Record<string, unknown>;
@@ -49,6 +51,7 @@ export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null)
         break;
       case "pergunta":
       case "reavaliacao":
+      case "investigacao":
         if (!String(c.prompt ?? "").trim()) add(false, `${label(s, i)} está sem enunciado`);
         break;
       case "ordenar": {
@@ -87,6 +90,24 @@ export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null)
       const noFeedback = opts.filter((o) => !o.feedback?.trim()).length;
       if (noFeedback) add(false, `${label(s, i)}: ${noFeedback} alternativa(s) sem feedback`, false);
     }
+  });
+
+  // ── INVESTIGAÇÃO: graded as a set, by the quality of each option ─────────
+  steps.forEach((s, i) => {
+    if (s.kind !== "investigacao") return;
+    const opts = s.options;
+    if (opts.length < 2 || opts.length > 8) add(false, `${label(s, i)}: precisa de 2 a 8 opções (tem ${opts.length})`);
+    const empty = opts.filter((o) => !o.label.trim()).length;
+    if (empty) add(false, `${label(s, i)}: ${empty} opção(ões) sem texto`);
+    // The quality IS the score here — there is no right/wrong fallback.
+    const noQuality = opts.filter((o) => !o.quality).length;
+    if (noQuality) add(false, `${label(s, i)}: ${noQuality} opção(ões) sem qualidade — em INVESTIGAÇÃO é ela que vale a nota`);
+    // Without an ideal option the score can never reach 1,0.
+    if (!opts.some((o) => o.quality === "ideal")) add(false, `${label(s, i)}: nenhuma opção Ideal — a nota máxima ficaria inalcançável`);
+    const noFeedback = opts.filter((o) => !o.feedback?.trim()).length;
+    if (noFeedback) add(false, `${label(s, i)}: ${noFeedback} opção(ões) sem feedback`, false);
+    // A set is not a path: a "vai para" on one option is ignored by the engine.
+    if (opts.some((o) => o.next_scene_key)) add(false, `${label(s, i)}: "vai para" não funciona dentro de INVESTIGAÇÃO e será ignorado`, false);
   });
 
   // ── Convergent branching (Clínica em Cena) ────────────────────────────────

@@ -12,6 +12,7 @@
 import { optionWeight, orderWeight, selectionWeight } from "./scoring";
 import {
   DECISION_KINDS,
+  MULTI_SELECT_KINDS,
   type AnsweredStep,
   type AttemptState,
   type Confidence,
@@ -117,6 +118,11 @@ export function applyDecision(state: AttemptState, screen: Screen, decision: Dec
   if (!step) throw new Error("Esta tela não tem decisão.");
   const key = stepKey(step);
   if (state.answered[key]) throw new Error("Decisão já registrada.");
+  // The answer must fit the block. Without this, a single `option_id` sent to an
+  // investigation would be scored as a one-choice question (and a `selected`
+  // list sent to an ordinary question would grade a set nobody was offered).
+  const multi = MULTI_SELECT_KINDS.includes(step.kind);
+  if (multi !== "selected" in decision) throw new Error("Resposta incompatível com este bloco.");
 
   let answered: AnsweredStep;
   let chosen: OptionDoc | null = null;
@@ -258,11 +264,43 @@ export type Reveal = {
   weight: number;
   revealed: { cat: string; texto: string; midia?: Media }[];
   after: StepDoc[];
+  /** Investigation only: the options ordered, by id. */
+  selected?: number[];
+  /**
+   * Investigation only: each ORDERED option's own result, in authored order,
+   * so the screen can show "exam → result". Options that were not ordered are
+   * absent — their results never leave the server.
+   */
+  results?: { option_id: number; items: { cat: string; texto: string; midia?: Media }[] }[];
 };
 
 export function buildReveal(screen: Screen, applied: Applied): Reveal {
   const step = screen.decision!;
   const correct = step.options.find((o) => o.is_correct);
+  if (MULTI_SELECT_KINDS.includes(step.kind)) {
+    // Rebuilt from the SAVED selection alone, so a resumed attempt shows exactly
+    // what the live confirmation showed.
+    const selected = applied.answered.selected ?? [];
+    const ordered = step.options.filter((o) => selected.includes(o.id ?? o.position));
+    const results = ordered.map((o) => ({ option_id: o.id ?? o.position, items: o.effect?.revela ?? [] }));
+    return {
+      correct_option_id: null,
+      options: step.options.map((o) => ({
+        id: o.id ?? o.position,
+        is_correct: o.is_correct,
+        quality: o.quality ?? null,
+        feedback: o.feedback ?? null,
+        seduction: o.seduction ?? null,
+      })),
+      chosen_option_id: null,
+      is_correct: applied.answered.is_correct,
+      weight: applied.answered.weight,
+      revealed: results.flatMap((r) => r.items),
+      after: screen.after,
+      selected,
+      results,
+    };
+  }
   return {
     correct_option_id: correct ? (correct.id ?? correct.position) : null,
     options: step.options.map((o) => ({

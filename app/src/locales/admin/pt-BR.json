@@ -1855,7 +1855,8 @@
       "cronometro": "Cronômetro",
       "leve_deste_caso": "Leve deste caso",
       "prontuario": "Prontuário Vivo",
-      "codigo_decifrado": "Código Decifrado"
+      "codigo_decifrado": "Código Decifrado",
+      "investigacao": "Investigação"
     },
     "fields": {
       "format": "Formato",
@@ -1896,7 +1897,8 @@
       "redHerring": "Distrator (não fecha o caso)",
       "redHerringReason": "Por que não fecha",
       "isFree": "Caso gratuito (amostra)",
-      "isFreeHint": "Liberado por completo para qualquer usuário logado, sem assinatura. O plano é UM caso grátis por formato."
+      "isFreeHint": "Liberado por completo para qualquer usuário logado, sem assinatura. O plano é UM caso grátis por formato.",
+      "exams": "Exames e ações"
     },
     "media": {
       "add": "Adicionar mídia",
@@ -1965,7 +1967,8 @@
       "unmatched": "\"{{value}}\" não está na lista — ligue manualmente.",
       "republished": "Alterações publicadas — nova revisão criada.",
       "deleteRefusedAttempts": "Este caso tem tentativas reais de alunos — só pode ser arquivado, nunca apagado.",
-      "deleteRefusedPublished": "Despublique o caso antes de excluir."
+      "deleteRefusedPublished": "Despublique o caso antes de excluir.",
+      "investigationHint": "Seleção múltipla: o aluno pede quantos itens quiser e confirma uma vez. Toda opção precisa de qualidade — é ela que vale a nota — e duas opções substituíveis não devem ser ambas Ideal. O resultado de cada item vai em \"Revela\" e só aparece se ele for solicitado; o feedback não pode conter o resultado."
     },
     "importer": {
       "title": "Importar casos",

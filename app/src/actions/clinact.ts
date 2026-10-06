@@ -387,7 +387,14 @@ export async function submitDecision(attemptId: number, stepId: number, decision
   const confidence = raw.confidence == null ? null : ConfidenceSchema.safeParse(raw.confidence).data ?? null;
   const timeMs = typeof raw.time_ms === "number" && raw.time_ms >= 0 ? Math.round(raw.time_ms) : null;
   let decision: Decision;
-  if (Array.isArray(raw.order)) decision = { order: raw.order.map(Number), confidence, time_ms: timeMs };
+  if (Array.isArray(raw.selected)) {
+    // Investigation: keep only ids that belong to THIS block, once each. The
+    // engine scores what is stored, so a tampered list cannot add options the
+    // student was never offered.
+    const valid = new Set(screen.decision.options.map((o) => o.id ?? o.position));
+    const selected = [...new Set(raw.selected.map(Number))].filter((n) => valid.has(n));
+    decision = { selected, confidence, time_ms: timeMs };
+  } else if (Array.isArray(raw.order)) decision = { order: raw.order.map(Number), confidence, time_ms: timeMs };
   else if (typeof raw.option_id === "number") decision = { option_id: raw.option_id, confidence, time_ms: timeMs };
   else return { ok: false, error: "invalid" };
 
@@ -407,7 +414,7 @@ export async function submitDecision(attemptId: number, stepId: number, decision
     weight: applied.answered.weight,
     confidence,
     time_ms: timeMs,
-    payload: "order" in decision ? { order: decision.order } : null,
+    payload: "order" in decision ? { order: decision.order } : "selected" in decision ? { selected: decision.selected } : null,
   });
   if (evErr) {
     if (evErr.code === "23505") return { ok: false, error: "Decisão já registrada." };

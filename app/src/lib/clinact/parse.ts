@@ -476,6 +476,9 @@ function parseChunk(chunk: Chunk): ParsedCase {
         break;
       case "pergunta":
       case "reavaliacao":
+      // INVESTIGAÇÃO keeps its question in `prompt` too. It had no case here, so
+      // an imported investigation lost its question text entirely.
+      case "investigacao":
         content.prompt = prose;
         if (!prose) errors.push({ line: b.line, message: `"${blockName(b.kind)}" sem enunciado.` });
         break;

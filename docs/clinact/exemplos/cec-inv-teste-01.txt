@@ -1,0 +1,167 @@
+=== CASO ===
+FORMATO: clinica_em_cena
+TÍTULO: CEC-INV-TESTE-01 · No início do plantão
+ESPECIALIDADE: Pneumologia
+TEMA: Pneumonia
+DIFICULDADE: intermediária
+DURAÇÃO: 8
+RESUMO: Cópia de TESTE do CEC-01 com o bloco INVESTIGAÇÃO. Não publicar.
+
+## CENA: chegada
+Antônio, 68 anos, chega ao pronto atendimento no fim da tarde. Há três dias apresenta febre, tosse com expectoração amarelada e dor à direita ao inspirar; desde a manhã, sente falta de ar para caminhar dentro de casa. Tem hipertensão controlada, não possui doença pulmonar crônica e não foi internado nem recebeu antibióticos nos últimos 90 dias. Nega alergias medicamentosas.
+
+Está alerta, fala frases completas e tem extremidades aquecidas. Temperatura 38,7 °C, PA 112/68 mmHg, FC 108 bpm, FR 32 irpm e SpO2 89% em ar ambiente.
+
+Qual é sua primeira abordagem?
+
+* Avaliar ABC, monitorizar, iniciar oxigênio suplementar titulado para SpO2 entre 94% e 98% e realizar exame pulmonar focado
+  qualidade: ideal
+  feedback: A hipoxemia exige correção e reavaliação imediatas. Como não há fator de risco conhecido para insuficiência respiratória hipercápnica, o oxigênio deve ser titulado para SpO2 entre 94% e 98%, enquanto o exame à beira-leito avança a investigação.
+  sabemos: Febre, tosse produtiva, dor ventilatório-dependente à direita e dispneia progressiva há três dias.
+  sabemos: Hipertensão controlada; sem doença pulmonar crônica, internação ou antibiótico nos últimos 90 dias; sem alergias medicamentosas.
+  encontramos: Temperatura 38,7 °C, PA 112/68 mmHg, FC 108 bpm, FR 32 irpm e SpO2 89% em ar ambiente; paciente alerta e com perfusão preservada.
+  encontramos: Crepitações inspiratórias na base direita.
+  [audio: CEC-01_audio1.mp3]
+  legenda: Ausculta pulmonar na base direita.
+  transcricao: Sons respiratórios descontínuos, breves e repetidos, mais perceptíveis durante a inspiração.
+  fizemos: Monitorização, oxigênio por máscara de Venturi a 28% e exame pulmonar focado.
+  estado: PA 112/68 mmHg, FC 104 bpm, FR 28 irpm e SpO2 95% com FiO2 de 28%; alerta e com perfusão preservada.
+  relógio: 5
+- Completar rapidamente a anamnese dirigida e o exame pulmonar antes de iniciar o oxigênio
+  qualidade: aceitavel
+  feedback: A avaliação dirigida é útil e foi breve, mas a SpO2 de 89% já indicava que o oxigênio não precisava esperar o término do exame.
+  sabemos: Febre, tosse produtiva, dor ventilatório-dependente à direita e dispneia progressiva há três dias.
+  sabemos: Hipertensão controlada; sem doença pulmonar crônica, internação ou antibiótico nos últimos 90 dias; sem alergias medicamentosas.
+  encontramos: Temperatura 38,7 °C, PA 112/68 mmHg, FC 108 bpm, FR 32 irpm e SpO2 89% em ar ambiente; paciente alerta e com perfusão preservada.
+  encontramos: Crepitações inspiratórias na base direita.
+  [audio: CEC-01_audio1.mp3]
+  legenda: Ausculta pulmonar na base direita.
+  transcricao: Sons respiratórios descontínuos, breves e repetidos, mais perceptíveis durante a inspiração.
+  fizemos: Anamnese e exame pulmonar focados, seguidos de oxigênio por máscara de Venturi a 28% e monitorização.
+  estado: PA 112/68 mmHg, FC 104 bpm, FR 29 irpm e SpO2 95% com FiO2 de 28%; alerta e com perfusão preservada.
+  relógio: 8
+- Fazer nebulização com broncodilatador e aguardar resposta antes de completar o exame e iniciar o oxigênio
+  qualidade: inadequada
+  feedback: Dispneia não equivale a broncoespasmo. Sem doença obstrutiva conhecida nem sibilância documentada, o broncodilatador empírico desvia a condução e posterga o tratamento da hipoxemia.
+  sabemos: Febre, tosse produtiva, dor ventilatório-dependente à direita e dispneia progressiva há três dias.
+  sabemos: Hipertensão controlada; sem doença pulmonar crônica, internação ou antibiótico nos últimos 90 dias; sem alergias medicamentosas.
+  encontramos: Temperatura 38,7 °C, PA 112/68 mmHg, FC 108 bpm, FR 32 irpm e SpO2 89% em ar ambiente; paciente alerta e com perfusão preservada.
+  fizemos: Nebulização com broncodilatador antes da avaliação pulmonar completa e sem iniciar oxigênio suplementar.
+  estado: PA 110/66 mmHg, FC 112 bpm, FR 32 irpm e SpO2 88% em ar ambiente; dispneia inalterada.
+  relógio: 10
+  vai para: resposta_broncodilatador
+
+## CENA: resposta_broncodilatador
+Dez minutos depois, Antônio continua dispneico. Não há sibilos audíveis e a saturação permanece em 88% em ar ambiente.
+
+Como você corrige a condução agora?
+
+* Interromper a tentativa, iniciar oxigênio titulado e monitorização e realizar o exame pulmonar focado
+  qualidade: ideal
+  feedback: Reconhecer a ausência de indicação e de resposta permite retomar imediatamente a prioridade: corrigir a hipoxemia, monitorizar e completar o exame que orientará a investigação.
+  encontramos: Ausência de sibilância; crepitações inspiratórias na base direita.
+  [audio: CEC-01_audio1.mp3]
+  legenda: Ausculta pulmonar na base direita.
+  transcricao: Sons respiratórios descontínuos, breves e repetidos, mais perceptíveis durante a inspiração.
+  fizemos: Oxigênio por máscara de Venturi a 28%, monitorização e exame pulmonar focado.
+  estado: PA 110/66 mmHg, FC 106 bpm, FR 29 irpm e SpO2 95% com FiO2 de 28%; alerta e com perfusão preservada.
+  relógio: 5
+- Repetir a nebulização e aguardar mais antes de oferecer oxigênio e reexaminar
+  qualidade: prejudicial
+  feedback: Persistir em uma intervenção sem indicação mantém a hipoxemia sem tratamento e prolonga o atraso até a avaliação que realmente orienta o caso.
+  encontramos: Ausência de sibilância; após a nova espera, crepitações inspiratórias na base direita.
+  [audio: CEC-01_audio1.mp3]
+  legenda: Ausculta pulmonar na base direita, realizada após a nova espera.
+  transcricao: Sons respiratórios descontínuos, breves e repetidos, mais perceptíveis durante a inspiração.
+  fizemos: Segunda nebulização; oxigênio por máscara de Venturi a 28%, monitorização e exame pulmonar iniciados somente após nova queda da saturação.
+  estado: PA 108/64 mmHg, FC 112 bpm, FR 31 irpm e SpO2 94% com FiO2 de 28%; alerta e com perfusão preservada.
+  relógio: 15
+
+## INVESTIGAÇÃO
+Com oxigênio em uso e o exame pulmonar já realizado, Antônio permanece hemodinamicamente estável. É preciso confirmar a suspeita e reunir dados que ajudem a definir a gravidade e o local de cuidado.
+
+Quais exames você deseja solicitar neste momento?
+
+- Radiografia de tórax
+  qualidade: ideal
+  feedback: Testa a hipótese construída à beira-leito e mostra a extensão do acometimento: é o exame que confirma a pneumonia e procura complicações.
+  fizemos: Radiografia de tórax.
+  encontramos: Radiografia de tórax disponível para interpretação.
+  [imagem: CEC-01_img1.jpg]
+  legenda: Radiografia de tórax obtida durante a investigação.
+  alt: Radiografia frontal do tórax com opacidade focal no campo pulmonar inferior direito, sem alteração pleural evidente.
+  relógio: 8
+- D-dímero
+  qualidade: inadequada
+  feedback: Com uma explicação alternativa clara e sem sinais sugestivos de tromboembolismo, o D-dímero tende a vir elevado pelo próprio processo infeccioso e pode desencadear exames desnecessários.
+  fizemos: D-dímero.
+  encontramos: D-dímero de 1.150 ng/mL, elevado e inespecífico neste contexto.
+  relógio: 4
+- Hemograma completo
+  qualidade: ideal
+  feedback: Ajuda a graduar a resposta inflamatória e identifica citopenias, que contam como critério de gravidade.
+  fizemos: Hemograma completo.
+  encontramos: Leucócitos 17.600/mm³ e plaquetas 214.000/mm³.
+  relógio: 4
+- Hemoculturas (duas amostras)
+  qualidade: aceitavel
+  feedback: Não são rotineiramente necessárias na pneumonia não grave sem fatores de risco para MRSA ou Pseudomonas aeruginosa, mas podem ser aceitas por protocolo local, desde que não atrasem o antimicrobiano.
+  fizemos: Duas hemoculturas coletadas.
+  encontramos: Hemoculturas coletadas; resultado previsto em 48 a 72 horas.
+  relógio: 5
+- Ureia, creatinina e eletrólitos
+  qualidade: ideal
+  feedback: A ureia entra no CURB-65 e nos critérios de gravidade; sem ela, a decisão sobre o local de cuidado fica incompleta.
+  fizemos: Ureia, creatinina e eletrólitos.
+  encontramos: Ureia 54 mg/dL, correspondente a BUN de aproximadamente 25 mg/dL, creatinina 1,1 mg/dL, sódio 138 mEq/L e potássio 4,2 mEq/L.
+  relógio: 4
+- Tomografia de tórax com contraste
+  qualidade: prejudicial
+  feedback: Diante de uma pneumonia típica em paciente estável, a tomografia antes da radiografia não muda a conduta e consome tempo: atrasa a definição de gravidade e o início do tratamento.
+  fizemos: Tomografia de tórax com contraste.
+  encontramos: Consolidação no lobo inferior direito, sem derrame pleural ou cavitação.
+  relógio: 40
+- Gasometria arterial
+  qualidade: ideal
+  feedback: Quantifica a oxigenação já em uso de oxigênio; a relação PaO2/FiO2 é critério de gravidade e orienta a intensidade do cuidado.
+  fizemos: Gasometria arterial em máscara de Venturi a 28%.
+  encontramos: Gasometria arterial com pH 7,45, PaCO2 34 mmHg e PaO2 80 mmHg em FiO2 de 28%; relação PaO2/FiO2 de 286.
+  relógio: 4
+- Procalcitonina
+  qualidade: inadequada
+  feedback: Não deve decidir o início do antimicrobiano quando o quadro clínico e a imagem são compatíveis com pneumonia; acrescenta pouco a este momento.
+  fizemos: Procalcitonina.
+  encontramos: Procalcitonina de 0,9 ng/mL.
+  relógio: 4
+
+## CONFIANÇA
+
+## CENA: gravidade
+Com os dados que você reuniu, é hora de definir a gravidade, o local de cuidado e o tratamento. O Prontuário Vivo mostra exatamente o que você solicitou.
+
+Qual é a melhor conduta a partir daqui?
+
+* Internar em enfermaria com monitorização frequente, manter oxigênio titulado para SpO2 entre 94% e 98% e iniciar ceftriaxona 2 g IV a cada 24 horas associada a azitromicina 500 mg IV a cada 24 horas
+  qualidade: ideal
+  feedback: O CURB-65 de 3, a hipoxemia e a necessidade de oxigênio afastam o tratamento ambulatorial. Sem critério maior nem três critérios menores de pneumonia grave, a enfermaria com vigilância estreita, reavaliação precoce e baixo limiar para escalonamento é coerente. O esquema combina beta-lactâmico e macrolídeo sem ampliar empiricamente para patógenos resistentes na ausência de fatores de risco.
+  fizemos: Internação em enfermaria com monitorização frequente, manutenção do oxigênio titulado e início de ceftriaxona associada a azitromicina.
+  estado: Hemodinamicamente estável, SpO2 95% com oxigênio e tratamento antimicrobiano iniciado.
+  relógio: 10
+- Colher hemoculturas e, sem aguardar o resultado, iniciar o mesmo esquema antimicrobiano e internar em enfermaria
+  qualidade: aceitavel
+  feedback: O destino e o tratamento estão adequados. Hemoculturas não são rotineiramente necessárias na pneumonia não grave sem fatores de risco para MRSA ou Pseudomonas aeruginosa, mas a coleta pode ser aceita quando segue protocolo local e não atrasa a primeira dose.
+  fizemos: Duas hemoculturas coletadas sem atraso relevante, internação em enfermaria com monitorização frequente, manutenção do oxigênio e início de ceftriaxona associada a azitromicina.
+  estado: Hemodinamicamente estável, SpO2 95% com oxigênio e tratamento antimicrobiano iniciado.
+  relógio: 15
+- Manter oxigênio e aguardar o resultado da cultura de escarro antes de iniciar o antimicrobiano e definir a internação
+  qualidade: prejudicial
+  feedback: A investigação microbiológica pode ser útil em situações selecionadas, mas não deve condicionar o início do tratamento nem postergar a internação de um paciente hipoxêmico com pneumonia e maior risco clínico.
+  fizemos: Manutenção do oxigênio; coleta de escarro e espera indevida antes do antimicrobiano e da definição do destino.
+  estado: Após 120 minutos, a cultura ainda não está disponível. O paciente permanece alerta e hemodinamicamente estável, mas continua taquipneico, dependente de oxigênio e sem terapia antimicrobiana.
+  relógio: 120
+
+## FEEDBACK
+O caso não se resolve por um único achado. A condução adequada combina correção da hipoxemia, exame focado, confirmação por imagem, quantificação da oxigenação, avaliação objetiva da gravidade e tratamento compatível com o local de cuidado. O CURB-65 auxilia a decidir a internação, enquanto os critérios ATS/IDSA e o julgamento clínico orientam a intensidade do cuidado. Um desvio pode ser recuperado quando a ausência de resposta é reconhecida; insistir nele transforma atraso em risco.
+
+## LEVE DESTE CASO
+Na condução clínica, cada dado deve orientar o próximo passo: estabilize, investigue o que muda a conduta e reavalie antes de definir o destino.
