@@ -14,7 +14,7 @@ import type { CoachKey } from "@/lib/onboarding/tips";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { TypeChip } from "@/components/content/type-chip";
 import { EditableText } from "@/components/admin/editable-text";
-import { buildCrumbsForPage, findSpecialtyHub, type Crumb } from "@/lib/breadcrumbs";
+import { buildCrumbsForPage, findAreaHub, findSpecialtyHub, type Crumb } from "@/lib/breadcrumbs";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { legacyMemorecardsHref } from "@/lib/memorecards-shared";
@@ -32,7 +32,7 @@ export default async function ContentPage({
 
   const { data: page } = await admin
     .from("pages")
-    .select("id, title, type, slug, view, track_id, specialty_id, content_module_id, status")
+    .select("id, title, type, slug, view, track_id, specialty_id, content_module_id, status, parent_id")
     .eq("slug", slug)
     .single();
 
@@ -59,17 +59,25 @@ export default async function ContentPage({
     .maybeSingle();
   const specialtyForCrumbs = specRow ?? null;
 
+  // Area level inside the specialty's hub (Resumos → Outros → Oftalmologia):
+  // null for every other page, which keeps the usual two-level breadcrumb.
+  const area = await findAreaHub(page);
+
   // The current page IS the per-specialty hub for its type when it's either a
   // blurb-nav-hub (with a view) or a track page (track_id set) under a specialty.
+  // An area hub is not: it sits one level below that hub.
   const isSpecialtyTypeHub =
     page.specialty_id != null &&
+    !(area && area.area == null) &&
     ((page.type === "blurb-nav-hub" && page.view != null) || page.track_id != null);
 
   // Otherwise — for a leaf topic — look up the matching (specialty, type) hub
   // so the breadcrumb's specialty crumb deep-links into the right view.
   let specialtyHubSlug: string | null = null;
   if (!isSpecialtyTypeHub && page.specialty_id != null) {
-    if (page.view != null) {
+    if (area) {
+      specialtyHubSlug = area.topHubSlug;
+    } else if (page.view != null) {
       const hub = await findSpecialtyHub({
         specialty_id: page.specialty_id,
         view: page.view,
@@ -88,6 +96,7 @@ export default async function ContentPage({
     page,
     specialty: specialtyForCrumbs,
     specialtyHubSlug: isSpecialtyTypeHub ? null : specialtyHubSlug,
+    areaHub: area?.area ?? null,
   });
 
   // Fallback target for the "Voltar" button on cold loads — the IA parent.

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { topLevelHubs } from "@/lib/hub-nesting";
 import type { PageView } from "@/types/supabase";
 
 export type Crumb = { label: string; href?: string };
@@ -62,16 +63,58 @@ export async function findSpecialtyHub(args: SpecialtyHubLookupArgs): Promise<{ 
   if (args.view != null) {
     const { data } = await admin
       .from("pages")
-      .select("slug")
+      .select("id, slug, parent_id")
       .eq("specialty_id", args.specialty_id)
       .eq("view", args.view)
       .eq("type", "blurb-nav-hub")
       .eq("status", "publish")
-      .limit(1)
-      .maybeSingle();
-    return data ? { slug: data.slug as string } : null;
+      .order("id");
+    // The specialty's hub, never one of the area hubs nested inside it.
+    const hub = topLevelHubs(data ?? [])[0];
+    return hub ? { slug: hub.slug as string } : null;
   }
   return null;
+}
+
+type HubLink = { id: number; slug: string; title: string; type: string; view: PageView | null; specialty_id: number | null; parent_id: number | null };
+
+/**
+ * The area level inside a specialty hub (Resumos → Outros → Oftalmologia →
+ * resumo): an area hub is a blurb-nav-hub whose parent is the same specialty's
+ * hub of the same view. Returns null for the usual two-level case (every other
+ * hub), so callers keep their existing breadcrumb.
+ *   - page IS an area hub → { topHubSlug, area: null }   (crumb: … > Outros > Oftalmologia Resumos)
+ *   - page sits IN one    → { topHubSlug, area }         (crumb: … > Outros > Oftalmologia > Fimose Resumos)
+ */
+export async function findAreaHub(page: {
+  type: string;
+  view: PageView | null;
+  specialty_id: number | null;
+  parent_id: number | null;
+}): Promise<{ topHubSlug: string; area: { slug: string; label: string } | null } | null> {
+  if (page.view == null || page.specialty_id == null || page.parent_id == null) return null;
+  const admin = createAdminClient();
+  const sameHub = (p: HubLink | null): p is HubLink =>
+    p != null && p.type === "blurb-nav-hub" && p.view === page.view && p.specialty_id === page.specialty_id;
+  const load = async (id: number) =>
+    (await admin.from("pages").select("id, slug, title, type, view, specialty_id, parent_id").eq("id", id).maybeSingle())
+      .data as HubLink | null;
+
+  const parent = await load(page.parent_id);
+  if (!sameHub(parent)) return null;
+  if (page.type === "blurb-nav-hub") return { topHubSlug: parent.slug, area: null };
+
+  const grand = parent.parent_id != null ? await load(parent.parent_id) : null;
+  if (!sameHub(grand)) return null;
+  // Card label on the specialty hub ("Oftalmologia"); the page title as fallback.
+  const { data: card } = await admin
+    .from("nav_items")
+    .select("label")
+    .eq("source_page_id", grand.id)
+    .eq("target_page_id", parent.id)
+    .limit(1)
+    .maybeSingle();
+  return { topHubSlug: grand.slug, area: { slug: parent.slug, label: (card?.label as string) || parent.title } };
 }
 
 export type BuildCrumbsInput = {
@@ -91,16 +134,19 @@ export type BuildCrumbsInput = {
   // The per-specialty hub URL slug (within /app/[specialty]/<slug>), if one exists.
   // Pass null when the current page IS that hub (terminal specialty crumb, no link).
   specialtyHubSlug: string | null;
+  // The area hub a leaf sits in (Resumos → Outros → Oftalmologia), from findAreaHub.
+  areaHub?: { slug: string; label: string } | null;
 };
 
 // Builds the canonical IA breadcrumb chain for a content page.
-// Shape: Início > [Type root] > [Specialty hub] > [Leaf]
+// Shape: Início > [Type root] > [Specialty hub] > [Area hub] > [Leaf]
+// - Area hub only when the leaf sits in one (see findAreaHub).
 // - Type root dropped when page has no view/track/module.
 // - Specialty hub dropped when page has no specialty.
 // - Leaf dropped when the current page is itself the (specialty-under-type) hub
 //   — in that case the specialty crumb becomes the terminal.
 export function buildCrumbsForPage(input: BuildCrumbsInput): Crumb[] {
-  const { page, specialty, specialtyHubSlug } = input;
+  const { page, specialty, specialtyHubSlug, areaHub } = input;
 
   const root: Crumb = { label: "Início", href: "/app" };
   const typeRoot = typeRootFor({
@@ -143,6 +189,7 @@ export function buildCrumbsForPage(input: BuildCrumbsInput): Crumb[] {
       ? `/app/${specialty.slug}/${specialtyHubSlug}`
       : `/app/${specialty.slug}`;
     crumbs.push({ label: specialty.name, href });
+    if (areaHub) crumbs.push({ label: areaHub.label, href: `/app/${specialty.slug}/${areaHub.slug}` });
   }
 
   crumbs.push({ label: page.title });

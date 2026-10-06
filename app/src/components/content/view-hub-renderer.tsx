@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { STUDY_TYPE_CONFIG, type StudyTypeKey } from "@/lib/page-type";
+import { topLevelHubs } from "@/lib/hub-nesting";
 import { TrackHubAccordion, type SuperGroupData } from "./track-hub-accordion";
 
 // Action verb shown on the per-specialty card inside an expanded accordion row.
@@ -24,7 +25,7 @@ export async function getViewHubGroups(
   const [{ data: viewPages }, { data: specialties }] = await Promise.all([
     (excludePageId != null
       ? admin.from("pages")
-          .select("id, slug, title, specialty_id")
+          .select("id, slug, title, specialty_id, parent_id")
           .eq("view", view)
           .eq("type", "blurb-nav-hub")
           .eq("status", "publish")
@@ -32,7 +33,7 @@ export async function getViewHubGroups(
           .not("specialty_id", "is", null)
           .order("specialty_id")
       : admin.from("pages")
-          .select("id, slug, title, specialty_id")
+          .select("id, slug, title, specialty_id, parent_id")
           .eq("view", view)
           .eq("type", "blurb-nav-hub")
           .eq("status", "publish")
@@ -43,7 +44,9 @@ export async function getViewHubGroups(
       .order("display_order"),
   ]);
 
-  const pages = viewPages ?? [];
+  // Area hubs (Resumos → Outros → Oftalmologia) open from their specialty's hub;
+  // listing them here would add three more "Outros" items to the accordion.
+  const pages = topLevelHubs(viewPages ?? []);
   if (pages.length === 0) return [];
 
   // Per-specialty progress.

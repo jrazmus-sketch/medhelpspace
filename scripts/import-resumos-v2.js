@@ -145,6 +145,18 @@ const LABEL_OVERRIDES = {
   "infeccoes-cervicofaciais-e-glandulas-salivares-resumos": "Infecções Cervicofaciais e Glândulas Salivares",
 };
 
+// Area hubs inside a specialty's Resumos hub (Karina 2026-10-06: "igual ao Revalida
+// Up"): Resumos → Outros → Oftalmologia / Otorrinolaringologia / Urologia → resumos.
+// The area is the delivery's sub-folder; the specialty hub's cards become the areas.
+const AREAS = {
+  outros: [
+    { area: "oftalmologia", label: "Oftalmologia" },
+    { area: "otorrinolaringologia", label: "Otorrinolaringologia" },
+    { area: "urologia", label: "Urologia" },
+  ],
+};
+const areaSlug = (area) => `${area}-resumos`;
+
 // ── docx → paragraphs ────────────────────────────────────────────────────────
 
 function xmlDecode(s) {
@@ -395,8 +407,10 @@ function buildRows() {
     if (seen.has(slug)) warnings.push(`${rel}: DUPLICATE slug '${slug}' (also ${seen.get(slug)})`);
     seen.set(slug, rel);
     const topic = LABEL_OVERRIDES[slug] || topicFrom(r.titleLine) || slug;
+    const area = AREAS[specialty] ? sub : null;
+    if (AREAS[specialty] && !AREAS[specialty].some((a) => a.area === sub)) warnings.push(`${rel}: '${sub}' is not an area of ${specialty} (AREAS)`);
     rows.push({
-      rel, specialty, sub, slug,
+      rel, specialty, sub, area, slug,
       dbSlug: matchSlug || slug, // the row to write to (MATCH keeps the live slug)
       label: topic,
       title: `${topic} Resumos`,
@@ -421,18 +435,18 @@ function main() {
   if (!fs.existsSync(SRC)) { console.error(`Source dir not found: ${SRC}`); process.exit(1); }
   const { files, rows, warnings } = buildRows();
 
-  // Hub card order: alphabetical per hub; Outros clusters by sub-area first
-  // (oftalmologia → otorrinolaringologia → urologia).
-  const ordered = rows.slice().sort((a, b) =>
-    a.specialty.localeCompare(b.specialty) ||
-    collator.compare(a.sub && a.specialty === "outros" ? a.sub : "", b.sub && b.specialty === "outros" ? b.sub : "") ||
-    collator.compare(a.label, b.label));
+  // Hub card order: alphabetical inside each hub (a specialty hub, or an area hub).
+  const hubKey = (r) => `${r.specialty}/${r.area || ""}`;
+  const ordered = rows.slice().sort((a, b) => hubKey(a).localeCompare(hubKey(b)) || collator.compare(a.label, b.label));
   const pos = new Map();
   const counters = {};
-  for (const r of ordered) { counters[r.specialty] = (counters[r.specialty] || 0) + 1; pos.set(r.slug, counters[r.specialty]); }
+  for (const r of ordered) { const k = hubKey(r); counters[k] = (counters[k] || 0) + 1; pos.set(r.slug, counters[k]); }
+  const areaValues = Object.entries(AREAS)
+    .flatMap(([spec, list]) => list.map((a, i) => `(${sqlStr(spec)}, ${sqlStr(a.area)}, ${sqlStr(areaSlug(a.area))}, ${sqlStr(a.label)}, ${i + 1})`))
+    .join(",\n  ");
 
   const valueLines = rows
-    .map((r) => `  (${sqlStr(r.slug)}, ${sqlStr(r.dbSlug)}, ${sqlStr(r.title)}, ${sqlStr(r.label)}, ${sqlStr(r.specialty)}, ${pos.get(r.slug)}, ${sqlStr(r.html)})`)
+    .map((r) => `  (${sqlStr(r.slug)}, ${sqlStr(r.dbSlug)}, ${sqlStr(r.title)}, ${sqlStr(r.label)}, ${sqlStr(r.specialty)}, ${sqlStr(r.area)}, ${pos.get(r.slug)}, ${sqlStr(r.html)})`)
     .join(",\n");
   const renameLines = Object.entries(RENAMES)
     .map(([o, n]) =>
@@ -453,8 +467,8 @@ function main() {
 --    slug = where the topic lives after this file; db_slug = the live row it replaces
 --    (differs only for MATCH, where the live slug is kept).
 CREATE TEMP TABLE nr (slug text PRIMARY KEY, db_slug text UNIQUE NOT NULL, title text, label text,
-                      spec_slug text, hub_pos int, body text) ON COMMIT DROP;
-INSERT INTO nr (slug, db_slug, title, label, spec_slug, hub_pos, body) VALUES
+                      spec_slug text, area text, hub_pos int, body text) ON COMMIT DROP;
+INSERT INTO nr (slug, db_slug, title, label, spec_slug, area, hub_pos, body) VALUES
 ${valueLines};
 
 -- Guards: every specialty resolves; every MATCH target is a live resumo; every
@@ -484,26 +498,67 @@ END $$;
 -- 1. Renames: same topic, the address remediation looks for. Row id kept.
 ${renameLines}
 
--- 2. The Outros hub (first time Outros has Resumos).
+-- 2. The Outros hub (first time Outros has Resumos) and its area hubs.
 INSERT INTO pages (id, slug, title, type, status, view, content_module_id, specialty_id, wp_created_at, wp_modified_at)
 SELECT (SELECT COALESCE(MAX(id), 0) + 1 FROM pages), 'outros-resumos', 'Outros Resumos',
        'blurb-nav-hub'::page_type, 'publish', 'resumos'::page_view, NULL,
        (SELECT id FROM specialties WHERE slug = 'outros'), now(), now()
 WHERE NOT EXISTS (SELECT 1 FROM pages WHERE slug = 'outros-resumos');
 
-CREATE TEMP TABLE hubs ON COMMIT DROP AS
-SELECT s.slug AS spec_slug, s.id AS spec_id, p.id AS hub_id
-FROM pages p JOIN specialties s ON s.id = p.specialty_id
-WHERE p.view = 'resumos' AND p.type = 'blurb-nav-hub';
+CREATE TEMP TABLE areas (spec_slug text, area text, slug text, label text, pos int) ON COMMIT DROP;
+INSERT INTO areas (spec_slug, area, slug, label, pos) VALUES
+  ${areaValues};
 
 DO $$
 DECLARE bad text;
 BEGIN
-  SELECT string_agg(DISTINCT nr.spec_slug, ', ') INTO bad
-  FROM nr WHERE NOT EXISTS (SELECT 1 FROM hubs h WHERE h.spec_slug = nr.spec_slug);
-  IF bad IS NOT NULL THEN RAISE EXCEPTION 'no Resumos hub for specialty: %', bad; END IF;
-  IF (SELECT count(*) FROM hubs) <> (SELECT count(DISTINCT spec_slug) FROM hubs) THEN
-    RAISE EXCEPTION 'more than one Resumos hub for a specialty';
+  SELECT string_agg(a.slug, ', ') INTO bad
+  FROM areas a JOIN pages p ON p.slug = a.slug
+  WHERE p.view IS DISTINCT FROM 'resumos' OR p.type <> 'blurb-nav-hub';
+  IF bad IS NOT NULL THEN RAISE EXCEPTION 'area hub slug(s) taken by another page: %', bad; END IF;
+END $$;
+
+--    Area hub = blurb-nav-hub of the same view + specialty whose parent is the
+--    specialty's hub (lib/hub-nesting.ts keeps it out of the top-level lists).
+WITH top AS (
+  SELECT s.slug AS spec_slug, s.id AS spec_id, p.id AS hub_id
+  FROM pages p JOIN specialties s ON s.id = p.specialty_id
+  WHERE p.view = 'resumos' AND p.type = 'blurb-nav-hub' AND p.slug = s.slug || '-resumos'
+),
+base AS (SELECT COALESCE(MAX(id), 0) AS m FROM pages),
+todo AS (
+  SELECT a.*, row_number() OVER (ORDER BY a.spec_slug, a.pos) AS n
+  FROM areas a WHERE NOT EXISTS (SELECT 1 FROM pages p WHERE p.slug = a.slug)
+)
+INSERT INTO pages (id, slug, title, type, status, view, content_module_id, specialty_id, parent_id, wp_created_at, wp_modified_at)
+SELECT base.m + todo.n, todo.slug, todo.label || ' Resumos',
+       'blurb-nav-hub'::page_type, 'publish', 'resumos'::page_view, NULL, top.spec_id, top.hub_id, now(), now()
+FROM todo CROSS JOIN base JOIN top ON top.spec_slug = todo.spec_slug;
+
+UPDATE pages p
+SET title = a.label || ' Resumos', status = 'publish',
+    parent_id = (SELECT t.id FROM pages t WHERE t.slug = a.spec_slug || '-resumos' AND t.view = 'resumos')
+FROM areas a WHERE p.slug = a.slug AND p.view = 'resumos';
+
+--    hubs: one row per specialty hub (area NULL) and one per area hub.
+CREATE TEMP TABLE hubs ON COMMIT DROP AS
+SELECT s.slug AS spec_slug, NULL::text AS area, s.id AS spec_id, p.id AS hub_id
+FROM pages p JOIN specialties s ON s.id = p.specialty_id
+WHERE p.view = 'resumos' AND p.type = 'blurb-nav-hub'
+  AND NOT EXISTS (SELECT 1 FROM areas a WHERE a.slug = p.slug)
+UNION ALL
+SELECT a.spec_slug, a.area, p.specialty_id, p.id
+FROM areas a JOIN pages p ON p.slug = a.slug AND p.view = 'resumos';
+
+DO $$
+DECLARE bad text;
+BEGIN
+  SELECT string_agg(DISTINCT nr.spec_slug || '/' || COALESCE(nr.area, ''), ', ') INTO bad
+  FROM nr WHERE NOT EXISTS (
+    SELECT 1 FROM hubs h WHERE h.spec_slug = nr.spec_slug AND h.area IS NOT DISTINCT FROM nr.area);
+  IF bad IS NOT NULL THEN RAISE EXCEPTION 'no Resumos hub for: %', bad; END IF;
+  IF (SELECT count(*) FROM hubs) <> (SELECT count(DISTINCT (spec_slug, area)) FROM hubs) THEN
+    RAISE EXCEPTION 'more than one Resumos hub for a specialty/area';
   END IF;
 END $$;
 
@@ -515,7 +570,7 @@ SET title = nr.title,
     parent_id = h.hub_id,
     status = 'publish',
     notes = NULLIF(btrim(replace(replace(COALESCE(p.notes, ''), ${sqlStr(RETIRE_NOTE)}, ''), ' | ', '')), '')
-FROM nr JOIN hubs h ON h.spec_slug = nr.spec_slug
+FROM nr JOIN hubs h ON h.spec_slug = nr.spec_slug AND h.area IS NOT DISTINCT FROM nr.area
 WHERE p.slug = nr.db_slug AND p.view = 'resumos';
 
 --    … and the body on its single lesson.
@@ -542,7 +597,8 @@ ins AS (
   SELECT base.m + newrows.n, newrows.slug, newrows.title,
          'plain-content'::page_type, 'publish', 'resumos'::page_view, NULL,
          h.spec_id, h.hub_id, now(), now()
-  FROM newrows CROSS JOIN base JOIN hubs h ON h.spec_slug = newrows.spec_slug
+  FROM newrows CROSS JOIN base
+  JOIN hubs h ON h.spec_slug = newrows.spec_slug AND h.area IS NOT DISTINCT FROM newrows.area
   RETURNING id, slug
 )
 INSERT INTO lessons (page_id, position, title, body_html)
@@ -556,14 +612,21 @@ SET status = 'draft',
 WHERE view = 'resumos' AND status = 'publish'
   AND slug IN (${RETIRE.map(sqlStr).join(", ")});
 
--- 6. Rebuild every Resumos hub's cards from the delivery (alphabetical; Outros by area).
+-- 6. Rebuild every Resumos hub's cards from the delivery (alphabetical per hub);
+--    a specialty with areas gets one card per area on its own hub.
 DELETE FROM nav_items WHERE source_page_id IN (SELECT hub_id FROM hubs);
 INSERT INTO nav_items (source_page_id, target_page_id, position, label, layout)
 SELECT h.hub_id, p.id, nr.hub_pos, nr.label, 'cards'
 FROM nr
-JOIN hubs h ON h.spec_slug = nr.spec_slug
+JOIN hubs h ON h.spec_slug = nr.spec_slug AND h.area IS NOT DISTINCT FROM nr.area
 JOIN pages p ON p.slug = nr.db_slug AND p.view = 'resumos'
 ORDER BY h.hub_id, nr.hub_pos;
+INSERT INTO nav_items (source_page_id, target_page_id, position, label, layout)
+SELECT top.hub_id, ah.hub_id, a.pos, a.label, 'cards'
+FROM areas a
+JOIN hubs ah ON ah.spec_slug = a.spec_slug AND ah.area = a.area
+JOIN hubs top ON top.spec_slug = a.spec_slug AND top.area IS NULL
+ORDER BY a.pos;
 
 -- ── Verification (printed by run-sql.js) ──
 -- Expect ${rows.length}: published resumo topics after the import.
@@ -587,10 +650,10 @@ SELECT count(*) AS cards_to_unpublished
 FROM nav_items n JOIN hubs h ON h.hub_id = n.source_page_id
 JOIN pages p ON p.id = n.target_page_id WHERE p.status <> 'publish';
 
--- Cards per hub (Outros is new).
-SELECT h.spec_slug, count(n.id) AS cards
+-- Cards per hub (Outros: 3 area cards; each area hub its resumos).
+SELECT h.spec_slug, h.area, count(n.id) AS cards
 FROM hubs h LEFT JOIN nav_items n ON n.source_page_id = h.hub_id
-GROUP BY h.spec_slug ORDER BY h.spec_slug;
+GROUP BY h.spec_slug, h.area ORDER BY h.spec_slug, h.area NULLS FIRST;
 `;
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

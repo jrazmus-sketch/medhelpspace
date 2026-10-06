@@ -7,6 +7,7 @@ import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer
 import { TrackHubRenderer } from "@/components/content/track-hub-renderer";
 import { ViewHubRenderer } from "@/components/content/view-hub-renderer";
 import { buildCrumbsForPage, type Crumb } from "@/lib/breadcrumbs";
+import { topLevelHubs } from "@/lib/hub-nesting";
 import { STUDY_TYPE_CONFIG, getStudyTypeKey, type StudyTypeConfig, type StudyTypeKey } from "@/lib/page-type";
 import { SiteText } from "@/components/landing/site-text";
 import { getStudyTypeOverrides } from "@/lib/queries/study-types";
@@ -122,7 +123,7 @@ export default async function SpecialtyHubPage({
   const [{ data: hubPages }, { data: trackPagesRaw }, { data: allTracks }, studyTypeOverrides, { count: revalidaUpCount }] = await Promise.all([
     admin
       .from("pages")
-      .select("id, slug, view, title")
+      .select("id, slug, view, title, parent_id")
       .eq("specialty_id", spec.id)
       .eq("status", "publish")
       .eq("type", "blurb-nav-hub"),
@@ -152,7 +153,8 @@ export default async function SpecialtyHubPage({
   for (const view of VIEW_ORDER) {
     const cfg = STUDY_TYPE_CONFIG[view as StudyTypeKey];
     if (!cfg) continue;
-    const hubPage = (hubPages ?? []).find(p => p.view === view);
+    // Top-level only: Outros' Resumos hub has area hubs nested under it.
+    const hubPage = topLevelHubs((hubPages ?? []).filter(p => p.view === view))[0];
     if (hubPage) {
       typeOptions.push({ key: view as StudyTypeKey, cfg, href: `/app/${slug}/${hubPage.slug}` });
     }
