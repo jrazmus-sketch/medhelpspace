@@ -147,6 +147,12 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   blurb-nav-hub of the same view + specialty whose `parent_id` is the specialty's hub;
   `lib/hub-nesting.ts topLevelHubs()` keeps it out of every hub list (accordion, specialty page,
   `findSpecialtyHub`) and `findAreaHub()` adds the area crumb. `AREAS` in the importer drives it.
+  **2026-10-06 (`2fc8064`)**: Meningites only in Infectologia (Karina) — `SKIP_FILES` + RETIRE.
+  Bradi/Taquiarritmias carry 8 ECG figures each: `FILE_REPLACEMENTS` reads her newer .docx, pictures
+  go through `scripts/prepare-resumo-images.py --upload` (1400 px lossless WebP on Bunny,
+  `images/resumos/v1/…`, manifest `parsed/resumos-images.json`) and render as `figure.resumo-figure`
+  (phone: readable 680 px strip that scrolls inside its frame + tap to open; sm+: fills the column).
+  216 resumos live.
   Specialty = FOLDER (moved: piloro + invaginação → Pediatria, febre reumática → Pediatria,
   neuroblastoma → Pediatria). Meningites came twice (Infecto + Neuro, different texts) → second
   page `meningites-neurologia-resumos`. Scene titles are `<h3>` (TOC on xl), Word Heading 4 /
