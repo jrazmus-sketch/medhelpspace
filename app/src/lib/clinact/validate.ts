@@ -28,6 +28,24 @@ function label(s: StepDoc, i: number): string {
   return `Bloco ${i + 1} (${s.kind.replace(/_/g, " ")})`;
 }
 
+/** Every authored string under a value — text, labels, reveals, captions — never a file name or URL. */
+function strings(v: unknown): string[] {
+  if (typeof v === "string") return [v];
+  if (Array.isArray(v)) return v.flatMap(strings);
+  if (v && typeof v === "object") {
+    return Object.entries(v).flatMap(([k, x]) => (k === "url" || k === "file" || k === "type" ? [] : strings(x)));
+  }
+  return [];
+}
+
+const stepStrings = (s: StepDoc): string[] => [
+  ...strings(s.content),
+  ...s.options.flatMap((o) => [o.label, o.feedback ?? "", o.seduction ?? "", ...strings(o.effect)]),
+];
+
+/** Numbers as written ("1.150", "7,45", "286"); a single digit is too common to mean anything. */
+const numbersIn = (t: string): string[] => (t.match(/\d+(?:[.,]\d+)*/g) ?? []).filter((n) => n.length > 1);
+
 export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null): Check[] {
   const checks: Check[] = [];
   const add = (ok: boolean, message: string, blocking = true) => checks.push({ ok, message, blocking });
@@ -108,6 +126,38 @@ export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null)
     if (noFeedback) add(false, `${label(s, i)}: ${noFeedback} opção(ões) sem feedback`, false);
     // A set is not a path: a "vai para" on one option is ignored by the engine.
     if (opts.some((o) => o.next_scene_key)) add(false, `${label(s, i)}: "vai para" não funciona dentro de INVESTIGAÇÃO e será ignorado`, false);
+  });
+
+  // ── INVESTIGAÇÃO: nothing may lean on a result the student may not have
+  // ordered (Karina 2026-10-06). This is the mechanical half of her rule: a
+  // number that exists ONLY in an option's result — absent from everything
+  // before the block — and turns up where every student reads it (any feedback
+  // in the block, shown for unordered items too, or anything after it). Inferences ("sem três
+  // critérios menores") carry no number; those stay an editorial read (§7).
+  steps.forEach((s, i) => {
+    if (s.kind !== "investigacao") return;
+    // The block's own prompt and option labels are on screen before confirming.
+    const before = new Set(
+      [...steps.slice(0, i).flatMap(stepStrings), ...strings(s.content), ...s.options.map((o) => o.label)].flatMap(numbersIn),
+    );
+    const owner = new Map<string, string>(); // result-only number → the option it belongs to
+    for (const o of s.options) {
+      for (const n of strings(o.effect).flatMap(numbersIn)) if (!before.has(n) && !owner.has(n)) owner.set(n, o.label);
+    }
+    if (!owner.size) return;
+    const everyone: [text: string, where: string][] = [
+      ...s.options.map((o): [string, string] => [o.feedback ?? "", `o feedback de "${o.label}"`]),
+      ...steps.slice(i + 1).flatMap((t, j) => stepStrings(t).map((x): [string, string] => [x, label(t, i + 1 + j)])),
+      [doc.takeaway ?? "", "Leve deste caso"],
+    ];
+    const flagged = new Set<string>();
+    for (const [text, where] of everyone) {
+      for (const n of numbersIn(text)) {
+        if (!owner.has(n) || flagged.has(n)) continue;
+        flagged.add(n);
+        add(false, `${label(s, i)}: "${n}" só existe no resultado de "${owner.get(n)}", mas aparece também em ${where} — quem não pediu esse exame leria o resultado ali`, false);
+      }
+    }
   });
 
   // ── Convergent branching (Clínica em Cena) ────────────────────────────────

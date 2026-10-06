@@ -14,7 +14,7 @@ import { advance, applyDecision, buildReveal, buildScreens, earnedWeights, empty
 import { caseScore } from "@/lib/clinact/scoring";
 import { validateForPublish } from "@/lib/clinact/validate";
 import { FORMAT_PRESETS, AUTHORABLE_KINDS, isDecision } from "@/lib/clinact/format-presets";
-import type { AttemptState, CaseDoc } from "@/lib/clinact/types";
+import { investigationSummary, type AttemptState, type CaseDoc } from "@/lib/clinact/types";
 
 const FILE = path.join(process.cwd(), "..", "docs", "clinact", "exemplos", "cec-inv-teste-01.txt");
 
@@ -100,18 +100,33 @@ test("incomplete: leaving out the blood gas costs a quarter", () => {
   assert.equal(state.answered[stepKey(inv.decision!)].weight, 0.75);
 });
 
+test("the classifications are Karina's final ones (2026-10-06): the CT is inadequada, not prejudicial", () => {
+  const quality = Object.fromEntries(inv.decision!.options.map((o) => [o.label, o.quality]));
+  assert.deepEqual(quality, {
+    "Radiografia de tórax": "ideal",
+    "D-dímero": "inadequada",
+    "Hemograma completo": "ideal",
+    "Hemoculturas (duas amostras)": "aceitavel",
+    "Ureia, creatinina e eletrólitos": "ideal",
+    "Tomografia de tórax com contraste": "inadequada",
+    "Gasometria arterial": "ideal",
+    "Procalcitonina": "inadequada",
+  });
+});
+
 test("excess: ordering everything 'to be safe' scores well below the focused set", () => {
   const all = inv.decision!.options.map((o) => o.id!);
   const { state } = playTo(all);
-  // (4 ideal + 0.6 + 0.2 + 0.2 + 0) / (4 + 4 extras) = 0.625
-  assert.equal(state.answered[stepKey(inv.decision!)].weight, 0.63);
+  // (4 ideal + 0.6 + 0.2 + 0.2 + 0.2) / (4 + 4 extras) = 0.65
+  assert.equal(state.answered[stepKey(inv.decision!)].weight, 0.65);
 });
 
-test("inadequate and harmful options cost more than an acceptable one", () => {
+test("an inadequate option costs more than an acceptable one, and the CT now weighs as inadequate", () => {
   const withCulture = playTo([...IDEAL, idOf("Hemoculturas")]).state.answered[stepKey(inv.decision!)].weight;
   const withDdimer = playTo([...IDEAL, idOf("D-dímero")]).state.answered[stepKey(inv.decision!)].weight;
   const withCT = playTo([...IDEAL, idOf("Tomografia")]).state.answered[stepKey(inv.decision!)].weight;
-  assert.ok(withCulture > withDdimer && withDdimer > withCT, `${withCulture} > ${withDdimer} > ${withCT}`);
+  assert.ok(withCulture > withDdimer, `${withCulture} > ${withDdimer}`);
+  assert.equal(withCT, withDdimer); // (4 + 0.2) / 5 = 0.84 for both
 });
 
 test("the investigation counts as ONE decision in the case score", () => {
@@ -208,11 +223,74 @@ test("a single-choice answer sent to an investigation is refused, and the revers
   assert.throws(() => applyDecision({ ...fresh, cursor: invIdx }, inv, { option_id: IDEAL[0] }), /incompatível/);
 });
 
-test("the next scene does not restate results the student may not have ordered", () => {
-  const grav = screens.find((s) => s.decision?.scene_key === "gravidade")!;
-  const text = String((grav.decision!.content as { text?: string }).text);
-  for (const value of ["PaO2/FiO2", "ureia 54", "Leucócitos", "BUN"]) {
-    assert.ok(!text.includes(value), `gravidade must not state "${value}"`);
+// ── Karina's permanent rule (2026-10-06) ─────────────────────────────────────
+// Nothing after the block, and no feedback inside it (unordered items show
+// theirs too), may assert, calculate, exclude or presuppose a result the
+// student may not have ordered.
+
+/** Every text a student reads whatever they ordered: the block's feedback and everything after it. */
+function textsForEveryone(doc: CaseDoc): string[] {
+  const steps = doc.steps.filter((s) => s.enabled).sort((a, b) => a.position - b.position);
+  const at = steps.findIndex((s) => s.kind === "investigacao");
+  const all = (v: unknown): string[] =>
+    typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(all) : v && typeof v === "object" ? Object.values(v).flatMap(all) : [];
+  return [
+    ...steps[at].options.map((o) => o.feedback ?? ""),
+    ...steps.slice(at + 1).flatMap((s) => [...all(s.content), ...s.options.flatMap((o) => [o.label, o.feedback ?? "", ...all(o.effect)])]),
+    doc.takeaway ?? "",
+  ];
+}
+
+test("no later text, and no feedback in the block, leans on a result the student may not have ordered", () => {
+  const text = textsForEveryone(d).join("\n");
+  const leaks: [RegExp, string][] = [
+    [/PaO2\/FiO2 de \d/, "states the blood gas"],
+    [/ureia (de |é )?\d/i, "states the urea"],
+    [/Leucócitos|plaquetas \d/i, "states the blood count"],
+    [/CURB-65 de 3/, "calculates with the urea (bedside alone gives CRB-65 de 2)"],
+    [/três critérios menores/, "excludes with the gas, count, urea and X-ray"],
+    [/imagem (é|são) compatíve/, "presupposes the X-ray"],
+    [/confirma a pneumonia/, "presupposes a positive X-ray"],
+  ];
+  for (const [re, why] of leaks) assert.doesNotMatch(text, re, why);
+});
+
+test("the publish checklist flags a later text that repeats a result-only number", () => {
+  const warnings = (doc: CaseDoc) => validateForPublish(doc).filter((c) => !c.ok && /só existe no resultado/.test(c.message));
+  assert.deepEqual(warnings(d).map((c) => c.message), [], "the test case itself is clean");
+
+  const leaky = testCase();
+  const grav = leaky.steps.find((s) => s.scene_key === "gravidade")!;
+  // A number the student already knew (FiO2 28%, set in the first scene) is not a leak…
+  (grav.content as { text: string }).text += " Mantenha a FiO2 de 28%.";
+  assert.deepEqual(warnings(leaky), []);
+  // …the P/F of 286 exists only in the blood gas result.
+  (grav.content as { text: string }).text += " A relação PaO2/FiO2 de 286 indica…";
+  const w = warnings(leaky);
+  assert.equal(w.length, 1);
+  assert.match(w[0].message, /"286" só existe no resultado de "Gasometria arterial"/);
+  assert.equal(w[0].blocking, false, "a warning, not a blocker: the semantic half is the author's read");
+
+  // A feedback in the block is read for unordered items too.
+  const leakyFeedback = testCase();
+  const rx = leakyFeedback.steps.find((s) => s.kind === "investigacao")!.options.find((o) => o.label.startsWith("Hemograma"))!;
+  rx.feedback += " Aqui, 17.600 leucócitos.";
+  assert.match(warnings(leakyFeedback)[0].message, /"17\.600".*o feedback de "Hemograma completo"/);
+});
+
+test("the summary counts 'itens da investigação ideal', never 'essenciais' (Karina 2026-10-06)", () => {
+  // Her two sentences, verbatim.
+  assert.equal(investigationSummary(4, 4, 0), "Você solicitou os 4 itens da investigação ideal.");
+  assert.equal(investigationSummary(4, 3, 1), "Você solicitou 3 de 4 itens da investigação ideal e mais 1 item além deles.");
+  // The rest of the grid.
+  assert.equal(investigationSummary(4, 4, 2), "Você solicitou os 4 itens da investigação ideal e mais 2 itens além deles.");
+  assert.equal(investigationSummary(4, 3, 0), "Você solicitou 3 de 4 itens da investigação ideal.");
+  assert.equal(investigationSummary(4, 0, 2), "Você não solicitou nenhum dos 4 itens da investigação ideal e solicitou 2 itens além deles.");
+  assert.equal(investigationSummary(4, 0, 0), "Você não solicitou nenhum item.");
+  assert.equal(investigationSummary(1, 1, 1), "Você solicitou o item da investigação ideal e mais 1 item além dele.");
+  assert.equal(investigationSummary(1, 0, 1), "Você não solicitou o item da investigação ideal e solicitou 1 item além dele.");
+  for (const [a, b, c] of [[4, 4, 0], [4, 3, 1], [4, 0, 2], [1, 0, 1], [0, 0, 2]]) {
+    assert.doesNotMatch(investigationSummary(a, b, c), /essencia/i);
   }
 });
 

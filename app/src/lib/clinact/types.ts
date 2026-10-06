@@ -70,6 +70,30 @@ export const DECISION_KINDS: readonly StepKind[] = ["pergunta", "reavaliacao", "
  */
 export const MULTI_SELECT_KINDS: readonly StepKind[] = ["investigacao"];
 
+/**
+ * The line above an investigation's results. "Ideal" is a quality of THIS
+ * case's strategy, never "essencial" or "obrigatório" (Karina, 2026-10-06): an
+ * exam can belong to the ideal investigation of one case without being
+ * indispensable to every defensible approach — so the count is of "itens da
+ * investigação ideal".
+ */
+export function investigationSummary(ideal: number, idealOrdered: number, extras: number): string {
+  const itens = (n: number) => `${n} ${n === 1 ? "item" : "itens"}`;
+  if (idealOrdered === 0 && extras === 0) return "Você não solicitou nenhum item.";
+  // Publish refuses a block without an ideal option; a draft preview may not.
+  if (ideal === 0) return `Você solicitou ${itens(extras)}.`;
+  const beyond = `além ${ideal === 1 ? "dele" : "deles"}`;
+  const more = extras ? ` e mais ${itens(extras)} ${beyond}` : "";
+  if (idealOrdered === ideal) {
+    return `${ideal === 1 ? "Você solicitou o item da investigação ideal" : `Você solicitou os ${ideal} itens da investigação ideal`}${more}.`;
+  }
+  if (idealOrdered === 0) {
+    const none = ideal === 1 ? "Você não solicitou o item da investigação ideal" : `Você não solicitou nenhum dos ${ideal} itens da investigação ideal`;
+    return `${none} e solicitou ${itens(extras)} ${beyond}.`;
+  }
+  return `Você solicitou ${idealOrdered} de ${ideal} itens da investigação ideal${more}.`;
+}
+
 /** Format → the skill it trains (the case's `primary_skill`). */
 export const FORMAT_SKILL: Record<CaseFormat, Skill> = {
   codigo_clinico: "conectar",

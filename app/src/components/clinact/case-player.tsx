@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { submitDecision, advanceAttempt, restartAttempt } from "@/actions/clinact";
 import type { PlayerPayload, PublicScreen } from "@/lib/clinact/player-load";
 import type { Reveal } from "@/lib/clinact/engine";
-import { FORMAT_LABELS, type AttemptState, type Confidence, type Media, type StepDoc } from "@/lib/clinact/types";
+import { FORMAT_LABELS, investigationSummary, type AttemptState, type Confidence, type Media, type StepDoc } from "@/lib/clinact/types";
 import { Prose, MediaView } from "./prose";
 import { CodigoDecifrado } from "./codigo-decifrado";
 import { ClipboardList } from "lucide-react";
@@ -409,20 +409,15 @@ function Investigation({
 
   const chosen = new Set(reveal.selected ?? []);
   const verdict = (id: number) => reveal.options.find((x) => x.id === id);
-  const essential = reveal.options.filter((x) => x.quality === "ideal");
-  const essentialOrdered = essential.filter((x) => chosen.has(x.id)).length;
+  const ideal = reveal.options.filter((x) => x.quality === "ideal");
+  const idealOrdered = ideal.filter((x) => chosen.has(x.id)).length;
   const extras = [...chosen].filter((id) => verdict(id)?.quality !== "ideal").length;
   const ordered = options.filter((o) => chosen.has(o.id));
   const notOrdered = options.filter((o) => !chosen.has(o.id));
   // The "fizemos" line only repeats the item's own name ("Radiografia de
   // tórax.") — it belongs in the Prontuário Vivo, not under the item.
   const resultsFor = (id: number) => (reveal.results?.find((r) => r.option_id === id)?.items ?? []).filter((r) => r.cat !== "fizemos");
-  const summary =
-    chosen.size === 0
-      ? "Você não solicitou nenhum item."
-      : `Você solicitou ${essentialOrdered} de ${essential.length} ${essential.length === 1 ? "item essencial" : "itens essenciais"}${
-          extras ? ` e mais ${extras} ${extras === 1 ? "item" : "itens"} além ${essential.length === 1 ? "do essencial" : "dos essenciais"}` : ""
-        }.`;
+  const summary = investigationSummary(ideal.length, idealOrdered, extras);
 
   const badge = (quality: string | null | undefined) =>
     quality ? (

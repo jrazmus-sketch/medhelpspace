@@ -319,15 +319,40 @@ Quais exames você deseja solicitar neste momento?
   `fizemos:`…), com imagem ou áudio logo abaixo. Só aparece — na tela e no
   Prontuário Vivo — se o aluno pedir aquela opção. O relógio soma só o que foi pedido.
 - **A nota:** soma da qualidade do que foi pedido ÷ (opções `ideal` + opções pedidas
-  além das ideais). Pedir tudo "para garantir" e deixar de pedir o essencial custam,
-  cada um à sua maneira.
+  além das ideais). Pedir tudo "para garantir" e deixar de pedir um item da
+  investigação ideal custam, cada um à sua maneira.
+- **`ideal` vale para este caso, neste momento.** Não quer dizer obrigatório nem
+  essencial: um exame pode fazer parte da investigação ideal de um caso sem ser
+  indispensável em toda abordagem defensável. A gasometria é ideal no
+  `CEC-INV-TESTE-01` porque o paciente chegou com SpO2 de 89% — não porque toda
+  pneumonia exija gasometria. Por isso o aluno lê "itens da investigação ideal",
+  nunca "itens essenciais".
 - **Duas opções substituíveis não podem ser ambas `ideal`** — senão a nota máxima
   passa a exigir as duas.
-- **O feedback nunca contém o resultado.** O aluno lê o feedback também das opções
-  que **não** pediu; ali vai o porquê, nunca o valor.
-- **A cena seguinte não repete resultados.** Se a próxima cena disser "a ureia é 54",
-  entrega ao aluno um dado que ele talvez não tenha pedido. Escreva-a a partir do
-  que ele reuniu ("Com os dados que você reuniu…").
+- **O feedback nunca contém nem pressupõe o resultado.** O aluno lê o feedback
+  também das opções que **não** pediu; ali vai o porquê, nunca o valor. "Quando o
+  quadro e a imagem são compatíveis" entrega a radiografia a quem não a pediu.
+- **Regra permanente — nada depois da investigação depende de um exame que o aluno
+  pode não ter pedido:**
+
+  > Nenhuma cena, alternativa, feedback ou texto posterior pode afirmar, calcular,
+  > excluir ou pressupor informação que dependa de um exame que o aluno pode não ter
+  > solicitado no bloco INVESTIGAÇÃO.
+
+  O texto precisa funcionar com **todas** as combinações de pedidos — inclusive
+  nenhum. As três formas de errar:
+
+  - **afirmar** o valor: "a relação PaO2/FiO2 é 286";
+  - **calcular** com ele: "CURB-65 de 3" — o 3 só existe com a ureia; só com dados
+    de beira-leito, o CRB-65 deste paciente é 2;
+  - **excluir** com ele: "sem três critérios menores de pneumonia grave" pressupõe
+    a gasometria, o hemograma, a ureia e a radiografia.
+
+  Escreva a partir do que todos conhecem — história, beira-leito, o que já foi
+  feito ("Com os dados que você reuniu…", "Com os dados disponíveis…"). O
+  Checklist de publicação, no editor, avisa (em amarelo) quando um texto posterior
+  repete um número que só existe no resultado de um exame; cálculo e exclusão não
+  têm número, e por isso dependem da sua leitura.
 - **Sem `vai para:`** dentro da investigação: o aluno escolhe um conjunto, não um
   caminho.
 - **Confiança continua seletiva.** Um `## CONFIANÇA` logo depois pergunta sobre a

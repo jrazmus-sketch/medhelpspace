@@ -84,7 +84,7 @@ Quais exames você deseja solicitar neste momento?
 
 - Radiografia de tórax
   qualidade: ideal
-  feedback: Testa a hipótese construída à beira-leito e mostra a extensão do acometimento: é o exame que confirma a pneumonia e procura complicações.
+  feedback: Testa a hipótese construída à beira-leito: é o exame que confirma ou afasta a pneumonia, avalia a extensão e procura complicações.
   fizemos: Radiografia de tórax.
   encontramos: Radiografia de tórax disponível para interpretação.
   [imagem: CEC-01_img1.jpg]
@@ -116,7 +116,7 @@ Quais exames você deseja solicitar neste momento?
   encontramos: Ureia 54 mg/dL, correspondente a BUN de aproximadamente 25 mg/dL, creatinina 1,1 mg/dL, sódio 138 mEq/L e potássio 4,2 mEq/L.
   relógio: 4
 - Tomografia de tórax com contraste
-  qualidade: prejudicial
+  qualidade: inadequada
   feedback: Diante de uma pneumonia típica em paciente estável, a tomografia antes da radiografia não muda a conduta e consome tempo: atrasa a definição de gravidade e o início do tratamento.
   fizemos: Tomografia de tórax com contraste.
   encontramos: Consolidação no lobo inferior direito, sem derrame pleural ou cavitação.
@@ -129,7 +129,7 @@ Quais exames você deseja solicitar neste momento?
   relógio: 4
 - Procalcitonina
   qualidade: inadequada
-  feedback: Não deve decidir o início do antimicrobiano quando o quadro clínico e a imagem são compatíveis com pneumonia; acrescenta pouco a este momento.
+  feedback: Não deve decidir o início do antimicrobiano quando o quadro clínico é compatível com pneumonia; acrescenta pouco a este momento.
   fizemos: Procalcitonina.
   encontramos: Procalcitonina de 0,9 ng/mL.
   relógio: 4
@@ -143,7 +143,7 @@ Qual é a melhor conduta a partir daqui?
 
 * Internar em enfermaria com monitorização frequente, manter oxigênio titulado para SpO2 entre 94% e 98% e iniciar ceftriaxona 2 g IV a cada 24 horas associada a azitromicina 500 mg IV a cada 24 horas
   qualidade: ideal
-  feedback: O CURB-65 de 3, a hipoxemia e a necessidade de oxigênio afastam o tratamento ambulatorial. Sem critério maior nem três critérios menores de pneumonia grave, a enfermaria com vigilância estreita, reavaliação precoce e baixo limiar para escalonamento é coerente. O esquema combina beta-lactâmico e macrolídeo sem ampliar empiricamente para patógenos resistentes na ausência de fatores de risco.
+  feedback: A idade e a frequência respiratória (CRB-65 de 2, calculável à beira-leito), a hipoxemia e a necessidade de oxigênio afastam o tratamento ambulatorial. Com os dados disponíveis, a internação com vigilância estreita e reavaliação precoce é necessária; qualquer evidência adicional de pneumonia grave deve levar ao escalonamento do cuidado. O esquema combina beta-lactâmico e macrolídeo sem ampliar empiricamente para patógenos resistentes na ausência de fatores de risco.
   fizemos: Internação em enfermaria com monitorização frequente, manutenção do oxigênio titulado e início de ceftriaxona associada a azitromicina.
   estado: Hemodinamicamente estável, SpO2 95% com oxigênio e tratamento antimicrobiano iniciado.
   relógio: 10
