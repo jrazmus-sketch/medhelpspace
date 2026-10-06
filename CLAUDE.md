@@ -142,6 +142,11 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   by `<question-slug>-resumos`; only 3 `RENAMES` where the NEW slug is the one it wants. 16 new
   topics, first **Outros** hub (`outros-resumos`, cards clustered oftalmo → otorrino → urologia),
   8 retired to draft (explicit `RETIRE`), every Resumos hub's cards rebuilt from the delivery.
+  **Outros has AREA hubs (Karina 2026-10-06, "igual ao Revalida Up", `ca53274`)**: Resumos → Outros →
+  `oftalmologia-` / `otorrinolaringologia-` / `urologia-resumos` → resumos. An area hub is a
+  blurb-nav-hub of the same view + specialty whose `parent_id` is the specialty's hub;
+  `lib/hub-nesting.ts topLevelHubs()` keeps it out of every hub list (accordion, specialty page,
+  `findSpecialtyHub`) and `findAreaHub()` adds the area crumb. `AREAS` in the importer drives it.
   Specialty = FOLDER (moved: piloro + invaginação → Pediatria, febre reumática → Pediatria,
   neuroblastoma → Pediatria). Meningites came twice (Infecto + Neuro, different texts) → second
   page `meningites-neurologia-resumos`. Scene titles are `<h3>` (TOC on xl), Word Heading 4 /
