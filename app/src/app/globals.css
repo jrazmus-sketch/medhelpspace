@@ -310,13 +310,26 @@
   color: var(--foreground);
 }
 
+/* Sub-topic inside a section (e.g. "Respondedor" under a resumo's "Cena 4"). */
+.prose-content h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.375rem;
+  color: var(--foreground);
+}
+
 .prose-content p {
   margin-top: 0;
   margin-bottom: 0.75rem;
 }
 
-.prose-content p:empty,
-.prose-content p:has(> br:only-child) {
+/* Empty paragraphs only. There used to be a second selector here,
+   p:has(> br:only-child), meant for WP's <p><br /></p> blanks — but :only-child
+   ignores text, so it also hid every REAL paragraph with exactly one line break
+   ("line one<br>line two"): 1,922 of them in the 2026-10-05 Resumos. No <p><br></p>
+   blank exists in the database (checked across every text column, 2026-10-05). */
+.prose-content p:empty {
   display: none;
 }
 
@@ -345,6 +358,12 @@
 
 .prose-content ul {
   list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-content ol {
+  list-style: decimal;
   padding-left: 1.5rem;
   margin-bottom: 0.75rem;
 }
@@ -467,6 +486,14 @@
 .prose-content.prose-resumo h3,
 .prose-content.prose-formula h3 {
   color: var(--brand);
+}
+
+/* --brand stays #7a1d91 in dark (buttons carry white text on it), which is ~2.4:1
+   as TEXT on the dark surface. Resumo headings and title lines take the documented
+   dark-mode brand shift instead (same value as .prose-color-brand below). */
+.dark .prose-content.prose-resumo h3,
+.dark .prose-content.prose-resumo .prose-brand-color {
+  color: #c084e8;
 }
 
 .prose-content ul.pega li::marker {

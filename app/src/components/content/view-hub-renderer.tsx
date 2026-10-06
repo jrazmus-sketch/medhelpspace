@@ -176,10 +176,12 @@ export async function ViewHubRenderer({
       </p>
     );
   }
-  // Resumos / Fórmula hubs get an extra "Outros" section, empty for now — content
-  // TBD. Scoped to these views so the quiz/simulados tabs (which share
+  // Resumos / Fórmula hubs always show an "Outros" section — an empty placeholder
+  // until that view has its own Outros hub page (Resumos got one 2026-10-05; the
+  // real group then comes from the data, and a second one would duplicate it).
+  // Scoped to these views so the quiz/simulados tabs (which share
   // getViewHubGroups) are unaffected.
-  if (view === "resumos" || view === "formula") {
+  if ((view === "resumos" || view === "formula") && !groups.some((g) => g.label === "Outros")) {
     groups.push({ label: "Outros", iconSlug: "outros", items: [] });
   }
   // Stripe color for accordion rows — derived from the view's StudyTypeKey
