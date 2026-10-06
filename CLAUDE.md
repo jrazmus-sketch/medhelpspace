@@ -544,7 +544,17 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   the result; the scene after an investigation never restates results; two substitutable options never both
   ideal. Fixed on the way: parser dropped the block's question text; THREE more hardcoded decision lists
   (format-presets `isDecision`, validate.ts, editor) — derive from `DECISION_KINDS`, never copy it.
-  OPEN: Karina's validation + review of the 4 drafted distractors; then official use (drop "em teste").
+  **Karina's test round (2026-10-06 evening, `dcf5574`): engine/UI/conditional reveal APPROVED**, the three MVP
+  decisions (unordered = verdict + feedback, never result; empty confirm = 0; Prontuário gets text, media stays on
+  the result screen) and the one-shot confidence APPROVED. Shipped her asks: **permanent rule** in guide §7 — no
+  later scene/option/feedback/text may assert, calculate, exclude or presuppose anything that depends on an exam
+  the student may not have ordered (must work for EVERY combination, incl. none); summary says "itens da
+  investigação ideal", never "essenciais" (`investigationSummary` in types.ts — ideal ≠ mandatory); TC
+  prejudicial → inadequada (her final classifications are locked by a test). Her suggested gravidade feedback
+  itself said "CURB-65 de 3", which needs the urea — rewritten with bedside CRB-65 de 2. Publish checklist now
+  WARNS when a result-only number reappears later (mechanical half; inference stays editorial).
+  OPEN: her quick retest (empty confirm, resume, excess) → then drop "em teste" (both guide copies) and add the
+  block to the CEC model.
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **STARTED 2026-09-02** (`00fb2e2`): login AND signup now thread `next` end to
   end — `/login` declared `next` and ignored it, so the proxy's `?next=` landed everyone on
