@@ -533,6 +533,18 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   spaced review, confidence + high-confidence-error tracking, the two-door library, the shared
   Revalida palette, and the spoiler rule tested live on a new case ("Antes mesmo da pulseira":
   `Emergência · Intermediária · 2 min` before, `Anafilaxia` shown only after finishing).
+- [x] **INVESTIGAÇÃO block (Karina 2026-09-03), second half shipped 2026-10-06 (`217eadd`)** — engine was `9c6cba8`.
+  Multi-select decision, Clínica em Cena only, ONE event per block (`payload.selected`), score = Σ quality ÷
+  (ideals + extras). Player: no result before confirm; after, only ordered items' results (`Reveal.results`,
+  rebuilt from the saved selection on resume); unordered items show verdict + feedback, never the result.
+  Guide §7 "Investigação" (marked EM TESTE). Test case **CEC-INV-TESTE-01** = prod id 32 / local id 26, a
+  non-free DRAFT from `docs/clinact/exemplos/cec-inv-teste-01.txt` via
+  `scripts/clinact-create-investigation-test-case.ts` (fingerprints official CEC-01 before/after; re-run safe).
+  Karina plays it via Admin → ClinAct → the case → Pré-visualizar. **Editorial rules:** feedback never contains
+  the result; the scene after an investigation never restates results; two substitutable options never both
+  ideal. Fixed on the way: parser dropped the block's question text; THREE more hardcoded decision lists
+  (format-presets `isDecision`, validate.ts, editor) — derive from `DECISION_KINDS`, never copy it.
+  OPEN: Karina's validation + review of the 4 drafted distractors; then official use (drop "em teste").
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **STARTED 2026-09-02** (`00fb2e2`): login AND signup now thread `next` end to
   end — `/login` declared `next` and ignored it, so the proxy's `?next=` landed everyone on
