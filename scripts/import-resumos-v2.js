@@ -67,9 +67,25 @@ const SPECIALTIES = new Set([
   "outros",
 ]);
 
-// Per-file slug when the filename cannot be the slug. Meningites came twice, with
-// two different texts — one in Infectologia (keeps the live page) and one in
-// Neurologia, which becomes its own page.
+// Files of the 2026-10-05 delivery NOT imported. Meningites came twice with two
+// different texts; Karina (2026-10-06): "Deixar apenas em infectologia" — the
+// Neurologia page it had created is retired (see RETIRE).
+const SKIP_FILES = new Set([
+  "clinica-medica/neurologia/meningites-resumos.md.docx",
+]);
+
+// A later version of a delivered file, read in its place (path from the repo root).
+// Karina 2026-10-06: same text + the ECG strips (images: scripts/prepare-resumo-images.py).
+const FILE_REPLACEMENTS = {
+  "clinica-medica/cardiologia/bradiarritmias-resumos.md.docx": "parsed/resumos-2026-10-06-ecg/bradiarritmias.docx",
+  "clinica-medica/cardiologia/taquiarritmias-resumos.md.docx": "parsed/resumos-2026-10-06-ecg/taquiarritmias.docx",
+};
+
+// Pictures already on the CDN, keyed "<slug>/<media name>" (prepare-resumo-images.py).
+const IMAGES_FILE = path.join(__dirname, "..", "parsed", "resumos-images.json");
+const IMAGES = fs.existsSync(IMAGES_FILE) ? JSON.parse(fs.readFileSync(IMAGES_FILE, "utf8")) : {};
+
+// Per-file slug when the filename cannot be the slug.
 const FILE_SLUG_OVERRIDES = {
   "clinica-medica/neurologia/meningites-resumos.md.docx": "meningites-neurologia-resumos",
   // filename carries a stray space before "-resumos"
@@ -134,6 +150,8 @@ const RETIRE = [
   // legacy text-lesson stub ("PASTE TEXT HERE" ×2) that showed as a second
   // "Insuficiência Cardíaca" card in Cardiologia Resumos
   "insuficiencia-cardiaca",
+  // Karina 2026-10-06: Meningites only in Infectologia (see SKIP_FILES)
+  "meningites-neurologia-resumos",
 ];
 const RETIRE_NOTE = "retirado 2026-10-05: sem arquivo na atualização dos resumos narrativos (Karina)";
 
@@ -192,6 +210,8 @@ function docxParagraphs(file) {
   const zip = unzipSync(new Uint8Array(fs.readFileSync(file)));
   const xml = strFromU8(zip["word/document.xml"]);
   const formats = listFormats(zip);
+  const relsXml = zip["word/_rels/document.xml.rels"] ? strFromU8(zip["word/_rels/document.xml.rels"]) : "";
+  const rels = Object.fromEntries([...relsXml.matchAll(/Id="(rId\d+)"[^>]*Target="([^"]+)"/g)].map((m) => [m[1], m[2]]));
   const paras = [];
   for (const pm of xml.matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)) {
     const p = pm[1];
@@ -209,7 +229,9 @@ function docxParagraphs(file) {
         text += t[1] != null ? xmlDecode(t[1]) : t[0] === "<w:tab/>" ? " " : "\n";
       }
     }
-    paras.push({ style, list, lines: text.split("\n").map((l) => l.replace(/\s+$/, "").replace(/^\s+/, "")) });
+    // embedded pictures, by media file name (word/media/imageN.png)
+    const images = [...p.matchAll(/<a:blip\b[^>]*r:embed="(rId\d+)"/g)].map((m) => (rels[m[1]] || "").split("/").pop()).filter(Boolean);
+    paras.push({ style, list, images, lines: text.split("\n").map((l) => l.replace(/\s+$/, "").replace(/^\s+/, "")) });
   }
   return paras;
 }
@@ -223,7 +245,21 @@ const FINAL_RE = /^RESUMO NARRATIVO FINAL$/;
 const SUBTITLE_RE = /(Resumos Narrativos|Clínica em Cena).*MedHelpSpace/i;
 const HEADING_STYLE = /^Heading[123]$/;
 
-function convert(file) {
+/**
+ * A self-contained figure (its title and labels are baked into the image). On a phone it
+ * keeps a readable width and scrolls sideways (.resumo-figure in globals.css); a tap
+ * opens the full image, where the phone's own pinch-zoom works.
+ */
+function figureHtml(img) {
+  const alt = escHtml(img.alt).replace(/"/g, "&quot;");
+  return (
+    `<figure class="resumo-figure"><a href="${img.url}" target="_blank" rel="noopener">` +
+    `<img src="${img.url}" alt="${alt}" width="${img.w}" height="${img.h}" loading="lazy" /></a>` +
+    `<figcaption class="resumo-figure-hint">↔ Arraste para ver o traçado · toque para ampliar</figcaption></figure>`
+  );
+}
+
+function convert(file, imageKey = null) {
   const paras = docxParagraphs(file);
   const warnings = [];
   const blocks = [];
@@ -319,6 +355,19 @@ function convert(file) {
   for (const para of stream) {
     const lines = para.lines;
     const text = lines.filter(Boolean).join(" ").trim();
+    if (para.images && para.images.length) {
+      // A picture (e.g. an ECG strip) where it sits in the document — always in a
+      // paragraph of its own in these files; any text on it renders before it.
+      flushP(); flushList();
+      if (text) { blocks.push(`<p>${lines.filter(Boolean).map(escHtml).join("<br />")}</p>`); stats.paras++; }
+      for (const media of para.images) {
+        const img = imageKey ? IMAGES[`${imageKey}/${media}`] : null;
+        if (!img) { warnings.push(`image ${media} has no CDN entry (run scripts/prepare-resumo-images.py --upload)`); continue; }
+        blocks.push(figureHtml(img));
+        stats.images = (stats.images || 0) + 1;
+      }
+      continue;
+    }
     if (!text) { flushP(); continue; }
     const level = stylesUsable ? levelOf(para.style) : 0;
     if (level > 0) {
@@ -392,12 +441,15 @@ function buildRows() {
   const seen = new Map();
   for (const file of files) {
     const rel = path.relative(SRC, file).split(path.sep).join("/");
+    if (SKIP_FILES.has(rel)) continue;
     const parts = rel.split("/");
     const top = parts[0];
     const sub = parts.length > 2 ? parts[1] : null;
     const specialty = top === "clinica-medica" ? sub : top === "outros" ? "outros" : top;
     const fileSlug = FILE_SLUG_OVERRIDES[rel] || parts[parts.length - 1].replace(/\.md\.docx$|\.docx$/, "");
-    const r = convert(file);
+    const source = FILE_REPLACEMENTS[rel] ? path.join(__dirname, "..", FILE_REPLACEMENTS[rel]) : file;
+    if (!fs.existsSync(source)) { warnings.push(`${rel}: replacement ${FILE_REPLACEMENTS[rel]} not found`); continue; }
+    const r = convert(source, fileSlug);
     for (const w of r.warnings) warnings.push(`${rel}: ${w}`);
     if (!SPECIALTIES.has(specialty)) warnings.push(`${rel}: unknown specialty '${specialty}'`);
     if (!/^[a-z0-9-]+-resumos$/.test(fileSlug)) warnings.push(`${rel}: odd slug '${fileSlug}'`);
