@@ -135,6 +135,20 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   Rollbacks: `scripts/rollback-questoes-v2.sql`, `scripts/rollback-mini-simulados.sql` (both
   restore from `*_bk_questoes_20260920` / `*_bk_minisim_20260922`). Still open: the annulled
   questions she fixed on Drive (fresh download → re-parse → re-run, both re-run safe).
+- **Resumos Narrativos v2 — LIVE on prod + local (2026-10-05, `0acdb6d`)**. Karina's "Atualização
+  resumos narrativos" (217 `.md.docx`, "excluir e substituir todos") via `scripts/import-resumos-v2.js`
+  (generator → `parsed/resumos-v2-import.sql`). UPDATE in place, never delete: renamed files map onto
+  the LIVE slug (`MATCH`) because Questões remediation (`lib/review/remediation.ts`) finds a resumo
+  by `<question-slug>-resumos`; only 3 `RENAMES` where the NEW slug is the one it wants. 16 new
+  topics, first **Outros** hub (`outros-resumos`, cards clustered oftalmo → otorrino → urologia),
+  8 retired to draft (explicit `RETIRE`), every Resumos hub's cards rebuilt from the delivery.
+  Specialty = FOLDER (moved: piloro + invaginação → Pediatria, febre reumática → Pediatria,
+  neuroblastoma → Pediatria). Meningites came twice (Infecto + Neuro, different texts) → second
+  page `meningites-neurologia-resumos`. Scene titles are `<h3>` (TOC on xl), Word Heading 4 /
+  sub-headings → `<h4>`, Word lists → `<ol>/<ul>`. **CSS gotcha fixed:** `p:has(> br:only-child)`
+  hid every paragraph with exactly ONE `<br>` (1,922 in this delivery) — never reintroduce it.
+  Rollback: `node scripts/snapshot-resumos.js <db>` BEFORE apply → `parsed/resumos-rollback-2026-10-05-{local,prod}.sql`
+  (gitignored; rollback tested exact on local).
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a
