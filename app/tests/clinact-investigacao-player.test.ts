@@ -191,6 +191,22 @@ test("resume rebuilds exactly the confirmation screen the student saw", () => {
   assert.equal(saved.answered[stepKey(inv.decision!)].confidence, "media");
 });
 
+test("resume after an EMPTY confirmation stays on the confirmation screen (Karina 2026-10-06)", () => {
+  const { state, screen } = playTo([]);
+  // Confirming saves the answer but never moves on: only Continuar advances.
+  assert.equal(state.cursor, invIdx);
+  const saved = JSON.parse(JSON.stringify(state)) as AttemptState;
+  const a = saved.answered[stepKey(inv.decision!)];
+  assert.ok(a, "an empty selection still counts as answered, so the player shows the result screen");
+  assert.deepEqual(a.selected, []);
+  assert.equal(a.confidence, "media");
+  const resumed = buildReveal(screen, { state: saved, answered: a, chosen: null, reveals: [] });
+  assert.deepEqual(resumed.selected, []);
+  assert.deepEqual(resumed.results, []);
+  assert.equal(resumed.options.length, 8, "every option comes back for 'O que você não solicitou'");
+  assert.equal(saved.relogio, playTo([]).state.relogio);
+});
+
 test("after confirming, the selection cannot be changed", () => {
   const { state, screen } = playTo([IDEAL[0]]);
   assert.throws(() => applyDecision(state, screen, { selected: IDEAL }), /já registrada/);
