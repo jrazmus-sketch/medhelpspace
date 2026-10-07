@@ -336,6 +336,58 @@ test("the summary counts 'itens da investigação ideal', never 'essenciais' (Ka
   }
 });
 
+// ── Official release (Karina 2026-10-06: "oficialmente aprovado") ────────────
+
+const DOCS = path.join(process.cwd(), "..", "docs", "clinact");
+const doc = (f: string) => readFileSync(path.join(DOCS, f), "utf8").split("\r\n").join("\n");
+
+test("the guide no longer marks the block as a test, and lists it among the blocks", () => {
+  const guide = doc("formato-de-conteudo.md");
+  assert.doesNotMatch(guide, /Em teste/);
+  assert.match(guide, /Blocos disponíveis:[^]*?`INVESTIGAÇÃO` \(só na Clínica em Cena\)/);
+  // The rules frozen during validation stay, as permanent rules.
+  for (const rule of [
+    /Nenhuma cena, alternativa, feedback ou texto posterior pode afirmar, calcular,\n  > excluir ou pressupor/,
+    /Depois de INVESTIGAÇÃO, nenhuma alternativa posterior deve mandar repetir/,
+    /O feedback nunca contém nem pressupõe o resultado/,
+    /`ideal` vale para este caso, neste momento/,
+    /Confiança continua seletiva/,
+  ]) assert.match(guide, rule);
+});
+
+test("the Clínica em Cena template offers the block, and its snippet imports once filled in", () => {
+  const md = doc("modelo-clinica-em-cena.md");
+  assert.match(md, /\| `INVESTIGAÇÃO` \| \*\*opcional\*\*/);
+  const at = md.indexOf("### Trecho para copiar");
+  const open = md.indexOf("```", at) + 3;
+  const snippet = md.slice(open, md.indexOf("```", open)).replace(/^\n/, "");
+  const wrap = (block: string) =>
+    `FORMATO: clinica_em_cena\nTÍTULO: Teste do trecho\nESPECIALIDADE: Pneumologia\n\n## CENA: chegada\nC\n\n- Conduta A\n  qualidade: ideal\n  feedback: f\n- Conduta B\n  qualidade: inadequada\n  feedback: f\n\n${block}\n## LEVE DESTE CASO\nL\n`;
+  // Left as is, the placeholders are a loud error — never a silent import.
+  const raw = parseCaseFile(wrap(snippet)).cases[0];
+  assert.ok(raw.errors.some((e) => /texto de exemplo do modelo/.test(e.message)), JSON.stringify(raw.errors));
+  // Filled in, it is a real investigation block.
+  let n = 0;
+  const filled = snippet
+    .replace("## INVESTIGAÇÃO\n", "## INVESTIGAÇÃO\nQuais exames você deseja solicitar?\n")
+    .replace(/\[exame ou ação\]/g, () => `Exame ${++n}`)
+    .replace("qualidade:\n", "qualidade: ideal\n")
+    .replace(/qualidade:\n/g, "qualidade: inadequada\n")
+    .replace(/(feedback|fizemos|encontramos):\n/g, "$1: texto\n")
+    .replace(/relógio:\n/g, "relógio: 4\n");
+  const ok = parseCaseFile(wrap(filled)).cases[0];
+  assert.deepEqual(ok.errors, []);
+  const step = ok.doc!.steps.find((s) => s.kind === "investigacao")!;
+  assert.equal(step.options.length, 3);
+  assert.ok(step.options.some((o) => o.quality === "ideal"));
+});
+
+test("the X-ray feedback is Karina's final wording (2026-10-06)", () => {
+  const rx = d.steps.find((s) => s.kind === "investigacao")!.options.find((o) => o.label.startsWith("Radiografia"))!;
+  assert.match(rx.feedback!, /ajuda a confirmar ou enfraquecer a hipótese, avalia a extensão e procura complicações\.$/);
+  assert.doesNotMatch(rx.feedback!, /confirma ou afasta/);
+});
+
 // ── Editor and publish wiring ────────────────────────────────────────────────
 
 test("the block is offered in Clínica em Cena only, is a decision everywhere, and can be added by hand", () => {

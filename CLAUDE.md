@@ -553,8 +553,14 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   prejudicial → inadequada (her final classifications are locked by a test). Her suggested gravidade feedback
   itself said "CURB-65 de 3", which needs the urea — rewritten with bedside CRB-65 de 2. Publish checklist now
   WARNS when a result-only number reappears later (mechanical half; inference stays editorial).
-  OPEN: her quick retest (empty confirm, resume, excess) → then drop "em teste" (both guide copies) and add the
-  block to the CEC model.
+  Her three clinical calls (`faa8378`): new hemoculturas + TC feedbacks, "Colher hemoculturas" option replaced
+  by "monitorização habitual", and a SECOND permanent rule — no later option may order again what the block may
+  already have done. **OFFICIALLY APPROVED 2026-10-06 night**: all final tests passed (empty confirm, ⌘R resume,
+  8-exam excess = 88%). Her one resume "bug" was a Continuar press 96 s after confirming (prod attempt 96,
+  `updated_at`) — the load path never moves the cursor; regression test `c2ccf22`. "Em teste" removed from guide
+  §7, block listed in "Blocos disponíveis", `modelo-clinica-em-cena.md` gained an optional INVESTIGAÇÃO section
+  + copyable snippet (after the main template, so the blank-template tests are untouched). The test copy stays a
+  DRAFT as the worked example (export .txt from the editor). Official CEC-01 untouched throughout.
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **STARTED 2026-09-02** (`00fb2e2`): login AND signup now thread `next` end to
   end — `/login` declared `next` and ignored it, so the proxy's `?next=` landed everyone on

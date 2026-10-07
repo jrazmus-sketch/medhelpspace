@@ -84,7 +84,7 @@ Quais exames você deseja solicitar neste momento?
 
 - Radiografia de tórax
   qualidade: ideal
-  feedback: Testa a hipótese construída à beira-leito: é o exame que confirma ou afasta a pneumonia, avalia a extensão e procura complicações.
+  feedback: Testa a hipótese construída à beira-leito: ajuda a confirmar ou enfraquecer a hipótese, avalia a extensão e procura complicações.
   fizemos: Radiografia de tórax.
   encontramos: Radiografia de tórax disponível para interpretação.
   [imagem: CEC-01_img1.jpg]

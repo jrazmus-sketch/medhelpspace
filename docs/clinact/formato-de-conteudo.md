@@ -140,8 +140,8 @@ PA 88/54, FC 128, SpO₂ 86% em ar ambiente.
 **A ordem no arquivo é a ordem no caso.** Não numere os blocos.
 
 Blocos disponíveis: `NARRATIVA`, `PISTAS`, `PERGUNTA`, `ORDENAR`, `CENA`,
-`NOVO DADO`, `REAVALIAÇÃO`, `CONFIANÇA`, `FEEDBACK`, `CUSTO DO ATRASO`, `MÍDIA`,
-`CRONÔMETRO`, `LEVE DESTE CASO`.
+`INVESTIGAÇÃO` (só na Clínica em Cena), `NOVO DADO`, `REAVALIAÇÃO`, `CONFIANÇA`,
+`FEEDBACK`, `CUSTO DO ATRASO`, `MÍDIA`, `CRONÔMETRO`, `LEVE DESTE CASO`.
 
 Cada modelo já traz os blocos padrão do seu formato — comece pelo modelo e apague
 o que não usar.
@@ -281,9 +281,6 @@ voltar ao caminho comum. Isso é proposital: oito cenas com três condutas cada 
 24 blocos de texto para escrever — não 6.561 histórias.
 
 ### Investigação — o aluno escolhe o que pedir
-
-> **Em teste.** Não use em caso oficial até a validação no caso de teste
-> `CEC-INV-TESTE-01`.
 
 Em alguns casos, em vez de escolher uma conduta, o aluno escolhe **quais exames ou
 ações** quer realizar — quantos quiser — e confirma uma vez. Só recebe o resultado

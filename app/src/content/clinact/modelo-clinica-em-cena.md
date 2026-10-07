@@ -15,6 +15,7 @@ pelo menos um caso de cada um dos outros três.
 | `LEVE DESTE CASO` | padrão |
 | `PERGUNTA` | se o caso pedir |
 | `NOVO DADO` | se o caso pedir |
+| `INVESTIGAÇÃO` | **opcional** — quando o aluno deve escolher o que pedir (veja o fim deste modelo) |
 | `CONFIANÇA` | **seletiva** — nunca em todas as cenas (guia, seção 9) |
 | `CUSTO DO ATRASO` | se o caso pedir |
 | `MÍDIA` | disponível em qualquer ponto — imagem ou áudio |
@@ -139,4 +140,57 @@ RESUMO:
 
 ## LEVE DESTE CASO
 
+```
+
+---
+
+## Bloco opcional: INVESTIGAÇÃO
+
+Use quando o que o momento ensina é **o que pedir**: o aluno escolhe quantos exames
+ou ações quiser, confirma uma vez e só recebe o resultado do que pediu. Entra no
+lugar de uma cena, quando houver justificativa pedagógica — nem todo caso precisa
+dele. As regras completas estão no guia (seção 7, "Investigação"). As que mais pesam:
+
+- De 2 a 8 opções, `qualidade:` em todas e pelo menos uma `ideal`. Duas opções
+  substituíveis nunca são ambas `ideal`. `ideal` é a investigação ideal **deste**
+  caso, neste momento — não um exame obrigatório em toda situação.
+- O resultado vai em `encontramos:` (imagem ou áudio logo abaixo) e só aparece se a
+  opção for pedida.
+- O feedback nunca contém nem pressupõe o resultado: o aluno lê também o feedback do
+  que não pediu.
+- Nada depois do bloco pode afirmar, calcular, excluir ou pressupor um dado de exame
+  que o aluno pode não ter pedido — nem mandar repetir um exame ou procedimento que
+  ele pode já ter feito no bloco.
+- Sem `vai para:` dentro do bloco.
+- Um `## CONFIANÇA` logo depois só se houver valor pedagógico; ele pergunta sobre a
+  investigação como um todo.
+- O bloco inteiro conta como uma decisão.
+
+Um exemplo completo e validado: o rascunho `CEC-INV-TESTE-01` no admin (ClinAct →
+o caso → "Exportar .txt").
+
+### Trecho para copiar
+
+```
+## INVESTIGAÇÃO
+
+
+- [exame ou ação]
+  qualidade:
+  feedback:
+  fizemos:
+  encontramos:
+  relógio:
+- [exame ou ação]
+  qualidade:
+  feedback:
+  fizemos:
+  encontramos:
+  relógio:
+- [exame ou ação]
+  qualidade:
+  feedback:
+  fizemos:
+  encontramos:
+  relógio:
 ```
