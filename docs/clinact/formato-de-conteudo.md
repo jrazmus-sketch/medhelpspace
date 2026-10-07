@@ -353,6 +353,19 @@ Quais exames você deseja solicitar neste momento?
   Checklist de publicação, no editor, avisa (em amarelo) quando um texto posterior
   repete um número que só existe no resultado de um exame; cálculo e exclusão não
   têm número, e por isso dependem da sua leitura.
+- **Regra permanente — nada depois da investigação manda repetir o que já pode ter
+  sido feito:**
+
+  > Depois de INVESTIGAÇÃO, nenhuma alternativa posterior deve mandar repetir
+  > automaticamente um exame ou procedimento que o aluno possa já ter realizado no
+  > próprio bloco.
+
+  É consequência da regra anterior: a cena seguinte precisa funcionar com todas as
+  combinações. "Colher hemoculturas e iniciar o antimicrobiano" vira uma segunda
+  coleta para quem já pediu hemoculturas na investigação. E não resolva com "se
+  ainda não colhidas": para quem já colheu, a alternativa pode ficar praticamente
+  igual à ideal e mudar de classificação. Troque a alternativa por outra cuja
+  diferença não dependa de exame nenhum.
 - **Sem `vai para:`** dentro da investigação: o aluno escolhe um conjunto, não um
   caminho.
 - **Confiança continua seletiva.** Um `## CONFIANÇA` logo depois pergunta sobre a

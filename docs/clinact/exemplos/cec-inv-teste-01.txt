@@ -105,7 +105,7 @@ Quais exames você deseja solicitar neste momento?
   relógio: 4
 - Hemoculturas (duas amostras)
   qualidade: aceitavel
-  feedback: Não são rotineiramente necessárias na pneumonia não grave sem fatores de risco para MRSA ou Pseudomonas aeruginosa, mas podem ser aceitas por protocolo local, desde que não atrasem o antimicrobiano.
+  feedback: Hemoculturas podem acrescentar informação na pneumonia grave ou em situações específicas de risco microbiológico. Não são parte obrigatória de toda investigação de pneumonia; quando solicitadas, não devem atrasar o início do antimicrobiano.
   fizemos: Duas hemoculturas coletadas.
   encontramos: Hemoculturas coletadas; resultado previsto em 48 a 72 horas.
   relógio: 5
@@ -117,7 +117,7 @@ Quais exames você deseja solicitar neste momento?
   relógio: 4
 - Tomografia de tórax com contraste
   qualidade: inadequada
-  feedback: Diante de uma pneumonia típica em paciente estável, a tomografia antes da radiografia não muda a conduta e consome tempo: atrasa a definição de gravidade e o início do tratamento.
+  feedback: Em uma apresentação clínica típica e estável, a tomografia contrastada não é necessária como investigação inicial. Acrescenta radiação, contraste e complexidade sem ganho proporcional em relação à radiografia; deve ser reservada para situações selecionadas, como imagem inicial inconclusiva ou suspeita de complicação.
   fizemos: Tomografia de tórax com contraste.
   encontramos: Consolidação no lobo inferior direito, sem derrame pleural ou cavitação.
   relógio: 40
@@ -147,12 +147,12 @@ Qual é a melhor conduta a partir daqui?
   fizemos: Internação em enfermaria com monitorização frequente, manutenção do oxigênio titulado e início de ceftriaxona associada a azitromicina.
   estado: Hemodinamicamente estável, SpO2 95% com oxigênio e tratamento antimicrobiano iniciado.
   relógio: 10
-- Colher hemoculturas e, sem aguardar o resultado, iniciar o mesmo esquema antimicrobiano e internar em enfermaria
+- Internar em enfermaria, manter oxigênio e iniciar ceftriaxona 2 g IV a cada 24 horas associada a azitromicina 500 mg IV a cada 24 horas, com monitorização habitual da unidade
   qualidade: aceitavel
-  feedback: O destino e o tratamento estão adequados. Hemoculturas não são rotineiramente necessárias na pneumonia não grave sem fatores de risco para MRSA ou Pseudomonas aeruginosa, mas a coleta pode ser aceita quando segue protocolo local e não atrasa a primeira dose.
-  fizemos: Duas hemoculturas coletadas sem atraso relevante, internação em enfermaria com monitorização frequente, manutenção do oxigênio e início de ceftriaxona associada a azitromicina.
+  feedback: O local de cuidado, o suporte de oxigênio e o esquema antimicrobiano são adequados. Entretanto, a hipoxemia inicial, a taquipneia e a necessidade de oxigênio justificam vigilância mais próxima e reavaliação precoce, em vez de depender apenas da monitorização habitual da enfermaria.
+  fizemos: Internação em enfermaria com monitorização habitual da unidade, manutenção do oxigênio e início de ceftriaxona associada a azitromicina.
   estado: Hemodinamicamente estável, SpO2 95% com oxigênio e tratamento antimicrobiano iniciado.
-  relógio: 15
+  relógio: 10
 - Manter oxigênio e aguardar o resultado da cultura de escarro antes de iniciar o antimicrobiano e definir a internação
   qualidade: prejudicial
   feedback: A investigação microbiológica pode ser útil em situações selecionadas, mas não deve condicionar o início do tratamento nem postergar a internação de um paciente hipoxêmico com pneumonia e maior risco clínico.

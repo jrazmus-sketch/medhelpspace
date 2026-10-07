@@ -251,8 +251,34 @@ test("no later text, and no feedback in the block, leans on a result the student
     [/três critérios menores/, "excludes with the gas, count, urea and X-ray"],
     [/imagem (é|são) compatíve/, "presupposes the X-ray"],
     [/confirma a pneumonia/, "presupposes a positive X-ray"],
+    [/pneumonia não grave/, "classifies the severity, which needs the blood gas"],
   ];
   for (const [re, why] of leaks) assert.doesNotMatch(text, re, why);
+});
+
+test("no later conduct orders again an exam the student may already have ordered (Karina 2026-10-06)", () => {
+  const steps = d.steps.filter((s) => s.enabled).sort((a, b) => a.position - b.position);
+  const at = steps.findIndex((s) => s.kind === "investigacao");
+  // "Hemoculturas (duas amostras)" → "hemoculturas", "Ureia, creatinina…" → "ureia", …
+  const exams = steps[at].options.map((o) => o.label.split(/[ ,(]/)[0].toLowerCase());
+  for (const s of steps.slice(at + 1)) {
+    for (const o of s.options) {
+      for (const exam of exams) assert.ok(!o.label.toLowerCase().includes(exam), `"${o.label}" orders ${exam} again`);
+    }
+  }
+  // Her replacement for "Colher hemoculturas…": the gap to the ideal is the monitoring, never an exam.
+  const grav = steps.find((s) => s.scene_key === "gravidade")!;
+  const acceptable = grav.options.find((o) => o.quality === "aceitavel")!;
+  assert.match(acceptable.label, /com monitorização habitual da unidade$/);
+  assert.match(acceptable.feedback!, /vigilância mais próxima e reavaliação precoce/);
+});
+
+test("the CT and blood-culture feedbacks are Karina's (2026-10-06): no delay as the CT's reason, no severity label", () => {
+  const all = d.steps.find((s) => s.kind === "investigacao")!.options;
+  const fb = (start: string) => all.find((o) => o.label.startsWith(start))!.feedback!;
+  assert.match(fb("Tomografia"), /^Em uma apresentação clínica típica e estável, a tomografia contrastada não é necessária/);
+  assert.doesNotMatch(fb("Tomografia"), /atras/);
+  assert.match(fb("Hemoculturas"), /^Hemoculturas podem acrescentar informação na pneumonia grave/);
 });
 
 test("the publish checklist flags a later text that repeats a result-only number", () => {
