@@ -644,6 +644,19 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   `/admin/clinact/pagina`: publish gate (super_admin), section order/visibility (Planos never hideable), two screenshot
   slots (`clinact.{casos,evolucao}.image`, set). Sandbox webhooks hit prod as `?ambiente=sandbox` and are dropped.
   OPEN (Karina): publish the page; logs to Nathalia (~01/10); refund; Pix-key check; Pix one-off for ClinAct yes/no.
+  **Sales page v2 + editable platform (Karina 2026-10-08, `f560a4c`, prod + local seeded).** Her editing bug: a
+  `<SiteText>` is only editable once its `site_content` row exists — the page had 41 keys in code and NONE in the DB.
+  Now EVERY ClinAct string lives in `lib/clinact/site-copy.ts` (`CLINACT_COPY`, her text verbatim); `<ClinactText k>`
+  is typed against it; `scripts/clinact-seed-site-content.ts <DB_URL>` creates missing rows (DO NOTHING — never
+  overwrites her edits). **Adding a ClinAct key = add it to CLINACT_COPY, then run the seed on prod AND local.**
+  Tests refuse `<SiteText>` in ClinAct files and any `k="clinact.…"` outside the map. Six sections (hero,
+  competencias, casos, evolucao, gratuitos, planos — old keys kept for the admin ordering + image slots;
+  `schema-patch-clinact-sales-v2-sections.sql` dropped the other 8 rows). Revalida-page look (black `--lp-base`,
+  Bricolage, mono eyebrows, side-by-side demos alternating). Admins see the page AS A VISITOR (`has && !isAdmin`) —
+  they pass the access gate and otherwise only see "Entrar nos casos". New token `--brand-text` (#7a1d91 light /
+  #c084e8 dark): brand AS TEXT — `--brand` stays dark purple in dark (~2.4:1 as text). Screenshots = LIGHT-mode
+  captures (clinact-assinante@local.test after decision 1 of CEC-01; demo.clinact for Minha Evolução), uploaded to
+  Bunny `clinact/site/`. Casos shows her weekly line under the title. The checkout still says "10 mensalidades".
 
 ## Theme requirements (non-negotiable)
 - Light and dark mode supported from day one
