@@ -69,6 +69,11 @@ export function trackFreeSimulatorClick(location: string): void {
   trackEvent("click_free_simulator", { location });
 }
 
+/** The hero's "Conheça quem está por trás da MedHelpSpace ↓" link (Karina 2026-10-09). */
+export function trackFounderLinkClick(location: string): void {
+  trackEvent("click_founder_link", { location });
+}
+
 /** A turma chosen in the pricing selector → e.g. select_revalida_2027_1. */
 export function trackTurmaSelect(slug: string): void {
   trackEvent(turmaSelectEventName(slug), { turma: slug });

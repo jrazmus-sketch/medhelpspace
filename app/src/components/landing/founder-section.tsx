@@ -2,101 +2,82 @@
 
 import { useReveal } from "@/hooks/use-reveal";
 import { SiteText } from "./site-text";
-import type { LandingStats } from "@/lib/landing/stats";
 
-export function FounderSection({ stats }: { stats: LandingStats }) {
+// "Por trás da MedHelpSpace" (Karina, 2026-10-09) — replaces the old quote block
+// ("Criar o MedHelpSpace foi uma decisão…" + "Equipe MedHelpSpace" + the three
+// counters, which already appear higher on the page). A personal note from the
+// founder, read as a quiet pause between the platform tour and the pricing: one
+// centred reading column, left-aligned text, no photo, no cards. The hero's founder
+// line links here, so the id is fixed (also the GA4 view_founder_section target).
+export const FOUNDER_SECTION_ID = "por-tras";
+
+const PARAGRAPHS = [
+  {
+    k: "behind.p1",
+    text: "Criei a plataforma com o propósito de repensar o jeito de estudar para o Revalida. Sei que essa preparação carrega expectativas que vão muito além da prova — e que estudar por horas sem saber o que priorizar ou se você está no caminho certo pode ser desgastante.",
+  },
+  {
+    k: "behind.p2",
+    text: "Analiso as provas dos últimos anos, comparo como os temas são cobrados e observo o raciocínio que cada questão exige. É a partir dessa análise que defino o que precisa ser priorizado e como cada tema pode ser melhor explicado.",
+  },
+  {
+    k: "behind.p3",
+    text: "Por isso, combinei diferentes formas de estudar: recursos visuais, áudios e revisão ativa para que você possa retomar um mesmo tema por caminhos diferentes, fixar o que importa e adaptar a preparação à sua rotina.",
+  },
+  {
+    k: "behind.p4",
+    text: "Dedico a este projeto o cuidado que uma etapa tão importante da sua trajetória merece. Quero que você chegue à prova mais preparado para reconhecer o raciocínio que cada questão exige e mais confiante para decidir.",
+  },
+];
+
+export function FounderSection() {
   const ref = useReveal(0.15);
-  const nf = (n: number) => n.toLocaleString("pt-BR");
 
   return (
-    <section className="bg-[var(--lp-alt-bg)] px-5 py-20 md:px-8 md:py-28">
-      <div className="mx-auto max-w-3xl">
-        <div ref={ref} className="lp-reveal relative">
+    <section
+      id={FOUNDER_SECTION_ID}
+      className="scroll-mt-16 bg-[var(--lp-alt-bg)] px-5 py-20 md:px-8 md:py-28"
+    >
+      <div ref={ref} className="lp-reveal mx-auto max-w-[38rem]">
+        <div aria-hidden className="mb-6 h-[3px] w-12 rounded-full" style={{ background: "linear-gradient(to right, var(--brand), var(--brand-text))" }} />
 
-          {/* Decorative quote mark */}
-          <div
-            className="pointer-events-none absolute -top-4 -left-4 select-none text-[120px] font-black leading-none text-brand/8 md:-top-6 md:-left-8 md:text-[180px]"
-            aria-hidden
+        <h2
+          className="text-[clamp(1.9rem,4.4vw,3rem)] font-black leading-[1.08] tracking-[-0.025em]"
+          style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
+        >
+          <SiteText as="span" multiline k="behind.title" fallback="Por trás da MedHelpSpace" />
+        </h2>
+
+        <div className="mt-10 space-y-6 text-left text-[1.0625rem] leading-[1.75] md:text-lg md:leading-[1.8]">
+          <p
+            className="text-xl font-semibold leading-snug md:text-[1.375rem]"
+            style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            {'"'}
-          </div>
-
-          {/* Quote */}
-          <blockquote className="relative">
-            <p
-              className="text-xl font-semibold leading-[1.55] tracking-tight text-foreground sm:text-2xl md:text-3xl"
-              style={{ fontFamily: "var(--font-bricolage)" }}
-            >
-              <SiteText
-                as="span"
-                multiline
-                k="founder.quote"
-                fallback="Criar o MedHelpSpace foi uma decisão de repensar o jeito de estudar para o Revalida. Não mais aulas que precisam de 3 horas para dizer o que a prova cobra em 30 segundos. A ideia foi simples:"
-              />{" "}
-              <span className="text-brand">
-                <SiteText
-                  as="span"
-                  multiline
-                  k="founder.quote_hl"
-                  fallback="tirar o excesso, deixar o que cai, e treinar do jeito que a banca pensa."
-                />
-              </span>
+            <SiteText as="span" multiline k="behind.lead" fallback="Sou Karina, médica formada na Argentina e fundadora da MedHelpSpace." />
+          </p>
+          {PARAGRAPHS.map((p) => (
+            <p key={p.k} style={{ color: "var(--lp-fg-75)" }}>
+              <SiteText as="span" multiline k={p.k} fallback={p.text} />
             </p>
+          ))}
+        </div>
 
-            {/* Attribution */}
-            <footer className="mt-8">
-              <div className="flex items-center gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-bold text-white"
-                  style={{ background: "var(--brand)" }}
-                >
-                  M
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-foreground">
-                    <SiteText as="span" k="founder.attr_name" fallback="Equipe MedHelpSpace" />
-                  </div>
-                  <div className="text-xs text-foreground/45">
-                    <SiteText
-                      as="span"
-                      k="founder.attr_role"
-                      fallback="Médicos e especialistas em aprovação no Revalida"
-                    />
-                  </div>
-                </div>
-              </div>
-            </footer>
-          </blockquote>
-
-          {/* Accent line */}
+        {/* Signature */}
+        <div className="mt-12">
           <div
-            className="mt-10 h-px"
-            style={{
-              background: "linear-gradient(to right, var(--brand), transparent)",
-            }}
+            aria-hidden
+            className="mb-5 h-px w-16"
+            style={{ background: "linear-gradient(to right, var(--brand-text), transparent)" }}
           />
-
-          {/* Stat row */}
-          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-            {[
-              { value: nf(stats.especialidades), label: "especialidades cobertas", k: "founder.stat1_label" },
-              { value: nf(stats.questoes), label: "questões comentadas", k: "founder.stat2_label" },
-              { value: nf(stats.flashcards), label: "flashcards de fixação", k: "founder.stat3_label" },
-            ].map((stat) => (
-              <div key={stat.k}>
-                <div
-                  className="text-2xl font-extrabold text-foreground md:text-3xl"
-                  style={{ fontFamily: "var(--font-bricolage)" }}
-                >
-                  {stat.value}
-                </div>
-                <div className="mt-1 text-xs text-foreground/45">
-                  <SiteText as="span" k={stat.k} fallback={stat.label} />
-                </div>
-              </div>
-            ))}
+          <div
+            className="text-xl font-bold tracking-[-0.01em] md:text-2xl"
+            style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
+          >
+            <SiteText as="span" k="behind.sign_name" fallback="Karina Brandão" />
           </div>
-
+          <div className="mt-1 text-[0.9375rem] font-medium" style={{ color: "var(--brand-text)" }}>
+            <SiteText as="span" k="behind.sign_role" fallback="Fundadora da MedHelpSpace" />
+          </div>
         </div>
       </div>
     </section>

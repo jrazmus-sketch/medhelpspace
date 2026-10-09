@@ -18,6 +18,7 @@ export const LANDING_SECTIONS: readonly LandingSection[] = [
   { id: "feature-audiocards", section: "audiocards" },
   { id: "feature-revalida-up", section: "revalida_up" },
   { id: "medhelp60d", section: "medhelp60d" },
+  { id: "por-tras", section: "founder" }, // view_founder_section — "Por trás da MedHelpSpace" (Karina 2026-10-09)
   { id: "precos", section: "pricing" },
   { id: "faq", section: "faq" },
 ];
