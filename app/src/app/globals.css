@@ -31,6 +31,7 @@
   --color-brand:          var(--brand);
   --color-brand-fg:       var(--brand-fg);
   --color-brand-muted:    var(--brand-muted);
+  --color-brand-text:     var(--brand-text);
 
   /* Layered dark surfaces */
   --color-surface-0:  var(--surface-0);
@@ -87,6 +88,10 @@
   --brand:                #7a1d91;
   --brand-fg:             #ffffff;
   --brand-muted:          #ede0f6;  /* very light purple for hover states */
+  /* Brand colour used AS TEXT: the documented brand shift (#7a1d91 light,
+     #c084e8 dark). --brand itself stays #7a1d91 in dark because buttons carry
+     white text on it, which leaves it at ~2.4:1 as text on a dark surface. */
+  --brand-text:           #7a1d91;
 
   /* Secondary / muted (light purple tint) */
   --secondary:            #f5f0fb;
@@ -154,6 +159,7 @@
   --brand:                #7a1d91;
   --brand-fg:             #ffffff;
   --brand-muted:          rgba(122, 29, 145, 0.15);
+  --brand-text:           #c084e8;
   --brand-2:              #b0a4ff;   /* lighter accent — design's accent-2 */
 
   /* Extended text scale — design's text-3 / text-4 */

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { loadLibrary, filterCases } from "@/lib/clinact/library";
 import { FORMATS } from "@/lib/clinact/types";
 import { FormatCard, SECTION_LABEL, Trail, caseCount } from "@/components/clinact/library-cards";
+import { ClinactText } from "@/components/clinact/clinact-text";
 
 /**
  * Porta B, step 2 — inside a specialty, the four formats. Deliberately built
@@ -40,12 +41,13 @@ export default async function SpecialtyPage({ params }: { params: Promise<{ espe
           {specialty.name}
         </h1>
         <p className="mt-2 text-sm leading-normal text-muted-foreground">
-          Escolha como quer treinar esta especialidade. {caseCount(mine.length)} por aqui.
+          {/* {casos} is filled with the live count, so editing the words never freezes the number. */}
+          <ClinactText k="clinact.app.especialidade.lead" vars={{ casos: caseCount(mine.length) }} />
         </p>
       </header>
 
       <div style={SECTION_LABEL} className="mb-3.5">
-        Formato
+        <ClinactText k="clinact.app.especialidade.formato" />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {FORMATS.map((format, i) => (

@@ -4,6 +4,7 @@ import { getEvolution } from "@/lib/clinact/evolution";
 import { FORMAT_LABELS, FORMATS, type CaseFormat } from "@/lib/clinact/types";
 import { toDateKeyBR } from "@/lib/br-date";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ClinactText } from "@/components/clinact/clinact-text";
 
 // Karina 2026-08-31: the pill color must follow the meaning of the score —
 // a 0% in green reads as success. Bands anchored on the 60% boundary the
@@ -44,16 +45,20 @@ export default async function EvolucaoPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="text-2xl font-bold">Minha Evolução</h1>
+      <h1 className="text-2xl font-bold">
+        <ClinactText k="clinact.app.evolucao.title" />
+      </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Conta a <strong>primeira conclusão</strong> de cada caso. Refazer um caso treina — mas não muda estes números.
+        <ClinactText k="clinact.app.evolucao.lead" />
       </p>
 
       {ev.completed === 0 ? (
         <div className="mt-8 rounded-xl border border-dashed border-border p-10 text-center">
-          <p className="text-sm text-muted-foreground">Nenhum caso concluído ainda.</p>
+          <p className="text-sm text-muted-foreground">
+            <ClinactText k="clinact.app.evolucao.vazio" />
+          </p>
           <Link href="/clinact/treinar" className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-brand-fg">
-            Começar um caso
+            <ClinactText k="clinact.app.evolucao.comecar" />
           </Link>
         </div>
       ) : (
@@ -71,7 +76,9 @@ export default async function EvolucaoPage() {
 
           {/* Per format */}
           <section className="mt-8">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Por formato</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <ClinactText k="clinact.app.evolucao.por_formato" />
+            </h2>
             <div className="mt-2 overflow-hidden rounded-xl border border-border bg-surface-1">
               <table className="w-full text-sm">
                 <tbody className="divide-y divide-border">
@@ -93,7 +100,9 @@ export default async function EvolucaoPage() {
           {/* Confidence */}
           {confTotal > 0 ? (
             <section className="mt-8">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Confiança nas decisões</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <ClinactText k="clinact.app.evolucao.confianca" />
+              </h2>
               <div className="mt-2 space-y-2 rounded-xl border border-border bg-surface-1 p-4">
                 {(["alta", "media", "baixa"] as const).map((c) => {
                   const n = ev.confidence[c];
@@ -114,7 +123,9 @@ export default async function EvolucaoPage() {
 
           {/* Case list */}
           <section className="mt-8">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Casos concluídos</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <ClinactText k="clinact.app.evolucao.concluidos" />
+            </h2>
             <ul className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface-1">
               {ev.cases.map((c) => (
                 <li key={c.case_id}>

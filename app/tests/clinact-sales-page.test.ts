@@ -10,6 +10,7 @@ import {
   annualPerMonth,
   formatBRL,
 } from "@/lib/clinact/plans";
+import { CLINACT_COPY } from "@/lib/clinact/site-copy";
 
 // Etapa 3, sales page. Karina's decisions 2, 3, 5 and 6 (2026-09-01) are the
 // ones that can be got wrong quietly, so they are asserted here.
@@ -72,15 +73,16 @@ test("the plan prices are the agreed ones, in cents", () => {
 });
 
 test("the annual claim is computed, so it cannot drift from the price", () => {
-  // Her copy: "dez mensalidades, doze meses".
+  // The sales page shows "Equivalente a R$ 24,92 por mês" (Karina 2026-10-08);
+  // the checkout still says "10 mensalidades".
   assert.equal(annualInMonthlies(), 10);
   assert.equal(annualPerMonth(), "R$ 24,92");
 });
 
 test("no price is rendered as an editable string", () => {
   const sections = read("components/clinact/sales/sections.tsx");
-  // Prices must come through the plan helpers, never a SiteText fallback.
-  assert.ok(!/SiteText[^>]*fallback="[^"]*R\$/.test(sections), "no price inside a SiteText fallback");
+  // Prices must come through the plan helpers, never an editable string.
+  for (const [k, v] of Object.entries(CLINACT_COPY)) assert.doesNotMatch(v, /R\$\s*\d/, `${k} must not carry a price`);
   assert.ok(sections.includes("formatBRL(plan.amount_cents)"), "the price is read from the plan");
   assert.equal(CLINACT_PLAN_LIST.length, 2);
 });
@@ -91,7 +93,9 @@ test("the renewal terms live inside the plans section", () => {
   const sections = read("components/clinact/sales/sections.tsx");
   const planos = sections.slice(sections.indexOf("function Planos("), sections.indexOf("export const CLINACT_SECTIONS"));
   assert.ok(planos.includes("clinact.planos.renovacao"), "renewal text is part of Planos");
-  assert.ok(/renovada automaticamente/.test(planos), "and states the auto-renewal plainly");
+  // Her shorter version (2026-10-08) still states renewal AND how to cancel.
+  assert.match(CLINACT_COPY["clinact.planos.renovacao"], /Renovação automática/);
+  assert.match(CLINACT_COPY["clinact.planos.renovacao"], /Cancele pela sua conta/);
   // There is no separate hideable section for it, so hiding it is impossible
   // without hiding the prices too.
   assert.ok(!/key: "renovacao"/.test(sections), "renewal must not be its own toggleable section");
@@ -110,11 +114,12 @@ test("each plan card leads to the checkout with that plan preselected", () => {
 
 // ── Decision 5: no typed case count ────────────────────────────────────────
 
-test("the page never states a number of cases", () => {
-  const sections = read("components/clinact/sales/sections.tsx");
-  const biblioteca = sections.slice(sections.indexOf("function Biblioteca()"), sections.indexOf("function Gratuitos"));
-  assert.ok(!/\d+\s*casos/.test(biblioteca), "no hardcoded case count at launch");
-  assert.ok(/biblioteca viva/.test(biblioteca), "her wording instead");
+test("the page never states the size of the library", () => {
+  // The only number of cases on the page is the four free ones (one per format,
+  // her plan) — never a typed library size.
+  for (const [k, v] of Object.entries(CLINACT_COPY)) {
+    assert.doesNotMatch(v.replace(/\b4 casos\b/g, ""), /\d+\s+casos/, `${k} must not type a case count`);
+  }
 });
 
 // ── Decision 1: signup-first, no anonymous play ────────────────────────────

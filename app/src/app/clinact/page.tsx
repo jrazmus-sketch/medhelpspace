@@ -38,7 +38,8 @@ export default async function ClinactSalesPage() {
   const sections = orderSections(CLINACT_SECTIONS, layout);
 
   return (
-    <div className="min-h-screen bg-background">
+    // The Revalida sales page's black (--lp-base), not the app's dark surface.
+    <div className="min-h-screen" style={{ background: "var(--lp-base)" }}>
       {!layout.published ? (
         <div className="border-b border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-center text-sm">
           <span className="inline-flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-300">
@@ -50,8 +51,12 @@ export default async function ClinactSalesPage() {
         </div>
       ) : null}
 
+      {/* An admin sees the page as a VISITOR sees it. Admins pass the access gate,
+          so with `has` they only ever got the subscriber buttons ("Entrar nos
+          casos") — and could neither review nor edit "Experimente o ClinAct de
+          graça", the copy the page actually shows its audience. */}
       {sections.map(({ key, Section }) => (
-        <Section key={key} hasAccess={has} isLoggedIn={isLoggedIn} />
+        <Section key={key} hasAccess={has && !isAdmin} isLoggedIn={isLoggedIn} />
       ))}
     </div>
   );

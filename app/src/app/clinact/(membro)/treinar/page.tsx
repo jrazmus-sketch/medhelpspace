@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { RotateCcw, Sparkles } from "lucide-react";
+import { CalendarClock, RotateCcw, Sparkles } from "lucide-react";
 import { loadLibrary } from "@/lib/clinact/library";
 import { FORMATS, FORMAT_LABELS } from "@/lib/clinact/types";
 import { FormatCard, SECTION_LABEL, SpecialtyCard } from "@/components/clinact/library-cards";
+import { ClinactText } from "@/components/clinact/clinact-text";
 
 export const metadata = { title: "Casos" };
 
@@ -15,18 +16,26 @@ export default async function TreinarPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="text-2xl font-bold">Casos</h1>
+      <h1 className="text-2xl font-bold">
+        <ClinactText k="clinact.app.treinar.title" />
+      </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Raciocínio clínico que termina em uma decisão. Um caso por vez.
+        <ClinactText k="clinact.app.treinar.sub" />
+      </p>
+      {/* Karina (2026-10-08): the library is still small, so whoever subscribes
+          must see, on arrival, that it grows every week. Everyone sees it. */}
+      <p className="mt-3 flex items-start gap-2 rounded-xl border border-brand-text/30 bg-brand/10 px-3.5 py-2.5 text-sm font-medium text-brand-text">
+        <CalendarClock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <ClinactText k="clinact.app.treinar.semanal" />
       </p>
 
       {!viewer.hasAccess ? (
         <div className="mt-4 rounded-xl border border-brand/40 bg-brand/10 p-4">
           <p className="flex items-center gap-2 text-sm font-medium">
-            <Sparkles className="h-4 w-4 text-brand" /> Experimente grátis um caso de cada formato.
+            <Sparkles className="h-4 w-4 shrink-0 text-brand-text" /> <ClinactText k="clinact.app.treinar.gratis_title" />
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Os casos marcados como <strong>grátis</strong> estão liberados por completo. Os demais abrem com a assinatura.
+            <ClinactText k="clinact.app.treinar.gratis_body" />
           </p>
         </div>
       ) : null}
@@ -34,10 +43,10 @@ export default async function TreinarPage() {
       {dueReviews.length ? (
         <section className="mt-6">
           <h2 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-            <RotateCcw className="h-3.5 w-3.5" /> Revisões de hoje
+            <RotateCcw className="h-3.5 w-3.5" /> <ClinactText k="clinact.app.treinar.revisoes_title" />
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Casos que chegaram à data de rever. Refazer não muda a sua primeira nota — reexpõe o raciocínio.
+            <ClinactText k="clinact.app.treinar.revisoes_hint" />
           </p>
           <ul className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-amber-500/40 bg-surface-1">
             {dueReviews.map((c) => (
@@ -59,9 +68,11 @@ export default async function TreinarPage() {
 
       {/* ── Porta A — "como quero treinar?" ─────────────────────────────────── */}
       <section className="mt-8">
-        <div style={SECTION_LABEL}>Treine uma habilidade</div>
+        <div style={SECTION_LABEL}>
+          <ClinactText k="clinact.app.treinar.portaA_label" />
+        </div>
         <p className="mb-3.5 mt-1.5 max-w-[54ch] text-[13.5px] leading-normal text-muted-foreground">
-          Cada formato treina um jeito diferente de raciocinar. Escolha como você quer pensar hoje.
+          <ClinactText k="clinact.app.treinar.portaA_lead" />
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {FORMATS.map((format, i) => (
@@ -78,9 +89,11 @@ export default async function TreinarPage() {
 
       {/* ── Porta B — "o que quero treinar?" ────────────────────────────────── */}
       <section className="mt-10 border-t border-surface-2 pt-6">
-        <div style={SECTION_LABEL}>Estude por especialidade</div>
+        <div style={SECTION_LABEL}>
+          <ClinactText k="clinact.app.treinar.portaB_label" />
+        </div>
         <p className="mb-3.5 mt-1.5 max-w-[54ch] text-[13.5px] leading-normal text-muted-foreground">
-          Entre pela especialidade e escolha, lá dentro, em qual formato quer treiná-la.
+          <ClinactText k="clinact.app.treinar.portaB_lead" />
         </p>
         {specialties.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -90,7 +103,7 @@ export default async function TreinarPage() {
           </div>
         ) : (
           <div className="mt-3 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            Nenhuma especialidade com casos publicados ainda.
+            <ClinactText k="clinact.app.treinar.vazio" />
           </div>
         )}
       </section>
@@ -98,7 +111,7 @@ export default async function TreinarPage() {
       {cases.length ? (
         <p className="mt-8 text-center">
           <Link href="/clinact/treinar/casos" className="inline-flex min-h-11 items-center text-sm font-medium text-brand hover:underline">
-            Ver todos os casos
+            <ClinactText k="clinact.app.treinar.todos" />
           </Link>
         </p>
       ) : null}

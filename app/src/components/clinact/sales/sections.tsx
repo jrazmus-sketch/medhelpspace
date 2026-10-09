@@ -1,40 +1,64 @@
 import Link from "next/link";
-import { Check, Sparkles } from "lucide-react";
-import { SiteText } from "@/components/landing/site-text";
+import { CalendarClock, Lightbulb, Sparkles, Stethoscope } from "lucide-react";
+import { ClinactText } from "@/components/clinact/clinact-text";
 import { SiteImage } from "@/components/clinact/sales/site-image";
-import { FORMATS, FORMAT_COLOR_VARS, FORMAT_LABELS, FORMAT_SKILL, SKILL_LABELS } from "@/lib/clinact/types";
-import { CLINACT_PLAN_LIST, annualInMonthlies, annualPerMonth, formatBRL } from "@/lib/clinact/plans";
+import { FORMATS, FORMAT_COLOR_VARS, FORMAT_LABELS, FORMAT_SKILL, SKILL_LABELS, type CaseFormat } from "@/lib/clinact/types";
+import { CLINACT_PLAN_LIST, annualPerMonth, formatBRL, type ClinactPlanKey } from "@/lib/clinact/plans";
+import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
 
 /**
  * The ClinAct sales page, section by section.
  *
- * Structure and copy are Karina's brief (CLINACT-SALES-PAGE-SPEC.md §1), which
- * moves the reader: problema → proposta → experiência → diferenciais
- * pedagógicos → acompanhamento → experimentação gratuita → assinatura. It is
- * deliberately NOT a feature list.
+ * Six sections, one idea each (Karina, 2026-10-08 — supersedes the 14-section
+ * brief of CLINACT-SALES-PAGE-SPEC.md §1): início → os quatro formatos → veja
+ * na prática → entenda suas decisões → quatro casos gratuitos → planos. The
+ * presentation follows the MedHelpSpace Revalida sales page: black background,
+ * Bricolage headings, mono eyebrows, colour only in accents, text and phone
+ * side by side on desktop (alternating sides), one column on the phone.
  *
- * Every string goes through <SiteText>, so all of it is editable from the admin
- * with no deploy; the hardcoded text here is the fallback that renders when a
- * row is missing, so deleting a row can never break the page.
+ * Every string is a <ClinactText>, editable from the page with "Edição rápida";
+ * the copy itself lives in lib/clinact/site-copy.ts.
  *
  * The two things that are NOT editable strings, on purpose:
- *   · prices — they come from lib/clinact/plans.ts (her decision 2);
- *   · the case count — computed from the published library, never typed
- *     (her decision 5), and not shown at launch at all.
+ *   · prices — they come from lib/clinact/plans.ts (her decision 2), and the
+ *     annual plan's monthly equivalent is computed from them;
+ *   · the case count — computed, never typed (her decision 5), and not shown.
  *
  * Sections are declared here and merely ORDERED/HIDDEN by `site_sections`, so
- * adding one is a code change and never a database migration.
+ * adding one is a code change and never a database migration. The keys of the
+ * sections that carry over keep their old names (competencias, casos,
+ * evolucao) so the admin ordering and the two screenshot slots keep working.
  */
 
 type SectionProps = { hasAccess: boolean; isLoggedIn: boolean };
 type SectionDef = { key: string; Section: (p: SectionProps) => React.ReactElement };
 
-const WRAP = "mx-auto w-full max-w-3xl px-5";
-const H2 = "text-2xl font-bold leading-tight sm:text-3xl";
-const LEAD = "mt-3 text-base leading-relaxed text-muted-foreground";
+const DISPLAY = { fontFamily: "var(--font-bricolage)" } as const;
+const MONO = { fontFamily: "var(--font-geist-mono)" } as const;
+const H2 = "text-[clamp(1.85rem,4.2vw,3rem)] font-black leading-[1.08] tracking-[-0.025em] text-foreground";
+const LEAD = "text-lg leading-relaxed text-foreground/85";
+const BAND = "border-t px-5 py-16 md:px-8 md:py-24";
+const BAND_STYLE_BASE = { background: "var(--lp-base)", borderColor: "var(--lp-border)" } as const;
+const BAND_STYLE_ALT = { background: "var(--lp-alt)", borderColor: "var(--lp-border)" } as const;
+const BTN_PRIMARY_BASE =
+  // py-3 + leading-snug: an edited label that wraps gets two clean lines, not a cramped 48px.
+  "inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand px-6 py-3 text-center text-base font-bold leading-snug text-brand-fg transition hover:-translate-y-px hover:opacity-90 sm:px-8";
+const BTN_PRIMARY = `${BTN_PRIMARY_BASE} sm:w-auto`;
+const BTN_SECONDARY =
+  "inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-foreground/25 px-6 py-3 text-center text-base font-semibold leading-snug text-foreground transition hover:-translate-y-px hover:bg-foreground/5 sm:w-auto sm:px-8";
 
-/** Signup-first: no anonymous play (her decision 1), landing on the free cases. */
-const TRY_HREF = "/signup?next=%2Fclinact%2Ftreinar";
+/** The in-page anchors the two hero buttons land on (her brief: #casos-gratuitos). */
+export const ANCHOR_GRATUITOS = "casos-gratuitos";
+export const ANCHOR_PLANOS = "planos";
+
+/**
+ * Where the free cases start. Signup-first (her decision 1): no anonymous play.
+ * Someone already signed in goes straight to the library, where the four free
+ * cases are open — sending them to /signup would only bounce them.
+ */
+function tryHref(isLoggedIn: boolean): string {
+  return isLoggedIn ? "/clinact/treinar" : "/signup?next=%2Fclinact%2Ftreinar";
+}
 
 /**
  * A plan button goes to the checkout with the plan preselected. Someone without
@@ -47,369 +71,286 @@ function planHref(planKey: string, isLoggedIn: boolean): string {
   return isLoggedIn ? checkout : `/signup?next=${encodeURIComponent(checkout)}`;
 }
 
+// ── 1. Início ──────────────────────────────────────────────────────────────
+
 function Hero({ hasAccess }: SectionProps) {
   return (
-    <section className={`${WRAP} pb-12 pt-16 text-center sm:pt-24`}>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand">MedHelpSpace</p>
-      <h1 className="mt-4 text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
-        <SiteText k="clinact.hero.title" fallback="Raciocínio que termina em decisão." />
-      </h1>
-      <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
-        <SiteText
-          k="clinact.hero.sub"
-          fallback="Treine como conectar pistas, conduzir casos, priorizar sob pressão e reavaliar quando o cenário muda."
-        />
-      </p>
-      <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground">
-        <SiteText
-          k="clinact.hero.definicao"
-          fallback="Plataforma de treinamento de raciocínio clínico e tomada de decisão para internos e médicos recém-formados."
-        />
-      </p>
-      <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <Link
-          href={hasAccess ? "/clinact/treinar" : TRY_HREF}
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand px-8 text-base font-semibold text-brand-fg sm:w-auto"
-        >
-          <SiteText k="clinact.hero.cta" fallback={hasAccess ? "Entrar nos casos" : "Experimentar gratuitamente"} />
-        </Link>
-        <Link
-          href="#competencias"
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-border px-8 text-base font-medium sm:w-auto"
-        >
-          <SiteText k="clinact.hero.cta2" fallback="Conhecer o ClinAct" />
-        </Link>
+    <section className="relative isolate overflow-hidden px-5 pb-20 pt-16 text-center sm:pt-24 md:px-8 md:pb-28">
+      {/* Light from above, as on the Revalida hero — decorative, behind the copy. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background: [
+            "radial-gradient(ellipse 90% 60% at 50% 0%, color-mix(in srgb, var(--brand) 38%, transparent), transparent 70%)",
+            "radial-gradient(ellipse 60% 45% at 50% 100%, color-mix(in srgb, var(--brand) 14%, transparent), transparent 70%)",
+          ].join(", "),
+        }}
+      />
+      <div className="mx-auto max-w-4xl">
+        <p className="text-sm uppercase tracking-[0.24em] text-muted-foreground" style={MONO}>
+          <ClinactText k="clinact.hero.label" />
+        </p>
+        <h1 className="mx-auto mt-6 text-balance text-[clamp(2.6rem,8vw,5.25rem)] font-black leading-[1.02] tracking-[-0.035em] text-foreground" style={DISPLAY}>
+          <ClinactText k="clinact.hero.title" />
+          <span className="text-brand-text">
+            <ClinactText k="clinact.hero.title_accent" autoSpace />
+          </span>
+        </h1>
+        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-foreground/90 sm:text-xl">
+          <ClinactText k="clinact.hero.sub" />
+        </p>
+        <p className="mx-auto mt-3 max-w-lg text-[15px] leading-relaxed text-muted-foreground">
+          <ClinactText k="clinact.hero.publico" />
+        </p>
+        <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-brand-text/35 bg-brand/20 px-4 py-1.5 text-sm font-semibold text-brand-text">
+          <CalendarClock className="h-4 w-4 shrink-0" aria-hidden />
+          <ClinactText k="clinact.hero.semanal" />
+        </p>
+        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          {hasAccess ? (
+            <Link href="/clinact/treinar" className={BTN_PRIMARY} style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 55%, transparent)" }}>
+              <ClinactText k="clinact.hero.cta_assinante" />
+            </Link>
+          ) : (
+            <a href={`#${ANCHOR_GRATUITOS}`} className={BTN_PRIMARY} style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 55%, transparent)" }}>
+              <ClinactText k="clinact.hero.cta" />
+            </a>
+          )}
+          <a href={`#${ANCHOR_PLANOS}`} className={BTN_SECONDARY}>
+            <ClinactText k="clinact.hero.cta2" />
+          </a>
+        </div>
       </div>
     </section>
   );
 }
 
-function Problema() {
-  const perguntas = [
-    ["clinact.problema.q1", "Qual pista realmente importa aqui?"],
-    ["clinact.problema.q2", "O que eu faço primeiro?"],
-    ["clinact.problema.q3", "Que exame pedir agora — e por quê agora?"],
-    ["clinact.problema.q4", "Isso muda a minha hipótese?"],
-    ["clinact.problema.q5", "Estou confiante porque sei, ou porque estou ancorado?"],
-  ];
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.problema.title" fallback="Saber Medicina não é o mesmo que saber decidir." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.problema.lead"
-          fallback="Na hora do plantão, a prova não é de conteúdo. É de decisão — com informação incompleta e o relógio correndo."
-        />
-      </p>
-      <ul className="mt-6 space-y-2.5">
-        {perguntas.map(([k, fallback]) => (
-          <li key={k} className="flex gap-3 text-[15px] leading-snug">
-            <span aria-hidden className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-            <SiteText k={k} fallback={fallback} />
-          </li>
-        ))}
-      </ul>
-      <p className="mt-6 text-lg font-semibold">
-        <SiteText k="clinact.problema.fecho" fallback="É isso que o ClinAct treina." />
-      </p>
-    </section>
-  );
-}
+// ── 2. Os quatro formatos ─────────────────────────────────────────────────
+
+const FORMAT_COPY: Record<CaseFormat, ClinactCopyKey> = {
+  codigo_clinico: "clinact.competencias.codigo_clinico",
+  clinica_em_cena: "clinact.competencias.clinica_em_cena",
+  decisao_30s: "clinact.competencias.decisao_30s",
+  ponto_de_virada: "clinact.competencias.ponto_de_virada",
+};
 
 function Competencias() {
   return (
-    <section id="competencias" className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.competencias.title" fallback="Quatro competências, quatro jeitos de pensar." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.competencias.lead"
-          fallback="Cada formato existe para treinar uma habilidade diferente do raciocínio clínico — e não para variar o visual da mesma questão."
-        />
-      </p>
-      <div className="mt-7 grid gap-3 sm:grid-cols-2">
-        {FORMATS.map((format) => (
-          <div
-            key={format}
-            className="rounded-xl p-5"
-            style={{
-              background: `linear-gradient(140deg, color-mix(in srgb, ${FORMAT_COLOR_VARS[format]} 92%, #1a0030) 0%, ${FORMAT_COLOR_VARS[format]} 100%)`,
-            }}
-          >
-            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: "rgba(255,255,255,0.88)" }}>
-              {SKILL_LABELS[FORMAT_SKILL[format]]}
-            </p>
-            <p className="mt-1 text-lg font-bold text-white">{FORMAT_LABELS[format]}</p>
-            <p className="mt-1.5 text-sm leading-snug" style={{ color: "rgba(255,255,255,0.82)" }}>
-              <SiteText k={`clinact.competencias.${format}`} fallback={COMPETENCIA_FALLBACK[format]} />
-            </p>
-          </div>
-        ))}
+    <section className={BAND} style={BAND_STYLE_ALT}>
+      <div className="mx-auto max-w-4xl">
+        <h2 className={`${H2} text-center`} style={DISPLAY}>
+          <ClinactText k="clinact.competencias.title" />
+        </h2>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          {FORMATS.map((format) => {
+            const color = FORMAT_COLOR_VARS[format];
+            return (
+              <div
+                key={format}
+                className="relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-6 sm:p-7"
+                style={{
+                  borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
+                  background: `linear-gradient(155deg, color-mix(in srgb, ${color} 20%, var(--lp-alt-2)) 0%, color-mix(in srgb, ${color} 6%, var(--lp-base)) 100%)`,
+                }}
+              >
+                <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ ...MONO, color }}>
+                  {SKILL_LABELS[FORMAT_SKILL[format]]}
+                </p>
+                <p className="mt-2 text-2xl font-black leading-tight tracking-[-0.02em] text-foreground" style={DISPLAY}>
+                  {FORMAT_LABELS[format]}
+                </p>
+                <p className="mt-3 text-base leading-relaxed text-foreground/85">
+                  <ClinactText k={FORMAT_COPY[format]} />
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
 }
 
-const COMPETENCIA_FALLBACK: Record<string, string> = {
-  codigo_clinico: "Pistas soltas que só fazem sentido juntas. Você monta o quadro antes de nomear o diagnóstico.",
-  clinica_em_cena: "Um plantão que avança cena a cena. Cada conduta muda o paciente e consome tempo.",
-  decisao_30s: "Pouco tempo, uma decisão. O que importa é a ordem das condutas, não a lista delas.",
-  ponto_de_virada: "Você decide, e então um dado novo aparece. A pergunta passa a ser se você muda de ideia.",
-};
+// ── 3 & 4. Text and phone side by side ─────────────────────────────────────
+
+/**
+ * One demo row: copy and phone in two columns on desktop, the phone on the
+ * RIGHT unless `phoneLeft`; one column on the phone, copy first, so the
+ * caption stays under its picture.
+ */
+function DemoRow({ copy, phone, phoneLeft, glow }: { copy: React.ReactNode; phone: React.ReactNode; phoneLeft?: boolean; glow: string }) {
+  return (
+    <div className="relative isolate">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{ background: `radial-gradient(48% 70% at ${phoneLeft ? "24%" : "76%"} 50%, color-mix(in srgb, ${glow} 12%, transparent), transparent 72%)` }}
+      />
+      <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2 md:gap-16">
+        <div>{copy}</div>
+        <div className={`flex justify-center ${phoneLeft ? "md:order-first" : ""}`}>{phone}</div>
+      </div>
+    </div>
+  );
+}
 
 function Casos() {
+  const glow = FORMAT_COLOR_VARS.clinica_em_cena;
   return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.casos.title" fallback="Casos interativos, não questões disfarçadas." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.casos.lead"
-          fallback="Em Clínica em Cena, o caso avança conforme as suas condutas. O Prontuário Vivo se monta sozinho com o que você fez, o que encontrou e o tempo que gastou."
-        />
-      </p>
-      <blockquote className="mt-6 rounded-xl border-l-2 border-brand bg-surface-1 p-5 text-lg font-medium leading-snug">
-        <SiteText
-          k="clinact.casos.frase"
-          fallback="A informação não precisa aparecer antes da decisão. Ela pode aparecer porque você decidiu buscá-la."
-        />
-      </blockquote>
-      <SiteImage k="clinact.casos.image" alt="Um caso de Clínica em Cena em andamento, com o Prontuário Vivo" />
-    </section>
-  );
-}
-
-function Midia() {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.midia.title" fallback="Veja e ouça quando isso faz parte da decisão." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.midia.lead"
-          fallback="ECG, radiografia, tomografia, ultrassom, sopros e sons pulmonares — selecionados e auditados, revelados no momento clínico em que passam a existir. Nunca como enfeite."
-        />
-      </p>
-    </section>
-  );
-}
-
-function Confianca() {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.confianca.title" fallback="Não importa apenas se você acertou." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.confianca.lead"
-          fallback="Em decisões de peso, o ClinAct pergunta o quanto você confia na sua escolha: baixa, média ou alta."
-        />
-      </p>
-      <p className="mt-5 rounded-xl bg-brand/10 p-5 text-lg font-medium leading-snug">
-        <SiteText
-          k="clinact.confianca.frase"
-          fallback="O ClinAct não mostra apenas onde você errou. Mostra onde você estava convencido de que estava certo."
-        />
-      </p>
+    <section className={BAND} style={BAND_STYLE_BASE}>
+      <DemoRow
+        glow={glow}
+        copy={
+          <>
+            <h2 className={H2} style={DISPLAY}>
+              <ClinactText k="clinact.casos.title" />
+            </h2>
+            <p className={`${LEAD} mt-5`}>
+              <ClinactText k="clinact.casos.lead" />
+            </p>
+            <ul className="mt-8 space-y-4">
+              <li className="flex gap-3 text-base leading-relaxed text-foreground/85">
+                <Stethoscope className="mt-1 h-5 w-5 shrink-0 text-brand-text" aria-hidden />
+                <ClinactText k="clinact.casos.midia" />
+              </li>
+              <li className="flex gap-3 text-base leading-relaxed text-foreground/85">
+                <Lightbulb className="mt-1 h-5 w-5 shrink-0 text-brand-text" aria-hidden />
+                <ClinactText k="clinact.casos.fecho" />
+              </li>
+            </ul>
+          </>
+        }
+        phone={
+          <SiteImage
+            k="clinact.casos.image"
+            alt="Um caso de Clínica em Cena em andamento, com o Prontuário Vivo"
+            glow={glow}
+            caption={<ClinactText k="clinact.casos.legenda" />}
+          />
+        }
+      />
     </section>
   );
 }
 
 function Evolucao() {
   return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.evolucao.title" fallback="Minha Evolução" />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.evolucao.lead"
-          fallback="Treinos, desempenho geral e por formato, distribuição de confiança e os erros que você cometeu com alta confiança."
-        />
-      </p>
-      <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
-        <SiteText
-          k="clinact.evolucao.regra"
-          fallback="A sua primeira tentativa concluída permanece como referência. Refazer treina de novo sem apagar o que aconteceu."
-        />
-      </p>
-      <SiteImage k="clinact.evolucao.image" alt="A tela Minha Evolução do ClinAct" />
+    <section className={BAND} style={BAND_STYLE_ALT}>
+      <DemoRow
+        phoneLeft
+        glow="var(--brand)"
+        copy={
+          <>
+            <h2 className={H2} style={DISPLAY}>
+              <ClinactText k="clinact.evolucao.title" />
+            </h2>
+            <p className={`${LEAD} mt-5`}>
+              <ClinactText k="clinact.evolucao.lead" />
+            </p>
+          </>
+        }
+        phone={<SiteImage k="clinact.evolucao.image" alt="A tela Minha Evolução do ClinAct" />}
+      />
     </section>
   );
 }
 
-function Revisao() {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.revisao.title" fallback="Revisite o raciocínio no momento certo." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.revisao.lead"
-          fallback="Os casos voltam conforme o seu desempenho e a sua confiança. O que merece atenção volta antes — sem streak, sem pressão."
-        />
-      </p>
-    </section>
-  );
-}
+// ── 5. Quatro casos gratuitos ──────────────────────────────────────────────
 
-function LeveDesteCaso() {
+function Gratuitos({ hasAccess, isLoggedIn }: SectionProps) {
   return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand">
-        <SiteText k="clinact.leve.label" fallback="Leve deste caso" />
-      </p>
-      <h2 className={`${H2} mt-2`}>
-        <SiteText k="clinact.leve.title" fallback="Todo caso termina com uma regra que você leva embora." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.leve.lead"
-          fallback="Não é a resposta daquele caso. É o princípio de raciocínio que serve para o próximo paciente — o que faz o treino transferir."
-        />
-      </p>
-    </section>
-  );
-}
-
-function Biblioteca() {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.biblioteca.title" fallback="Uma biblioteca viva, em expansão contínua." />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.biblioteca.lead"
-          fallback="Novos desafios toda semana. Cada caso é construído para treinar uma decisão, com revisão clínica e pedagógica."
-        />
-      </p>
-    </section>
-  );
-}
-
-function Gratuitos({ hasAccess }: SectionProps) {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <div className="rounded-2xl border border-brand/40 bg-brand/10 p-7 text-center">
-        <p className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand">
-          <Sparkles className="h-4 w-4" />
-          <SiteText k="clinact.gratuitos.label" fallback="Quatro casos gratuitos" />
+    // scroll-mt keeps the title in view when the hero button jumps here.
+    <section id={ANCHOR_GRATUITOS} className={`${BAND} scroll-mt-2`} style={BAND_STYLE_BASE}>
+      <div
+        className="relative isolate mx-auto max-w-3xl overflow-hidden rounded-3xl border px-5 py-10 text-center sm:px-12 sm:py-14"
+        style={{
+          borderColor: "color-mix(in srgb, var(--brand-text) 32%, transparent)",
+          background: "linear-gradient(160deg, color-mix(in srgb, var(--brand) 42%, var(--lp-base)) 0%, color-mix(in srgb, var(--brand) 20%, var(--lp-base)) 100%)",
+          boxShadow: "0 40px 120px -40px color-mix(in srgb, var(--brand) 70%, transparent)",
+        }}
+      >
+        <p className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-brand-text" style={MONO}>
+          <Sparkles className="h-4 w-4" aria-hidden />
+          <ClinactText k="clinact.gratuitos.label" />
         </p>
-        <h2 className={`${H2} mt-3`}>
-          <SiteText k="clinact.gratuitos.title" fallback="Experimente o ClinAct antes de assinar." />
+        <h2 className={`${H2} mt-4`} style={DISPLAY}>
+          <ClinactText k="clinact.gratuitos.title" />
         </h2>
-        <p className={`${LEAD} mx-auto max-w-xl`}>
-          <SiteText
-            k="clinact.gratuitos.lead"
-            fallback="Um caso gratuito de cada formato, completo do início ao fim — com feedback, confiança e Minha Evolução. Permanentemente gratuitos, não é um teste que expira."
-          />
+        <p className={`${LEAD} mx-auto mt-5 max-w-xl`}>
+          <ClinactText k="clinact.gratuitos.lead" />
         </p>
-        <ul className="mx-auto mt-6 grid max-w-md gap-2 text-left">
-          {FORMATS.map((format) => (
-            <li key={format} className="flex items-center gap-2 text-[15px]">
-              <Check className="h-4 w-4 shrink-0 text-brand" />
-              {FORMAT_LABELS[format]}
-            </li>
-          ))}
-        </ul>
         <Link
-          href={hasAccess ? "/clinact/treinar" : TRY_HREF}
-          className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-brand px-8 text-base font-semibold text-brand-fg"
+          href={hasAccess ? "/clinact/treinar" : tryHref(isLoggedIn)}
+          className="mt-9 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand-text px-4 py-3 text-center text-base font-bold leading-snug text-background transition hover:-translate-y-px hover:opacity-90 sm:w-auto sm:px-8"
         >
-          <SiteText k="clinact.gratuitos.cta" fallback="Experimentar os 4 casos" />
+          {hasAccess ? <ClinactText k="clinact.gratuitos.cta_assinante" /> : <ClinactText k="clinact.gratuitos.cta" />}
         </Link>
       </div>
     </section>
   );
 }
 
-function ParaQuem() {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.paraquem.title" fallback="Para quem é" />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.paraquem.lead"
-          fallback="Internos de Medicina e médicos recém-formados que precisam decidir sob pressão. Também serve a estudantes em fase clínica avançada."
-        />
-      </p>
-    </section>
-  );
-}
+// ── 6. Planos ──────────────────────────────────────────────────────────────
 
-function OQueENaoE() {
-  return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.oquee.title" fallback="O que é e o que não é" />
-      </h2>
-      <p className={LEAD}>
-        <SiteText
-          k="clinact.oquee.lead"
-          fallback="Não é curso. Não é banco de questões. Não é videoaula. É treino de decisão."
-        />
-      </p>
-    </section>
-  );
-}
+const PLAN_COPY: Record<ClinactPlanKey, { nome: ClinactCopyKey; periodo: ClinactCopyKey; cta: ClinactCopyKey }> = {
+  mensal: { nome: "clinact.planos.mensal.nome", periodo: "clinact.planos.mensal.periodo", cta: "clinact.planos.mensal.cta" },
+  anual: { nome: "clinact.planos.anual.nome", periodo: "clinact.planos.anual.periodo", cta: "clinact.planos.anual.cta" },
+};
 
 function Planos({ hasAccess, isLoggedIn }: SectionProps) {
   return (
-    <section className={`${WRAP} border-t border-surface-2 py-14`}>
-      <h2 className={H2}>
-        <SiteText k="clinact.planos.title" fallback="Assine o ClinAct" />
-      </h2>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        {CLINACT_PLAN_LIST.map((plan) => (
-          <div key={plan.key} className="flex flex-col rounded-xl border border-border bg-surface-1 p-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand">{plan.label}</p>
-            {/* Price comes from the plan config, never from an editable string
-                (her decision 2): a price edited out of step with what PagBank
-                charges is a CDC problem, not a bug. */}
-            <p className="mt-2 text-3xl font-bold tabular-nums">{formatBRL(plan.amount_cents)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {plan.key === "mensal" ? "por mês" : `por ano — ${annualPerMonth()} por mês`}
-            </p>
-            {plan.key === "anual" ? (
-              <p className="mt-3 text-sm font-medium text-brand">
-                {`${annualInMonthlies()} mensalidades, doze meses`}
-              </p>
-            ) : null}
-            {/* mt-auto pins the button to the card's foot, so the two buttons line
-                up side by side even though only the annual card has the extra line. */}
-            <div className="mt-auto pt-5">
-              <Link
-                href={hasAccess ? "/clinact/treinar" : planHref(plan.key, isLoggedIn)}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-base font-semibold text-brand-fg"
-              >
-                {hasAccess ? (
-                  <SiteText k="clinact.planos.cta_assinante" fallback="Entrar nos casos" />
-                ) : (
-                  <SiteText k={`clinact.planos.cta_${plan.key}`} fallback={`Assinar ${plan.label.toLowerCase()}`} />
-                )}
-              </Link>
-            </div>
-          </div>
-        ))}
+    <section id={ANCHOR_PLANOS} className={`${BAND} scroll-mt-2`} style={BAND_STYLE_ALT}>
+      <div className="mx-auto max-w-4xl">
+        <h2 className={`${H2} text-center`} style={DISPLAY}>
+          <ClinactText k="clinact.planos.title" />
+        </h2>
+        <p className={`${LEAD} mx-auto mt-5 max-w-2xl text-center`}>
+          <ClinactText k="clinact.planos.lead" />
+        </p>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          {CLINACT_PLAN_LIST.map((plan) => {
+            const copy = PLAN_COPY[plan.key];
+            return (
+              <div key={plan.key} className="flex flex-col rounded-2xl border border-border bg-surface-1 p-7">
+                <p className="text-sm font-bold uppercase tracking-[0.16em] text-brand-text" style={MONO}>
+                  <ClinactText k={copy.nome} />
+                </p>
+                {/* Price comes from the plan config, never from an editable string
+                    (her decision 2): a price edited out of step with what PagBank
+                    charges is a CDC problem, not a bug. */}
+                <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-4xl font-black tabular-nums tracking-[-0.02em] text-foreground" style={DISPLAY}>
+                    {formatBRL(plan.amount_cents)}
+                  </span>
+                  <span className="text-base text-muted-foreground">
+                    <ClinactText k={copy.periodo} />
+                  </span>
+                </p>
+                {plan.key === "anual" ? (
+                  // The equivalent is computed from the two plan prices; only the
+                  // words around it are editable ({mensal} stays in the text).
+                  <p className="mt-2 text-sm text-foreground/85">
+                    <ClinactText k="clinact.planos.anual.equivalente" vars={{ mensal: annualPerMonth() }} />
+                  </p>
+                ) : null}
+                {/* mt-auto pins the button to the card's foot, so the two buttons
+                    line up even though only the annual card has the extra line. */}
+                <div className="mt-auto pt-7">
+                  <Link href={hasAccess ? "/clinact/treinar" : planHref(plan.key, isLoggedIn)} className={BTN_PRIMARY_BASE}>
+                    {hasAccess ? <ClinactText k="clinact.planos.cta_assinante" /> : <ClinactText k={copy.cta} />}
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Her decision 3: renewal and billing terms are excluded from the
+            section-visibility toggle — they can never be hidden with the plans. */}
+        <p className="mx-auto mt-8 max-w-2xl text-center text-[15px] leading-relaxed text-muted-foreground">
+          <ClinactText k="clinact.planos.renovacao" />
+        </p>
       </div>
-      {/* Her decision 3: renewal and billing terms are excluded from the
-          section-visibility toggle — they can never be hidden with the plans. */}
-      <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
-        <SiteText
-          k="clinact.planos.renovacao"
-          fallback="A assinatura é renovada automaticamente conforme a modalidade escolhida — mensal a cada mês, anual a cada doze meses — até que você cancele. O cancelamento pode ser feito a qualquer momento pela sua conta, e o acesso permanece até o fim do período já pago."
-        />
-      </p>
     </section>
   );
 }
@@ -428,17 +369,9 @@ export const CLINACT_ALWAYS_VISIBLE = ["planos"];
  */
 export const CLINACT_SECTIONS: SectionDef[] = [
   { key: "hero", Section: Hero },
-  { key: "problema", Section: Problema },
   { key: "competencias", Section: Competencias },
   { key: "casos", Section: Casos },
-  { key: "midia", Section: Midia },
-  { key: "confianca", Section: Confianca },
   { key: "evolucao", Section: Evolucao },
-  { key: "revisao", Section: Revisao },
-  { key: "leve-deste-caso", Section: LeveDesteCaso },
-  { key: "biblioteca", Section: Biblioteca },
   { key: "gratuitos", Section: Gratuitos },
-  { key: "para-quem", Section: ParaQuem },
-  { key: "o-que-e-nao-e", Section: OQueENaoE },
   { key: "planos", Section: Planos },
 ];
