@@ -369,13 +369,13 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.36, duration: 0.5 }}
-          className="mt-8 flex max-w-md flex-col items-center text-center text-sm leading-relaxed sm:text-[0.9375rem] md:mt-7"
+          className="mt-8 flex max-w-xl flex-col items-center text-center text-sm leading-relaxed text-balance sm:text-[0.9375rem] md:mt-7"
           style={{ color: "var(--lp-fg-55)" }}
         >
           <p>
             <SiteText as="span" k="hero.founder_pre" fallback="Preparação criada por" />{" "}
             <strong className="font-semibold" style={{ color: "var(--lp-fg)" }}>
-              <SiteText as="span" k="hero.founder_name" fallback="Karina Razmus" />
+              <SiteText as="span" k="hero.founder_name" fallback="Karina Brandão" />
             </strong>
             <SiteText as="span" k="hero.founder_post" autoSpace fallback=", médica formada na Argentina." />
           </p>
