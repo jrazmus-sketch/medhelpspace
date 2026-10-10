@@ -69,6 +69,11 @@ export function trackFreeSimulatorClick(location: string): void {
   trackEvent("click_free_simulator", { location });
 }
 
+/** "Teste 50 flashcards grátis →" on the sales page → /flashcards-revalida (Karina 2026-10-09). */
+export function trackFreeFlashcardsClick(location: string): void {
+  trackEvent("click_free_flashcards", { location });
+}
+
 /** The hero's "Conheça quem está por trás da MedHelpSpace ↓" link (Karina 2026-10-09). */
 export function trackFounderLinkClick(location: string): void {
   trackEvent("click_founder_link", { location });
