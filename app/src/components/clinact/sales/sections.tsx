@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarClock, Lightbulb, Sparkles, Stethoscope } from "lucide-react";
 import { ClinactText } from "@/components/clinact/clinact-text";
 import { SiteImage } from "@/components/clinact/sales/site-image";
+import { FORMAT_ICONS } from "@/components/clinact/library-cards";
 import { FORMATS, FORMAT_COLOR_VARS, FORMAT_LABELS, FORMAT_SKILL, SKILL_LABELS, type CaseFormat } from "@/lib/clinact/types";
 import { CLINACT_PLAN_LIST, annualPerMonth, formatBRL, type ClinactPlanKey } from "@/lib/clinact/plans";
 import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
@@ -145,24 +146,49 @@ function Competencias() {
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {FORMATS.map((format) => {
             const color = FORMAT_COLOR_VARS[format];
+            const Icon = FORMAT_ICONS[format];
             return (
               <div
                 key={format}
-                className="relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-6 sm:p-7"
+                className="relative isolate flex h-full overflow-hidden rounded-2xl border p-6 sm:p-7"
                 style={{
                   borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
                   background: `linear-gradient(155deg, color-mix(in srgb, ${color} 20%, var(--lp-alt-2)) 0%, color-mix(in srgb, ${color} 6%, var(--lp-base)) 100%)`,
                 }}
               >
-                <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ ...MONO, color }}>
-                  {SKILL_LABELS[FORMAT_SKILL[format]]}
-                </p>
-                <p className="mt-2 text-2xl font-black leading-tight tracking-[-0.02em] text-foreground" style={DISPLAY}>
-                  {FORMAT_LABELS[format]}
-                </p>
-                <p className="mt-3 text-base leading-relaxed text-foreground/85">
-                  <ClinactText k={FORMAT_COPY[format]} />
-                </p>
+                {/* The format's mark, large and faint in the corner — texture, not content. */}
+                <Icon
+                  aria-hidden
+                  strokeWidth={1}
+                  className="pointer-events-none absolute -bottom-7 -right-5 -z-10 h-36 w-36"
+                  style={{ color, opacity: 0.08 }}
+                />
+                <div className="flex items-start gap-4 sm:gap-5">
+                  {/* Same icon the student meets on the format card inside the platform. */}
+                  <span
+                    aria-hidden
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border"
+                    style={{
+                      color,
+                      background: `color-mix(in srgb, ${color} 16%, transparent)`,
+                      borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
+                      boxShadow: `0 0 28px color-mix(in srgb, ${color} 28%, transparent)`,
+                    }}
+                  >
+                    <Icon className="h-6 w-6" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ ...MONO, color }}>
+                      {SKILL_LABELS[FORMAT_SKILL[format]]}
+                    </p>
+                    <p className="mt-1.5 text-2xl font-black leading-tight tracking-[-0.02em] text-foreground" style={DISPLAY}>
+                      {FORMAT_LABELS[format]}
+                    </p>
+                    <p className="mt-3 text-base leading-relaxed text-foreground/85">
+                      <ClinactText k={FORMAT_COPY[format]} />
+                    </p>
+                  </div>
+                </div>
               </div>
             );
           })}

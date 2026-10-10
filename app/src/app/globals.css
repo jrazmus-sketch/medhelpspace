@@ -1247,6 +1247,16 @@
 .lp-mockup-dark  { --mk-bg: #0a0a0a; --mk-card: #141414; --mk-text: #ededed; --mk-sub: #a8a8a8; --mk-brand: #7a1d91; --mk-border: rgba(255,255,255,0.09); }
 .lp-mockup-light { --mk-bg: #ffffff; --mk-card: #faf8fd; --mk-text: #09090d; --mk-sub: #6b5f7a; --mk-brand: #7a1d91; --mk-border: #e2d9ef; }
 
+/* ── Device mockup (ClinAct sales page phones) ───────────────── */
+/* Titanium edge, black bezel, side buttons and glass of a modern phone. Device
+   chrome, not theme colour: the same in light and dark. */
+.lp-device {
+  --dv-frame:  linear-gradient(145deg, #6a6a72 0%, #26262b 28%, #141417 55%, #2c2c32 78%, #575760 100%);
+  --dv-bezel:  #050506;
+  --dv-button: linear-gradient(90deg, #1c1c20, #4a4a51 55%, #26262b);
+  --dv-glare:  linear-gradient(118deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 22%, transparent 38%);
+}
+
 /* ── Landing page theme tokens ───────────────────────────────── */
 :root {
   --lp-base:   #f8f6f3;

@@ -14,7 +14,8 @@ export function caseCount(n: number): string {
   return `${n} ${n === 1 ? "caso" : "casos"}`;
 }
 
-const FORMAT_ICONS: Record<CaseFormat, typeof Network> = {
+/** One icon per format — the library and the sales page share them, so a student meets the same mark on both. */
+export const FORMAT_ICONS: Record<CaseFormat, typeof Network> = {
   codigo_clinico: Network,
   clinica_em_cena: Route,
   decisao_30s: Timer,

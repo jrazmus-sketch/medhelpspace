@@ -121,7 +121,18 @@ test("the two demos alternate sides on desktop, and the caption sits under its p
   assert.match(casos, /caption=\{<ClinactText k="clinact\.casos\.legenda" \/>\}/);
   const img = read("components/clinact/sales/site-image.tsx");
   assert.match(img, /<figcaption/, "the caption is part of the image's figure");
-  assert.match(img, /aspect-\[390\/844\]/, "one aspect ratio for every phone");
+  // One device for every demo (Justin 2026-10-10): the display is inset in a
+  // bezel, under a status bar with the island — never edge to edge.
+  assert.match(img, /aspectRatio: "390 \/ 897"/, "one aspect ratio for every phone: status bar + the whole capture");
+  assert.match(img, /var\(--dv-bezel\)/, "a bezel around the display");
+  assert.match(img, /<StatusBar \/>/, "a status bar above the app");
+});
+
+test("the format cards carry the same icon the platform's library uses", () => {
+  const src = read(SECTIONS);
+  assert.match(src, /import \{ FORMAT_ICONS \} from "@\/components\/clinact\/library-cards";/);
+  const card = src.slice(src.indexOf("function Competencias("), src.indexOf("// ── 3 & 4."));
+  assert.match(card, /const Icon = FORMAT_ICONS\[format\];/);
 });
 
 test("the free cases and the plans read as she wrote them", () => {
