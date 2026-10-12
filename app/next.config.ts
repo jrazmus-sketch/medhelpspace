@@ -1,5 +1,12 @@
 import type { NextConfig } from "next";
 
+// medhelpspace.com.br/<path> → homepage with that network's UTMs (see redirects()).
+const SOCIAL_SHORT_LINKS = [
+  { path: "/instagram", source: "instagram", medium: "organic_social" },
+  { path: "/tiktok", source: "tiktok", medium: "organic_social" },
+  { path: "/youtube", source: "youtube", medium: "organic_video" },
+] as const;
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
@@ -55,6 +62,15 @@ const nextConfig: NextConfig = {
         destination: "/questoes-revalida/:path*",
         permanent: true,
       },
+      // Short links for the social profiles (Karina 2026-10-12): the bio shows a clean
+      // URL, GA4 + the first-touch cookie still get the UTMs from the landing URL.
+      // TEMPORARY (307) on purpose — she wants to change the UTMs later without a
+      // browser-cached permanent redirect pinning the old ones.
+      ...SOCIAL_SHORT_LINKS.map(({ path, source, medium }) => ({
+        source: path,
+        destination: `/?utm_source=${source}&utm_medium=${medium}&utm_campaign=perfil_revalida`,
+        permanent: false,
+      })),
     ];
   },
 };
