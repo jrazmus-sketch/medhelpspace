@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { CalendarClock, RotateCcw, Sparkles } from "lucide-react";
-import { loadLibrary } from "@/lib/clinact/library";
+import { loadLibrary, scenarioCounts } from "@/lib/clinact/library";
 import { FORMATS, FORMAT_LABELS } from "@/lib/clinact/types";
 import { FormatCard, SECTION_LABEL, SpecialtyCard } from "@/components/clinact/library-cards";
 import { ClinactText } from "@/components/clinact/clinact-text";
+import { ScenarioChips } from "@/components/clinact/scenario-chips";
 
 export const metadata = { title: "Casos" };
 
@@ -106,6 +107,18 @@ export default async function TreinarPage() {
             <ClinactText k="clinact.app.treinar.vazio" />
           </div>
         )}
+      </section>
+
+      {/* ── Cenário clínico — a compact third way in (Karina 2026-10-13): chips,
+          not another grid; each opens the list already filtered by it. ──── */}
+      <section className="mt-10 border-t border-surface-2 pt-6">
+        <div style={SECTION_LABEL}>
+          <ClinactText k="clinact.app.treinar.cenario_label" />
+        </div>
+        <p className="mb-3.5 mt-1.5 max-w-[54ch] text-[13.5px] leading-normal text-muted-foreground">
+          <ClinactText k="clinact.app.treinar.cenario_lead" />
+        </p>
+        <ScenarioChips counts={scenarioCounts(cases)} hrefFor={(slug) => `/clinact/treinar/casos?cenario=${slug}`} />
       </section>
 
       {cases.length ? (

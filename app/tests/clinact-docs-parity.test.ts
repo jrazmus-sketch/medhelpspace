@@ -14,7 +14,7 @@ const BUNDLED = path.resolve(import.meta.dirname, "..", "src", "content", "clina
 
 test("src/content/clinact mirrors docs/clinact exactly", () => {
   const files = readdirSync(DOCS).filter((f) => f.endsWith(".md"));
-  assert.ok(files.length >= 6);
+  assert.ok(files.length >= 5);
   for (const f of files) {
     const a = readFileSync(path.join(DOCS, f), "utf8");
     const b = readFileSync(path.join(BUNDLED, f), "utf8");

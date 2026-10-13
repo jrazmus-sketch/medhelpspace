@@ -39,6 +39,7 @@ import { AUTHORABLE_KINDS, FORMAT_PRESETS, isDecision, newStep, seedSteps } from
 import { validateForPublish } from "@/lib/clinact/validate";
 import { serializeCase } from "@/lib/clinact/serialize";
 import { slugifyTitle } from "@/lib/clinact/slug";
+import { SCENARIOS, isScenario } from "@/lib/clinact/scenarios";
 import {
   DIFFICULTIES,
   FORMATS,
@@ -329,6 +330,16 @@ export function CaseEditor({ initial, taxonomy, isNew }: { initial: CaseDoc; tax
             </select>
             {doc.topic_text && !doc.topic_id ? <p className="mt-1 text-xs text-amber-600 dark:text-amber-300">{t("clinact.editor.unmatched", { value: doc.topic_text })}</p> : null}
           </Field>
+          {/* One clinical scenario per case (Karina 2026-10-13). "—" clears it;
+              the save sends the key either way, so clearing really clears. */}
+          <Field label={t("clinact.fields.scenario")}>
+            <select value={doc.scenario ?? ""} onChange={(e) => set({ scenario: isScenario(e.target.value) ? e.target.value : null })} className={inputCls}>
+              <option value="">—</option>
+              {SCENARIOS.map((s) => (
+                <option key={s.slug} value={s.slug}>{s.label}</option>
+              ))}
+            </select>
+          </Field>
           <div className="grid grid-cols-2 gap-2">
             <Field label={t("clinact.fields.difficulty")}>
               <select value={doc.difficulty} onChange={(e) => set({ difficulty: e.target.value as CaseDoc["difficulty"] })} className={inputCls}>
@@ -455,6 +466,9 @@ function normalizeForSave(doc: CaseDoc): CaseDoc {
     ...doc,
     slug: doc.slug || slugifyTitle(doc.title),
     primary_skill: FORMAT_SKILL[doc.format],
+    // The editor shows the field, so what it shows is the truth: always send
+    // the key (null = "—"). Only the importer may leave it out to keep it.
+    scenario: doc.scenario ?? null,
     takeaway: leve ? String((leve.content as { text?: string }).text ?? "") || null : doc.takeaway ?? null,
     steps: doc.steps.map((s, i) => ({
       ...s,

@@ -87,6 +87,9 @@ export const CLINACT_COPY = {
   "clinact.app.treinar.portaB_label": "Estude por especialidade",
   "clinact.app.treinar.portaB_lead": "Entre pela especialidade e escolha, lá dentro, em qual formato quer treiná-la.",
   "clinact.app.treinar.vazio": "Nenhuma especialidade com casos publicados ainda.",
+  // Karina 2026-10-12/13 — the compact scenario section after the specialty grid.
+  "clinact.app.treinar.cenario_label": "Treine por cenário clínico",
+  "clinact.app.treinar.cenario_lead": "Escolha o ambiente de atendimento que você quer treinar.",
   "clinact.app.treinar.todos": "Ver todos os casos",
 
   // ── Platform — specialty page (/clinact/treinar/[especialidade]) ────────

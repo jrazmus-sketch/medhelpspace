@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { LayoutList, Plus, Upload } from "lucide-react";
+import { LayoutList, Plus, Tags, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FORMAT_LABELS, type CaseListRow, type CaseFormat, type CaseStatus } from "@/lib/clinact/types";
 
@@ -52,6 +52,9 @@ export function ClinactListClient({ rows }: { rows: Row[] }) {
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/clinact/pagina" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3.5 text-sm font-medium hover:bg-accent">
             <LayoutList className="h-4 w-4" /> {t("clinact.page.open")}
+          </Link>
+          <Link href="/admin/clinact/taxonomia" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3.5 text-sm font-medium hover:bg-accent">
+            <Tags className="h-4 w-4" /> {t("clinact.taxonomy.open")}
           </Link>
           <Link href="/admin/clinact/importar" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3.5 text-sm font-medium hover:bg-accent">
             <Upload className="h-4 w-4" /> {t("clinact.import")}

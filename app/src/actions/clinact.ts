@@ -471,7 +471,6 @@ export async function advanceAttempt(attemptId: number): Promise<AdvanceResult> 
         await onCaseFinished({
           userId: attempt.user_id,
           caseId: attempt.case_id,
-          specialtyId: doc.specialty_id ?? null,
           score,
           highConfidenceErrors: hc ?? 0,
           isFirstCompletion: (earlier ?? 0) === 0,

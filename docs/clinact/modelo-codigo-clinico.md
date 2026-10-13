@@ -36,6 +36,7 @@ FORMATO: codigo_clinico
 TÍTULO:
 ESPECIALIDADE:
 TEMA:
+CENÁRIO:
 DIFICULDADE: intermediária
 DURAÇÃO: 4
 RESUMO:

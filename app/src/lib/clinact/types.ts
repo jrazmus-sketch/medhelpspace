@@ -9,6 +9,8 @@
  * Pure types + constants only — safe to import from client components.
  */
 
+import type { Scenario } from "./scenarios";
+
 export const FORMATS = ["codigo_clinico", "clinica_em_cena", "decisao_30s", "ponto_de_virada"] as const;
 export type CaseFormat = (typeof FORMATS)[number];
 
@@ -131,7 +133,9 @@ export const FORMAT_BLURBS: Record<CaseFormat, string> = {
   codigo_clinico: "Juntar pistas soltas até o caso fechar.",
   clinica_em_cena: "Conduzir um plantão, cena a cena, com o relógio correndo.",
   decisao_30s: "Decidir rápido, quando a ordem das condutas é o que importa.",
-  ponto_de_virada: "Rever a hipótese quando um dado novo muda tudo.",
+  // Karina 2026-10-12: the new datum can end in MANTENHO, REBAIXO or VIRADA —
+  // not always a change of hypothesis. (The sales page keeps its own sentence.)
+  ponto_de_virada: "Reavalie quando um novo dado muda o caso.",
 };
 
 export const FORMAT_LABELS: Record<CaseFormat, string> = {
@@ -265,6 +269,12 @@ export type CaseDoc = {
   published_at?: string | null;
   /** Editorial flag (Karina 2026-08-31): one free sample case per format. */
   is_free?: boolean;
+  /**
+   * Cenário clínico (lib/clinact/scenarios.ts). ABSENT = "not stated": the save
+   * keeps whatever the case already has, so re-importing an old file without
+   * CENÁRIO never wipes it. null = cleared on purpose (the admin's "—").
+   */
+  scenario?: Scenario | null;
   steps: StepDoc[];
   clues: ClueDoc[];
 };
@@ -286,6 +296,7 @@ export type CaseListRow = {
   revision: number;
   published_at: string | null;
   is_free: boolean;
+  scenario: Scenario | null;
   updated_at: string;
 };
 

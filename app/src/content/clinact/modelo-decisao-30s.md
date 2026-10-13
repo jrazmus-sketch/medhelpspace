@@ -29,6 +29,7 @@ FORMATO: decisao_30s
 TÍTULO:
 ESPECIALIDADE:
 TEMA:
+CENÁRIO:
 DIFICULDADE: intermediária
 DURAÇÃO: 2
 RESUMO:
@@ -70,6 +71,7 @@ FORMATO: decisao_30s
 TÍTULO: TEP — paciente instável
 ESPECIALIDADE: Pneumologia
 TEMA: Tromboembolismo Pulmonar
+CENÁRIO: Emergência
 DIFICULDADE: intermediária
 DURAÇÃO: 2
 RESUMO: Dispneia súbita com instabilidade: o que fazer antes da confirmação.

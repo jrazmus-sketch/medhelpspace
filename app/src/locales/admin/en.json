@@ -793,7 +793,13 @@
       "clinact_page_sections": "ClinAct: sales page sections changed",
       "clinact_page_publish": "ClinAct: sales page published",
       "clinact_page_unpublish": "ClinAct: sales page unpublished",
-      "clinact_page_image": "ClinAct: sales page image changed"
+      "clinact_page_image": "ClinAct: sales page image changed",
+      "clinact_specialty_create": "ClinAct: specialty created",
+      "clinact_specialty_update": "ClinAct: specialty changed",
+      "clinact_specialty_delete": "ClinAct: specialty deleted",
+      "clinact_topic_create": "ClinAct: topic created",
+      "clinact_topic_update": "ClinAct: topic changed",
+      "clinact_topic_delete": "ClinAct: topic deleted"
     }
   },
   "pageNew": {
@@ -1898,7 +1904,8 @@
       "redHerringReason": "Why it does not close",
       "isFree": "Free sample case",
       "isFreeHint": "Fully open to any signed-in user, no subscription. The plan is ONE free case per format.",
-      "exams": "Exams and actions"
+      "exams": "Exams and actions",
+      "scenario": "Clinical setting"
     },
     "media": {
       "add": "Add media",
@@ -2079,6 +2086,46 @@
       "imageRemove": "Remove",
       "imageSaved": "Image saved.",
       "imageRemoved": "Image removed."
+    },
+    "taxonomy": {
+      "open": "Taxonomy",
+      "title": "ClinAct taxonomy",
+      "subtitle": "Specialties and topics used only by ClinAct — independent of Revalida. Changing something here never changes Revalida, and Revalida never changes this.",
+      "ruleEmpty": "An active specialty with no published case shows in the library as \"Em breve\", not clickable.",
+      "ruleInactive": "Inactive hides it from the library and the editor. You can't deactivate what a published case uses.",
+      "ruleDelete": "Delete only appears when no case uses it (not even a draft). Used by a case: deactivate instead.",
+      "ruleSlug": "Renaming doesn't change the address — it's fixed at creation. The topic is never shown to a student before the case ends.",
+      "specialties": "Specialties",
+      "topics": "Topics",
+      "noTopics": "No topics yet. Without a topic, a case stays \"Sem tema ligado\".",
+      "counts": "{{cases}} case(s) · {{published}} published · {{topics}} topic(s)",
+      "topicCounts": "{{cases}} case(s) · {{published}} published",
+      "inactive": "Inactive",
+      "soon": "Coming soon",
+      "name": "Name",
+      "topicName": "Topic name",
+      "address": "Address:",
+      "save": "Save",
+      "add": "Add",
+      "newSpecialty": "New specialty",
+      "newTopic": "New topic",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "delete": "Delete",
+      "confirmDelete": "Delete \"{{name}}\"? This can't be undone.",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "created": "Created.",
+      "saved": "Saved.",
+      "deleted": "Deleted.",
+      "errors": {
+        "forbidden": "You don't have permission for this action.",
+        "invalid": "Invalid name (2 to 80 characters).",
+        "duplicate": "An item with that name already exists (maybe inactive — reactivate it).",
+        "in_use": "Used by a case. Published cases block deactivation; any case blocks deletion.",
+        "reserved": "That name produces a reserved address. Pick another.",
+        "failed": "Couldn't save. Try again."
+      }
     }
   },
   "appErrors": {

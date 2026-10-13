@@ -82,9 +82,16 @@ test("no library screen renders the theme except on finished rows", () => {
   }
 });
 
-test("the specialty door never offers a shelf with nothing on it", () => {
+test("a specialty with nothing published stays in the grid as \"Em breve\", never as a link", () => {
+  // Karina 2026-10-13 (supersedes "drop empty specialties"): the card reads
+  // "Em breve" instead of "0 casos" and cannot be clicked.
   const lib = read("lib/clinact/library.ts");
-  assert.ok(/\.filter\(\(s\) => s\.count > 0\)/.test(lib), "empty specialties are dropped");
+  assert.ok(!/\.filter\(\(s\) => s\.count > 0\)/.test(lib), "empty specialties are kept");
+  const cards = read("components/clinact/library-cards.tsx");
+  const card = cards.slice(cards.indexOf("export function SpecialtyCard"), cards.indexOf("export function Trail"));
+  assert.ok(card.includes("const empty = count === 0"));
+  assert.ok(/if \(empty\) \{\s*return \(\s*<div[^>]*aria-disabled/.test(card), "the empty card is a div, not a Link");
+  assert.ok(card.includes('"Em breve"'));
 });
 
 test("both doors point at the same case URL", () => {

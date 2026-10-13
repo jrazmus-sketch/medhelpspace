@@ -12,6 +12,7 @@ import {
   type StepDoc,
   type StepKind,
 } from "./types";
+import { scenarioLabel } from "./scenarios";
 
 const BLOCK_NAMES: Record<StepKind, string> = {
   narrativa: "NARRATIVA",
@@ -123,6 +124,8 @@ export function serializeCase(doc: CaseDoc): string {
   out.push(`TÍTULO: ${doc.title}`);
   if (doc.specialty_text) out.push(`ESPECIALIDADE: ${doc.specialty_text}`);
   if (doc.topic_text) out.push(`TEMA: ${doc.topic_text}`);
+  const scenario = scenarioLabel(doc.scenario);
+  if (scenario) out.push(`CENÁRIO: ${scenario}`);
   out.push(`DIFICULDADE: ${DIFFICULTY_LABEL[doc.difficulty] ?? doc.difficulty}`);
   if (doc.est_minutes) out.push(`DURAÇÃO: ${doc.est_minutes}`);
   if (doc.summary) out.push(`RESUMO: ${doc.summary}`);

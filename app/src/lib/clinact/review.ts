@@ -39,7 +39,6 @@ export function secondIntervalDays(first: number): number {
 export type FinishOutcome = {
   userId: string;
   caseId: number;
-  specialtyId: number | null;
   score: number;
   highConfidenceErrors: number;
   /** True when this finish is the FIRST completed non-preview attempt. */
@@ -62,7 +61,12 @@ export async function onCaseFinished(o: FinishOutcome): Promise<void> {
         user_id: o.userId,
         item_type: CLINACT_REVIEW_ITEM_TYPE,
         item_id: o.caseId,
-        specialty_id: o.specialtyId,
+        // No specialty: review_schedule is shared with Revalida and its
+        // specialty_id references Revalida's `specialties`, while ClinAct now
+        // has its own list (Ortopedia = 101 exists only there) — writing it
+        // would fail the FK and silently drop the schedule. ClinAct's queue
+        // reads the case, never this column (2026-10-13).
+        specialty_id: null,
         interval_days: interval,
         repetitions: 0,
         due_date: addDaysKey(today, interval),

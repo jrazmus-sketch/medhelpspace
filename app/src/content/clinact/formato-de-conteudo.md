@@ -80,6 +80,7 @@ FORMATO: decisao_30s
 TÍTULO: TEP — paciente instável
 ESPECIALIDADE: Pneumologia
 TEMA: Tromboembolismo Pulmonar
+CENÁRIO: Emergência
 DIFICULDADE: intermediária
 DURAÇÃO: 2
 RESUMO: Dispneia súbita com instabilidade: o que fazer antes da confirmação.
@@ -89,8 +90,9 @@ RESUMO: Dispneia súbita com instabilidade: o que fazer antes da confirmação.
 |---|---|
 | `FORMATO:` | Um de: `codigo_clinico`, `clinica_em_cena`, `decisao_30s`, `ponto_de_virada` |
 | `TÍTULO:` | Único entre todos os casos. O endereço do caso é gerado a partir dele — você nunca escreve endereço. |
-| `ESPECIALIDADE:` | Copiada da lista em `especialidades-e-temas.md` |
-| `TEMA:` | Copiado da mesma lista |
+| `ESPECIALIDADE:` | Copiada da lista **Especialidades e temas** (link no importador) |
+| `TEMA:` | Copiado da mesma lista, dentro da especialidade do caso |
+| `CENÁRIO:` | Opcional. Onde o atendimento acontece — ver abaixo. |
 | `DIFICULDADE:` | `básica`, `intermediária` ou `avançada` |
 | `DURAÇÃO:` | Minutos, só o número |
 | `RESUMO:` | Uma linha, opcional |
@@ -99,6 +101,45 @@ RESUMO: Dispneia súbita com instabilidade: o que fazer antes da confirmação.
 **Rótulo trocado é erro; campo opcional ausente é só um aviso.** O importador
 reclama de `TITULO:` sem acento ou de `Título:` em minúsculas, mas segue em frente
 se faltar o `RESUMO:`.
+
+### Especialidades e temas são do ClinAct
+
+A lista de especialidades e temas é **própria do ClinAct**, independente do
+Revalida, e é administrada em **Admin → ClinAct → Taxonomia**. O link
+"Especialidades e temas" no importador baixa sempre a lista atual.
+
+Antes de importar um caso com um tema novo, cadastre o tema na Taxonomia. Um tema
+fora da lista ainda importa, com o aviso "Sem tema ligado" — é o plano B, não o
+caminho normal.
+
+### Cenário clínico
+
+`CENÁRIO:` diz **onde** o atendimento acontece. É independente do formato, da
+especialidade e do tema, e cada caso tem **um** cenário principal. O aluno usa
+para filtrar a biblioteca ("Treine por cenário clínico").
+
+| Escreva | Aparece para o aluno como |
+|---|---|
+| `Atenção Primária / UBS` | APS / UBS |
+| `Ambulatório / Consultório` | Ambulatório |
+| `Urgência` | Urgência |
+| `Emergência` | Emergência |
+| `Hospital / Enfermaria` | Hospital |
+| `Maternidade / Centro Obstétrico` | Maternidade |
+
+Vale escrever o nome inteiro ou só a forma curta (`UBS`, `APS`, `Ambulatório`,
+`Hospital`, `Maternidade`…). Acento e maiúsculas não importam.
+
+- **Sem a linha `CENÁRIO:`** o caso importa normalmente. Se ele já tinha um cenário
+  marcado no admin, **o cenário continua** — reimportar um arquivo antigo nunca
+  apaga a classificação.
+- **Com um valor que não está na tabela** (um erro de digitação, por exemplo) a
+  importação é **bloqueada** e a mensagem lista os valores aceitos. Assim um caso
+  nunca perde o cenário sem você perceber.
+- Para **tirar** o cenário de um caso, use o campo "Cenário clínico" na ficha, no
+  admin.
+
+Atenção Primária, Atenção Básica e UBS são **cenários**, nunca especialidades.
 
 ### O título não entrega o caso
 
@@ -509,10 +550,10 @@ O importador corrige tudo isto sozinho:
 
 **Não gaste tempo com nada disso.** Escreva normalmente.
 
-Uma exceção: `ESPECIALIDADE:` e `TEMA:` precisam ser copiados **exatamente** como
-estão na lista, inclusive onde a acentuação parecer errada (alguns temas antigos
-estão sem acento no banco). Se não bater, o caso entra assim mesmo e nós ligamos o
-tema depois — é aviso, não erro.
+Uma exceção: `ESPECIALIDADE:` e `TEMA:` precisam ter o mesmo nome que está na
+lista **Especialidades e temas** (acento e maiúsculas não importam). Se não bater,
+o caso entra assim mesmo, sem a ligação — é aviso, não erro. O `CENÁRIO:` é o
+contrário: valor desconhecido **bloqueia** (seção 2).
 
 ---
 

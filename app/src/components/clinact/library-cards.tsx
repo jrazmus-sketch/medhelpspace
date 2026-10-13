@@ -153,32 +153,54 @@ export function SpecialtyCard({
   count: number;
   index?: number;
 }) {
-  return (
-    <Link
-      href={href}
-      style={{
-        background: "var(--surface-1)",
-        borderRadius: "var(--radius)",
-        padding: "18px 16px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        gap: 10,
-        minHeight: 88,
-        textDecoration: "none",
-        outline: "1px solid var(--surface-2)",
-        outlineOffset: "-1px",
-        animation: "dash-fade-up 0.45s cubic-bezier(.16,1,.3,1) both",
-        animationDelay: `${index * 35}ms`,
-      }}
-      className="hover:bg-surface-2"
-    >
+  // No published case yet: the card stays in the grid, reads "Em breve" and is
+  // NOT a link (Karina 2026-10-13) — same rule as a format with no cases.
+  const empty = count === 0;
+  const style: React.CSSProperties = {
+    background: "var(--surface-1)",
+    borderRadius: "var(--radius)",
+    padding: "18px 16px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    gap: 10,
+    minHeight: 88,
+    textDecoration: "none",
+    outline: empty ? "1px dashed var(--surface-3, var(--surface-2))" : "1px solid var(--surface-2)",
+    outlineOffset: "-1px",
+    animation: "dash-fade-up 0.45s cubic-bezier(.16,1,.3,1) both",
+    animationDelay: `${index * 35}ms`,
+  };
+  const inner = (
+    <>
       <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: "-.01em", color: "var(--foreground)", lineHeight: 1.25 }}>
         {name}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 500, color: "var(--brand)" }}>
-        {caseCount(count)} <ChevronRight size={10} strokeWidth={2.5} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 3,
+          fontSize: 12,
+          fontWeight: 500,
+          color: empty ? "var(--muted-foreground)" : "var(--brand-text)",
+        }}
+      >
+        {empty ? "Em breve" : caseCount(count)}
+        {empty ? null : <ChevronRight size={10} strokeWidth={2.5} />}
       </div>
+    </>
+  );
+  if (empty) {
+    return (
+      <div style={style} aria-disabled>
+        {inner}
+      </div>
+    );
+  }
+  return (
+    <Link href={href} style={style} className="hover:bg-surface-2">
+      {inner}
     </Link>
   );
 }

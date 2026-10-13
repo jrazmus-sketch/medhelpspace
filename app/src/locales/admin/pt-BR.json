@@ -793,7 +793,13 @@
       "clinact_page_sections": "ClinAct: seções da página de vendas alteradas",
       "clinact_page_publish": "ClinAct: página de vendas publicada",
       "clinact_page_unpublish": "ClinAct: página de vendas tirada do ar",
-      "clinact_page_image": "ClinAct: imagem da página de vendas alterada"
+      "clinact_page_image": "ClinAct: imagem da página de vendas alterada",
+      "clinact_specialty_create": "ClinAct: especialidade criada",
+      "clinact_specialty_update": "ClinAct: especialidade alterada",
+      "clinact_specialty_delete": "ClinAct: especialidade excluída",
+      "clinact_topic_create": "ClinAct: tema criado",
+      "clinact_topic_update": "ClinAct: tema alterado",
+      "clinact_topic_delete": "ClinAct: tema excluído"
     }
   },
   "pageNew": {
@@ -1898,7 +1904,8 @@
       "redHerringReason": "Por que não fecha",
       "isFree": "Caso gratuito (amostra)",
       "isFreeHint": "Liberado por completo para qualquer usuário logado, sem assinatura. O plano é UM caso grátis por formato.",
-      "exams": "Exames e ações"
+      "exams": "Exames e ações",
+      "scenario": "Cenário clínico"
     },
     "media": {
       "add": "Adicionar mídia",
@@ -2079,6 +2086,46 @@
       "imageRemove": "Remover",
       "imageSaved": "Imagem salva.",
       "imageRemoved": "Imagem removida."
+    },
+    "taxonomy": {
+      "open": "Taxonomia",
+      "title": "Taxonomia do ClinAct",
+      "subtitle": "Especialidades e temas usados só pelo ClinAct — independentes do Revalida. Mudar algo aqui nunca altera o Revalida, e o Revalida nunca altera isto.",
+      "ruleEmpty": "Especialidade ativa sem caso publicado aparece na biblioteca como \"Em breve\", sem link.",
+      "ruleInactive": "Inativa some da biblioteca e do editor. Não é possível desativar o que um caso publicado usa.",
+      "ruleDelete": "Excluir só aparece quando nenhum caso usa (nem rascunho). Usado por algum caso: desative.",
+      "ruleSlug": "Renomear não muda o endereço — ele é fixado na criação. O tema nunca aparece para o aluno antes do fim do caso.",
+      "specialties": "Especialidades",
+      "topics": "Temas",
+      "noTopics": "Nenhum tema ainda. Sem tema, o caso fica \"Sem tema ligado\".",
+      "counts": "{{cases}} caso(s) · {{published}} publicado(s) · {{topics}} tema(s)",
+      "topicCounts": "{{cases}} caso(s) · {{published}} publicado(s)",
+      "inactive": "Inativa",
+      "soon": "Em breve",
+      "name": "Nome",
+      "topicName": "Nome do tema",
+      "address": "Endereço:",
+      "save": "Salvar",
+      "add": "Adicionar",
+      "newSpecialty": "Nova especialidade",
+      "newTopic": "Novo tema",
+      "activate": "Ativar",
+      "deactivate": "Desativar",
+      "delete": "Excluir",
+      "confirmDelete": "Excluir \"{{name}}\"? Isto não pode ser desfeito.",
+      "moveUp": "Mover para cima",
+      "moveDown": "Mover para baixo",
+      "created": "Criado.",
+      "saved": "Salvo.",
+      "deleted": "Excluído.",
+      "errors": {
+        "forbidden": "Você não tem permissão para esta ação.",
+        "invalid": "Nome inválido (2 a 80 caracteres).",
+        "duplicate": "Já existe um item com esse nome (talvez inativo — reative-o).",
+        "in_use": "Em uso por um caso. Casos publicados impedem desativar; qualquer caso impede excluir.",
+        "reserved": "Esse nome gera um endereço reservado. Escolha outro.",
+        "failed": "Não foi possível salvar. Tente novamente."
+      }
     }
   },
   "appErrors": {

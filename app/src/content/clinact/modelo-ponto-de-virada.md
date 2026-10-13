@@ -38,6 +38,7 @@ FORMATO: ponto_de_virada
 TÍTULO:
 ESPECIALIDADE:
 TEMA:
+CENÁRIO:
 DIFICULDADE: intermediária
 DURAÇÃO: 4
 RESUMO:

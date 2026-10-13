@@ -234,14 +234,20 @@ test("round trip: serialize(parse(x)) parses back to an identical document", () 
 });
 
 test("taxonomy resolves exact then accent-insensitive; misses are warnings", () => {
-  const c = parseCaseFile(`FORMATO: decisao_30s\nTÍTULO: T\nESPECIALIDADE: Pneumologia\nTEMA: Insuficiencia Cardiaca\n## NARRATIVA\nN\n## PERGUNTA\nP\n* A\n- B\n`).cases[0];
-  resolveTaxonomy(
-    c,
-    [{ id: 10, name: "Pneumologia" }, { id: 1, name: "Cardiologia" }],
-    [{ id: 99, name: "Insuficiencia Cardiaca", specialty_id: 1 }],
-  );
-  assert.equal(c.doc!.specialty_id, 10);
+  const specialties = [{ id: 10, name: "Pneumologia" }, { id: 1, name: "Cardiologia" }];
+  const topics = [{ id: 99, name: "Insuficiencia Cardiaca", specialty_id: 1 }];
+  // Accent-insensitive: a topic renamed to fix its accents still matches an old file.
+  const c = parseCaseFile(`FORMATO: decisao_30s\nTÍTULO: T\nESPECIALIDADE: Cardiologia\nTEMA: Insuficiência Cardíaca\n## NARRATIVA\nN\n## PERGUNTA\nP\n* A\n- B\n`).cases[0];
+  resolveTaxonomy(c, specialties, topics);
+  assert.equal(c.doc!.specialty_id, 1);
   assert.equal(c.doc!.topic_id, 99);
+  // ClinAct's topics are per-specialty lists (2026-10-13): a same-named topic of
+  // ANOTHER specialty is not this case's topic — a warning, not a link.
+  const x = parseCaseFile(`FORMATO: decisao_30s\nTÍTULO: T\nESPECIALIDADE: Pneumologia\nTEMA: Insuficiencia Cardiaca\n## NARRATIVA\nN\n## PERGUNTA\nP\n* A\n- B\n`).cases[0];
+  resolveTaxonomy(x, specialties, topics);
+  assert.equal(x.doc!.specialty_id, 10);
+  assert.equal(x.doc!.topic_id ?? null, null);
+  assert.ok(x.warnings.some((w) => /Tema "Insuficiencia Cardiaca"/.test(w.message)));
   const d = parseCaseFile(`FORMATO: decisao_30s\nTÍTULO: T\nESPECIALIDADE: Xis\nTEMA: Ípsilon\n## NARRATIVA\nN\n## PERGUNTA\nP\n* A\n- B\n`).cases[0];
   resolveTaxonomy(d, [{ id: 10, name: "Pneumologia" }], []);
   assert.deepEqual(d.errors, []);

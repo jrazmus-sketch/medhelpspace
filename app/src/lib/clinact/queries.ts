@@ -13,7 +13,7 @@ export async function listCases(): Promise<CaseListRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("clinact_cases")
-    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, is_free, updated_at")
+    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, is_free, scenario, updated_at")
     .order("updated_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as CaseListRow[];
@@ -23,7 +23,7 @@ export async function listPublishedCases(): Promise<CaseListRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("clinact_cases")
-    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, is_free, updated_at")
+    .select("id, slug, format, title, specialty_id, topic_id, specialty_text, topic_text, difficulty, est_minutes, summary, status, revision, published_at, is_free, scenario, updated_at")
     .eq("status", "published")
     .order("published_at", { ascending: false });
   if (error) throw error;
@@ -92,18 +92,72 @@ export async function resolveCaseSlug(desired: string, caseId?: number | null): 
   return `${desired}-${Date.now()}`;
 }
 
+/**
+ * ClinAct's OWN taxonomy (Karina 2026-10-13): `clinact_specialties` and
+ * `clinact_topics`, never Revalida's `specialties` / `topics`. The two started
+ * as copies with the same ids, so every case kept its specialty and topic;
+ * from here on they evolve independently — adding Ortopedia here touches
+ * nothing in Revalida. Active rows only; the admin's Taxonomia page reads the
+ * full list through getTaxonomyForAdmin.
+ */
 export async function getTaxonomy(): Promise<{
   specialties: { id: number; slug: string; name: string }[];
   topics: { id: number; name: string; specialty_id: number | null }[];
 }> {
   const admin = createAdminClient();
-  const [{ data: specialties }, { data: topics }] = await Promise.all([
-    admin.from("specialties").select("id, slug, name").eq("active", true).order("display_order"),
-    admin.from("topics").select("id, name, specialty_id").order("name"),
+  const [{ data: specialties, error: e1 }, { data: topics, error: e2 }] = await Promise.all([
+    admin.from("clinact_specialties").select("id, slug, name").eq("active", true).order("display_order").order("name"),
+    admin.from("clinact_topics").select("id, name, specialty_id").eq("active", true).order("name"),
   ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
   return {
     specialties: (specialties ?? []) as { id: number; slug: string; name: string }[],
     topics: (topics ?? []) as { id: number; name: string; specialty_id: number | null }[],
+  };
+}
+
+/** `cases` counts every case (drafts and archived too); `published` only the ones students see. */
+export type TaxonomySpecialtyRow = { id: number; slug: string; name: string; display_order: number; active: boolean; cases: number; published: number };
+export type TaxonomyTopicRow = { id: number; specialty_id: number; name: string; slug: string; active: boolean; cases: number; published: number };
+
+/** Everything the Taxonomia page shows: inactive rows too, and how many cases use each. */
+export async function getTaxonomyForAdmin(): Promise<{ specialties: TaxonomySpecialtyRow[]; topics: TaxonomyTopicRow[] }> {
+  const admin = createAdminClient();
+  const [{ data: sp, error: e1 }, { data: tp, error: e2 }, { data: cases, error: e3 }] = await Promise.all([
+    admin.from("clinact_specialties").select("id, slug, name, display_order, active").order("display_order").order("name"),
+    admin.from("clinact_topics").select("id, specialty_id, name, slug, active").order("name"),
+    admin.from("clinact_cases").select("specialty_id, topic_id, status"),
+  ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+  if (e3) throw e3;
+  const count = () => new Map<number, { cases: number; published: number }>();
+  const bySpecialty = count();
+  const byTopic = count();
+  const bump = (m: ReturnType<typeof count>, id: unknown, published: boolean) => {
+    if (id == null) return;
+    const k = Number(id);
+    const cur = m.get(k) ?? { cases: 0, published: 0 };
+    m.set(k, { cases: cur.cases + 1, published: cur.published + (published ? 1 : 0) });
+  };
+  for (const c of cases ?? []) {
+    bump(bySpecialty, c.specialty_id, c.status === "published");
+    bump(byTopic, c.topic_id, c.status === "published");
+  }
+  const none = { cases: 0, published: 0 };
+  return {
+    specialties: (sp ?? []).map((s) => ({
+      ...(s as Omit<TaxonomySpecialtyRow, "cases" | "published">),
+      id: Number(s.id),
+      ...(bySpecialty.get(Number(s.id)) ?? none),
+    })),
+    topics: (tp ?? []).map((t) => ({
+      ...(t as Omit<TaxonomyTopicRow, "cases" | "published">),
+      id: Number(t.id),
+      specialty_id: Number(t.specialty_id),
+      ...(byTopic.get(Number(t.id)) ?? none),
+    })),
   };
 }
 

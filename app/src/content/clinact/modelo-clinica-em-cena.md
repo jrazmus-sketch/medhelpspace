@@ -62,6 +62,7 @@ FORMATO: clinica_em_cena
 TÍTULO:
 ESPECIALIDADE:
 TEMA:
+CENÁRIO:
 DIFICULDADE: intermediária
 DURAÇÃO: 8
 RESUMO:

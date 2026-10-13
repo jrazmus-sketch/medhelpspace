@@ -18,7 +18,7 @@ import { listPublishedCases, getCanonicalAttempts, getTaxonomy } from "./queries
 import { getDueClinactReviews } from "./review";
 import { FORMATS, type CaseFormat, type CaseListRow } from "./types";
 
-export { toFormat, filterCases } from "./library-filters";
+export { toFormat, toScenario, filterCases, scenarioCounts } from "./library-filters";
 
 export type LibrarySpecialty = { id: number; slug: string; name: string; count: number };
 
@@ -26,7 +26,11 @@ export type Library = {
   viewer: Awaited<ReturnType<typeof getClinactViewer>>;
   cases: CaseListRow[];
   done: Map<number, { score: number | null }>;
-  /** Only specialties that actually have a published case, in taxonomy order. */
+  /**
+   * Every ACTIVE ClinAct specialty, in taxonomy order — including those with
+   * no published case yet (count 0), which the grid shows as "Em breve",
+   * without a link (Karina 2026-10-13).
+   */
   specialties: LibrarySpecialty[];
   countByFormat: Record<CaseFormat, number>;
   specialtyName: (id: number | null) => string | null;
@@ -57,9 +61,7 @@ export async function loadLibrary(): Promise<Library> {
     viewer,
     cases,
     done,
-    specialties: taxonomy.specialties
-      .map((s) => ({ ...s, count: countBySpecialty.get(s.id) ?? 0 }))
-      .filter((s) => s.count > 0),
+    specialties: taxonomy.specialties.map((s) => ({ ...s, count: countBySpecialty.get(s.id) ?? 0 })),
     countByFormat,
     specialtyName: (id) => (id == null ? null : nameById.get(id) ?? null),
     // Only reviews the reader can actually open: still published, still playable.

@@ -20,6 +20,7 @@
 import { FORMAT_PRESETS } from "./format-presets";
 import { mediaRejectionReason, mediaTypeFor, mediaUrlFor } from "./media";
 import { normalizeSceneKey, slugifyTitle } from "./slug";
+import { parseScenario, type Scenario } from "./scenarios";
 import {
   DIFFICULTIES,
   FORMATS,
@@ -90,7 +91,8 @@ function stripAccents(s: string): string {
 
 // ── ficha labels (§2) — exact ─────────────────────────────────────────────────
 
-const LABELS = ["FORMATO", "TÍTULO", "ESPECIALIDADE", "TEMA", "DIFICULDADE", "DURAÇÃO", "RESUMO", "CHAVE FINAL"] as const;
+// CENÁRIO (Karina 2026-10-13) is optional: a file without it imports as before.
+const LABELS = ["FORMATO", "TÍTULO", "ESPECIALIDADE", "TEMA", "CENÁRIO", "DIFICULDADE", "DURAÇÃO", "RESUMO", "CHAVE FINAL"] as const;
 type Label = (typeof LABELS)[number];
 const LABEL_BY_LOOSE = new Map(LABELS.map((l) => [stripAccents(l).toUpperCase(), l]));
 
@@ -309,7 +311,7 @@ function parseChunk(chunk: Chunk): ParsedCase {
           continue;
         }
       }
-      errors.push({ line: ln, message: `Linha inesperada antes do primeiro bloco: "${trimmed.slice(0, 60)}". A ficha aceita só FORMATO, TÍTULO, ESPECIALIDADE, TEMA, DIFICULDADE, DURAÇÃO, RESUMO e CHAVE FINAL.` });
+      errors.push({ line: ln, message: `Linha inesperada antes do primeiro bloco: "${trimmed.slice(0, 60)}". A ficha aceita só FORMATO, TÍTULO, ESPECIALIDADE, TEMA, CENÁRIO, DIFICULDADE, DURAÇÃO, RESUMO e CHAVE FINAL.` });
       continue;
     }
 
@@ -430,6 +432,16 @@ function parseChunk(chunk: Chunk): ParsedCase {
     if (Number.isFinite(n) && n > 0) estMinutes = Math.round(n);
     else errors.push({ line: ficha["DURAÇÃO"].line, message: `DURAÇÃO "${ficha["DURAÇÃO"].value}" — escreva só o número de minutos.` });
   } else warnings.push({ line: chunk.startLine, message: `Sem "DURAÇÃO:".` });
+
+  // CENÁRIO: absent or blank = not stated (the save keeps what the case has);
+  // a value we do not recognise is an ERROR listing the accepted ones — a typo
+  // must never silently drop the classification (Karina 2026-10-13).
+  let scenario: Scenario | undefined;
+  if (ficha["CENÁRIO"]?.value) {
+    const r = parseScenario(ficha["CENÁRIO"].value);
+    if (r.ok) scenario = r.slug;
+    else errors.push({ line: ficha["CENÁRIO"].line, message: r.message });
+  }
 
   if (!ficha.RESUMO?.value) warnings.push({ line: chunk.startLine, message: `Sem "RESUMO:" — o caso aparece sem chamada na lista.` });
   if (!ficha.ESPECIALIDADE?.value) warnings.push({ line: chunk.startLine, message: `Sem "ESPECIALIDADE:".` });
@@ -640,6 +652,8 @@ function parseChunk(chunk: Chunk): ParsedCase {
           takeaway,
           final_key: ficha["CHAVE FINAL"]?.value || null,
           notes: notes.length ? notes.join("\n") : null,
+          // Only when stated: an absent key tells the save to keep the stored value.
+          ...(scenario ? { scenario } : {}),
           steps,
           clues,
         };
@@ -829,12 +843,10 @@ export function resolveTaxonomy(
   }
   const tpText = parsed.doc.topic_text;
   if (tpText) {
+    // Only within the case's own specialty when it has one: ClinAct's topics are
+    // its own lists, and a same-named topic of another specialty is not this one.
     const pool = parsed.doc.specialty_id ? topics.filter((t) => t.specialty_id === parsed.doc!.specialty_id) : topics;
-    const tp =
-      pool.find((t) => t.name === tpText) ??
-      pool.find((t) => norm(t.name) === norm(tpText)) ??
-      topics.find((t) => t.name === tpText) ??
-      topics.find((t) => norm(t.name) === norm(tpText));
+    const tp = pool.find((t) => t.name === tpText) ?? pool.find((t) => norm(t.name) === norm(tpText));
     if (tp) parsed.doc.topic_id = tp.id;
     else parsed.warnings.push({ line: parsed.startLine, message: `Tema "${tpText}" não está na lista — o caso entra sem tema; ligamos depois.` });
   }

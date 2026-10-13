@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { SCENARIO_SLUGS, type Scenario } from "./scenarios";
 import {
   CONFIDENCES,
   DIFFICULTIES,
@@ -113,6 +114,8 @@ export const CaseDocSchema = z.object({
   final_key: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   is_free: z.boolean().optional(),
+  // Absent = keep the stored scenario (old files); null = cleared on purpose.
+  scenario: z.enum(SCENARIO_SLUGS as [Scenario, ...Scenario[]]).nullable().optional(),
   steps: z.array(StepSchema),
   clues: z.array(ClueSchema),
 });
