@@ -260,3 +260,23 @@ test("taxonomy admin: content roles only, refuses to deactivate what a published
   // /clinact/treinar/casos is a static sibling of [especialidade].
   assert.ok(actions.includes('slug === "casos"'));
 });
+
+test("renaming never touches the slug, and a specialty with topics or cases cannot be deleted (Karina 2026-10-13)", () => {
+  const actions = read("actions/clinact-taxonomy.ts");
+  // "Doenca de Kawasaki" → "Doença de Kawasaki" changes the display name only;
+  // cases link by id, and the slug is written once, at creation.
+  for (const fn of ["updateClinactSpecialty", "updateClinactTopic"]) {
+    const body = actions.slice(actions.indexOf(`export async function ${fn}`), actions.indexOf("\nexport ", actions.indexOf(`export async function ${fn}`) + 1));
+    // The only write is `.update({ ...update, updated_at })`, and `update` gets name/active only.
+    assert.ok(!/update\.slug|\.update\(\{[^}]*slug/.test(body), `${fn} must not write a slug`);
+    assert.ok(body.includes(".update({ ...update, updated_at: new Date().toISOString() })"), fn);
+  }
+  const del = actions.slice(actions.indexOf("export async function deleteClinactSpecialty"), actions.indexOf("// ── Topics"));
+  assert.ok(/used\.cases > 0 \|\| \(topics \?\? 0\) > 0\) return \{ ok: false, error: "in_use" \}/.test(del));
+  // The floor under the admin: phase 2 re-adds the case FKs as RESTRICT, and a
+  // topic already cannot outlive its specialty.
+  const publish = readFileSync(path.join(ROOT, "schema-patch-clinact-taxonomia-publish.sql"), "utf8");
+  assert.equal((publish.match(/REFERENCES clinact_\w+\(id\) ON DELETE RESTRICT/g) ?? []).length, 2);
+  const phase1 = readFileSync(path.join(ROOT, "schema-patch-clinact-taxonomia.sql"), "utf8");
+  assert.ok(/specialty_id\s+smallint NOT NULL REFERENCES clinact_specialties\(id\) ON DELETE RESTRICT/.test(phase1));
+});
