@@ -1,6 +1,7 @@
 "use client";
 
 import { useReveal } from "@/hooks/use-reveal";
+import { trackFreeFlashcardsClick } from "@/lib/analytics/track";
 import { SiteText } from "./site-text";
 import { MemorecardsScreen } from "./memorecards-carousel";
 import type { LandingStats } from "@/lib/landing/stats";
@@ -23,6 +24,9 @@ type Feature = {
   alt: string;
   interactive?: boolean; // renders the swipeable device instead of a static shot
   badge?: string; // small pill under the name (e.g. "incluído no MedHelp 60D")
+  // Secondary text CTA after the result line — a plain <a href> so Google crawls the
+  // internal link (Karina 2026-10-09: the free 50 flashcards landing).
+  cta?: { href: string; label: string };
 };
 
 const FEATURES: Feature[] = [
@@ -79,6 +83,7 @@ const FEATURES: Feature[] = [
     tagline: "{flashcards} cartões que decidem sozinhos quando voltar.",
     body: "Você se autoavalia — “errei” ou “acertei” — e a repetição espaçada cuida do resto. O que você domina espaça; o que você erra volta amanhã.",
     result: "Fixação real, não releitura passiva.",
+    cta: { href: "/flashcards-revalida", label: "Teste 50 flashcards grátis →" },
     color: "var(--c-flashcards)",
     shot: "/landing/shot-flashcards.webp",
     alt: "Tela de um flashcard com a frente da pergunta.",
@@ -183,6 +188,19 @@ function FeatureRow({ f, i, vars }: { f: Feature; i: number; vars: Record<string
             <span className="mt-0.5 flex-shrink-0">✦</span>
             <SiteText as="span" multiline k={`sys.${f.id}.result`} fallback={f.result} />
           </div>
+          {f.cta && (
+            <a
+              href={f.cta.href}
+              onClick={() => trackFreeFlashcardsClick("showcase")}
+              className="mt-4 inline-flex min-h-11 items-center text-[0.9375rem] font-semibold underline underline-offset-4 transition-opacity hover:opacity-80"
+              style={{
+                color: "var(--brand-text)",
+                textDecorationColor: "color-mix(in srgb, var(--brand-text) 45%, transparent)",
+              }}
+            >
+              <SiteText as="span" k={`sys.${f.id}.cta`} fallback={f.cta.label} />
+            </a>
+          )}
         </div>
 
         {/* Real app screenshot — accent-haloed device */}

@@ -41,6 +41,12 @@ export const metadata: Metadata = {
   },
   description:
     "Plataforma de preparação para o Revalida — questões comentadas, resumos e flashcards.",
+  // Google Search Console ownership (Karina 2026-10-09). Must STAY after verification —
+  // Google re-checks it to keep the property confirmed. Renders
+  // <meta name="google-site-verification" content="…"> in <head> on every page.
+  verification: {
+    google: "clZiznT9gN2S0fepnRETppbt5XkUPxr1c0FQhFAGaHA",
+  },
   openGraph: {
     siteName: "MedHelpSpace",
     title: "MedHelpSpace Revalida",

@@ -56,7 +56,7 @@ export default async function LandingPage() {
         <RevisaoSection />
         <PlanoSection />
         <DesktopShowcase />
-        <FounderSection stats={stats} />
+        <FounderSection />
         <PricingCTA cohorts={cohorts} promo={promo} />
         <FaqSection />
       </main>

@@ -69,6 +69,11 @@ export function trackFreeSimulatorClick(location: string): void {
   trackEvent("click_free_simulator", { location });
 }
 
+/** "Teste 50 flashcards grátis →" on the sales page → /flashcards-revalida (Karina 2026-10-09). */
+export function trackFreeFlashcardsClick(location: string): void {
+  trackEvent("click_free_flashcards", { location });
+}
+
 /** A turma chosen in the pricing selector → e.g. select_revalida_2027_1. */
 export function trackTurmaSelect(slug: string): void {
   trackEvent(turmaSelectEventName(slug), { turma: slug });

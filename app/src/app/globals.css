@@ -1263,6 +1263,7 @@
   --lp-alt:    #efece5;
   --lp-alt-2:  #e6e1d5;
   --lp-fg:     #0d0c09;
+  --lp-fg-75:  rgba(13,12,9,0.75); /* long-form reading text (founder note) */
   --lp-fg-55:  rgba(13,12,9,0.55);
   --lp-fg-40:  rgba(13,12,9,0.40);
   --lp-fg-25:  rgba(13,12,9,0.25);
@@ -1278,6 +1279,7 @@
   --lp-alt:    #06060d;
   --lp-alt-2:  #0b0b18;
   --lp-fg:     #ffffff;
+  --lp-fg-75:  rgba(255,255,255,0.76); /* ≥ 7:1 on --lp-alt-bg: long-form reading text */
   --lp-fg-55:  rgba(255,255,255,0.55);
   --lp-fg-40:  rgba(255,255,255,0.40);
   --lp-fg-25:  rgba(255,255,255,0.25);
