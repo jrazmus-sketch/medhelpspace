@@ -5,8 +5,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { SiteText } from "./site-text";
 import { HeroVideo } from "./hero-video";
-import { trackBuyClick, trackFounderLinkClick, trackFreeSimulatorClick } from "@/lib/analytics/track";
-import { FOUNDER_SECTION_ID } from "./founder-section";
+import { trackBuyClick, trackFreeSimulatorClick } from "@/lib/analytics/track";
 
 function ecgSample(phase: number): number {
   // Flat isoelectric baseline
@@ -359,34 +358,6 @@ export function HeroSection() {
           <SiteText as="span" k="hero.trust2" fallback="Garantia de 7 dias" />
           <span className="hidden sm:block">·</span>
           <SiteText as="span" k="hero.trust3" fallback="Pagamento via PagBank" />
-        </motion.div>
-
-        {/* Founder micro-signature (Karina 2026-10-09): answers "quem criou essa
-            preparação?" in one line; the full note is "Por trás da MedHelpSpace"
-            further down, which the link jumps to. Shown at every width — the trust
-            line above is md+ only — and wraps naturally on phones. */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.36, duration: 0.5 }}
-          className="mt-8 flex max-w-xl flex-col items-center text-center text-sm leading-relaxed text-balance sm:text-[0.9375rem] md:mt-7"
-          style={{ color: "var(--lp-fg-55)" }}
-        >
-          <p>
-            <SiteText as="span" k="hero.founder_pre" fallback="Preparação criada por" />{" "}
-            <strong className="font-semibold" style={{ color: "var(--lp-fg)" }}>
-              <SiteText as="span" k="hero.founder_name" fallback="Karina Brandão" />
-            </strong>
-            <SiteText as="span" k="hero.founder_post" autoSpace fallback=", médica formada na Argentina." />
-          </p>
-          <a
-            href={`#${FOUNDER_SECTION_ID}`}
-            onClick={() => trackFounderLinkClick("hero")}
-            className="inline-flex min-h-11 items-center font-medium underline-offset-4 transition-opacity hover:underline hover:opacity-85"
-            style={{ color: "var(--brand-text)" }}
-          >
-            <SiteText as="span" k="hero.founder_link" fallback="Conheça quem está por trás da MedHelpSpace ↓" />
-          </a>
         </motion.div>
 
       </div>

@@ -29,12 +29,10 @@ test("the section list covers Questões, MedVoice, 60D and pricing, with stable 
   assert.match(read("components/landing/sixty-d-section.tsx"), /id="medhelp60d"/);
   assert.match(read("components/landing/pricing-cta.tsx"), /id="precos"/);
   assert.match(read("components/landing/faq-section.tsx"), /id="faq"/);
-  // "Por trás da MedHelpSpace" (Karina 2026-10-09): tracked as view_founder_section, and
-  // the hero's founder link jumps to the same id.
+  // "Por trás da MedHelpSpace" (Karina 2026-10-09): tracked as view_founder_section.
   assert.match(read("components/landing/founder-section.tsx"), /FOUNDER_SECTION_ID = "por-tras"/);
   assert.match(read("components/landing/founder-section.tsx"), /id=\{FOUNDER_SECTION_ID\}/);
   assert.ok(LANDING_SECTIONS.some((s) => s.id === "por-tras" && s.section === "founder"));
-  assert.match(read("components/landing/hero-section.tsx"), /href=\{`#\$\{FOUNDER_SECTION_ID\}`\}/);
   // A block taller than ~2.9 screens can never be 35% visible (pricing on a 375×667
   // phone is ~1970px), so "fills half the screen" must also count as reached.
   const events = read("components/analytics/landing-events.tsx");
