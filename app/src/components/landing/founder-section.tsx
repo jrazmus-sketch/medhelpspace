@@ -11,24 +11,27 @@ import { SiteText } from "./site-text";
 // line links here, so the id is fixed (also the GA4 view_founder_section target).
 export const FOUNDER_SECTION_ID = "por-tras";
 
+// Karina's text (v2, 2026-10-12, via Justin) — verbatim, one entry per paragraph.
+const LEAD = "Para mim, compartilhar conhecimento é ajudar alguém a entender de verdade.";
 const PARAGRAPHS = [
   {
     k: "behind.p1",
-    text: "Criei a plataforma com o propósito de repensar o jeito de estudar para o Revalida. Sei que essa preparação carrega expectativas que vão muito além da prova — e que estudar por horas sem saber o que priorizar ou se você está no caminho certo pode ser desgastante.",
+    text: "É explicar de um jeito que faça sentido, que ajude a conectar as informações e a compreender o raciocínio por trás de uma decisão.",
   },
   {
     k: "behind.p2",
-    text: "Analiso as provas dos últimos anos, comparo como os temas são cobrados e observo o raciocínio que cada questão exige. É a partir dessa análise que defino o que precisa ser priorizado e como cada tema pode ser melhor explicado.",
+    text: "Eu sou Karina, médica formada na Argentina, e foi com esse propósito que criei a MedHelpSpace.",
   },
   {
     k: "behind.p3",
-    text: "Por isso, combinei diferentes formas de estudar: recursos visuais, áudios e revisão ativa para que você possa retomar um mesmo tema por caminhos diferentes, fixar o que importa e adaptar a preparação à sua rotina.",
+    text: "É isso que busco em cada explicação e em cada caso clínico: ajudar você a compreender o que estuda e a usar esse conhecimento com mais segurança.",
   },
   {
     k: "behind.p4",
-    text: "Dedico a este projeto o cuidado que uma etapa tão importante da sua trajetória merece. Quero que você chegue à prova mais preparado para reconhecer o raciocínio que cada questão exige e mais confiante para decidir.",
+    text: "Porque o seu tempo e o seu esforço merecem respeito. E cuidar da forma de ensinar é também cuidar de quem está aprendendo.",
   },
 ];
+const CLOSING = "Seja muito bem-vindo à MedHelpSpace!";
 
 export function FounderSection() {
   const ref = useReveal(0.15);
@@ -53,13 +56,16 @@ export function FounderSection() {
             className="text-xl font-semibold leading-snug md:text-[1.375rem]"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            <SiteText as="span" multiline k="behind.lead" fallback="Sou Karina, médica formada na Argentina e fundadora da MedHelpSpace." />
+            <SiteText as="span" multiline k="behind.lead" fallback={LEAD} />
           </p>
           {PARAGRAPHS.map((p) => (
             <p key={p.k} style={{ color: "var(--lp-fg-75)" }}>
               <SiteText as="span" multiline k={p.k} fallback={p.text} />
             </p>
           ))}
+          <p className="font-medium" style={{ color: "var(--lp-fg)" }}>
+            <SiteText as="span" multiline k="behind.closing" fallback={CLOSING} />
+          </p>
         </div>
 
         {/* Signature */}
