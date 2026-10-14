@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { safeDestination } from "@/lib/ambassadors/ref-link";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { LoginPageClient } from "./login-client";
+
+// An access page, nothing to search for: out of the sitemap and noindex (Karina
+// 2026-10-14). Users still reach it normally.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 function mapAuthError(msg: string): string {
   if (msg === "empty") return "Preencha todos os campos.";

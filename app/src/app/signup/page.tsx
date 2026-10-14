@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { safeDestination } from "@/lib/ambassadors/ref-link";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { SignupPageClient } from "./signup-client";
+
+// An access page, nothing to search for: out of the sitemap and noindex (Karina
+// 2026-10-14). Users still reach it normally.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 export default async function SignupPage({
   searchParams,

@@ -40,3 +40,13 @@ test("/flashcards-gratis keeps working for the e-mail links but is noindex", () 
   assert.doesNotMatch(page, /canonical:/);
   assert.match(read("lib/magnet/links.ts"), /FREE_DECK_PATH = "\/flashcards-gratis"/);
 });
+
+test("/login and /signup are noindex and out of the sitemap (Karina 2026-10-14)", async () => {
+  const { default: sitemap } = await import("@/app/sitemap");
+  const urls = sitemap().map((e) => e.url);
+  for (const p of ["login", "signup"]) {
+    assert.ok(!urls.some((u) => u.endsWith(`/${p}`)), `/${p} must stay out of the sitemap`);
+    assert.match(read(`app/${p}/page.tsx`), /robots: \{ index: false, follow: true \}/);
+  }
+  assert.equal(urls.length, 7);
+});
