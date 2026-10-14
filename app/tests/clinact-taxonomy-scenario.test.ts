@@ -315,9 +315,16 @@ test("her topic lists for the five new specialties are in the patch verbatim", (
 
 test("the broad list keeps the old ids, skips what she moved, and never copies Outros or later Revalida topics", () => {
   const ids = [...section(3).matchAll(/^\s+\((\d+), (\d+), '/gm)].map((m) => Number(m[1]));
-  assert.equal(ids.length, 185);
-  for (const moved of [76, 129, 74]) assert.ok(!ids.includes(moved), `moved topic ${moved} copied`);
-  for (let id = 210; id <= 225; id++) assert.ok(!ids.includes(id), `topic ${id} (Outros / after the document) copied`);
+  assert.equal(ids.length, 188);
+  // Moved by her: Coluna, Osteomielite, Tumores Renais; and (second round) Artrite Infecciosa.
+  for (const moved of [76, 129, 74, 103]) assert.ok(!ids.includes(moved), `moved topic ${moved} copied`);
+  for (let id = 210; id <= 221; id++) assert.ok(!ids.includes(id), `Outros topic ${id} copied`);
+  // Second round: the four Revalida created after the document ARE wanted.
+  for (const id of [222, 223, 224, 225]) assert.ok(ids.includes(id), `topic ${id} missing`);
+  // Artrite Infecciosa, inserted by the first run, is removed — only from Reumatologia, only while unused.
+  assert.ok(/WHERE t\.id IN \(103\) AND t\.specialty_id = 12\s+AND NOT EXISTS \(SELECT 1 FROM clinact_cases c WHERE c\.topic_id = t\.id\)/.test(section(6)));
+  // Kept on purpose (her answers): Trauma Raquimedular in Cirurgia Geral, Faringoamigdalite in Pediatria.
+  assert.ok(ids.includes(123) && ids.includes(192));
   // Every topic a published case uses today is in it, under the same id.
   // (the 40 topic ids the published cases pointed at on 2026-10-14)
   const caseTopics = [7, 10, 14, 18, 22, 27, 28, 31, 32, 35, 36, 44, 54, 55, 56, 61, 72, 73, 75, 78, 79, 84, 87, 88, 99, 101, 105, 116, 117, 122, 140, 146, 153, 154, 164, 165, 170, 180, 182, 186];

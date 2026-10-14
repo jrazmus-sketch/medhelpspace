@@ -8,18 +8,20 @@
 --      No "Outros" in ClinAct (her rule).
 --   2. Specialties in the alphabetical order of her list. (Re-running this resets the order.)
 --   3. The broad list of the 16 existing specialties from the old "ClinAct — Especialidades e temas"
---      document, with the SAME ids it had (185 topics), minus the 3 she moved:
+--      document, with the SAME ids it had (188 topics), minus the 3 she moved:
 --        Patologias da Coluna Vertebral (Neurologia) -> Ortopedia: Coluna Vertebral e Lombalgia
 --        Trauma - Osteomielite (Cirurgia Geral) -> Ortopedia: Infecções Osteoarticulares
 --        Tumores Renais (Nefrologia) -> Urologia: Tumores Renais
---      The 12 old "Outros" topics are absorbed by the new specialties and NOT copied. Four topics
---      added to Revalida after that document (ids 222-225) are NOT copied; flagged to her instead.
+--        Artrite Infecciosa (Reumatologia) -> Ortopedia: Infecções Osteoarticulares (her answer, 2026-10-14)
+--      The 12 old "Outros" topics are absorbed by the new specialties and NOT copied. Her second
+--      round added the four topics Revalida created after that document (ids 222-225: SIM-P, TEP,
+--      Icterícia e Hiperbilirrubinemias, HIV na Gestação) and retired Artrite Infecciosa.
 --   4. Accents/spelling/presentation of the names; ids and slugs never change. A name is only rewritten
 --      while it still carries the OLD spelling, so an edit made later in the admin is never undone.
 --   5. Her lists for Ortopedia, Urologia, Saúde Coletiva (replaces the old 11), Oftalmologia, Otorrino.
 --   No A/B/C/D incidence weights (her decision 10).
 --
--- 237 topics in all. Re-run safe: inserts skip what already exists.
+-- 240 topics in all. Re-run safe: inserts skip what already exists.
 -- Rollback: delete the rows this added that no case uses —
 --   DELETE FROM clinact_topics t WHERE NOT EXISTS (SELECT 1 FROM clinact_cases c WHERE c.topic_id = t.id);
 --   DELETE FROM clinact_specialties WHERE id IN (103, 104);
@@ -117,6 +119,7 @@ INSERT INTO clinact_topics (id, specialty_id, name, slug) VALUES
   (40, 5, 'Doença do Refluxo Gastroesofágico', 'doenca-do-refluxo-gastroesofagico'),
   (39, 5, 'Doenças Inflamatórias Intestinais', 'doencas-inflamatorias-intestinais'),
   (41, 5, 'Hepatites Virais', 'hepatites-virais'),
+  (224, 5, 'Icterícia e Hiperbilirrubinemias', 'ictericia-e-hiperbilirrubinemias'),
   (42, 5, 'Síndrome do Intestino Irritável', 'sindrome-do-intestino-irritavel'),
   (43, 5, 'Úlcera Péptica e H. pylori', 'ulcera-peptica-e-h-pylori'),
   (45, 6, 'Anemia Falciforme', 'anemia-falciforme'),
@@ -167,6 +170,7 @@ INSERT INTO clinact_topics (id, specialty_id, name, slug) VALUES
   (91, 10, 'DPOC', 'dpoc'),
   (92, 10, 'Nódulo e Câncer de Pulmão', 'nodulo-e-cancer-de-pulmao'),
   (88, 10, 'Pneumonia', 'pneumonia'),
+  (223, 10, 'Tromboembolismo Pulmonar', 'tromboembolismo-pulmonar'),
   (87, 10, 'Tuberculose', 'tuberculose'),
   (98, 11, 'Efeitos do Álcool e Abstinência', 'efeitos-do-alcool-e-abstinencia'),
   (101, 11, 'Emergências Psiquiátricas', 'emergencias-psiquiatricas'),
@@ -175,7 +179,6 @@ INSERT INTO clinact_topics (id, specialty_id, name, slug) VALUES
   (97, 11, 'Transtorno de Ansiedade', 'transtorno-de-ansiedade'),
   (99, 11, 'Transtorno de Humor', 'transtorno-de-humor'),
   (100, 11, 'Transtornos Alimentares', 'transtorno-alimentares'),
-  (103, 12, 'Artrite Infecciosa', 'artrite-infecciosa'),
   (107, 12, 'Artrite Reumatoide', 'artrite-reumatoide'),
   (104, 12, 'Fibromialgia', 'fibromialgia'),
   (105, 12, 'Lúpus', 'lupus'),
@@ -228,6 +231,7 @@ INSERT INTO clinact_topics (id, specialty_id, name, slug) VALUES
   (152, 15, 'Assistência Pré-Natal', 'assistencia-pre-natal'),
   (155, 15, 'Diabetes da Gestação', 'diabetes-da-gestacao'),
   (165, 15, 'Gestação Ectópica', 'gestacao-ectopica'),
+  (225, 15, 'HIV na Gestação', 'hiv-na-gestacao'),
   (162, 15, 'Infecção Urinária na Gestação', 'infeccao-urinaria-na-gestacao'),
   (161, 15, 'Isoimunização Rh', 'isoimunizacao-rh'),
   (166, 15, 'Mecanismo de Parto', 'mecanismo-de-parto'),
@@ -265,6 +269,7 @@ INSERT INTO clinact_topics (id, specialty_id, name, slug) VALUES
   (180, 16, 'Reanimação Neonatal', 'reanimacao-neonatal'),
   (184, 16, 'Sepse Neonatal', 'sepse-neonatal'),
   (190, 16, 'Sífilis Congênita', 'sifilis-congenita'),
+  (222, 16, 'Síndrome Inflamatória Multissistêmica Pediátrica', 'sindrome-inflamatoria-multissistemica-pediatrica'),
   (191, 16, 'Taquipneia Transitória do Recém-Nascido', 'taquipneia-transitoria-do-recem-nascido'),
   (175, 16, 'Triagem Neonatal', 'triagem-neonatal')
 ON CONFLICT (id) DO NOTHING;
@@ -352,5 +357,11 @@ INSERT INTO clinact_topics (specialty_id, name, slug) VALUES
   (104, 'Corpo Estranho em Otorrinolaringologia', 'corpo-estranho-em-otorrinolaringologia'),
   (104, 'Infecções Cervicofaciais', 'infeccoes-cervicofaciais')
 ON CONFLICT (specialty_id, slug) DO NOTHING;
+
+-- ── 6. Topics she retired after the first run (removed only while no case uses them) ──
+DELETE FROM clinact_topics t
+-- (topic 103 is Artrite Infecciosa in Reumatologia — not specialty 103, Oftalmologia)
+ WHERE t.id IN (103) AND t.specialty_id = 12
+   AND NOT EXISTS (SELECT 1 FROM clinact_cases c WHERE c.topic_id = t.id);
 
 COMMIT;
