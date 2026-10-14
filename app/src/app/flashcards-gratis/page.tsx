@@ -3,18 +3,19 @@ import Link from "next/link";
 import { getFreeDeckCards } from "@/lib/magnet/flashcards";
 import { MagnetFlashcards } from "@/components/magnet/magnet-flashcards";
 
-// PUBLIC, indexable giveaway — lives OUTSIDE the /app gate. This is the real
-// "baralho de flashcards" the D0 email + magnet results promise (deckUrl), and an
-// SEO landing for the "flashcards revalida" long-tail (one of the paid-ads terms).
-// Fully open (no email gate): the simulado is the capture; the deck is the gift +
-// the funnel-in for cold SEO visitors (CTA → /questoes-revalida). Mirrors the lean
-// chrome of /questoes-revalida. Public pages are dark-only (lib/theme-scope).
+// PUBLIC giveaway — lives OUTSIDE the /app gate. This is the real "baralho de
+// flashcards" the D0 email + magnet results promise (deckUrl), so it must keep working.
+// Fully open (no email gate): the simulado is the capture; the deck is the gift.
+// NOT indexed (Karina 2026-10-13): /flashcards-revalida is THE "flashcards revalida"
+// landing she submitted to Search Console — two pages for one query compete. `follow`
+// stays on so its links still count. Mirrors the lean chrome of /questoes-revalida.
+// Public pages are dark-only (lib/theme-scope).
 
 export const metadata: Metadata = {
   title: "Flashcards Revalida 1ª Etapa — Baralho Grátis com Revisão Espaçada",
   description:
     "Estude com flashcards das principais especialidades da 1ª etapa do Revalida. Vire o card, avalie se lembrou e veja como a revisão espaçada fixa o conteúdo. Grátis, sem cartão.",
-  alternates: { canonical: "/flashcards-gratis" },
+  robots: { index: false, follow: true },
 };
 
 export const dynamic = "force-dynamic";

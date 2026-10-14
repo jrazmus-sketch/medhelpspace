@@ -34,7 +34,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://medhelpspace.com.br"),
+  // www is the canonical host: the apex 308s to it and the Search Console property is
+  // https://www.medhelpspace.com.br/ (Karina 2026-10-13). Every relative canonical resolves here.
+  metadataBase: new URL("https://www.medhelpspace.com.br"),
   title: {
     default: "MedHelpSpace Revalida",
     template: "%s | MedHelpSpace",
@@ -52,12 +54,12 @@ export const metadata: Metadata = {
     title: "MedHelpSpace Revalida",
     description:
       "Plataforma de preparação para o Revalida — questões comentadas, resumos e flashcards.",
-    url: "https://medhelpspace.com.br",
+    url: "https://www.medhelpspace.com.br",
     locale: "pt_BR",
     type: "website",
     images: [
       {
-        url: "https://medhelpspace.com.br/og-image.png",
+        url: "https://www.medhelpspace.com.br/og-image.png",
         width: 1200,
         height: 630,
         alt: "MedHelpSpace Revalida",
@@ -69,7 +71,7 @@ export const metadata: Metadata = {
     title: "MedHelpSpace Revalida",
     description:
       "Plataforma de preparação para o Revalida — questões comentadas, resumos e flashcards.",
-    images: ["https://medhelpspace.com.br/og-image.png"],
+    images: ["https://www.medhelpspace.com.br/og-image.png"],
   },
 };
 
