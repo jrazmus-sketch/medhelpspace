@@ -280,3 +280,51 @@ test("renaming never touches the slug, and a specialty with topics or cases cann
   const phase1 = readFileSync(path.join(ROOT, "schema-patch-clinact-taxonomia.sql"), "utf8");
   assert.ok(/specialty_id\s+smallint NOT NULL REFERENCES clinact_specialties\(id\) ON DELETE RESTRICT/.test(phase1));
 });
+
+// ── the full topic lists (Karina 2026-10-14) ─────────────────────────────────
+
+const TEMAS = readFileSync(path.join(ROOT, "schema-patch-clinact-taxonomia-temas.sql"), "utf8");
+const section = (n: number) => TEMAS.slice(TEMAS.indexOf(`-- ── ${n}.`), TEMAS.indexOf(`-- ── ${n + 1}.`) > 0 ? TEMAS.indexOf(`-- ── ${n + 1}.`) : undefined);
+
+test("the 21 specialties are hers, in her (alphabetical) order, and there is no Outros", () => {
+  const expected = [
+    "Cardiologia", "Cirurgia Geral", "Dermatologia", "Emergência", "Endocrinologia", "Gastroenterologia", "Ginecologia",
+    "Hematologia", "Infectologia", "Nefrologia", "Neurologia", "Obstetrícia", "Oftalmologia", "Ortopedia",
+    "Otorrinolaringologia", "Pediatria", "Pneumologia", "Psiquiatria", "Reumatologia", "Saúde Coletiva", "Urologia",
+  ];
+  const names = [...section(1).matchAll(/\(\d+, '[a-z-]+', '([^']+)', (\d+)\)/g)];
+  assert.deepEqual(names.map((m) => m[1]), expected);
+  assert.deepEqual(names.map((m) => Number(m[2])), expected.map((_, i) => (i + 1) * 10));
+  assert.ok(!/outros/i.test(section(1) + section(2)));
+});
+
+test("her topic lists for the five new specialties are in the patch verbatim", () => {
+  const lists: Record<number, string[]> = {
+    101: ["Trauma Ortopédico — Fraturas e Luxações", "Lesões Ligamentares, Tendíneas e Musculares", "Coluna Vertebral e Lombalgia", "Ombro", "Cotovelo, Punho e Mão", "Quadril", "Joelho", "Tornozelo e Pé", "Infecções Osteoarticulares", "Osteoartrose e Doenças Degenerativas", "Ortopedia Pediátrica", "Tumores Ósseos e de Partes Moles"],
+    102: ["Litíase Urinária", "Sintomas do Trato Urinário Inferior e Hiperplasia Prostática Benigna", "Câncer de Próstata", "Hematúria e Tumores Uroteliais", "Tumores Renais", "Escroto Agudo e Doenças Testiculares", "Afecções do Pênis e Prepúcio", "Trauma Urogenital", "Incontinência Urinária e Disfunções Miccionais", "Urologia Pediátrica"],
+    17: ["Atenção Primária à Saúde", "SUS: Princípios, Organização e Redes de Atenção", "Rastreamento e Prevenção", "Imunizações", "Vigilância Epidemiológica e Notificação Compulsória", "Saúde do Idoso", "Saúde do Trabalhador", "Abordagem Familiar e Comunitária", "Ética Médica e Medicina Legal", "Declaração de Óbito", "Indicadores de Saúde", "Testes Diagnósticos", "Epidemiologia e Estudos Epidemiológicos", "Determinantes Sociais e Processo Saúde–Doença"],
+    103: ["Trauma Ocular", "Urgências Oftalmológicas", "Glaucoma", "Catarata", "Olho Vermelho", "Doenças da Retina", "Pálpebras e Vias Lacrimais", "Erros de Refração e Alterações Visuais"],
+    104: ["Otites", "Rinossinusites", "Faringoamigdalites", "Epistaxe", "Vertigem e Distúrbios Vestibulares", "Perda Auditiva", "Corpo Estranho em Otorrinolaringologia", "Infecções Cervicofaciais"],
+  };
+  const s5 = section(5);
+  for (const [sp, names] of Object.entries(lists)) {
+    const got = [...s5.matchAll(new RegExp(`\\(${sp}, '([^']+)', '[a-z0-9-]+'\\)`, "g"))].map((m) => m[1]);
+    assert.deepEqual(got, names, `specialty ${sp}`);
+  }
+});
+
+test("the broad list keeps the old ids, skips what she moved, and never copies Outros or later Revalida topics", () => {
+  const ids = [...section(3).matchAll(/^\s+\((\d+), (\d+), '/gm)].map((m) => Number(m[1]));
+  assert.equal(ids.length, 185);
+  for (const moved of [76, 129, 74]) assert.ok(!ids.includes(moved), `moved topic ${moved} copied`);
+  for (let id = 210; id <= 225; id++) assert.ok(!ids.includes(id), `topic ${id} (Outros / after the document) copied`);
+  // Every topic a published case uses today is in it, under the same id.
+  // (the 40 topic ids the published cases pointed at on 2026-10-14)
+  const caseTopics = [7, 10, 14, 18, 22, 27, 28, 31, 32, 35, 36, 44, 54, 55, 56, 61, 72, 73, 75, 78, 79, 84, 87, 88, 99, 101, 105, 116, 117, 122, 140, 146, 153, 154, 164, 165, 170, 180, 182, 186];
+  assert.equal(caseTopics.length, 40);
+  for (const used of caseTopics) assert.ok(ids.includes(used), `case topic ${used} missing`);
+  // Spelling fixes only overwrite the OLD spelling, never a later admin edit.
+  assert.ok(/WHERE t\.id = v\.id AND t\.name = v\.old_name/.test(section(4)));
+  assert.ok(section(4).includes("(182, 'Doenca de Kawasaki', 'Doença de Kawasaki')"));
+  assert.ok(!/weight|incid|\[A\]|\[B\]/i.test(TEMAS.split("BEGIN;")[1]), "no A/B/C/D weights");
+});
