@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/app/", "/admin/", "/auth/", "/api/"],
     },
-    sitemap: "https://medhelpspace.com.br/sitemap.xml",
-    host: "https://medhelpspace.com.br",
+    sitemap: "https://www.medhelpspace.com.br/sitemap.xml",
+    host: "https://www.medhelpspace.com.br",
   };
 }
