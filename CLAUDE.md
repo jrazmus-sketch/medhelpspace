@@ -561,6 +561,24 @@ Spec: `CLINACT-BUILD-SPEC.md` (closed). Authoring contract: `docs/clinact/format
   §7, block listed in "Blocos disponíveis", `modelo-clinica-em-cena.md` gained an optional INVESTIGAÇÃO section
   + copyable snippet (after the main template, so the blank-template tests are untouched). The test copy stays a
   DRAFT as the worked example (export .txt from the editor). Official CEC-01 untouched throughout.
+- [x] **Own taxonomy + Cenário clínico (Karina 2026-10-12/14, approved for production 2026-10-14).** ClinAct NEVER
+  reads Revalida's `specialties` / `topics` again: `clinact_specialties` (21, her alphabetical order, NO "Outros")
+  and `clinact_topics` (240) — same ids the cases had, so no case moved; new rows from 101 (specialties) / 100000
+  (topics). Read ONLY through `getTaxonomy()`; a test refuses `from("specialties"|"topics")` in ClinAct code.
+  Admin `/admin/clinact/taxonomia` (content roles, audited `clinact_specialty_*` / `clinact_topic_*`): rename never
+  touches the slug (cases link by id); deactivate refused while a PUBLISHED case uses it; delete refused while ANY
+  case uses it (specialty: or has topics). The importer's "Especialidades e temas" list is GENERATED from it
+  (`lib/clinact/taxonomy-doc.ts`; the static .md is gone) and TEMA matches only inside the case's specialty,
+  accent-insensitive — **register a new topic in Taxonomia BEFORE importing**, or it imports "Sem tema ligado".
+  `clinact_cases.scenario` (six slugs, CHECK; `lib/clinact/scenarios.ts`): ficha select, `CENÁRIO:` in the importer
+  (absent = keep, unknown = blocking error listing the values), compact chips on /clinact/treinar, 3-way filter
+  (formato + especialidade + cenário) in the query string, zero-case chips/specialties shown faded + not links
+  ("Em breve"). `review_schedule.specialty_id` is written NULL for ClinAct (it FKs Revalida's table); history keeps
+  specialty/topic/scenario in `clinact_case_versions` snapshots. PV platform blurb = "Reavalie quando um novo dado
+  muda o caso." (sales page keeps hers). Patches: `schema-patch-clinact-taxonomia.sql` (tables + scenario, dropped
+  the old FKs), `-temas.sql` (data), `-publish.sql` (FKs to the ClinAct tables, ON DELETE RESTRICT). Scenario
+  backfill: `scripts/clinact-backfill-scenarios.ts`. Worktree dev server: `next dev --webpack` (Turbopack panics on
+  the node_modules junction).
 - [ ] Step 3 — subscriptions (PagBank recurrence), Pix one-off, card self-update, real
   sales page. **STARTED 2026-09-02** (`00fb2e2`): login AND signup now thread `next` end to
   end — `/login` declared `next` and ignored it, so the proxy's `?next=` landed everyone on
