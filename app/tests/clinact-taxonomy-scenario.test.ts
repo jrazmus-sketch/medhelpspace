@@ -242,7 +242,9 @@ test("the importer's topic list is generated from ClinAct's taxonomy, not a stat
   assert.ok(md.indexOf("- Insuficiência Cardíaca") < md.indexOf("- Valvopatias"), "topics sorted pt-BR");
   assert.ok(/### Ortopedia\n_Nenhum tema cadastrado ainda\._/.test(md));
   const route = read("app/admin/clinact/modelos/[name]/route.ts");
-  assert.ok(route.includes("taxonomyMarkdown(await getTaxonomy())"));
+  assert.ok(route.includes("taxonomyMarkdown(await getTaxonomy(), todayKeyBR())"), "the list carries its BR date");
+  const dated = taxonomyMarkdown({ specialties: [{ id: 1, name: "Cardiologia" }], topics: [{ name: "Valvopatias", specialty_id: 1 }] }, "2026-10-15");
+  assert.ok(dated.includes("**Gerada em 15/10/2026** a partir da Taxonomia · 1 temas"));
   assert.ok(!route.includes("especialidades-e-temas.md\" }"), "no static file entry");
 });
 
@@ -334,4 +336,19 @@ test("the broad list keeps the old ids, skips what she moved, and never copies O
   assert.ok(/WHERE t\.id = v\.id AND t\.name = v\.old_name/.test(section(4)));
   assert.ok(section(4).includes("(182, 'Doenca de Kawasaki', 'Doença de Kawasaki')"));
   assert.ok(!/weight|incid|\[A\]|\[B\]/i.test(TEMAS.split("BEGIN;")[1]), "no A/B/C/D weights");
+});
+
+test("the guide and the four templates carry the same revision date, and the guide keeps the history", () => {
+  // Karina 2026-10-15: every production document must say which revision it is.
+  const guide = readFileSync(path.join(ROOT, "docs", "clinact", "formato-de-conteudo.md"), "utf8");
+  const rev = guide.match(/\*\*Revisão do documento: (\d{2}\/\d{2}\/\d{4}) · Versão 1 do formato\*\*/);
+  assert.ok(rev, "guide header carries its revision");
+  assert.ok(guide.includes("## 13. Histórico de revisões"));
+  assert.ok(guide.includes(`- **${rev![1]}** —`), "the current revision is the first entry of the history");
+  for (const f of ["modelo-clinica-em-cena", "modelo-codigo-clinico", "modelo-decisao-30s", "modelo-ponto-de-virada"]) {
+    const md = readFileSync(path.join(ROOT, "docs", "clinact", `${f}.md`), "utf8");
+    assert.ok(md.includes(`**Revisão: ${rev![1]} · Versão 1 do formato**`), `${f} is on the guide's revision`);
+    // The version line sits OUTSIDE the fenced template, so "Baixar modelo" (.txt) stays importable.
+    assert.ok(md.indexOf("**Revisão:") < md.indexOf("```"), f);
+  }
 });

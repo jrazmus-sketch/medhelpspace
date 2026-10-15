@@ -4,6 +4,7 @@ import path from "node:path";
 import { createClient } from "@/lib/supabase/server";
 import { getTaxonomy } from "@/lib/clinact/queries";
 import { taxonomyMarkdown } from "@/lib/clinact/taxonomy-doc";
+import { todayKeyBR } from "@/lib/br-date";
 
 // Authoring guide + the four templates, served from the importer screen
 // (§3.3: "Instructions that live only in an e-mail are lost by case 12").
@@ -34,7 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
     if (!["super_admin", "content_admin"].includes((profile?.role as string) ?? "")) {
       return new NextResponse("Forbidden", { status: 403 });
     }
-    return new NextResponse(taxonomyMarkdown(await getTaxonomy()), {
+    return new NextResponse(taxonomyMarkdown(await getTaxonomy(), todayKeyBR()), {
       headers: {
         "Content-Type": "text/markdown; charset=utf-8",
         "Content-Disposition": `${url.searchParams.get("ver") === "1" ? "inline" : "attachment"}; filename="${TOPICS_DOWNLOAD}"`,

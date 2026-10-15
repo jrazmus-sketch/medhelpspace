@@ -1,5 +1,7 @@
 # Modelo — Clínica em Cena
 
+**Revisão: 15/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
+
 **Habilidade treinada:** conduzir.
 Cenas encadeadas com 2 a 4 condutas. O paciente responde ao que você faz.
 

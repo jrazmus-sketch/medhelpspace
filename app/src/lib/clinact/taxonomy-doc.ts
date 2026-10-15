@@ -5,13 +5,19 @@
  * edited in Admin → ClinAct → Taxonomia, a static copy would go stale the first
  * time a topic is added. Pure: no server imports, so it is testable.
  */
-export function taxonomyMarkdown(taxonomy: {
-  specialties: { id: number; name: string }[];
-  topics: { name: string; specialty_id: number | null }[];
-}): string {
+export function taxonomyMarkdown(
+  taxonomy: {
+    specialties: { id: number; name: string }[];
+    topics: { name: string; specialty_id: number | null }[];
+  },
+  /** BR date key (YYYY-MM-DD, from lib/br-date) of the download — Karina asked for every document to carry its date. */
+  generatedOn?: string,
+): string {
+  const stamp = generatedOn && /^\d{4}-\d{2}-\d{2}$/.test(generatedOn) ? generatedOn.split("-").reverse().join("/") : null;
   const lines = [
     "# ClinAct — Especialidades e temas",
     "",
+    ...(stamp ? [`**Gerada em ${stamp}** a partir da Taxonomia · ${taxonomy.topics.length} temas`, ""] : []),
     "Lista atual da taxonomia do ClinAct, gerada agora a partir de",
     "Admin → ClinAct → Taxonomia. É própria do ClinAct: independente do Revalida.",
     "",

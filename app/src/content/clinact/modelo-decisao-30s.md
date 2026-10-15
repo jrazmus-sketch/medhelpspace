@@ -1,5 +1,7 @@
 # Modelo — Decisão em 30 Segundos
 
+**Revisão: 15/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
+
 **Habilidade treinada:** priorizar.
 Uma pergunta, pouco tempo, e o custo de escolher a ordem errada.
 

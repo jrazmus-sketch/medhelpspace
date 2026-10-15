@@ -1,7 +1,8 @@
 # ClinAct — Como escrever os casos para importação
 
-**Versão 1 do formato.** Se esta versão mudar, você recebe o documento novo e o
-importador avisa qual versão ele aceita.
+**Revisão do documento: 15/10/2026 · Versão 1 do formato** (a mesma desde o primeiro
+caso). Se a versão do formato mudar, você recebe o documento novo e o importador avisa
+qual versão ele aceita. O que mudou em cada revisão está na seção 13.
 
 Este documento é o combinado entre o que você escreve e o que o sistema consegue
 ler sozinho. Se um caso seguir estas regras, ele entra na plataforma já dividido
@@ -583,3 +584,30 @@ Nada entra no sistema antes de você confirmar.
 - Reimportar um caso com o mesmo **título** substitui o rascunho. Se o caso já
   estiver **publicado**, ele é pulado — para não sobrescrever, sem querer, um caso
   que alunos já fizeram.
+
+---
+
+## 13. Histórico de revisões
+
+O formato continua na versão 1: um arquivo escrito com qualquer revisão abaixo
+continua importando. Cada revisão só acrescentou regras ou campos.
+
+- **15/10/2026** — Campo opcional `CENÁRIO:` na ficha, com seis valores aceitos
+  (seção 2). Especialidades e temas próprios do ClinAct, administrados em Admin →
+  ClinAct → Taxonomia: a lista é gerada pela plataforma (link "Especialidades e
+  temas" no importador) e o `TEMA:` é procurado só dentro da especialidade do caso
+  (seção 2). Os quatro modelos ganharam a linha `CENÁRIO:`.
+- **06/10/2026** — Bloco `## INVESTIGAÇÃO` no Clínica em Cena, com as duas regras
+  permanentes: nada depois da investigação depende de um exame que o aluno pode não
+  ter pedido, nem manda repetir o que ele já pode ter feito (seção 7). O modelo do
+  Clínica em Cena ganhou uma seção opcional de investigação.
+- **02/09/2026** — O título público não entrega o caso; o `TEMA:` só aparece para o
+  aluno no fim (seção 2). No Clínica em Cena, a `## CONFIANÇA` é seletiva, nunca
+  depois de todas as cenas (seção 9).
+- **01/09/2026** — Formatos de mídia aceitos: áudio `.mp3`, `.m4a`, `.wav`; imagem
+  `.jpg`, `.png`, `.webp`, `.gif`; vídeo `.mp4`, `.webm`; `.ogg` recusado (seção 8).
+  O texto principal de cada pista ou alternativa vai na mesma linha do `-` ou do `*`
+  (seção 5); os modelos em branco passaram a trazer o texto nessa linha.
+- **31/08/2026** — Clínica em Cena: uma cena que aparece em algum `vai para:` é um
+  desvio, e o fluxo normal a pula (seção 7).
+- **27–28/08/2026** — Primeira versão, a usada no início dos 40 casos iniciais.

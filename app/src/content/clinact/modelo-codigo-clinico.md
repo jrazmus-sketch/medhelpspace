@@ -1,5 +1,7 @@
 # Modelo — Código Clínico
 
+**Revisão: 15/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
+
 **Habilidade treinada:** conectar.
 Pistas soltas que só fazem sentido juntas. Fecha no mapa do Código Decifrado.
 
