@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { getViewHubGroups } from "@/components/content/view-hub-renderer";
-import { GeralSimuladosGrid } from "@/components/content/geral-simulados-grid";
+import { SimuladoCollectionCards } from "@/components/content/geral-simulados-grid";
 import { EstudoTabs, type SimuladoSectionMeta } from "@/components/content/estudo-tabs";
 import { getStudyTypeOverrides } from "@/lib/queries/study-types";
 import { getSimuladoSectionOverrides } from "@/lib/queries/simulado-sections";
@@ -21,7 +21,8 @@ export default async function EstudoPorQuestoesPage({
   //  - quiz tab: the Questões accordion (per-specialty hubs).
   //  - simulados tab: "Por área" reuses the same accordion machinery over
   //    view='simulados' hubs (Clínica Médica bundles its 12 subspecialties);
-  //    "Geral" is a flat grid of cross-specialty mock exams rendered separately.
+  //    "Geral" is one card per collection of cross-specialty mock exams (Simulados
+  //    Gerais, Questões Pegada INEP), each opening its own numbered grid.
   const [quizGroups, simuladoPorAreaGroups, overridesMap, simSections, simuladoCount] =
     await Promise.all([
       getViewHubGroups("quiz", null),
@@ -60,7 +61,7 @@ export default async function EstudoPorQuestoesPage({
 
       <EstudoTabs
         quizGroups={quizGroups}
-        simuladoGeralSlot={<GeralSimuladosGrid />}
+        simuladoGeralSlot={<SimuladoCollectionCards />}
         simuladoPorAreaGroups={simuladoPorAreaGroups}
         simuladoSections={{
           geral: toMeta(geralRow, "Geral", "geral"),

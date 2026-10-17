@@ -4,6 +4,7 @@ import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { recordAppError } from "@/lib/app-errors-server";
 import Link from "next/link";
 import { Search as SearchIcon, ChevronRight } from "lucide-react";
+import { collectionForSlug, geralSimuladoHref } from "@/lib/simulado-collections";
 
 export const metadata = { title: "Buscar — MedHelpSpace" };
 
@@ -163,9 +164,13 @@ export default async function BuscarPage({
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {results.map((r) => {
+              // A Geral simulado (no specialty) is played at /app/geral/<slug>; the bare
+              // /app/<slug> is the Simulados view hub, not the quiz.
               const href = r.specialty_slug
                 ? `/app/${r.specialty_slug}/${r.page_slug}${r.matched_lesson_id ? `?s=${r.matched_lesson_id}` : ""}`
-                : `/app/${r.page_slug}`;
+                : collectionForSlug(r.page_slug)
+                  ? geralSimuladoHref(r.page_slug)
+                  : `/app/${r.page_slug}`;
               return (
                 <Link
                   key={`${r.page_id}-${r.matched_lesson_id ?? "page"}`}

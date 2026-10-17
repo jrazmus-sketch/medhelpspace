@@ -1,4 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { geralSimuladoHref, simuladoNumber } from "@/lib/simulado-collections";
+import { geralCollectionOf } from "@/lib/simulado-collections-server";
 
 export interface PageSiblingsResult {
   nextHref: string | null;
@@ -39,7 +41,7 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
   const [pageRes, navRes] = await Promise.all([
     admin
       .from("pages")
-      .select("specialty:specialties!specialty_id(slug, name)")
+      .select("slug, view, specialty_id, content_module_id, specialty:specialties!specialty_id(slug, name)")
       .eq("id", pageId)
       .single(),
     admin
@@ -59,6 +61,21 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
 
   const navLookup = navRes.data as unknown as NavLookupRow | null;
   if (!navLookup) {
+    // A Geral simulado has no hub card: its collection is the hub, and "next" is the
+    // next number in that collection (Simulado 7 → Simulado 8).
+    const self = pageRes.data as { slug: string; view: string | null; specialty_id: number | null; content_module_id: number | null } | null;
+    const collection = self ? await geralCollectionOf(self) : null;
+    if (collection && self) {
+      const next = await nextInCollection(collection.collection.slugPrefix, simuladoNumber(self.slug));
+      return {
+        nextHref: next ? geralSimuladoHref(next.slug) : null,
+        nextTitle: next?.title ?? null,
+        specialtyHref: collection.href,
+        specialtyName: collection.title,
+        hubHref: collection.href,
+        hubName: collection.title,
+      };
+    }
     return { nextHref: null, nextTitle: null, specialtyHref, specialtyName, hubHref: null, hubName: null };
   }
 
@@ -91,4 +108,23 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
     ? `/app/${target.specialty.slug}/${target.slug}`
     : `/app/${target.slug}`;
   return { nextHref, nextTitle: target.title, specialtyHref, specialtyName, hubHref, hubName };
+}
+
+// The published simulado with the smallest number above `after` in one GERAL collection.
+// Numbers come from the slug, so a gap (a retired simulado) is simply skipped.
+async function nextInCollection(slugPrefix: string, after: number): Promise<{ slug: string; title: string } | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("pages")
+    .select("slug, title")
+    .like("slug", `${slugPrefix}%`)
+    .eq("view", "simulados")
+    .eq("type", "h5p-quiz")
+    .eq("status", "publish")
+    .is("specialty_id", null)
+    .is("content_module_id", null);
+  const later = ((data ?? []) as { slug: string; title: string }[])
+    .filter((p) => simuladoNumber(p.slug) > after && p.slug === `${slugPrefix}${simuladoNumber(p.slug)}`)
+    .sort((a, b) => simuladoNumber(a.slug) - simuladoNumber(b.slug));
+  return later[0] ?? null;
 }

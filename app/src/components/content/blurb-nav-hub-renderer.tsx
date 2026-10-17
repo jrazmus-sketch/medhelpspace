@@ -270,19 +270,41 @@ async function loadCompletedLessonPages(pageIds: number[]): Promise<Set<number>>
 
 // ── Data: quiz stats per page ────────────────────────────────────────────────
 
+// Reads every row of a query in PAGE-sized slices (PostgREST returns at most 1000 per
+// request and says nothing when it cuts). The query must have a stable ORDER BY.
+async function fetchAllRows<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>,
+): Promise<T[]> {
+  const PAGE = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as T[];
+    out.push(...rows);
+    if (rows.length < PAGE) return out;
+  }
+}
+
 export async function loadQuizStats(quizPageIds: number[]): Promise<Map<number, QuizStats>> {
   const out = new Map<number, QuizStats>();
   if (quizPageIds.length === 0) return out;
 
   const admin = createAdminClient();
-  // Total questions per quiz page (always needed).
-  const { data: questions } = await admin
-    .from("quiz_questions")
-    .select("id, page_id")
-    .in("page_id", quizPageIds);
+  // Total questions per quiz page (always needed). Paginated: PostgREST caps a response
+  // at 1000 rows WITHOUT an error, and one GERAL collection alone holds 950 questions
+  // (Questões Pegada INEP) — a student's attempts on it pass 1000 on the first retry.
+  let questions: { id: number; page_id: number }[];
+  try {
+    questions = await fetchAllRows<{ id: number; page_id: number }>((from, to) =>
+      admin.from("quiz_questions").select("id, page_id").in("page_id", quizPageIds).order("id").range(from, to),
+    );
+  } catch {
+    return out; // Non-fatal — cards render without stats, as before.
+  }
 
   const totalsByPage = new Map<number, number>();
-  for (const q of questions ?? []) {
+  for (const q of questions) {
     const pid = q.page_id as number;
     totalsByPage.set(pid, (totalsByPage.get(pid) ?? 0) + 1);
   }
@@ -298,12 +320,17 @@ export async function loadQuizStats(quizPageIds: number[]): Promise<Map<number, 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return out;
 
-    const { data: attempts } = await admin
-      .from("quiz_attempts")
-      .select("page_id, question_id, is_correct, created_at")
-      .eq("user_id", user.id)
-      .in("page_id", quizPageIds)
-      .order("created_at", { ascending: false });
+    const attempts = await fetchAllRows<{ page_id: number; question_id: number; is_correct: boolean; created_at: string }>(
+      (from, to) =>
+        admin
+          .from("quiz_attempts")
+          .select("page_id, question_id, is_correct, created_at")
+          .eq("user_id", user.id)
+          .in("page_id", quizPageIds)
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to),
+    );
 
     // Per-page: latest is_correct value per question_id (DESC order means first wins).
     const latestByPage = new Map<number, Map<number, boolean>>();

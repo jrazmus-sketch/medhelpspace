@@ -136,6 +136,9 @@ export type BuildCrumbsInput = {
   specialtyHubSlug: string | null;
   // The area hub a leaf sits in (Resumos → Outros → Oftalmologia), from findAreaHub.
   areaHub?: { slug: string; label: string } | null;
+  // The GERAL collection a simulado belongs to (Simulados → Questões Pegada INEP →
+  // Simulado 7), from lib/simulado-collections. Label = the collection's live title.
+  collection?: { label: string; href: string } | null;
 };
 
 // Builds the canonical IA breadcrumb chain for a content page.
@@ -146,7 +149,7 @@ export type BuildCrumbsInput = {
 // - Leaf dropped when the current page is itself the (specialty-under-type) hub
 //   — in that case the specialty crumb becomes the terminal.
 export function buildCrumbsForPage(input: BuildCrumbsInput): Crumb[] {
-  const { page, specialty, specialtyHubSlug, areaHub } = input;
+  const { page, specialty, specialtyHubSlug, areaHub, collection } = input;
 
   const root: Crumb = { label: "Início", href: "/app" };
   const typeRoot = typeRootFor({
@@ -191,6 +194,9 @@ export function buildCrumbsForPage(input: BuildCrumbsInput): Crumb[] {
     crumbs.push({ label: specialty.name, href });
     if (areaHub) crumbs.push({ label: areaHub.label, href: `/app/${specialty.slug}/${areaHub.slug}` });
   }
+
+  // A Geral simulado has no specialty; its collection takes that level instead.
+  if (!specialty && collection) crumbs.push({ label: collection.label, href: collection.href });
 
   crumbs.push({ label: page.title });
   return crumbs;

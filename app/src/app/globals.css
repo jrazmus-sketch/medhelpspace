@@ -428,6 +428,45 @@
   line-height: 1.65;
 }
 
+/* Where a question comes from ("ENARE | Questão original 27 | 2022") and, when it applies,
+   "Origem: INEP — ENAMED 2025…" / "Questão histórica — sem pontuação" — Questões Pegada
+   INEP (2026-10). Small meta line under the "Questão N" heading; 75% foreground keeps it
+   above 7:1 in both themes. Not scoped to .quiz-stem: the Revisão card renders the same
+   question HTML without it. */
+p.quiz-source,
+.quiz-stem p.quiz-source {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+}
+.quiz-stem p.quiz-source {
+  margin-top: -0.25rem;
+}
+
+/* A figure placed inside the stem, where the author put it ("a ferida (imagem abaixo)" →
+   figure → question) — Questões Pegada INEP carry up to three per question, so they can't
+   use the single media_url slot above the heading. White frame so X-rays, ECGs and scanned
+   tables read the same in dark mode; natural size up to the column (small charts are not
+   blown up); a tap opens the full image, where the phone's pinch-zoom works. Unscoped
+   for the same reason as .quiz-source. */
+figure.quiz-figure {
+  margin: 0.75rem 0 1.25rem;
+}
+figure.quiz-figure > a {
+  display: block;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  padding: 0.5rem;
+  text-decoration: none;
+}
+figure.quiz-figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
 /* Simulado quiz explanation block (Comentário / PEGA REVALIDA / Resumo-chave) */
 .quiz-explanation h4 {
   font-size: 1rem;

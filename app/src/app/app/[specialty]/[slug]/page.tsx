@@ -18,6 +18,7 @@ import { buildCrumbsForPage, findAreaHub, findSpecialtyHub, type Crumb } from "@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { legacyMemorecardsHref } from "@/lib/memorecards-shared";
+import { geralCollectionOf } from "@/lib/simulado-collections-server";
 
 export default async function ContentPage({
   params,
@@ -61,7 +62,8 @@ export default async function ContentPage({
 
   // Area level inside the specialty's hub (Resumos → Outros → Oftalmologia):
   // null for every other page, which keeps the usual two-level breadcrumb.
-  const area = await findAreaHub(page);
+  // A Geral simulado's collection plays the same role (Simulados → Questões Pegada INEP).
+  const [area, collection] = await Promise.all([findAreaHub(page), geralCollectionOf(page)]);
 
   // The current page IS the per-specialty hub for its type when it's either a
   // blurb-nav-hub (with a view) or a track page (track_id set) under a specialty.
@@ -97,6 +99,7 @@ export default async function ContentPage({
     specialty: specialtyForCrumbs,
     specialtyHubSlug: isSpecialtyTypeHub ? null : specialtyHubSlug,
     areaHub: area?.area ?? null,
+    collection: collection ? { label: collection.title, href: collection.href } : null,
   });
 
   // Fallback target for the "Voltar" button on cold loads — the IA parent.
@@ -150,7 +153,8 @@ export default async function ContentPage({
         )}
         {isSimulado(page) && (
           <p className="mt-4 text-sm italic text-muted-foreground">
-            Questões inéditas no padrão da banca
+            {/* Questões Pegada INEP come from other institutions' exams — never "inéditas". */}
+            {collection?.tagline ?? "Questões inéditas no padrão da banca"}
           </p>
         )}
       </header>

@@ -19,6 +19,8 @@ import { getAudiocardsPlaylist } from "@/lib/audiocards/discovery";
 import { SiteText } from "@/components/landing/site-text";
 import type { Cohort } from "@/types/supabase";
 import { getAuthUser } from "@/lib/viewer";
+import { geralSimuladoHref } from "@/lib/simulado-collections";
+import { geralCollectionOf } from "@/lib/simulado-collections-server";
 
 type StudyType = {
   id: string;
@@ -119,13 +121,15 @@ function ReadingViz() {
 }
 
 function ContinueCard({
-  lastPage, lastTrack, lastPageSpec, cardStyle,
+  lastPage, lastTrack, lastPageSpec, lastPageCollection, cardStyle,
   lastPageQuizStats, lastPageLessonCount, lastPageCompletedCount,
   coveredSpecialtyIds, specialtiesAll,
 }: {
   lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null;
   lastTrack: { id: number; name: string; slug: string } | null;
   lastPageSpec: { name: string; slug: string } | null | undefined;
+  /** The GERAL collection of a Geral simulado (Simulados Gerais / Questões Pegada INEP). */
+  lastPageCollection: { title: string } | null;
   cardStyle: React.CSSProperties;
   lastPageQuizStats: { total: number; attempted: number; correct: number } | null;
   lastPageLessonCount: number;
@@ -173,9 +177,15 @@ function ContinueCard({
   }
 
   const kind = getContentKind(lastPage.type, lastTrack?.slug ?? null);
-  const topLabel = (lastTrack?.name ?? lastPageSpec?.name ?? "").toUpperCase() || null;
+  // A Geral simulado has no specialty: its collection names it ("Simulado 7" alone is
+  // ambiguous between Simulados Gerais and Questões Pegada INEP), and it is played at
+  // /app/geral/<slug> — the bare /app/<slug> is the Simulados view hub, not the quiz.
+  const geral = !lastPageSpec && lastPage.type === "h5p-quiz" ? lastPageCollection : null;
+  const topLabel = (lastTrack?.name ?? lastPageSpec?.name ?? geral?.title ?? "").toUpperCase() || null;
   const subLabel = lastTrack && lastPageSpec ? lastPageSpec.name : null;
-  const href = lastPageSpec ? `/app/${lastPageSpec.slug}/${lastPage.slug}` : `/app/${lastPage.slug}`;
+  const href = lastPageSpec
+    ? `/app/${lastPageSpec.slug}/${lastPage.slug}`
+    : geral ? geralSimuladoHref(lastPage.slug) : `/app/${lastPage.slug}`;
 
   return (
     <div style={baseStyle}>
@@ -416,16 +426,17 @@ export default async function MemberDashboardPage() {
   const allTracks = allTracksData ?? [];
 
   // Last page + track
-  let lastPage: { id: number; title: string; slug: string; type: string; specialty_id: number | null; track_id: number | null } | null = null;
+  let lastPage: { id: number; title: string; slug: string; type: string; view: string | null; specialty_id: number | null; track_id: number | null; content_module_id: number | null } | null = null;
   let lastTrack: { id: number; name: string; slug: string } | null = null;
   if (lastPageId) {
-    const { data } = await admin.from("pages").select("id, title, slug, type, specialty_id, track_id").eq("id", lastPageId).single();
+    const { data } = await admin.from("pages").select("id, title, slug, type, view, specialty_id, track_id, content_module_id").eq("id", lastPageId).single();
     lastPage = data ?? null;
     if (lastPage?.track_id) {
       lastTrack = allTracks.find(t => t.id === lastPage!.track_id) ?? null;
     }
   }
   const lastPageSpec = lastPage?.specialty_id ? specById.get(lastPage.specialty_id) : null;
+  const lastPageCollection = lastPage ? await geralCollectionOf(lastPage) : null;
 
   // Lesson count for audio/text-lesson pages (used by WaveformProgress on dashboard)
   let lastPageLessonCount = 0;
@@ -738,6 +749,7 @@ export default async function MemberDashboardPage() {
           lastPage={lastPage}
           lastTrack={lastTrack}
           lastPageSpec={lastPageSpec}
+          lastPageCollection={lastPageCollection}
           cardStyle={cardAlt}
           lastPageQuizStats={lastPageQuizStats}
           lastPageLessonCount={lastPageLessonCount}

@@ -3,6 +3,7 @@ import {
   Headphones, Layers, CalendarClock, Target, type LucideIcon,
 } from "lucide-react";
 import type { PageView } from "@/types/supabase";
+import { collectionForSlug } from "@/lib/simulado-collections";
 
 // Canonical study-type keys. Cover every "type root" that buildCrumbsForPage
 // can resolve (view / track_id / content_module_id), plus flashcards.
@@ -110,6 +111,9 @@ export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null 
   if (pathname === "/app/audiocards")          return "audiocards";
   if (pathname === "/app/flashcards")          return "flashcards";
 
+  // A GERAL collection's page (Simulados Gerais, Questões Pegada INEP) sits under the
+  // Estudo por Questões route but belongs to Simulados.
+  if (pathname.startsWith("/app/estudo-por-questoes/simulados/")) return "simulados";
   if (pathname.startsWith("/app/estudo-por-questoes/")) return "quiz";
   if (pathname.startsWith("/app/resumos/"))             return "resumos";
   if (pathname.startsWith("/app/formula-medhelp/"))     return "formula";
@@ -128,9 +132,10 @@ export function getStudyTypeFromPathname(pathname: string): StudyTypeKey | null 
     if (slug.endsWith("-revalida-up")) return "revalida-up";
     if (slug.endsWith("-formula"))    return "formula";
     if (slug.endsWith("-simulados"))  return "simulados";
-    // New simulados leaves: '<spec>-simulado-<n>' (por área) and
-    // 'simulado-geral-<n>' (Geral), routed at /app/<spec>/… and /app/geral/….
-    if (/-simulado-\d+$/.test(slug) || /^simulado-geral-\d+$/.test(slug)) return "simulados";
+    // New simulados leaves: '<spec>-simulado-<n>' (por área) and the GERAL
+    // collections ('simulado-geral-<n>', 'pegada-inep-<n>'), routed at /app/<spec>/…
+    // and /app/geral/….
+    if (/-simulado-\d+$/.test(slug) || collectionForSlug(slug)) return "simulados";
     if (slug.endsWith("-quiz"))       return "quiz";
   }
 

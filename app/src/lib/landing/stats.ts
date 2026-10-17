@@ -41,7 +41,7 @@ export interface LandingStats {
 // transient DB error can never render a "0" on the public landing page.
 const FALLBACK_STATS: LandingStats = {
   flashcards: 5280,
-  questoes: 2518,
+  questoes: 5164, // 2026-10-17: 4,214 + the 950 Questões Pegada INEP
   audios: 164,
   audiocards: 184,
   especialidades: 17,
