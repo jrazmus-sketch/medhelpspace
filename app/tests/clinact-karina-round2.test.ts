@@ -11,7 +11,7 @@ import type { CaseDoc } from "@/lib/clinact/types";
 const DOCS = path.resolve(import.meta.dirname, "..", "..", "docs", "clinact");
 
 function blankTemplate(file: string): string {
-  const md = readFileSync(path.join(DOCS, file), "utf8");
+  const md = readFileSync(path.join(DOCS, file), "utf8").split("\r\n").join("\n");
   // The first fenced block after "Modelo para copiar" is the blank template.
   const i = md.indexOf("## Modelo para copiar");
   const open = md.indexOf("```", i);

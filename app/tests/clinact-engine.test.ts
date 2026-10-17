@@ -18,7 +18,7 @@ import type { CaseDoc } from "@/lib/clinact/types";
 const DOCS = path.resolve(import.meta.dirname, "..", "..", "docs", "clinact");
 
 function exampleFromModel(file: string): string {
-  const md = readFileSync(path.join(DOCS, file), "utf8");
+  const md = readFileSync(path.join(DOCS, file), "utf8").split("\r\n").join("\n");
   const blocks = [...md.matchAll(/```\n([\s\S]*?)```/g)].map((m) => m[1]);
   // The last fenced block is the "Exemplo preenchido".
   return blocks[blocks.length - 1];
@@ -61,7 +61,7 @@ test("parses the Decisão em 30 Segundos worked example with no errors", () => {
 });
 
 test("the empty template parses with errors, never crashes", () => {
-  const md = readFileSync(path.join(DOCS, "modelo-decisao-30s.md"), "utf8");
+  const md = readFileSync(path.join(DOCS, "modelo-decisao-30s.md"), "utf8").split("\r\n").join("\n");
   const template = [...md.matchAll(/```\n([\s\S]*?)```/g)][0][1];
   const { cases } = parseCaseFile(template);
   assert.equal(cases.length, 1);
