@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTaxonomy } from "@/lib/clinact/queries";
 import { taxonomyMarkdown } from "@/lib/clinact/taxonomy-doc";
 import { todayKeyBR } from "@/lib/br-date";
+import { downloadName, extractTemplate } from "@/lib/clinact/template-download";
 
 // Authoring guide + the four templates, served from the importer screen
 // (§3.3: "Instructions that live only in an e-mail are lost by case 12").
@@ -35,10 +36,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
     if (!["super_admin", "content_admin"].includes((profile?.role as string) ?? "")) {
       return new NextResponse("Forbidden", { status: 403 });
     }
-    return new NextResponse(taxonomyMarkdown(await getTaxonomy(), todayKeyBR()), {
+    const today = todayKeyBR();
+    return new NextResponse(taxonomyMarkdown(await getTaxonomy(), today), {
       headers: {
         "Content-Type": "text/markdown; charset=utf-8",
-        "Content-Disposition": `${url.searchParams.get("ver") === "1" ? "inline" : "attachment"}; filename="${TOPICS_DOWNLOAD}"`,
+        "Content-Disposition": `${url.searchParams.get("ver") === "1" ? "inline" : "attachment"}; filename="${TOPICS_DOWNLOAD.replace(/\.md$/, `-${today}.md`)}"`,
         "Cache-Control": "no-store",
       },
     });
@@ -48,13 +50,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
   const onlyTemplate = url.searchParams.get("modelo") === "1";
 
   const raw = await readFile(path.join(process.cwd(), "src", "content", "clinact", entry.file), "utf8");
-  let body = raw;
-  if (onlyTemplate) {
-    // "Baixar modelo": just the first fenced block (the fill-in template).
-    const m = raw.match(/```\n([\s\S]*?)```/);
-    body = m ? m[1] : raw;
-  }
-  const filename = onlyTemplate ? entry.download.replace(/\.md$/, ".txt") : entry.download;
+  // "Baixar modelo": just the fill-in template. The name carries the revision.
+  const body = onlyTemplate ? extractTemplate(raw) : raw;
+  const filename = downloadName(entry.download, raw, onlyTemplate);
   return new NextResponse(body, {
     headers: {
       "Content-Type": onlyTemplate ? "text/plain; charset=utf-8" : "text/markdown; charset=utf-8",

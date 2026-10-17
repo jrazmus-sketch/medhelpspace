@@ -74,6 +74,10 @@ export function normalizeText(raw: string): string {
   s = s.replace(/\*\*/g, ""); // markdown bold residue
   const lines = s.split("\n").map((line) => {
     let l = line.replace(/\s+$/, "");
+    // "REVISÃO DO MODELO: …" says which template revision a file came from
+    // (Karina 2026-10-17). It is never content: blanked, not removed, so every
+    // error keeps pointing at the right line of her file.
+    if (RE_TEMPLATE_REVISION.test(stripAccents(l).toUpperCase())) return "";
     // Bullet variants at line start → "- " (guide §1). Only at the start, so an
     // em dash inside a title ("TEP — paciente instável") is left alone.
     l = l.replace(/^(\s*)[•–—]\s+/, "$1- ");
@@ -84,6 +88,7 @@ export function normalizeText(raw: string): string {
 }
 
 const DELIMITER = /^\s*=+\s*CASO\s*=+\s*$/i;
+const RE_TEMPLATE_REVISION = /^\s*REVISAO DO MODELO\s*:/;
 
 function stripAccents(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -493,6 +498,17 @@ function parseChunk(chunk: Chunk): ParsedCase {
       case "investigacao":
         content.prompt = prose;
         if (!prose) errors.push({ line: b.line, message: `"${blockName(b.kind)}" sem enunciado.` });
+        // A template placeholder left as the question must never import as the
+        // question itself (the INVESTIGAÇÃO block in the blank template is optional).
+        else if (RE_PLACEHOLDER.test(prose.trim())) {
+          errors.push({
+            line: b.line,
+            message:
+              b.kind === "investigacao"
+                ? `"${blockName(b.kind)}" ainda está com o texto de exemplo do modelo — escreva a pergunta do caso, ou apague o bloco inteiro se o caso não tiver investigação.`
+                : `"${blockName(b.kind)}" ainda está com o texto de exemplo do modelo ("${prose.trim()}") — substitua pelo enunciado do caso.`,
+          });
+        }
         break;
       case "cena_conduta":
         content.text = prose;

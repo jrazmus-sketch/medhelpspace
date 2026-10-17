@@ -1,6 +1,6 @@
 # Modelo — Código Clínico
 
-**Revisão: 15/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
+**Revisão: 17/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
 
 **Habilidade treinada:** conectar.
 Pistas soltas que só fazem sentido juntas. Fecha no mapa do Código Decifrado.
@@ -33,6 +33,7 @@ Sugestão: de 5 a 8 pistas, com 2 ou 3 grupos e 1 ou 2 distratores.
 ## Modelo para copiar
 
 ```
+REVISÃO DO MODELO: 17/10/2026 · Versão 1 do formato
 === CASO ===
 FORMATO: codigo_clinico
 TÍTULO:

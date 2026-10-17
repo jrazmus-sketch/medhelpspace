@@ -1,6 +1,6 @@
 # Modelo — Clínica em Cena
 
-**Revisão: 15/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
+**Revisão: 17/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
 
 **Habilidade treinada:** conduzir.
 Cenas encadeadas com 2 a 4 condutas. O paciente responde ao que você faz.
@@ -59,6 +59,7 @@ Apelido da cena: curto, sem acento, sem espaço (`chegada`, `investigacao`,
 ## Modelo para copiar
 
 ```
+REVISÃO DO MODELO: 17/10/2026 · Versão 1 do formato
 === CASO ===
 FORMATO: clinica_em_cena
 TÍTULO:
@@ -122,6 +123,28 @@ RESUMO:
 - [conduta]
   qualidade:
   feedback:
+  relógio:
+
+## INVESTIGAÇÃO
+[pergunta da investigação — bloco opcional: apague o bloco inteiro, até antes da próxima cena, se o caso não tiver investigação]
+
+- [exame ou ação]
+  qualidade:
+  feedback:
+  fizemos:
+  encontramos:
+  relógio:
+- [exame ou ação]
+  qualidade:
+  feedback:
+  fizemos:
+  encontramos:
+  relógio:
+- [exame ou ação]
+  qualidade:
+  feedback:
+  fizemos:
+  encontramos:
   relógio:
 
 ## CENA: conduta-final

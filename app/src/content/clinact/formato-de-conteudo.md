@@ -1,6 +1,6 @@
 # ClinAct — Como escrever os casos para importação
 
-**Revisão do documento: 15/10/2026 · Versão 1 do formato** (a mesma desde o primeiro
+**Revisão do documento: 17/10/2026 · Versão 1 do formato** (a mesma desde o primeiro
 caso). Se a versão do formato mudar, você recebe o documento novo e o importador avisa
 qual versão ele aceita. O que mudou em cada revisão está na seção 13.
 
@@ -36,6 +36,9 @@ o primeiro que vai estar funcionando na plataforma.
 === CASO ===
 ```
 
+- **A primeira linha dos modelos, `REVISÃO DO MODELO: …`, só identifica de qual
+  revisão o arquivo saiu.** O importador ignora essa linha em qualquer lugar do
+  arquivo: pode deixá-la ou apagá-la, tanto faz.
 - Imagens e áudios: nunca cole o arquivo dentro do documento. Escreva o nome do
   arquivo na linha, e deixe os arquivos na mesma pasta:
 
@@ -592,6 +595,12 @@ Nada entra no sistema antes de você confirmar.
 O formato continua na versão 1: um arquivo escrito com qualquer revisão abaixo
 continua importando. Cada revisão só acrescentou regras ou campos.
 
+- **17/10/2026** — O modelo do Clínica em Cena passou a trazer o bloco opcional
+  `## INVESTIGAÇÃO` já no lugar (com o aviso de que pode ser apagado), além da cena
+  comum. Os modelos baixados começam com a linha `REVISÃO DO MODELO: …`, que o
+  importador ignora (seção 1), e o nome do arquivo baixado traz a data da revisão.
+  Uma pergunta deixada com o texto de exemplo do modelo (`[…]`) passou a ser erro
+  na importação, como já acontecia com as alternativas.
 - **15/10/2026** — Campo opcional `CENÁRIO:` na ficha, com seis valores aceitos
   (seção 2). Especialidades e temas próprios do ClinAct, administrados em Admin →
   ClinAct → Taxonomia: a lista é gerada pela plataforma (link "Especialidades e

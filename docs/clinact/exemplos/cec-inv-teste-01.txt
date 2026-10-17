@@ -3,6 +3,7 @@ FORMATO: clinica_em_cena
 TÍTULO: CEC-INV-TESTE-01 · No início do plantão
 ESPECIALIDADE: Pneumologia
 TEMA: Pneumonia
+CENÁRIO: Emergência
 DIFICULDADE: intermediária
 DURAÇÃO: 8
 RESUMO: Cópia de TESTE do CEC-01 com o bloco INVESTIGAÇÃO. Não publicar.

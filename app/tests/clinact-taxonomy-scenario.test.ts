@@ -242,7 +242,7 @@ test("the importer's topic list is generated from ClinAct's taxonomy, not a stat
   assert.ok(md.indexOf("- Insuficiência Cardíaca") < md.indexOf("- Valvopatias"), "topics sorted pt-BR");
   assert.ok(/### Ortopedia\n_Nenhum tema cadastrado ainda\._/.test(md));
   const route = read("app/admin/clinact/modelos/[name]/route.ts");
-  assert.ok(route.includes("taxonomyMarkdown(await getTaxonomy(), todayKeyBR())"), "the list carries its BR date");
+  assert.ok(route.includes("const today = todayKeyBR();") && route.includes("taxonomyMarkdown(await getTaxonomy(), today)"), "the list carries its BR date");
   const dated = taxonomyMarkdown({ specialties: [{ id: 1, name: "Cardiologia" }], topics: [{ name: "Valvopatias", specialty_id: 1 }] }, "2026-10-15");
   assert.ok(dated.includes("**Gerada em 15/10/2026** a partir da Taxonomia · 1 temas"));
   assert.ok(!route.includes("especialidades-e-temas.md\" }"), "no static file entry");

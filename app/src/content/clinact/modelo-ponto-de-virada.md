@@ -1,6 +1,6 @@
 # Modelo — Ponto de Virada
 
-**Revisão: 15/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
+**Revisão: 17/10/2026 · Versão 1 do formato** — confira o histórico no guia, seção 13.
 
 **Habilidade treinada:** reavaliar.
 Hipótese montada, dado novo chega, a estratégia precisa mudar.
@@ -35,6 +35,7 @@ que respondeu a primeira com alta confiança e mudou de ideia na segunda.
 ## Modelo para copiar
 
 ```
+REVISÃO DO MODELO: 17/10/2026 · Versão 1 do formato
 === CASO ===
 FORMATO: ponto_de_virada
 TÍTULO:
