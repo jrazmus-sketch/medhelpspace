@@ -3,24 +3,24 @@
 import { useReveal } from "@/hooks/use-reveal";
 import { SiteText } from "./site-text";
 
-// "Por trás da MedHelpSpace" (Karina 2026-10-09; text v3 + look 2026-10-12) — replaces
-// the old quote block ("Criar o MedHelpSpace foi uma decisão…" + "Equipe MedHelpSpace"
-// + the three counters, which already appear higher on the page). Her personal note,
-// read as a quiet pause between the platform tour and the pricing: one centred reading
-// column, left-aligned, no photo, no cards. Not all white (her ask): the title ends in
-// the page's lilac like the hero headline, her two bold phrases are lilac, a lilac rule
-// runs beside the text and a faint lilac glow sits behind the title.
+// "Por trás da MedHelpSpace" (Karina 2026-10-09; look 2026-10-12; text v4 2026-10-21) —
+// her personal note, read as a quiet pause between the platform tour and the pricing:
+// one centred reading column, left-aligned, no photo, no cards. Not all white (her ask):
+// the title ends in the page's lilac like the hero headline, her italic passages are
+// lilac, a lilac rule runs beside the text and a faint lilac glow sits behind the title.
+// v4 replaced every paragraph, so its copy lives under NEW keys (behind.v4_*): the v3
+// rows (behind.p1a … p5) are still in site_content and a DB row wins over a fallback.
 // The id is the GA4 view_founder_section target.
 export const FOUNDER_SECTION_ID = "por-tras";
 
 const LILAC = "var(--brand-text)"; // #c084e8 on the dark sales page — the hero's lilac
 
-/** Her bold phrases: lilac + semibold, inline. */
-function Hl({ k, text }: { k: string; text: string }) {
+/** Her italic passages: lilac italic, inline (wrap a whole paragraph's text in it too). */
+function Em({ k, text }: { k: string; text: string }) {
   return (
-    <strong className="font-semibold" style={{ color: LILAC }}>
+    <em style={{ color: LILAC }}>
       <SiteText as="span" multiline k={k} fallback={text} />
-    </strong>
+    </em>
   );
 }
 
@@ -74,22 +74,32 @@ export function FounderSection() {
             style={{ background: `linear-gradient(to bottom, ${LILAC}, color-mix(in srgb, var(--brand) 55%, transparent) 55%, transparent)` }}
           />
           <Para>
-            <SiteText as="span" multiline k="behind.p1a" fallback="Acredito que compartilhar conhecimento também é saber torná-lo compreensível. Meu objetivo é" />{" "}
-            <Hl k="behind.p1_hl" text="explicar conteúdos médicos de forma clara e acessível" />
-            <SiteText as="span" multiline autoSpace k="behind.p1b" fallback=", ajudando você a entender o raciocínio, conectar as informações e aplicar o que aprendeu." />
+            <SiteText as="span" multiline k="behind.v4_p1" fallback="Durante meus anos de estudo, também passei por erros e acertos. Levei tempo para compreender que estudar muitas horas não significa necessariamente aprender melhor. Aprendi a importância de estudar de forma ativa, conectar informações e voltar ao que ainda não havia compreendido." />
           </Para>
           <Para>
-            <SiteText as="span" multiline k="behind.p2" fallback="Foi dessa visão que nasceu a MedHelpSpace. Criei a plataforma para unir esse cuidado com a forma de ensinar a uma preparação orientada pelo que o Revalida exige: compreender as situações apresentadas, reconhecer as informações importantes e tomar decisões com mais segurança." />
+            <SiteText as="span" multiline k="behind.v4_p2" fallback="Mais tarde, ao conhecer de perto diferentes cursos e materiais de preparação para o Revalida, senti falta de algo que, para mim, era essencial: uma experiência de estudo realmente conectada à maneira como o INEP cobra o conhecimento médico." />
           </Para>
           <Para>
-            <Hl k="behind.p3_hl" text="Meu trabalho começa pelas próprias provas." />
-            <SiteText as="span" multiline autoSpace k="behind.p3b" fallback="Analiso os temas cobrados ao longo dos anos, comparo como aparecem em diferentes questões e observo quais informações são decisivas para chegar à resposta. Essa análise orienta o que priorizar, como explicar cada conteúdo e o que retomar nas revisões." />
+            <SiteText as="span" multiline k="behind.v4_p3a" fallback="Foi então que comecei a me fazer uma pergunta:" />{" "}
+            <Em k="behind.v4_p3_em" text="e se, em vez de partir de uma sequência de aulas, a preparação começasse pelas próprias provas?" />
           </Para>
           <Para>
-            <SiteText as="span" multiline k="behind.p4" fallback="Foi com esse cuidado que reuni questões, recursos visuais, áudios e revisão ativa. Cada formato tem um propósito: ajudar você a compreender, testar o que aprendeu e revisitar um mesmo tema por caminhos diferentes. Assim, você pode adaptar o estudo à sua rotina e trabalhar as dificuldades que identifica ao longo da preparação." />
+            <SiteText as="span" multiline k="behind.v4_p4" fallback="Dessa pergunta nasceu a MedHelpSpace." />
           </Para>
           <Para>
-            <SiteText as="span" multiline k="behind.p5" fallback="Sei que o Revalida carrega expectativas que vão muito além de uma prova. Por isso, dedico a este projeto o cuidado que uma etapa tão importante da sua trajetória merece — com respeito ao seu tempo, ao seu esforço e ao que você deseja conquistar." />
+            <SiteText as="span" multiline k="behind.v4_p5" fallback="Meu trabalho começa pela análise das questões do Revalida. Observo como os temas reaparecem ao longo dos anos, como as pistas mudam e quais informações são decisivas para chegar à resposta. Essa análise orienta a organização dos conteúdos e a forma como eles se conectam." />
+          </Para>
+          <Para>
+            <SiteText as="span" multiline k="behind.v4_p6" fallback="Quis reunir diferentes maneiras de estudar um mesmo assunto, permitindo que questões, revisões, recursos visuais e áudios se complementassem. Não para preencher horas com mais material, mas para que cada etapa do estudo tivesse um propósito." />
+          </Para>
+          <Para>
+            <Em k="behind.v4_p7_em" text="Meu objetivo foi criar a experiência de preparação que eu gostaria de ter encontrado: uma plataforma construída a partir da prova, com atenção ao raciocínio, à revisão e ao tempo de quem estuda." />
+          </Para>
+          <Para>
+            <SiteText as="span" multiline k="behind.v4_p8" fallback="Sei que o Revalida representa muito mais do que uma avaliação. Por trás de cada candidato existe uma trajetória, um esforço e um projeto de vida." />
+          </Para>
+          <Para>
+            <Em k="behind.v4_p9_em" text="É com respeito a tudo isso que conduzo a MedHelpSpace, com o cuidado e a responsabilidade que essa etapa da sua trajetória merece." />
           </Para>
         </div>
 
@@ -100,7 +110,9 @@ export function FounderSection() {
             className="text-xl font-bold tracking-[-0.01em] md:text-2xl"
             style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
           >
-            <SiteText as="span" k="behind.sign_name" fallback="Karina Razmus" />
+            <em>
+              <SiteText as="span" k="behind.sign_name" fallback="Karina Razmus" />
+            </em>
           </div>
           <div className="mt-1 text-[0.9375rem] font-medium" style={{ color: LILAC }}>
             <SiteText as="span" k="behind.sign_role" fallback="Fundadora da MedHelpSpace" />
