@@ -43,8 +43,42 @@ const stepStrings = (s: StepDoc): string[] => [
   ...s.options.flatMap((o) => [o.label, o.feedback ?? "", o.seduction ?? "", ...strings(o.effect)]),
 ];
 
-/** Numbers as written ("1.150", "7,45", "286"); a single digit is too common to mean anything. */
-const numbersIn = (t: string): string[] => (t.match(/\d+(?:[.,]\d+)*/g) ?? []).filter((n) => n.length > 1);
+// ── Findings, not digits (Karina 2026-10-22, CEC-19) ─────────────────────────
+// The result-leak check compared bare numbers, so "há 14 meses" (in a result)
+// matched a dose "às 14h" later, and the "76" of "128/76 mmHg" matched a new
+// reading "130/76 mmHg" at the return visit. A finding is the WHOLE value — a
+// compound like 128/76 stays one value — together with its unit when the unit
+// is a known clinical/time unit. "14 meses" ≠ "14h" ≠ "14"; "128/76 mmHg" ≠
+// "130/76 mmHg" ≠ "76 bpm". The same finding reappearing is still a leak.
+const UNITS = new Set([
+  "h", "hs", "min", "minuto", "minutos", "hora", "horas", "dia", "dias", "semana", "semanas",
+  "mes", "meses", "ano", "anos", "mmhg", "bpm", "irpm", "ipm", "rpm", "%", "°c", "ºc", "c",
+  "mg", "g", "kg", "mcg", "µg", "ug", "ml", "l", "dl", "cm", "mm", "m", "ui", "u",
+  "mg/dl", "g/dl", "mmol/l", "meq/l", "mg/l", "ng/ml", "pg/ml", "u/l", "ui/l", "ui/ml",
+  "mm3", "/mm3", "cmh2o", "kg/m2", "ml/min", "l/min", "mg/kg", "vezes", "x",
+]);
+const stripMarks = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+const RE_FINDING = /(\d+(?:[.,]\d+)*(?:\s*\/\s*\d+(?:[.,]\d+)*)*)(?:\s*(%|[°º]\s?C|\/?[A-Za-zÀ-ÿµ][A-Za-zÀ-ÿµ0-9]*(?:\/[A-Za-zÀ-ÿµ0-9]+)?))?/g;
+
+type Finding = { key: string; shown: string };
+
+/** Every finding in a text: "128/76 mmHg" → key "128/76 mmhg"; "14 meses" → "14 meses"; "14h" → "14 h". */
+export function findingsIn(t: string): Finding[] {
+  const out: Finding[] = [];
+  for (const m of t.matchAll(RE_FINDING)) {
+    const value = m[1].replace(/\s+/g, "");
+    // A lone single digit is too common to mean anything (same rule as before).
+    if (!value.includes("/") && value.replace(/[.,]/g, "").length < 2) continue;
+    const rawUnit = (m[2] ?? "").replace(/\s+/g, "");
+    const unit = stripMarks(rawUnit).toLowerCase();
+    const known = UNITS.has(unit) ? unit : "";
+    out.push({ key: known ? `${value} ${known}` : value, shown: known ? `${value} ${rawUnit}` : value });
+  }
+  return out;
+}
+
+/** A later conduct that explicitly OBTAINS data may reveal that value as its own result. */
+const RE_OBTAINS = /\b(solicit|ped[ei]|medi[rd]|med[ei]|aferi|afer[ei]|dosa|dosag|repet|colet|coleta|realiz|reavali|examin|verific|chec|obt[eé]m|obter|nova (aferi|medida|dosagem))/i;
 
 export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null): Check[] {
   const checks: Check[] = [];
@@ -138,24 +172,36 @@ export function validateForPublish(doc: CaseDoc, probe: MediaProbe = () => null)
     if (s.kind !== "investigacao") return;
     // The block's own prompt and option labels are on screen before confirming.
     const before = new Set(
-      [...steps.slice(0, i).flatMap(stepStrings), ...strings(s.content), ...s.options.map((o) => o.label)].flatMap(numbersIn),
+      [...steps.slice(0, i).flatMap(stepStrings), ...strings(s.content), ...s.options.map((o) => o.label)]
+        .flatMap(findingsIn)
+        .map((f) => f.key),
     );
-    const owner = new Map<string, string>(); // result-only number → the option it belongs to
+    const owner = new Map<string, { option: string; shown: string }>(); // result-only finding → its option
     for (const o of s.options) {
-      for (const n of strings(o.effect).flatMap(numbersIn)) if (!before.has(n) && !owner.has(n)) owner.set(n, o.label);
+      for (const f of strings(o.effect).flatMap(findingsIn)) {
+        if (!before.has(f.key) && !owner.has(f.key)) owner.set(f.key, { option: o.label, shown: f.shown });
+      }
     }
     if (!owner.size) return;
+    // Later conducts: the label, feedback and seduction are read by everyone; the
+    // revealed result is exempt only when the conduct itself explicitly obtains
+    // data ("Aferir novamente a PA…") — then the value is that action's own.
+    const laterStrings = (t: StepDoc): string[] => [
+      ...strings(t.content),
+      ...t.options.flatMap((o) => [o.label, o.feedback ?? "", o.seduction ?? "", ...(RE_OBTAINS.test(o.label) ? [] : strings(o.effect))]),
+    ];
     const everyone: [text: string, where: string][] = [
       ...s.options.map((o): [string, string] => [o.feedback ?? "", `o feedback de "${o.label}"`]),
-      ...steps.slice(i + 1).flatMap((t, j) => stepStrings(t).map((x): [string, string] => [x, label(t, i + 1 + j)])),
+      ...steps.slice(i + 1).flatMap((t, j) => laterStrings(t).map((x): [string, string] => [x, label(t, i + 1 + j)])),
       [doc.takeaway ?? "", "Leve deste caso"],
     ];
     const flagged = new Set<string>();
     for (const [text, where] of everyone) {
-      for (const n of numbersIn(text)) {
-        if (!owner.has(n) || flagged.has(n)) continue;
-        flagged.add(n);
-        add(false, `${label(s, i)}: "${n}" só existe no resultado de "${owner.get(n)}", mas aparece também em ${where} — quem não pediu esse exame leria o resultado ali`, false);
+      for (const f of findingsIn(text)) {
+        const hit = owner.get(f.key);
+        if (!hit || flagged.has(f.key)) continue;
+        flagged.add(f.key);
+        add(false, `${label(s, i)}: "${hit.shown}" só existe no resultado de "${hit.option}", mas aparece também em ${where} — quem não pediu esse exame leria o resultado ali`, false);
       }
     }
   });
