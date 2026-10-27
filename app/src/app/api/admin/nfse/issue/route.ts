@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Record the outcome of a MANUALLY-issued NFS-e (issued on the WebISS portal), or
+// Record the outcome of a MANUALLY-issued NFS-e (issued on the national Emissor portal), or
 // mark a paid order as "dispensada" (no nota needed). No money or external call —
 // this only writes the tracking columns + an audit row.
 export async function POST(request: NextRequest) {

@@ -4,16 +4,21 @@ import { useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { Search, Copy, Check, ExternalLink, FileText, Lock, Pencil } from "lucide-react";
+import { BR_TZ } from "@/lib/br-date";
 
-// ── Fiscal constants (validated via the 2026-06-27 test note). Edit here when the
-//    accountant finalizes wording / rates. `{turma}` is replaced with the cohort. ──
+// ── Fiscal constants. Edit here when the accountant finalizes wording / rates.
+//    `{turma}` is replaced with the cohort. From 01/11/2026 Simples Nacional
+//    companies issue on the national Emissor (Karina 2026-10-27) — manually, with
+//    the e-CNPJ A1 in her browser; the certificate never touches this app. ──
 const SERVICO = {
-  codigo: "0802",
+  // Código de Tributação Nacional: instrução, treinamento, orientação pedagógica
+  // e avaliação de conhecimentos.
+  codigo: "080201",
   iss: "5%",
   descricaoTemplate:
     "Acesso à plataforma de estudos MedHelpSpace — curso preparatório online para o Revalida (Turma {turma}).",
 };
-const WEBISS_URL = "https://feiradesantanaba.webiss.com.br/";
+const EMISSOR_NACIONAL_URL = "https://www.nfse.gov.br/EmissorNacional";
 
 interface Row {
   id: string;
@@ -22,7 +27,14 @@ interface Row {
   accountName: string | null;
   cohortName: string;
   amountCents: number;
+  baseAmountCents: number;
+  discountCents: number;
+  interestCents: number;
+  paymentMethod: string;
+  installments: number | null;
+  orderStatus: string;
   createdAt: string;
+  paidAt: string | null;
   eligibleAt: string;
   ready: boolean;
   waiting: boolean;
@@ -51,6 +63,30 @@ function fmtDate(iso: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+// Copied values go onto the nota, so they use the Brazilian calendar date — never
+// the admin's browser timezone.
+function fmtDateBR(iso: string | null) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BR_TZ });
+}
+
+// Fiscal data in Portuguese, like the description — it is pasted into the portal.
+const ORDER_STATUS_PT: Record<string, string> = {
+  paid: "Pago",
+  pending: "Pendente",
+  refunded: "Estornado",
+  cancelled: "Cancelado",
+  declined: "Recusado",
+};
+function paymentStatus(r: Row) {
+  const status = ORDER_STATUS_PT[r.orderStatus] ?? r.orderStatus;
+  const method =
+    r.paymentMethod === "pix"
+      ? "Pix"
+      : `Cartão de crédito${r.installments && r.installments > 1 ? ` (${r.installments}x)` : ""}`;
+  return `${status} — ${method}`;
 }
 
 function buyerName(r: Row) {
@@ -177,13 +213,13 @@ export function NotasFiscaisClient({
           <p className="text-sm text-muted-foreground">{t("notasFiscais.subtitle")}</p>
         </div>
         <a
-          href={WEBISS_URL}
+          href={EMISSOR_NACIONAL_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          {t("notasFiscais.openWebiss")}
+          {t("notasFiscais.openPortal")}
         </a>
       </div>
 
@@ -349,8 +385,14 @@ function NotaDetail({
   const cityState = [row.city, row.state].filter(Boolean).join(" - ");
 
   const allBlock = [
+    `Pedido: ${row.id}`,
+    `Produto: Turma ${row.cohortName}`,
+    `Data da venda: ${fmtDateBR(row.createdAt)}`,
+    `Data do pagamento: ${fmtDateBR(row.paidAt) || "—"}`,
+    `Situação do pagamento: ${paymentStatus(row)}`,
+    "—",
     `Nome: ${`${row.firstName} ${row.lastName}`.trim()}`,
-    `CPF: ${row.cpf}`,
+    `CPF/CNPJ: ${row.cpf}`,
     `E-mail: ${row.email}`,
     `Telefone: ${row.phone}`,
     `CEP: ${row.cep}`,
@@ -359,9 +401,12 @@ function NotaDetail({
     `Cidade: ${cityState}`,
     "—",
     `Serviço: ${descricao(row)}`,
-    `Cód. serviço municipal: ${SERVICO.codigo}`,
+    `Cód. Tributação Nacional: ${SERVICO.codigo}`,
     `Alíquota ISS: ${SERVICO.iss}`,
-    `Valor: ${fmt(row.amountCents)}`,
+    `Valor original: ${fmt(row.baseAmountCents)}`,
+    `Desconto: ${fmt(row.discountCents)}`,
+    ...(row.interestCents > 0 ? [`Juros do parcelamento: ${fmt(row.interestCents)}`] : []),
+    `Valor pago: ${fmt(row.amountCents)}`,
   ].join("\n");
 
   function save(action: "issue" | "skip") {
@@ -430,21 +475,37 @@ function NotaDetail({
           </p>
         )}
 
-        {/* Tomador */}
+        {/* Venda */}
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("notasFiscais.sectionTomador")}
+              {t("notasFiscais.sectionVenda")}
             </h3>
             <button
               type="button"
               onClick={copyAll}
-              className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+              className="flex min-h-11 items-center gap-1 text-xs font-medium text-brand hover:underline"
             >
               <Copy className="h-3 w-3" />
               {t("notasFiscais.copyAll")}
             </button>
           </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <CopyField label={t("notasFiscais.fieldOrderId")} value={row.id} />
+            <CopyField label={t("notasFiscais.fieldProduct")} value={`Turma ${row.cohortName}`} />
+            <CopyField label={t("notasFiscais.fieldSaleDate")} value={fmtDateBR(row.createdAt)} />
+            <CopyField label={t("notasFiscais.fieldPaidDate")} value={fmtDateBR(row.paidAt)} />
+          </div>
+          <div className="mt-2 grid gap-2">
+            <CopyField label={t("notasFiscais.fieldPaymentStatus")} value={paymentStatus(row)} />
+          </div>
+        </div>
+
+        {/* Tomador */}
+        <div className="mb-4">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("notasFiscais.sectionTomador")}
+          </h3>
           <div className="grid gap-2 sm:grid-cols-2">
             <CopyField label={t("notasFiscais.fieldName")} value={`${row.firstName} ${row.lastName}`.trim()} />
             <CopyField label={t("notasFiscais.fieldCpf")} value={row.cpf} />
@@ -464,10 +525,17 @@ function NotaDetail({
           </h3>
           <div className="grid gap-2">
             <CopyField label={t("notasFiscais.fieldDescription")} value={descricao(row)} />
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2">
               <CopyField label={t("notasFiscais.fieldServiceCode")} value={SERVICO.codigo} />
               <CopyField label={t("notasFiscais.fieldIss")} value={SERVICO.iss} />
-              <CopyField label={t("notasFiscais.fieldAmount")} value={fmt(row.amountCents)} />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <CopyField label={t("notasFiscais.fieldOriginalAmount")} value={fmt(row.baseAmountCents)} />
+              <CopyField label={t("notasFiscais.fieldDiscount")} value={fmt(row.discountCents)} />
+              {row.interestCents > 0 && (
+                <CopyField label={t("notasFiscais.fieldInterest")} value={fmt(row.interestCents)} />
+              )}
+              <CopyField label={t("notasFiscais.fieldPaidAmount")} value={fmt(row.amountCents)} />
             </div>
           </div>
         </div>

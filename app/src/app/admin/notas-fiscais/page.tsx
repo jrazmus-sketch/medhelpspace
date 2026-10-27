@@ -15,8 +15,17 @@ interface RawOrder {
   user_id: string;
   cohort_id: number;
   amount_cents: number;
+  base_amount_cents: number | null;
+  discount_cents: number | null;
+  interest_cents: number | null;
+  payment_method: string;
+  cc_installments: number | null;
   status: string;
   created_at: string;
+  // Payment time from the stored PagBank snapshot: a charge carries `paid_at`
+  // at the top level; an order snapshot (card checkout) under `charges[0]`.
+  charge_paid_at: string | null;
+  order_paid_at: string | null;
   billing_first_name: string | null;
   billing_last_name: string | null;
   billing_cpf: string | null;
@@ -59,7 +68,10 @@ export default async function NotasFiscaisPage() {
   const { data: ordersData } = await admin
     .from("orders")
     .select(
-      "id, user_id, cohort_id, amount_cents, status, created_at, " +
+      "id, user_id, cohort_id, amount_cents, base_amount_cents, discount_cents, " +
+        "interest_cents, payment_method, cc_installments, status, created_at, " +
+        "charge_paid_at:pagbank_response->>paid_at, " +
+        "order_paid_at:pagbank_response->charges->0->>paid_at, " +
         "billing_first_name, billing_last_name, billing_cpf, billing_cep, " +
         "billing_address, billing_number, billing_neighborhood, billing_city, " +
         "billing_state, billing_phone, " +
@@ -101,7 +113,16 @@ export default async function NotasFiscaisPage() {
       accountName: profileMap.get(o.user_id as string)?.name ?? null,
       cohortName: cohortMap.get(o.cohort_id as number) ?? "—",
       amountCents: o.amount_cents as number,
+      // Orders from before coupons/interest were tracked have no base — then the
+      // charged amount IS the original price.
+      baseAmountCents: o.base_amount_cents ?? o.amount_cents,
+      discountCents: o.discount_cents ?? 0,
+      interestCents: o.interest_cents ?? 0,
+      paymentMethod: o.payment_method,
+      installments: o.cc_installments,
+      orderStatus: o.status,
       createdAt: o.created_at as string,
+      paidAt: o.charge_paid_at ?? o.order_paid_at ?? null,
       eligibleAt: new Date(eligibleMs).toISOString(),
       ready: !handled && now >= eligibleMs,
       waiting: !handled && now < eligibleMs,
