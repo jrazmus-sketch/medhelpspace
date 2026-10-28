@@ -1129,7 +1129,8 @@
     "refundReasonPlaceholder": "Ex.: solicitação do aluno, cobrança duplicada…",
     "confirmRefund": "Confirmar estorno",
     "refundSending": "Estornando…",
-    "refundError": "Erro ao estornar"
+    "refundError": "Erro ao estornar",
+    "statusFreeShort": "Matrícula gratuita"
   },
   "notasFiscais": {
     "title": "Notas Fiscais",
@@ -1227,7 +1228,12 @@
     "markTestConfirm": "Confirma que este registro é um teste interno, e não uma venda? Ele sai das vendas e de \"Aguardando emissão\".",
     "unmarkTest": "Desmarcar teste interno",
     "webissTestNota": "Nota de teste emitida no WebISS — competência anterior a 01/11/2026.",
-    "webissTestRefunded": "Teste reembolsado com NFS-e emitida no WebISS — verifique se a nota fiscal também foi cancelada."
+    "webissTestRefunded": "Teste reembolsado com NFS-e emitida no WebISS — verifique se a nota fiscal também foi cancelada.",
+    "statusFree": "Matrículas gratuitas",
+    "freeBadge": "Matrícula gratuita — sem cobrança",
+    "freeRevoked": "Matrícula cancelada",
+    "freeListNote": "Matrículas com cupom de 100% (R$ 0): não são vendas, não entram em \"Aguardando emissão\" e não geram NFS-e. Ficam aqui apenas como histórico.",
+    "freeBanner": "Matrícula gratuita — sem cobrança. Não é uma venda paga e não gera NFS-e de valor zero. Se foi feita em um teste da equipe, marque-a como teste interno."
   },
   "embaixadores": {
     "title": "Embaixadores",

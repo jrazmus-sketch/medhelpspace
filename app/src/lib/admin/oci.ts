@@ -68,7 +68,8 @@ export async function getOciReadyCounts(): Promise<OciReadyCounts> {
     base().not("sim_entered_at", "is", null).is("oci_sim_started_uploaded_at", null),
     base().not("sim_completed_at", "is", null).is("oci_sim_submitted_uploaded_at", null),
     orders().is("oci_checkout_uploaded_at", null),
-    orders().eq("status", "paid").is("oci_purchase_uploaded_at", null),
+    // A R$ 0 "Matrícula gratuita" is not a purchase (Karina 2026-10-28).
+    orders().eq("status", "paid").gt("amount_cents", 0).is("oci_purchase_uploaded_at", null),
   ]);
   return {
     verified: verified ?? 0,
@@ -175,11 +176,15 @@ export async function buildOciExport(opts: { feedSinceIso?: string } = {}): Prom
         .from("orders")
         .select("id, user_id, gclid, created_at, base_amount_cents, amount_cents")
         .not("gclid", "is", null)
-        .eq("status", "paid"),
+        .eq("status", "paid")
+        // A 100%-off "Matrícula gratuita" is not a purchase (Karina 2026-10-28) —
+        // and its base_amount_cents would report the full list price.
+        .gt("amount_cents", 0),
       "oci_purchase_uploaded_at",
       "created_at",
     ),
     // Every paid ad order, uploaded or not — to skip the lead-based duplicate.
+    // Free enrollments included on purpose: their lead must not be sent either.
     admin.from("orders").select("user_id").not("gclid", "is", null).eq("status", "paid"),
   ]);
   const usersWithAdOrder = new Set((allPaidAdOrders ?? []).map((o) => o.user_id as string));
@@ -188,6 +193,8 @@ export async function buildOciExport(opts: { feedSinceIso?: string } = {}): Prom
   // Mirrors how finalize.ts flips the lead to converted (matched by account email).
   const emailToValue = new Map<string, number>();
   const emailsCoveredByOrder = new Set<string>();
+  // Leads whose only "purchase" was a free enrollment: stamped, never sent.
+  const emailsWithFreeOrder = new Set<string>();
   const emails = [
     ...new Set((purchaseLeads ?? []).map((l) => (l.email as string).toLowerCase())),
   ];
@@ -209,6 +216,10 @@ export async function buildOciExport(opts: { feedSinceIso?: string } = {}): Prom
       for (const o of orders ?? []) {
         const em = idToEmail.get(o.user_id as string);
         if (!em) continue;
+        if ((o.amount_cents as number) === 0) {
+          emailsWithFreeOrder.add(em);
+          continue;
+        }
         // Sale value in BRL. Prefer the base (pre-installment-interest) price and
         // fall back to the total charged. Change here if you'd rather report the
         // total (amount_cents) or net-of-discount.
@@ -284,6 +295,11 @@ export async function buildOciExport(opts: { feedSinceIso?: string } = {}): Prom
     const email = (l.email as string).toLowerCase();
     // Already reported from the order itself — stamp it, never send it twice.
     if (emailsCoveredByOrder.has(email)) {
+      purchaseIds.push(l.id as string);
+      continue;
+    }
+    // Converted only by a "Matrícula gratuita" — not a purchase to report.
+    if (emailsWithFreeOrder.has(email) && !emailToValue.has(email)) {
       purchaseIds.push(l.id as string);
       continue;
     }

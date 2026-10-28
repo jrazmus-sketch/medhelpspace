@@ -267,10 +267,11 @@ export function CheckoutClient({
 
   // Fire the GA4 `purchase` conversion exactly once when payment is confirmed.
   // Both card-approved and Pix-paid flip `paid`, so this single effect covers
-  // both methods. Value is in BRL (reais), post-coupon.
+  // both methods. Value is in BRL (reais), post-coupon. A 100%-off enrollment is
+  // a "Matrícula gratuita", not a sale (Karina 2026-10-28): no purchase event.
   const purchaseTracked = useRef(false);
   useEffect(() => {
-    if (!paid || purchaseTracked.current) return;
+    if (!paid || purchaseTracked.current || isFullDiscount) return;
     purchaseTracked.current = true;
     trackPurchase({
       value: effectiveAmountCents / 100,
@@ -378,7 +379,7 @@ export function CheckoutClient({
         </div>
         <div>
           <h2 className="text-2xl font-extrabold text-foreground">
-            Pagamento confirmado!
+            {isFullDiscount ? "Matrícula confirmada!" : "Pagamento confirmado!"}
           </h2>
           <p className="mt-2 text-foreground/55">
             Sua matrícula na {cohortName} foi ativada. Bons estudos!

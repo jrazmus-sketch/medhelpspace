@@ -27,6 +27,8 @@ const ORDER_STATUS_STYLE: Record<string, string> = {
   declined: "bg-red-500/15 text-red-700 dark:text-red-400",
   cancelled: "bg-surface-2 text-muted-foreground",
   refunded: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  // A paid R$ 0 order: 100%-coupon "Matrícula gratuita", not a sale (Karina 2026-10-28).
+  free: "bg-brand/10 text-brand-text",
 };
 
 // Friendly labels for the lifecycle email kinds the cron writes to email_log.
@@ -526,18 +528,25 @@ export function MemberDetailDrawer({ row, onClose }: Props) {
                               <p className="font-medium">{fmtMoney(o.amountCents)}</p>
                               <p className="truncate text-xs text-muted-foreground">
                                 {fmtDate(o.createdAt)} ·{" "}
-                                {o.paymentMethod === "pix"
+                                {o.status === "paid" && o.amountCents === 0
+                                  ? "—"
+                                  : o.paymentMethod === "pix"
                                   ? "Pix"
                                   : `${t("members.card")}${o.ccInstallments && o.ccInstallments > 1 ? ` · ${o.ccInstallments}x` : ""}`}
                                 {o.cohortName ? ` · ${o.cohortName}` : ""}
                               </p>
                             </div>
                             <span
-                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_STYLE[o.status] ?? ORDER_STATUS_STYLE.pending}`}
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                                ORDER_STATUS_STYLE[o.status === "paid" && o.amountCents === 0 ? "free" : o.status] ??
+                                ORDER_STATUS_STYLE.pending
+                              }`}
                             >
-                              {t(`billing.status${o.status.charAt(0).toUpperCase()}${o.status.slice(1)}`, {
-                                defaultValue: o.status,
-                              })}
+                              {o.status === "paid" && o.amountCents === 0
+                                ? t("billing.statusFreeShort")
+                                : t(`billing.status${o.status.charAt(0).toUpperCase()}${o.status.slice(1)}`, {
+                                    defaultValue: o.status,
+                                  })}
                             </span>
                           </div>
 

@@ -264,7 +264,12 @@ export async function getAdminDashboardData(opts: {
   };
 
   // ── Aggregate paid orders ───────────────────────────────────────────────────
-  const paid = (paidRes.data ?? []) as PaidOrder[];
+  // Sales only: an internal test is history, and a R$ 0 "Matrícula gratuita"
+  // (100% coupon) is not a sale — neither counts in totals, the recent-sales
+  // list or the NFS-e backlog (Karina 2026-10-27/28).
+  const paid = ((paidRes.data ?? []) as PaidOrder[]).filter(
+    (o) => o.amount_cents > 0 && !o.internal_test,
+  );
   const revenueByCohort = new Map<number, number>();
   let monthCents = 0, lastMonthCents = 0, monthCount = 0, weekCount = 0, todayCount = 0;
   let pixCount = 0, cardCount = 0, lifetimeCents = 0;

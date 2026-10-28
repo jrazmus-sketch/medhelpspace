@@ -478,14 +478,18 @@ export async function POST(request: NextRequest) {
   // DB trigger when the order settles, against the contract's state on that date.
   //
   // Best-effort: an attribution lookup failure must not cost the buyer a purchase.
+  // A 100%-off order is a "Matrícula gratuita", not a sale (Karina 2026-10-28):
+  // never attributed, so the trigger can never book a R$ 0 commission for it.
   let attribution: Awaited<ReturnType<typeof resolveAttribution>> = null;
-  try {
-    attribution = await resolveAttribution({
-      couponId,
-      refCode: request.cookies.get(REF_COOKIE)?.value ?? null,
-    });
-  } catch (err) {
-    console.error("ambassador attribution lookup failed", err);
+  if (!isFullDiscount) {
+    try {
+      attribution = await resolveAttribution({
+        couponId,
+        refCode: request.cookies.get(REF_COOKIE)?.value ?? null,
+      });
+    } catch (err) {
+      console.error("ambassador attribution lookup failed", err);
+    }
   }
 
   // Google Ads click (set by the proxy when the visitor landed from an ad). Frozen

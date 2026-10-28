@@ -81,7 +81,7 @@ export interface FiscalRow {
 }
 
 type Product = "all" | "revalida" | "clinact";
-type Situation = "all" | "pending" | "issued" | "cancelled" | "refunded" | "test";
+type Situation = "all" | "pending" | "issued" | "cancelled" | "refunded" | "free" | "test";
 type NotaState = "pending" | "issued" | "cancelled" | "skipped";
 
 function notaState(r: FiscalRow): NotaState {
@@ -97,14 +97,21 @@ function notaState(r: FiscalRow): NotaState {
 //
 // An internal test is never a sale nor a nota pending on the Emissor Nacional
 // (Karina 2026-10-27): every filter but "Testes internos" leaves it out.
+//
+// Neither is a "Matrícula gratuita" — a 100%-off order, R$ 0 charged (Karina
+// 2026-10-28): no NFS-e of value zero, kept in the history under its own
+// filter. A free enrollment made in a team test is marked "Teste interno" and
+// then lists there instead.
+const isFree = (r: FiscalRow) => r.totalCents === 0;
+const isSale = (r: FiscalRow) => !r.internalTest && !isFree(r);
 const SITUATION: Record<Exclude<Situation, "all">, (r: FiscalRow) => boolean> = {
-  pending: (r) => !r.internalTest && notaState(r) === "pending" && !r.refunded,
-  issued: (r) => !r.internalTest && notaState(r) === "issued",
-  cancelled: (r) => !r.internalTest && notaState(r) === "cancelled",
-  refunded: (r) => !r.internalTest && r.refunded,
+  pending: (r) => isSale(r) && notaState(r) === "pending" && !r.refunded,
+  issued: (r) => isSale(r) && notaState(r) === "issued",
+  cancelled: (r) => isSale(r) && notaState(r) === "cancelled",
+  refunded: (r) => isSale(r) && r.refunded,
+  free: (r) => !r.internalTest && isFree(r),
   test: (r) => r.internalTest,
 };
-const isSale = (r: FiscalRow) => !r.internalTest;
 
 /** A test nota recorded before the national Emissor existed — it was a WebISS one. */
 function isWebissTestNota(r: FiscalRow) {
@@ -135,6 +142,10 @@ function fmtDoc(r: FiscalRow) {
 // Fiscal VALUES are Portuguese, like the description — they are pasted into
 // the portal. Only the labels follow the admin's language.
 function paymentStatus(r: FiscalRow) {
+  // Nothing was charged: never "Pago — Pix" (Karina 2026-10-28, her wording).
+  if (isFree(r)) {
+    return r.refunded ? "Matrícula gratuita — cancelada" : "Matrícula gratuita — sem cobrança";
+  }
   const status = r.refunded ? "Reembolsado" : "Pago";
   const method =
     r.kind === "clinact"
@@ -320,6 +331,7 @@ const BADGE = {
   skipped: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   refunded: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   test: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+  free: "bg-brand/10 text-brand-text",
 };
 
 function StatusBadges({ r }: { r: FiscalRow }) {
@@ -343,23 +355,29 @@ function StatusBadges({ r }: { r: FiscalRow }) {
             {t("notasFiscais.testBadge")}
           </span>
         )}
-        {!(state === "pending" && (r.refunded || r.internalTest)) && (
+        {isFree(r) && (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE.free}`}>
+            {t("notasFiscais.freeBadge")}
+          </span>
+        )}
+        {!(state === "pending" && (r.refunded || r.internalTest || isFree(r))) && (
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE[state]}`}>
             {label}
           </span>
         )}
         {r.refunded && (
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE.refunded}`}>
-            {t("notasFiscais.statusRefunded")}
+            {/* No money moved on a free enrollment: "estornar" it only revoked the access. */}
+            {isFree(r) ? t("notasFiscais.freeRevoked") : t("notasFiscais.statusRefunded")}
           </span>
         )}
       </div>
-      {!r.internalTest && state === "pending" && !r.refunded && r.inGuarantee && (
+      {isSale(r) && state === "pending" && !r.refunded && r.inGuarantee && (
         <p className="text-[11px] text-muted-foreground">
           {t("notasFiscais.guaranteeUntil", { date: fmtDateBR(r.eligibleAt) })}
         </p>
       )}
-      {!r.internalTest && state === "issued" && r.refunded && (
+      {isSale(r) && state === "issued" && r.refunded && (
         <p className="flex items-center gap-1 text-[11px] font-medium text-red-700 dark:text-red-400">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           {t("notasFiscais.refundedWithActiveNota")}
@@ -483,6 +501,7 @@ export function NotasFiscaisClient({
             { value: "issued", label: t("notasFiscais.statusIssued"), count: count("issued") },
             { value: "cancelled", label: t("notasFiscais.statusCancelled"), count: count("cancelled") },
             { value: "refunded", label: t("notasFiscais.statusRefunded"), count: count("refunded") },
+            { value: "free", label: t("notasFiscais.statusFree"), count: count("free") },
             { value: "test", label: t("notasFiscais.statusTest"), count: count("test") },
           ]}
         />
@@ -500,6 +519,9 @@ export function NotasFiscaisClient({
 
       {situation === "test" && (
         <p className="text-sm text-muted-foreground">{t("notasFiscais.testListNote")}</p>
+      )}
+      {situation === "free" && (
+        <p className="text-sm text-muted-foreground">{t("notasFiscais.freeListNote")}</p>
       )}
 
       {filtered.length === 0 && (
@@ -739,7 +761,13 @@ function NotaDetail({
           </p>
         )}
 
-        {!row.internalTest && state === "pending" && !row.refunded && row.inGuarantee && (
+        {isFree(row) && (
+          <p className="mb-4 rounded-lg border border-brand/30 bg-brand/5 px-3 py-2 text-xs text-foreground">
+            {t("notasFiscais.freeBanner")}
+          </p>
+        )}
+
+        {isSale(row) && state === "pending" && !row.refunded && row.inGuarantee && (
           <p className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
             {t("notasFiscais.guaranteeNote", { days: guaranteeDays })}
           </p>
@@ -761,8 +789,11 @@ function NotaDetail({
           </div>
         ))}
 
-        {/* Record what was done on the Portal Nacional */}
+        {/* Record what was done on the Portal Nacional — never for a free
+            enrollment: there is no NFS-e of value zero (Karina 2026-10-28). */}
         <div className="border-t border-border pt-4">
+          {!isFree(row) && (
+          <>
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("notasFiscais.markIssued")}
@@ -869,6 +900,9 @@ function NotaDetail({
             )}
           </div>
 
+          </>
+          )}
+
           {/* ClinAct has no refund flow in the app: the refund is made in the
               PagBank panel and only recorded here. Revalida refunds come from
               the order itself (Faturamento → reembolso). */}
@@ -887,7 +921,7 @@ function NotaDetail({
           )}
 
           {/* A test purchase made after 28/10/2026 is marked here, by hand. */}
-          <div className="mt-5 border-t border-border pt-4">
+          <div className={isFree(row) ? "" : "mt-5 border-t border-border pt-4"}>
             <p className="mb-2 text-xs text-muted-foreground">{t("notasFiscais.testHint")}</p>
             <button
               type="button"

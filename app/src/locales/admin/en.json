@@ -1129,7 +1129,8 @@
     "refundReasonPlaceholder": "e.g. student request, duplicate charge…",
     "confirmRefund": "Confirm refund",
     "refundSending": "Refunding…",
-    "refundError": "Refund failed"
+    "refundError": "Refund failed",
+    "statusFreeShort": "Free enrollment"
   },
   "notasFiscais": {
     "title": "Invoices (NFS-e)",
@@ -1227,7 +1228,12 @@
     "markTestConfirm": "Confirm this record is an internal test, not a sale? It leaves the sales and the awaiting-issue list.",
     "unmarkTest": "Unmark internal test",
     "webissTestNota": "Test invoice issued on WebISS — period before 01/11/2026.",
-    "webissTestRefunded": "Refunded test with an NFS-e issued on WebISS — check that the invoice was also cancelled."
+    "webissTestRefunded": "Refunded test with an NFS-e issued on WebISS — check that the invoice was also cancelled.",
+    "statusFree": "Free enrollments",
+    "freeBadge": "Free enrollment — no charge",
+    "freeRevoked": "Enrollment cancelled",
+    "freeListNote": "Enrollments with a 100% coupon (R$ 0): not sales, never awaiting issue, never an NFS-e. Kept here as history only.",
+    "freeBanner": "Free enrollment — no charge. Not a paid sale and never an NFS-e of value zero. If it was made in a team test, mark it as an internal test."
   },
   "embaixadores": {
     "title": "Ambassadors",

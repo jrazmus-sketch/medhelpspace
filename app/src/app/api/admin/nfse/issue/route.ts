@@ -76,11 +76,16 @@ export async function POST(request: NextRequest) {
   const table = kind === "clinact" ? "clinact_invoices" : "orders";
   const { data: current } = await admin
     .from(table)
-    .select(kind === "clinact" ? "id, user_id, nfse_status, refunded_at" : "id, user_id, status, nfse_status")
+    .select(
+      kind === "clinact"
+        ? "id, user_id, amount_cents, nfse_status, refunded_at"
+        : "id, user_id, amount_cents, status, nfse_status",
+    )
     .eq("id", id)
     .maybeSingle();
   const row = current as unknown as {
     user_id: string;
+    amount_cents: number;
     nfse_status: string | null;
     status?: string;
     refunded_at?: string | null;
@@ -101,6 +106,14 @@ export async function POST(request: NextRequest) {
 
   switch (action) {
     case "issue": {
+      // A 100%-off "Matrícula gratuita" (R$ 0) never gets an NFS-e of value zero
+      // (Karina 2026-10-28) — the screen hides the form; this is the second layer.
+      if (row.amount_cents === 0) {
+        return NextResponse.json(
+          { error: "Matrícula gratuita — sem cobrança: não gera NFS-e." },
+          { status: 409 },
+        );
+      }
       if (!numero) {
         return NextResponse.json({ error: "Informe o número da NFS-e." }, { status: 400 });
       }

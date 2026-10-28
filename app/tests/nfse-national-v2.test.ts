@@ -95,6 +95,6 @@ test("fiscal screen: the filters Karina listed, Cancelada ≠ Reembolsada", () =
   assert.equal(ptBR.statusIssued, "Emitida");
   assert.equal(ptBR.statusCancelled, "Cancelada");
   assert.equal(ptBR.statusRefunded, "Reembolsada");
-  assert.match(client, /cancelled: \(r\) => !r\.internalTest && notaState\(r\) === "cancelled"/);
-  assert.match(client, /refunded: \(r\) => !r\.internalTest && r\.refunded/);
+  assert.match(client, /cancelled: \(r\) => isSale\(r\) && notaState\(r\) === "cancelled"/);
+  assert.match(client, /refunded: \(r\) => isSale\(r\) && r\.refunded/);
 });

@@ -189,6 +189,12 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   outra PF / PJ. Card holder CPF is sent apart ("O titular do cartão tem o mesmo CPF…" checkbox) and is
   the PagBank holder `tax_id`; the PagBank customer is the tomador. Orders without `tomador_type` are
   legacy: the fiscal screen derives them from `billing_person_type` as before.
+  **v5 (Karina 2026-10-28, approval round):** a paid order with `amount_cents = 0` (100% coupon) is a
+  **"Matrícula gratuita — sem cobrança", never a sale**: own filter on the fiscal screen (no nota form;
+  the issue route refuses it), out of the NFS-e backlog (bell/digest/dashboard), dashboard sales totals,
+  billing "Pagos", Google Ads OCI purchases (order AND lead path) and GA4 `purchase`; never attributed to
+  an ambassador. Derived from the amount, no column. Still markable "Teste interno"; "Estornar" on it
+  only revokes access (refund route `couponOnly`).
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a

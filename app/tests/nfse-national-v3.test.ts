@@ -80,8 +80,10 @@ test("ClinAct description: Karina's text, verbatim", () => {
 
 test("internal tests: out of every sale filter, only under Testes internos", () => {
   for (const s of ["pending", "issued", "cancelled", "refunded"]) {
-    assert.match(client, new RegExp(`${s}: \\(r\\) => !r\\.internalTest`), s);
+    // isSale = !internalTest && !isFree (a R$ 0 free enrollment is no sale either).
+    assert.match(client, new RegExp(`${s}: \\(r\\) => isSale\\(r\\)`), s);
   }
+  assert.match(client, /const isSale = \(r: FiscalRow\) => !r\.internalTest && !isFree\(r\)/);
   assert.match(client, /test: \(r\) => r\.internalTest/);
   assert.match(client, /situation === "all" \? !isSale\(r\)/);
   assert.equal(ptBR.statusTest, "Testes internos");

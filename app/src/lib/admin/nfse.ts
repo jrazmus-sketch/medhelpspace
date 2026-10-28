@@ -3,7 +3,8 @@
 // route and the daily digest cron. (The dashboard derives the same numbers inline
 // from the order scan it already runs, mirroring this rule.)
 //
-// Internal tests (orders/clinact_invoices.internal_test) are never a nota to issue.
+// Internal tests (orders/clinact_invoices.internal_test) are never a nota to issue,
+// and neither is a R$ 0 "Matrícula gratuita" (100% coupon — Karina 2026-10-28).
 //
 // Rule: a nota is "ready" once a paid order clears the 7-day satisfaction guarantee
 // (issuable on day 8) and hasn't been issued/skipped. It is "at risk" when it is
@@ -35,6 +36,8 @@ export async function getNfseBacklog(): Promise<NfseBacklog> {
       .select("created_at")
       .eq("status", "paid")
       .eq("internal_test", false)
+      // A R$ 0 "Matrícula gratuita" never gets a zero-value NFS-e (Karina 2026-10-28).
+      .gt("amount_cents", 0)
       .is("nfse_status", null)
       .limit(5000),
     admin

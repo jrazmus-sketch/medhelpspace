@@ -26,7 +26,14 @@ const STATUS_COLORS: Record<string, string> = {
   declined:   "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   cancelled:  "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   refunded:   "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  free:       "bg-brand/10 text-brand-text",
 };
+
+// A paid R$ 0 order is a 100%-coupon "Matrícula gratuita" — no charge, not a
+// sale: never counted as a paid order (Karina 2026-10-28). "Estornar" stays: on
+// it, the refund route only revokes the access (no PagBank call).
+const isFreeEnrollment = (r: { status: string; amountCents: number }) =>
+  r.status === "paid" && r.amountCents === 0;
 
 function fmt(cents: number) {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -77,7 +84,7 @@ export function BillingClient({
         (r.amountCents / 100).toFixed(2),
         r.paymentMethod === "pix" ? "Pix" : `Cartão${r.ccBrand ? ` (${r.ccBrand})` : ""}`,
         r.ccInstallments ?? 1,
-        r.status,
+        isFreeEnrollment(r) ? "free" : r.status,
         fmtDate(r.createdAt),
       ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
@@ -123,6 +130,7 @@ export function BillingClient({
     declined:  t("billing.statusDeclined"),
     cancelled: t("billing.statusCancelled"),
     refunded:  t("billing.statusRefunded"),
+    free:      t("billing.statusFreeShort"),
   };
 
   return (
@@ -144,7 +152,7 @@ export function BillingClient({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
           { label: t("billing.totalOrders"),   value: rows.length },
-          { label: t("billing.paidOrders"),    value: rows.filter((r) => r.status === "paid").length },
+          { label: t("billing.paidOrders"),    value: rows.filter((r) => r.status === "paid" && !isFreeEnrollment(r)).length },
           { label: t("billing.totalRevenue"),  value: fmt(totalPaidCents) },
           { label: t("billing.pendingOrders"), value: rows.filter((r) => r.status === "pending").length },
         ].map(({ label, value }) => (
@@ -211,7 +219,11 @@ export function BillingClient({
             )}
             {filtered.map((row) => {
               const isRefunded = refundDone.has(row.id) || row.status === "refunded";
-              const effectiveStatus = refundDone.has(row.id) ? "refunded" : row.status;
+              const effectiveStatus = refundDone.has(row.id)
+                ? "refunded"
+                : isFreeEnrollment(row)
+                  ? "free"
+                  : row.status;
               return (
                 <tr key={row.id} className="border-b border-border last:border-0 hover:bg-surface-1/50 transition-colors">
                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -226,7 +238,9 @@ export function BillingClient({
                   <td className="px-4 py-3 text-foreground whitespace-nowrap">{row.cohortName}</td>
                   <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{fmt(row.amountCents)}</td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                    {row.paymentMethod === "pix"
+                    {isFreeEnrollment(row)
+                      ? "—"
+                      : row.paymentMethod === "pix"
                       ? "Pix"
                       : `Cartão${row.ccBrand ? ` · ${row.ccBrand}` : ""}${row.ccInstallments && row.ccInstallments > 1 ? ` · ${row.ccInstallments}x` : ""}`}
                   </td>
