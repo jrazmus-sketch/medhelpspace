@@ -182,6 +182,13 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   (`webissTestNota` / `webissTestRefunded`); a WebISS nota is NEVER auto-cancelled. ClinAct
   description is her text verbatim. Patch: `schema-patch-nfse-national-v3.sql` (also marks the
   25/09 R$ 29,90 invoice refunded).
+  **v4 (Karina 2026-10-28):** the Revalida checkout has the SAME block — ONE component
+  `components/checkout/nota-fiscal-fields.tsx` renders it for both checkouts (never fork it). Revalida
+  orders snapshot `tomador_*` (patch `schema-patch-nfse-revalida-tomador.sql`); `billing_first/last_name`
+  + `billing_cpf` are ALWAYS the student (`billingFromTomador`), the student block appears only for
+  outra PF / PJ. Card holder CPF is sent apart ("O titular do cartão tem o mesmo CPF…" checkbox) and is
+  the PagBank holder `tax_id`; the PagBank customer is the tomador. Orders without `tomador_type` are
+  legacy: the fiscal screen derives them from `billing_person_type` as before.
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a

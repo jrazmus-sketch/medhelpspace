@@ -6,26 +6,23 @@ import { Check, ChevronRight, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "luc
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
 import { BillingForm } from "./billing-form";
-import { validateBilling, formatCpf, formatCep, formatCnpj, type BillingDetails } from "@/lib/br";
+import { EMPTY_TOMADOR } from "@/components/checkout/nota-fiscal-fields";
+import {
+  formatCep,
+  formatCnpj,
+  formatCpf,
+  formatPhoneBr,
+  normalizeNfseTomador,
+  resolveCheckoutStudent,
+  validateCheckoutStudent,
+  validateNfseTomador,
+  type BillingDetails,
+  type CheckoutStudent,
+  type NfseTomador,
+  type TomadorType,
+} from "@/lib/br";
 import type { InstallmentOption } from "@/lib/pagbank/types";
 import { trackBeginCheckout, trackPurchase } from "@/lib/analytics/track";
-
-const EMPTY_BILLING: BillingDetails = {
-  personType: "pf",
-  firstName: "",
-  lastName: "",
-  cpf: "",
-  companyName: "",
-  cnpj: "",
-  companyEmail: "",
-  cep: "",
-  address: "",
-  number: "",
-  neighborhood: "",
-  city: "",
-  state: "",
-  phone: "",
-};
 
 function fmtBRL(cents: number): string {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", {
@@ -127,15 +124,59 @@ export function CheckoutClient({
   const [showGuestPassword, setShowGuestPassword] = useState(false);
   const [guestName, setGuestName] = useState("");
 
-  // Billing details (tax / nota fiscal). Prefilled from the buyer's profile when
-  // available so returning customers don't retype. Required for every sale.
-  const [billing, setBilling] = useState<BillingDetails>(() => {
-    const merged = { ...EMPTY_BILLING, ...(initialBilling ?? {}) };
-    // Profile stores CPF/CEP as digits only — mask them for display.
-    return { ...merged, cpf: formatCpf(merged.cpf), cep: formatCep(merged.cep) };
+  // "Dados para a nota fiscal" (Karina 2026-10-28) — the same block as ClinAct:
+  // the nota goes to the student (default), another Pessoa Física or a company.
+  // Prefilled from the buyer's profile (always the STUDENT's own data, so it
+  // seeds the default "Para mim" choice). The card is payment data only.
+  const [tomador, setTomador] = useState<NfseTomador>(() => {
+    const b = initialBilling ?? {};
+    return {
+      ...EMPTY_TOMADOR,
+      name: `${b.firstName ?? ""} ${b.lastName ?? ""}`.trim(),
+      document: formatCpf(b.cpf ?? ""),
+      email: userEmail,
+      phone: formatPhoneBr(b.phone ?? ""),
+      cep: formatCep(b.cep ?? ""),
+      street: b.address ?? "",
+      number: b.number ?? "",
+      neighborhood: b.neighborhood ?? "",
+      city: b.city ?? "",
+      state: b.state ?? "",
+    };
   });
-  function patchBilling(patch: Partial<BillingDetails>) {
-    setBilling((b) => ({ ...b, ...patch }));
+  // The student, asked for apart only when the nota is for someone else.
+  const [student, setStudent] = useState<CheckoutStudent>({ name: "", cpf: "" });
+  function patchTomador(patch: Partial<NfseTomador>) {
+    setTomador((t) => ({ ...t, ...patch }));
+  }
+  function patchStudent(patch: Partial<CheckoutStudent>) {
+    setStudent((s) => ({ ...s, ...patch }));
+  }
+  const accountEmail = isLoggedIn ? userEmail : guestEmail.trim();
+
+  // Switching who the nota is for never leaves one person's CPF on someone
+  // else's nota: leaving "Para mim" carries the student's identity into the
+  // student block; coming back restores it from there. The address is kept.
+  function chooseTomadorType(type: TomadorType) {
+    if (type === tomador.type) return;
+    const leavingAluno = tomador.type === "aluno";
+    const studentNow = leavingAluno ? { name: tomador.name, cpf: tomador.document } : student;
+    if (leavingAluno) setStudent(studentNow);
+    const toAluno = type === "aluno";
+    patchTomador({
+      type,
+      name: toAluno ? studentNow.name : "",
+      document: toAluno ? studentNow.cpf : "",
+      email: toAluno ? accountEmail : "",
+    });
+  }
+
+  /** First problem in the nota/student data, or null. */
+  function validateNota(): string | null {
+    const nota = normalizeNfseTomador(tomador);
+    const err = validateNfseTomador(nota);
+    if (err) return `Dados para a nota fiscal: ${err}`;
+    return validateCheckoutStudent(resolveCheckoutStudent(nota, student));
   }
 
   // Flow: account → billing → payment. Logged-in users skip the account step.
@@ -143,12 +184,12 @@ export function CheckoutClient({
 
   const steps: Array<{ key: Step; label: string }> = isLoggedIn
     ? [
-        { key: "billing", label: "Cobrança" },
+        { key: "billing", label: "Nota fiscal" },
         { key: "payment", label: "Pagamento" },
       ]
     : [
         { key: "account", label: "Conta" },
-        { key: "billing", label: "Cobrança" },
+        { key: "billing", label: "Nota fiscal" },
         { key: "payment", label: "Pagamento" },
       ];
 
@@ -246,11 +287,19 @@ export function CheckoutClient({
       return;
     }
     setError(null);
+    // A guest's name and e-mail seed the default "Para mim" nota.
+    if (tomador.type === "aluno") {
+      setTomador((t) => ({
+        ...t,
+        name: t.name || guestName.trim(),
+        email: t.email || guestEmail.trim(),
+      }));
+    }
     setStep("billing");
   }
 
   function advanceFromBilling() {
-    const err = validateBilling(billing);
+    const err = validateNota();
     if (err) {
       setError(err);
       return;
@@ -288,10 +337,12 @@ export function CheckoutClient({
   }
 
   function buildBasePayload() {
+    const nota = normalizeNfseTomador(tomador);
     return {
       ...buildAuthPayload(),
       ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
-      billing,
+      tomador: nota,
+      student: resolveCheckoutStudent(nota, student),
     };
   }
 
@@ -358,7 +409,7 @@ export function CheckoutClient({
   }
 
   async function submitPix() {
-    const guestErr = validateGuestFields() ?? validateBilling(billing);
+    const guestErr = validateGuestFields() ?? validateNota();
     if (guestErr) {
       setError(guestErr);
       return;
@@ -378,6 +429,9 @@ export function CheckoutClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao processar pagamento");
       setResult(data as ChargeResult);
+      // A 100%-off coupon is finalized inside the request (no QR): show the
+      // confirmation instead of leaving the buyer on the confirm button.
+      if ((data as ChargeResult).status === "PAID") setPaid(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro inesperado");
     } finally {
@@ -390,8 +444,9 @@ export function CheckoutClient({
     cardHolder: string;
     installments: number;
     cardBin: string;
+    holderCpf: string;
   }) {
-    const guestErr = validateGuestFields() ?? validateBilling(billing);
+    const guestErr = validateGuestFields() ?? validateNota();
     if (guestErr) {
       setError(guestErr);
       return;
@@ -409,6 +464,7 @@ export function CheckoutClient({
           cardHolder: params.cardHolder,
           installments: params.installments,
           cardBin: params.cardBin,
+          cpf: params.holderCpf,
           ...buildBasePayload(),
         }),
       });
@@ -726,7 +782,14 @@ export function CheckoutClient({
           {/* Step: billing details (tax / nota fiscal) */}
           {step === "billing" && (
             <div className="flex flex-col gap-6">
-              <BillingForm value={billing} onChange={patchBilling} />
+              <BillingForm
+                tomador={tomador}
+                onTomador={patchTomador}
+                onTypeChange={chooseTomadorType}
+                student={student}
+                onStudent={patchStudent}
+                accountEmail={accountEmail}
+              />
               <button
                 type="button"
                 onClick={advanceFromBilling}
@@ -761,9 +824,10 @@ export function CheckoutClient({
                   <div className="flex min-w-0 items-center gap-2">
                     <Check className="h-4 w-4 shrink-0 text-brand" />
                     <span className="truncate font-medium text-foreground/70">
-                      {billing.personType === "pj"
-                        ? `${billing.companyName} · CNPJ ${formatCnpj(billing.cnpj)}`
-                        : `${billing.firstName} ${billing.lastName} · CPF ${billing.cpf}`}
+                      Nota fiscal:{" "}
+                      {tomador.type === "pj"
+                        ? `${tomador.name} · CNPJ ${formatCnpj(tomador.document)}`
+                        : `${tomador.name} · CPF ${formatCpf(tomador.document)}`}
                     </span>
                   </div>
                   <button
@@ -847,6 +911,7 @@ export function CheckoutClient({
                       loading={loading}
                       initialInstallments={appliedCoupon ? [] : initialInstallments}
                       couponCode={appliedCoupon?.code ?? null}
+                      notaCpf={tomador.type === "pj" ? null : tomador.document}
                       onSubmit={submitCard}
                     />
                   )}

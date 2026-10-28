@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Script from "next/script";
 import type { InstallmentOption } from "@/lib/pagbank/types";
+import { formatCpf, isValidCpf, onlyDigits } from "@/lib/br";
 
 // PagBank JS SDK global (loaded via <Script>)
 declare global {
@@ -28,11 +29,14 @@ interface Props {
   loading: boolean;
   initialInstallments: InstallmentOption[];
   couponCode: string | null;
+  /** CPF on the nota (null when the nota is for a company) — offered, never assumed, as the holder's. */
+  notaCpf: string | null;
   onSubmit: (params: {
     encryptedCard: string;
     cardHolder: string;
     installments: number;
     cardBin: string;
+    holderCpf: string;
   }) => void;
 }
 
@@ -60,6 +64,7 @@ export function CardForm({
   loading,
   initialInstallments,
   couponCode,
+  notaCpf,
   onSubmit,
 }: Props) {
   const [sdkReady, setSdkReady] = useState(false);
@@ -67,6 +72,12 @@ export function CardForm({
   const [cardHolder, setCardHolder] = useState(cardHolderDefault);
   const [expiry, setExpiry] = useState(""); // MM/YY
   const [cvv, setCvv] = useState("");
+  // The card is payment only (Karina 2026-10-27/28): its holder is never the
+  // tomador. Paying with your own card should not mean typing the same CPF
+  // twice — so it is an explicit, uncheckable choice, same as ClinAct.
+  const [sameCpf, setSameCpf] = useState(true);
+  const [holderCpf, setHolderCpf] = useState("");
+  const cpfFromNota = notaCpf !== null && sameCpf;
   const [installments, setInstallments] = useState(1);
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [options, setOptions] = useState<InstallmentOption[]>(
@@ -161,6 +172,11 @@ export function CardForm({
       setFieldError("Nome no cartão é obrigatório.");
       return;
     }
+    const cpf = cpfFromNota ? onlyDigits(notaCpf ?? "") : onlyDigits(holderCpf);
+    if (!isValidCpf(cpf)) {
+      setFieldError("CPF do titular do cartão inválido.");
+      return;
+    }
 
     const { encryptedCard, hasErrors, errors } = window.PagSeguro.encryptCard({
       publicKey: pagbankPublicKey,
@@ -181,6 +197,7 @@ export function CardForm({
       cardHolder: cardHolder.trim().toUpperCase(),
       installments: selectedInstallments,
       cardBin: rawNumber.slice(0, 6),
+      holderCpf: cpf,
     });
   }
 
@@ -198,6 +215,10 @@ export function CardForm({
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <p className="text-sm text-foreground/60">
+          Os dados do cartão são usados somente para o pagamento.
+        </p>
+
         {fieldError && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {fieldError}
@@ -229,6 +250,34 @@ export function CardForm({
             className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           />
         </div>
+
+        {notaCpf !== null && (
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-foreground/70">
+            <input
+              type="checkbox"
+              checked={sameCpf}
+              onChange={(e) => setSameCpf(e.target.checked)}
+              className="h-5 w-5 shrink-0"
+            />
+            O titular do cartão tem o mesmo CPF informado na nota fiscal
+          </label>
+        )}
+
+        {!cpfFromNota && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground/70">CPF do titular do cartão</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={holderCpf}
+              onChange={(e) => setHolderCpf(formatCpf(e.target.value))}
+              placeholder="000.000.000-00"
+              maxLength={14}
+              required
+              className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">

@@ -64,7 +64,8 @@ test("tomador: Pessoa Jurídica needs razão social + a valid CNPJ", () => {
 const read = (p: string) => readFileSync(path.resolve(p), "utf8");
 const client = read("src/app/admin/notas-fiscais/notas-fiscais-client.tsx");
 const page = read("src/app/admin/notas-fiscais/page.tsx");
-const form = read("src/app/clinact/(membro)/assinar/subscribe-form.tsx");
+// The block lives in one component shared by the ClinAct and Revalida checkouts.
+const form = read("src/components/checkout/nota-fiscal-fields.tsx");
 const assinarRoute = read("src/app/api/clinact/assinar/route.ts");
 const ptBR = JSON.parse(read("src/locales/admin/pt-BR.json")).notasFiscais;
 
@@ -106,7 +107,7 @@ test("ClinAct tomador: from Dados para a nota fiscal, never from the card", () =
   }
   assert.match(assinarRoute, /validateNfseTomador\(tomador\)/);
   // The fiscal screen reads tomador_* and no longer builds a tomador from billing_*.
-  assert.match(page, /tomador: i\.tomador_type/);
+  assert.match(page, /tomador: storedTomador\(i\)/);
   assert.doesNotMatch(page, /name: i\.billing_name/);
   assert.equal(ptBR.sectionTomadorCard, undefined);
 });

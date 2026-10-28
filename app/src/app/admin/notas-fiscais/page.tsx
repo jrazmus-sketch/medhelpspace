@@ -21,7 +21,43 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // sale yet — and any later test marked by hand) are history, not sales: the
 // client lists them only under "Testes internos".
 
-interface RawOrder {
+interface TomadorColumns {
+  tomador_type: "aluno" | "pf" | "pj" | null;
+  tomador_name: string | null;
+  tomador_document: string | null;
+  tomador_email: string | null;
+  tomador_phone: string | null;
+  tomador_cep: string | null;
+  tomador_street: string | null;
+  tomador_number: string | null;
+  tomador_complement: string | null;
+  tomador_neighborhood: string | null;
+  tomador_city: string | null;
+  tomador_state: string | null;
+}
+
+const TOMADOR_SELECT =
+  "tomador_type, tomador_name, tomador_document, tomador_email, tomador_phone, tomador_cep, " +
+  "tomador_street, tomador_number, tomador_complement, tomador_neighborhood, tomador_city, tomador_state";
+
+/** The tomador chosen in "Dados para a nota fiscal", or null on a legacy row. */
+function storedTomador(r: TomadorColumns): FiscalRow["tomador"] {
+  if (!r.tomador_type) return null;
+  return {
+    type: r.tomador_type,
+    name: r.tomador_name ?? "",
+    doc: r.tomador_document ?? "",
+    email: r.tomador_email ?? "",
+    phone: r.tomador_phone ?? "",
+    cep: r.tomador_cep ?? "",
+    address: [r.tomador_street, r.tomador_number].filter(Boolean).join(", "),
+    complement: r.tomador_complement ?? "",
+    neighborhood: r.tomador_neighborhood ?? "",
+    cityState: [r.tomador_city, r.tomador_state].filter(Boolean).join(" - "),
+  };
+}
+
+interface RawOrder extends TomadorColumns {
   id: string;
   user_id: string;
   cohort_id: number;
@@ -59,7 +95,7 @@ interface RawOrder {
   internal_test: boolean;
 }
 
-interface RawInvoice {
+interface RawInvoice extends TomadorColumns {
   id: string;
   user_id: string;
   plan_key: "mensal" | "anual";
@@ -79,18 +115,6 @@ interface RawInvoice {
   nfse_issued_at: string | null;
   nfse_cancelled_at: string | null;
   internal_test: boolean;
-  tomador_type: "aluno" | "pf" | "pj" | null;
-  tomador_name: string | null;
-  tomador_document: string | null;
-  tomador_email: string | null;
-  tomador_phone: string | null;
-  tomador_cep: string | null;
-  tomador_street: string | null;
-  tomador_number: string | null;
-  tomador_complement: string | null;
-  tomador_neighborhood: string | null;
-  tomador_city: string | null;
-  tomador_state: string | null;
 }
 
 export default async function NotasFiscaisPage() {
@@ -129,7 +153,8 @@ export default async function NotasFiscaisPage() {
             "billing_first_name, billing_last_name, billing_cpf, billing_cep, " +
             "billing_address, billing_number, billing_neighborhood, billing_city, " +
             "billing_state, billing_phone, " +
-            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at, internal_test",
+            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at, internal_test, " +
+            TOMADOR_SELECT,
         )
         .in("status", ["paid", "refunded"])
         .order("created_at", { ascending: false })
@@ -140,9 +165,8 @@ export default async function NotasFiscaisPage() {
           "id, user_id, plan_key, occurrence, amount_cents, billed_at, paid_at, " +
             "period_start, period_end, billing_name, billing_tax_id, billing_phone, refunded_at, " +
             "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at, " +
-            "internal_test, tomador_type, tomador_name, tomador_document, tomador_email, " +
-            "tomador_phone, tomador_cep, tomador_street, tomador_number, tomador_complement, " +
-            "tomador_neighborhood, tomador_city, tomador_state",
+            "internal_test, " +
+            TOMADOR_SELECT,
         )
         // Sandbox invoices never need a nota.
         .eq("environment", getSubscriptionsEnv())
@@ -195,8 +219,9 @@ export default async function NotasFiscaisPage() {
       // the charged amount IS the original price and nothing was added.
       surchargeCents: o.interest_cents ?? 0,
       totalCents: o.amount_cents,
-      // Pessoa Física on the Revalida checkout = the student is the tomador.
-      tomador: {
+      // The tomador chosen in "Dados para a nota fiscal" (orders from 28/10/2026).
+      // Before that block, Pessoa Física = the student was the tomador.
+      tomador: storedTomador(o) ?? {
         type: isPj ? "pj" : "aluno",
         name: isPj ? o.billing_company_name ?? "" : studentName,
         doc: isPj ? o.billing_cnpj ?? "" : o.billing_cpf ?? "",
@@ -209,10 +234,13 @@ export default async function NotasFiscaisPage() {
         cityState: [o.billing_city, o.billing_state].filter(Boolean).join(" - "),
       },
       // A separate student only when someone other than the student is the tomador.
-      student: isPj
+      // billing_first/last_name + billing_cpf are always the student.
+      student: (o.tomador_type ? o.tomador_type !== "aluno" : isPj)
         ? { name: studentName, cpf: o.billing_cpf ?? "", email: account?.email ?? "" }
         : null,
-      listName: isPj ? o.billing_company_name ?? "" : studentName || account?.name || account?.email || "—",
+      listName:
+        o.tomador_name ||
+        (isPj ? o.billing_company_name ?? "" : studentName || account?.name || account?.email || "—"),
       listEmail: account?.email ?? "—",
       eligibleAt: new Date(eligibleMs).toISOString(),
       inGuarantee: now < eligibleMs,
@@ -251,20 +279,7 @@ export default async function NotasFiscaisPage() {
       // The tomador is what was chosen in "Dados para a nota fiscal" — never the
       // cardholder (billing_*), which is payment data only. A subscription from
       // before that block has none: shown as "não informado", not guessed.
-      tomador: i.tomador_type
-        ? {
-            type: i.tomador_type,
-            name: i.tomador_name ?? "",
-            doc: i.tomador_document ?? "",
-            email: i.tomador_email ?? "",
-            phone: i.tomador_phone ?? "",
-            cep: i.tomador_cep ?? "",
-            address: [i.tomador_street, i.tomador_number].filter(Boolean).join(", "),
-            complement: i.tomador_complement ?? "",
-            neighborhood: i.tomador_neighborhood ?? "",
-            cityState: [i.tomador_city, i.tomador_state].filter(Boolean).join(" - "),
-          }
-        : null,
+      tomador: storedTomador(i),
       // The student is the account; listed apart whenever it is not the tomador.
       student:
         i.tomador_type === "aluno"

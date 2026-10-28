@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import {
-  UF_OPTIONS,
-  formatCep,
-  formatCnpj,
   formatCpf,
   isValidCpf,
   normalizeNfseTomador,
@@ -15,36 +12,9 @@ import {
   type NfseTomador,
   type TomadorType,
 } from "@/lib/br";
+import { EMPTY_TOMADOR, NotaFiscalFields } from "@/components/checkout/nota-fiscal-fields";
 
 type PlanOption = { key: string; label: string; price: string; note: string };
-
-const TOMADOR_TYPES: Array<{ value: TomadorType; label: string }> = [
-  { value: "aluno", label: "Para mim (aluno)" },
-  { value: "pf", label: "Outra pessoa física" },
-  { value: "pj", label: "Pessoa jurídica" },
-];
-
-const EMPTY_TOMADOR: NfseTomador = {
-  type: "aluno",
-  name: "",
-  document: "",
-  email: "",
-  phone: "",
-  cep: "",
-  street: "",
-  number: "",
-  complement: "",
-  neighborhood: "",
-  city: "",
-  state: "",
-};
-
-function formatPhone(raw: string) {
-  const d = raw.replace(/\D/g, "").slice(0, 11);
-  if (d.length <= 2) return d;
-  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-  return `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}`;
-}
 
 /**
  * The card is encrypted HERE, in the student's browser, with PagBank's SDK —
@@ -96,8 +66,6 @@ export function SubscribeForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [cepLoading, setCepLoading] = useState(false);
-  const lastCepLookup = useRef("");
 
   const isPj = tomador.type === "pj";
   const cardCpfFromNota = !isPj && sameCpf;
@@ -117,33 +85,6 @@ export function SubscribeForm({
       email: type === "aluno" ? student.email : "",
     });
   }
-
-  // ViaCEP autofill, same as the Revalida checkout. Keyless; degrades silently.
-  const cepDigits = onlyDigits(tomador.cep);
-  useEffect(() => {
-    if (cepDigits.length !== 8 || lastCepLookup.current === cepDigits) return;
-    lastCepLookup.current = cepDigits;
-    let cancelled = false;
-    setCepLoading(true);
-    fetch(`https://viacep.com.br/ws/${cepDigits}/json/`)
-      .then((r) => r.json())
-      .then((data: { erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string }) => {
-        if (cancelled || data.erro) return;
-        const p: Partial<NfseTomador> = {};
-        if (data.logradouro) p.street = data.logradouro;
-        if (data.bairro) p.neighborhood = data.bairro;
-        if (data.localidade) p.city = data.localidade;
-        if (data.uf) p.state = data.uf;
-        if (Object.keys(p).length) setTomador((prev) => ({ ...prev, ...p }));
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setCepLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [cepDigits]);
 
   function formatCard(raw: string) {
     return raw.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
@@ -238,7 +179,6 @@ export function SubscribeForm({
   const field =
     "min-h-12 w-full min-w-0 rounded-xl border border-border bg-surface-1 px-3 text-base outline-none focus:border-brand";
   const sectionTitle = "text-base font-semibold";
-  const optional = <span className="font-normal text-muted-foreground">(opcional)</span>;
 
   return (
     <>
@@ -280,192 +220,21 @@ export function SubscribeForm({
           </div>
         </fieldset>
 
-        {/* ── Dados para a nota fiscal ─────────────────────────────────────── */}
-        <section className="flex flex-col gap-3" aria-labelledby="nota-title">
-          <div>
-            <h2 id="nota-title" className={sectionTitle}>
-              Dados para a nota fiscal
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              A nota fiscal é emitida em nome de quem você indicar aqui.
-            </p>
-          </div>
-
-          <fieldset>
-            <legend className="text-sm font-medium">Emitir a nota para</legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-3">
-              {TOMADOR_TYPES.map((o) => (
-                <label
-                  key={o.value}
-                  className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm font-medium ${
-                    tomador.type === o.value ? "border-brand bg-brand/10" : "border-border bg-surface-1"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="tomador"
-                    value={o.value}
-                    checked={tomador.type === o.value}
-                    onChange={() => chooseType(o.value)}
-                    className="h-4 w-4 shrink-0"
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {tomador.type !== "aluno" && (
+        {/* ── Dados para a nota fiscal (shared with the Revalida checkout) ──── */}
+        <NotaFiscalFields
+          value={tomador}
+          onChange={patch}
+          onTypeChange={chooseType}
+          fieldClass={field}
+          optionClass="border-border bg-surface-1"
+          student={
             <p className="rounded-xl border border-border bg-surface-1 p-3 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Aluno (quem vai usar o ClinAct):</span>{" "}
               {student.name ? `${student.name} · ` : ""}
               {student.email}. O acesso continua na sua conta.
             </p>
-          )}
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{isPj ? "Razão social" : "Nome completo"}</span>
-            <input
-              className={field}
-              value={tomador.name}
-              onChange={(e) => patch({ name: e.target.value })}
-              autoComplete={isPj ? "organization" : "name"}
-              required
-            />
-          </label>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium">{isPj ? "CNPJ" : "CPF"}</span>
-              <input
-                className={field}
-                value={tomador.document}
-                onChange={(e) =>
-                  patch({ document: isPj ? formatCnpj(e.target.value) : formatCpf(e.target.value) })
-                }
-                inputMode="numeric"
-                placeholder={isPj ? "00.000.000/0000-00" : "000.000.000-00"}
-                required
-              />
-            </label>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium">Telefone com DDD</span>
-              <input
-                className={field}
-                value={tomador.phone}
-                onChange={(e) => patch({ phone: formatPhone(e.target.value) })}
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="(11) 91234-5678"
-                required
-              />
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">E-mail</span>
-            <input
-              className={field}
-              type="email"
-              value={tomador.email}
-              onChange={(e) => patch({ email: e.target.value })}
-              autoComplete="email"
-              required
-            />
-          </label>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium">
-                CEP
-                {cepLoading && <span className="ml-2 font-normal text-muted-foreground">buscando…</span>}
-              </span>
-              <input
-                className={field}
-                value={tomador.cep}
-                onChange={(e) => patch({ cep: formatCep(e.target.value) })}
-                inputMode="numeric"
-                autoComplete="postal-code"
-                placeholder="00000-000"
-                required
-              />
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Logradouro</span>
-            <input
-              className={field}
-              value={tomador.street}
-              onChange={(e) => patch({ street: e.target.value })}
-              autoComplete="address-line1"
-              placeholder="Rua, avenida…"
-              required
-            />
-          </label>
-
-          <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3">
-            <label className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-sm font-medium">Número</span>
-              <input
-                className={field}
-                value={tomador.number}
-                onChange={(e) => patch({ number: e.target.value })}
-                placeholder="123"
-                required
-              />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-sm font-medium">Complemento {optional}</span>
-              <input
-                className={field}
-                value={tomador.complement}
-                onChange={(e) => patch({ complement: e.target.value })}
-                autoComplete="address-line2"
-                placeholder="Apto, sala…"
-              />
-            </label>
-          </div>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Bairro</span>
-            <input
-              className={field}
-              value={tomador.neighborhood}
-              onChange={(e) => patch({ neighborhood: e.target.value })}
-              required
-            />
-          </label>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_7.5rem] gap-3">
-            <label className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-sm font-medium">Município</span>
-              <input
-                className={field}
-                value={tomador.city}
-                onChange={(e) => patch({ city: e.target.value })}
-                autoComplete="address-level2"
-                required
-              />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-sm font-medium">UF</span>
-              <select
-                className={field}
-                value={tomador.state}
-                onChange={(e) => patch({ state: e.target.value })}
-                required
-              >
-                <option value="">—</option>
-                {UF_OPTIONS.map((uf) => (
-                  <option key={uf.value} value={uf.value}>
-                    {uf.value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
+          }
+        />
 
         {/* ── Pagamento ───────────────────────────────────────────────────── */}
         <section className="flex flex-col gap-3" aria-labelledby="pagamento-title">

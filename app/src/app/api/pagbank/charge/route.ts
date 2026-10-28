@@ -9,7 +9,19 @@ import { livePixBlocksCardMessage } from "@/lib/pagbank/order-rules";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getActivePromotionForCohort } from "@/lib/cohort-promotions";
 import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
-import { validateBilling, onlyDigits, type BillingDetails } from "@/lib/br";
+import {
+  billingFromTomador,
+  isValidCpf,
+  normalizeNfseTomador,
+  onlyDigits,
+  resolveCheckoutStudent,
+  validateBilling,
+  validateCheckoutStudent,
+  validateNfseTomador,
+  type BillingDetails,
+  type CheckoutStudent,
+  type NfseTomador,
+} from "@/lib/br";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { REF_COOKIE, resolveAttribution } from "@/lib/ambassadors/attribution";
 import { ADS_CLICK_COOKIE, decodeAdsClick } from "@/lib/ads-click";
@@ -58,7 +70,7 @@ export async function POST(request: NextRequest) {
     installments?: number;
     encryptedCard?: string;
     cardHolder?: string;
-    cpf?: string; // CPF digits only, required for credit_card
+    cpf?: string; // card HOLDER's CPF, digits only, required for credit_card
     cardBin?: string; // first 6 card digits, for brand-accurate installment rates
     // Guest checkout: client sends one of these when the visitor isn't logged in.
     // signup creates the account (auto-confirmed — payment proves the buyer is real);
@@ -66,7 +78,11 @@ export async function POST(request: NextRequest) {
     signup?: { email: string; password: string; displayName?: string | null };
     login?: { email: string; password: string };
     couponCode?: string;
-    // Brazilian tax/billing identity (nota fiscal). Required for every sale.
+    // "Dados para a nota fiscal" (Karina 2026-10-28, same block as ClinAct): who
+    // the nota is for, and the student when that is someone else.
+    tomador?: Partial<NfseTomador>;
+    student?: Partial<CheckoutStudent>;
+    // Legacy shape (a checkout page loaded before that block shipped).
     billing?: Partial<BillingDetails>;
   };
 
@@ -89,33 +105,53 @@ export async function POST(request: NextRequest) {
     billing: rawBilling,
   } = body;
 
-  // Validate + normalize billing up front (before creating an account or
+  // Validate + normalize the nota data up front (before creating an account or
   // redeeming a coupon) so a bad form never leaves side effects behind.
-  const billingErr = validateBilling(rawBilling);
-  if (billingErr) {
-    return NextResponse.json({ error: billingErr }, { status: 400 });
+  let tomador: NfseTomador | null = null;
+  let billing: BillingDetails;
+  if (body.tomador) {
+    tomador = normalizeNfseTomador(body.tomador);
+    const notaErr = validateNfseTomador(tomador);
+    if (notaErr) {
+      return NextResponse.json({ error: `Dados para a nota fiscal: ${notaErr}` }, { status: 400 });
+    }
+    const student = resolveCheckoutStudent(tomador, body.student);
+    const studentErr = validateCheckoutStudent(student);
+    if (studentErr) {
+      return NextResponse.json({ error: studentErr }, { status: 400 });
+    }
+    billing = billingFromTomador(tomador, student);
+  } else {
+    const billingErr = validateBilling(rawBilling);
+    if (billingErr) {
+      return NextResponse.json({ error: billingErr }, { status: 400 });
+    }
+    const isPj = rawBilling!.personType === "pj";
+    billing = {
+      personType: isPj ? "pj" : "pf",
+      firstName: rawBilling!.firstName!.trim(),
+      lastName: rawBilling!.lastName!.trim(),
+      cpf: onlyDigits(rawBilling!.cpf!),
+      // Company fields only exist on a PJ sale — never left over from a form the
+      // buyer switched back to PF.
+      companyName: isPj ? rawBilling!.companyName!.trim().slice(0, 200) : "",
+      cnpj: isPj ? onlyDigits(rawBilling!.cnpj!) : "",
+      companyEmail: isPj ? (rawBilling!.companyEmail ?? "").trim().slice(0, 200) : "",
+      cep: onlyDigits(rawBilling!.cep!),
+      address: rawBilling!.address!.trim(),
+      number: rawBilling!.number!.trim(),
+      neighborhood: rawBilling!.neighborhood?.trim() ?? "",
+      city: rawBilling!.city!.trim(),
+      state: rawBilling!.state!.trim().toUpperCase(),
+      phone: onlyDigits(rawBilling!.phone ?? ""),
+    };
   }
-  const isPj = rawBilling!.personType === "pj";
-  const billing: BillingDetails = {
-    personType: isPj ? "pj" : "pf",
-    firstName: rawBilling!.firstName!.trim(),
-    lastName: rawBilling!.lastName!.trim(),
-    cpf: onlyDigits(rawBilling!.cpf!),
-    // Company fields only exist on a PJ sale — never left over from a form the
-    // buyer switched back to PF.
-    companyName: isPj ? rawBilling!.companyName!.trim().slice(0, 200) : "",
-    cnpj: isPj ? onlyDigits(rawBilling!.cnpj!) : "",
-    companyEmail: isPj ? (rawBilling!.companyEmail ?? "").trim().slice(0, 200) : "",
-    cep: onlyDigits(rawBilling!.cep!),
-    address: rawBilling!.address!.trim(),
-    number: rawBilling!.number!.trim(),
-    neighborhood: rawBilling!.neighborhood?.trim() ?? "",
-    city: rawBilling!.city!.trim(),
-    state: rawBilling!.state!.trim().toUpperCase(),
-    phone: onlyDigits(rawBilling!.phone ?? ""),
-  };
-  // CPF on the card is the billing CPF — single source of truth.
-  const cpf = billing.cpf;
+  // The card is payment only: its holder is never the tomador. The checkout
+  // sends the holder's CPF; a legacy page (no tomador) used the billing CPF.
+  const cpf = tomador ? onlyDigits(body.cpf ?? "") : billing.cpf;
+  if (paymentMethod === "credit_card" && !isValidCpf(cpf)) {
+    return NextResponse.json({ error: "CPF do titular do cartão inválido." }, { status: 400 });
+  }
 
   // Launch condition (cohort_promotions). Read once: it decides whether a coupon
   // may be used at all, and it is frozen onto the order below so a Pix paid after
@@ -495,6 +531,22 @@ export async function POST(request: NextRequest) {
       billing_city: billing.city,
       billing_state: billing.state,
       billing_phone: billing.phone || null,
+      // Who the NFS-e is for, as chosen in "Dados para a nota fiscal". NULL only
+      // for a legacy checkout page — the fiscal screen then derives it as before.
+      ...(tomador && {
+        tomador_type: tomador.type,
+        tomador_name: tomador.name,
+        tomador_document: tomador.document,
+        tomador_email: tomador.email,
+        tomador_phone: tomador.phone,
+        tomador_cep: tomador.cep,
+        tomador_street: tomador.street,
+        tomador_number: tomador.number,
+        tomador_complement: tomador.complement || null,
+        tomador_neighborhood: tomador.neighborhood,
+        tomador_city: tomador.city,
+        tomador_state: tomador.state,
+      }),
     })
     .select("id")
     .single();
@@ -529,15 +581,17 @@ export async function POST(request: NextRequest) {
 
   // Cache billing on the profile so returning buyers get the form prefilled.
   // Best-effort: a failure here must not block the purchase. The profile is the
-  // STUDENT's: on a PJ sale the address is the company's, so it is not cached.
+  // STUDENT's: when the nota is for someone else, the address and phone are
+  // theirs, so they are not cached.
+  const notaIsStudent = tomador ? tomador.type === "aluno" : billing.personType === "pf";
   await admin
     .from("profiles")
     .update({
       billing_first_name: billing.firstName,
       billing_last_name: billing.lastName,
       billing_cpf: billing.cpf,
-      billing_phone: billing.phone || null,
-      ...(billing.personType === "pf" && {
+      ...(notaIsStudent && {
+        billing_phone: billing.phone || null,
         billing_cep: billing.cep,
         billing_address: billing.address,
         billing_number: billing.number,
@@ -578,7 +632,7 @@ export async function POST(request: NextRequest) {
   }
 
   const webhookUrl = `${getWebhookBaseUrl()}/api/pagbank/webhook`;
-  const customer = buildCustomer(billing, user.email);
+  const customer = buildCustomer(billing, user.email, tomador);
 
   // --- Pix: PagBank Orders API (POST /orders with qr_codes[]). PIX is NOT a
   // /charges payment method — that returns 400 invalid_parameter payment_method.pix.
@@ -712,15 +766,22 @@ export async function POST(request: NextRequest) {
 // name + email + tax_id (required by the Orders/Pix API). The address block is
 // attached only when every PagBank-required subfield is present — a partial
 // address makes PagBank 400, and bairro (locality) is optional in our form.
-// On a PJ sale the customer is the paying company (razão social + CNPJ, which
-// PagBank accepts as tax_id); the card holder stays the person typed on the card.
-function buildCustomer(billing: BillingDetails, email: string | undefined): PagBankCustomer {
+// The customer is the tomador — the student, another person or the paying
+// company (razão social + CNPJ, which PagBank accepts as tax_id); the card holder
+// stays the person typed on the card.
+function buildCustomer(
+  billing: BillingDetails,
+  email: string | undefined,
+  tomador: NfseTomador | null,
+): PagBankCustomer {
   const isPj = billing.personType === "pj";
-  const customer: PagBankCustomer = {
-    name: isPj ? billing.companyName : `${billing.firstName} ${billing.lastName}`.trim(),
-    email: (isPj && billing.companyEmail) || email || undefined,
-    tax_id: isPj ? billing.cnpj : billing.cpf,
-  };
+  const customer: PagBankCustomer = tomador
+    ? { name: tomador.name, email: tomador.email || email || undefined, tax_id: tomador.document }
+    : {
+        name: isPj ? billing.companyName : `${billing.firstName} ${billing.lastName}`.trim(),
+        email: (isPj && billing.companyEmail) || email || undefined,
+        tax_id: isPj ? billing.cnpj : billing.cpf,
+      };
   if (
     billing.address && billing.number && billing.neighborhood &&
     billing.city && billing.state && billing.cep

@@ -196,6 +196,14 @@ export function normalizeNfseTomador(t: Partial<NfseTomador> | undefined): NfseT
   };
 }
 
+/** Mask a Brazilian phone as (11) 91234-5678 / (11) 1234-5678 while typing. */
+export function formatPhoneBr(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}`;
+}
+
 /** Portuguese error for the first problem, or null. Expects a normalized tomador. */
 export function validateNfseTomador(t: NfseTomador): string | null {
   const isPj = t.type === "pj";
@@ -215,4 +223,64 @@ export function validateNfseTomador(t: NfseTomador): string | null {
   if (!t.city) return "Informe o município.";
   if (!isValidUf(t.state)) return "Selecione a UF.";
   return null;
+}
+
+/**
+ * The Revalida student when the nota goes to someone else (Karina 2026-10-28:
+ * same "Dados para a nota fiscal" block as ClinAct). When the tomador is
+ * "aluno" the student IS the tomador and this is ignored.
+ */
+export interface CheckoutStudent {
+  name: string; // nome completo
+  cpf: string;
+}
+
+/** "Maria da Silva" → { firstName: "Maria", lastName: "da Silva" }. */
+export function splitFullName(full: string): { firstName: string; lastName: string } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
+}
+
+/** The student actually enrolled: the tomador himself, or the separate block. */
+export function resolveCheckoutStudent(t: NfseTomador, s: Partial<CheckoutStudent> | undefined): CheckoutStudent {
+  if (t.type === "aluno") return { name: t.name, cpf: t.document };
+  return {
+    name: typeof s?.name === "string" ? s.name.trim().slice(0, 200) : "",
+    cpf: onlyDigits(typeof s?.cpf === "string" ? s.cpf.slice(0, 30) : ""),
+  };
+}
+
+/** Portuguese error for the student block, or null. Expects resolveCheckoutStudent output. */
+export function validateCheckoutStudent(s: CheckoutStudent): string | null {
+  if (s.name.split(/\s+/).filter(Boolean).length < 2) return "Informe o nome completo do aluno.";
+  if (!isValidCpf(s.cpf)) return "CPF do aluno inválido.";
+  return null;
+}
+
+/**
+ * The legacy billing_* snapshot of a Revalida order, built from the tomador and
+ * the student. billing_first/last_name + billing_cpf are ALWAYS the student; the
+ * address and phone are the tomador's; the company fields exist only on a PJ
+ * nota. personType is "pj" only for a company — "aluno" and another Pessoa
+ * Física are both "pf" there (tomador_type tells them apart).
+ */
+export function billingFromTomador(t: NfseTomador, s: CheckoutStudent): BillingDetails {
+  const isPj = t.type === "pj";
+  const { firstName, lastName } = splitFullName(s.name);
+  return {
+    personType: isPj ? "pj" : "pf",
+    firstName,
+    lastName,
+    cpf: s.cpf,
+    companyName: isPj ? t.name : "",
+    cnpj: isPj ? t.document : "",
+    companyEmail: isPj ? t.email : "",
+    cep: t.cep,
+    address: t.street,
+    number: t.number,
+    neighborhood: t.neighborhood,
+    city: t.city,
+    state: t.state,
+    phone: t.phone,
+  };
 }
