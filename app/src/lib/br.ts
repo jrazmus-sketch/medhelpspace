@@ -74,11 +74,48 @@ export function isValidUf(uf: string): boolean {
   return UF_SET.has(uf.toUpperCase());
 }
 
+/** Mask CNPJ digits as 00.000.000/0000-00 while typing. */
+export function formatCnpj(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 14);
+  if (d.length <= 2) return d;
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`;
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`;
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/** Validate CNPJ check digits. Accepts masked or unmasked input. */
+export function isValidCnpj(raw: string): boolean {
+  const d = raw.replace(/\D/g, "");
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const digit = (len: number) => {
+    let sum = 0;
+    let weight = len - 7;
+    for (let i = 0; i < len; i++) {
+      sum += parseInt(d[i]) * weight;
+      weight = weight === 2 ? 9 : weight - 1;
+    }
+    const r = sum % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return digit(12) === parseInt(d[12]) && digit(13) === parseInt(d[13]);
+}
+
+/** Who the nota is issued to: the student (PF) or a company paying for them (PJ). */
+export type PersonType = "pf" | "pj";
+
 // Shape shared across checkout client, charge route, and DB columns.
 export interface BillingDetails {
+  /** Defaults to "pf". In "pj" the address is the company's. */
+  personType: PersonType;
+  // The STUDENT (always) — and the tomador when personType is "pf".
   firstName: string;
   lastName: string;
   cpf: string;          // digits only by the time it hits the server
+  // The company — the tomador when personType is "pj". Empty for "pf".
+  companyName: string;  // razão social
+  cnpj: string;         // digits only by the time it hits the server
+  companyEmail: string; // optional — where the company wants the nota
   cep: string;          // digits only
   address: string;
   number: string;
@@ -95,6 +132,15 @@ export interface BillingDetails {
  */
 export function validateBilling(b: Partial<BillingDetails> | undefined): string | null {
   if (!b) return "Dados de cobrança ausentes.";
+  if (b.personType !== undefined && b.personType !== "pf" && b.personType !== "pj") {
+    return "Tipo de comprador inválido.";
+  }
+  if (b.personType === "pj") {
+    if (!b.companyName?.trim()) return "Informe a razão social da empresa.";
+    if (!b.cnpj || !isValidCnpj(b.cnpj)) return "CNPJ inválido.";
+    const email = b.companyEmail?.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "E-mail da empresa inválido.";
+  }
   if (!b.firstName?.trim()) return "Informe o nome.";
   if (!b.lastName?.trim()) return "Informe o sobrenome.";
   if (!b.cpf || !isValidCpf(b.cpf)) return "CPF inválido.";

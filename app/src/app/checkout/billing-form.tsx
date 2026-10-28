@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { formatCpf, formatCep, onlyDigits, UF_OPTIONS, type BillingDetails } from "@/lib/br";
+import { formatCpf, formatCep, formatCnpj, onlyDigits, UF_OPTIONS, type BillingDetails, type PersonType } from "@/lib/br";
 
 interface Props {
   value: BillingDetails;
@@ -11,11 +11,18 @@ interface Props {
 const inputCls =
   "rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 const labelCls = "text-sm font-medium text-foreground/70";
+const groupCls = "text-xs font-semibold uppercase tracking-wide text-foreground/50";
+
+const PERSON_TYPES: Array<{ value: PersonType; label: string }> = [
+  { value: "pf", label: "Pessoa Física" },
+  { value: "pj", label: "Pessoa Jurídica" },
+];
 
 // Brazilian billing identity required for the nota fiscal. Mirrors the fields the
 // old WooCommerce checkout collected. Controlled by the parent CheckoutClient so
 // the values can be validated and threaded into the charge request.
 export function BillingForm({ value, onChange }: Props) {
+  const isPj = value.personType === "pj";
   const [cepLoading, setCepLoading] = useState(false);
   const lastCepLookup = useRef<string>("");
 
@@ -63,6 +70,81 @@ export function BillingForm({ value, onChange }: Props) {
           Necessários para emissão da nota fiscal.
         </p>
       </div>
+
+      {/* Pessoa Física (default) / Pessoa Jurídica — who the nota is issued to */}
+      <div className="flex flex-col gap-1.5">
+        <span className={labelCls}>Comprar como</span>
+        <div role="radiogroup" aria-label="Comprar como" className="grid grid-cols-2 gap-2">
+          {PERSON_TYPES.map((opt) => {
+            const active = value.personType === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => onChange({ personType: opt.value })}
+                className={`min-h-11 rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  active
+                    ? "border-brand bg-brand/10 text-foreground"
+                    : "border-border text-foreground/60 hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {isPj && (
+        <>
+          <div>
+            <p className={groupCls}>Empresa (tomadora da nota fiscal)</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={labelCls}>Razão social</label>
+            <input
+              type="text"
+              autoComplete="organization"
+              value={value.companyName}
+              onChange={(e) => onChange({ companyName: e.target.value })}
+              placeholder="Clínica Exemplo Ltda."
+              className={inputCls}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>CNPJ</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={value.cnpj}
+                onChange={(e) => onChange({ cnpj: formatCnpj(e.target.value) })}
+                placeholder="00.000.000/0000-00"
+                maxLength={18}
+                className={inputCls}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={labelCls}>
+                E-mail da empresa <span className="font-normal text-foreground/40">(opcional)</span>
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                value={value.companyEmail}
+                onChange={(e) => onChange({ companyEmail: e.target.value })}
+                placeholder="financeiro@empresa.com.br"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div className="mt-1">
+            <p className={groupCls}>Aluno (quem vai acessar o curso)</p>
+          </div>
+        </>
+      )}
 
       {/* Nome / Sobrenome */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -114,6 +196,12 @@ export function BillingForm({ value, onChange }: Props) {
           />
         </div>
       </div>
+
+      {isPj && (
+        <div className="mt-1">
+          <p className={groupCls}>Endereço da empresa</p>
+        </div>
+      )}
 
       {/* CEP */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

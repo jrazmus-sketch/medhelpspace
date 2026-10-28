@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscription, getSubscriptionsEnv, listInvoices } from "@/lib/pagbank/subscriptions";
 import { renewalDecision, type RenewalDecision } from "@/lib/pagbank/subscriptions-core";
 import { grantAccess } from "./subscribe";
+import { recordPaidInvoices } from "./invoices";
 
 /**
  * Keeps a ClinAct subscriber's access in step with what PagBank actually
@@ -63,6 +64,10 @@ export async function reconcileClinactSubscription(row: {
     // Forward-only inside grantAccess: a stale read can never shorten access.
     await grantAccess(row.user_id, decision.until);
   }
+
+  // Each paid invoice becomes a row for its own NFS-e. After access, and
+  // best-effort: it swallows its own failures.
+  await recordPaidInvoices(row.user_id, row.pagbank_subscription_id, invoices);
 
   return { ...base, status: subscription.status, decision };
 }

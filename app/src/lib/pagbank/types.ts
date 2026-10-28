@@ -45,7 +45,7 @@ export interface PagBankAddress {
 export interface PagBankCustomer {
   name?: string;
   email?: string;
-  tax_id?: string;            // CPF
+  tax_id?: string;            // CPF, or CNPJ when a company is buying
   phones?: Array<{ country: string; area: string; number: string; type?: string }>;
   address?: PagBankAddress;
 }

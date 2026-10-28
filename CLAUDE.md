@@ -160,6 +160,18 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   hid every paragraph with exactly ONE `<br>` (1,922 in this delivery) — never reintroduce it.
   Rollback: `node scripts/snapshot-resumos.js <db>` BEFORE apply → `parsed/resumos-rollback-2026-10-05-{local,prod}.sql`
   (gitignored; rollback tested exact on local).
+- **NFS-e = national Emissor, MANUAL, one fiscal screen for all products (Karina 2026-10-27).**
+  `/admin/notas-fiscais` lists Revalida `orders` (paid + refunded) AND `clinact_invoices` (one row
+  per PAID PagBank invoice — first charge and every renewal), filters Produto × Situação. It only
+  RECORDS what she did on https://www.nfse.gov.br/EmissorNacional (número + data de emissão,
+  cancelada, ClinAct reembolsada) — never stores a certificate/credential, never issues anything.
+  **Cancelada (the nota) ≠ Reembolsada (the money)**; no ISS rate on screen (paid inside the
+  Simples/DAS); service code 080201; the installment surcharge is NEVER part of the service value.
+  Checkout has PF (default) / PJ: a PJ order keeps the student (`billing_first/last_name`, `cpf`)
+  separate from the tomador (`billing_company_name`, `billing_cnpj`); PagBank customer = the company.
+  `clinact_invoices` is written best-effort by `lib/clinact/invoices.ts` from checkout + the renewal
+  reconcile (cron/webhook), keyed by INVO_ id, DO NOTHING on conflict — never the access authority.
+  Patch: `schema-patch-nfse-national-v2.sql`; backfill: `scripts/clinact-backfill-invoices.ts`.
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a

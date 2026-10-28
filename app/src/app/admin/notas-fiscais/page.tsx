@@ -1,15 +1,22 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { NotasFiscaisClient } from "./notas-fiscais-client";
+import { getSubscriptionsEnv } from "@/lib/pagbank/subscriptions";
+import { NotasFiscaisClient, type FiscalRow } from "./notas-fiscais-client";
 
 export const metadata = { title: "Notas Fiscais" };
 
-// Days of the satisfaction guarantee — only invoice sales that have cleared it.
+// Days of the satisfaction guarantee — a sale is only invoiced once it has
+// cleared it. Applies to a Revalida order and to a ClinAct FIRST charge
+// (a renewal is not a new purchase).
 const GUARANTEE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Raw order shape we read. The generated Supabase types don't yet include the new
-// nfse_* columns (the patch isn't applied), so we cast the rows to this.
+// One fiscal screen for every product (Karina 2026-10-27): Revalida orders and
+// each paid ClinAct invoice (first charge and every renewal) become rows of the
+// same shape. Issuing stays MANUAL on the national Emissor; this page only
+// shows the data to copy and records what was done there.
+
 interface RawOrder {
   id: string;
   user_id: string;
@@ -26,6 +33,10 @@ interface RawOrder {
   // at the top level; an order snapshot (card checkout) under `charges[0]`.
   charge_paid_at: string | null;
   order_paid_at: string | null;
+  billing_person_type: string | null;
+  billing_company_name: string | null;
+  billing_cnpj: string | null;
+  billing_company_email: string | null;
   billing_first_name: string | null;
   billing_last_name: string | null;
   billing_cpf: string | null;
@@ -40,11 +51,33 @@ interface RawOrder {
   nfse_number: string | null;
   nfse_verificacao: string | null;
   nfse_issued_at: string | null;
+  nfse_cancelled_at: string | null;
+}
+
+interface RawInvoice {
+  id: string;
+  user_id: string;
+  plan_key: "mensal" | "anual";
+  occurrence: number;
+  amount_cents: number;
+  billed_at: string;
+  paid_at: string;
+  period_start: string;
+  period_end: string;
+  billing_name: string | null;
+  billing_tax_id: string | null;
+  billing_phone: string | null;
+  refunded_at: string | null;
+  nfse_status: string | null;
+  nfse_number: string | null;
+  nfse_verificacao: string | null;
+  nfse_issued_at: string | null;
+  nfse_cancelled_at: string | null;
 }
 
 export default async function NotasFiscaisPage() {
-  // Role gate: this page exposes buyer fiscal PII (CPF, address), so restrict to
-  // billing roles even though the layout already blocks plain members.
+  // Role gate: this page exposes buyer fiscal PII (CPF, CNPJ, address), so
+  // restrict to billing roles even though the layout already blocks members.
   const supabase = await createClient();
   const {
     data: { user },
@@ -63,29 +96,42 @@ export default async function NotasFiscaisPage() {
     redirect("/admin");
   }
 
-  // Paid orders are the ones that need a nota. (Refunded sales never get one; a
-  // refund after issuance is a rare, manually-handled edge at this volume.)
-  const { data: ordersData } = await admin
-    .from("orders")
-    .select(
-      "id, user_id, cohort_id, amount_cents, base_amount_cents, discount_cents, " +
-        "interest_cents, payment_method, cc_installments, status, created_at, " +
-        "charge_paid_at:pagbank_response->>paid_at, " +
-        "order_paid_at:pagbank_response->charges->0->>paid_at, " +
-        "billing_first_name, billing_last_name, billing_cpf, billing_cep, " +
-        "billing_address, billing_number, billing_neighborhood, billing_city, " +
-        "billing_state, billing_phone, " +
-        "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at",
-    )
-    .eq("status", "paid")
-    .order("created_at", { ascending: false })
-    .limit(1000);
+  // Paid AND refunded orders: a refunded sale stays visible ("Reembolsada"),
+  // and one whose nota was already issued is the one that needs cancelling.
+  const [{ data: ordersData }, { data: invoicesData }, { data: profiles }, { data: cohorts }] =
+    await Promise.all([
+      admin
+        .from("orders")
+        .select(
+          "id, user_id, cohort_id, amount_cents, base_amount_cents, discount_cents, " +
+            "interest_cents, payment_method, cc_installments, status, created_at, " +
+            "charge_paid_at:pagbank_response->>paid_at, " +
+            "order_paid_at:pagbank_response->charges->0->>paid_at, " +
+            "billing_person_type, billing_company_name, billing_cnpj, billing_company_email, " +
+            "billing_first_name, billing_last_name, billing_cpf, billing_cep, " +
+            "billing_address, billing_number, billing_neighborhood, billing_city, " +
+            "billing_state, billing_phone, " +
+            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at",
+        )
+        .in("status", ["paid", "refunded"])
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      admin
+        .from("clinact_invoices")
+        .select(
+          "id, user_id, plan_key, occurrence, amount_cents, billed_at, paid_at, " +
+            "period_start, period_end, billing_name, billing_tax_id, billing_phone, refunded_at, " +
+            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at",
+        )
+        // Sandbox invoices never need a nota.
+        .eq("environment", getSubscriptionsEnv())
+        .order("paid_at", { ascending: false })
+        .limit(1000),
+      admin.from("profiles").select("id, email, display_name"),
+      admin.from("cohorts").select("id, name"),
+    ]);
   const orders = (ordersData ?? []) as unknown as RawOrder[];
-
-  const { data: profiles } = await admin
-    .from("profiles")
-    .select("id, email, display_name");
-  const { data: cohorts } = await admin.from("cohorts").select("id, name");
+  const invoices = (invoicesData ?? []) as unknown as RawInvoice[];
 
   const profileMap = new Map(
     (profiles ?? []).map((p) => [
@@ -97,53 +143,118 @@ export default async function NotasFiscaisPage() {
     (cohorts ?? []).map((c) => [c.id as number, c.name as string]),
   );
 
+  // eslint-disable-next-line react-hooks/purity -- server component, one render per request
   const now = Date.now();
-  const guaranteeMs = GUARANTEE_DAYS * 24 * 60 * 60 * 1000;
 
-  const rows = orders.map((o) => {
-    const createdMs = new Date(o.created_at as string).getTime();
-    const eligibleMs = createdMs + guaranteeMs;
-    const nfseStatus = (o.nfse_status as string | null) ?? null;
-    const handled = nfseStatus === "issued" || nfseStatus === "skipped";
-
+  const orderRows: FiscalRow[] = orders.map((o) => {
+    const account = profileMap.get(o.user_id);
+    const isPj = o.billing_person_type === "pj";
+    const studentName = `${o.billing_first_name ?? ""} ${o.billing_last_name ?? ""}`.trim();
+    const original = o.base_amount_cents ?? o.amount_cents;
+    const discount = o.discount_cents ?? 0;
+    const eligibleMs = new Date(o.created_at).getTime() + GUARANTEE_DAYS * DAY_MS;
     return {
-      id: o.id as string,
-      userId: o.user_id as string,
-      email: profileMap.get(o.user_id as string)?.email ?? "—",
-      accountName: profileMap.get(o.user_id as string)?.name ?? null,
-      cohortName: cohortMap.get(o.cohort_id as number) ?? "—",
-      amountCents: o.amount_cents as number,
-      // Orders from before coupons/interest were tracked have no base — then the
-      // charged amount IS the original price.
-      baseAmountCents: o.base_amount_cents ?? o.amount_cents,
-      discountCents: o.discount_cents ?? 0,
-      interestCents: o.interest_cents ?? 0,
+      kind: "revalida",
+      id: o.id,
+      userId: o.user_id,
+      product: `Turma ${cohortMap.get(o.cohort_id) ?? "—"}`,
+      descriptionTarget: cohortMap.get(o.cohort_id) ?? "—",
+      planKey: null,
+      occurrence: null,
+      periodStart: null,
+      periodEnd: null,
+      saleDate: o.created_at,
+      paidAt: o.charge_paid_at ?? o.order_paid_at ?? null,
       paymentMethod: o.payment_method,
       installments: o.cc_installments,
-      orderStatus: o.status,
-      createdAt: o.created_at as string,
-      paidAt: o.charge_paid_at ?? o.order_paid_at ?? null,
+      refunded: o.status === "refunded",
+      originalCents: original,
+      discountCents: discount,
+      // Orders from before coupons/interest were tracked have no base — then
+      // the charged amount IS the original price and nothing was added.
+      surchargeCents: o.interest_cents ?? 0,
+      totalCents: o.amount_cents,
+      tomador: {
+        type: isPj ? "pj" : "pf",
+        name: isPj ? o.billing_company_name ?? "" : studentName,
+        doc: isPj ? o.billing_cnpj ?? "" : o.billing_cpf ?? "",
+        email: isPj ? o.billing_company_email ?? "" : account?.email ?? "",
+        phone: o.billing_phone ?? "",
+        cep: o.billing_cep ?? "",
+        address: [o.billing_address, o.billing_number].filter(Boolean).join(", "),
+        neighborhood: o.billing_neighborhood ?? "",
+        cityState: [o.billing_city, o.billing_state].filter(Boolean).join(" - "),
+        hasAddress: true,
+      },
+      // A separate student only when someone other than the student is the tomador.
+      student: isPj
+        ? { name: studentName, cpf: o.billing_cpf ?? "", email: account?.email ?? "" }
+        : null,
+      listName: isPj ? o.billing_company_name ?? "" : studentName || account?.name || account?.email || "—",
+      listEmail: account?.email ?? "—",
       eligibleAt: new Date(eligibleMs).toISOString(),
-      ready: !handled && now >= eligibleMs,
-      waiting: !handled && now < eligibleMs,
-      // Tomador (buyer) snapshot captured at checkout.
-      firstName: (o.billing_first_name as string | null) ?? "",
-      lastName: (o.billing_last_name as string | null) ?? "",
-      cpf: (o.billing_cpf as string | null) ?? "",
-      cep: (o.billing_cep as string | null) ?? "",
-      address: (o.billing_address as string | null) ?? "",
-      number: (o.billing_number as string | null) ?? "",
-      neighborhood: (o.billing_neighborhood as string | null) ?? "",
-      city: (o.billing_city as string | null) ?? "",
-      state: (o.billing_state as string | null) ?? "",
-      phone: (o.billing_phone as string | null) ?? "",
-      // NFS-e outcome (manually recorded).
-      nfseStatus,
-      nfseNumber: (o.nfse_number as string | null) ?? null,
-      nfseVerificacao: (o.nfse_verificacao as string | null) ?? null,
-      nfseIssuedAt: (o.nfse_issued_at as string | null) ?? null,
+      inGuarantee: now < eligibleMs,
+      nfseStatus: o.nfse_status,
+      nfseNumber: o.nfse_number,
+      nfseVerificacao: o.nfse_verificacao,
+      nfseIssuedAt: o.nfse_issued_at,
+      nfseCancelledAt: o.nfse_cancelled_at,
     };
   });
+
+  const invoiceRows: FiscalRow[] = invoices.map((i) => {
+    const account = profileMap.get(i.user_id);
+    const firstCharge = i.occurrence <= 1;
+    const eligibleMs = new Date(i.paid_at).getTime() + GUARANTEE_DAYS * DAY_MS;
+    return {
+      kind: "clinact",
+      id: i.id,
+      userId: i.user_id,
+      product: `ClinAct — plano ${i.plan_key}`,
+      descriptionTarget: i.plan_key,
+      planKey: i.plan_key,
+      occurrence: i.occurrence,
+      periodStart: i.period_start,
+      periodEnd: i.period_end,
+      saleDate: i.billed_at,
+      paidAt: i.paid_at,
+      paymentMethod: "credit_card",
+      installments: 1,
+      refunded: i.refunded_at != null,
+      originalCents: i.amount_cents,
+      discountCents: 0,
+      surchargeCents: 0,
+      totalCents: i.amount_cents,
+      // The tomador is the cardholder typed at checkout. ClinAct's checkout
+      // does not ask for an address (PagBank's subscriber does not need one).
+      tomador: {
+        type: "pf",
+        name: i.billing_name ?? "",
+        doc: i.billing_tax_id ?? "",
+        email: account?.email ?? "",
+        phone: i.billing_phone ?? "",
+        cep: "",
+        address: "",
+        neighborhood: "",
+        cityState: "",
+        hasAddress: false,
+      },
+      student: { name: account?.name ?? "", cpf: "", email: account?.email ?? "" },
+      listName: i.billing_name || account?.name || account?.email || "—",
+      listEmail: account?.email ?? "—",
+      eligibleAt: new Date(eligibleMs).toISOString(),
+      inGuarantee: firstCharge && now < eligibleMs,
+      nfseStatus: i.nfse_status,
+      nfseNumber: i.nfse_number,
+      nfseVerificacao: i.nfse_verificacao,
+      nfseIssuedAt: i.nfse_issued_at,
+      nfseCancelledAt: i.nfse_cancelled_at,
+    };
+  });
+
+  const rows = [...orderRows, ...invoiceRows].sort(
+    (a, b) => new Date(b.paidAt ?? b.saleDate).getTime() - new Date(a.paidAt ?? a.saleDate).getTime(),
+  );
 
   return <NotasFiscaisClient rows={rows} guaranteeDays={GUARANTEE_DAYS} />;
 }

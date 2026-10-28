@@ -2,99 +2,245 @@
 
 import { useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
-import "@/lib/i18n";
-import { Search, Copy, Check, ExternalLink, FileText, Lock, Pencil } from "lucide-react";
-import { BR_TZ } from "@/lib/br-date";
+import type { TFunction } from "i18next";
+import i18n from "@/lib/i18n";
+import { Search, Copy, Check, ExternalLink, FileText, Lock, Pencil, AlertTriangle } from "lucide-react";
+import { BR_TZ, todayKeyBR, toDateKeyBR } from "@/lib/br-date";
+import { formatCpf, formatCnpj } from "@/lib/br";
 
-// ── Fiscal constants. Edit here when the accountant finalizes wording / rates.
-//    `{turma}` is replaced with the cohort. From 01/11/2026 Simples Nacional
-//    companies issue on the national Emissor (Karina 2026-10-27) — manually, with
-//    the e-CNPJ A1 in her browser; the certificate never touches this app. ──
+// ── Fiscal constants. Edit here when the accountant finalizes wording.
+//    From 01/11/2026 Simples Nacional companies issue on the national Emissor
+//    (Karina 2026-10-27) — manually, with the e-CNPJ A1 in her browser; the
+//    certificate never touches this app. No ISS rate is shown: MedHelpSpace
+//    pays ISS inside the Simples (DAS), so a fixed rate here would be wrong. ──
 const SERVICO = {
   // Código de Tributação Nacional: instrução, treinamento, orientação pedagógica
   // e avaliação de conhecimentos.
   codigo: "080201",
-  iss: "5%",
-  descricaoTemplate:
+  revalida:
     "Acesso à plataforma de estudos MedHelpSpace — curso preparatório online para o Revalida (Turma {turma}).",
+  clinact:
+    "Assinatura da plataforma de treino clínico ClinAct (MedHelpSpace) — plano {plano}, período de {inicio} a {fim}.",
 };
 const EMISSOR_NACIONAL_URL = "https://www.nfse.gov.br/EmissorNacional";
 
-interface Row {
+export interface FiscalRow {
+  kind: "revalida" | "clinact";
+  /** Order uuid (Revalida) or PagBank INVO_ id (ClinAct). */
   id: string;
   userId: string;
-  email: string;
-  accountName: string | null;
-  cohortName: string;
-  amountCents: number;
-  baseAmountCents: number;
-  discountCents: number;
-  interestCents: number;
+  product: string;
+  /** Cohort name (Revalida) or plan key (ClinAct), for the description. */
+  descriptionTarget: string;
+  planKey: "mensal" | "anual" | null;
+  occurrence: number | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  saleDate: string;
+  paidAt: string | null;
   paymentMethod: string;
   installments: number | null;
-  orderStatus: string;
-  createdAt: string;
-  paidAt: string | null;
+  refunded: boolean;
+  originalCents: number;
+  discountCents: number;
+  surchargeCents: number;
+  totalCents: number;
+  tomador: {
+    type: "pf" | "pj";
+    name: string;
+    doc: string;
+    email: string;
+    phone: string;
+    cep: string;
+    address: string;
+    neighborhood: string;
+    cityState: string;
+    hasAddress: boolean;
+  };
+  /** Set when the student is not the tomador (PJ sale; ClinAct cardholder). */
+  student: { name: string; cpf: string; email: string } | null;
+  listName: string;
+  listEmail: string;
   eligibleAt: string;
-  ready: boolean;
-  waiting: boolean;
-  firstName: string;
-  lastName: string;
-  cpf: string;
-  cep: string;
-  address: string;
-  number: string;
-  neighborhood: string;
-  city: string;
-  state: string;
-  phone: string;
+  inGuarantee: boolean;
   nfseStatus: string | null;
   nfseNumber: string | null;
   nfseVerificacao: string | null;
   nfseIssuedAt: string | null;
+  nfseCancelledAt: string | null;
 }
+
+type Product = "all" | "revalida" | "clinact";
+type Situation = "all" | "pending" | "issued" | "cancelled" | "refunded";
+type NotaState = "pending" | "issued" | "cancelled" | "skipped";
+
+function notaState(r: FiscalRow): NotaState {
+  if (r.nfseStatus === "cancelled") return "cancelled";
+  if (r.nfseStatus === "issued") return "issued";
+  if (r.nfseStatus === "skipped") return "skipped";
+  return "pending";
+}
+
+// The status filters are predicates, not one state: a sale refunded after its
+// nota was issued is BOTH "Emitida" and "Reembolsada" — and that is exactly
+// the one that needs the nota cancelled.
+const SITUATION: Record<Exclude<Situation, "all">, (r: FiscalRow) => boolean> = {
+  pending: (r) => notaState(r) === "pending" && !r.refunded,
+  issued: (r) => notaState(r) === "issued",
+  cancelled: (r) => notaState(r) === "cancelled",
+  refunded: (r) => r.refunded,
+};
 
 function fmt(cents: number) {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 }
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+// Values go onto the nota, so they use the Brazilian calendar date — never the
+// admin's browser timezone. A bare YYYY-MM-DD is already a calendar date.
+function fmtDateBR(value: string | null) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value.split("-").reverse().join("/");
+  return new Date(value).toLocaleDateString("pt-BR", { timeZone: BR_TZ });
+}
+function fmtDoc(r: FiscalRow) {
+  if (!r.tomador.doc) return "";
+  return r.tomador.type === "pj" ? formatCnpj(r.tomador.doc) : formatCpf(r.tomador.doc);
 }
 
-// Copied values go onto the nota, so they use the Brazilian calendar date — never
-// the admin's browser timezone.
-function fmtDateBR(iso: string | null) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("pt-BR", { timeZone: BR_TZ });
-}
-
-// Fiscal data in Portuguese, like the description — it is pasted into the portal.
-const ORDER_STATUS_PT: Record<string, string> = {
-  paid: "Pago",
-  pending: "Pendente",
-  refunded: "Estornado",
-  cancelled: "Cancelado",
-  declined: "Recusado",
-};
-function paymentStatus(r: Row) {
-  const status = ORDER_STATUS_PT[r.orderStatus] ?? r.orderStatus;
+// Fiscal VALUES are Portuguese, like the description — they are pasted into
+// the portal. Only the labels follow the admin's language.
+function paymentStatus(r: FiscalRow) {
+  const status = r.refunded ? "Reembolsado" : "Pago";
   const method =
-    r.paymentMethod === "pix"
-      ? "Pix"
-      : `Cartão de crédito${r.installments && r.installments > 1 ? ` (${r.installments}x)` : ""}`;
+    r.kind === "clinact"
+      ? "Cartão de crédito (assinatura)"
+      : r.paymentMethod === "pix"
+        ? "Pix"
+        : `Cartão de crédito${r.installments && r.installments > 1 ? ` (${r.installments}x)` : ""}`;
   return `${status} — ${method}`;
 }
-
-function buyerName(r: Row) {
-  const n = `${r.firstName} ${r.lastName}`.trim();
-  return n || r.accountName || r.email;
+function planLabel(r: FiscalRow) {
+  return r.planKey === "anual" ? "Anual" : "Mensal";
 }
-function descricao(r: Row) {
-  return SERVICO.descricaoTemplate.replace("{turma}", r.cohortName);
+function chargeLabel(r: FiscalRow) {
+  return !r.occurrence || r.occurrence <= 1 ? "Primeira cobrança" : `Renovação (${r.occurrence}ª cobrança)`;
+}
+function periodLabel(r: FiscalRow) {
+  return `${fmtDateBR(r.periodStart)} a ${fmtDateBR(r.periodEnd)}`;
+}
+function descricao(r: FiscalRow) {
+  if (r.kind === "clinact") {
+    return SERVICO.clinact
+      .replace("{plano}", planLabel(r).toLowerCase())
+      .replace("{inicio}", fmtDateBR(r.periodStart))
+      .replace("{fim}", fmtDateBR(r.periodEnd));
+  }
+  return SERVICO.revalida.replace("{turma}", r.descriptionTarget);
+}
+
+interface Field {
+  label: string;
+  value: string;
+  wide?: boolean;
+}
+interface Section {
+  title: string;
+  fields: Field[];
+  note?: string;
+}
+
+/**
+ * Everything to copy for one sale, grouped. The modal AND "Copiar tudo" are
+ * built from this one list, so a field can never carry two different names.
+ * The money block keeps the installment surcharge on its own line: it is NOT
+ * part of the service value of the nota (Karina 2026-10-27).
+ */
+function sectionsFor(r: FiscalRow, t: TFunction): Section[] {
+  const k = (key: string) => t(`notasFiscais.${key}`);
+  const isClinact = r.kind === "clinact";
+
+  const venda: Field[] = [
+    { label: k(isClinact ? "fieldInvoiceId" : "fieldOrderId"), value: r.id, wide: true },
+    { label: k("fieldProduct"), value: r.product },
+  ];
+  if (isClinact) {
+    venda.push(
+      { label: k("fieldPlan"), value: planLabel(r) },
+      { label: k("fieldCharge"), value: chargeLabel(r) },
+      { label: k("fieldPeriod"), value: periodLabel(r) },
+    );
+  }
+  venda.push(
+    { label: k(isClinact ? "fieldChargeDate" : "fieldSaleDate"), value: fmtDateBR(r.saleDate) },
+    { label: k("fieldPaidDate"), value: fmtDateBR(r.paidAt) },
+    { label: k("fieldPaymentStatus"), value: paymentStatus(r), wide: true },
+  );
+
+  const tm = r.tomador;
+  const tomadorFields: Field[] = [
+    { label: k(tm.type === "pj" ? "fieldCompanyName" : "fieldName"), value: tm.name, wide: true },
+    { label: k(tm.type === "pj" ? "fieldCnpj" : "fieldCpf"), value: fmtDoc(r) },
+    { label: k("fieldEmail"), value: tm.email },
+    { label: k("fieldPhone"), value: tm.phone },
+  ];
+  if (tm.hasAddress) {
+    tomadorFields.push(
+      { label: k("fieldCep"), value: tm.cep },
+      { label: k("fieldAddress"), value: tm.address, wide: true },
+      { label: k("fieldNeighborhood"), value: tm.neighborhood },
+      { label: k("fieldCity"), value: tm.cityState },
+    );
+  }
+  const tomadorTitle = isClinact
+    ? k("sectionTomadorCard")
+    : tm.type === "pj"
+      ? k("sectionTomadorPj")
+      : k("sectionTomadorPf");
+
+  const sections: Section[] = [
+    { title: k("sectionVenda"), fields: venda },
+    {
+      title: tomadorTitle,
+      fields: tomadorFields,
+      note: tm.hasAddress ? undefined : k("noAddressNote"),
+    },
+  ];
+
+  if (r.student) {
+    const studentFields: Field[] = [
+      { label: k("fieldName"), value: r.student.name, wide: true },
+      { label: k("fieldEmail"), value: r.student.email },
+    ];
+    if (r.student.cpf) studentFields.splice(1, 0, { label: k("fieldCpf"), value: formatCpf(r.student.cpf) });
+    sections.push({ title: k("sectionAluno"), fields: studentFields });
+  }
+
+  sections.push({
+    title: k("sectionServico"),
+    fields: [
+      { label: k("fieldDescription"), value: descricao(r), wide: true },
+      { label: k("fieldServiceCode"), value: SERVICO.codigo },
+    ],
+  });
+
+  const valores: Field[] = [
+    { label: k("fieldOriginal"), value: fmt(r.originalCents) },
+    { label: k("fieldDiscount"), value: fmt(r.discountCents) },
+    { label: k("fieldService"), value: fmt(r.originalCents - r.discountCents) },
+  ];
+  if (r.surchargeCents > 0) valores.push({ label: k("fieldSurcharge"), value: fmt(r.surchargeCents) });
+  valores.push({ label: k("fieldTotal"), value: fmt(r.totalCents) });
+  sections.push({ title: k("sectionValores"), fields: valores });
+
+  return sections;
+}
+
+function copyBlock(r: FiscalRow): string {
+  // Always the Portuguese names — the block is pasted next to a Portuguese
+  // portal, whatever language the admin UI is in.
+  const tPt = i18n.getFixedT("pt-BR");
+  return sectionsFor(r, tPt)
+    .map((s) => [`— ${s.title} —`, ...s.fields.map((f) => `${f.label}: ${f.value || "—"}`)].join("\n"))
+    .join("\n\n");
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -115,7 +261,8 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       onClick={copy}
       disabled={!value}
       title={label}
-      className="shrink-0 rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+      aria-label={label}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
     >
       {copied ? (
         <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
@@ -130,12 +277,99 @@ function CopyField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-border bg-surface-1 px-3 py-2">
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </p>
-        <p className="truncate text-sm text-foreground">{value || "—"}</p>
+        <p className="break-words text-sm text-foreground">{value || "—"}</p>
       </div>
       <CopyButton value={value} label={label} />
+    </div>
+  );
+}
+
+const BADGE = {
+  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+  issued: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  cancelled: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  skipped: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  refunded: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+};
+
+function StatusBadges({ r }: { r: FiscalRow }) {
+  const { t } = useTranslation();
+  const state = notaState(r);
+  const label =
+    state === "issued"
+      ? r.nfseNumber
+        ? t("notasFiscais.notaNumberShort", { n: r.nfseNumber })
+        : t("notasFiscais.statusIssued")
+      : t(
+          `notasFiscais.${
+            { pending: "statusPending", cancelled: "statusCancelled", skipped: "statusSkipped" }[state]
+          }`,
+        );
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex flex-wrap gap-1">
+        {!(state === "pending" && r.refunded) && (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE[state]}`}>
+            {label}
+          </span>
+        )}
+        {r.refunded && (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE.refunded}`}>
+            {t("notasFiscais.statusRefunded")}
+          </span>
+        )}
+      </div>
+      {state === "pending" && !r.refunded && r.inGuarantee && (
+        <p className="text-[11px] text-muted-foreground">
+          {t("notasFiscais.guaranteeUntil", { date: fmtDateBR(r.eligibleAt) })}
+        </p>
+      )}
+      {state === "issued" && r.refunded && (
+        <p className="flex items-center gap-1 text-[11px] font-medium text-red-700 dark:text-red-400">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {t("notasFiscais.refundedWithActiveNota")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string; count?: number }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+      <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={value === o.value}
+            onClick={() => onChange(o.value)}
+            className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              value === o.value
+                ? "border-brand bg-brand/10 text-foreground"
+                : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {o.label}
+            {o.count !== undefined && <span className="ml-1.5 text-xs opacity-70">{o.count}</span>}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -144,72 +378,33 @@ export function NotasFiscaisClient({
   rows: initialRows,
   guaranteeDays,
 }: {
-  rows: Row[];
+  rows: FiscalRow[];
   guaranteeDays: number;
 }) {
   const { t } = useTranslation();
-  const [rows, setRows] = useState<Row[]>(initialRows);
-  const [filter, setFilter] = useState<"ready" | "waiting" | "issued" | "all">("ready");
+  const [rows, setRows] = useState<FiscalRow[]>(initialRows);
+  const [product, setProduct] = useState<Product>("all");
+  const [situation, setSituation] = useState<Situation>("pending");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Row | null>(null);
+  const [selected, setSelected] = useState<FiscalRow | null>(null);
 
-  const counts = {
-    ready: rows.filter((r) => r.ready).length,
-    waiting: rows.filter((r) => r.waiting).length,
-    issued: rows.filter((r) => r.nfseStatus === "issued").length,
-  };
+  const byProduct = rows.filter((r) => product === "all" || r.kind === product);
+  const count = (s: Exclude<Situation, "all">) => byProduct.filter(SITUATION[s]).length;
 
-  const filtered = rows.filter((r) => {
-    const byFilter =
-      filter === "all"
-        ? true
-        : filter === "ready"
-          ? r.ready
-          : filter === "waiting"
-            ? r.waiting
-            : r.nfseStatus === "issued" || r.nfseStatus === "skipped";
-    const q = search.toLowerCase();
-    const bySearch =
-      !q ||
-      buyerName(r).toLowerCase().includes(q) ||
-      r.email.toLowerCase().includes(q) ||
-      r.cohortName.toLowerCase().includes(q) ||
-      r.cpf.includes(q);
-    return byFilter && bySearch;
+  const q = search.trim().toLowerCase();
+  const filtered = byProduct.filter((r) => {
+    if (situation !== "all" && !SITUATION[situation](r)) return false;
+    if (!q) return true;
+    return [r.listName, r.listEmail, r.product, r.tomador.doc, r.student?.name ?? "", r.id]
+      .some((v) => v.toLowerCase().includes(q));
   });
-
-  function badge(r: Row) {
-    if (r.nfseStatus === "issued")
-      return {
-        label: r.nfseNumber
-          ? t("notasFiscais.notaNumberShort", { n: r.nfseNumber })
-          : t("notasFiscais.statusIssued"),
-        cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-      };
-    if (r.nfseStatus === "skipped")
-      return {
-        label: t("notasFiscais.statusSkipped"),
-        cls: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-      };
-    if (r.ready)
-      return {
-        label: t("notasFiscais.statusReady"),
-        cls: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-      };
-    return {
-      label: t("notasFiscais.statusWaiting"),
-      cls: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-    };
-  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">
-            {t("notasFiscais.title")}
-          </h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-foreground">{t("notasFiscais.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("notasFiscais.subtitle")}</p>
         </div>
         <a
@@ -223,127 +418,134 @@ export function NotasFiscaisClient({
         </a>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { key: "ready", label: t("notasFiscais.summaryReady"), value: counts.ready, accent: "text-green-600 dark:text-green-400" },
-          { key: "waiting", label: t("notasFiscais.summaryWaiting"), value: counts.waiting, accent: "text-yellow-600 dark:text-yellow-400" },
-          { key: "issued", label: t("notasFiscais.summaryIssued"), value: counts.issued, accent: "text-foreground" },
-        ].map(({ key, label, value, accent }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setFilter(key as typeof filter)}
-            className={`rounded-xl border bg-surface-1 p-4 text-left transition-colors ${
-              filter === key ? "border-brand" : "border-border hover:border-muted-foreground/40"
-            }`}
-          >
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className={`mt-1 text-2xl font-bold ${accent}`}>{value}</p>
-          </button>
-        ))}
-      </div>
-
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative">
+      <div className="space-y-4">
+        <Segmented<Product>
+          label={t("notasFiscais.productLabel")}
+          value={product}
+          onChange={setProduct}
+          options={[
+            { value: "all", label: t("notasFiscais.productAll") },
+            { value: "revalida", label: t("notasFiscais.productRevalida") },
+            { value: "clinact", label: t("notasFiscais.productClinact") },
+          ]}
+        />
+        <Segmented<Situation>
+          label={t("notasFiscais.statusLabel")}
+          value={situation}
+          onChange={setSituation}
+          options={[
+            { value: "all", label: t("notasFiscais.statusAll"), count: byProduct.length },
+            { value: "pending", label: t("notasFiscais.statusPending"), count: count("pending") },
+            { value: "issued", label: t("notasFiscais.statusIssued"), count: count("issued") },
+            { value: "cancelled", label: t("notasFiscais.statusCancelled"), count: count("cancelled") },
+            { value: "refunded", label: t("notasFiscais.statusRefunded"), count: count("refunded") },
+          ]}
+        />
+        <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t("notasFiscais.searchPlaceholder")}
-            className="rounded-lg border border-border bg-background py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
+            className="min-h-11 w-full rounded-lg border border-border bg-background py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand"
           />
         </div>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as typeof filter)}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-brand"
-        >
-          <option value="ready">{t("notasFiscais.filterReady")}</option>
-          <option value="waiting">{t("notasFiscais.filterWaiting")}</option>
-          <option value="issued">{t("notasFiscais.filterIssued")}</option>
-          <option value="all">{t("notasFiscais.filterAll")}</option>
-        </select>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface-1 text-left">
-              {[
-                t("notasFiscais.colDate"),
-                t("notasFiscais.colBuyer"),
-                t("notasFiscais.colCohort"),
-                t("notasFiscais.colAmount"),
-                t("notasFiscais.colStatus"),
-                "",
-              ].map((h, i) => (
-                <th
-                  key={i}
-                  className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  {t("notasFiscais.noResults")}
-                </td>
+      {filtered.length === 0 && (
+        <p className="rounded-xl border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          {t("notasFiscais.noResults")}
+        </p>
+      )}
+
+      {/* Phone: one card per sale */}
+      {filtered.length > 0 && (
+        <ul className="space-y-3 sm:hidden">
+          {filtered.map((r) => (
+            <li key={`${r.kind}:${r.id}`}>
+              <button
+                type="button"
+                onClick={() => setSelected(r)}
+                className="w-full rounded-xl border border-border bg-surface-1 p-4 text-left"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-foreground">{r.listName}</p>
+                    <p className="truncate text-xs text-muted-foreground">{r.product}</p>
+                  </div>
+                  <p className="shrink-0 font-semibold text-foreground">{fmt(r.totalCents)}</p>
+                </div>
+                <div className="mt-3 flex items-end justify-between gap-3">
+                  <StatusBadges r={r} />
+                  <span className="shrink-0 text-xs text-muted-foreground">{fmtDateBR(r.paidAt ?? r.saleDate)}</span>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* sm+: table */}
+      {filtered.length > 0 && (
+        <div className="hidden overflow-x-auto rounded-xl border border-border sm:block">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface-1 text-left">
+                {[
+                  t("notasFiscais.colDate"),
+                  t("notasFiscais.colBuyer"),
+                  t("notasFiscais.colProduct"),
+                  t("notasFiscais.colAmount"),
+                  t("notasFiscais.colStatus"),
+                  "",
+                ].map((h, i) => (
+                  <th
+                    key={i}
+                    className="whitespace-nowrap px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
-            )}
-            {filtered.map((r) => {
-              const b = badge(r);
-              return (
+            </thead>
+            <tbody>
+              {filtered.map((r) => (
                 <tr
-                  key={r.id}
+                  key={`${r.kind}:${r.id}`}
                   className="border-b border-border transition-colors last:border-0 hover:bg-surface-1/50"
                 >
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-                    {fmtDate(r.createdAt)}
+                    {fmtDateBR(r.paidAt ?? r.saleDate)}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium leading-tight text-foreground">{buyerName(r)}</p>
-                    <p className="text-xs text-muted-foreground">{r.email}</p>
+                    <p className="font-medium leading-tight text-foreground">{r.listName}</p>
+                    <p className="text-xs text-muted-foreground">{r.listEmail}</p>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-foreground">{r.cohortName}</td>
+                  <td className="px-4 py-3 text-foreground">{r.product}</td>
                   <td className="whitespace-nowrap px-4 py-3 font-medium text-foreground">
-                    {fmt(r.amountCents)}
+                    {fmt(r.totalCents)}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${b.cls}`}
-                    >
-                      {b.label}
-                    </span>
-                    {r.waiting && (
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {t("notasFiscais.eligibleOn", { date: fmtDate(r.eligibleAt) })}
-                      </p>
-                    )}
+                    <StatusBadges r={r} />
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => setSelected(r)}
-                      className="ml-auto flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                      className="ml-auto flex min-h-11 items-center gap-1 text-xs font-medium text-brand hover:underline"
                     >
                       <FileText className="h-3.5 w-3.5" />
-                      {r.nfseStatus === "issued" ? t("notasFiscais.view") : t("notasFiscais.fill")}
+                      {notaState(r) === "pending" ? t("notasFiscais.fill") : t("notasFiscais.view")}
                     </button>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {selected && (
         <NotaDetail
@@ -351,8 +553,10 @@ export function NotasFiscaisClient({
           guaranteeDays={guaranteeDays}
           onClose={() => setSelected(null)}
           onSaved={(updated) => {
-            setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-            setSelected(null);
+            setRows((prev) =>
+              prev.map((r) => (r.kind === updated.kind && r.id === updated.id ? updated : r)),
+            );
+            setSelected(updated);
           }}
         />
       )}
@@ -360,56 +564,36 @@ export function NotasFiscaisClient({
   );
 }
 
+type Action = "issue" | "cancel" | "uncancel" | "refund" | "unrefund";
+
 function NotaDetail({
   row,
   guaranteeDays,
   onClose,
   onSaved,
 }: {
-  row: Row;
+  row: FiscalRow;
   guaranteeDays: number;
   onClose: () => void;
-  onSaved: (r: Row) => void;
+  onSaved: (r: FiscalRow) => void;
 }) {
   const { t } = useTranslation();
+  const today = todayKeyBR();
+  const state = notaState(row);
   const [numero, setNumero] = useState(row.nfseNumber ?? "");
+  const [issuedOn, setIssuedOn] = useState(row.nfseIssuedAt ? toDateKeyBR(row.nfseIssuedAt) : today);
   const [verificacao, setVerificacao] = useState(row.nfseVerificacao ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
-  // Already-recorded invoices open read-only so nobody accidentally re-saves or
-  // skips while just viewing. The "Editar" button unlocks the form.
-  const alreadyRecorded = row.nfseStatus === "issued" || row.nfseStatus === "skipped";
-  const [locked, setLocked] = useState(alreadyRecorded);
+  const [copiedAll, setCopiedAll] = useState(false);
+  // A recorded nota opens read-only so nobody re-saves it while just looking.
+  const [editing, setEditing] = useState(state === "pending");
 
-  const fullAddress = [row.address, row.number].filter(Boolean).join(", ");
-  const cityState = [row.city, row.state].filter(Boolean).join(" - ");
+  const sections = sectionsFor(row, t);
 
-  const allBlock = [
-    `Pedido: ${row.id}`,
-    `Produto: Turma ${row.cohortName}`,
-    `Data da venda: ${fmtDateBR(row.createdAt)}`,
-    `Data do pagamento: ${fmtDateBR(row.paidAt) || "—"}`,
-    `Situação do pagamento: ${paymentStatus(row)}`,
-    "—",
-    `Nome: ${`${row.firstName} ${row.lastName}`.trim()}`,
-    `CPF/CNPJ: ${row.cpf}`,
-    `E-mail: ${row.email}`,
-    `Telefone: ${row.phone}`,
-    `CEP: ${row.cep}`,
-    `Endereço: ${fullAddress}`,
-    `Bairro: ${row.neighborhood}`,
-    `Cidade: ${cityState}`,
-    "—",
-    `Serviço: ${descricao(row)}`,
-    `Cód. Tributação Nacional: ${SERVICO.codigo}`,
-    `Alíquota ISS: ${SERVICO.iss}`,
-    `Valor original: ${fmt(row.baseAmountCents)}`,
-    `Desconto: ${fmt(row.discountCents)}`,
-    ...(row.interestCents > 0 ? [`Juros do parcelamento: ${fmt(row.interestCents)}`] : []),
-    `Valor pago: ${fmt(row.amountCents)}`,
-  ].join("\n");
-
-  function save(action: "issue" | "skip") {
+  function send(action: Action) {
+    if (action === "cancel" && !window.confirm(t("notasFiscais.cancelConfirm"))) return;
+    if (action === "refund" && !window.confirm(t("notasFiscais.refundConfirm"))) return;
     startSaving(async () => {
       setError(null);
       try {
@@ -417,23 +601,35 @@ function NotaDetail({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            orderId: row.id,
+            kind: row.kind,
+            id: row.id,
             action,
             numero: numero.trim(),
             verificacao: verificacao.trim(),
+            issuedOn,
           }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? t("notasFiscais.saveError"));
-        onSaved({
-          ...row,
-          ready: false,
-          waiting: false,
-          nfseStatus: action === "skip" ? "skipped" : "issued",
-          nfseNumber: action === "issue" ? numero.trim() : null,
-          nfseVerificacao: action === "issue" ? verificacao.trim() || null : null,
-          nfseIssuedAt: new Date().toISOString(),
-        });
+        const nowIso = new Date().toISOString();
+        const next: FiscalRow = { ...row };
+        if (action === "issue") {
+          next.nfseStatus = "issued";
+          next.nfseNumber = numero.trim();
+          next.nfseVerificacao = verificacao.trim() || null;
+          next.nfseIssuedAt = data.issuedAt ?? nowIso;
+          next.nfseCancelledAt = null;
+        } else if (action === "cancel") {
+          next.nfseStatus = "cancelled";
+          next.nfseCancelledAt = nowIso;
+        } else if (action === "uncancel") {
+          next.nfseStatus = "issued";
+          next.nfseCancelledAt = null;
+        } else {
+          next.refunded = action === "refund";
+        }
+        setEditing(false);
+        onSaved(next);
       } catch (e) {
         setError(e instanceof Error ? e.message : t("notasFiscais.saveError"));
       }
@@ -442,121 +638,90 @@ function NotaDetail({
 
   async function copyAll() {
     try {
-      await navigator.clipboard.writeText(allBlock);
+      await navigator.clipboard.writeText(copyBlock(row));
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 1500);
     } catch {
       /* no-op */
     }
   }
 
+  const inputCls =
+    "min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand disabled:cursor-not-allowed disabled:bg-surface-1 disabled:text-muted-foreground";
+  const secondaryBtn =
+    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-1 disabled:opacity-60";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4">
-      <div className="my-8 w-full min-w-0 max-w-lg rounded-2xl border border-border bg-background p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-3 sm:p-4">
+      <div className="my-4 w-full min-w-0 max-w-xl rounded-2xl border border-border bg-background p-4 shadow-xl sm:my-8 sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">
-              {t("notasFiscais.detailTitle")}
-            </h2>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-foreground">{t("notasFiscais.detailTitle")}</h2>
             <p className="text-sm text-muted-foreground">
-              {buyerName(row)} · {row.cohortName} · {fmt(row.amountCents)}
+              {row.listName} · {row.product} · {fmt(row.totalCents)}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
+            className="min-h-11 shrink-0 rounded-md px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
           >
             {t("common.close")}
           </button>
         </div>
 
-        {row.waiting && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <StatusBadges r={row} />
+          <button
+            type="button"
+            onClick={copyAll}
+            className="flex min-h-11 items-center gap-1 text-sm font-medium text-brand hover:underline"
+          >
+            {copiedAll ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {t("notasFiscais.copyAll")}
+          </button>
+        </div>
+
+        {state === "pending" && !row.refunded && row.inGuarantee && (
           <p className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
             {t("notasFiscais.guaranteeNote", { days: guaranteeDays })}
           </p>
         )}
 
-        {/* Venda */}
-        <div className="mb-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("notasFiscais.sectionVenda")}
+        {sections.map((s) => (
+          <div key={s.title} className="mb-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {s.title}
             </h3>
-            <button
-              type="button"
-              onClick={copyAll}
-              className="flex min-h-11 items-center gap-1 text-xs font-medium text-brand hover:underline"
-            >
-              <Copy className="h-3 w-3" />
-              {t("notasFiscais.copyAll")}
-            </button>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <CopyField label={t("notasFiscais.fieldOrderId")} value={row.id} />
-            <CopyField label={t("notasFiscais.fieldProduct")} value={`Turma ${row.cohortName}`} />
-            <CopyField label={t("notasFiscais.fieldSaleDate")} value={fmtDateBR(row.createdAt)} />
-            <CopyField label={t("notasFiscais.fieldPaidDate")} value={fmtDateBR(row.paidAt)} />
-          </div>
-          <div className="mt-2 grid gap-2">
-            <CopyField label={t("notasFiscais.fieldPaymentStatus")} value={paymentStatus(row)} />
-          </div>
-        </div>
-
-        {/* Tomador */}
-        <div className="mb-4">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("notasFiscais.sectionTomador")}
-          </h3>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <CopyField label={t("notasFiscais.fieldName")} value={`${row.firstName} ${row.lastName}`.trim()} />
-            <CopyField label={t("notasFiscais.fieldCpf")} value={row.cpf} />
-            <CopyField label={t("notasFiscais.fieldEmail")} value={row.email} />
-            <CopyField label={t("notasFiscais.fieldPhone")} value={row.phone} />
-            <CopyField label={t("notasFiscais.fieldCep")} value={row.cep} />
-            <CopyField label={t("notasFiscais.fieldAddress")} value={fullAddress} />
-            <CopyField label={t("notasFiscais.fieldNeighborhood")} value={row.neighborhood} />
-            <CopyField label={t("notasFiscais.fieldCity")} value={cityState} />
-          </div>
-        </div>
-
-        {/* Serviço */}
-        <div className="mb-5">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t("notasFiscais.sectionServico")}
-          </h3>
-          <div className="grid gap-2">
-            <CopyField label={t("notasFiscais.fieldDescription")} value={descricao(row)} />
             <div className="grid gap-2 sm:grid-cols-2">
-              <CopyField label={t("notasFiscais.fieldServiceCode")} value={SERVICO.codigo} />
-              <CopyField label={t("notasFiscais.fieldIss")} value={SERVICO.iss} />
+              {s.fields.map((f) => (
+                <div key={f.label} className={f.wide ? "sm:col-span-2" : undefined}>
+                  <CopyField label={f.label} value={f.value} />
+                </div>
+              ))}
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <CopyField label={t("notasFiscais.fieldOriginalAmount")} value={fmt(row.baseAmountCents)} />
-              <CopyField label={t("notasFiscais.fieldDiscount")} value={fmt(row.discountCents)} />
-              {row.interestCents > 0 && (
-                <CopyField label={t("notasFiscais.fieldInterest")} value={fmt(row.interestCents)} />
-              )}
-              <CopyField label={t("notasFiscais.fieldPaidAmount")} value={fmt(row.amountCents)} />
-            </div>
+            {s.note && <p className="mt-2 text-xs text-muted-foreground">{s.note}</p>}
           </div>
-        </div>
+        ))}
 
-        {/* Mark as issued */}
+        {/* Record what was done on the Portal Nacional */}
         <div className="border-t border-border pt-4">
           <div className="mb-2 flex items-center justify-between gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("notasFiscais.markIssued")}
             </h3>
-            {locked && (
+            {!editing && state !== "pending" && (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
                 <Lock className="h-3 w-3" />
                 {t("notasFiscais.lockedBadge")}
               </span>
             )}
           </div>
+          <p className="mb-3 text-xs text-muted-foreground">{t("notasFiscais.manualNote")}</p>
 
-          {locked && (
-            <p className="mb-3 rounded-lg border border-border bg-surface-1 px-3 py-2 text-xs text-muted-foreground">
-              {t("notasFiscais.lockedNote")}
+          {state === "cancelled" && row.nfseCancelledAt && (
+            <p className="mb-3 text-sm text-foreground">
+              {t("notasFiscais.cancelledOn", { date: fmtDateBR(row.nfseCancelledAt) })}
             </p>
           )}
 
@@ -569,12 +734,25 @@ function NotaDetail({
                 type="text"
                 value={numero}
                 onChange={(e) => setNumero(e.target.value)}
-                disabled={locked}
+                disabled={!editing}
                 placeholder={t("notasFiscais.numeroPlaceholder")}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand disabled:cursor-not-allowed disabled:bg-surface-1 disabled:text-muted-foreground"
+                className={inputCls}
               />
             </label>
             <label className="block">
+              <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                {t("notasFiscais.issuedOnLabel")}
+              </span>
+              <input
+                type="date"
+                value={issuedOn}
+                max={today}
+                onChange={(e) => setIssuedOn(e.target.value)}
+                disabled={!editing}
+                className={inputCls}
+              />
+            </label>
+            <label className="block sm:col-span-2">
               <span className="mb-1 block text-[11px] font-medium text-muted-foreground">
                 {t("notasFiscais.verificacaoLabel")}
               </span>
@@ -582,9 +760,9 @@ function NotaDetail({
                 type="text"
                 value={verificacao}
                 onChange={(e) => setVerificacao(e.target.value)}
-                disabled={locked}
+                disabled={!editing}
                 placeholder={t("notasFiscais.verificacaoPlaceholder")}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand disabled:cursor-not-allowed disabled:bg-surface-1 disabled:text-muted-foreground"
+                className={inputCls}
               />
             </label>
           </div>
@@ -595,41 +773,58 @@ function NotaDetail({
             </p>
           )}
 
-          {locked ? (
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setLocked(false)}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-1"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                {t("notasFiscais.edit")}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {t("common.close")}
-              </button>
-            </div>
-          ) : (
-            <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
+            {editing ? (
+              <>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => send("issue")}
+                  className="min-h-11 flex-1 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {saving ? t("notasFiscais.saving") : t("notasFiscais.saveIssued")}
+                </button>
+                {state !== "pending" && (
+                  <button type="button" onClick={() => setEditing(false)} className={secondaryBtn}>
+                    {t("common.cancel")}
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                {state === "issued" && (
+                  <>
+                    <button type="button" onClick={() => setEditing(true)} className={secondaryBtn}>
+                      <Pencil className="h-3.5 w-3.5" />
+                      {t("notasFiscais.edit")}
+                    </button>
+                    <button type="button" disabled={saving} onClick={() => send("cancel")} className={secondaryBtn}>
+                      {t("notasFiscais.cancelNota")}
+                    </button>
+                  </>
+                )}
+                {state === "cancelled" && (
+                  <button type="button" disabled={saving} onClick={() => send("uncancel")} className={secondaryBtn}>
+                    {t("notasFiscais.uncancel")}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ClinAct has no refund flow in the app: the refund is made in the
+              PagBank panel and only recorded here. Revalida refunds come from
+              the order itself (Faturamento → reembolso). */}
+          {row.kind === "clinact" && (
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="mb-2 text-xs text-muted-foreground">{t("notasFiscais.refundHint")}</p>
               <button
                 type="button"
                 disabled={saving}
-                onClick={() => save("issue")}
-                className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                onClick={() => send(row.refunded ? "unrefund" : "refund")}
+                className={secondaryBtn}
               >
-                {saving ? t("notasFiscais.saving") : t("notasFiscais.saveIssued")}
-              </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => save("skip")}
-                className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
-              >
-                {t("notasFiscais.skip")}
+                {row.refunded ? t("notasFiscais.unmarkRefunded") : t("notasFiscais.markRefunded")}
               </button>
             </div>
           )}

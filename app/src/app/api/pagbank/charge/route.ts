@@ -95,10 +95,17 @@ export async function POST(request: NextRequest) {
   if (billingErr) {
     return NextResponse.json({ error: billingErr }, { status: 400 });
   }
+  const isPj = rawBilling!.personType === "pj";
   const billing: BillingDetails = {
+    personType: isPj ? "pj" : "pf",
     firstName: rawBilling!.firstName!.trim(),
     lastName: rawBilling!.lastName!.trim(),
     cpf: onlyDigits(rawBilling!.cpf!),
+    // Company fields only exist on a PJ sale — never left over from a form the
+    // buyer switched back to PF.
+    companyName: isPj ? rawBilling!.companyName!.trim().slice(0, 200) : "",
+    cnpj: isPj ? onlyDigits(rawBilling!.cnpj!) : "",
+    companyEmail: isPj ? (rawBilling!.companyEmail ?? "").trim().slice(0, 200) : "",
     cep: onlyDigits(rawBilling!.cep!),
     address: rawBilling!.address!.trim(),
     number: rawBilling!.number!.trim(),
@@ -472,7 +479,12 @@ export async function POST(request: NextRequest) {
       currency: "BRL",
       payment_method: paymentMethod,
       status: initialStatus,
-      // Immutable billing snapshot for nota fiscal / audit.
+      // Immutable billing snapshot for nota fiscal / audit. On a PJ sale the
+      // first/last name + CPF are the STUDENT and the company is the tomador.
+      billing_person_type: billing.personType,
+      billing_company_name: billing.companyName || null,
+      billing_cnpj: billing.cnpj || null,
+      billing_company_email: billing.companyEmail || null,
       billing_first_name: billing.firstName,
       billing_last_name: billing.lastName,
       billing_cpf: billing.cpf,
@@ -516,20 +528,23 @@ export async function POST(request: NextRequest) {
   }
 
   // Cache billing on the profile so returning buyers get the form prefilled.
-  // Best-effort: a failure here must not block the purchase.
+  // Best-effort: a failure here must not block the purchase. The profile is the
+  // STUDENT's: on a PJ sale the address is the company's, so it is not cached.
   await admin
     .from("profiles")
     .update({
       billing_first_name: billing.firstName,
       billing_last_name: billing.lastName,
       billing_cpf: billing.cpf,
-      billing_cep: billing.cep,
-      billing_address: billing.address,
-      billing_number: billing.number,
-      billing_neighborhood: billing.neighborhood || null,
-      billing_city: billing.city,
-      billing_state: billing.state,
       billing_phone: billing.phone || null,
+      ...(billing.personType === "pf" && {
+        billing_cep: billing.cep,
+        billing_address: billing.address,
+        billing_number: billing.number,
+        billing_neighborhood: billing.neighborhood || null,
+        billing_city: billing.city,
+        billing_state: billing.state,
+      }),
     })
     .eq("id", user.id);
 
@@ -697,11 +712,14 @@ export async function POST(request: NextRequest) {
 // name + email + tax_id (required by the Orders/Pix API). The address block is
 // attached only when every PagBank-required subfield is present — a partial
 // address makes PagBank 400, and bairro (locality) is optional in our form.
+// On a PJ sale the customer is the paying company (razão social + CNPJ, which
+// PagBank accepts as tax_id); the card holder stays the person typed on the card.
 function buildCustomer(billing: BillingDetails, email: string | undefined): PagBankCustomer {
+  const isPj = billing.personType === "pj";
   const customer: PagBankCustomer = {
-    name: `${billing.firstName} ${billing.lastName}`.trim(),
-    email: email || undefined,
-    tax_id: billing.cpf,
+    name: isPj ? billing.companyName : `${billing.firstName} ${billing.lastName}`.trim(),
+    email: (isPj && billing.companyEmail) || email || undefined,
+    tax_id: isPj ? billing.cnpj : billing.cpf,
   };
   if (
     billing.address && billing.number && billing.neighborhood &&

@@ -6,14 +6,18 @@ import { Check, ChevronRight, Eye, EyeOff, Lock, ShieldCheck, Tag, X } from "luc
 import { PixDisplay } from "./pix-display";
 import { CardForm } from "./card-form";
 import { BillingForm } from "./billing-form";
-import { validateBilling, formatCpf, formatCep, type BillingDetails } from "@/lib/br";
+import { validateBilling, formatCpf, formatCep, formatCnpj, type BillingDetails } from "@/lib/br";
 import type { InstallmentOption } from "@/lib/pagbank/types";
 import { trackBeginCheckout, trackPurchase } from "@/lib/analytics/track";
 
 const EMPTY_BILLING: BillingDetails = {
+  personType: "pf",
   firstName: "",
   lastName: "",
   cpf: "",
+  companyName: "",
+  cnpj: "",
+  companyEmail: "",
   cep: "",
   address: "",
   number: "",
@@ -757,7 +761,9 @@ export function CheckoutClient({
                   <div className="flex min-w-0 items-center gap-2">
                     <Check className="h-4 w-4 shrink-0 text-brand" />
                     <span className="truncate font-medium text-foreground/70">
-                      {billing.firstName} {billing.lastName} · CPF {billing.cpf}
+                      {billing.personType === "pj"
+                        ? `${billing.companyName} · CNPJ ${formatCnpj(billing.cnpj)}`
+                        : `${billing.firstName} ${billing.lastName} · CPF ${billing.cpf}`}
                     </span>
                   </div>
                   <button

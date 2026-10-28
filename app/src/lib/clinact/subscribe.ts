@@ -17,8 +17,10 @@ import {
   setCustomerCard,
   PagBankSubscriptionsError,
   type PagBankAuditEntry,
+  type PagBankInvoice,
   type PagBankSubscription,
 } from "@/lib/pagbank/subscriptions";
+import { recordPaidInvoices, recordPaidInvoicesFor } from "./invoices";
 
 /**
  * The ClinAct subscription flow: plan → subscriber (card encrypted in the
@@ -174,12 +176,13 @@ function paidUntilFrom(subscription: PagBankSubscription, planKey: ClinactPlanKe
   return fallback.toISOString();
 }
 
-async function anyInvoicePaid(subscriptionId: string): Promise<boolean> {
+/** The subscription's invoices, or none when PagBank could not be read (= not paid). */
+async function invoicesOf(subscriptionId: string): Promise<PagBankInvoice[]> {
   try {
     const { invoices } = await listInvoices(subscriptionId);
-    return (invoices ?? []).some((i) => i.status === "PAID");
+    return invoices ?? [];
   } catch {
-    return false;
+    return [];
   }
 }
 
@@ -222,6 +225,8 @@ async function recordSubscription(input: {
   planKey: ClinactPlanKey;
   planId: string | null;
   card?: { brand?: string; last?: string } | null;
+  /** The cardholder typed at checkout — the tomador of the subscription's NFS-e. */
+  billing: { name: string; taxId: string; phone: string };
 }): Promise<void> {
   const admin = createAdminClient();
   await admin.from("clinact_subscriptions").upsert(
@@ -235,6 +240,9 @@ async function recordSubscription(input: {
       status: input.subscription?.status ?? null,
       card_brand: input.card?.brand ?? null,
       card_last_digits: input.card?.last ?? null,
+      billing_name: input.billing.name,
+      billing_tax_id: input.billing.taxId,
+      billing_phone: input.billing.phone,
       environment: getSubscriptionsEnv(),
       updated_at: new Date().toISOString(),
     },
@@ -245,6 +253,11 @@ async function recordSubscription(input: {
 export async function subscribeToClinact(input: SubscribeInput): Promise<SubscribeResult> {
   const referenceId = `clinact-${input.planKey}-${input.attemptId}`.slice(0, 64);
   const audit = auditSink(input.userId, referenceId);
+  const billing = {
+    name: input.name,
+    taxId: input.taxId,
+    phone: `${input.phone.area}${input.phone.number}`,
+  };
 
   let planId: string;
   try {
@@ -355,8 +368,9 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
       if (outcome.kind === "paid") {
         const found = await findSubscriptionByReference(referenceId);
         if (found) {
-          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, card });
+          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, card, billing });
           await grantAccess(input.userId, paidUntilFrom(found, input.planKey));
+          await recordPaidInvoicesFor(input.userId, found.id);
           return { ok: true, state: "paid", subscriptionId: outcome.subscriptionId, paidUntil: paidUntilFrom(found, input.planKey) };
         }
       }
@@ -364,14 +378,15 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
         return { ok: true, state: "pending", subscriptionId: outcome.subscriptionId };
       }
     }
-    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, card });
+    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, card, billing });
     return { ok: false, error: GENERIC_ERROR };
   }
 
-  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, card });
+  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, card, billing });
 
   // 201 does NOT mean paid. Ask the invoice.
-  const paid = await anyInvoicePaid(subscription.id);
+  const invoices = await invoicesOf(subscription.id);
+  const paid = invoices.some((i) => i.status === "PAID");
   if (!paid) {
     // OVERDUE at creation means the issuer declined the first charge.
     if (subscription.status === "OVERDUE" || subscription.status === "PENDING_ACTION") {
@@ -382,6 +397,8 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
 
   const paidUntil = paidUntilFrom(subscription, input.planKey);
   await grantAccess(input.userId, paidUntil);
+  // The paid invoice gets its NFS-e row. After access; swallows its own failures.
+  await recordPaidInvoices(input.userId, subscription.id, invoices);
   return { ok: true, state: "paid", subscriptionId: subscription.id, paidUntil };
 }
 

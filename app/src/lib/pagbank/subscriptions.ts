@@ -214,7 +214,15 @@ export type PagBankSubscription = {
   retries?: { attempt: string; retried_at: string; status: string }[];
 };
 
-export type PagBankInvoice = { id: string; status: "PAID" | "OVERDUE" | "WAITING" | "CANCELED"; amount: Money; occurrence: number };
+export type PagBankInvoice = {
+  id: string;
+  status: "PAID" | "OVERDUE" | "WAITING" | "CANCELED";
+  amount: Money;
+  occurrence: number;
+  // There is no paid_at: a PAID invoice's updated_at is when it was paid.
+  created_at?: string;
+  updated_at?: string;
+};
 export type PagBankPayment = {
   id: string;
   status: "APPROVED" | "DENIED" | "IN_ANALYSIS" | "CANCELED";
