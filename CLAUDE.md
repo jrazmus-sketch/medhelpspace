@@ -172,6 +172,16 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   `clinact_invoices` is written best-effort by `lib/clinact/invoices.ts` from checkout + the renewal
   reconcile (cron/webhook), keyed by INVO_ id, DO NOTHING on conflict — never the access authority.
   Patch: `schema-patch-nfse-national-v2.sql`; backfill: `scripts/clinact-backfill-invoices.ts`.
+  **v3 (Karina's third reply):** (a) **the ClinAct tomador is NEVER the cardholder** — the checkout's
+  "Dados para a nota fiscal" block picks o próprio aluno / outra PF / PJ with the full address
+  (`tomador_*` on `clinact_subscriptions`, copied onto each invoice; `billing_*` = cardholder =
+  payment only); shared validator `validateNfseTomador` in `lib/br.ts`. (b) **`internal_test`** on
+  orders + clinact_invoices: every record before 28/10/2026 is an internal test (no real sale yet) —
+  listed only under "Testes internos", never a sale or a pending nota (screen, bell, dashboard); later
+  test purchases are marked by hand in the modal. Her WebISS sentences are verbatim locale keys
+  (`webissTestNota` / `webissTestRefunded`); a WebISS nota is NEVER auto-cancelled. ClinAct
+  description is her text verbatim. Patch: `schema-patch-nfse-national-v3.sql` (also marks the
+  25/09 R$ 29,90 invoice refunded).
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a

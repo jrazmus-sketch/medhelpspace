@@ -803,7 +803,9 @@
       "clinact_specialty_delete": "ClinAct: especialidade excluída",
       "clinact_topic_create": "ClinAct: tema criado",
       "clinact_topic_update": "ClinAct: tema alterado",
-      "clinact_topic_delete": "ClinAct: tema excluído"
+      "clinact_topic_delete": "ClinAct: tema excluído",
+      "nfse_test_marked": "Registro marcado como teste interno",
+      "nfse_test_unmarked": "Teste interno desmarcado"
     }
   },
   "pageNew": {
@@ -1162,7 +1164,6 @@
     "sectionVenda": "Venda",
     "sectionTomadorPf": "Tomador (aluno)",
     "sectionTomadorPj": "Tomador (empresa)",
-    "sectionTomadorCard": "Tomador (titular do cartão)",
     "sectionAluno": "Aluno",
     "sectionServico": "Serviço",
     "sectionValores": "Valores",
@@ -1186,7 +1187,6 @@
     "fieldAddress": "Endereço",
     "fieldNeighborhood": "Bairro",
     "fieldCity": "Município/UF",
-    "noAddressNote": "O checkout do ClinAct não pede endereço.",
     "fieldDescription": "Discriminação do serviço",
     "fieldServiceCode": "Cód. Tributação Nacional",
     "fieldOriginal": "Valor original do produto",
@@ -1213,7 +1213,21 @@
     "markRefunded": "Marcar cobrança como reembolsada",
     "refundConfirm": "Confirma que o valor desta cobrança já foi devolvido no PagBank? Aqui só fica registrado.",
     "unmarkRefunded": "Desfazer reembolso",
-    "saveError": "Não foi possível salvar."
+    "saveError": "Não foi possível salvar.",
+    "sectionTomador": "Tomador",
+    "sectionTomadorOtherPf": "Tomador (outra pessoa física)",
+    "tomadorMissing": "Assinatura anterior aos \"Dados para a nota fiscal\" do checkout: o tomador não foi informado.",
+    "fieldComplement": "Complemento",
+    "statusTest": "Testes internos",
+    "testBadge": "Teste interno",
+    "testListNote": "Testes internos não são vendas: ficam só no histórico e não entram em \"Aguardando emissão\".",
+    "testBanner": "Teste interno — não é uma venda e não é uma NFS-e pendente do Emissor Nacional.",
+    "testHint": "Compra de teste feita pela equipe? Marque como teste interno para tirá-la das vendas.",
+    "markTest": "Marcar como teste interno",
+    "markTestConfirm": "Confirma que este registro é um teste interno, e não uma venda? Ele sai das vendas e de \"Aguardando emissão\".",
+    "unmarkTest": "Desmarcar teste interno",
+    "webissTestNota": "Nota de teste emitida no WebISS — competência anterior a 01/11/2026.",
+    "webissTestRefunded": "Teste reembolsado com NFS-e emitida no WebISS — verifique se a nota fiscal também foi cancelada."
   },
   "embaixadores": {
     "title": "Embaixadores",

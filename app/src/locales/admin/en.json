@@ -803,7 +803,9 @@
       "clinact_specialty_delete": "ClinAct: specialty deleted",
       "clinact_topic_create": "ClinAct: topic created",
       "clinact_topic_update": "ClinAct: topic changed",
-      "clinact_topic_delete": "ClinAct: topic deleted"
+      "clinact_topic_delete": "ClinAct: topic deleted",
+      "nfse_test_marked": "Record marked as internal test",
+      "nfse_test_unmarked": "Internal test unmarked"
     }
   },
   "pageNew": {
@@ -1162,7 +1164,6 @@
     "sectionVenda": "Sale",
     "sectionTomadorPf": "Customer (student)",
     "sectionTomadorPj": "Customer (company)",
-    "sectionTomadorCard": "Customer (cardholder)",
     "sectionAluno": "Student",
     "sectionServico": "Service",
     "sectionValores": "Amounts",
@@ -1186,7 +1187,6 @@
     "fieldAddress": "Address",
     "fieldNeighborhood": "Neighborhood",
     "fieldCity": "City/State",
-    "noAddressNote": "The ClinAct checkout does not ask for an address.",
     "fieldDescription": "Service description",
     "fieldServiceCode": "National tax code",
     "fieldOriginal": "Original product price",
@@ -1213,7 +1213,21 @@
     "markRefunded": "Mark charge as refunded",
     "refundConfirm": "Confirm this charge has already been refunded in PagBank? This only records it.",
     "unmarkRefunded": "Undo refund",
-    "saveError": "Could not save."
+    "saveError": "Could not save.",
+    "sectionTomador": "Customer (tomador)",
+    "sectionTomadorOtherPf": "Customer (another individual)",
+    "tomadorMissing": "Subscription from before the checkout's \"Dados para a nota fiscal\": no customer was given.",
+    "fieldComplement": "Address line 2",
+    "statusTest": "Internal tests",
+    "testBadge": "Internal test",
+    "testListNote": "Internal tests are not sales: they stay in the history only and never count as awaiting issue.",
+    "testBanner": "Internal test — not a sale and not an NFS-e pending on the national Emissor.",
+    "testHint": "A test purchase made by the team? Mark it as an internal test to take it out of the sales.",
+    "markTest": "Mark as internal test",
+    "markTestConfirm": "Confirm this record is an internal test, not a sale? It leaves the sales and the awaiting-issue list.",
+    "unmarkTest": "Unmark internal test",
+    "webissTestNota": "Test invoice issued on WebISS — period before 01/11/2026.",
+    "webissTestRefunded": "Refunded test with an NFS-e issued on WebISS — check that the invoice was also cancelled."
   },
   "embaixadores": {
     "title": "Ambassadors",

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getClinactViewer } from "@/lib/clinact/access";
+import { createClient } from "@/lib/supabase/server";
 import { getPublicKey } from "@/lib/pagbank/subscriptions";
 import { subscriptionsUnavailable } from "@/lib/clinact/subscribe";
 import { CLINACT_PLAN_LIST, annualInMonthlies, formatBRL } from "@/lib/clinact/plans";
@@ -70,6 +71,18 @@ export default async function AssinarPage({
     );
   }
 
+  // The student is the account. Shown in the nota block so "the student himself"
+  // as tomador is pre-filled, and so a different tomador is visibly NOT the
+  // person who will use ClinAct.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const student = { name: (profile?.display_name as string | null) ?? "", email: user?.email ?? "" };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-2xl font-bold">Assinar o ClinAct</h1>
@@ -81,6 +94,7 @@ export default async function AssinarPage({
       <SubscribeForm
         publicKey={publicKey}
         initialPlan={initialPlan}
+        student={student}
         plans={CLINACT_PLAN_LIST.map((p) => ({
           key: p.key,
           label: p.label,

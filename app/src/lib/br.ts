@@ -151,3 +151,68 @@ export function validateBilling(b: Partial<BillingDetails> | undefined): string 
   if (!b.state || !isValidUf(b.state)) return "Selecione o estado.";
   return null;
 }
+
+/**
+ * The tomador of a ClinAct subscription's NFS-e (Karina 2026-10-27): the
+ * student himself (default), another Pessoa Física, or a Pessoa Jurídica.
+ * Never derived from the card — the cardholder is payment data only.
+ */
+export type TomadorType = "aluno" | "pf" | "pj";
+
+export interface NfseTomador {
+  type: TomadorType;
+  /** Nome completo, or razão social when "pj". */
+  name: string;
+  /** CPF, or CNPJ when "pj" — digits only by the time it hits the server. */
+  document: string;
+  email: string;
+  phone: string;        // digits, with DDD
+  cep: string;          // digits only
+  street: string;       // logradouro
+  number: string;
+  complement: string;   // optional
+  neighborhood: string;
+  city: string;
+  state: string;        // UF
+}
+
+/** Trimmed, digits-only and length-capped copy — what the server stores. */
+export function normalizeNfseTomador(t: Partial<NfseTomador> | undefined): NfseTomador {
+  const s = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const type: TomadorType = t?.type === "pf" || t?.type === "pj" ? t.type : "aluno";
+  return {
+    type,
+    name: s(t?.name, 200),
+    document: onlyDigits(s(t?.document, 30)),
+    email: s(t?.email, 200).toLowerCase(),
+    phone: onlyDigits(s(t?.phone, 30)),
+    cep: onlyDigits(s(t?.cep, 12)),
+    street: s(t?.street, 200),
+    number: s(t?.number, 30),
+    complement: s(t?.complement, 100),
+    neighborhood: s(t?.neighborhood, 100),
+    city: s(t?.city, 100),
+    state: s(t?.state, 2).toUpperCase(),
+  };
+}
+
+/** Portuguese error for the first problem, or null. Expects a normalized tomador. */
+export function validateNfseTomador(t: NfseTomador): string | null {
+  const isPj = t.type === "pj";
+  if (isPj) {
+    if (!t.name) return "Informe a razão social.";
+    if (!isValidCnpj(t.document)) return "CNPJ inválido.";
+  } else {
+    if (t.name.split(/\s+/).filter(Boolean).length < 2) return "Informe o nome completo.";
+    if (!isValidCpf(t.document)) return "CPF inválido.";
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t.email)) return "E-mail inválido.";
+  if (t.phone.length < 10 || t.phone.length > 11) return "Informe um telefone com DDD.";
+  if (t.cep.length !== 8) return "CEP inválido.";
+  if (!t.street) return "Informe o logradouro.";
+  if (!t.number) return "Informe o número.";
+  if (!t.neighborhood) return "Informe o bairro.";
+  if (!t.city) return "Informe o município.";
+  if (!isValidUf(t.state)) return "Selecione a UF.";
+  return null;
+}

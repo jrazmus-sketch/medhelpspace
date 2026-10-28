@@ -15,9 +15,11 @@ import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
 //   refund / unrefund — ClinAct only: the charge was returned in the PagBank
 //              panel. A Revalida refund is the order's own status, set by the
 //              refund flow, never by this route.
+//   test / untest — an internal test, not a sale: kept as history, never listed
+//              as a sale or a pending nota (Karina 2026-10-27).
 type Kind = "revalida" | "clinact";
-type Action = "issue" | "cancel" | "uncancel" | "refund" | "unrefund";
-const ACTIONS: Action[] = ["issue", "cancel", "uncancel", "refund", "unrefund"];
+type Action = "issue" | "cancel" | "uncancel" | "refund" | "unrefund" | "test" | "untest";
+const ACTIONS: Action[] = ["issue", "cancel", "uncancel", "refund", "unrefund", "test", "untest"];
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -140,6 +142,10 @@ export async function POST(request: NextRequest) {
     case "unrefund":
       update = { refunded_at: null };
       break;
+    case "test":
+    case "untest":
+      update = { internal_test: action === "test" };
+      break;
   }
 
   const { error: updErr } = await admin.from(table).update(update).eq("id", id);
@@ -155,6 +161,8 @@ export async function POST(request: NextRequest) {
     uncancel: "nfse_uncancelled",
     refund: "clinact_refund_marked",
     unrefund: "clinact_refund_unmarked",
+    test: "nfse_test_marked",
+    untest: "nfse_test_unmarked",
   }[action];
   const { error: auditErr } = await admin.from("admin_audit_log").insert({
     actor_user_id: user.id,

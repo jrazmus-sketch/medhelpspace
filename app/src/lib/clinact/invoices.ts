@@ -5,6 +5,22 @@ import { getSubscriptionsEnv, listInvoices, type PagBankInvoice } from "@/lib/pa
 import { referencePeriod } from "./invoice-period";
 import type { ClinactPlanKey } from "./plans";
 
+/** Copied as-is from clinact_subscriptions onto each invoice row. */
+const TOMADOR_COLUMNS = [
+  "tomador_type",
+  "tomador_name",
+  "tomador_document",
+  "tomador_email",
+  "tomador_phone",
+  "tomador_cep",
+  "tomador_street",
+  "tomador_number",
+  "tomador_complement",
+  "tomador_neighborhood",
+  "tomador_city",
+  "tomador_state",
+] as const;
+
 /**
  * Records every PAID ClinAct invoice in `clinact_invoices`, one row per invoice
  * (first charge and each renewal), for the manual NFS-e screen.
@@ -26,15 +42,18 @@ export async function recordPaidInvoices(
     if (paid.length === 0) return;
 
     const admin = createAdminClient();
-    // The tomador (cardholder) and plan come from the subscription row, so a
-    // renewal carries the data typed at checkout.
-    const { data: sub } = await admin
+    // The plan, the cardholder (payment data) and the tomador ("Dados para a
+    // nota fiscal") come from the subscription row, so a renewal carries what
+    // was typed at checkout.
+    const { data: subData } = await admin
       .from("clinact_subscriptions")
-      .select("plan_key, billing_name, billing_tax_id, billing_phone")
+      .select(`plan_key, billing_name, billing_tax_id, billing_phone, ${TOMADOR_COLUMNS.join(", ")}`)
       .eq("user_id", userId)
       .maybeSingle();
-    if (!sub) return;
+    if (!subData) return;
+    const sub = subData as unknown as Record<string, string | null>;
     const planKey = sub.plan_key as ClinactPlanKey;
+    const tomador = Object.fromEntries(TOMADOR_COLUMNS.map((c) => [c, sub[c] ?? null]));
 
     const rows = paid.map((inv) => {
       const billedAt = inv.created_at ?? inv.updated_at ?? new Date().toISOString();
@@ -54,6 +73,7 @@ export async function recordPaidInvoices(
         billing_name: (sub.billing_name as string | null) ?? null,
         billing_tax_id: (sub.billing_tax_id as string | null) ?? null,
         billing_phone: (sub.billing_phone as string | null) ?? null,
+        ...tomador,
       };
     });
 

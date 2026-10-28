@@ -69,7 +69,9 @@ const ptBR = JSON.parse(read("src/locales/admin/pt-BR.json")).notasFiscais;
 
 test("fiscal screen: official Emissor URL, no WebISS, no ISS rate", () => {
   assert.match(client, /"https:\/\/www\.nfse\.gov\.br\/EmissorNacional"/);
-  assert.doesNotMatch(client, /google\.com\/url|webiss/i);
+  // No WebISS link in the flow. The word itself survives only in the historical
+  // label of the June test nota (Karina's third reply, 2026-10-27).
+  assert.doesNotMatch(client, /google\.com\/url|https?:\/\/[^"\s]*webiss/i);
   assert.doesNotMatch(client, /Alíquota|SERVICO\.iss|fieldIss/);
   assert.equal(ptBR.openPortal, "Emitir NFS-e no Portal Nacional");
   assert.equal(ptBR.fieldIss, undefined);
@@ -93,6 +95,6 @@ test("fiscal screen: the filters Karina listed, Cancelada ≠ Reembolsada", () =
   assert.equal(ptBR.statusIssued, "Emitida");
   assert.equal(ptBR.statusCancelled, "Cancelada");
   assert.equal(ptBR.statusRefunded, "Reembolsada");
-  assert.match(client, /cancelled: \(r\) => notaState\(r\) === "cancelled"/);
-  assert.match(client, /refunded: \(r\) => r\.refunded/);
+  assert.match(client, /cancelled: \(r\) => !r\.internalTest && notaState\(r\) === "cancelled"/);
+  assert.match(client, /refunded: \(r\) => !r\.internalTest && r\.refunded/);
 });

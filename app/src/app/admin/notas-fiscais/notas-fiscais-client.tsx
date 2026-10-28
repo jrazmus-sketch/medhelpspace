@@ -19,10 +19,13 @@ const SERVICO = {
   codigo: "080201",
   revalida:
     "Acesso à plataforma de estudos MedHelpSpace — curso preparatório online para o Revalida (Turma {turma}).",
+  // Karina 2026-10-27, verbatim ("plano mensal" / "plano anual").
   clinact:
-    "Assinatura da plataforma de treino clínico ClinAct (MedHelpSpace) — plano {plano}, período de {inicio} a {fim}.",
+    "Assinatura da plataforma educacional MedHelpSpace ClinAct, destinada ao treinamento online de raciocínio e decisão clínica — plano {plano}, referente ao período de {inicio} a {fim}.",
 };
 const EMISSOR_NACIONAL_URL = "https://www.nfse.gov.br/EmissorNacional";
+// First day of the national Emissor. A test nota issued before it was a WebISS one.
+const NACIONAL_DESDE = "2026-11-01";
 
 export interface FiscalRow {
   kind: "revalida" | "clinact";
@@ -45,19 +48,24 @@ export interface FiscalRow {
   discountCents: number;
   surchargeCents: number;
   totalCents: number;
+  /**
+   * Who the nota is issued to: the student ("aluno"), another Pessoa Física, or
+   * a company. Null only for a ClinAct subscription from before the checkout
+   * asked — never filled in from the card.
+   */
   tomador: {
-    type: "pf" | "pj";
+    type: "aluno" | "pf" | "pj";
     name: string;
     doc: string;
     email: string;
     phone: string;
     cep: string;
     address: string;
+    complement: string;
     neighborhood: string;
     cityState: string;
-    hasAddress: boolean;
-  };
-  /** Set when the student is not the tomador (PJ sale; ClinAct cardholder). */
+  } | null;
+  /** Set when the student is not the tomador. */
   student: { name: string; cpf: string; email: string } | null;
   listName: string;
   listEmail: string;
@@ -68,10 +76,12 @@ export interface FiscalRow {
   nfseVerificacao: string | null;
   nfseIssuedAt: string | null;
   nfseCancelledAt: string | null;
+  /** An internal test, not a sale (Karina 2026-10-27): listed only under "Testes internos". */
+  internalTest: boolean;
 }
 
 type Product = "all" | "revalida" | "clinact";
-type Situation = "all" | "pending" | "issued" | "cancelled" | "refunded";
+type Situation = "all" | "pending" | "issued" | "cancelled" | "refunded" | "test";
 type NotaState = "pending" | "issued" | "cancelled" | "skipped";
 
 function notaState(r: FiscalRow): NotaState {
@@ -84,12 +94,28 @@ function notaState(r: FiscalRow): NotaState {
 // The status filters are predicates, not one state: a sale refunded after its
 // nota was issued is BOTH "Emitida" and "Reembolsada" — and that is exactly
 // the one that needs the nota cancelled.
+//
+// An internal test is never a sale nor a nota pending on the Emissor Nacional
+// (Karina 2026-10-27): every filter but "Testes internos" leaves it out.
 const SITUATION: Record<Exclude<Situation, "all">, (r: FiscalRow) => boolean> = {
-  pending: (r) => notaState(r) === "pending" && !r.refunded,
-  issued: (r) => notaState(r) === "issued",
-  cancelled: (r) => notaState(r) === "cancelled",
-  refunded: (r) => r.refunded,
+  pending: (r) => !r.internalTest && notaState(r) === "pending" && !r.refunded,
+  issued: (r) => !r.internalTest && notaState(r) === "issued",
+  cancelled: (r) => !r.internalTest && notaState(r) === "cancelled",
+  refunded: (r) => !r.internalTest && r.refunded,
+  test: (r) => r.internalTest,
 };
+const isSale = (r: FiscalRow) => !r.internalTest;
+
+/** A test nota recorded before the national Emissor existed — it was a WebISS one. */
+function isWebissTestNota(r: FiscalRow) {
+  const state = notaState(r);
+  return (
+    r.internalTest &&
+    (state === "issued" || state === "cancelled") &&
+    !!r.nfseIssuedAt &&
+    toDateKeyBR(r.nfseIssuedAt) < NACIONAL_DESDE
+  );
+}
 
 function fmt(cents: number) {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
@@ -102,7 +128,7 @@ function fmtDateBR(value: string | null) {
   return new Date(value).toLocaleDateString("pt-BR", { timeZone: BR_TZ });
 }
 function fmtDoc(r: FiscalRow) {
-  if (!r.tomador.doc) return "";
+  if (!r.tomador?.doc) return "";
   return r.tomador.type === "pj" ? formatCnpj(r.tomador.doc) : formatCpf(r.tomador.doc);
 }
 
@@ -176,33 +202,33 @@ function sectionsFor(r: FiscalRow, t: TFunction): Section[] {
   );
 
   const tm = r.tomador;
-  const tomadorFields: Field[] = [
-    { label: k(tm.type === "pj" ? "fieldCompanyName" : "fieldName"), value: tm.name, wide: true },
-    { label: k(tm.type === "pj" ? "fieldCnpj" : "fieldCpf"), value: fmtDoc(r) },
-    { label: k("fieldEmail"), value: tm.email },
-    { label: k("fieldPhone"), value: tm.phone },
-  ];
-  if (tm.hasAddress) {
+  const tomadorFields: Field[] = [];
+  if (tm) {
     tomadorFields.push(
+      { label: k(tm.type === "pj" ? "fieldCompanyName" : "fieldName"), value: tm.name, wide: true },
+      { label: k(tm.type === "pj" ? "fieldCnpj" : "fieldCpf"), value: fmtDoc(r) },
+      { label: k("fieldEmail"), value: tm.email },
+      { label: k("fieldPhone"), value: tm.phone },
       { label: k("fieldCep"), value: tm.cep },
       { label: k("fieldAddress"), value: tm.address, wide: true },
+    );
+    if (tm.complement) tomadorFields.push({ label: k("fieldComplement"), value: tm.complement });
+    tomadorFields.push(
       { label: k("fieldNeighborhood"), value: tm.neighborhood },
       { label: k("fieldCity"), value: tm.cityState },
     );
   }
-  const tomadorTitle = isClinact
-    ? k("sectionTomadorCard")
+  const tomadorTitle = !tm
+    ? k("sectionTomador")
     : tm.type === "pj"
       ? k("sectionTomadorPj")
-      : k("sectionTomadorPf");
+      : tm.type === "pf"
+        ? k("sectionTomadorOtherPf")
+        : k("sectionTomadorPf");
 
   const sections: Section[] = [
     { title: k("sectionVenda"), fields: venda },
-    {
-      title: tomadorTitle,
-      fields: tomadorFields,
-      note: tm.hasAddress ? undefined : k("noAddressNote"),
-    },
+    { title: tomadorTitle, fields: tomadorFields, note: tm ? undefined : k("tomadorMissing") },
   ];
 
   if (r.student) {
@@ -293,6 +319,7 @@ const BADGE = {
   cancelled: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
   skipped: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
   refunded: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  test: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
 };
 
 function StatusBadges({ r }: { r: FiscalRow }) {
@@ -311,7 +338,12 @@ function StatusBadges({ r }: { r: FiscalRow }) {
   return (
     <div className="flex flex-col items-start gap-1">
       <div className="flex flex-wrap gap-1">
-        {!(state === "pending" && r.refunded) && (
+        {r.internalTest && (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE.test}`}>
+            {t("notasFiscais.testBadge")}
+          </span>
+        )}
+        {!(state === "pending" && (r.refunded || r.internalTest)) && (
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${BADGE[state]}`}>
             {label}
           </span>
@@ -322,17 +354,28 @@ function StatusBadges({ r }: { r: FiscalRow }) {
           </span>
         )}
       </div>
-      {state === "pending" && !r.refunded && r.inGuarantee && (
+      {!r.internalTest && state === "pending" && !r.refunded && r.inGuarantee && (
         <p className="text-[11px] text-muted-foreground">
           {t("notasFiscais.guaranteeUntil", { date: fmtDateBR(r.eligibleAt) })}
         </p>
       )}
-      {state === "issued" && r.refunded && (
+      {!r.internalTest && state === "issued" && r.refunded && (
         <p className="flex items-center gap-1 text-[11px] font-medium text-red-700 dark:text-red-400">
           <AlertTriangle className="h-3 w-3 shrink-0" />
           {t("notasFiscais.refundedWithActiveNota")}
         </p>
       )}
+      {/* Karina's wording, verbatim. Whether that WebISS nota was cancelled is
+          what WebISS says — never assumed here; she records it by hand. */}
+      {isWebissTestNota(r) &&
+        (state === "issued" && r.refunded ? (
+          <p className="flex items-start gap-1 text-[11px] font-medium text-red-700 dark:text-red-400">
+            <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+            {t("notasFiscais.webissTestRefunded")}
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">{t("notasFiscais.webissTestNota")}</p>
+        ))}
     </div>
   );
 }
@@ -393,9 +436,9 @@ export function NotasFiscaisClient({
 
   const q = search.trim().toLowerCase();
   const filtered = byProduct.filter((r) => {
-    if (situation !== "all" && !SITUATION[situation](r)) return false;
+    if (situation === "all" ? !isSale(r) : !SITUATION[situation](r)) return false;
     if (!q) return true;
-    return [r.listName, r.listEmail, r.product, r.tomador.doc, r.student?.name ?? "", r.id]
+    return [r.listName, r.listEmail, r.product, r.tomador?.doc ?? "", r.student?.name ?? "", r.id]
       .some((v) => v.toLowerCase().includes(q));
   });
 
@@ -435,11 +478,12 @@ export function NotasFiscaisClient({
           value={situation}
           onChange={setSituation}
           options={[
-            { value: "all", label: t("notasFiscais.statusAll"), count: byProduct.length },
+            { value: "all", label: t("notasFiscais.statusAll"), count: byProduct.filter(isSale).length },
             { value: "pending", label: t("notasFiscais.statusPending"), count: count("pending") },
             { value: "issued", label: t("notasFiscais.statusIssued"), count: count("issued") },
             { value: "cancelled", label: t("notasFiscais.statusCancelled"), count: count("cancelled") },
             { value: "refunded", label: t("notasFiscais.statusRefunded"), count: count("refunded") },
+            { value: "test", label: t("notasFiscais.statusTest"), count: count("test") },
           ]}
         />
         <div className="relative max-w-sm">
@@ -453,6 +497,10 @@ export function NotasFiscaisClient({
           />
         </div>
       </div>
+
+      {situation === "test" && (
+        <p className="text-sm text-muted-foreground">{t("notasFiscais.testListNote")}</p>
+      )}
 
       {filtered.length === 0 && (
         <p className="rounded-xl border border-border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -537,7 +585,7 @@ export function NotasFiscaisClient({
                       className="ml-auto flex min-h-11 items-center gap-1 text-xs font-medium text-brand hover:underline"
                     >
                       <FileText className="h-3.5 w-3.5" />
-                      {notaState(r) === "pending" ? t("notasFiscais.fill") : t("notasFiscais.view")}
+                      {notaState(r) === "pending" && isSale(r) ? t("notasFiscais.fill") : t("notasFiscais.view")}
                     </button>
                   </td>
                 </tr>
@@ -564,7 +612,7 @@ export function NotasFiscaisClient({
   );
 }
 
-type Action = "issue" | "cancel" | "uncancel" | "refund" | "unrefund";
+type Action = "issue" | "cancel" | "uncancel" | "refund" | "unrefund" | "test" | "untest";
 
 function NotaDetail({
   row,
@@ -594,6 +642,7 @@ function NotaDetail({
   function send(action: Action) {
     if (action === "cancel" && !window.confirm(t("notasFiscais.cancelConfirm"))) return;
     if (action === "refund" && !window.confirm(t("notasFiscais.refundConfirm"))) return;
+    if (action === "test" && !window.confirm(t("notasFiscais.markTestConfirm"))) return;
     startSaving(async () => {
       setError(null);
       try {
@@ -625,6 +674,8 @@ function NotaDetail({
         } else if (action === "uncancel") {
           next.nfseStatus = "issued";
           next.nfseCancelledAt = null;
+        } else if (action === "test" || action === "untest") {
+          next.internalTest = action === "test";
         } else {
           next.refunded = action === "refund";
         }
@@ -682,7 +733,13 @@ function NotaDetail({
           </button>
         </div>
 
-        {state === "pending" && !row.refunded && row.inGuarantee && (
+        {row.internalTest && (
+          <p className="mb-4 rounded-lg border border-purple-500/30 bg-purple-50 px-3 py-2 text-xs text-purple-900 dark:bg-purple-900/20 dark:text-purple-200">
+            {t("notasFiscais.testBanner")}
+          </p>
+        )}
+
+        {!row.internalTest && state === "pending" && !row.refunded && row.inGuarantee && (
           <p className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
             {t("notasFiscais.guaranteeNote", { days: guaranteeDays })}
           </p>
@@ -828,6 +885,19 @@ function NotaDetail({
               </button>
             </div>
           )}
+
+          {/* A test purchase made after 28/10/2026 is marked here, by hand. */}
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="mb-2 text-xs text-muted-foreground">{t("notasFiscais.testHint")}</p>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => send(row.internalTest ? "untest" : "test")}
+              className={secondaryBtn}
+            >
+              {row.internalTest ? t("notasFiscais.unmarkTest") : t("notasFiscais.markTest")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

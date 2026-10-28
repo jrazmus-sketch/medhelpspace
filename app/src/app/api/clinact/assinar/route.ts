@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
-import { onlyDigits } from "@/lib/br";
+import { isValidCpf, normalizeNfseTomador, onlyDigits, validateNfseTomador, type NfseTomador } from "@/lib/br";
 import { CLINACT_PLANS, type ClinactPlanKey } from "@/lib/clinact/plans";
 import { subscribeToClinact, subscriptionsUnavailable } from "@/lib/clinact/subscribe";
 
@@ -10,8 +10,13 @@ import { subscribeToClinact, subscriptionsUnavailable } from "@/lib/clinact/subs
 //
 // Deliberately much smaller than the Revalida charge route: no guest checkout
 // (signing up first is the decided flow), no coupons, no installments — a
-// subscription is charged in full each period — and no NF-e billing address,
-// which PagBank's subscriber does not ask for.
+// subscription is charged in full each period.
+//
+// THE TOMADOR is NOT the cardholder (Karina 2026-10-27): the card may belong to
+// someone who neither contracts nor receives the nota. "Dados para a nota
+// fiscal" arrives as its own block — the student, another Pessoa Física or a
+// Pessoa Jurídica, with the full address — and is stored for the NFS-e only.
+// The cardholder (name + CPF) goes to PagBank and nowhere else.
 //
 // THE CVV. PagBank refuses POST /subscriptions without `security_code` in plain
 // text, even though the card itself arrives encrypted. So it is accepted here,
@@ -41,7 +46,7 @@ export async function POST(request: NextRequest) {
     holderName?: string;
     cpf?: string;
     attemptId?: string;
-    phone?: { area?: string; number?: string };
+    tomador?: Partial<NfseTomador>;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -75,8 +80,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Informe o nome como está no cartão." }, { status: 400 });
   }
   const cpf = onlyDigits(body.cpf ?? "");
-  if (cpf.length !== 11) {
-    return NextResponse.json({ error: "CPF inválido." }, { status: 400 });
+  if (!isValidCpf(cpf)) {
+    return NextResponse.json({ error: "CPF do titular do cartão inválido." }, { status: 400 });
   }
   // The browser generates this once per checkout attempt and keeps it across
   // retries: it becomes the reference_id and the idempotency keys, which is
@@ -86,14 +91,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Requisição inválida." }, { status: 400 });
   }
 
-  // PagBank refuses to create a subscriber without a phone, so this is not
-  // optional however much we would prefer a shorter form.
-  const area = onlyDigits(body.phone?.area ?? "");
-  const phoneNumber = onlyDigits(body.phone?.number ?? "");
-  if (area.length !== 2 || phoneNumber.length < 8 || phoneNumber.length > 9) {
-    return NextResponse.json({ error: "Informe um celular com DDD." }, { status: 400 });
+  const tomador = normalizeNfseTomador(body.tomador);
+  const tomadorError = validateNfseTomador(tomador);
+  if (tomadorError) {
+    return NextResponse.json({ error: `Dados para a nota fiscal: ${tomadorError}` }, { status: 400 });
   }
-  const phone = { area, number: phoneNumber };
+
+  // PagBank refuses to create a subscriber without a phone. Rather than ask for
+  // a second one, the subscriber gets the contact phone of the nota block — a
+  // contact number only; nothing about the tomador is decided by the card.
+  const phone = { area: tomador.phone.slice(0, 2), number: tomador.phone.slice(2) };
 
   const result = await subscribeToClinact({
     userId: user.id,
@@ -105,6 +112,7 @@ export async function POST(request: NextRequest) {
     securityCode,
     attemptId,
     phone,
+    tomador,
   });
 
   if (!result.ok) {

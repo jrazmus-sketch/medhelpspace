@@ -124,6 +124,7 @@ type PaidOrder = {
   payment_method: string;
   user_id: string;
   nfse_status: string | null;
+  internal_test: boolean;
 };
 
 export async function getAdminDashboardData(opts: {
@@ -182,7 +183,7 @@ export async function getAdminDashboardData(opts: {
   const paidOrdersP = opts.canSeeBilling
     ? admin
         .from("orders")
-        .select("id, amount_cents, created_at, cohort_id, payment_method, user_id, nfse_status")
+        .select("id, amount_cents, created_at, cohort_id, payment_method, user_id, nfse_status, internal_test")
         .eq("status", "paid")
         .order("created_at", { ascending: false })
         .limit(5000)
@@ -301,8 +302,8 @@ export async function getAdminDashboardData(opts: {
     const sIdx = seriesIdx.get(dayKey(created));
     if (sIdx !== undefined) series[sIdx].cents += o.amount_cents;
 
-    // NFS-e backlog (only unissued/unskipped paid orders count)
-    if (o.nfse_status == null) {
+    // NFS-e backlog (only unissued/unskipped paid orders count; never a test)
+    if (o.nfse_status == null && !o.internal_test) {
       const eligibleMs = cMs + GUARANTEE_DAYS * DAY_MS;
       if (nowMs >= eligibleMs) {
         nfseReady += 1;

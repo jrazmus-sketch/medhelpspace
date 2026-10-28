@@ -20,6 +20,7 @@ import {
   type PagBankInvoice,
   type PagBankSubscription,
 } from "@/lib/pagbank/subscriptions";
+import type { NfseTomador } from "@/lib/br";
 import { recordPaidInvoices, recordPaidInvoicesFor } from "./invoices";
 
 /**
@@ -75,6 +76,12 @@ export type SubscribeInput = {
   attemptId: string;
   /** REQUIRED by PagBank: POST /customers refuses a subscriber without phones. */
   phone: { area: string; number: string };
+  /**
+   * "Dados para a nota fiscal" — who the NFS-e is issued to, chosen at checkout
+   * (Karina 2026-10-27). Validated by the route. Never sent to PagBank and never
+   * derived from the card: the cardholder above is payment data only.
+   */
+  tomador: NfseTomador;
 };
 
 export type SubscribeResult =
@@ -225,9 +232,11 @@ async function recordSubscription(input: {
   planKey: ClinactPlanKey;
   planId: string | null;
   card?: { brand?: string; last?: string } | null;
-  /** The cardholder typed at checkout — the tomador of the subscription's NFS-e. */
+  /** The cardholder typed at checkout — payment data, NOT the tomador. */
   billing: { name: string; taxId: string; phone: string };
+  tomador: NfseTomador;
 }): Promise<void> {
+  const t = input.tomador;
   const admin = createAdminClient();
   await admin.from("clinact_subscriptions").upsert(
     {
@@ -243,6 +252,18 @@ async function recordSubscription(input: {
       billing_name: input.billing.name,
       billing_tax_id: input.billing.taxId,
       billing_phone: input.billing.phone,
+      tomador_type: t.type,
+      tomador_name: t.name,
+      tomador_document: t.document,
+      tomador_email: t.email,
+      tomador_phone: t.phone,
+      tomador_cep: t.cep,
+      tomador_street: t.street,
+      tomador_number: t.number,
+      tomador_complement: t.complement || null,
+      tomador_neighborhood: t.neighborhood,
+      tomador_city: t.city,
+      tomador_state: t.state,
       environment: getSubscriptionsEnv(),
       updated_at: new Date().toISOString(),
     },
@@ -368,7 +389,7 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
       if (outcome.kind === "paid") {
         const found = await findSubscriptionByReference(referenceId);
         if (found) {
-          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, card, billing });
+          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, card, billing, tomador: input.tomador });
           await grantAccess(input.userId, paidUntilFrom(found, input.planKey));
           await recordPaidInvoicesFor(input.userId, found.id);
           return { ok: true, state: "paid", subscriptionId: outcome.subscriptionId, paidUntil: paidUntilFrom(found, input.planKey) };
@@ -378,11 +399,11 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
         return { ok: true, state: "pending", subscriptionId: outcome.subscriptionId };
       }
     }
-    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, card, billing });
+    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, card, billing, tomador: input.tomador });
     return { ok: false, error: GENERIC_ERROR };
   }
 
-  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, card, billing });
+  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, card, billing, tomador: input.tomador });
 
   // 201 does NOT mean paid. Ask the invoice.
   const invoices = await invoicesOf(subscription.id);

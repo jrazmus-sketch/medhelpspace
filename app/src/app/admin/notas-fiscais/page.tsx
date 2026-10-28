@@ -16,6 +16,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // each paid ClinAct invoice (first charge and every renewal) become rows of the
 // same shape. Issuing stays MANUAL on the national Emissor; this page only
 // shows the data to copy and records what was done there.
+//
+// internal_test rows (every record before 28/10/2026 — MedHelpSpace had made no
+// sale yet — and any later test marked by hand) are history, not sales: the
+// client lists them only under "Testes internos".
 
 interface RawOrder {
   id: string;
@@ -52,6 +56,7 @@ interface RawOrder {
   nfse_verificacao: string | null;
   nfse_issued_at: string | null;
   nfse_cancelled_at: string | null;
+  internal_test: boolean;
 }
 
 interface RawInvoice {
@@ -73,6 +78,19 @@ interface RawInvoice {
   nfse_verificacao: string | null;
   nfse_issued_at: string | null;
   nfse_cancelled_at: string | null;
+  internal_test: boolean;
+  tomador_type: "aluno" | "pf" | "pj" | null;
+  tomador_name: string | null;
+  tomador_document: string | null;
+  tomador_email: string | null;
+  tomador_phone: string | null;
+  tomador_cep: string | null;
+  tomador_street: string | null;
+  tomador_number: string | null;
+  tomador_complement: string | null;
+  tomador_neighborhood: string | null;
+  tomador_city: string | null;
+  tomador_state: string | null;
 }
 
 export default async function NotasFiscaisPage() {
@@ -111,7 +129,7 @@ export default async function NotasFiscaisPage() {
             "billing_first_name, billing_last_name, billing_cpf, billing_cep, " +
             "billing_address, billing_number, billing_neighborhood, billing_city, " +
             "billing_state, billing_phone, " +
-            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at",
+            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at, internal_test",
         )
         .in("status", ["paid", "refunded"])
         .order("created_at", { ascending: false })
@@ -121,7 +139,10 @@ export default async function NotasFiscaisPage() {
         .select(
           "id, user_id, plan_key, occurrence, amount_cents, billed_at, paid_at, " +
             "period_start, period_end, billing_name, billing_tax_id, billing_phone, refunded_at, " +
-            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at",
+            "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at, " +
+            "internal_test, tomador_type, tomador_name, tomador_document, tomador_email, " +
+            "tomador_phone, tomador_cep, tomador_street, tomador_number, tomador_complement, " +
+            "tomador_neighborhood, tomador_city, tomador_state",
         )
         // Sandbox invoices never need a nota.
         .eq("environment", getSubscriptionsEnv())
@@ -174,17 +195,18 @@ export default async function NotasFiscaisPage() {
       // the charged amount IS the original price and nothing was added.
       surchargeCents: o.interest_cents ?? 0,
       totalCents: o.amount_cents,
+      // Pessoa Física on the Revalida checkout = the student is the tomador.
       tomador: {
-        type: isPj ? "pj" : "pf",
+        type: isPj ? "pj" : "aluno",
         name: isPj ? o.billing_company_name ?? "" : studentName,
         doc: isPj ? o.billing_cnpj ?? "" : o.billing_cpf ?? "",
         email: isPj ? o.billing_company_email ?? "" : account?.email ?? "",
         phone: o.billing_phone ?? "",
         cep: o.billing_cep ?? "",
         address: [o.billing_address, o.billing_number].filter(Boolean).join(", "),
+        complement: "",
         neighborhood: o.billing_neighborhood ?? "",
         cityState: [o.billing_city, o.billing_state].filter(Boolean).join(" - "),
-        hasAddress: true,
       },
       // A separate student only when someone other than the student is the tomador.
       student: isPj
@@ -199,6 +221,7 @@ export default async function NotasFiscaisPage() {
       nfseVerificacao: o.nfse_verificacao,
       nfseIssuedAt: o.nfse_issued_at,
       nfseCancelledAt: o.nfse_cancelled_at,
+      internalTest: o.internal_test,
     };
   });
 
@@ -225,22 +248,29 @@ export default async function NotasFiscaisPage() {
       discountCents: 0,
       surchargeCents: 0,
       totalCents: i.amount_cents,
-      // The tomador is the cardholder typed at checkout. ClinAct's checkout
-      // does not ask for an address (PagBank's subscriber does not need one).
-      tomador: {
-        type: "pf",
-        name: i.billing_name ?? "",
-        doc: i.billing_tax_id ?? "",
-        email: account?.email ?? "",
-        phone: i.billing_phone ?? "",
-        cep: "",
-        address: "",
-        neighborhood: "",
-        cityState: "",
-        hasAddress: false,
-      },
-      student: { name: account?.name ?? "", cpf: "", email: account?.email ?? "" },
-      listName: i.billing_name || account?.name || account?.email || "—",
+      // The tomador is what was chosen in "Dados para a nota fiscal" — never the
+      // cardholder (billing_*), which is payment data only. A subscription from
+      // before that block has none: shown as "não informado", not guessed.
+      tomador: i.tomador_type
+        ? {
+            type: i.tomador_type,
+            name: i.tomador_name ?? "",
+            doc: i.tomador_document ?? "",
+            email: i.tomador_email ?? "",
+            phone: i.tomador_phone ?? "",
+            cep: i.tomador_cep ?? "",
+            address: [i.tomador_street, i.tomador_number].filter(Boolean).join(", "),
+            complement: i.tomador_complement ?? "",
+            neighborhood: i.tomador_neighborhood ?? "",
+            cityState: [i.tomador_city, i.tomador_state].filter(Boolean).join(" - "),
+          }
+        : null,
+      // The student is the account; listed apart whenever it is not the tomador.
+      student:
+        i.tomador_type === "aluno"
+          ? null
+          : { name: account?.name ?? "", cpf: "", email: account?.email ?? "" },
+      listName: i.tomador_name || account?.name || account?.email || "—",
       listEmail: account?.email ?? "—",
       eligibleAt: new Date(eligibleMs).toISOString(),
       inGuarantee: firstCharge && now < eligibleMs,
@@ -249,6 +279,7 @@ export default async function NotasFiscaisPage() {
       nfseVerificacao: i.nfse_verificacao,
       nfseIssuedAt: i.nfse_issued_at,
       nfseCancelledAt: i.nfse_cancelled_at,
+      internalTest: i.internal_test,
     };
   });
 

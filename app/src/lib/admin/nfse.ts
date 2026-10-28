@@ -3,6 +3,8 @@
 // route and the daily digest cron. (The dashboard derives the same numbers inline
 // from the order scan it already runs, mirroring this rule.)
 //
+// Internal tests (orders/clinact_invoices.internal_test) are never a nota to issue.
+//
 // Rule: a nota is "ready" once a paid order clears the 7-day satisfaction guarantee
 // (issuable on day 8) and hasn't been issued/skipped. It is "at risk" when it is
 // ready AND its purchase month is already over — i.e. it is slipping its competência
@@ -32,6 +34,7 @@ export async function getNfseBacklog(): Promise<NfseBacklog> {
       .from("orders")
       .select("created_at")
       .eq("status", "paid")
+      .eq("internal_test", false)
       .is("nfse_status", null)
       .limit(5000),
     admin
@@ -39,6 +42,7 @@ export async function getNfseBacklog(): Promise<NfseBacklog> {
       .select("paid_at, occurrence")
       .eq("environment", getSubscriptionsEnv())
       .is("refunded_at", null)
+      .eq("internal_test", false)
       .is("nfse_status", null)
       .limit(5000),
   ]);
