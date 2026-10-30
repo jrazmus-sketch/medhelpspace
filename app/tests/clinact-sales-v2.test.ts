@@ -72,11 +72,12 @@ test("the copy has no empty value and no leftover of the old 14-section page", (
 
 // ── Her six sections ─────────────────────────────────────────────────────────
 
-test("the page is her six sections, in her order", async () => {
+test("the page is her six sections, in her order, with the video after the opening", async () => {
   const src = read(SECTIONS);
   const block = src.slice(src.indexOf("export const CLINACT_SECTIONS"));
   const keys = [...block.matchAll(/key: "([a-z-]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(keys, ["hero", "competencias", "casos", "evolucao", "gratuitos", "planos"]);
+  // "video" = Karina 2026-10-30, between the opening and the four formats.
+  assert.deepEqual(keys, ["hero", "video", "competencias", "casos", "evolucao", "gratuitos", "planos"]);
 });
 
 test("início: her title with 'decisão.' in lilac, audience, weekly line, and the two buttons", () => {

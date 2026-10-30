@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarClock, Lightbulb, Sparkles, Stethoscope } from "lucide-react";
 import { ClinactText } from "@/components/clinact/clinact-text";
 import { SiteImage } from "@/components/clinact/sales/site-image";
+import { SalesVideo } from "@/components/clinact/sales/sales-video";
 import { FORMAT_ICONS } from "@/components/clinact/library-cards";
 import { FORMATS, FORMAT_COLOR_VARS, FORMAT_LABELS, FORMAT_SKILL, SKILL_LABELS, type CaseFormat } from "@/lib/clinact/types";
 import {
@@ -21,7 +22,8 @@ import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
  *
  * Six sections, one idea each (Karina, 2026-10-08 — supersedes the 14-section
  * brief of CLINACT-SALES-PAGE-SPEC.md §1): início → os quatro formatos → veja
- * na prática → entenda suas decisões → quatro casos gratuitos → planos. The
+ * na prática → entenda suas decisões → quatro casos gratuitos → planos — plus
+ * the presentation video between the first two (Karina, 2026-10-30). The
  * presentation follows the MedHelpSpace Revalida sales page: black background,
  * Bricolage headings, mono eyebrows, colour only in accents, text and phone
  * side by side on desktop (alternating sides), one column on the phone.
@@ -47,6 +49,12 @@ type SectionDef = { key: string; Section: (p: SectionProps) => React.ReactElemen
 const DISPLAY = { fontFamily: "var(--font-bricolage)" } as const;
 const MONO = { fontFamily: "var(--font-geist-mono)" } as const;
 const H2 = "text-[clamp(1.85rem,4.2vw,3rem)] font-black leading-[1.08] tracking-[-0.025em] text-foreground";
+/**
+ * A title in the lilac of "decisão." in the hero title (`text-brand-text`) —
+ * Karina 2026-10-30, the whole phrase: "Veja o ClinAct na prática.",
+ * "Entenda suas decisões." and "Assine o ClinAct".
+ */
+const H2_ACCENT = H2.replace("text-foreground", "text-brand-text");
 const LEAD = "text-lg leading-relaxed text-foreground/85";
 const BAND = "border-t px-5 py-16 md:px-8 md:py-24";
 const BAND_STYLE_BASE = { background: "var(--lp-base)", borderColor: "var(--lp-border)" } as const;
@@ -134,6 +142,23 @@ function Hero({ hasAccess }: SectionProps) {
         </div>
       </div>
     </section>
+  );
+}
+
+// ── 1b. Conheça o ClinAct por dentro ──────────────────────────────────────
+
+/**
+ * The presentation video (Karina 2026-10-30), right after the opening and
+ * before "Quatro formas de treinar suas decisões.". Shows nothing at all until
+ * a YouTube link is set in /admin/clinact/pagina — see sales-video.tsx.
+ */
+function Video() {
+  return (
+    <SalesVideo className={BAND} style={BAND_STYLE_BASE}>
+      <h2 className={`${H2} text-center`} style={DISPLAY}>
+        <ClinactText k="clinact.video.title" />
+      </h2>
+    </SalesVideo>
   );
 }
 
@@ -239,7 +264,7 @@ function Casos() {
         glow={glow}
         copy={
           <>
-            <h2 className={H2} style={DISPLAY}>
+            <h2 className={H2_ACCENT} style={DISPLAY}>
               <ClinactText k="clinact.casos.title" />
             </h2>
             <p className={`${LEAD} mt-5`}>
@@ -278,7 +303,7 @@ function Evolucao() {
         glow="var(--brand)"
         copy={
           <>
-            <h2 className={H2} style={DISPLAY}>
+            <h2 className={H2_ACCENT} style={DISPLAY}>
               <ClinactText k="clinact.evolucao.title" />
             </h2>
             <p className={`${LEAD} mt-5`}>
@@ -338,7 +363,7 @@ function Planos({ hasAccess, isLoggedIn }: SectionProps) {
   return (
     <section id={ANCHOR_PLANOS} className={`${BAND} scroll-mt-2`} style={BAND_STYLE_ALT}>
       <div className="mx-auto max-w-4xl">
-        <h2 className={`${H2} text-center`} style={DISPLAY}>
+        <h2 className={`${H2_ACCENT} text-center`} style={DISPLAY}>
           <ClinactText k="clinact.planos.title" />
         </h2>
         <p className={`${LEAD} mx-auto mt-5 max-w-2xl text-center`}>
@@ -436,6 +461,7 @@ export const CLINACT_ALWAYS_VISIBLE = ["planos"];
  */
 export const CLINACT_SECTIONS: SectionDef[] = [
   { key: "hero", Section: Hero },
+  { key: "video", Section: Video },
   { key: "competencias", Section: Competencias },
   { key: "casos", Section: Casos },
   { key: "evolucao", Section: Evolucao },

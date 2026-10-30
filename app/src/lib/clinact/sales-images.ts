@@ -11,6 +11,8 @@ import { CLINACT_CDN_BASE } from "@/lib/clinact/types";
 export const SALES_IMAGE_SLOTS = [
   { key: "clinact.casos.image", section: "casos" },
   { key: "clinact.evolucao.image", section: "evolucao" },
+  // The presentation video's cover (lib/clinact/sales-video.ts).
+  { key: "clinact.video.image", section: "video" },
 ] as const;
 
 export type SalesImageKey = (typeof SALES_IMAGE_SLOTS)[number]["key"];

@@ -14,13 +14,22 @@ export type PageLayout = {
 
 /**
  * Order the code-declared sections by the layout, dropping hidden ones.
- * A section with no row keeps its declared order — so adding a section in code
- * works without a database write.
+ *
+ * A section with no row goes right AFTER the section declared before it in
+ * code (wherever the admin has moved that one) — so adding a section in code
+ * works without a database write, and lands where it was declared even when
+ * the stored positions are 1..n with no gap for it. (Its old position was its
+ * code index, which TIED with the stored row already holding that number.)
  */
 export function orderSections<T extends { key: string }>(sections: T[], layout: PageLayout): T[] {
+  let prev = 0;
   return sections
-    .filter((s) => layout.visible[s.key] !== false)
-    .map((s, i) => ({ s, at: layout.position[s.key] ?? i + 1 }))
+    .map((s) => {
+      const at = layout.position[s.key] ?? prev + 0.001;
+      prev = at;
+      return { s, at };
+    })
+    .filter(({ s }) => layout.visible[s.key] !== false)
     .sort((a, b) => a.at - b.at)
     .map(({ s }) => s);
 }

@@ -29,6 +29,9 @@ export const CLINACT_COPY = {
   "clinact.hero.cta_assinante": "Entrar nos casos",
   "clinact.hero.cta2": "Ver planos",
 
+  // ── 1b. Vídeo de apresentação (Karina 2026-10-30) ───────────────────────
+  "clinact.video.title": "Conheça o ClinAct por dentro",
+
   // ── 2. Os quatro formatos ───────────────────────────────────────────────
   "clinact.competencias.title": "Quatro formas de treinar suas decisões.",
   "clinact.competencias.codigo_clinico": "Conecte as pistas e construa sua hipótese.",

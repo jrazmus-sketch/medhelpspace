@@ -5,6 +5,7 @@ import { motion, useReducedMotion, useScroll, useSpring, useTransform } from "mo
 import { Play } from "lucide-react";
 import { SiteText } from "./site-text";
 import { VIDEO_MILESTONES, trackVideoPlay, trackVideoProgress, trackVideoStart } from "@/lib/analytics/track";
+import { loadYouTubeApi, type YTPlayer } from "@/lib/youtube-api";
 
 /*
  * The sales video (Karina's narration, 2:42) in the hero, where the in-hand phone
@@ -25,67 +26,6 @@ export const HERO_VIDEO_ID = "FhBSfjYIrqs";
 const LOOP_SRC = "/landing/video/hero-loop.mp4";
 const POSTER_SRC = "/landing/video/hero-poster.webp";
 const DURATION_LABEL = "2:42";
-
-type YTPlayer = {
-  playVideo(): void;
-  getCurrentTime(): number;
-  getDuration(): number;
-  destroy(): void;
-};
-type YTNamespace = {
-  Player: new (
-    el: HTMLElement,
-    opts: {
-      host?: string;
-      videoId: string;
-      width?: string;
-      height?: string;
-      playerVars?: Record<string, string | number>;
-      events?: {
-        onReady?: (e: { target: YTPlayer }) => void;
-        onStateChange?: (e: { data: number; target: YTPlayer }) => void;
-      };
-    },
-  ) => YTPlayer;
-  PlayerState: { ENDED: number; PLAYING: number; PAUSED: number };
-};
-
-declare global {
-  interface Window {
-    YT?: YTNamespace;
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-let ytApi: Promise<YTNamespace> | null = null;
-
-/** Loads https://www.youtube.com/iframe_api once per page; rejects after 8 s (blocked/offline). */
-function loadYouTubeApi(): Promise<YTNamespace> {
-  if (window.YT?.Player) return Promise.resolve(window.YT);
-  if (ytApi) return ytApi;
-  ytApi = new Promise<YTNamespace>((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error("youtube api timeout")), 8000);
-    const prev = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      prev?.();
-      window.clearTimeout(timer);
-      if (window.YT?.Player) resolve(window.YT);
-      else reject(new Error("youtube api missing"));
-    };
-    const s = document.createElement("script");
-    s.src = "https://www.youtube.com/iframe_api";
-    s.async = true;
-    s.onerror = () => {
-      window.clearTimeout(timer);
-      reject(new Error("youtube api blocked"));
-    };
-    document.head.appendChild(s);
-  }).catch((e) => {
-    ytApi = null; // let a later click retry
-    throw e;
-  });
-  return ytApi;
-}
 
 function useIsDesktop(): boolean {
   const [desktop, setDesktop] = useState(false);

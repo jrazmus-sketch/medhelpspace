@@ -805,7 +805,8 @@
       "clinact_topic_update": "ClinAct: tema alterado",
       "clinact_topic_delete": "ClinAct: tema excluído",
       "nfse_test_marked": "Registro marcado como teste interno",
-      "nfse_test_unmarked": "Teste interno desmarcado"
+      "nfse_test_unmarked": "Teste interno desmarcado",
+      "clinact_page_video": "ClinAct: vídeo da página de vendas alterado"
     }
   },
   "pageNew": {
@@ -2113,7 +2114,8 @@
         "invalid": "A lista de seções mudou. Recarregue a página e tente de novo.",
         "failed": "Não foi possível salvar. Tente novamente.",
         "bad_type": "Formato não aceito. Use JPG, PNG ou WebP.",
-        "too_large": "Imagem muito grande. O limite é 5 MB."
+        "too_large": "Imagem muito grande. O limite é 5 MB.",
+        "bad_video": "Link não reconhecido. Cole o link do vídeo no YouTube (youtube.com/watch?v=… ou youtu.be/…)."
       },
       "sections": {
         "hero": "Abertura",
@@ -2129,7 +2131,8 @@
         "gratuitos": "Casos gratuitos",
         "para-quem": "Para quem é",
         "o-que-e-nao-e": "O que é e o que não é",
-        "planos": "Planos e renovação"
+        "planos": "Planos e renovação",
+        "video": "Vídeo de apresentação"
       },
       "imagesTitle": "Imagens",
       "imagesHelp": "Screenshots da página de vendas. JPG, PNG ou WebP, até 5 MB. Sem imagem, a seção aparece só com o texto.",
@@ -2139,7 +2142,17 @@
       "imageReplace": "Trocar imagem",
       "imageRemove": "Remover",
       "imageSaved": "Imagem salva.",
-      "imageRemoved": "Imagem removida."
+      "imageRemoved": "Imagem removida.",
+      "videoTitle": "Vídeo de apresentação",
+      "videoHelp": "O bloco \"Conheça o ClinAct por dentro\", entre a abertura e os quatro formatos. Cole o link do vídeo no YouTube. Sem link, o bloco não aparece. A capa é a imagem \"Vídeo de apresentação\" em Imagens; sem ela, usamos a miniatura do YouTube.",
+      "videoLabel": "Link do vídeo no YouTube",
+      "videoCurrent": "Vídeo atual:",
+      "videoEmpty": "Sem vídeo — o bloco não aparece na página.",
+      "videoSave": "Salvar vídeo",
+      "videoReplace": "Trocar vídeo",
+      "videoRemove": "Remover",
+      "videoSaved": "Vídeo salvo. O bloco já aparece na página.",
+      "videoRemoved": "Vídeo removido. O bloco não aparece mais na página."
     },
     "taxonomy": {
       "open": "Taxonomia",

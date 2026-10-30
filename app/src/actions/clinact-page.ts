@@ -12,6 +12,7 @@ import {
   isSalesImageKey,
 } from "@/lib/clinact/sales-images";
 import { CLINACT_CDN_BASE } from "@/lib/clinact/types";
+import { SALES_VIDEO_KEY, parseYouTubeId } from "@/lib/clinact/sales-video";
 
 // /admin/clinact/pagina — the sales page's structure, not its copy (the copy is
 // edited in place through site_content). Same conventions as actions/clinact.ts:
@@ -156,6 +157,46 @@ export async function removeSalesImage(slot: string): Promise<Result> {
     return { ok: false, error: "failed" };
   }
   await audit(who.userId, "clinact_page_image", { slot, url: null });
+  revalidatePath("/clinact");
+  revalidatePath("/admin/clinact/pagina");
+  return { ok: true };
+}
+
+// ── Presentation video ───────────────────────────────────────────────────────
+// A YouTube link pasted by an admin; only the video id is stored, in
+// site_content, where the page reads it. Removing it hides the whole block.
+
+type VideoResult = { ok: true; id: string } | { ok: false; error: "forbidden" | "bad_video" | "failed" };
+
+export async function setSalesVideo(input: string): Promise<VideoResult> {
+  const who = await actor();
+  if (!who || !CONTENT_ROLES.includes(who.role)) return { ok: false, error: "forbidden" };
+  const id = typeof input === "string" ? parseYouTubeId(input) : null;
+  if (!id) return { ok: false, error: "bad_video" };
+
+  const { error } = await createAdminClient()
+    .from("site_content")
+    .upsert({ key: SALES_VIDEO_KEY, value: id, updated_at: new Date().toISOString(), updated_by: who.userId }, { onConflict: "key" });
+  if (error) {
+    console.error("setSalesVideo failed", error);
+    return { ok: false, error: "failed" };
+  }
+  await audit(who.userId, "clinact_page_video", { youtube_id: id });
+  revalidatePath("/clinact");
+  revalidatePath("/admin/clinact/pagina");
+  return { ok: true, id };
+}
+
+export async function removeSalesVideo(): Promise<Result> {
+  const who = await actor();
+  if (!who || !CONTENT_ROLES.includes(who.role)) return { ok: false, error: "forbidden" };
+
+  const { error } = await createAdminClient().from("site_content").delete().eq("key", SALES_VIDEO_KEY);
+  if (error) {
+    console.error("removeSalesVideo failed", error);
+    return { ok: false, error: "failed" };
+  }
+  await audit(who.userId, "clinact_page_video", { youtube_id: null });
   revalidatePath("/clinact");
   revalidatePath("/admin/clinact/pagina");
   return { ok: true };

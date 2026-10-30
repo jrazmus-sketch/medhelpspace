@@ -4,6 +4,7 @@ import { getPageLayout, orderSections } from "@/lib/queries/site-sections";
 import { CLINACT_SECTIONS, CLINACT_ALWAYS_VISIBLE } from "@/components/clinact/sales/sections";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SALES_IMAGE_SLOTS, isSalesImageUrl } from "@/lib/clinact/sales-images";
+import { SALES_VIDEO_KEY, isYouTubeId } from "@/lib/clinact/sales-video";
 import { SalesPageClient } from "./sales-page-client";
 
 export const metadata = { title: "ClinAct — página de vendas" };
@@ -23,9 +24,10 @@ export default async function ClinactSalesPageAdmin() {
     createAdminClient()
       .from("site_content")
       .select("key, value")
-      .in("key", SALES_IMAGE_SLOTS.map((s) => s.key)),
+      .in("key", [...SALES_IMAGE_SLOTS.map((s) => s.key), SALES_VIDEO_KEY]),
   ]);
   const imageUrl = new Map((imageRows ?? []).map((r) => [r.key as string, r.value as string]));
+  const videoId = imageUrl.get(SALES_VIDEO_KEY);
 
   // Hidden sections stay in the list (orderSections would drop them), placed by
   // their stored position so the admin sees where they would reappear.
@@ -35,6 +37,7 @@ export default async function ClinactSalesPageAdmin() {
     <SalesPageClient
       published={layout.published}
       canPublish={profile?.role === "super_admin"}
+      videoId={isYouTubeId(videoId) ? videoId : null}
       images={SALES_IMAGE_SLOTS.map((slot) => {
         const url = imageUrl.get(slot.key);
         return { key: slot.key, section: slot.section, url: isSalesImageUrl(url) ? url : null };

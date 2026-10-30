@@ -5,9 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
-import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Eye, EyeOff, ImageUp, Lock, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, ExternalLink, Eye, EyeOff, ImageUp, Lock, Play, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { removeSalesImage, saveClinactSections, setClinactPagePublished, uploadSalesImage } from "@/actions/clinact-page";
+import {
+  removeSalesImage,
+  removeSalesVideo,
+  saveClinactSections,
+  setClinactPagePublished,
+  setSalesVideo,
+  uploadSalesImage,
+} from "@/actions/clinact-page";
 
 type Section = { key: string; visible: boolean; locked: boolean };
 type ImageSlot = { key: string; section: string; url: string | null };
@@ -17,17 +24,20 @@ export function SalesPageClient({
   canPublish,
   sections: initial,
   images,
+  videoId,
 }: {
   published: boolean;
   canPublish: boolean;
   sections: Section[];
   images: ImageSlot[];
+  videoId: string | null;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
   const [sections, setSections] = useState(initial);
   const [saved, setSaved] = useState(initial);
   const [confirming, setConfirming] = useState(false);
+  const [videoInput, setVideoInput] = useState("");
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -97,6 +107,33 @@ export function SalesPageClient({
       const res = await removeSalesImage(slot);
       if (res.ok) {
         setNotice({ tone: "ok", text: t("clinact.page.imageRemoved") });
+        router.refresh();
+      } else {
+        setNotice({ tone: "error", text: t(`clinact.page.errors.${res.error}`) });
+      }
+    });
+  }
+
+  function saveVideo() {
+    setNotice(null);
+    startTransition(async () => {
+      const res = await setSalesVideo(videoInput);
+      if (res.ok) {
+        setVideoInput("");
+        setNotice({ tone: "ok", text: t("clinact.page.videoSaved") });
+        router.refresh();
+      } else {
+        setNotice({ tone: "error", text: t(`clinact.page.errors.${res.error}`) });
+      }
+    });
+  }
+
+  function removeVideo() {
+    setNotice(null);
+    startTransition(async () => {
+      const res = await removeSalesVideo();
+      if (res.ok) {
+        setNotice({ tone: "ok", text: t("clinact.page.videoRemoved") });
         router.refresh();
       } else {
         setNotice({ tone: "error", text: t(`clinact.page.errors.${res.error}`) });
@@ -281,6 +318,70 @@ export function SalesPageClient({
             </button>
           ) : null}
           {dirty ? <p className="text-sm text-muted-foreground">{t("clinact.page.unsaved")}</p> : null}
+        </div>
+      </section>
+
+      {/* Presentation video (Karina 2026-10-30). Empty = the block is not shown. */}
+      <section className="rounded-xl border border-border bg-surface-1">
+        <div className="border-b border-border p-4">
+          <h2 className="font-semibold">{t("clinact.page.videoTitle")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("clinact.page.videoHelp")}</p>
+        </div>
+        <div className="space-y-3 p-4">
+          {videoId ? (
+            <div className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row sm:items-center">
+              <p className="min-w-0 flex-1 text-sm">
+                <span className="text-muted-foreground">{t("clinact.page.videoCurrent")}</span>{" "}
+                <a
+                  href={`https://www.youtube.com/watch?v=${videoId}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex min-h-11 items-center gap-1 break-all font-mono font-medium underline-offset-4 hover:underline"
+                >
+                  {videoId} <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                </a>
+              </p>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={removeVideo}
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-destructive/50 px-4 text-sm font-medium text-destructive disabled:opacity-60"
+              >
+                <Trash2 className="h-4 w-4" /> {t("clinact.page.videoRemove")}
+              </button>
+            </div>
+          ) : (
+            <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              {t("clinact.page.videoEmpty")}
+            </p>
+          )}
+          <form
+            className="flex flex-col gap-2 sm:flex-row"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (videoInput.trim()) saveVideo();
+            }}
+          >
+            <label className="sr-only" htmlFor="clinact-video-url">
+              {t("clinact.page.videoLabel")}
+            </label>
+            <input
+              id="clinact-video-url"
+              type="text"
+              inputMode="url"
+              value={videoInput}
+              onChange={(e) => setVideoInput(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=…"
+              className="min-h-11 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-base sm:text-sm"
+            />
+            <button
+              type="submit"
+              disabled={pending || !videoInput.trim()}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg disabled:opacity-50"
+            >
+              <Play className="h-4 w-4" /> {t(videoId ? "clinact.page.videoReplace" : "clinact.page.videoSave")}
+            </button>
+          </form>
         </div>
       </section>
 

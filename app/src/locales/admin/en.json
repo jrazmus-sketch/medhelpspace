@@ -805,7 +805,8 @@
       "clinact_topic_update": "ClinAct: topic changed",
       "clinact_topic_delete": "ClinAct: topic deleted",
       "nfse_test_marked": "Record marked as internal test",
-      "nfse_test_unmarked": "Internal test unmarked"
+      "nfse_test_unmarked": "Internal test unmarked",
+      "clinact_page_video": "ClinAct: sales page video changed"
     }
   },
   "pageNew": {
@@ -2113,7 +2114,8 @@
         "invalid": "The section list changed. Reload the page and try again.",
         "failed": "Couldn't save. Please try again.",
         "bad_type": "Format not accepted. Use JPG, PNG or WebP.",
-        "too_large": "Image too large. The limit is 5 MB."
+        "too_large": "Image too large. The limit is 5 MB.",
+        "bad_video": "Link not recognised. Paste the video's YouTube link (youtube.com/watch?v=… or youtu.be/…)."
       },
       "sections": {
         "hero": "Opening",
@@ -2129,7 +2131,8 @@
         "gratuitos": "Free cases",
         "para-quem": "Who it's for",
         "o-que-e-nao-e": "What it is and isn't",
-        "planos": "Plans and renewal"
+        "planos": "Plans and renewal",
+        "video": "Presentation video"
       },
       "imagesTitle": "Images",
       "imagesHelp": "Sales page screenshots. JPG, PNG or WebP, up to 5 MB. With no image, the section shows text only.",
@@ -2139,7 +2142,17 @@
       "imageReplace": "Replace image",
       "imageRemove": "Remove",
       "imageSaved": "Image saved.",
-      "imageRemoved": "Image removed."
+      "imageRemoved": "Image removed.",
+      "videoTitle": "Presentation video",
+      "videoHelp": "The \"Conheça o ClinAct por dentro\" block, between the opening and the four formats. Paste the video's YouTube link. With no link, the block is not shown. The cover is the \"Presentation video\" image under Images; without one, the YouTube thumbnail is used.",
+      "videoLabel": "YouTube video link",
+      "videoCurrent": "Current video:",
+      "videoEmpty": "No video — the block is not shown on the page.",
+      "videoSave": "Save video",
+      "videoReplace": "Replace video",
+      "videoRemove": "Remove",
+      "videoSaved": "Video saved. The block now shows on the page.",
+      "videoRemoved": "Video removed. The block no longer shows on the page."
     },
     "taxonomy": {
       "open": "Taxonomy",
