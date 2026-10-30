@@ -4,7 +4,16 @@ import { ClinactText } from "@/components/clinact/clinact-text";
 import { SiteImage } from "@/components/clinact/sales/site-image";
 import { FORMAT_ICONS } from "@/components/clinact/library-cards";
 import { FORMATS, FORMAT_COLOR_VARS, FORMAT_LABELS, FORMAT_SKILL, SKILL_LABELS, type CaseFormat } from "@/lib/clinact/types";
-import { CLINACT_PLAN_LIST, annualPerMonth, formatBRL, type ClinactPlanKey } from "@/lib/clinact/plans";
+import {
+  CLINACT_PLAN_LIST,
+  annualOfferPerMonth,
+  formatBRL,
+  planOffer,
+  promoPriceSuffix,
+  renewalLine,
+  type ClinactPlanKey,
+} from "@/lib/clinact/plans";
+import { todayKeyBR } from "@/lib/br-date";
 import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
 
 /**
@@ -22,7 +31,8 @@ import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
  *
  * The two things that are NOT editable strings, on purpose:
  *   · prices — they come from lib/clinact/plans.ts (her decision 2), and the
- *     annual plan's monthly equivalent is computed from them;
+ *     annual plan's monthly equivalent is computed from them; so does the
+ *     launch promotion (planOffer), shown by date with no edit to make;
  *   · the case count — computed, never typed (her decision 5), and not shown.
  *
  * Sections are declared here and merely ORDERED/HIDDEN by `site_sections`, so
@@ -337,6 +347,9 @@ function Planos({ hasAccess, isLoggedIn }: SectionProps) {
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {CLINACT_PLAN_LIST.map((plan) => {
             const copy = PLAN_COPY[plan.key];
+            // The promotion running TODAY in Brazil (the page is force-dynamic),
+            // from the same planOffer() the checkout and the charge use.
+            const offer = planOffer(plan.key, todayKeyBR());
             return (
               <div key={plan.key} className="flex flex-col rounded-2xl border border-border bg-surface-1 p-7">
                 <p className="text-sm font-bold uppercase tracking-[0.16em] text-brand-text" style={MONO}>
@@ -345,20 +358,48 @@ function Planos({ hasAccess, isLoggedIn }: SectionProps) {
                 {/* Price comes from the plan config, never from an editable string
                     (her decision 2): a price edited out of step with what PagBank
                     charges is a CDC problem, not a bug. */}
-                <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
-                  <span className="text-4xl font-black tabular-nums tracking-[-0.02em] text-foreground" style={DISPLAY}>
-                    {formatBRL(plan.amount_cents)}
-                  </span>
-                  <span className="text-base text-muted-foreground">
-                    <ClinactText k={copy.periodo} />
-                  </span>
-                </p>
-                {plan.key === "anual" ? (
-                  // The equivalent is computed from the two plan prices; only the
-                  // words around it are editable ({mensal} stays in the text).
-                  <p className="mt-2 text-sm text-foreground/85">
-                    <ClinactText k="clinact.planos.anual.equivalente" vars={{ mensal: annualPerMonth() }} />
+                {offer.promotion ? (
+                  // Karina 2026-10-29, in writing: the normal price appears struck
+                  // through and with less emphasis, "Condição de lançamento Black
+                  // Friday" identifies the offer, the promotional price is the main
+                  // one, and the renewal price is always stated under it.
+                  <>
+                    <p className="mt-4 flex flex-wrap items-baseline gap-x-2 text-muted-foreground">
+                      <s className="text-xl font-semibold tabular-nums">{formatBRL(offer.normal_cents)}</s>
+                      <span className="text-sm">
+                        <ClinactText k={copy.periodo} />
+                      </span>
+                    </p>
+                    <p className="mt-3 text-sm font-bold uppercase tracking-[0.08em] text-brand-text" style={MONO}>
+                      {offer.promotion.label}
+                    </p>
+                    <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1">
+                      <span className="text-4xl font-black tabular-nums tracking-[-0.02em] text-foreground" style={DISPLAY}>
+                        {formatBRL(offer.first_cents)}
+                      </span>
+                      <span className="text-base font-semibold text-foreground">{promoPriceSuffix(offer)}</span>
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-4xl font-black tabular-nums tracking-[-0.02em] text-foreground" style={DISPLAY}>
+                      {formatBRL(plan.amount_cents)}
+                    </span>
+                    <span className="text-base text-muted-foreground">
+                      <ClinactText k={copy.periodo} />
+                    </span>
                   </p>
+                )}
+                {plan.key === "anual" ? (
+                  // The equivalent is computed from what the first year costs; only
+                  // the words around it are editable ({mensal} stays in the text).
+                  <p className="mt-2 text-sm text-foreground/85">
+                    <ClinactText k="clinact.planos.anual.equivalente" vars={{ mensal: annualOfferPerMonth(offer) }} />
+                  </p>
+                ) : null}
+                {/* Last, so it reads as what comes AFTER the promotional price. */}
+                {offer.promotion ? (
+                  <p className="mt-2 text-[15px] font-medium text-foreground">{renewalLine(offer)}</p>
                 ) : null}
                 {/* mt-auto pins the button to the card's foot, so the two buttons
                     line up even though only the annual card has the extra line. */}

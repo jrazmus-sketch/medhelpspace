@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { alertCronFailure } from "@/lib/admin/cron-alert";
 import { getSubscriptionsEnv } from "@/lib/pagbank/subscriptions";
 import { reconcileClinactSubscription } from "@/lib/clinact/renewals";
+import { sendDueRenewalNotices } from "@/lib/clinact/subscription-emails";
 
 // ClinAct renewals — keeps each subscriber's access in step with what PagBank
 // actually charged.
@@ -74,7 +75,11 @@ export async function GET(request: NextRequest) {
       else summary.held += 1;
     }
 
-    return NextResponse.json({ ok: true, environment: getSubscriptionsEnv(), ...summary });
+    // Annual subscriptions sold with a promotion renew at the normal price:
+    // the subscriber is told RENEWAL_NOTICE_DAYS before (Karina 2026-10-29).
+    const notices = await sendDueRenewalNotices();
+
+    return NextResponse.json({ ok: true, environment: getSubscriptionsEnv(), ...summary, renewalNotices: notices.sent });
   } catch (err) {
     await alertCronFailure("clinact-subscriptions", err);
     return NextResponse.json({ ok: false }, { status: 500 });

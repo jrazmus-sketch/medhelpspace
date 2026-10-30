@@ -5,6 +5,7 @@ import { getSubscription, getSubscriptionsEnv, listInvoices } from "@/lib/pagban
 import { renewalDecision, type RenewalDecision } from "@/lib/pagbank/subscriptions-core";
 import { grantAccess } from "./subscribe";
 import { recordPaidInvoices } from "./invoices";
+import { sendSubscriptionConfirmation } from "./subscription-emails";
 
 /**
  * Keeps a ClinAct subscriber's access in step with what PagBank actually
@@ -68,6 +69,10 @@ export async function reconcileClinactSubscription(row: {
   // Each paid invoice becomes a row for its own NFS-e. After access, and
   // best-effort: it swallows its own failures.
   await recordPaidInvoices(row.user_id, row.pagbank_subscription_id, invoices);
+
+  // A first charge that cleared after the checkout (pending → paid) gets its
+  // confirmation here. Once per subscription — a no-op when already sent.
+  if (decision.action === "extend") await sendSubscriptionConfirmation(row.user_id);
 
   return { ...base, status: subscription.status, decision };
 }

@@ -382,6 +382,8 @@ export function createSubscription(input: {
   customer_id: string;
   card_token: string;
   security_code: string;
+  /** A discount coupon (launch promotion). Omitted = the plan's own price. */
+  coupon_id?: string;
   idempotency_key?: string;
   audit?: PagBankAuditSink;
 }): Promise<PagBankSubscription> {
@@ -393,10 +395,70 @@ export function createSubscription(input: {
       plan: { id: input.plan_id },
       customer: { id: input.customer_id },
       payment_method: [{ type: "CREDIT_CARD", card: { id: input.card_token, security_code: input.security_code } }],
+      ...(input.coupon_id ? { coupon: { id: input.coupon_id } } : {}),
     },
     input.idempotency_key,
     input.audit,
   );
+}
+
+// ── Coupons (launch promotion) ───────────────────────────────────────────────
+
+/**
+ * A discount the subscription carries for a number of charges. ONCE = the
+ * first charge only (the annual first year); REPEATING = `occurrences` charges
+ * (the monthly first three); every later charge is the plan's own price.
+ *
+ * DELIBERATELY NO `exp_at` and NO `redemption_limit` on ours. Our server is
+ * the only thing that ever attaches a coupon, and only inside the promotion
+ * window, so the window is enforced by us. PagBank's docs do NOT say whether
+ * an expired (or inactivated) coupon keeps discounting charges two and three
+ * of a REPEATING subscription that already holds it; leaving expiry off means
+ * a subscriber from 30/11 can never lose a discount they were sold. For the
+ * same reason, never inactivate a coupon that is in use.
+ *
+ * `discount.value` comes back as a STRING ("12000"); compare with Number().
+ */
+export type PagBankCoupon = {
+  id: string;
+  reference_id?: string;
+  name: string;
+  status: "ACTIVE" | "INACTIVE";
+  discount: { type: "PERCENT" | "AMOUNT"; value: number | string };
+  duration: { type: "ONCE" | "REPEATING" | "FOREVER"; occurrences?: number | string };
+  exp_at?: string | null;
+  redemption_limit?: number | null;
+  in_use?: boolean;
+};
+
+export function createCoupon(input: {
+  reference_id: string;
+  name: string;
+  description?: string;
+  /** Fixed amount off each discounted charge, in cents. */
+  amount_off_cents: number;
+  /** How many charges carry the discount: 1 → ONCE, more → REPEATING. */
+  cycles: number;
+  audit?: PagBankAuditSink;
+}): Promise<PagBankCoupon> {
+  return request("POST", "/coupons", {
+    reference_id: input.reference_id,
+    name: input.name,
+    description: input.description,
+    discount: { type: "AMOUNT", value: input.amount_off_cents },
+    duration: input.cycles > 1 ? { type: "REPEATING", occurrences: input.cycles } : { type: "ONCE" },
+    status: "ACTIVE",
+  }, undefined, input.audit);
+}
+
+export function listCoupons(params?: { reference_id?: string }): Promise<{ coupons: PagBankCoupon[] }> {
+  const query = new URLSearchParams({ offset: "0", limit: "100" });
+  if (params?.reference_id) query.set("reference_id", params.reference_id);
+  return request("GET", `/coupons?${query.toString()}`);
+}
+
+export function getCoupon(couponId: string): Promise<PagBankCoupon> {
+  return request("GET", `/coupons/${couponId}`);
 }
 
 /**

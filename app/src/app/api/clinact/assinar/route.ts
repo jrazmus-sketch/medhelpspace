@@ -9,8 +9,10 @@ import { subscribeToClinact, subscriptionsUnavailable } from "@/lib/clinact/subs
 // ClinAct subscription checkout.
 //
 // Deliberately much smaller than the Revalida charge route: no guest checkout
-// (signing up first is the decided flow), no coupons, no installments — a
-// subscription is charged in full each period.
+// (signing up first is the decided flow), no coupon field, no installments — a
+// subscription is charged in full each period. The launch promotion (Black
+// Friday 2026) is a PagBank coupon the SERVER attaches inside its window
+// (lib/clinact/plans.ts); the student never types a code.
 //
 // THE TOMADOR is NOT the cardholder (Karina 2026-10-27): the card may belong to
 // someone who neither contracts nor receives the nota. "Dados para a nota
@@ -47,6 +49,8 @@ export async function POST(request: NextRequest) {
     cpf?: string;
     attemptId?: string;
     tomador?: Partial<NfseTomador>;
+    /** The first charge the page showed, in cents — see subscribeToClinact. */
+    expectedFirstCents?: number;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -113,10 +117,14 @@ export async function POST(request: NextRequest) {
     attemptId,
     phone,
     tomador,
+    expectedFirstCents: Number.isInteger(body.expectedFirstCents) ? body.expectedFirstCents : undefined,
   });
 
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json(
+      { error: result.error, priceChanged: result.priceChanged ?? false },
+      { status: result.priceChanged ? 409 : 400 },
+    );
   }
   return NextResponse.json(result);
 }

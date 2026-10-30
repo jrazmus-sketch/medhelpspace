@@ -522,6 +522,59 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<string, EmailTemplateRow> = {
     active: true,
     sort_order: 4,
   },
+  // ClinAct subscriptions (Black Friday launch, Karina 2026-10-29). Every
+  // amount and date arrives as a variable computed from lib/clinact/plans.ts —
+  // never typed into the template — so the e-mail cannot promise a price the
+  // card is not charged.
+  "clinact-subscription-confirmed": {
+    kind: "clinact-subscription-confirmed",
+    name: "ClinAct — assinatura confirmada",
+    description: "Enviado quando o primeiro pagamento de uma assinatura do ClinAct é aprovado.",
+    subject: "Assinatura do ClinAct confirmada",
+    kicker: "Olá, {{displayName}}",
+    headline: "Sua assinatura do ClinAct está ativa",
+    body_html:
+      "<p style=\"margin:0 0 14px;\">Seu acesso ao ClinAct está liberado: todos os casos, a Minha Evolução e a revisão espaçada.</p>" +
+      "<p style=\"margin:0 0 14px;\"><strong>Plano:</strong> {{planLabel}}<br/>{{promoLine}}<strong>Primeira cobrança:</strong> {{firstCharge}}<br/><strong>Próxima cobrança:</strong> {{nextCharge}}</p>" +
+      "<p style=\"margin:0 0 14px;\">{{chargeSchedule}}</p>" +
+      "<p style=\"margin:0 0 14px;\">A assinatura renova automaticamente até você cancelar. Você pode cancelar quando quiser em Minha assinatura, e o acesso continua até o fim do período já pago.</p>",
+    cta_label: "Começar a treinar →",
+    cta_href: "/clinact/treinar",
+    variables: [
+      { tag: "displayName", description: "Primeiro nome do assinante" },
+      { tag: "planLabel", description: "Plano contratado (Mensal ou Anual)" },
+      { tag: "promoLine", description: "Linha da condição especial, quando houver (já formatada) — vazia sem promoção" },
+      { tag: "firstCharge", description: "Valor da primeira cobrança (ex.: R$ 179,00)" },
+      { tag: "nextCharge", description: "Valor e data da próxima cobrança (ex.: R$ 299,00 em 02/11/2027)" },
+      { tag: "chargeSchedule", description: "As cobranças por extenso (calculado do plano)" },
+    ],
+    active: true,
+    sort_order: 60,
+  },
+  "clinact-renewal-notice": {
+    kind: "clinact-renewal-notice",
+    name: "ClinAct — aviso de renovação anual",
+    description:
+      "Enviado 15 dias antes da primeira renovação de uma assinatura anual contratada com condição especial, que renova pelo valor normal.",
+    subject: "Sua assinatura anual do ClinAct renova em {{renewalDate}}",
+    kicker: "Olá, {{displayName}}",
+    headline: "Aviso de renovação",
+    body_html:
+      "<p style=\"margin:0 0 14px;\">Sua assinatura anual do ClinAct foi contratada na {{promoLabel}}, com o primeiro ano por {{firstCharge}}.</p>" +
+      "<p style=\"margin:0 0 14px;\">Em <strong>{{renewalDate}}</strong>, ela será renovada automaticamente pelo valor normal do plano: <strong>{{renewalAmount}}</strong>, no cartão cadastrado.</p>" +
+      "<p style=\"margin:0 0 14px;\">Se quiser continuar, não precisa fazer nada. Se preferir não renovar, cancele antes dessa data em Minha assinatura — o acesso continua até o fim do período já pago.</p>",
+    cta_label: "Ver minha assinatura →",
+    cta_href: "/clinact/assinatura",
+    variables: [
+      { tag: "displayName", description: "Primeiro nome do assinante" },
+      { tag: "promoLabel", description: "Nome da condição especial (ex.: Condição de lançamento Black Friday)" },
+      { tag: "firstCharge", description: "Valor pago no primeiro ano (ex.: R$ 179,00)" },
+      { tag: "renewalDate", description: "Data da renovação (ex.: 02/11/2027)" },
+      { tag: "renewalAmount", description: "Valor da renovação (ex.: R$ 299,00/ano)" },
+    ],
+    active: true,
+    sort_order: 61,
+  },
   "weekly-summary": {
     kind: "weekly-summary",
     name: "Resumo semanal",

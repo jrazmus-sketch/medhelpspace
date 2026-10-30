@@ -14,7 +14,20 @@ import {
 } from "@/lib/br";
 import { EMPTY_TOMADOR, NotaFiscalFields } from "@/components/checkout/nota-fiscal-fields";
 
-type PlanOption = { key: string; label: string; price: string; note: string };
+type PlanOption = {
+  key: string;
+  label: string;
+  /** The normal plan price, e.g. "R$ 299,00". */
+  price: string;
+  /** The first charge, in cents — echoed to the server, which refuses a mismatch. */
+  firstCents: number;
+  firstPrice: string;
+  /** The launch promotion, when one is running (lib/clinact/plans.ts). */
+  promo: { label: string; line: string; renewal: string } | null;
+  /** Every charge spelled out — shown above the button. */
+  schedule: string;
+  note: string;
+};
 
 /**
  * The card is encrypted HERE, in the student's browser, with PagBank's SDK —
@@ -68,6 +81,7 @@ export function SubscribeForm({
   const [pending, setPending] = useState(false);
 
   const isPj = tomador.type === "pj";
+  const selected = plans.find((p) => p.key === planKey) ?? plans[0];
   const cardCpfFromNota = !isPj && sameCpf;
 
   function patch(p: Partial<NfseTomador>) {
@@ -141,11 +155,15 @@ export function SubscribeForm({
           cpf: holderCpf,
           tomador: nota,
           attemptId,
+          expectedFirstCents: selected?.firstCents,
         }),
       });
-      const data = (await res.json()) as { error?: string; state?: string };
+      const data = (await res.json()) as { error?: string; state?: string; priceChanged?: boolean };
       if (!res.ok) {
         setError(data.error ?? "Não foi possível concluir a assinatura.");
+        // The promotion ended while the page was open: nothing was charged.
+        // Reload the server data so the plans show the price that applies now.
+        if (data.priceChanged) router.refresh();
         return;
       }
       if (data.state === "paid") {
@@ -212,8 +230,21 @@ export function SubscribeForm({
                     className="h-4 w-4"
                   />
                   <span className="font-medium">{p.label}</span>
-                  <span className="ml-auto font-semibold">{p.price}</span>
+                  {/* Karina 2026-10-29: the normal price struck through and
+                      smaller, the promotional one as the main price. */}
+                  {p.promo ? (
+                    <s className="ml-auto text-sm text-muted-foreground">{p.price}</s>
+                  ) : (
+                    <span className="ml-auto font-semibold">{p.price}</span>
+                  )}
                 </span>
+                {p.promo ? (
+                  <span className="mt-1.5 flex flex-col gap-0.5 pl-6">
+                    <span className="text-xs font-semibold text-brand-text">{p.promo.label}</span>
+                    <span className="font-semibold">{p.promo.line}</span>
+                    <span className="text-xs text-muted-foreground">{p.promo.renewal}</span>
+                  </span>
+                ) : null}
                 <span className="mt-1 pl-6 text-xs text-muted-foreground">{p.note}</span>
               </label>
             ))}
@@ -324,6 +355,16 @@ export function SubscribeForm({
             <p role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm">
               {error}
             </p>
+          ) : null}
+
+          {selected ? (
+            <div className="rounded-xl border border-border bg-surface-1 p-3 text-sm">
+              <p className="flex items-baseline justify-between gap-3">
+                <span className="text-muted-foreground">Cobrança de hoje</span>
+                <span className="font-semibold tabular-nums">{selected.firstPrice}</span>
+              </p>
+              <p className="mt-1 text-muted-foreground">{selected.schedule}</p>
+            </div>
           ) : null}
 
           <button

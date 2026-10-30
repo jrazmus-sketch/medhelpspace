@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getClinactViewer } from "@/lib/clinact/access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicKey, getSubscriptionsEnv } from "@/lib/pagbank/subscriptions";
-import { CLINACT_PLANS, formatBRL, type ClinactPlanKey } from "@/lib/clinact/plans";
+import { CLINACT_PLANS, chargeSchedule, formatBRL, perPeriod, storedOffer, type ClinactPlanKey } from "@/lib/clinact/plans";
 import { SubscriptionActions } from "./subscription-actions";
 
 export const metadata = { title: "Minha assinatura" };
@@ -39,7 +39,7 @@ export default async function AssinaturaPage() {
   const [{ data: sub }, { data: access }] = await Promise.all([
     admin
       .from("clinact_subscriptions")
-      .select("plan_key, status, card_brand, card_last_digits")
+      .select("plan_key, status, card_brand, card_last_digits, promotion_key, promo_amount_cents, promo_cycles")
       .eq("user_id", viewer.userId)
       .eq("environment", getSubscriptionsEnv())
       .maybeSingle(),
@@ -67,6 +67,8 @@ export default async function AssinaturaPage() {
   }
 
   const plan = CLINACT_PLANS[sub.plan_key as ClinactPlanKey];
+  // What this subscription was SOLD at — a launch promotion stays with it.
+  const offer = plan ? storedOffer(plan.key, sub) : null;
   const status = STATUS_LABEL[String(sub.status)] ?? { text: "—", tone: "warn" as const };
   const ended = sub.status === "CANCELED" || sub.status === "EXPIRED";
   const until = dateBR(access?.paid_until as string | undefined);
@@ -96,9 +98,15 @@ export default async function AssinaturaPage() {
         <div className="flex min-h-14 items-center justify-between gap-3 px-4 py-3">
           <dt className="text-sm text-muted-foreground">Plano</dt>
           <dd className="text-right font-medium">
-            {plan ? `${plan.label} · ${formatBRL(plan.amount_cents)}` : "—"}
+            {plan ? `${plan.label} · ${formatBRL(plan.amount_cents)}${perPeriod(plan.key)}` : "—"}
           </dd>
         </div>
+        {offer?.promotion ? (
+          <div className="flex flex-col gap-1 px-4 py-3">
+            <dt className="text-sm text-muted-foreground">{offer.promotion.label}</dt>
+            <dd className="text-sm">{chargeSchedule(offer)}</dd>
+          </div>
+        ) : null}
         <div className="flex min-h-14 items-center justify-between gap-3 px-4 py-3">
           <dt className="text-sm text-muted-foreground">Situação</dt>
           <dd>

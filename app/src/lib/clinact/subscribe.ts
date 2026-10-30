@@ -1,16 +1,23 @@
 import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { CLINACT_PLANS, type ClinactPlanKey } from "./plans";
+import { CLINACT_PLANS, planOffer, type ClinactPlanKey, type PlanOffer } from "./plans";
+import { couponMatches, couponSpec } from "./promotion-coupon";
+import { todayKeyBR } from "@/lib/br-date";
+import { recordAppError } from "@/lib/app-errors-server";
+import { sendSubscriptionConfirmation } from "./subscription-emails";
 import {
+  createCoupon,
   createCustomer,
   createPlan,
   createSubscription,
   customerCardToken,
   findCustomersByDocument,
   findSubscriptionByReference,
+  getCoupon,
   getSubscriptionsEnv,
   isIdempotencyConflict,
+  listCoupons,
   listInvoices,
   listPlans,
   reconcileByReference,
@@ -82,12 +89,18 @@ export type SubscribeInput = {
    * derived from the card: the cardholder above is payment data only.
    */
   tomador: NfseTomador;
+  /**
+   * The first charge the checkout SHOWED, in cents. When it no longer matches
+   * what would be charged now (the promotion ended while the page was open),
+   * nothing is charged and the student is told the new price.
+   */
+  expectedFirstCents?: number;
 };
 
 export type SubscribeResult =
   | { ok: true; state: "paid"; subscriptionId: string; paidUntil: string }
   | { ok: true; state: "pending"; subscriptionId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; priceChanged?: boolean };
 
 /** pt-BR, and never leaks PagBank's wording to the student. */
 const GENERIC_ERROR =
@@ -171,6 +184,30 @@ async function ensurePlanId(planKey: ClinactPlanKey, audit: ReturnType<typeof au
   return created.id;
 }
 
+/**
+ * The PagBank coupon for a promotional offer, created on first use — same
+ * pattern as ensurePlanId: the terms are in the reference AND re-checked
+ * (couponMatches), so a changed offer can only ever create a new coupon.
+ *
+ * The list endpoint may omit `duration.occurrences`; a candidate whose
+ * reference matches is then read individually before it is trusted.
+ */
+async function ensureCouponId(offer: PlanOffer, audit: ReturnType<typeof auditSink>): Promise<string> {
+  const spec = couponSpec(offer);
+  if (!spec) throw new Error("ensureCouponId called without a promotion");
+
+  const { coupons } = await listCoupons({ reference_id: spec.reference_id });
+  for (const listed of coupons ?? []) {
+    if (listed.reference_id !== spec.reference_id) continue;
+    if (couponMatches(listed, spec)) return listed.id;
+    const full = await getCoupon(listed.id);
+    if (couponMatches(full, spec)) return full.id;
+  }
+
+  const created = await createCoupon({ ...spec, audit });
+  return created.id;
+}
+
 /** PagBank returns `next_invoice_at` as YYYY-MM-DD; fall back to one period. */
 function paidUntilFrom(subscription: PagBankSubscription, planKey: ClinactPlanKey): string {
   if (subscription.next_invoice_at) {
@@ -231,6 +268,9 @@ async function recordSubscription(input: {
   customerId: string | null;
   planKey: ClinactPlanKey;
   planId: string | null;
+  /** What this subscription was sold at — the promotion, when there was one. */
+  offer: PlanOffer;
+  couponId: string | null;
   card?: { brand?: string; last?: string } | null;
   /** The cardholder typed at checkout — payment data, NOT the tomador. */
   billing: { name: string; taxId: string; phone: string };
@@ -246,6 +286,14 @@ async function recordSubscription(input: {
       pagbank_customer_id: input.customerId,
       plan_key: input.planKey,
       pagbank_plan_id: input.planId,
+      // One row per user, overwritten by every new subscription: the offer is
+      // ALWAYS written, so a re-subscription never inherits the previous one's
+      // promotion. (The e-mail markers need no reset: they name the PagBank
+      // subscription they were sent for — see subscription-emails.ts.)
+      promotion_key: input.offer.promotion?.key ?? null,
+      promo_amount_cents: input.offer.promotion ? input.offer.first_cents : null,
+      promo_cycles: input.offer.promotion ? input.offer.promo_cycles : null,
+      pagbank_coupon_id: input.couponId,
       status: input.subscription?.status ?? null,
       card_brand: input.card?.brand ?? null,
       card_last_digits: input.card?.last ?? null,
@@ -280,9 +328,28 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
     phone: `${input.phone.area}${input.phone.number}`,
   };
 
+  // What is charged is decided HERE, on the Brazilian date of the charge — the
+  // same planOffer() every screen uses. If the checkout showed a different
+  // first charge (the promotion ended while the page was open), stop before
+  // anything reaches PagBank: the student confirms the price they will pay.
+  const offer = planOffer(input.planKey, todayKeyBR());
+  if (input.expectedFirstCents !== undefined && input.expectedFirstCents !== offer.first_cents) {
+    return {
+      ok: false,
+      priceChanged: true,
+      error: offer.promotion
+        ? "As condições deste plano mudaram. Atualize a página para ver o valor atual — nenhuma cobrança foi feita."
+        : "A Condição de lançamento Black Friday terminou. Atualize a página para ver o valor atual — nenhuma cobrança foi feita.",
+    };
+  }
+
   let planId: string;
+  let couponId: string | null = null;
   try {
     planId = await ensurePlanId(input.planKey, audit);
+    // No coupon → no promotional charge. Never fall back to the full price for
+    // a student who was shown the promotional one: refuse, charge nothing.
+    if (offer.promotion) couponId = await ensureCouponId(offer, audit);
   } catch {
     return { ok: false, error: GENERIC_ERROR };
   }
@@ -323,7 +390,11 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
           tax_id: input.taxId,
           phone: input.phone,
           encrypted_card: input.encryptedCard,
-          idempotency_key: key(input.attemptId, "cust"),
+          // The CPF is part of the key: PagBank replays the FIRST answer for a
+          // reused key (a 409 "CPF already registered" included), so a student
+          // who corrects a mistyped CPF would otherwise be refused until they
+          // reloaded the page. Same CPF = same key = still a safe retry.
+          idempotency_key: key(input.attemptId, "cust", input.taxId),
           audit,
         });
         customerId = created.id;
@@ -378,6 +449,7 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
       customer_id: customerId,
       card_token: cardToken,
       security_code: input.securityCode,
+      coupon_id: couponId ?? undefined,
       idempotency_key: key(input.attemptId, "sub"),
       audit,
     });
@@ -389,9 +461,10 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
       if (outcome.kind === "paid") {
         const found = await findSubscriptionByReference(referenceId);
         if (found) {
-          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, card, billing, tomador: input.tomador });
+          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador });
           await grantAccess(input.userId, paidUntilFrom(found, input.planKey));
           await recordPaidInvoicesFor(input.userId, found.id);
+          await sendSubscriptionConfirmation(input.userId);
           return { ok: true, state: "paid", subscriptionId: outcome.subscriptionId, paidUntil: paidUntilFrom(found, input.planKey) };
         }
       }
@@ -399,11 +472,11 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
         return { ok: true, state: "pending", subscriptionId: outcome.subscriptionId };
       }
     }
-    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, card, billing, tomador: input.tomador });
+    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador });
     return { ok: false, error: GENERIC_ERROR };
   }
 
-  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, card, billing, tomador: input.tomador });
+  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador });
 
   // 201 does NOT mean paid. Ask the invoice.
   const invoices = await invoicesOf(subscription.id);
@@ -420,6 +493,24 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
   await grantAccess(input.userId, paidUntil);
   // The paid invoice gets its NFS-e row. After access; swallows its own failures.
   await recordPaidInvoices(input.userId, subscription.id, invoices);
+
+  // The student was shown first_cents. If PagBank charged anything else (a
+  // coupon it ignored), that is a promise broken — nothing here can undo a
+  // charge, so make it loud for a human on /admin/erros.
+  const charged = invoices.find((i) => i.status === "PAID")?.amount?.value;
+  if (charged !== undefined && charged !== offer.first_cents) {
+    await recordAppError({
+      kind: "server",
+      message: `ClinAct: primeira cobrança de ${charged} centavos, mas o aluno viu ${offer.first_cents} (assinatura ${subscription.id}, plano ${input.planKey}, cupom ${couponId ?? "nenhum"})`,
+      route: "/api/clinact/assinar",
+      digest: null,
+      stack: null,
+      path: null,
+      userAgent: null,
+    });
+  }
+
+  await sendSubscriptionConfirmation(input.userId);
   return { ok: true, state: "paid", subscriptionId: subscription.id, paidUntil };
 }
 

@@ -3,7 +3,16 @@ import { getClinactViewer } from "@/lib/clinact/access";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicKey } from "@/lib/pagbank/subscriptions";
 import { subscriptionsUnavailable } from "@/lib/clinact/subscribe";
-import { CLINACT_PLAN_LIST, annualInMonthlies, formatBRL } from "@/lib/clinact/plans";
+import {
+  CLINACT_PLAN_LIST,
+  annualOfferInMonthlies,
+  chargeSchedule,
+  formatBRL,
+  planOffer,
+  promoPriceLine,
+  renewalLine,
+} from "@/lib/clinact/plans";
+import { todayKeyBR } from "@/lib/br-date";
 import { SubscribeForm } from "./subscribe-form";
 
 export const metadata = { title: "Assinar" };
@@ -95,15 +104,27 @@ export default async function AssinarPage({
         publicKey={publicKey}
         initialPlan={initialPlan}
         student={student}
-        plans={CLINACT_PLAN_LIST.map((p) => ({
-          key: p.key,
-          label: p.label,
-          price: formatBRL(p.amount_cents),
-          note:
-            p.key === "anual"
-              ? `Equivale a ${annualInMonthlies()} mensalidades por 12 meses`
-              : "Cobrado todo mês",
-        }))}
+        plans={CLINACT_PLAN_LIST.map((p) => {
+          // The same planOffer() the charge uses, on the same Brazilian date —
+          // and the first charge travels back with the form, so the server
+          // refuses to charge anything other than what this page showed.
+          const offer = planOffer(p.key, todayKeyBR());
+          return {
+            key: p.key,
+            label: p.label,
+            price: formatBRL(p.amount_cents),
+            firstCents: offer.first_cents,
+            firstPrice: formatBRL(offer.first_cents),
+            promo: offer.promotion
+              ? { label: offer.promotion.label, line: promoPriceLine(offer), renewal: renewalLine(offer) }
+              : null,
+            schedule: chargeSchedule(offer),
+            note:
+              p.key === "anual"
+                ? `Equivale a ${annualOfferInMonthlies(offer)} mensalidades por 12 meses`
+                : "Cobrado todo mês",
+          };
+        })}
       />
     </div>
   );
