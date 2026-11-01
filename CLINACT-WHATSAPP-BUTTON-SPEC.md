@@ -3,7 +3,12 @@
 **Source:** Karina, e-mail "WhatsApp Business", 2026-09-28 (thread `1a0e858fb45fbc02`).
 **Status of the Revalida half:** built in the MedHelpSpace chat on 2026-09-28 (homepage + `/loja`),
 in test mode. This document is the hand-off so the ClinAct sales page gets the **same button,
-the same mechanism, and the same test-first process**. Nothing here is built yet for ClinAct.
+the same mechanism, and the same test-first process**.
+
+**ClinAct half BUILT 2026-11-01** (Karina asked again): mounted on `/clinact`, gate in `GATES` + the
+/admin/settings row, `whatsapp-clinact` seeded **published** on prod + local — the sales page's own
+unpublished gate is the admin-only test window, so the button goes public with the page. Same number
+also in the new ClinAct footer (`components/clinact/sales/clinact-footer.tsx`).
 
 ## What Karina asked (applies to both products)
 

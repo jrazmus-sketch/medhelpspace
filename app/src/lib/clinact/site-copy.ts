@@ -100,6 +100,10 @@ export const CLINACT_COPY = {
   "clinact.planos.renovacao":
     "Renovação automática mensal ou anual, conforme o plano. Cancele pela sua conta e mantenha o acesso até o fim do período pago.",
 
+  // ── Rodapé (Karina 2026-10-30 / 2026-11-01) — links and labels are code ─
+  "clinact.footer.tagline": "Raciocínio clínico que termina em uma decisão.",
+  "clinact.footer.copyright": "© 2026 MedHelpSpace. Todos os direitos reservados.",
+
   // ── Platform — Casos (/clinact/treinar) ─────────────────────────────────
   "clinact.app.treinar.title": "Casos",
   "clinact.app.treinar.sub": "Raciocínio clínico que termina em uma decisão. Um caso por vez.",

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
+import { Check, Lock, ShieldCheck } from "lucide-react";
 import {
   formatCpf,
   isValidCpf,
@@ -13,6 +14,17 @@ import {
   type TomadorType,
 } from "@/lib/br";
 import { EMPTY_TOMADOR, NotaFiscalFields } from "@/components/checkout/nota-fiscal-fields";
+
+/**
+ * The three reassurances of the Revalida store (/loja), worded the same
+ * (Karina 2026-10-30: "seguindo o modelo que usamos no Revalida"). The 7 days
+ * are also the CDC art. 49 right of withdrawal for a purchase made online.
+ */
+const TRUST = [
+  { Icon: Check, text: "Acesso imediato após confirmação" },
+  { Icon: ShieldCheck, text: "Garantia incondicional de 7 dias" },
+  { Icon: Lock, text: "Pagamento 100% seguro · PagBank" },
+] as const;
 
 type PlanOption = {
   key: string;
@@ -374,6 +386,15 @@ export function SubscribeForm({
           >
             {busy ? "Processando…" : "Assinar"}
           </button>
+
+          <ul className="flex flex-col gap-2 rounded-xl bg-muted/40 px-3 py-3 text-sm text-foreground/80" data-testid="clinact-checkout-trust">
+            {TRUST.map(({ Icon, text }) => (
+              <li key={text} className="flex items-center gap-2">
+                <Icon className="h-4 w-4 shrink-0 text-brand-text" aria-hidden />
+                {text}
+              </li>
+            ))}
+          </ul>
 
           <p className="text-xs text-muted-foreground">
             Os dados do cartão são criptografados no seu navegador e enviados direto ao PagBank. O

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { WHATSAPP_GATE_KEY, WHATSAPP_MESSAGES, WHATSAPP_NUMBER, whatsappUrl } from "@/lib/whatsapp";
 
@@ -56,4 +56,19 @@ test("the gate can only be flipped by super_admin and revalidates both sales pag
   const action = read("actions/site-pages.ts");
   assert.match(action, /who\.role !== "super_admin"/);
   assert.match(action, /\[WHATSAPP_GATE_KEY\.revalida\]: \["\/", "\/loja"\]/);
+});
+
+test("the ClinAct sales page mounts the same button behind its own gate — and no member route does", () => {
+  const page = read("app/clinact/page.tsx");
+  assert.match(page, /<WhatsAppButton product="clinact" published=\{whatsappPublished\} \/>/);
+  assert.match(page, /getSitePagePublished\(WHATSAPP_GATE_KEY\.clinact\)/);
+  const action = read("actions/site-pages.ts");
+  assert.match(action, /\[WHATSAPP_GATE_KEY\.clinact\]: \["\/clinact"\]/);
+  assert.match(read("app/admin/settings/site-toggles.tsx"), /WHATSAPP_GATE_KEY\.clinact/);
+  // The case player has its own fixed bottom controls; a contact button there would cover them.
+  const walk = (dir: string): string[] =>
+    readdirSync(path.join(SRC, dir), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)],
+    );
+  for (const f of walk("app/clinact/(membro)")) assert.doesNotMatch(read(f), /WhatsAppButton/, f);
 });

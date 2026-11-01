@@ -2,9 +2,12 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { hasProductAccess } from "@/lib/clinact/access";
 import { isViewerAdmin } from "@/lib/membership-gate";
-import { getPageLayout, orderSections } from "@/lib/queries/site-sections";
+import { getPageLayout, getSitePagePublished, orderSections } from "@/lib/queries/site-sections";
 import { createClient } from "@/lib/supabase/server";
 import { CLINACT_SECTIONS } from "@/components/clinact/sales/sections";
+import { ClinactFooter } from "@/components/clinact/sales/clinact-footer";
+import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
+import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
 
 export const metadata = {
   title: "ClinAct — raciocínio clínico que termina em uma decisão | MedHelpSpace",
@@ -25,11 +28,12 @@ export const dynamic = "force-dynamic";
  */
 export default async function ClinactSalesPage() {
   const supabase = await createClient();
-  const [has, isAdmin, layout, { data: auth }] = await Promise.all([
+  const [has, isAdmin, layout, { data: auth }, whatsappPublished] = await Promise.all([
     hasProductAccess("clinact"),
     isViewerAdmin(),
     getPageLayout("clinact"),
     supabase.auth.getUser(),
+    getSitePagePublished(WHATSAPP_GATE_KEY.clinact),
   ]);
   const isLoggedIn = !!auth.user;
 
@@ -58,6 +62,12 @@ export default async function ClinactSalesPage() {
       {sections.map(({ key, Section }) => (
         <Section key={key} hasAccess={has && !isAdmin} isLoggedIn={isLoggedIn} />
       ))}
+
+      <ClinactFooter />
+      {/* Same button, number and gate mechanism as the Revalida pages (Karina
+          2026-09-28 / 2026-11-01). Its own gate stays independent of the page's:
+          it decides whether visitors see the button once the page is public. */}
+      <WhatsAppButton product="clinact" published={whatsappPublished} />
     </div>
   );
 }

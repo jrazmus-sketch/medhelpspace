@@ -16,8 +16,7 @@ import { WHATSAPP_OPTIN_GATE_KEY } from "@/lib/whatsapp-optin";
 // flipped from this action, so a typo can never create a stray site_pages row.
 const GATES: Record<string, readonly string[]> = {
   [WHATSAPP_GATE_KEY.revalida]: ["/", "/loja"],
-  // The ClinAct chat adds WHATSAPP_GATE_KEY.clinact → ["/clinact"] when it mounts
-  // the button on that page (see CLINACT-WHATSAPP-BUTTON-SPEC.md).
+  [WHATSAPP_GATE_KEY.clinact]: ["/clinact"],
   // Optional WhatsApp step in the lead funnels (both pages are force-dynamic, so
   // the flip is instant; the revalidate is harmless).
   [WHATSAPP_OPTIN_GATE_KEY]: ["/flashcards-revalida", "/questoes-revalida"],

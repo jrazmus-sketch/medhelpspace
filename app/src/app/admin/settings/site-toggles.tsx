@@ -15,6 +15,7 @@ import { WHATSAPP_OPTIN_GATE_KEY } from "@/lib/whatsapp-optin";
 
 const GATES: { key: string; i18n: string }[] = [
   { key: WHATSAPP_GATE_KEY.revalida, i18n: "whatsapp" },
+  { key: WHATSAPP_GATE_KEY.clinact, i18n: "whatsappClinact" },
   { key: WHATSAPP_OPTIN_GATE_KEY, i18n: "whatsappOptin" },
 ];
 
