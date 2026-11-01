@@ -77,7 +77,8 @@ test("the page is her six sections, in her order, with the video after the openi
   const block = src.slice(src.indexOf("export const CLINACT_SECTIONS"));
   const keys = [...block.matchAll(/key: "([a-z-]+)"/g)].map((m) => m[1]);
   // "video" = Karina 2026-10-30, between the opening and the four formats.
-  assert.deepEqual(keys, ["hero", "video", "competencias", "casos", "evolucao", "gratuitos", "planos"]);
+  // "fundadora" = Karina 2026-11-01, between "Entenda suas decisões." and the free cases.
+  assert.deepEqual(keys, ["hero", "video", "competencias", "casos", "evolucao", "fundadora", "gratuitos", "planos"]);
 });
 
 test("início: her title with 'decisão.' in lilac, audience, weekly line, and the two buttons", () => {

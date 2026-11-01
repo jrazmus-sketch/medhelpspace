@@ -23,7 +23,8 @@ import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
  * Six sections, one idea each (Karina, 2026-10-08 — supersedes the 14-section
  * brief of CLINACT-SALES-PAGE-SPEC.md §1): início → os quatro formatos → veja
  * na prática → entenda suas decisões → quatro casos gratuitos → planos — plus
- * the presentation video between the first two (Karina, 2026-10-30). The
+ * the presentation video between the first two (Karina, 2026-10-30) and her
+ * founder note before the free cases (Karina, 2026-11-01). The
  * presentation follows the MedHelpSpace Revalida sales page: black background,
  * Bricolage headings, mono eyebrows, colour only in accents, text and phone
  * side by side on desktop (alternating sides), one column on the phone.
@@ -317,6 +318,98 @@ function Evolucao() {
   );
 }
 
+// ── 4b. Por trás da MedHelpSpace ClinAct ──────────────────────────────────
+
+/** One of her bold passages: full white on the dimmer reading text. */
+function Strong({ k }: { k: ClinactCopyKey }) {
+  return (
+    <strong className="font-semibold text-foreground">
+      <ClinactText k={k} multiline />
+    </strong>
+  );
+}
+
+/**
+ * Karina's founder note (2026-11-01), between "Entenda suas decisões." and the
+ * free cases. Modelled on "Por trás da MedHelpSpace" on the Revalida sales page
+ * (components/landing/founder-section.tsx): one comfortable reading column,
+ * left-aligned, no photo, no cards, its own deep background with a faint lilac
+ * glow, a lilac rule beside the text and the signature at the foot. Her
+ * emphasis here is BOLD (the Revalida note's is lilac italic); the lilac is in
+ * the title's "MedHelpSpace ClinAct", the rule and the signature line.
+ */
+function Fundadora() {
+  return (
+    <section className={`${BAND} relative isolate overflow-hidden`} style={{ ...BAND_STYLE_BASE, background: "var(--lp-alt-bg)" }}>
+      {/* Faint lilac glow behind the title — atmosphere, not a card. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{ background: "radial-gradient(60% 45% at 30% 12%, color-mix(in srgb, var(--brand) 22%, transparent), transparent 70%)" }}
+      />
+      <div className="mx-auto max-w-[38rem]">
+        <div aria-hidden className="mb-6 h-[3px] w-12 rounded-full" style={{ background: "linear-gradient(to right, var(--brand), var(--brand-text))" }} />
+        <h2 className={H2} style={DISPLAY}>
+          <ClinactText k="clinact.fundadora.title" />{" "}
+          {/* inline-block: "MedHelpSpace ClinAct" moves to the next line as one
+              piece instead of leaving "ClinAct" alone there (desktop). */}
+          <span className="inline-block text-brand-text">
+            <ClinactText k="clinact.fundadora.title_hl" />
+          </span>
+        </h2>
+        <p className="mt-8 text-xl font-medium leading-snug text-foreground/90 md:text-[1.375rem]" style={DISPLAY}>
+          <ClinactText k="clinact.fundadora.lead" />{" "}
+          <strong className="font-bold text-foreground">
+            <ClinactText k="clinact.fundadora.lead_b" multiline />
+          </strong>
+        </p>
+        {/* Reading column with a lilac rule down its left edge. */}
+        <div className="relative mt-8 space-y-6 pl-5 text-[1.0625rem] leading-[1.75] text-foreground/80 md:pl-7 md:text-lg md:leading-[1.8]">
+          <div
+            aria-hidden
+            className="absolute bottom-1 left-0 top-1 w-[2px] rounded-full"
+            style={{ background: "linear-gradient(to bottom, var(--brand-text), color-mix(in srgb, var(--brand) 55%, transparent) 55%, transparent)" }}
+          />
+          <p>
+            <ClinactText k="clinact.fundadora.p1" multiline />
+          </p>
+          <p>
+            <Strong k="clinact.fundadora.p2_b" />
+            <ClinactText k="clinact.fundadora.p2" multiline autoSpace />
+          </p>
+          <p>
+            <Strong k="clinact.fundadora.p3_b" />
+          </p>
+          <p>
+            <ClinactText k="clinact.fundadora.p4" multiline />
+          </p>
+          <p>
+            <ClinactText k="clinact.fundadora.p5" multiline />{" "}
+            <Strong k="clinact.fundadora.p5_b" />
+            <ClinactText k="clinact.fundadora.p5_fim" multiline autoSpace />
+          </p>
+          <p>
+            <ClinactText k="clinact.fundadora.p6" multiline />
+          </p>
+          <p>
+            <Strong k="clinact.fundadora.p7_b" />
+          </p>
+        </div>
+        {/* Signature */}
+        <div className="mt-12">
+          <div aria-hidden className="mb-5 h-px w-16" style={{ background: "linear-gradient(to right, var(--brand-text), transparent)" }} />
+          <p className="text-xl font-bold tracking-[-0.01em] text-foreground md:text-2xl" style={DISPLAY}>
+            <ClinactText k="clinact.fundadora.assinatura" />
+          </p>
+          <p className="mt-1 text-[0.9375rem] font-medium text-brand-text">
+            <ClinactText k="clinact.fundadora.cargo" />
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── 5. Quatro casos gratuitos ──────────────────────────────────────────────
 
 function Gratuitos({ hasAccess, isLoggedIn }: SectionProps) {
@@ -465,6 +558,7 @@ export const CLINACT_SECTIONS: SectionDef[] = [
   { key: "competencias", Section: Competencias },
   { key: "casos", Section: Casos },
   { key: "evolucao", Section: Evolucao },
+  { key: "fundadora", Section: Fundadora },
   { key: "gratuitos", Section: Gratuitos },
   { key: "planos", Section: Planos },
 ];

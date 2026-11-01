@@ -52,6 +52,31 @@ export const CLINACT_COPY = {
   "clinact.evolucao.lead":
     "Acompanhe seu desempenho e identifique erros cometidos com alta confiança. A revisão prioriza os casos que precisam de mais atenção.",
 
+  // ── 4b. Por trás da MedHelpSpace ClinAct (Karina 2026-11-01) ────────────
+  // Split where her bold passages start and end: the `_b` keys render in bold.
+  "clinact.fundadora.title": "Por trás da",
+  "clinact.fundadora.title_hl": "MedHelpSpace ClinAct",
+  "clinact.fundadora.lead": "Sou",
+  "clinact.fundadora.lead_b": "Karina, médica formada na Argentina e criadora do ClinAct.",
+  "clinact.fundadora.p1":
+    "Durante a minha formação, tive a oportunidade de desenvolver o raciocínio clínico desde cedo. Essa experiência me mostrou o valor de conectar o conhecimento às decisões de um caso.",
+  "clinact.fundadora.p2_b": "Mesmo com essa base, eu queria mais oportunidades para praticar.",
+  "clinact.fundadora.p2":
+    "Entre aulas, provas e uma grande quantidade de conteúdo, nem sempre havia espaço para aprofundar esse processo como eu gostaria. E era frustrante sentir que parte dessa construção acabaria ficando para a próxima etapa da carreira.",
+  "clinact.fundadora.p3_b": "Foi dessa vontade de ampliar as oportunidades de treino que nasceu o ClinAct.",
+  "clinact.fundadora.p4":
+    "Criei um espaço em que estudantes de Medicina e médicos já formados podem praticar decisões, compreender suas escolhas e perceber o que ainda precisam desenvolver. Porque o raciocínio clínico se constrói dia após dia, com prática e reflexão.",
+  "clinact.fundadora.p5": "Esse cuidado começa na elaboração do conteúdo.",
+  "clinact.fundadora.p5_b": "Cada caso passa por auditoria",
+  "clinact.fundadora.p5_fim":
+    ", e as imagens são selecionadas de acordo com a situação clínica e com o que precisa ser observado e interpretado para decidir.",
+  "clinact.fundadora.p6":
+    "Os casos abrangem diferentes especialidades e cenários de atendimento, como UBS, ambulatórios, hospitais, maternidades e serviços de urgência e emergência. Você pode direcionar o treino para a habilidade, a área ou o cenário que deseja trabalhar.",
+  "clinact.fundadora.p7_b":
+    "Meu objetivo é oferecer mais espaço para aquilo que marcou a minha formação: aprender a pensar diante de um caso, compreender cada decisão e ter novas oportunidades para tentar. Durante a faculdade e depois dela.",
+  "clinact.fundadora.assinatura": "Karina Razmus",
+  "clinact.fundadora.cargo": "Fundadora da MedHelpSpace",
+
   // ── 5. Quatro casos gratuitos ───────────────────────────────────────────
   "clinact.gratuitos.label": "4 casos gratuitos",
   "clinact.gratuitos.title": "Experimente o ClinAct antes de assinar.",
