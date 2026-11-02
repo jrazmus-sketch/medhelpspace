@@ -12,6 +12,8 @@ import {
 export {
   PagBankSubscriptionsError,
   isIdempotencyConflict,
+  isAlreadyRefunded,
+  paymentToRefund,
   idempotencyKey,
   grantsAccess,
   reconcileOutcome,
@@ -225,7 +227,7 @@ export type PagBankInvoice = {
 };
 export type PagBankPayment = {
   id: string;
-  status: "APPROVED" | "DENIED" | "IN_ANALYSIS" | "CANCELED";
+  status: "APPROVED" | "DENIED" | "IN_ANALYSIS" | "CANCELED" | "REFUNDED";
   provider?: { code: string; message: string };
 };
 
@@ -512,9 +514,39 @@ export function listPayments(invoiceId: string): Promise<{ payments: PagBankPaym
   return request("GET", `/invoices/${invoiceId}/payments`);
 }
 
+export type PagBankRefund = {
+  id: string;
+  status: string;
+  type: string;
+  amount: Money;
+};
+
+/**
+ * FULL refund of one payment (PAYM_). Proven in sandbox 2026-11-02: `amount` is
+ * REQUIRED even for a full refund (an empty body is a 400, whatever the
+ * reference says) → 201 status SUCCESS, type FULL; the payment becomes REFUNDED
+ * and its invoice UNPAID. Works on a cancelled subscription. A replayed key
+ * answers 409 (isIdempotencyConflict); a new key on a refunded payment answers
+ * 400 (isAlreadyRefunded). Card refunds reach the cardholder's statement.
+ */
+export function refundPayment(
+  paymentId: string,
+  amountCents: number,
+  idempotency: string,
+  audit?: PagBankAuditSink,
+): Promise<PagBankRefund> {
+  return request(
+    "POST",
+    `/payments/${paymentId}/refunds`,
+    { amount: { value: amountCents, currency: "BRL" } },
+    idempotency,
+    audit,
+  );
+}
+
 /** Returns 204 with no body. */
-export function cancelSubscription(subscriptionId: string): Promise<null> {
-  return request("PUT", `/subscriptions/${subscriptionId}/cancel`);
+export function cancelSubscription(subscriptionId: string, audit?: PagBankAuditSink): Promise<null> {
+  return request("PUT", `/subscriptions/${subscriptionId}/cancel`, undefined, undefined, audit);
 }
 
 export function suspendSubscription(subscriptionId: string): Promise<null> {

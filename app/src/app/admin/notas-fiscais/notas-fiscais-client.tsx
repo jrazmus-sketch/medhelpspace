@@ -44,6 +44,12 @@ export interface FiscalRow {
   paymentMethod: string;
   installments: number | null;
   refunded: boolean;
+  /**
+   * ClinAct only: when the refund happened, which admin did it (null on refunds
+   * recorded before 2026-11-02) and whether the Reembolsar button moved the
+   * money (true) or it was only recorded after a refund in the PagBank panel.
+   */
+  refund: { at: string; by: string | null; byApp: boolean } | null;
   originalCents: number;
   discountCents: number;
   surchargeCents: number;
@@ -634,6 +640,153 @@ export function NotasFiscaisClient({
   );
 }
 
+/**
+ * "Reembolsar" for a ClinAct invoice (Karina 2026-11-02): cancels the
+ * subscription, refunds the payment on PagBank, ends access and records who and
+ * when — behind a confirmation step, since it cannot be undone. A refund made in
+ * the PagBank panel can still be RECORDED (and that record undone); a refund the
+ * button made cannot.
+ */
+function ClinactRefundBlock({
+  row,
+  saving,
+  secondaryBtn,
+  onManual,
+  onSaved,
+}: {
+  row: FiscalRow;
+  saving: boolean;
+  secondaryBtn: string;
+  onManual: (action: "refund" | "unrefund") => void;
+  onSaved: (r: FiscalRow) => void;
+}) {
+  const { t } = useTranslation();
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, startBusy] = useTransition();
+
+  function refund() {
+    startBusy(async () => {
+      setError(null);
+      try {
+        const res = await fetch("/api/admin/clinact/refund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ invoiceId: row.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? t("notasFiscais.refundError"));
+        setConfirming(false);
+        onSaved({
+          ...row,
+          refunded: true,
+          refund: { at: data.refundedAt, by: t("notasFiscais.refundByYou"), byApp: true },
+        });
+      } catch (e) {
+        setError(e instanceof Error ? e.message : t("notasFiscais.refundError"));
+      }
+    });
+  }
+
+  if (row.refund) {
+    return (
+      <div className="mt-5 border-t border-border pt-4">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("notasFiscais.refundTitle")}
+        </h3>
+        <p className="text-sm text-foreground">
+          {row.refund.by
+            ? t("notasFiscais.refundedOnBy", { date: fmtDateBR(row.refund.at), name: row.refund.by })
+            : t("notasFiscais.refundedOn", { date: fmtDateBR(row.refund.at) })}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {row.refund.byApp ? t("notasFiscais.refundByAppNote") : t("notasFiscais.refundManualNote")}
+        </p>
+        {row.nfseStatus === "issued" && (
+          <p className="mt-3 rounded-lg border border-yellow-500/30 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+            {t("notasFiscais.refundCancelNotaHint")}
+          </p>
+        )}
+        {!row.refund.byApp && (
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => onManual("unrefund")}
+            className={`${secondaryBtn} mt-3`}
+          >
+            {t("notasFiscais.unmarkRefunded")}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 border-t border-border pt-4">
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("notasFiscais.refundTitle")}
+      </h3>
+      {!confirming ? (
+        <>
+          <p className="mb-3 text-xs text-muted-foreground">{t("notasFiscais.refundHint")}</p>
+          <button
+            type="button"
+            disabled={saving || busy}
+            onClick={() => setConfirming(true)}
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-destructive/40 px-4 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/5 disabled:opacity-60"
+          >
+            {t("notasFiscais.refundButton")}
+          </button>
+        </>
+      ) : (
+        <div
+          data-testid="clinact-refund-confirm"
+          className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 sm:p-4"
+        >
+          <p className="text-sm font-semibold text-foreground">
+            {t("notasFiscais.refundConfirmTitle", { amount: fmt(row.totalCents), name: row.listName })}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-foreground/85">
+            <li>{t("notasFiscais.refundStepMoney")}</li>
+            <li>{t("notasFiscais.refundStepCancel")}</li>
+            <li>{t("notasFiscais.refundStepAccess")}</li>
+            <li>{t("notasFiscais.refundStepRecord")}</li>
+          </ul>
+          <p className="mt-2 text-xs font-medium text-destructive">{t("notasFiscais.refundIrreversible")}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={refund}
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-destructive px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {busy ? t("notasFiscais.refunding") : t("notasFiscais.refundConfirmButton")}
+            </button>
+            <button type="button" disabled={busy} onClick={() => setConfirming(false)} className={secondaryBtn}>
+              {t("notasFiscais.refundBack")}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && (
+        <p className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      {!confirming && (
+        <button
+          type="button"
+          disabled={saving || busy}
+          onClick={() => onManual("refund")}
+          className="mt-3 min-h-11 text-left text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          {t("notasFiscais.markRefunded")}
+        </button>
+      )}
+    </div>
+  );
+}
+
 type Action = "issue" | "cancel" | "uncancel" | "refund" | "unrefund" | "test" | "untest";
 
 function NotaDetail({
@@ -700,6 +853,8 @@ function NotaDetail({
           next.internalTest = action === "test";
         } else {
           next.refunded = action === "refund";
+          next.refund =
+            action === "refund" ? { at: nowIso, by: t("notasFiscais.refundByYou"), byApp: false } : null;
         }
         setEditing(false);
         onSaved(next);
@@ -903,21 +1058,17 @@ function NotaDetail({
           </>
           )}
 
-          {/* ClinAct has no refund flow in the app: the refund is made in the
-              PagBank panel and only recorded here. Revalida refunds come from
-              the order itself (Faturamento → reembolso). */}
+          {/* ClinAct: the Reembolsar button moves the money itself (Karina
+              2026-11-02). Revalida refunds come from the order itself
+              (Faturamento → reembolso). */}
           {row.kind === "clinact" && (
-            <div className="mt-5 border-t border-border pt-4">
-              <p className="mb-2 text-xs text-muted-foreground">{t("notasFiscais.refundHint")}</p>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => send(row.refunded ? "unrefund" : "refund")}
-                className={secondaryBtn}
-              >
-                {row.refunded ? t("notasFiscais.unmarkRefunded") : t("notasFiscais.markRefunded")}
-              </button>
-            </div>
+            <ClinactRefundBlock
+              row={row}
+              saving={saving}
+              secondaryBtn={secondaryBtn}
+              onManual={(action) => send(action)}
+              onSaved={onSaved}
+            />
           )}
 
           {/* A test purchase made after 28/10/2026 is marked here, by hand. */}

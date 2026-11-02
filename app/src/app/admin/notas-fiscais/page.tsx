@@ -109,6 +109,8 @@ interface RawInvoice extends TomadorColumns {
   billing_tax_id: string | null;
   billing_phone: string | null;
   refunded_at: string | null;
+  refunded_by: string | null;
+  refund_id: string | null;
   nfse_status: string | null;
   nfse_number: string | null;
   nfse_verificacao: string | null;
@@ -163,7 +165,7 @@ export default async function NotasFiscaisPage() {
         .from("clinact_invoices")
         .select(
           "id, user_id, plan_key, occurrence, amount_cents, billed_at, paid_at, " +
-            "period_start, period_end, billing_name, billing_tax_id, billing_phone, refunded_at, " +
+            "period_start, period_end, billing_name, billing_tax_id, billing_phone, refunded_at, refunded_by, refund_id, " +
             "nfse_status, nfse_number, nfse_verificacao, nfse_issued_at, nfse_cancelled_at, " +
             "internal_test, " +
             TOMADOR_SELECT,
@@ -213,6 +215,7 @@ export default async function NotasFiscaisPage() {
       paymentMethod: o.payment_method,
       installments: o.cc_installments,
       refunded: o.status === "refunded",
+      refund: null,
       originalCents: original,
       discountCents: discount,
       // Orders from before coupons/interest were tracked have no base — then
@@ -272,6 +275,15 @@ export default async function NotasFiscaisPage() {
       paymentMethod: "credit_card",
       installments: 1,
       refunded: i.refunded_at != null,
+      refund: i.refunded_at
+        ? {
+            at: i.refunded_at,
+            by: i.refunded_by
+              ? profileMap.get(i.refunded_by)?.name || profileMap.get(i.refunded_by)?.email || null
+              : null,
+            byApp: i.refund_id != null,
+          }
+        : null,
       originalCents: i.amount_cents,
       discountCents: 0,
       surchargeCents: 0,

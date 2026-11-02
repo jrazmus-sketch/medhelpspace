@@ -12,9 +12,11 @@ import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
 //   issue    — the nota exists: número, data de emissão, chave (optional)
 //   cancel   — the nota was cancelled on the portal (only an issued one)
 //   uncancel — undo a cancel recorded by mistake
-//   refund / unrefund — ClinAct only: the charge was returned in the PagBank
-//              panel. A Revalida refund is the order's own status, set by the
-//              refund flow, never by this route.
+//   refund / unrefund — ClinAct only: RECORDS a refund made in the PagBank
+//              panel (who + when). The "Reembolsar" button moves the money
+//              itself (api/admin/clinact/refund); a refund it made can never be
+//              "unrefunded" here. A Revalida refund is the order's own status,
+//              set by the refund flow, never by this route.
 //   test / untest — an internal test, not a sale: kept as history, never listed
 //              as a sale or a pending nota (Karina 2026-10-27).
 type Kind = "revalida" | "clinact";
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
     .from(table)
     .select(
       kind === "clinact"
-        ? "id, user_id, amount_cents, nfse_status, refunded_at"
+        ? "id, user_id, amount_cents, nfse_status, refunded_at, refund_id"
         : "id, user_id, amount_cents, status, nfse_status",
     )
     .eq("id", id)
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
     nfse_status: string | null;
     status?: string;
     refunded_at?: string | null;
+    refund_id?: string | null;
   } | null;
   if (!row) {
     return NextResponse.json({ error: "Venda não encontrada" }, { status: 404 });
@@ -150,10 +153,20 @@ export async function POST(request: NextRequest) {
       update = { nfse_status: "issued", nfse_cancelled_at: null };
       break;
     case "refund":
-      update = { refunded_at: row.refunded_at ?? nowIso };
+      if (row.refunded_at) {
+        return NextResponse.json({ error: "Esta cobrança já está registrada como reembolsada." }, { status: 409 });
+      }
+      update = { refunded_at: nowIso, refunded_by: user.id };
       break;
     case "unrefund":
-      update = { refunded_at: null };
+      // Money returned by the app stayed returned — only a hand-made mark undoes.
+      if (row.refund_id) {
+        return NextResponse.json(
+          { error: "Este reembolso foi feito pelo botão Reembolsar e não pode ser desfeito." },
+          { status: 409 },
+        );
+      }
+      update = { refunded_at: null, refunded_by: null };
       break;
     case "test":
     case "untest":

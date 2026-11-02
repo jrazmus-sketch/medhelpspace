@@ -43,6 +43,33 @@ export function isIdempotencyConflict(error: unknown): boolean {
   );
 }
 
+/**
+ * The refund endpoint's answer for a payment that was ALREADY refunded (by an
+ * earlier click whose response was lost, or in the PagBank panel): 400
+ * `status_payment_refund_validation`. Observed in sandbox 2026-11-02. The money
+ * is back either way, so the caller records the refund instead of failing.
+ */
+export function isAlreadyRefunded(error: unknown): boolean {
+  if (!(error instanceof PagBankSubscriptionsError) || error.status !== 400) return false;
+  const messages = (error.body as { error_messages?: { error?: string }[] })?.error_messages;
+  return (messages ?? []).some((m) => m.error === "status_payment_refund_validation");
+}
+
+/**
+ * Which payment of an invoice a refund goes to. An invoice can carry declined
+ * attempts before the approved one; only the APPROVED payment holds money. A
+ * REFUNDED one means the money is already back.
+ */
+export function paymentToRefund(
+  payments: { id: string; status: string }[],
+): { kind: "refund"; id: string } | { kind: "already"; id: string } | { kind: "none" } {
+  const approved = payments.find((p) => p.status === "APPROVED");
+  if (approved) return { kind: "refund", id: approved.id };
+  const refunded = payments.find((p) => p.status === "REFUNDED");
+  if (refunded) return { kind: "already", id: refunded.id };
+  return { kind: "none" };
+}
+
 /** Alphanumeric only, max 200 chars, valid for 48h. Never reuse across payloads. */
 export function idempotencyKey(...parts: (string | number)[]): string {
   return parts
