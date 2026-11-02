@@ -320,10 +320,13 @@ function Evolucao() {
 
 // ── 4b. Por trás da MedHelpSpace ClinAct ──────────────────────────────────
 
-/** One of her bold passages: full white on the dimmer reading text. */
+/**
+ * One of her bold passages inside the body: lilac AND bold (Karina 2026-11-02).
+ * The opening "Sou Karina…" line is not one of these — it stays white bold.
+ */
 function Strong({ k }: { k: ClinactCopyKey }) {
   return (
-    <strong className="font-semibold text-foreground">
+    <strong className="font-semibold text-brand-text">
       <ClinactText k={k} multiline />
     </strong>
   );
@@ -335,8 +338,8 @@ function Strong({ k }: { k: ClinactCopyKey }) {
  * (components/landing/founder-section.tsx): one comfortable reading column,
  * left-aligned, no photo, no cards, its own deep background with a faint lilac
  * glow, a lilac rule beside the text and the signature at the foot. Her
- * emphasis here is BOLD (the Revalida note's is lilac italic); the lilac is in
- * the title's "MedHelpSpace ClinAct", the rule and the signature line.
+ * emphasis here is lilac BOLD (the Revalida note's is lilac italic); only the
+ * opening "Sou Karina…" sentence is white bold.
  */
 function Fundadora() {
   return (

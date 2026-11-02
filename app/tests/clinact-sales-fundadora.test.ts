@@ -43,7 +43,9 @@ test("her text, verbatim, reassembled from the pieces split around her bold pass
 
 test("the bold passages are exactly hers, the title highlight is lilac, every piece is rendered", () => {
   for (const k of ["p2_b", "p3_b", "p5_b", "p7_b"]) assert.match(fn, new RegExp(`<Strong k="clinact\\.fundadora\\.${k}" />`));
-  assert.match(fn, /<strong[^>]*>\s*<ClinactText k="clinact\.fundadora\.lead_b"/);
+  // Karina 2026-11-02: the body's bold passages are lilac; only "Sou Karina…" stays white bold.
+  assert.match(SECTIONS, /function Strong[\s\S]*?<strong className="font-semibold text-brand-text">/);
+  assert.match(fn, /<strong className="font-bold text-foreground">\s*<ClinactText k="clinact\.fundadora\.lead_b"/);
   assert.match(fn, /<span className="inline-block text-brand-text">\s*<ClinactText k="clinact\.fundadora\.title_hl"/);
   for (const k of Object.keys(c).filter((k) => k.startsWith("clinact.fundadora."))) assert.ok(fn.includes(`"${k}"`), k);
   // Pieces that follow a bold passage get the space SiteText adds — never glued words.

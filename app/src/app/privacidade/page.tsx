@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getEditablePage } from "@/lib/queries/editable-pages";
 import { EditableText } from "@/components/admin/editable-text";
 import { safe } from "@/lib/sanitize";
+import { LegalFallback } from "@/components/legal/legal-fallback";
+import { PRIVACIDADE_HTML } from "@/lib/legal-pages";
 
 export const metadata = { title: "Política de privacidade — MedHelpSpace" };
 
@@ -42,95 +44,9 @@ export default async function PrivacidadePage() {
             />
           </>
         ) : (
-          <FallbackContent />
+          <LegalFallback title="Política de privacidade" html={PRIVACIDADE_HTML} />
         )}
       </main>
     </div>
-  );
-}
-
-// Rendered when the `editable_pages` row is missing (pre-patch / mock mode). Keep
-// in sync with the body_html seed in schema-patch-editable-pages.sql.
-function FallbackContent() {
-  return (
-    <>
-      <h1 className="mb-4 text-2xl font-bold">Política de privacidade</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Última atualização: maio de 2026</p>
-
-      <div className="prose-content">
-        <p>
-          Esta política descreve como o MedHelpSpace coleta, usa e protege
-          as informações dos usuários da plataforma.
-        </p>
-
-        <h2>1. Dados coletados</h2>
-        <p>
-          Coletamos nome, endereço de e-mail e dados de uso da plataforma
-          (progresso em questões, flashcards e aulas). Não coletamos dados
-          sensíveis de saúde.
-        </p>
-
-        <h2>2. Uso das informações</h2>
-        <p>
-          Os dados são utilizados para fornecer e melhorar o serviço,
-          personalizar a experiência de aprendizado e enviar comunicações
-          relacionadas à conta.
-        </p>
-
-        <h2>3. Compartilhamento</h2>
-        <p>
-          Não vendemos nem compartilhamos seus dados pessoais com terceiros,
-          exceto quando exigido por lei ou para operar serviços essenciais da
-          plataforma (ex.: processamento de pagamento).
-        </p>
-
-        <h2>4. Segurança</h2>
-        <p>
-          Utilizamos criptografia e boas práticas de segurança para proteger
-          suas informações. O acesso aos dados é restrito à equipe autorizada.
-        </p>
-
-        <h2>5. Seus direitos (LGPD)</h2>
-        <p>
-          Nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018),
-          você pode solicitar acesso, correção ou exclusão dos seus dados a
-          qualquer momento.
-        </p>
-
-        <h2>6. Cookies e análise de uso</h2>
-        <p>
-          Utilizamos cookies técnicos necessários para o funcionamento da
-          plataforma, como manutenção de sessão. Também utilizamos cookies de
-          análise (Google Analytics) para entender, de forma agregada, como a
-          plataforma é acessada e melhorar a experiência. Não utilizamos cookies
-          para publicidade. Você pode recusar os cookies de análise a qualquer
-          momento pelo aviso exibido no site.
-        </p>
-
-        <h2>7. Comunicações pelo WhatsApp</h2>
-        <p>
-          Ao deixar seu e-mail em uma de nossas páginas gratuitas, você pode,
-          opcionalmente, informar o seu número de WhatsApp e autorizar o recebimento
-          de mensagens da MedHelpSpace com materiais e conteúdos educacionais,
-          novidades, ofertas, descontos e cupons. O número só é coletado com o seu
-          consentimento expresso, registrado com data, hora e a versão do texto
-          aceito, e é usado exclusivamente para essas comunicações. Não
-          compartilhamos o seu número com terceiros.
-        </p>
-        <p>
-          Você pode cancelar a qualquer momento: basta responder <strong>SAIR</strong> a
-          qualquer mensagem, fazer qualquer pedido claro nesse sentido pelo próprio
-          WhatsApp, ou escrever para contato@medhelpspace.com.br. Registramos a
-          revogação e deixamos de enviar mensagens.
-        </p>
-
-        <p className="pt-4 text-xs text-muted-foreground">
-          Para exercer seus direitos ou tirar dúvidas, entre em contato em{" "}
-          <a href="mailto:contato@medhelpspace.com.br" className="text-brand hover:underline">
-            contato@medhelpspace.com.br
-          </a>
-        </p>
-      </div>
-    </>
   );
 }

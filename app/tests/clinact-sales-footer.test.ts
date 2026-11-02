@@ -41,10 +41,13 @@ test("its editable strings are in the copy map", () => {
   }
 });
 
-test("the checkout carries the Revalida store's three reassurances", () => {
+test("the checkout carries the Revalida store's reassurances, with Karina's ClinAct guarantee line", () => {
   const form = read("app/clinact/(membro)/assinar/subscribe-form.tsx");
-  for (const t of ["Acesso imediato após confirmação", "Garantia incondicional de 7 dias", "Pagamento 100% seguro · PagBank"]) {
+  for (const t of ["Acesso imediato após confirmação", "Pagamento 100% seguro · PagBank"]) {
     assert.ok(form.includes(t), t);
     assert.ok(read("app/loja/page.tsx").includes(t), `/loja no longer says "${t}"`);
   }
+  // Karina 2026-11-02: replaces "Garantia incondicional de 7 dias" on ClinAct only.
+  assert.ok(form.includes("7 dias para cancelar e receber 100% do valor de volta"));
+  assert.ok(!form.includes("Garantia incondicional"));
 });

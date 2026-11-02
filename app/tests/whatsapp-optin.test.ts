@@ -101,9 +101,11 @@ test("the capture actions issue the step info and the gate is flippable from set
 });
 
 test("the privacy policy fallback carries the WhatsApp section the live row will get", () => {
-  const page = read("app/privacidade/page.tsx");
-  assert.match(page, /Comunicações pelo WhatsApp/);
-  assert.match(page, /SAIR/);
+  // The fallback text lives in lib/legal-pages.ts since 2026-11-02 (the page renders it).
+  assert.match(read("app/privacidade/page.tsx"), /PRIVACIDADE_HTML/);
+  const text = read("lib/legal-pages.ts");
+  assert.match(text, /Comunicações pelo WhatsApp/);
+  assert.match(text, /SAIR/);
   const patch = readFileSync(path.join(process.cwd(), "..", "schema-patch-privacidade-whatsapp.sql"), "utf8");
   assert.match(patch, /Comunicações pelo WhatsApp/);
 });

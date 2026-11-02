@@ -16,13 +16,15 @@ import {
 import { EMPTY_TOMADOR, NotaFiscalFields } from "@/components/checkout/nota-fiscal-fields";
 
 /**
- * The three reassurances of the Revalida store (/loja), worded the same
- * (Karina 2026-10-30: "seguindo o modelo que usamos no Revalida"). The 7 days
- * are also the CDC art. 49 right of withdrawal for a purchase made online.
+ * The three reassurances of the Revalida store (/loja) (Karina 2026-10-30:
+ * "seguindo o modelo que usamos no Revalida"). The guarantee line is her own
+ * ClinAct wording (2026-11-02): the 7 days cover the INITIAL purchase only and
+ * never restart on a renewal — the same rule as the Termos. They are also the
+ * CDC art. 49 right of withdrawal for a purchase made online.
  */
 const TRUST = [
   { Icon: Check, text: "Acesso imediato após confirmação" },
-  { Icon: ShieldCheck, text: "Garantia incondicional de 7 dias" },
+  { Icon: ShieldCheck, text: "7 dias para cancelar e receber 100% do valor de volta" },
   { Icon: Lock, text: "Pagamento 100% seguro · PagBank" },
 ] as const;
 
