@@ -972,7 +972,11 @@
     "bulkImageHint": "Mentions an image — attach the URL afterwards",
     "bulkAdd": "Add {{count}} question(s)",
     "bulkEmpty": "No questions recognized. Check the format.",
-    "saveError": "Error saving"
+    "saveError": "Error saving",
+    "listPlain": "Plain list",
+    "listPega": "PEGA REVALIDA (❌)",
+    "listCerto": "Right call (✔)",
+    "listResumo": "Key summary (🟣)"
   },
   "flashcardEditor": {
     "title": "Flashcards",
@@ -2245,5 +2249,25 @@
     "first": "First:",
     "path": "Page:",
     "resolve": "Mark resolved"
+  },
+  "richText": {
+    "placeholder": "Write the content here…",
+    "bold": "Bold (Ctrl+B)",
+    "italic": "Italic (Ctrl+I)",
+    "h2": "Heading H2",
+    "h3": "Heading H3",
+    "h4": "Section heading H4 (e.g. Comentário, PEGA REVALIDA)",
+    "bulletList": "Bulleted list",
+    "orderedList": "Numbered list",
+    "divider": "Divider line",
+    "textColor": "Text color",
+    "textColorReset": "Default (remove color)",
+    "textColorDefault": "Default",
+    "undo": "Undo (Ctrl+Z)",
+    "redo": "Redo (Ctrl+Y)",
+    "htmlMode": "HTML code",
+    "visualMode": "Back to the visual editor",
+    "preservedBlock": "Protected table/figure — to change what is inside, use HTML code",
+    "lossyWarning": "This text has formatting the visual editor cannot keep, so it opened as HTML code. Fix words directly here, leaving the tags between < > alone, and the formatting stays intact."
   }
 }

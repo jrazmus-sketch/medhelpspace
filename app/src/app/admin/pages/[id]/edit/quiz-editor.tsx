@@ -4,7 +4,7 @@ import { forwardRef, useImperativeHandle, useState } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
 import { updateQuizQuestions } from "@/actions/admin";
-import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { RichTextEditor, type ListStyle } from "@/components/admin/rich-text-editor";
 import { AlertCircle, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Plus, ClipboardPaste } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseQuizText, type ParseResult } from "@/lib/quiz-bulk-parse";
@@ -47,6 +47,13 @@ export const QuizEditor = forwardRef<
     })),
   );
   const [error, setError] = useState<string | null>(null);
+  // The comment's list looks, as quiz-explanation renders them (globals.css).
+  const listStyles: ListStyle[] = [
+    { className: null, label: t("quizEditor.listPlain"), marker: "•" },
+    { className: "pega", label: t("quizEditor.listPega"), marker: "❌" },
+    { className: "certo", label: t("quizEditor.listCerto"), marker: "✔" },
+    { className: "resumo", label: t("quizEditor.listResumo"), marker: "🟣" },
+  ];
 
   // ── Bulk paste ──────────────────────────────────────────────────────────────
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -333,6 +340,7 @@ export const QuizEditor = forwardRef<
                   onChange={(html) => patch(idx, { question: html })}
                   placeholder={t("quizEditor.promptPlaceholder")}
                   minHeight="120px"
+                  contentClassName="quiz-stem"
                 />
               </div>
 
@@ -402,6 +410,8 @@ export const QuizEditor = forwardRef<
                   onChange={(html) => patch(idx, { explanation_html: html })}
                   placeholder={t("quizEditor.explanationPlaceholder")}
                   minHeight="140px"
+                  contentClassName="quiz-explanation"
+                  listStyles={listStyles}
                 />
               </div>
             </div>

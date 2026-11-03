@@ -972,7 +972,11 @@
     "bulkImageHint": "Menção a imagem — anexe a URL depois",
     "bulkAdd": "Adicionar {{count}} questão(ões)",
     "bulkEmpty": "Nenhuma questão reconhecida. Confira o formato.",
-    "saveError": "Erro ao salvar"
+    "saveError": "Erro ao salvar",
+    "listPlain": "Lista comum",
+    "listPega": "PEGA REVALIDA (❌)",
+    "listCerto": "Conduta certa (✔)",
+    "listResumo": "Resumo-chave (🟣)"
   },
   "flashcardEditor": {
     "title": "Flashcards",
@@ -2245,5 +2249,25 @@
     "first": "Primeira:",
     "path": "Página:",
     "resolve": "Marcar como resolvido"
+  },
+  "richText": {
+    "placeholder": "Escreva o conteúdo aqui…",
+    "bold": "Negrito (Ctrl+B)",
+    "italic": "Itálico (Ctrl+I)",
+    "h2": "Título H2",
+    "h3": "Título H3",
+    "h4": "Título de seção H4 (ex.: Comentário, PEGA REVALIDA)",
+    "bulletList": "Lista com marcadores",
+    "orderedList": "Lista numerada",
+    "divider": "Linha divisória",
+    "textColor": "Cor do texto",
+    "textColorReset": "Padrão (remover cor)",
+    "textColorDefault": "Padrão",
+    "undo": "Desfazer (Ctrl+Z)",
+    "redo": "Refazer (Ctrl+Y)",
+    "htmlMode": "Código HTML",
+    "visualMode": "Voltar ao editor visual",
+    "preservedBlock": "Tabela/figura protegida — para alterar o conteúdo, use Código HTML",
+    "lossyWarning": "Este texto tem formatação que o editor visual não consegue manter, por isso ele abriu em Código HTML. Corrija palavras diretamente aqui, sem mexer nas marcações entre < >, e a formatação fica intacta."
   }
 }

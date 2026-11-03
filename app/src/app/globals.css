@@ -1548,6 +1548,31 @@ figure.quiz-figure img {
   background: var(--background);
 }
 
+/* ── Admin RichTextEditor: protected table / figure (rich-text-extensions.ts) ──
+   Shown exactly as the member sees it, framed and labelled so it reads as one piece
+   that is moved or deleted whole, and changed only through "Código HTML". */
+.rte-preserved-block {
+  position: relative;
+  margin: 0.75rem 0;
+  padding: 1.5rem 0.5rem 0.25rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
+}
+.rte-preserved-block::before {
+  content: attr(data-label);
+  position: absolute;
+  top: 0.25rem;
+  left: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  color: var(--muted-foreground);
+}
+.ProseMirror-selectednode.rte-preserved-block {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
 /* ── Email body visual editor (TipTap / ProseMirror) ─────────────── */
 .email-editor-surface {
   min-height: 220px;
