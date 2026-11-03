@@ -40,6 +40,8 @@ type CouponInput = {
   cohortSlugs?: string[] | null;
   notes?: string | null;
   active?: boolean;
+  /** May apply on top of a turma's promotional price (Black Friday). */
+  combinableWithOffers?: boolean;
   /** false = restore an archived ("excluído") coupon. It comes back inactive. */
   archived?: boolean;
 };
@@ -111,6 +113,7 @@ function buildPatch(b: CouponInput, requireAll: boolean, validSlugs: Set<string>
 
   if (b.notes !== undefined) patch.notes = (b.notes ?? "").trim() || null;
   if (b.active !== undefined) patch.active = !!b.active;
+  if (b.combinableWithOffers !== undefined) patch.combinable_with_offers = !!b.combinableWithOffers;
   if (b.archived === false) patch.archived_at = null;
 
   return { patch };

@@ -5,7 +5,7 @@
 // (lib/cohort-promotions.ts) is server-only. Same split as library-filters.ts.
 
 import { toDateKeyBR } from "@/lib/br-date";
-import { UNDECIDED_COHORT } from "@/lib/magnet/links";
+import { RECOVERY_COUPONS, UNDECIDED_COHORT, WELCOME_COUPONS } from "@/lib/magnet/links";
 
 export type ActivePromotion = {
   id: number;
@@ -63,15 +63,39 @@ export function formatDateKeyBR(key: string): string {
  * its all-turma FLASH5 would be refused on the promo turma, and "don't send a
  * code we then refuse at checkout" is the whole point (Karina, decision 3).
  */
-export function pausedCouponCohorts(promotions: ActivePromotion[]): Set<string> {
+export function pausedCouponCohorts(
+  promotions: ActivePromotion[],
+  sale?: CouponSaleState,
+): Set<string> {
   const paused = new Set<string>();
   for (const p of promotions) {
     if (!p.blocksCoupons) continue;
     paused.add(p.cohortSlug);
     paused.add(UNDECIDED_COHORT);
   }
+  // A promotional price (Black Friday) refuses every coupon NOT marked combinable
+  // (coupons.combinable_with_offers — redeem_coupon raises COUPON_NOT_COMBINABLE). Each
+  // turma is offered one code per table (WELCOME / RECOVERY: BEMVINDO10 today), so the
+  // turma's offers pause when any code it is offered would be refused. The undecided
+  // track's all-turma FLASH5 pauses as soon as ANY turma is on sale — the lead may pick it.
+  if (sale && sale.saleCohorts.size > 0) {
+    const combinable = (code: string | undefined) => !code || sale.combinableCodes.has(code.toUpperCase());
+    for (const cohort of sale.saleCohorts) {
+      if (!combinable(WELCOME_COUPONS[cohort]?.code) || !combinable(RECOVERY_COUPONS[cohort]?.code)) {
+        paused.add(cohort);
+      }
+    }
+    if (!combinable(WELCOME_COUPONS[UNDECIDED_COHORT]?.code)) paused.add(UNDECIDED_COHORT);
+  }
   return paused;
 }
+
+/** Which turmas have their promotional price in force now, and which coupons may stack on it. */
+export type CouponSaleState = {
+  saleCohorts: Set<string>;
+  /** Upper-cased codes with combinable_with_offers = true. */
+  combinableCodes: Set<string>;
+};
 
 /**
  * The coupon to OFFER a lead for this turma, or null while offers are paused.

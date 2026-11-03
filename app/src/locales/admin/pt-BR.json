@@ -702,7 +702,15 @@
     "manualOverrideLabel": "manual",
     "resetToAuto": "Restaurar automático",
     "resetToAutoTitle": "Restaurar data automática",
-    "resetToAutoDesc": "Redefinir a data de desbloqueio de {{module}} para {{date}} (calculada automaticamente)?"
+    "resetToAutoDesc": "Redefinir a data de desbloqueio de {{module}} para {{date}} (calculada automaticamente)?",
+    "saleFirstDay": "Início da oferta (dia)",
+    "saleLastDay": "Último dia da oferta",
+    "saleWindowHint": "Horário de Brasília: começa às 00h00 do primeiro dia e termina às 23h59 do último. Em branco = sem data (liga/desliga manual).",
+    "saleBadgeLabel": "Nome da campanha no preço",
+    "saleBadgeHint": "Ex.: BLACK FRIDAY — aparece em lilás com o selo \"50% OFF\". Em branco = preço riscado simples.",
+    "saleWindowNeedsPrice": "Defina o preço promocional para usar datas ou nome de campanha.",
+    "saleWindowInvalid": "O último dia da oferta deve ser igual ou posterior ao primeiro.",
+    "saleBadgeTooLong": "O nome da campanha pode ter no máximo 40 caracteres."
   },
   "settings": {
     "title": "Configurações",
@@ -1439,7 +1447,10 @@
     "errWindow": "A data de início deve ser anterior à expiração.",
     "errCodeTaken": "Já existe um cupom com este código.",
     "errCodeArchived": "Já existe um cupom excluído com este código. Abra \"Ver cupons excluídos\" e restaure-o.",
-    "errArchived": "Este cupom foi excluído. Restaure-o antes de ativá-lo."
+    "errArchived": "Este cupom foi excluído. Restaure-o antes de ativá-lo.",
+    "formNoStacking": "Não combinar com outras ofertas ativas (ex.: Black Friday)",
+    "formNoStackingHint": "Marcado: o cupom não vale enquanto a turma estiver com preço promocional. Desmarque para que ele também se aplique sobre o preço da oferta.",
+    "stacksBadge": "Combina com ofertas"
   },
   "emailClicks": {
     "title": "Cliques de e-mail",

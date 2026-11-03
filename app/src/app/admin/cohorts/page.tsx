@@ -15,7 +15,7 @@ export default async function CohortsPage() {
   ] = await Promise.all([
     admin
       .from("cohorts")
-      .select("id, slug, name, test_date, date_confirmed, membership_starts_at, membership_ends_at, active, price_cents, sale_price_cents, is_for_sale, display_order, sale_ends_at")
+      .select("id, slug, name, test_date, date_confirmed, membership_starts_at, membership_ends_at, active, price_cents, sale_price_cents, sale_price_starts_at, sale_price_ends_at, sale_badge_label, is_for_sale, display_order, sale_ends_at")
       .order("display_order")
       .order("id"),
     admin.from("user_cohort_memberships").select("cohort_id"),
@@ -41,6 +41,9 @@ export default async function CohortsPage() {
     active: (c.active ?? true) as boolean,
     price_cents: (c.price_cents ?? null) as number | null,
     sale_price_cents: (c.sale_price_cents ?? null) as number | null,
+    sale_price_starts_at: (c.sale_price_starts_at ?? null) as string | null,
+    sale_price_ends_at: (c.sale_price_ends_at ?? null) as string | null,
+    sale_badge_label: (c.sale_badge_label ?? null) as string | null,
     is_for_sale: (c.is_for_sale ?? false) as boolean,
     display_order: (c.display_order ?? 0) as number,
     sale_ends_at: (c.sale_ends_at ?? null) as string | null,

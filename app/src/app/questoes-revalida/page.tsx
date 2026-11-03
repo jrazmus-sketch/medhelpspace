@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getActivePromotions } from "@/lib/cohort-promotions";
-import { pausedCouponCohorts } from "@/lib/cohort-promotions-shared";
+import { getPausedCouponCohorts } from "@/lib/cohort-promotions";
 import { getMagnetQuestions, MAGNET_FREE_IDS, MAGNET_GATED_IDS } from "@/lib/magnet/questions";
 import { getResumeByToken } from "@/lib/magnet/result";
 import { MagnetQuiz, type MagnetUtm, type MagnetResume } from "@/components/magnet/magnet-quiz";
@@ -136,7 +135,7 @@ export default async function SimuladoHonestoPage({
             offers={offers}
             resume={resume}
             startImmediately={direto}
-            pausedCouponCohorts={[...pausedCouponCohorts(await getActivePromotions())]}
+            pausedCouponCohorts={[...await getPausedCouponCohorts()]}
           />
         )}
       </main>

@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { USE_MOCK_DATA, MOCK_COHORT_PRODUCTS } from "@/lib/mock-data";
 import type { CohortProduct } from "@/types/supabase";
+import { activeSalePriceCents, discountPercentOf } from "@/lib/cohort-sale";
 
 // The cohort product catalog. Reads the commerce columns added to the `cohorts`
 // table (price_cents, is_for_sale, display_order, sale_ends_at) and
@@ -23,14 +24,17 @@ export function formatBRL(cents: number): string {
   })}`;
 }
 
-const PRODUCT_COLUMNS = "id, slug, name, price_cents, sale_price_cents, display_order";
+// The promotional price only counts inside its window (lib/cohort-sale.ts), and the
+// campaign label rides along for the price block ("BLACK FRIDAY").
+const SALE_FIELDS = "sale_price_cents, sale_price_starts_at, sale_price_ends_at, sale_badge_label";
+const PRODUCT_COLUMNS = `id, slug, name, price_cents, ${SALE_FIELDS}, display_order`;
 
 // Storefront columns also pull test_date and the per-cohort MedHelp 60D unlock
 // date (embedded from cohort_module_access) so the loja/landing cards can render
 // the date-driven countdown + 60D status. Checkout/charge use PRODUCT_COLUMNS
 // (no timing needed), so toCohortProduct coalesces the timing fields to null.
 const SALE_COLUMNS =
-  "id, slug, name, price_cents, sale_price_cents, display_order, test_date, date_confirmed, " +
+  `id, slug, name, price_cents, ${SALE_FIELDS}, display_order, test_date, date_confirmed, ` +
   "cohort_module_access ( unlock_date, content_modules ( slug ) )";
 
 type ModuleAccessRow = {
@@ -44,6 +48,9 @@ type CohortRow = {
   name: string;
   price_cents: number | null;
   sale_price_cents?: number | null;
+  sale_price_starts_at?: string | null;
+  sale_price_ends_at?: string | null;
+  sale_badge_label?: string | null;
   display_order: number | null;
   test_date?: string | null;
   date_confirmed?: boolean | null;
@@ -65,14 +72,15 @@ function toCohortProduct(row: CohortRow): CohortProduct {
   // is_for_sale rows always have a price (enforced by the
   // cohorts_for_sale_needs_price CHECK constraint), but coalesce defensively.
   const base = row.price_cents ?? 0;
-  // A sale is on when a valid promo price is set: non-negative and strictly below
-  // the base. The cohorts_sale_price_below_base CHECK enforces this at the DB
-  // level; we re-check here so a bad row can never invert the discount. The sale
-  // price then becomes the effective price everywhere — including the charge,
-  // which already reads priceCents — with the base shown struck through.
-  const sale = row.sale_price_cents ?? null;
-  const onSale = sale != null && base > 0 && sale >= 0 && sale < base;
-  const effective = onSale ? (sale as number) : base;
+  // A sale is on when a valid promo price is set (non-negative, strictly below the base —
+  // the cohorts_sale_price_below_base CHECK enforces the same) AND its campaign window is
+  // open right now (lib/cohort-sale.ts; NULL bounds = open). The sale price then becomes
+  // the effective price everywhere — including the charge, which reads priceCents — with
+  // the base shown struck through. Outside the window the turma is simply back at its
+  // normal price: Black Friday ends on its own, with no one touching the row.
+  const sale = activeSalePriceCents(row);
+  const onSale = sale != null;
+  const effective = onSale ? sale : base;
   return {
     id: row.id,
     slug: row.slug,
@@ -82,8 +90,10 @@ function toCohortProduct(row: CohortRow): CohortProduct {
     compareAtPriceCents: onSale ? base : null,
     compareAtPriceLabel: onSale ? formatBRL(base) : null,
     isOnSale: onSale,
-    discountPercent: onSale ? Math.round((1 - effective / base) * 100) : null,
+    discountPercent: onSale ? discountPercentOf(base, effective) : null,
     savingsLabel: onSale ? `Economize ${formatBRL(base - effective)}` : null,
+    saleBadgeLabel: onSale ? (row.sale_badge_label?.trim() || null) : null,
+    saleEndsAt: onSale ? (row.sale_price_ends_at ?? null) : null,
     displayOrder: row.display_order ?? 0,
     testDate: row.test_date ?? null,
     unlock60dDate: extract60dUnlock(row),

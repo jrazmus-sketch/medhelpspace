@@ -50,6 +50,10 @@ interface Props {
   cohortName: string;
   priceLabel: string;
   compareAtPriceLabel: string | null;  // struck-through original when the turma is on sale
+  /** Named campaign on the price ("BLACK FRIDAY" + 50) — shown above the total. */
+  saleBadge?: { label: string; percent: number } | null;
+  /** The price this page was rendered with. Sent with the charge, which refuses a
+   *  mismatch (a page opened at 23:59 on the campaign's last day, paid after midnight). */
   amountCents: number;
   isLoggedIn: boolean;
   userEmail: string;
@@ -84,6 +88,7 @@ export function CheckoutClient({
   cohortName,
   priceLabel,
   compareAtPriceLabel,
+  saleBadge = null,
   amountCents,
   isLoggedIn,
   userEmail,
@@ -342,6 +347,7 @@ export function CheckoutClient({
     return {
       ...buildAuthPayload(),
       ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
+      expectedPriceCents: amountCents,
       tomador: nota,
       student: resolveCheckoutStudent(nota, student),
     };
@@ -513,6 +519,23 @@ export function CheckoutClient({
           </h1>
 
           <div className="my-5 border-t border-border" />
+
+          {saleBadge && (
+            <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+              <span
+                className="text-xs font-semibold uppercase tracking-[0.24em]"
+                style={{ fontFamily: "var(--font-geist-mono)", color: "var(--brand-text)" }}
+              >
+                {saleBadge.label}
+              </span>
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold text-foreground"
+                style={{ border: "1.5px solid var(--brand-text)" }}
+              >
+                {saleBadge.percent}% OFF
+              </span>
+            </div>
+          )}
 
           {appliedCoupon ? (
             <div className="flex flex-col gap-2">

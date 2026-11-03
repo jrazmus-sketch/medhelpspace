@@ -11,7 +11,9 @@ import {
   pausedCouponCohorts,
   templateMentionsCoupon,
   type ActivePromotion,
+  type CouponSaleState,
 } from "@/lib/cohort-promotions-shared";
+import { getCohortsForSale } from "@/lib/queries/cohort-products";
 
 // Cohort promotions — the DB side. Schema + the rules they enforce:
 // schema-patch-cohort-promotions.sql. Pure helpers (and the ActivePromotion type)
@@ -90,6 +92,42 @@ export async function getActivePromotionForCohort(
 }
 
 /**
+ * Turmas whose promotional price is in force right now (the storefront's own rule,
+ * lib/cohort-sale.ts) and the coupons an admin marked combinable with it. On a read
+ * error the coupon list is empty — offers then pause, which is the safe side: the DB
+ * would refuse those coupons anyway (redeem_coupon → COUPON_NOT_COMBINABLE).
+ */
+export const getCouponSaleState = cache(async (): Promise<CouponSaleState> => {
+  if (USE_MOCK_DATA) return { saleCohorts: new Set(), combinableCodes: new Set() };
+  const saleCohorts = new Set<string>();
+  try {
+    for (const c of await getCohortsForSale()) if (c.isOnSale) saleCohorts.add(c.slug);
+  } catch (e) {
+    console.error("getCouponSaleState: cohorts read failed", e);
+  }
+  const combinableCodes = new Set<string>();
+  if (saleCohorts.size > 0) {
+    const { data, error } = await createAdminClient()
+      .from("coupons")
+      .select("code")
+      .eq("combinable_with_offers", true);
+    if (error) console.error("getCouponSaleState: coupons read failed", error);
+    for (const r of (data ?? []) as { code: string }[]) combinableCodes.add(r.code.toUpperCase());
+  }
+  return { saleCohorts, combinableCodes };
+});
+
+/**
+ * Turmas whose coupon OFFERS (drip e-mails, reward pages) are paused right now: a
+ * launch condition that closes coupons, or a promotional price the offered code does
+ * not combine with (lib/cohort-promotions-shared.ts → pausedCouponCohorts).
+ */
+export async function getPausedCouponCohorts(): Promise<Set<string>> {
+  const [promotions, sale] = await Promise.all([getActivePromotions(), getCouponSaleState()]);
+  return pausedCouponCohorts(promotions, sale);
+}
+
+/**
  * Everything a drip cron needs to honour the coupon pause for one run: which
  * turmas are paused, and a memoised "does this template show the coupon?".
  */
@@ -97,7 +135,7 @@ export async function getCouponOfferPause(): Promise<{
   paused: Set<string>;
   templateShowsCoupon: (kind: string) => Promise<boolean>;
 }> {
-  const paused = pausedCouponCohorts(await getActivePromotions());
+  const paused = await getPausedCouponCohorts();
   const memo = new Map<string, Promise<boolean>>();
   return {
     paused,

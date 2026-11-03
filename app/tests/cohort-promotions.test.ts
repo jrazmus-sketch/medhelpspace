@@ -113,6 +113,7 @@ test("no raw coupon-table lookups outside the allowed places", () => {
     "lib/magnet/links.ts",                  // the tables themselves
     "components/magnet/magnet-reward.tsx",  // client: gated by its couponPaused prop
     "lib/email-render.ts",                  // editor preview / test-send sample only — never reaches a lead
+    "lib/cohort-promotions-shared.ts",      // the pause itself: which code each turma is offered (Black Friday, combinable)
   ]);
   const offenders: string[] = [];
   const walk = (dir: string) => {

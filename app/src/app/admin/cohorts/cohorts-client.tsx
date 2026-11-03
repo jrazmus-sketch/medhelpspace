@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import "@/lib/i18n";
+import { saleWindowFromDays, saleWindowToDays, saleWindowLabel } from "@/lib/cohort-sale";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmModal } from "@/components/admin/confirm-modal";
@@ -26,6 +27,9 @@ type CohortRow = {
   active: boolean;
   price_cents: number | null;
   sale_price_cents: number | null;
+  sale_price_starts_at: string | null;
+  sale_price_ends_at: string | null;
+  sale_badge_label: string | null;
   is_for_sale: boolean;
   display_order: number;
   sale_ends_at: string | null;
@@ -70,6 +74,9 @@ function mapCohortError(e: unknown, t: (k: string) => string): string {
   if (msg === "INVALID_SALE_PRICE") return t("cohorts.salePriceInvalid");
   if (msg === "SALE_PRICE_NEEDS_BASE") return t("cohorts.salePriceNeedsBase");
   if (msg === "SALE_PRICE_ABOVE_BASE") return t("cohorts.salePriceAboveBase");
+  if (msg === "INVALID_SALE_WINDOW") return t("cohorts.saleWindowInvalid");
+  if (msg === "SALE_WINDOW_NEEDS_PRICE") return t("cohorts.saleWindowNeedsPrice");
+  if (msg === "SALE_BADGE_TOO_LONG") return t("cohorts.saleBadgeTooLong");
   if (msg === "SLUG_TAKEN") return t("cohorts.slugTaken");
   if (msg === "END_BEFORE_START") return t("cohorts.startBeforeEnd");
   if (msg === "TEST_DATE_OUTSIDE_WINDOW") return t("cohorts.testDateOutsideWindow");
@@ -94,6 +101,11 @@ interface EditState {
   membership_ends_at: string;
   price: string;          // reais, converted to cents on save
   sale_price: string;     // reais; blank = no sale. Must be below `price`.
+  // Campaign window as Brazilian DAYS (YYYY-MM-DD; blank = open): the promo starts at
+  // 00:00 of the first day and ends after 23:59 of the last (lib/cohort-sale.ts).
+  sale_first_day: string;
+  sale_last_day: string;
+  sale_badge: string;     // "BLACK FRIDAY"; blank = plain sale (struck price + −N%)
   is_for_sale: boolean;
   display_order: string;  // parsed to number on save
   sale_ends_at: string;   // YYYY-MM-DD or ""
@@ -134,6 +146,8 @@ export function CohortsClient({ rows, modules, access }: Props) {
       membership_ends_at: row.membership_ends_at.slice(0, 10),
       price: row.price_cents != null ? String(row.price_cents / 100) : "",
       sale_price: row.sale_price_cents != null ? String(row.sale_price_cents / 100) : "",
+      ...saleWindowToDays(row.sale_price_starts_at, row.sale_price_ends_at),
+      sale_badge: row.sale_badge_label ?? "",
       is_for_sale: row.is_for_sale,
       display_order: String(row.display_order ?? 0),
       sale_ends_at: row.sale_ends_at ? row.sale_ends_at.slice(0, 10) : "",
@@ -158,6 +172,12 @@ export function CohortsClient({ rows, modules, access }: Props) {
       if (!state.price.trim()) return t("cohorts.salePriceNeedsBase");
       if (Number(state.sale_price) >= Number(state.price)) return t("cohorts.salePriceAboveBase");
     }
+    if ((state.sale_first_day || state.sale_last_day || state.sale_badge.trim()) && !state.sale_price.trim()) {
+      return t("cohorts.saleWindowNeedsPrice");
+    }
+    if (state.sale_first_day && state.sale_last_day && state.sale_first_day > state.sale_last_day) {
+      return t("cohorts.saleWindowInvalid");
+    }
     return null;
   }
 
@@ -181,6 +201,8 @@ export function CohortsClient({ rows, modules, access }: Props) {
           membership_ends_at: d.membership_ends_at,
           price_cents: d.price.trim() ? Math.round(Number(d.price) * 100) : null,
           sale_price_cents: d.sale_price.trim() ? Math.round(Number(d.sale_price) * 100) : null,
+          ...saleWindowFromDays(d.sale_first_day, d.sale_last_day),
+          sale_badge_label: d.sale_badge.trim() || null,
           is_for_sale: d.is_for_sale,
           display_order: Number(d.display_order) || 0,
           sale_ends_at: d.sale_ends_at ? `${d.sale_ends_at}T23:59:59` : null,
@@ -508,6 +530,37 @@ export function CohortsClient({ rows, modules, access }: Props) {
                         <span className="text-[11px] text-muted-foreground">{t("cohorts.salePriceHint")}</span>
                       </label>
                       <label className="space-y-1">
+                        <span className="text-xs text-muted-foreground">{t("cohorts.saleFirstDay")}</span>
+                        <input
+                          type="date"
+                          value={editState.sale_first_day}
+                          onChange={(e) => setEditState({ ...editState, sale_first_day: e.target.value })}
+                          className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-xs text-muted-foreground">{t("cohorts.saleLastDay")}</span>
+                        <input
+                          type="date"
+                          value={editState.sale_last_day}
+                          onChange={(e) => setEditState({ ...editState, sale_last_day: e.target.value })}
+                          className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
+                        />
+                        <span className="text-[11px] text-muted-foreground">{t("cohorts.saleWindowHint")}</span>
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-xs text-muted-foreground">{t("cohorts.saleBadgeLabel")}</span>
+                        <input
+                          type="text"
+                          maxLength={40}
+                          value={editState.sale_badge}
+                          onChange={(e) => setEditState({ ...editState, sale_badge: e.target.value })}
+                          placeholder="BLACK FRIDAY"
+                          className="w-full rounded-lg border border-border bg-surface-1 px-3 py-2 text-sm outline-none focus:border-brand/50"
+                        />
+                        <span className="text-[11px] text-muted-foreground">{t("cohorts.saleBadgeHint")}</span>
+                      </label>
+                      <label className="space-y-1">
                         <span className="text-xs text-muted-foreground">{t("cohorts.displayOrder")}</span>
                         <input
                           type="number"
@@ -587,6 +640,14 @@ export function CohortsClient({ rows, modules, access }: Props) {
                           <span className="font-medium">
                             <span className="text-muted-foreground line-through mr-1.5">{fmtPrice(c.price_cents)}</span>
                             <span className="text-brand">{fmtPrice(c.sale_price_cents)}</span>
+                            {(c.sale_badge_label || c.sale_price_starts_at || c.sale_price_ends_at) && (
+                              <span className="mt-0.5 block text-right text-[11px] font-normal text-muted-foreground">
+                                {[
+                                  c.sale_badge_label,
+                                  saleWindowLabel(c.sale_price_starts_at, c.sale_price_ends_at),
+                                ].filter(Boolean).join(" · ")}
+                              </span>
+                            )}
                           </span>
                         ) : (
                           <span className="font-medium">{fmtPrice(c.price_cents)}</span>

@@ -70,6 +70,10 @@ export interface CohortProduct {
   isOnSale: boolean;
   discountPercent: number | null;      // rounded % off, for the "-25%" badge
   savingsLabel: string | null;         // "Economize R$ 1.000"
+  // Campaign name shown on the price while the sale is on ("BLACK FRIDAY"); null = a plain
+  // sale (struck price + "−25%"), or no sale.
+  saleBadgeLabel: string | null;
+  saleEndsAt: string | null;           // EXCLUSIVE end of the sale window (ISO), null = open-ended
   displayOrder: number;
   // testDate/unlock60dDate are the internal planning anchors — they exist even when
   // date_confirmed is false so downstream scheduling keeps working. Display code must

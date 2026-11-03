@@ -9,6 +9,7 @@ import { livePixBlocksCardMessage } from "@/lib/pagbank/order-rules";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { getActivePromotionForCohort } from "@/lib/cohort-promotions";
 import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
+import { PRICE_CHANGED_MESSAGE, couponNotCombinableMessage } from "@/lib/cohort-sale";
 import {
   billingFromTomador,
   isValidCpf,
@@ -78,6 +79,10 @@ export async function POST(request: NextRequest) {
     signup?: { email: string; password: string; displayName?: string | null };
     login?: { email: string; password: string };
     couponCode?: string;
+    // The turma price the checkout page displayed. A mismatch with the live price (a
+    // promotion ended or started while the page was open) refuses the charge — the buyer
+    // is never charged a number they were not shown. Optional: older pages omit it.
+    expectedPriceCents?: number;
     // "Dados para a nota fiscal" (Karina 2026-10-28, same block as ClinAct): who
     // the nota is for, and the student when that is someone else.
     tomador?: Partial<NfseTomador>;
@@ -251,6 +256,10 @@ export async function POST(request: NextRequest) {
   if (!product) {
     return NextResponse.json({ error: "Turma inválida" }, { status: 400 });
   }
+  // Refused BEFORE any coupon is redeemed or order created, so it leaves nothing behind.
+  if (typeof body.expectedPriceCents === "number" && body.expectedPriceCents !== product.priceCents) {
+    return NextResponse.json({ error: PRICE_CHANGED_MESSAGE, priceChanged: true }, { status: 409 });
+  }
 
   const admin = createAdminClient();
 
@@ -317,10 +326,14 @@ export async function POST(request: NextRequest) {
 
     const reusable = await findReusablePixOrder(admin, user.id, product.id, nowIso);
     if (reusable) {
-      const { promotionId: reusablePromotionId, ...reusableBody } = reusable;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { promotionId: reusablePromotionId, baseAmountCents: _reusableBase, ...reusableBody } = reusable;
+      // …and the price: a QR minted at the Black Friday price is not reused once the
+      // campaign ended (or vice versa) — it is superseded by one at the current price.
       if (
         (reusable.couponCode ?? null) === reqCouponCode &&
-        reusablePromotionId === (promotion?.id ?? null)
+        reusablePromotionId === (promotion?.id ?? null) &&
+        reusable.baseAmountCents === product.priceCents
       ) {
         return NextResponse.json(reusableBody);
       }
@@ -422,6 +435,7 @@ export async function POST(request: NextRequest) {
         COUPON_NOT_VALID_FOR_COHORT: "Cupom não é válido para esta turma.",
         COUPON_ALREADY_USED: "Você já usou este cupom.",
         COUPON_BLOCKED_BY_PROMOTION: COUPON_BLOCKED_MESSAGE,
+        COUPON_NOT_COMBINABLE: couponNotCombinableMessage(product.saleBadgeLabel),
       };
       // Backstop for the pre-max_uses_per_user unique index on (coupon_id, user_id)
       if (rpcErr.code === "23505") {
@@ -561,7 +575,7 @@ export async function POST(request: NextRequest) {
       const reusable = await findReusablePixOrder(admin, user.id, product.id, new Date().toISOString());
       if (reusable) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { promotionId: _internal, ...reusableBody } = reusable;
+        const { promotionId: _internal, baseAmountCents: _base, ...reusableBody } = reusable;
         return NextResponse.json(reusableBody);
       }
     }
@@ -895,7 +909,7 @@ async function findReusablePixOrder(
 ) {
   const { data } = await admin
     .from("orders")
-    .select("id, pagbank_order_id, pix_qr_text, pix_qr_image_url, pix_expires_at, promotion_id, coupon:coupons(code)")
+    .select("id, pagbank_order_id, pix_qr_text, pix_qr_image_url, pix_expires_at, promotion_id, base_amount_cents, coupon:coupons(code)")
     .eq("user_id", userId)
     .eq("cohort_id", cohortId)
     .eq("payment_method", "pix")
@@ -923,5 +937,6 @@ async function findReusablePixOrder(
     ccBrand: null,
     // Internal — compared by the caller, stripped before the body goes to the client.
     promotionId: (data.promotion_id as number | null) ?? null,
+    baseAmountCents: (data.base_amount_cents as number | null) ?? null,
   };
 }

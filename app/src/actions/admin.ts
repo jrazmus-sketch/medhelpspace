@@ -79,6 +79,12 @@ type CohortCommerce = {
   is_for_sale: boolean;
   display_order: number;
   sale_ends_at: string | null;
+  // The promo price's campaign window ([starts, ends), ISO; NULL = open on that side)
+  // and its name on the price ("BLACK FRIDAY") — schema-patch-cohort-sale-window.sql.
+  // Optional so a caller that predates them leaves the stored values alone.
+  sale_price_starts_at?: string | null;
+  sale_price_ends_at?: string | null;
+  sale_badge_label?: string | null;
 };
 
 function validateCommerce(c: CohortCommerce): string | null {
@@ -90,6 +96,12 @@ function validateCommerce(c: CohortCommerce): string | null {
     if (c.price_cents == null) return "SALE_PRICE_NEEDS_BASE";
     if (c.sale_price_cents >= c.price_cents) return "SALE_PRICE_ABOVE_BASE";
   }
+  const starts = c.sale_price_starts_at ? Date.parse(c.sale_price_starts_at) : null;
+  const ends = c.sale_price_ends_at ? Date.parse(c.sale_price_ends_at) : null;
+  if ((starts != null && Number.isNaN(starts)) || (ends != null && Number.isNaN(ends))) return "INVALID_SALE_WINDOW";
+  if (starts != null && ends != null && starts >= ends) return "INVALID_SALE_WINDOW";
+  if ((starts != null || ends != null || c.sale_badge_label) && c.sale_price_cents == null) return "SALE_WINDOW_NEEDS_PRICE";
+  if (c.sale_badge_label != null && c.sale_badge_label.length > 40) return "SALE_BADGE_TOO_LONG";
   return null;
 }
 
@@ -219,6 +231,9 @@ const COHORT_AUDITED_FIELDS = [
   "name",
   "price_cents",
   "sale_price_cents",
+  "sale_price_starts_at",
+  "sale_price_ends_at",
+  "sale_badge_label",
   "is_for_sale",
   "sale_ends_at",
   "test_date",
@@ -270,7 +285,7 @@ async function updateCohortImpl(
   // just "someone saved this form".
   const { data: before } = await admin
     .from("cohorts")
-    .select("slug, name, price_cents, sale_price_cents, is_for_sale, sale_ends_at, test_date, date_confirmed")
+    .select("slug, name, price_cents, sale_price_cents, sale_price_starts_at, sale_price_ends_at, sale_badge_label, is_for_sale, sale_ends_at, test_date, date_confirmed")
     .eq("id", cohortId)
     .maybeSingle();
 
@@ -337,6 +352,9 @@ const COHORT_ERROR_CODES = new Set([
   "INVALID_SALE_PRICE",
   "SALE_PRICE_NEEDS_BASE",
   "SALE_PRICE_ABOVE_BASE",
+  "INVALID_SALE_WINDOW",
+  "SALE_WINDOW_NEEDS_PRICE",
+  "SALE_BADGE_TOO_LONG",
   "SLUG_TAKEN",
   "END_BEFORE_START",
   "TEST_DATE_OUTSIDE_WINDOW",

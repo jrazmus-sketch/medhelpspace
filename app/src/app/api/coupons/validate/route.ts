@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { getCohortProduct } from "@/lib/queries/cohort-products";
 import { COUPON_BLOCKED_MESSAGE } from "@/lib/cohort-promotions-shared";
+import { couponNotCombinableMessage } from "@/lib/cohort-sale";
 
 // Read-only preview of a coupon. Anonymous-callable so guests can validate a
 // code before signing up. The per-user limit check (coupons.max_uses_per_user)
@@ -51,6 +52,9 @@ export async function POST(request: NextRequest) {
   if (error) {
     // PG errors from RAISE EXCEPTION come back with `message` like "COUPON_EXPIRED" — map them.
     const key = (error.message ?? "").match(/COUPON_[A-Z_]+/)?.[0];
+    if (key === "COUPON_NOT_COMBINABLE") {
+      return NextResponse.json({ error: couponNotCombinableMessage(product.saleBadgeLabel) }, { status: 400 });
+    }
     if (key && ERROR_MESSAGES[key]) {
       return NextResponse.json({ error: ERROR_MESSAGES[key] }, { status: 400 });
     }

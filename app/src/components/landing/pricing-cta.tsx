@@ -196,7 +196,42 @@ export function PricingCTA({
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.18 }}
               >
-                {cohort.isOnSale && cohort.compareAtPriceLabel && (
+                {cohort.isOnSale && cohort.compareAtPriceLabel && cohort.saleBadgeLabel ? (
+                  // A named campaign (Black Friday, Karina 2026-11-02): the campaign in lilac
+                  // + an outlined "50% OFF" seal, then the normal price struck through in grey,
+                  // then the promotional price as the big number. Ends with the window
+                  // (lib/cohort-sale.ts) — the card is back to normal on its own.
+                  <>
+                    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span
+                        className="text-sm font-semibold uppercase tracking-[0.28em]"
+                        style={{ fontFamily: "var(--font-geist-mono)", color: "var(--brand-text)" }}
+                      >
+                        {cohort.saleBadgeLabel}
+                      </span>
+                      {cohort.discountPercent != null && (
+                        <span
+                          className="inline-flex items-center rounded-full px-3 py-0.5 text-sm font-bold"
+                          style={{
+                            border: "1.5px solid var(--brand-text)",
+                            color: "var(--lp-fg)",
+                            boxShadow: "0 0 18px var(--lp-glow)",
+                          }}
+                        >
+                          {cohort.discountPercent}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className="mb-1 text-lg font-semibold line-through"
+                      style={{ fontFamily: "var(--font-geist-mono)", color: "var(--lp-fg-40)" }}
+                    >
+                      <span className="sr-only">De </span>
+                      {cohort.compareAtPriceLabel}
+                      <span className="sr-only"> por</span>
+                    </div>
+                  </>
+                ) : cohort.isOnSale && cohort.compareAtPriceLabel && (
                   <div className="mb-1.5 flex items-center gap-2.5">
                     <span
                       className="text-lg font-medium line-through"

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getActivePromotions } from "@/lib/cohort-promotions";
-import { offeredCoupon, pausedCouponCohorts } from "@/lib/cohort-promotions-shared";
+import { getPausedCouponCohorts } from "@/lib/cohort-promotions";
+import { offeredCoupon } from "@/lib/cohort-promotions-shared";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSiteContent } from "@/lib/queries/site-content";
@@ -125,8 +125,9 @@ export default async function SimuladoResultadoPage() {
 
   // Offer for invitation #2. Skipped gracefully when the turma isn't purchasable
   // (e.g. an "ainda não decidi" lead, or a cohort closed for sale).
-  // Withheld while the turma's launch condition closes coupons (lib/cohort-promotions).
-  const welcome = offeredCoupon(WELCOME_COUPONS, cohort, pausedCouponCohorts(await getActivePromotions()));
+  // Withheld while the turma's launch condition closes coupons, or its promotional price
+  // (Black Friday) does not combine with the code (lib/cohort-promotions).
+  const welcome = offeredCoupon(WELCOME_COUPONS, cohort, await getPausedCouponCohorts());
   const offer: SessionOffer | null = product
     ? {
         cohortName: product.name,

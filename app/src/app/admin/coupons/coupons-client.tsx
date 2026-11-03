@@ -19,6 +19,8 @@ interface Coupon {
   active: boolean;
   cohortSlugs: string[] | null;
   notes: string | null;
+  /** May apply on top of a turma's promotional price (Black Friday). Default false. */
+  combinable: boolean;
   /** Set = "excluído": hidden from the list unless "Ver excluídos" is on. */
   archivedAt: string | null;
 }
@@ -74,6 +76,8 @@ type FormState = {
   cohortSlugs: string[];
   notes: string;
   active: boolean;
+  /** "Não combinar com outras ofertas ativas" — the NEGATION of coupons.combinable_with_offers. */
+  noStacking: boolean;
 };
 
 function emptyForm(): FormState {
@@ -89,6 +93,7 @@ function emptyForm(): FormState {
     cohortSlugs: [],
     notes: "",
     active: true,
+    noStacking: true,
   };
 }
 
@@ -105,6 +110,7 @@ function couponToForm(c: Coupon): FormState {
     cohortSlugs: c.cohortSlugs ?? [],
     notes: c.notes ?? "",
     active: c.active,
+    noStacking: !c.combinable,
   };
 }
 
@@ -202,6 +208,7 @@ export function CouponsClient({
       cohortSlugs: form.cohortSlugs.length ? form.cohortSlugs : null,
       notes: form.notes,
       active: form.active,
+      combinableWithOffers: !form.noStacking,
     };
 
     startTransition(async () => {
@@ -376,6 +383,11 @@ export function CouponsClient({
                         : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                     }`}>
                       {c.active ? t("coupons.active") : t("coupons.inactive")}
+                    </span>
+                  )}
+                  {c.combinable && !c.archivedAt && (
+                    <span className="ml-1.5 mt-1 inline-flex items-center rounded-full border border-brand/40 px-2 py-0.5 text-[11px] font-semibold text-brand sm:mt-0">
+                      {t("coupons.stacksBadge")}
                     </span>
                   )}
                 </td>
@@ -587,6 +599,21 @@ export function CouponsClient({
                 />
                 {t("coupons.formActive")}
               </label>
+
+              {/* Stacking with a promotional price (Black Friday) — enforced by
+                  redeem_coupon (COUPON_NOT_COMBINABLE), so the checkout can't bypass it. */}
+              <div>
+                <label className="flex items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={form.noStacking}
+                    onChange={(e) => setForm({ ...form, noStacking: e.target.checked })}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-brand focus:ring-brand"
+                  />
+                  {t("coupons.formNoStacking")}
+                </label>
+                <p className="mt-1 pl-6 text-xs text-muted-foreground">{t("coupons.formNoStackingHint")}</p>
+              </div>
 
               {formError && (
                 <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">

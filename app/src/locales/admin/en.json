@@ -702,7 +702,15 @@
     "manualOverrideLabel": "manual",
     "resetToAuto": "Reset to auto",
     "resetToAutoTitle": "Reset to auto-calculated date",
-    "resetToAutoDesc": "Reset {{module}} unlock date to {{date}} (auto-calculated from test_date)?"
+    "resetToAutoDesc": "Reset {{module}} unlock date to {{date}} (auto-calculated from test_date)?",
+    "saleFirstDay": "Offer start (day)",
+    "saleLastDay": "Offer last day",
+    "saleWindowHint": "Brasília time: starts at 00:00 on the first day and ends after 23:59 on the last. Blank = no date (manual on/off).",
+    "saleBadgeLabel": "Campaign name on the price",
+    "saleBadgeHint": "E.g. BLACK FRIDAY — shown in lilac with the \"50% OFF\" seal. Blank = plain struck price.",
+    "saleWindowNeedsPrice": "Set the promotional price to use dates or a campaign name.",
+    "saleWindowInvalid": "The offer's last day must be on or after its first day.",
+    "saleBadgeTooLong": "The campaign name can have at most 40 characters."
   },
   "settings": {
     "title": "Settings",
@@ -1439,7 +1447,10 @@
     "errWindow": "Start date must be before the expiry date.",
     "errCodeTaken": "A coupon with this code already exists.",
     "errCodeArchived": "A deleted coupon already uses this code. Open \"Show deleted coupons\" and restore it.",
-    "errArchived": "This coupon was deleted. Restore it before activating it."
+    "errArchived": "This coupon was deleted. Restore it before activating it.",
+    "formNoStacking": "Don't allow combining with other active offers (e.g. Black Friday)",
+    "formNoStackingHint": "Checked: the coupon is refused while the turma has a promotional price. Uncheck it to let the coupon also apply on top of the offer price.",
+    "stacksBadge": "Stacks with offers"
   },
   "emailClicks": {
     "title": "Email clicks",

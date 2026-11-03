@@ -378,8 +378,34 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
 
           <div className="flex flex-1 flex-col gap-6 p-6">
             <div>
-              {/* On sale: struck-through original + badge above the discounted price. */}
-              {cohort.isOnSale && cohort.compareAtPriceLabel && (
+              {/* Named campaign (Black Friday): campaign in lilac + "50% OFF" seal, the
+                  normal price struck through, then the promotional price — same block as
+                  the sales page (components/landing/pricing-cta.tsx). */}
+              {cohort.isOnSale && cohort.compareAtPriceLabel && cohort.saleBadgeLabel ? (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <span
+                      className="text-sm font-semibold uppercase tracking-[0.28em]"
+                      style={{ fontFamily: "var(--font-geist-mono)", color: "var(--brand-text)" }}
+                    >
+                      {cohort.saleBadgeLabel}
+                    </span>
+                    {cohort.discountPercent != null && (
+                      <span
+                        className="inline-flex items-center rounded-full px-3 py-0.5 text-sm font-bold text-foreground"
+                        style={{ border: "1.5px solid var(--brand-text)" }}
+                      >
+                        {cohort.discountPercent}% OFF
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-1 text-lg font-semibold text-foreground/45 line-through">
+                    <span className="sr-only">De </span>
+                    {cohort.compareAtPriceLabel}
+                    <span className="sr-only"> por</span>
+                  </div>
+                </>
+              ) : cohort.isOnSale && cohort.compareAtPriceLabel && (
                 <div className="mb-1 flex items-center gap-2.5">
                   <span className="text-lg font-medium text-foreground/40 line-through">
                     {cohort.compareAtPriceLabel}
@@ -397,7 +423,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
               <p className="mt-1 text-sm text-foreground/45">
                 <SiteText as="span" k="loja.card.installments" fallback="ou parcele em até 12x no cartão" />
               </p>
-              {cohort.isOnSale && cohort.savingsLabel && (
+              {cohort.isOnSale && cohort.savingsLabel && !cohort.saleBadgeLabel && (
                 <p className="mt-1 text-sm font-semibold text-brand">{cohort.savingsLabel}</p>
               )}
             </div>

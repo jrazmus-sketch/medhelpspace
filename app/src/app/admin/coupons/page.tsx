@@ -52,6 +52,7 @@ export default async function CouponsPage() {
     active: c.active as boolean,
     cohortSlugs: (c.applies_to_cohort_slugs as string[] | null) ?? null,
     notes: c.notes as string | null,
+    combinable: (c.combinable_with_offers as boolean | null) ?? false,
     archivedAt: (c.archived_at as string | null) ?? null,
   }));
 

@@ -149,6 +149,11 @@ export default async function CheckoutPage({
             cohortName={config.name}
             priceLabel={config.priceLabel}
             compareAtPriceLabel={config.compareAtPriceLabel}
+            saleBadge={
+              config.saleBadgeLabel && config.discountPercent != null
+                ? { label: config.saleBadgeLabel, percent: config.discountPercent }
+                : null
+            }
             amountCents={config.priceCents}
             isLoggedIn={!!user}
             userEmail={userEmail}
