@@ -75,8 +75,8 @@ test("the data patch stores the same window the admin form would", () => {
 
 test("the DB refuses a non-combinable coupon inside BOTH coupon functions", () => {
   const sql = readFileSync(path.join(root, "schema-patch-cohort-sale-window.sql"), "utf8");
-  const guards = sql.match(/IF NOT v_coupon\.combinable_with_offers AND cohort_sale_price_active\(p_cohort_slug\)\s+THEN RAISE EXCEPTION 'COUPON_NOT_COMBINABLE'/g) ?? [];
-  assert.equal(guards.length, 2, "preview_coupon AND redeem_coupon");
+  const guards = sql.match(/IF NOT v_coupon\.combinable_with_offers\s+AND \(cohort_sale_price_active\(p_cohort_slug\)\s+OR \(v_list_cents IS NOT NULL AND p_base_amount_cents < v_list_cents\)\)\s+THEN RAISE EXCEPTION 'COUPON_NOT_COMBINABLE'/g) ?? [];
+  assert.equal(guards.length, 2, "preview_coupon AND redeem_coupon — clock OR a base below the list price");
   assert.match(sql, /combinable_with_offers boolean NOT NULL DEFAULT false/, "every coupon starts non-combinable");
   assert.match(sql, /REVOKE ALL ON FUNCTION public\.cohort_sale_price_active\(text\) FROM PUBLIC, anon, authenticated/);
 });

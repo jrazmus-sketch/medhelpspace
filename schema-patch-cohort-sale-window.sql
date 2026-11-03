@@ -12,7 +12,9 @@
 -- 2. coupons.combinable_with_offers — false (default, every existing coupon) = the coupon is
 --    refused while the turma's promotional price is active; the admin switch
 --    "Não combinar com outras ofertas ativas" is its negation. Enforced HERE, in
---    preview_coupon / redeem_coupon (COUPON_NOT_COMBINABLE), so no route can bypass it.
+--    preview_coupon / redeem_coupon (COUPON_NOT_COMBINABLE), so no route can bypass it —
+--    both when the window is open by the DB clock AND when the caller passes a base below
+--    the list price (closes the midnight race between the app's read and the RPC).
 --
 -- 3. cohort_sale_price_active(slug) — the one definition of "promotional price active now",
 --    mirrored by lib/cohort-sale.ts for the storefront (keep the two in step).
@@ -90,6 +92,7 @@ DECLARE
   v_coupon coupons%ROWTYPE;
   v_discount_cents INTEGER;
   v_final_cents INTEGER;
+  v_list_cents INTEGER;
 BEGIN
   IF cohort_coupons_blocked(p_cohort_slug) THEN RAISE EXCEPTION 'COUPON_BLOCKED_BY_PROMOTION'; END IF;
 
@@ -106,7 +109,14 @@ BEGIN
   IF v_coupon.applies_to_cohort_slugs IS NOT NULL
      AND NOT (p_cohort_slug = ANY(v_coupon.applies_to_cohort_slugs))
     THEN RAISE EXCEPTION 'COUPON_NOT_VALID_FOR_COHORT'; END IF;
-  IF NOT v_coupon.combinable_with_offers AND cohort_sale_price_active(p_cohort_slug)
+  -- Not combinable while the promo is on — by the DB's clock OR because the caller already
+  -- priced the turma below its list price (a base under price_cents IS the promo price).
+  -- The second test closes the boundary race: the app read the sale at 23:59:59, the RPC
+  -- runs at 00:00:00 — without it, the coupon would stack on the sale price.
+  SELECT c.price_cents INTO v_list_cents FROM cohorts c WHERE c.slug = p_cohort_slug;
+  IF NOT v_coupon.combinable_with_offers
+     AND (cohort_sale_price_active(p_cohort_slug)
+          OR (v_list_cents IS NOT NULL AND p_base_amount_cents < v_list_cents))
     THEN RAISE EXCEPTION 'COUPON_NOT_COMBINABLE'; END IF;
 
   IF v_coupon.discount_type = 'percent' THEN
@@ -136,6 +146,7 @@ DECLARE
   v_discount_cents INTEGER;
   v_final_cents INTEGER;
   v_redemption_id BIGINT;
+  v_list_cents INTEGER;
 BEGIN
   IF cohort_coupons_blocked(p_cohort_slug) THEN RAISE EXCEPTION 'COUPON_BLOCKED_BY_PROMOTION'; END IF;
 
@@ -154,7 +165,14 @@ BEGIN
   IF v_coupon.applies_to_cohort_slugs IS NOT NULL
      AND NOT (p_cohort_slug = ANY(v_coupon.applies_to_cohort_slugs))
     THEN RAISE EXCEPTION 'COUPON_NOT_VALID_FOR_COHORT'; END IF;
-  IF NOT v_coupon.combinable_with_offers AND cohort_sale_price_active(p_cohort_slug)
+  -- Not combinable while the promo is on — by the DB's clock OR because the caller already
+  -- priced the turma below its list price (a base under price_cents IS the promo price).
+  -- The second test closes the boundary race: the app read the sale at 23:59:59, the RPC
+  -- runs at 00:00:00 — without it, the coupon would stack on the sale price.
+  SELECT c.price_cents INTO v_list_cents FROM cohorts c WHERE c.slug = p_cohort_slug;
+  IF NOT v_coupon.combinable_with_offers
+     AND (cohort_sale_price_active(p_cohort_slug)
+          OR (v_list_cents IS NOT NULL AND p_base_amount_cents < v_list_cents))
     THEN RAISE EXCEPTION 'COUPON_NOT_COMBINABLE'; END IF;
 
   -- Per-user limit (NULL = unlimited). Table alias is required: the bare
