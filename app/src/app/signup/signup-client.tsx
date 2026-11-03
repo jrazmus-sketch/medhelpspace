@@ -16,7 +16,9 @@ import { trackSignUp } from "@/lib/analytics/track";
 import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
 
 function mapSignupError(msg: string): string {
-  if (msg.includes("already registered")) return "Este e-mail já está cadastrado.";
+  // signUp says "already registered"; the ClinAct path (generateLink) says
+  // "has already been registered".
+  if (msg.includes("already registered") || msg.includes("already been registered")) return "Este e-mail já está cadastrado.";
   if (msg.includes("Password should be at least")) return "A senha deve ter no mínimo 8 caracteres.";
   if (msg.includes("Unable to validate email")) return "E-mail inválido.";
   return "Erro ao criar conta. Tente novamente.";

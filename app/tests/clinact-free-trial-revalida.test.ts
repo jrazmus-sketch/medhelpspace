@@ -73,3 +73,17 @@ test("auth screens and ClinAct routes never inherit the Revalida title or card",
   }
   assert.match(read("src/lib/membership-gate.ts"), /viewerIsClinactPerson\(\)\) \? "\/clinact\/treinar" : "\/loja"/);
 });
+
+test("a ClinAct signup gets the app's own ClinAct confirmation e-mail, not Supabase's template", async () => {
+  const route = read("src/app/auth/signup/route.ts");
+  assert.match(route, /if \(clinactSignup && !USE_MOCK_DATA\) \{\s*const \{ data: link, error: linkError \} = await createAdminClient\(\)\.auth\.admin\.generateLink\(\{\s*type: "signup"/);
+  // Same link shape the dashboard template builds, so /auth/confirm is unchanged.
+  assert.match(route, /href\.searchParams\.set\("token_hash", link\.properties\.hashed_token\)/);
+  assert.match(route, /href\.searchParams\.set\("type", "signup"\)/);
+  const { clinactConfirmationEmailHtml, CLINACT_CONFIRMATION_SUBJECT } = await import("@/lib/clinact/confirmation-email");
+  const html = clinactConfirmationEmailHtml("https://x.test/auth/confirm?token_hash=a&type=signup&next=/clinact/gratis", "https://x.test");
+  assert.ok(html.includes("medhelpspace-clinact-wordmark-email.png"));
+  assert.ok(html.includes("token_hash=a&amp;type=signup&amp;next=/clinact/gratis"));
+  assert.ok(!/Revalida/.test(html + CLINACT_CONFIRMATION_SUBJECT));
+  assert.match(read("src/app/signup/signup-client.tsx"), /already been registered/);
+});
