@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { SiteText } from "@/components/landing/site-text";
-import { BrandLockup } from "@/components/brand/brand-lockup";
+import { AuthBrandLink } from "@/components/brand/auth-brand-link";
+import { isClinactDestination } from "@/lib/clinact/destination";
 
 export function LoginPageClient({
   initialError,
@@ -21,9 +22,7 @@ export function LoginPageClient({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-14 items-center border-b border-border/50 px-6">
-        <Link href="/" aria-label="MedHelpSpace Revalida — início" className="flex items-center hover:opacity-80">
-          <BrandLockup />
-        </Link>
+        <AuthBrandLink clinact={isClinactDestination(next)} />
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-12">

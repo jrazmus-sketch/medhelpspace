@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { getClinactViewer } from "@/lib/clinact/access";
 import { ClinactShell } from "@/components/clinact/clinact-shell";
+import { CLINACT_SHARE_METADATA } from "@/lib/clinact/metadata";
 
-export const metadata = { title: { template: "%s | ClinAct", default: "ClinAct" } };
+// The share card + description too: the root layout's are Revalida's, and
+// Next.js does not merge them (lib/clinact/metadata.ts).
+export const metadata: Metadata = {
+  title: { template: "%s | ClinAct", default: "ClinAct" },
+  ...CLINACT_SHARE_METADATA,
+};
 export const dynamic = "force-dynamic";
 
 // The ClinAct member area. Outside /app on purpose (§1): that layout requires

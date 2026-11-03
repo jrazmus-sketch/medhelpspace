@@ -5,6 +5,7 @@ import {
   isViewerStaff,
   viewerHasActiveMembership,
   viewerHasModuleAccess,
+  viewerIsClinactPerson,
 } from "@/lib/viewer";
 
 // The answers (who is this, which role, is there a membership) come from
@@ -42,7 +43,9 @@ export async function requireActiveMembership(contentModuleId?: number | null) {
   if (await isViewerStaff()) return;
 
   // Includes the launch-condition rollover fallback (see lib/viewer.ts).
-  if (!(await viewerHasActiveMembership())) redirect("/loja");
+  // A ClinAct person without a turma goes back to ClinAct, not to the Revalida
+  // store — /app is where every `next`-less login and "início" link lands.
+  if (!(await viewerHasActiveMembership())) redirect((await viewerIsClinactPerson()) ? "/clinact/treinar" : "/loja");
 
   if (contentModuleId) {
     // The buyer is a member, so this lives inside the /app layout (no redirect loop).

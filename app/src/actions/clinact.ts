@@ -361,10 +361,13 @@ async function loadAttemptForUser(attemptId: number) {
   const doc = await getCaseDoc(attempt.case_id);
   if (!doc) throw new Error("Case not found");
   // Non-preview attempts require the case to still be published, and a live
-  // entitlement (admins pass). Preview attempts are the admin's own.
+  // entitlement (admins pass) — unless the case is free, same rule as the
+  // page gate. Before 2026-11-03 this predated free cases, so a student with no
+  // subscription could open a free case but every answer threw "Unauthorized".
+  // Preview attempts are the admin's own.
   if (!attempt.is_preview) {
     if (doc.status !== "published") throw new Error("Unavailable");
-    if (!ANY_ADMIN.includes(ctx.role)) {
+    if (!doc.is_free && !ANY_ADMIN.includes(ctx.role)) {
       const supabase = await createClient();
       const { data: has } = await supabase.rpc("user_has_product_access", { p: "clinact" });
       if (!has) throw new Error("Unauthorized");
@@ -488,13 +491,13 @@ export async function advanceAttempt(attemptId: number): Promise<AdvanceResult> 
 /** "Reiniciar" — a deliberate new attempt; the original stays registered (§2.4). */
 export async function restartAttempt(caseId: number, isPreview: boolean): Promise<{ attemptId: number }> {
   const ctx = await currentUser();
-  const { data: c } = await ctx.admin.from("clinact_cases").select("id, status, revision").eq("id", caseId).maybeSingle();
+  const { data: c } = await ctx.admin.from("clinact_cases").select("id, status, revision, is_free").eq("id", caseId).maybeSingle();
   if (!c) throw new Error("Case not found");
   if (isPreview) {
     if (!CONTENT_ROLES.includes(ctx.role)) throw new Error("Unauthorized");
   } else {
     if (c.status !== "published") throw new Error("Unavailable");
-    if (!ANY_ADMIN.includes(ctx.role)) {
+    if (!c.is_free && !ANY_ADMIN.includes(ctx.role)) {
       const supabase = await createClient();
       const { data: has } = await supabase.rpc("user_has_product_access", { p: "clinact" });
       if (!has) throw new Error("Unauthorized");

@@ -38,6 +38,9 @@ export default async function TreinarPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             <ClinactText k="clinact.app.treinar.gratis_body" />
           </p>
+          <Link href="/clinact/gratis" className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-brand-text hover:underline">
+            Ver os casos grátis →
+          </Link>
         </div>
       ) : null}
 

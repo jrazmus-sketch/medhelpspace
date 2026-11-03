@@ -12,9 +12,11 @@
         <table width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
           <tr>
             <td style="background:#7a1d91;padding:24px 32px;">
-              <img src="https://www.medhelpspace.com.br/brand/medhelpspace-wordmark-email.png"
+              {{ if .Data.clinact_signup }}<img src="https://www.medhelpspace.com.br/brand/medhelpspace-clinact-wordmark-email.png"
+                alt="MedHelpSpace ClinAct" width="227" height="23"
+                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:227px;height:23px;" />{{ else }}<img src="https://www.medhelpspace.com.br/brand/medhelpspace-wordmark-email.png"
                 alt="MedHelpSpace" width="245" height="23"
-                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:245px;height:23px;" />
+                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:245px;height:23px;" />{{ end }}
             </td>
           </tr>
           <tr>

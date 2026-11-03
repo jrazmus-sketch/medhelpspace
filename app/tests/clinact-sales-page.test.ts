@@ -126,6 +126,7 @@ test("the page never states the size of the library", () => {
 
 test("the free-trial CTA goes to signup, carrying the destination", () => {
   const sections = read("components/clinact/sales/sections.tsx");
-  assert.ok(sections.includes('/signup?next=%2Fclinact%2Ftreinar'), "signup-first with next");
+  // Since 2026-11-03 the trial lands on the four free cases, not the full library.
+  assert.ok(sections.includes('/signup?next=%2Fclinact%2Fgratis'), "signup-first with next");
   assert.ok(!/href="\/clinact\/treinar"\s*$/m.test(sections), "no anonymous jump into the cases");
 });

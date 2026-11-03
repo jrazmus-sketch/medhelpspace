@@ -18,10 +18,17 @@ export function BrandLockup({
   size = "sm",
   showRevalida = true,
   revalidaClassName,
+  product = "revalida",
   className,
 }: {
   /** `sm` = compact chrome bars (member/auth headers, ~52px). `md` = responsive, scales up on desktop like the landing nav. */
   size?: "sm" | "md";
+  /**
+   * Which product the tag names. A screen reached from ClinAct (signup/login
+   * with a /clinact `next`) must read "MedHelpSpace | ClinAct", never Revalida
+   * (Karina 2026-11-03) — same mark as the e-mail header.
+   */
+  product?: "revalida" | "clinact";
   /** Drop the divider + "Revalida" tag entirely. */
   showRevalida?: boolean;
   /**
@@ -63,7 +70,7 @@ export function BrandLockup({
               color: "transparent",
             }}
           >
-            Revalida
+            {product === "clinact" ? "ClinAct" : "Revalida"}
           </span>
         </span>
       )}

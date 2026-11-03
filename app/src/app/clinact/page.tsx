@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { hasProductAccess } from "@/lib/clinact/access";
@@ -8,10 +9,14 @@ import { CLINACT_SECTIONS } from "@/components/clinact/sales/sections";
 import { ClinactFooter } from "@/components/clinact/sales/clinact-footer";
 import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
 import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
+import { CLINACT_OG_TITLE, CLINACT_SHARE_METADATA } from "@/lib/clinact/metadata";
 
-export const metadata = {
-  title: "ClinAct — raciocínio clínico que termina em uma decisão | MedHelpSpace",
-  description: "Casos clínicos curtos em quatro formatos: Decisão em 30 Segundos, Código Clínico, Ponto de Virada e Clínica em Cena.",
+// Its own title + share card (lib/clinact/metadata.ts): without them every
+// /clinact share previewed as the Revalida card. `absolute` because the root
+// "%s | MedHelpSpace" template doubled the suffix this title already carries.
+export const metadata: Metadata = {
+  title: { absolute: `${CLINACT_OG_TITLE} | MedHelpSpace` },
+  ...CLINACT_SHARE_METADATA,
 };
 export const dynamic = "force-dynamic";
 

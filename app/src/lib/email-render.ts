@@ -229,12 +229,36 @@ function resolveHref(href: string, appUrl: string): string {
   return href.startsWith("/") ? `${appUrl}${href}` : href;
 }
 
+// ClinAct is sold apart from Revalida and must never be framed as it (Justin +
+// Karina 2026-11-03). The brand is read from the template kind, so the real
+// send, the admin preview and the "send test" all render the same frame.
+type EmailBrand = { wordmark: string; wordmarkWidth: number; name: string; tagline: string; clinact: boolean };
+
+export function emailBrandFor(kind: string, settings: EmailSettingsRow): EmailBrand {
+  if (kind.startsWith("clinact-")) {
+    return {
+      wordmark: "medhelpspace-clinact-wordmark-email.png",
+      wordmarkWidth: 227,
+      name: "MedHelpSpace ClinAct",
+      tagline: "Siga a MedHelpSpace no Instagram, YouTube e TikTok",
+      clinact: true,
+    };
+  }
+  return {
+    wordmark: "medhelpspace-wordmark-email.png",
+    wordmarkWidth: 245,
+    name: settings.company_name,
+    tagline: SOCIAL_TAGLINE,
+    clinact: false,
+  };
+}
+
 // `unsubscribeUrl` is set ONLY for list/marketing mail (the lead funnel). When
 // present the footer switches to list-mail mode: a permission reminder ("you
 // asked for the Simulado Honesto") + a working one-click unsubscribe — the two
 // things that keep a young sending domain out of the spam folder. Member/
 // transactional mail (no unsubscribe URL) keeps the account-settings line.
-function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): string {
+function renderFooter(settings: EmailSettingsRow, brand: EmailBrand, unsubscribeUrl?: string): string {
   const site = settings.app_url.replace(/^https?:\/\//, "");
   const contact = settings.contact_email;
   const isListEmail = Boolean(unsubscribeUrl && /^https?:\/\//.test(unsubscribeUrl));
@@ -274,6 +298,11 @@ function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): stri
       Você recebeu este e-mail porque se cadastrou em ${site}.
       <a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline;">Cancelar e-mails</a>.
     </p>`
+    : brand.clinact
+    ? `<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+      Para gerenciar sua assinatura, acesse
+      <a href="${settings.app_url}/clinact/assinatura" style="color:#9ca3af;text-decoration:underline;">Minha assinatura</a>.
+    </p>`
     : `<p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
       Para gerenciar suas notificações por email, acesse suas
       <a href="${settings.app_url}/app/configuracoes" style="color:#9ca3af;text-decoration:underline;">configurações de conta</a>.
@@ -301,12 +330,12 @@ function renderFooter(settings: EmailSettingsRow, unsubscribeUrl?: string): stri
   const socialLine = `<table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 0 4px;">
       <tr>${socialIcons}</tr>
     </table>
-    <p style="margin:0 0 12px;font-size:12px;color:#9ca3af;line-height:1.5;">${SOCIAL_TAGLINE}</p>`;
+    <p style="margin:0 0 12px;font-size:12px;color:#9ca3af;line-height:1.5;">${brand.tagline}</p>`;
 
   return `<tr>
   <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:20px 40px;">
     <p style="margin:0 0 8px;font-size:11.5px;color:#9ca3af;line-height:1.5;">
-      ${settings.company_name} &nbsp;·&nbsp;
+      ${brand.name} &nbsp;·&nbsp;
       <a href="${settings.app_url}" style="color:#7a1d91;text-decoration:none;">${site}</a>
     </p>
     ${socialLine}
@@ -328,10 +357,11 @@ export function renderEmail(
   // Reserved settings-globals are applied LAST so a per-recipient var (or a sample
   // placeholder) can never shadow them — {{appUrl}} always resolves to the real
   // configured URL, never a stray "[appUrl]".
+  const brand = emailBrandFor(template.kind, settings);
   const allVars: Record<string, string> = {
     ...vars,
     appUrl: settings.app_url,
-    companyName: settings.company_name,
+    companyName: brand.name,
     contactEmail: settings.contact_email,
   };
   const fill = (s: string) => interpolate(s, allVars);
@@ -375,9 +405,9 @@ export function renderEmail(
         <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
           <tr>
             <td style="background:#7a1d91;padding:24px 40px;">
-              <img src="${settings.app_url}/brand/medhelpspace-wordmark-email.png"
-                alt="${settings.company_name}" width="245" height="23"
-                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:245px;height:23px;" />
+              <img src="${settings.app_url}/brand/${brand.wordmark}"
+                alt="${brand.name}" width="${brand.wordmarkWidth}" height="23"
+                style="display:block;border:0;line-height:100%;outline:none;text-decoration:none;width:${brand.wordmarkWidth}px;height:23px;" />
             </td>
           </tr>
           <tr>
@@ -390,7 +420,7 @@ export function renderEmail(
               ${ctaHtml}
             </td>
           </tr>
-          ${renderFooter(settings, allVars.unsubscribeUrl)}
+          ${renderFooter(settings, brand, allVars.unsubscribeUrl)}
         </table>
       </td>
     </tr>

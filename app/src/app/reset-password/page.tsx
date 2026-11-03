@@ -65,8 +65,9 @@ export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-14 items-center border-b border-border/50 px-6">
-        <Link href="/" aria-label="MedHelpSpace Revalida — início" className="flex items-center hover:opacity-80">
-          <BrandLockup />
+        <Link href="/" aria-label="MedHelpSpace — início" className="flex items-center hover:opacity-80">
+          {/* Neutral mark: password recovery serves Revalida AND ClinAct accounts. */}
+          <BrandLockup showRevalida={false} />
         </Link>
       </header>
 

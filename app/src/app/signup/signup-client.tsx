@@ -9,7 +9,8 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteText } from "@/components/landing/site-text";
-import { BrandLockup } from "@/components/brand/brand-lockup";
+import { AuthBrandLink } from "@/components/brand/auth-brand-link";
+import { isClinactDestination } from "@/lib/clinact/destination";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { trackSignUp } from "@/lib/analytics/track";
 import { GmailPromotionsNote } from "@/components/gmail-promotions-note";
@@ -28,6 +29,7 @@ export function SignupPageClient({
   next?: string | null;
 }) {
   const router = useRouter();
+  const clinact = isClinactDestination(next);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,9 +89,7 @@ export function SignupPageClient({
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <header className="flex h-14 items-center border-b border-border/50 px-6">
-          <Link href="/" aria-label="MedHelpSpace Revalida — início" className="flex items-center hover:opacity-80">
-            <BrandLockup />
-          </Link>
+          <AuthBrandLink clinact={clinact} />
         </header>
         <main className="flex flex-1 items-center justify-center px-4 py-12">
           <Card className="w-full max-w-sm border-border/50 bg-surface-1 text-center">
@@ -118,9 +118,7 @@ export function SignupPageClient({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-14 items-center border-b border-border/50 px-6">
-        <Link href="/" aria-label="MedHelpSpace Revalida — início" className="flex items-center hover:opacity-80">
-          <BrandLockup />
-        </Link>
+        <AuthBrandLink clinact={clinact} />
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-12">

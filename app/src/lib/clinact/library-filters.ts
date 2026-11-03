@@ -40,3 +40,13 @@ export function scenarioCounts(cases: { scenario: string | null }[]): Record<Sce
   for (const c of cases) if (c.scenario && c.scenario in out) out[c.scenario as Scenario] += 1;
   return out;
 }
+
+/**
+ * The free trial (Karina 2026-11-03): ONE free case per format, in the fixed
+ * format order, so /clinact/gratis always reads Código Clínico → Clínica em
+ * Cena → Decisão em 30 Segundos → Ponto de Virada. A format without a free
+ * case is simply absent; a second free case of a format stays in the library.
+ */
+export function freeCaseSet<T extends Pick<CaseListRow, "format" | "is_free">>(cases: T[]): T[] {
+  return FORMATS.map((f) => cases.find((c) => c.format === f && c.is_free)).filter((c): c is T => !!c);
+}

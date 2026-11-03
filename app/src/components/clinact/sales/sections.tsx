@@ -73,11 +73,12 @@ export const ANCHOR_PLANOS = "planos";
 
 /**
  * Where the free cases start. Signup-first (her decision 1): no anonymous play.
- * Someone already signed in goes straight to the library, where the four free
- * cases are open — sending them to /signup would only bounce them.
+ * Both land on /clinact/gratis — the four free cases on their own, not the
+ * full library with locked cases around them (Karina 2026-11-03). Someone
+ * already signed in skips /signup, which would only bounce them.
  */
 function tryHref(isLoggedIn: boolean): string {
-  return isLoggedIn ? "/clinact/treinar" : "/signup?next=%2Fclinact%2Ftreinar";
+  return isLoggedIn ? "/clinact/gratis" : "/signup?next=%2Fclinact%2Fgratis";
 }
 
 /**

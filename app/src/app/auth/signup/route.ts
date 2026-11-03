@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { safeDestination } from "@/lib/ambassadors/ref-link";
+import { isClinactDestination } from "@/lib/clinact/destination";
 
 export async function POST(request: NextRequest) {
   const { email, password, displayName, next: rawNext } = await request.json();
@@ -23,12 +24,20 @@ export async function POST(request: NextRequest) {
   // /verify. Only values that sit safely in a query string unescaped are
   // stored — the template engine's escaping is not something we control.
   const confirmNext = next && /^\/(?!\/)[A-Za-z0-9/_.=?-]*$/.test(next) ? next : null;
+  // A signup that starts in ClinAct gets the "MedHelpSpace | ClinAct" header on
+  // its confirmation e-mail (Karina 2026-11-03). A plain boolean because the
+  // template can only test truthiness safely: `{{ if .Data.clinact_signup }}`.
+  const clinactSignup = isClinactDestination(next);
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { display_name: displayName || null, ...(confirmNext ? { confirm_next: confirmNext } : {}) },
+      data: {
+        display_name: displayName || null,
+        ...(confirmNext ? { confirm_next: confirmNext } : {}),
+        ...(clinactSignup ? { clinact_signup: true } : {}),
+      },
       emailRedirectTo: confirmUrl.toString(),
     },
   });

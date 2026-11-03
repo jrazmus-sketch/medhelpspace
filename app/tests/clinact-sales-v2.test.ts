@@ -125,7 +125,7 @@ test("the two demos alternate sides on desktop, and the caption sits under its p
   assert.match(img, /<figcaption/, "the caption is part of the image's figure");
   // One device for every demo (Justin 2026-10-10): the display is inset in a
   // bezel, under a status bar with the island — never edge to edge.
-  assert.match(img, /aspectRatio: "390 \/ 897"/, "one aspect ratio for every phone: status bar + the whole capture");
+  assert.match(img, /aspectRatio: "390 \/ 844"/, "one aspect ratio for every phone: a real 390×844 screen, status bar included");
   assert.match(img, /var\(--dv-bezel\)/, "a bezel around the display");
   assert.match(img, /<StatusBar \/>/, "a status bar above the app");
 });

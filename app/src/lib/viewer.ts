@@ -54,6 +54,24 @@ export const viewerHasActiveMembership = cache(async (): Promise<boolean> => {
   return !!has;
 });
 
+/**
+ * Is the viewer a ClinAct person — signed up from ClinAct, ever subscribed, or
+ * ever played a case? Used only to send someone WITHOUT a Revalida turma back
+ * to ClinAct instead of the Revalida store (a plain login, a password reset, an
+ * error page's "início" all land on /app). Own rows only, under RLS.
+ */
+export const viewerIsClinactPerson = cache(async (): Promise<boolean> => {
+  const user = await getAuthUser();
+  if (!user) return false;
+  if (user.user_metadata?.clinact_signup === true) return true;
+  const supabase = await createClient();
+  const [access, attempts] = await Promise.all([
+    supabase.from("user_product_access").select("user_id").eq("user_id", user.id).eq("product", "clinact").limit(1),
+    supabase.from("clinact_attempts").select("id").eq("user_id", user.id).limit(1),
+  ]);
+  return (access.data?.length ?? 0) > 0 || (attempts.data?.length ?? 0) > 0;
+});
+
 /** Is a date-gated module (e.g. MedHelp 60D) open for the viewer's turma? */
 export const viewerHasModuleAccess = cache(async (moduleId: number): Promise<boolean> => {
   const supabase = await createClient();

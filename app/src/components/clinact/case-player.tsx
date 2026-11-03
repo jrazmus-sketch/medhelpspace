@@ -520,7 +520,10 @@ function BottomBar({ children }: { children: React.ReactNode }) {
       <div
         ref={ref}
         style={lift ? { bottom: lift } : undefined}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0"
+        // mb-0: the parent's space-y-4 gives every non-last child a 16px bottom
+        // margin (the spacer below makes this one non-last), which lifted the
+        // FIXED bar 16px off the screen edge with case text showing under it.
+        className="fixed inset-x-0 bottom-0 z-40 mb-0 border-t border-border bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0"
       >
         {children}
       </div>
@@ -717,7 +720,8 @@ function ClosingScreen({ screen, score, takeaway, isPreview, onRestart, pending,
         </section>
       ) : null}
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Link href="/clinact/treinar" className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand text-base font-semibold text-brand-fg">Voltar aos casos</Link>
+        {/* A free case played without the subscription goes back to the four free cases. */}
+        <Link href={subscribeCta ? "/clinact/gratis" : "/clinact/treinar"} className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand text-base font-semibold text-brand-fg">Voltar aos casos</Link>
         <button type="button" onClick={onRestart} disabled={pending} className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-border text-base font-medium">
           <RotateCcw className="h-4 w-4" /> Refazer {isPreview ? "" : "(não conta)"}
         </button>

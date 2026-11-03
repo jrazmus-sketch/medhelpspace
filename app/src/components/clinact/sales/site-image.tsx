@@ -71,7 +71,9 @@ export function SiteImage({
  *
  * Island, status bar and clock follow a 393 pt-wide phone and are expressed in
  * `cqw` (the screen is a size container), so they scale with the device at
- * every width. The screen is as tall as the status bar plus the whole capture. The screenshots are captures of the LIGHT app
+ * every width. The screen has a real phone's 390×844 proportions (Justin, 2026-11-03:
+ * the old status-bar-plus-full-capture screen was "oddly tall"); captures are
+ * 390×791 viewports at 3x. The screenshots are captures of the LIGHT app
  * (her decision), whose header is `--mk-card`: the status bar uses the same
  * token, so it reads as part of the app's top edge. The capture starts at the
  * app header, so it sits BELOW the status bar — as an app does on a real phone.
@@ -98,9 +100,11 @@ function PhoneDevice({ children, glow }: { children: ReactNode; glow: string }) 
           {/* Display */}
           <div
             className="lp-mockup-light @container relative overflow-hidden rounded-[34px]"
-            // The status bar (13.7cqw) plus a full 390×844 capture (216.4cqw) —
-            // nothing of the screenshot is cropped, not even its bottom bar.
-            style={{ aspectRatio: "390 / 897", background: "var(--mk-card)" }}
+            // A real 390×844 screen: the status bar (13.7cqw) takes its top,
+            // so the capture below it is 390×791 — shoot it at THAT viewport,
+            // or the fixed bottom bar lands mid-image with page text under it.
+            // (The old 390/897 stacked a bar on a full 844 capture: too tall.)
+            style={{ aspectRatio: "390 / 844", background: "var(--mk-card)" }}
           >
             <StatusBar />
             <div className="absolute inset-x-0 bottom-0" style={{ top: "13.7cqw" }}>

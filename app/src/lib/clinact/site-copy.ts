@@ -124,6 +124,14 @@ export const CLINACT_COPY = {
   "clinact.app.treinar.cenario_lead": "Escolha o ambiente de atendimento que você quer treinar.",
   "clinact.app.treinar.todos": "Ver todos os casos",
 
+  // ── Platform — the four free cases (/clinact/gratis), Karina 2026-11-03 ─
+  "clinact.app.gratis.title": "Experimente o ClinAct",
+  "clinact.app.gratis.sub": "Quatro casos completos, um de cada formato. Escolha por onde começar.",
+  "clinact.app.gratis.mais_title": "Quer continuar treinando?",
+  "clinact.app.gratis.mais_body":
+    "Conheça a biblioteca completa do ClinAct e tenha acesso aos novos casos publicados toda semana.",
+  "clinact.app.gratis.mais_cta": "Ver planos",
+
   // ── Platform — specialty page (/clinact/treinar/[especialidade]) ────────
   "clinact.app.especialidade.lead": "Escolha como quer treinar esta especialidade. {casos} por aqui.",
   "clinact.app.especialidade.formato": "Formato",
