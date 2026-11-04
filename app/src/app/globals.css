@@ -715,6 +715,31 @@ figure.quiz-figure img {
   font-weight: 700 !important;
 }
 
+/* AudioCards v2 (Karina 2026-11-04): each card opens with its "Card N" label, then
+   the question (.ac-q, bold) and the answer (.ac-a). A small brand label — not a
+   reading heading — so the transcript keeps the rhythm of the recording. */
+.prose-content.prose-transcript h3.ac-card {
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-text);
+  margin: 2rem 0 0.4rem;
+  padding: 0;
+  border: 0;
+}
+.prose-content.prose-transcript h3.ac-card:first-child {
+  margin-top: 0;
+}
+.prose-content.prose-transcript h3.ac-card + p.ac-q {
+  margin-top: 0;
+}
+.prose-content.prose-transcript p.ac-q + p.ac-a {
+  margin-top: 0.4rem;
+}
+
 /* Bloco header: branded section label with left-border accent */
 .bloco-header {
   font-family: var(--font-display, sans-serif);
@@ -1006,6 +1031,11 @@ figure.quiz-figure img {
 .mhs-mobile-transcript .bloco-header {
   color: #c084e8;
   border-left-color: #c084e8;
+}
+/* AudioCards "Card N" label: the player surface is dark in both themes, so the
+   light-theme --brand-text (#7a1d91) would sit dark-on-dark — use the dark-mode lilac. */
+.mhs-mobile-transcript .prose-content.prose-transcript h3.ac-card {
+  color: #c084e8;
 }
 /* Intro title also stays brand purple on mobile (matches desktop). */
 .mhs-mobile-transcript .mv-intro-title,

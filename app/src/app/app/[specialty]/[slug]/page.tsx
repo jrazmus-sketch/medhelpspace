@@ -262,6 +262,7 @@ function PageBody({
           pageTitle={page.title}
           specialtySlug={specialtySlug}
           backHref={backHref}
+          audioLabel={page.track_id === AUDIOCARDS_TRACK_ID ? "AudioCards · Áudio" : "MedVoice · Áudio"}
         />
       );
     }

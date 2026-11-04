@@ -171,6 +171,7 @@ export async function TextLessonRenderer({
   pageTitle,
   specialtySlug,
   backHref,
+  audioLabel = "MedVoice · Áudio",
 }: {
   pageId: number;
   selectedLessonId?: number;
@@ -181,6 +182,8 @@ export async function TextLessonRenderer({
   specialtySlug?: string;
   /** Back-navigation target shown in the mobile player's top chrome. */
   backHref?: string;
+  /** The player's brand chip line — the track the page belongs to. */
+  audioLabel?: string;
 }) {
   const supabase = createAdminClient();
   const { data: lessons } = await supabase
@@ -268,7 +271,7 @@ export async function TextLessonRenderer({
         {activeLesson.audio_url && (
           <AudioPlayer
             src={activeLesson.audio_url}
-            title="MedVoice · Áudio"
+            title={audioLabel}
             lessonId={activeLesson.id}
             initialPosition={positionByLesson.get(activeLesson.id) ?? 0}
             sectionTitle={activeLesson.title}

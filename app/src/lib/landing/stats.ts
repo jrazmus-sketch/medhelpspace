@@ -43,7 +43,7 @@ const FALLBACK_STATS: LandingStats = {
   flashcards: 5280,
   questoes: 5164, // 2026-10-17: 4,214 + the 950 Questões Pegada INEP
   audios: 164,
-  audiocards: 184,
+  audiocards: 189,
   especialidades: 17,
 };
 
