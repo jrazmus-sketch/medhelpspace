@@ -80,6 +80,9 @@ test("a ClinAct signup gets the app's own ClinAct confirmation e-mail, not Supab
   // Same link shape the dashboard template builds, so /auth/confirm is unchanged.
   assert.match(route, /href\.searchParams\.set\("token_hash", link\.properties\.hashed_token\)/);
   assert.match(route, /href\.searchParams\.set\("type", "signup"\)/);
+  // The token link's host is the configured site, never the request's Host.
+  assert.match(route, /const origin = new URL\(settings\.app_url\)\.origin;/);
+  assert.ok(!/new URL\(request\.url\)\.origin;\s*const href/.test(route));
   const { clinactConfirmationEmailHtml, CLINACT_CONFIRMATION_SUBJECT } = await import("@/lib/clinact/confirmation-email");
   const html = clinactConfirmationEmailHtml("https://x.test/auth/confirm?token_hash=a&type=signup&next=/clinact/gratis", "https://x.test");
   assert.ok(html.includes("medhelpspace-clinact-wordmark-email.png"));

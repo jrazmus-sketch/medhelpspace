@@ -54,12 +54,14 @@ export async function POST(request: NextRequest) {
     if (linkError) {
       return NextResponse.json({ error: linkError.message }, { status: 400 });
     }
-    const origin = new URL(request.url).origin;
+    // The link carries a live token, so its host comes from the configured
+    // site address — never from the request, whose Host a caller controls.
+    const settings = await getEmailSettings();
+    const origin = new URL(settings.app_url).origin;
     const href = new URL("/auth/confirm", origin);
     href.searchParams.set("token_hash", link.properties.hashed_token);
     href.searchParams.set("type", "signup");
     if (next) href.searchParams.set("next", next);
-    const settings = await getEmailSettings();
     const sent = await sendEmailRaw({
       to: email,
       subject: CLINACT_CONFIRMATION_SUBJECT,
