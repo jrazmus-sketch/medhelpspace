@@ -2,14 +2,21 @@ import Link from "next/link";
 import { SiteText } from "./site-text";
 import { FooterAccessLinks } from "./footer-access-links";
 import { SocialLinks } from "@/components/marketing/social-links";
+import { whatsappUrl } from "@/lib/whatsapp";
+
+// 44px tap target on the phone, where the Contato column stands alone on its row.
+const CONTACT_LINK = "inline-flex min-h-11 items-center transition-colors sm:min-h-0";
 
 export function LandingFooter() {
   return (
     <footer style={{ borderTop: "1px solid var(--lp-border)", background: "var(--lp-base)" }}>
       <div className="mx-auto max-w-7xl px-5 py-12 md:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+        {/* Five columns from lg; on a tablet the brand takes its own row above the four link
+            columns. The Contato column is sized by its content (auto) so the e-mail address
+            never overflows a narrow equal-width column. */}
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-[repeat(3,minmax(0,1fr))_auto] md:gap-x-6 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:gap-x-8">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="col-span-2 md:col-span-4 lg:col-span-1">
             <div
               className="mb-3 text-xl font-bold"
               style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
@@ -75,6 +82,30 @@ export function LandingFooter() {
               </div>
               <p className="mt-1.5 text-[10px]" style={{ color: "var(--lp-fg-15)" }}>Pix · Cartão de crédito (12x)</p>
             </div>
+          </div>
+
+          {/* Contato (Karina 2026-11-04) — the same block as the ClinAct footer, on the
+              same WhatsApp number as the floating button. Full row on the phone so the
+              e-mail address fits on one line. */}
+          <div className="col-span-2 md:col-span-1">
+            <h4
+              className="mb-4 text-xs font-bold uppercase tracking-widest"
+              style={{ color: "var(--lp-fg-25)" }}
+            >
+              Contato
+            </h4>
+            <ul className="text-sm sm:space-y-2.5">
+              <li>
+                <a href={whatsappUrl("revalida")} target="_blank" rel="noopener noreferrer" className={CONTACT_LINK} style={{ color: "var(--lp-fg-40)" }}>
+                  WhatsApp
+                </a>
+              </li>
+              <li>
+                <a href="mailto:contato@medhelpspace.com.br" className={CONTACT_LINK} style={{ color: "var(--lp-fg-40)" }}>
+                  contato@medhelpspace.com.br
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

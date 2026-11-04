@@ -49,13 +49,19 @@ export function FounderSection() {
       <div ref={ref} className="lp-reveal mx-auto max-w-[38rem]">
         <div aria-hidden className="mb-6 h-[3px] w-12 rounded-full" style={{ background: `linear-gradient(to right, var(--brand), ${LILAC})` }} />
 
+        {/* Always two lines (Karina 2026-11-04, as on the ClinAct page): "Por trás da" in
+            white, then "MedHelpSpace Revalida" in lilac on ONE line — nowrap, so "Revalida"
+            never drops alone onto a third line on the phone. The phone size scales with the
+            screen (7.4vw) so that line still fits a 320px screen. */}
         <h2
-          className="text-[clamp(1.9rem,4.4vw,3rem)] font-black leading-[1.08] tracking-[-0.025em]"
+          className="text-[clamp(1.5rem,7.4vw,1.9rem)] font-black md:text-[clamp(1.9rem,4.4vw,3rem)] leading-[1.08] tracking-[-0.025em]"
           style={{ fontFamily: "var(--font-bricolage)", color: "var(--lp-fg)" }}
         >
-          <SiteText as="span" k="behind.title" fallback="Por trás da" />{" "}
-          <span style={{ color: LILAC }}>
-            <SiteText as="span" k="behind.title_hl" fallback="MedHelpSpace" />
+          <span className="block">
+            <SiteText as="span" k="behind.title" fallback="Por trás da" />
+          </span>
+          <span className="block whitespace-nowrap" style={{ color: LILAC }}>
+            <SiteText as="span" k="behind.title_hl" fallback="MedHelpSpace Revalida" />
           </span>
         </h2>
 
