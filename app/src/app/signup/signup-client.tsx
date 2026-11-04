@@ -138,7 +138,7 @@ export function SignupPageClient({
                   id="displayName"
                   type="text"
                   autoComplete="name"
-                  placeholder="Dra. Maria Silva"
+                  placeholder="Maria Silva"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                 />
