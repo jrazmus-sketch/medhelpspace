@@ -18,7 +18,8 @@ import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
-const STOREFRONT_PATHS = ["/revalida", "/loja", "/questoes-revalida"];
+// "/" too: the home page's offer strip reads the same sale windows.
+const STOREFRONT_PATHS = ["/", "/revalida", "/loja", "/questoes-revalida"];
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");

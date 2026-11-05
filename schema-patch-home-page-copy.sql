@@ -10,5 +10,9 @@ INSERT INTO site_content (key, value) VALUES
   ('home.revalida.desc', $$Preparação para o Revalida INEP.$$),
   ('home.revalida.cta',  $$Conhecer$$),
   ('home.clinact.desc',  $$Treino de raciocínio clínico com casos interativos.$$),
-  ('home.clinact.cta',   $$Conhecer$$)
+  ('home.clinact.cta',   $$Conhecer$$),
+  -- v2 (same day): free doors + ClinAct's weekly line — her own ClinAct wording.
+  ('home.revalida.free',  $$Teste 50 flashcards grátis$$),
+  ('home.clinact.free',   $$Experimentar os 4 casos grátis$$),
+  ('home.clinact.semanal', $$Novos casos toda semana$$)
 ON CONFLICT (key) DO NOTHING;

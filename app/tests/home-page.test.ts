@@ -18,8 +18,27 @@ test("the home page offers exactly the two products, each to its own sales page"
   assert.match(home, /fallback="Preparação para o Revalida INEP\."/);
   assert.match(home, /fallback="Treino de raciocínio clínico com casos interativos\."/);
   assert.equal((home.match(/fallback="Conhecer"/g) ?? []).length, 2);
-  // The chooser is not a sales page: no Revalida sections, no pricing.
-  assert.doesNotMatch(home, /LandingEvents|PricingCTA|getCohortsForSale/);
+  // The hub is not a sales page: no Revalida sections, no pricing block.
+  assert.doesNotMatch(home, /LandingEvents|PricingCTA/);
+});
+
+test("each card shows its product: screenshot, proof, and a free way in", () => {
+  const home = read("app/page.tsx");
+  assert.match(home, /REVALIDA_SHOT = "\/landing\/shot-questoes\.webp"/);
+  // ClinAct's phone is the admin-replaceable sales-page slot, validated like there.
+  assert.match(home, /isSalesImageUrl\(clinactShot\)/);
+  // Revalida proof = the live counts; ClinAct proof never shows a case count
+  // (Karina's decision 5).
+  assert.match(home, /stats\.questoes/);
+  assert.doesNotMatch(home, /casos publicados|caseCount|count: "exact"/);
+  // Free doors: the free-50 flashcards and the four free ClinAct cases (signup-first).
+  assert.match(home, /href: "\/flashcards-revalida"/);
+  assert.match(home, /href: "\/signup\?next=%2Fclinact%2Fgratis"/);
+  assert.match(home, /hrefLoggedIn: "\/clinact\/gratis"/);
+  // A free link inside the card link would be invalid HTML: stretched-link pattern.
+  const card = read("components/home/product-card.tsx");
+  assert.match(card, /after:absolute after:inset-0/);
+  assert.match(card, /relative z-10/);
 });
 
 test("every card click is tracked by product", () => {
@@ -65,7 +84,7 @@ test("ambassador links land on the Revalida page by default", () => {
 test("price edits and the midnight refresh revalidate /revalida", () => {
   assert.match(read("actions/admin.ts"), /revalidatePath\("\/revalida"\)/);
   assert.match(read("actions/inline-edit.ts"), /revalidatePath\("\/revalida"\)/);
-  assert.match(read("app/api/cron/storefront-refresh/route.ts"), /"\/revalida", "\/loja"/);
+  assert.match(read("app/api/cron/storefront-refresh/route.ts"), /"\/", "\/revalida", "\/loja"/);
   assert.match(read("actions/site-pages.ts"), /\["\/revalida", "\/loja"\]/);
 });
 
