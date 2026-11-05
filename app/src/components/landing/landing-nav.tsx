@@ -48,7 +48,7 @@ export function LandingNav({ embedded = false }: { embedded?: boolean }) {
             Slightly larger than the logo on desktop; matched size on mobile so the
             whole lockup + auth controls fit a 360px bar. */}
         <Link
-          href="/"
+          href="/revalida"
           aria-label="MedHelpSpace Revalida — início"
           className="group flex items-center gap-1.5 sm:gap-2.5"
         >

@@ -9,8 +9,10 @@ const read = (p: string) => readFileSync(path.join(SRC, p), "utf8");
 
 test("Search Console verification stays in the root metadata (Google re-checks it — never remove)", () => {
   assert.match(read("app/layout.tsx"), /google:\s*"clZiznT9gN2S0fepnRETppbt5XkUPxr1c0FQhFAGaHA"/);
-  // the homepage must not override `verification` (Next merges metadata per top-level key)
+  // neither the home page nor the Revalida page may override `verification`
+  // (Next merges metadata per top-level key)
   assert.doesNotMatch(read("app/page.tsx"), /verification\s*:/);
+  assert.doesNotMatch(read("app/revalida/page.tsx"), /verification\s*:/);
 });
 
 test("the Flashcards row links to the free-50 landing with a plain, crawlable <a href>", () => {
@@ -48,5 +50,6 @@ test("/login and /signup are noindex and out of the sitemap (Karina 2026-10-14)"
     assert.ok(!urls.some((u) => u.endsWith(`/${p}`)), `/${p} must stay out of the sitemap`);
     assert.match(read(`app/${p}/page.tsx`), /robots: \{ index: false, follow: true \}/);
   }
-  assert.equal(urls.length, 7);
+  // home + /revalida + /clinact (2026-11-05) + loja, 3 free landings, termos, privacidade
+  assert.equal(urls.length, 9);
 });

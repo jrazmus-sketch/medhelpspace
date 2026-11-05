@@ -86,7 +86,7 @@ export default async function SimuladoHonestoPage({
       {/* Minimal brand bar — kept lean for Quality Score / conversion focus */}
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <Link href="/" className="text-sm font-bold tracking-tight">
+          <Link href="/revalida" className="text-sm font-bold tracking-tight">
             MedHelp<span className="text-brand">Space</span>
           </Link>
           <span className="text-xs text-muted-foreground">

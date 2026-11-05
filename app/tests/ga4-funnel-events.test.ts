@@ -39,8 +39,8 @@ test("the section list covers Questões, MedVoice, 60D and pricing, with stable 
   assert.match(events, /e\.intersectionRect\.height < screen \* 0\.5/);
 });
 
-test("the homepage mounts the tracker and every CTA fires its click event", () => {
-  assert.match(read("app/page.tsx"), /<LandingEvents \/>/);
+test("the Revalida sales page mounts the tracker and every CTA fires its click event", () => {
+  assert.match(read("app/revalida/page.tsx"), /<LandingEvents \/>/);
   assert.match(read("components/landing/hero-section.tsx"), /trackBuyClick\("hero"\)/);
   assert.match(read("components/landing/hero-section.tsx"), /trackFreeSimulatorClick\("hero"\)/);
   assert.match(read("components/landing/landing-nav.tsx"), /trackBuyClick\("nav"\)/);

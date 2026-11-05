@@ -15,7 +15,7 @@ import { WHATSAPP_OPTIN_GATE_KEY } from "@/lib/whatsapp-optin";
 // Gate key → the public paths that render it. A key not listed here cannot be
 // flipped from this action, so a typo can never create a stray site_pages row.
 const GATES: Record<string, readonly string[]> = {
-  [WHATSAPP_GATE_KEY.revalida]: ["/", "/loja"],
+  [WHATSAPP_GATE_KEY.revalida]: ["/revalida", "/loja"],
   [WHATSAPP_GATE_KEY.clinact]: ["/clinact"],
   // Optional WhatsApp step in the lead funnels (both pages are force-dynamic, so
   // the flip is instant; the revalidate is harmless).

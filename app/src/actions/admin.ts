@@ -146,10 +146,10 @@ function commerceFromFormData(f: FormData): CohortCommerce {
   };
 }
 
-// Storefront pages (/, /loja) read cohorts; revalidate them on any catalog change
-// so price / for-sale edits show up without waiting for the hourly ISR window.
+// Storefront pages (/revalida, /loja) read cohorts; revalidate them on any catalog
+// change so price / for-sale edits show up without waiting for the hourly ISR window.
 function revalidateStorefront() {
-  revalidatePath("/");
+  revalidatePath("/revalida");
   revalidatePath("/loja");
 }
 

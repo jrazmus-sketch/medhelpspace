@@ -333,7 +333,7 @@ export function FlashcardsSession({
                   lose the discount. Goes to the top of the homepage per Karina.
                   UTM-tagged so GA4 can prove whether it converts or just leaks. */}
               <a
-                href="/?utm_source=fc-reward&utm_medium=funnel&utm_campaign=ver-todos-recursos"
+                href="/revalida?utm_source=fc-reward&utm_medium=funnel&utm_campaign=ver-todos-recursos"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {

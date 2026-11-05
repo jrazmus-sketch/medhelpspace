@@ -7,10 +7,25 @@ const SITE = "https://www.medhelpspace.com.br";
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
+      // The MedHelpSpace home page — the two-product chooser (Karina 2026-11-05).
       url: SITE,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 1,
+    },
+    {
+      // The Revalida sales page (was "/" until 2026-11-05).
+      url: `${SITE}/revalida`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 1,
+    },
+    {
+      // The ClinAct sales page.
+      url: `${SITE}/clinact`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
     },
     {
       url: `${SITE}/loja`,

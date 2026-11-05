@@ -278,7 +278,7 @@ export function MagnetReward({
             Karina. Per-lead tracking fires only when the token is known (durable page +
             inline post-verify). Distinct utm_source so GA4 splits quiz vs flashcards. */}
         <a
-          href="/?utm_source=quiz-reward&utm_medium=funnel&utm_campaign=ver-todos-recursos"
+          href="/revalida?utm_source=quiz-reward&utm_medium=funnel&utm_campaign=ver-todos-recursos"
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => {

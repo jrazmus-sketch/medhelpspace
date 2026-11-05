@@ -265,7 +265,7 @@ export function SimuladoReport({
               />
             </p>
             <Link
-              href="/?utm_source=sim-report&utm_medium=funnel&utm_campaign=invite-1"
+              href="/revalida?utm_source=sim-report&utm_medium=funnel&utm_campaign=invite-1"
               onClick={() => {
                 void trackLeadEvent({ token, event: "clicked_ver_recursos" });
               }}

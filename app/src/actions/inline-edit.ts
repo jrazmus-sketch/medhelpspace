@@ -118,10 +118,12 @@ export async function updateScalarField(
 
   revalidatePath("/app", "layout");
   // Site strings render on every public page via the root-layout provider; the
-  // ISR'd marketing routes ("/" and "/loja") cache their output, so bust both so
-  // edits show immediately. Dynamic public pages (auth) re-read on every request.
+  // ISR'd marketing routes (home "/", the Revalida page "/revalida" and "/loja")
+  // cache their output, so bust them so edits show immediately. Dynamic public
+  // pages (auth) re-read on every request.
   if (table === "site_content") {
     revalidatePath("/");
+    revalidatePath("/revalida");
     revalidatePath("/loja");
   }
   // Legal pages (privacidade/termos) are ISR too — bust both so edits show now.

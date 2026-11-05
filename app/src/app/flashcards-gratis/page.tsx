@@ -27,7 +27,7 @@ export default async function FlashcardsGratisPage() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-          <Link href="/" className="text-sm font-bold tracking-tight">
+          <Link href="/revalida" className="text-sm font-bold tracking-tight">
             MedHelp<span className="text-brand">Space</span>
           </Link>
           <span className="text-xs text-muted-foreground">Flashcards · 1ª etapa</span>

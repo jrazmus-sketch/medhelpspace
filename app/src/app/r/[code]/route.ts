@@ -26,7 +26,11 @@ export async function GET(
   const { code } = await params;
   const url = request.nextUrl;
 
-  const destination = new URL(safeDestination(url.searchParams.get("destino")), request.url);
+  // Ambassadors sell Revalida, so their link lands on the Revalida sales page —
+  // not on "/", which became the two-product home page on 2026-11-05. An
+  // unsafe or missing `destino` (safeDestination's "/") lands there too.
+  const safe = safeDestination(url.searchParams.get("destino"));
+  const destination = new URL(safe === "/" ? "/revalida" : safe, request.url);
 
   // Carry advertising params through, so an ambassador link that also has UTMs
   // still attributes correctly in GA4 after the hop.

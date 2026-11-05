@@ -81,7 +81,7 @@ export default async function LojaPage() {
           {/* Header */}
           <div className="loja-rise mb-14 text-center" style={{ animationDelay: "40ms" }}>
             <Link
-              href="/"
+              href="/revalida"
               className="mb-6 inline-flex items-center gap-1.5 text-sm text-foreground/40 transition-colors hover:text-foreground"
             >
               ← Voltar

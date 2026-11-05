@@ -107,7 +107,7 @@ export default async function FlashcardsRevalidaPage({
       {/* Minimal brand bar */}
       <header className="border-b border-border/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <Link href="/" className="text-sm font-bold tracking-tight">
+          <Link href="/revalida" className="text-sm font-bold tracking-tight">
             MedHelp<span className="text-brand">Space</span>
           </Link>
           <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">

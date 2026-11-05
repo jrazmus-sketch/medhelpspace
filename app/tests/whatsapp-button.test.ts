@@ -30,7 +30,7 @@ test("each product's link opens Karina's number with her exact message", () => {
 });
 
 test("both Revalida sales pages mount the button behind the same gate", () => {
-  for (const page of ["app/page.tsx", "app/loja/page.tsx"]) {
+  for (const page of ["app/revalida/page.tsx", "app/loja/page.tsx"]) {
     const src = read(page);
     assert.match(src, /<WhatsAppButton product="revalida" published=\{whatsappPublished\} \/>/, page);
     assert.match(src, /getSitePagePublished\(WHATSAPP_GATE_KEY\.revalida\)/, page);
@@ -55,7 +55,7 @@ test("the button yields to the bottom bar and the consent card, and the admin pi
 test("the gate can only be flipped by super_admin and revalidates both sales pages", () => {
   const action = read("actions/site-pages.ts");
   assert.match(action, /who\.role !== "super_admin"/);
-  assert.match(action, /\[WHATSAPP_GATE_KEY\.revalida\]: \["\/", "\/loja"\]/);
+  assert.match(action, /\[WHATSAPP_GATE_KEY\.revalida\]: \["\/revalida", "\/loja"\]/);
 });
 
 test("the ClinAct sales page mounts the same button behind its own gate — and no member route does", () => {

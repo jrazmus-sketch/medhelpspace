@@ -8,7 +8,7 @@ import crypto from "node:crypto";
 // A turma's promotional price only counts inside its window (cohorts.sale_price_starts_at /
 // sale_price_ends_at, lib/cohort-sale.ts), and every window boundary falls on a Brasília
 // midnight (the admin edits it in days). The sales page and /loja are ISR-cached for up to an
-// hour, so without this, R$ 1.498,50 could still be on "/" at 00:30 on 01/12 while the checkout
+// hour, so without this, R$ 1.498,50 could still be on /revalida at 00:30 on 01/12 while the checkout
 // (rendered per request) already charges R$ 2.997. This drops those caches right after the
 // boundary. The charge itself never depends on it: it re-reads the price and refuses a checkout
 // opened at the old one (expectedPriceCents in /api/pagbank/charge).
@@ -18,7 +18,7 @@ import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
-const STOREFRONT_PATHS = ["/", "/loja", "/questoes-revalida"];
+const STOREFRONT_PATHS = ["/revalida", "/loja", "/questoes-revalida"];
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
