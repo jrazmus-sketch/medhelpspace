@@ -18,6 +18,9 @@ test("the home page offers exactly the two products, each to its own sales page"
   assert.match(home, /fallback="Preparação para o Revalida INEP\."/);
   assert.match(home, /fallback="Treino de raciocínio clínico com casos interativos\."/);
   assert.equal((home.match(/fallback="Conhecer"/g) ?? []).length, 2);
+  // Card titles are the product names only; "MedHelpSpace" is the brand on top
+  // (Karina 2026-11-05).
+  assert.doesNotMatch(home, /MedHelpSpace\{" "\}/);
   // The hub is not a sales page: no Revalida sections, no pricing block.
   assert.doesNotMatch(home, /LandingEvents|PricingCTA/);
 });

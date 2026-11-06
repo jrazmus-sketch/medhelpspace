@@ -117,21 +117,20 @@ export default async function HomePage() {
               // The Revalida wordmark fill (landing-nav / BrandLockup).
               stripe="linear-gradient(90deg, #a855f7 0%, #e879f9 100%)"
               shot={{ src: REVALIDA_SHOT }}
+              // Product name only — "MedHelpSpace" is the brand at the top, so
+              // both cards read "Revalida" / "ClinAct" (Karina 2026-11-05).
               name={
-                <>
-                  MedHelpSpace{" "}
-                  <span
-                    style={{
-                      backgroundImage: "linear-gradient(120deg, #a855f7 0%, #e879f9 100%)",
-                      WebkitBackgroundClip: "text",
-                      backgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      color: "transparent",
-                    }}
-                  >
-                    Revalida
-                  </span>
-                </>
+                <span
+                  style={{
+                    backgroundImage: "linear-gradient(120deg, #a855f7 0%, #e879f9 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    color: "transparent",
+                  }}
+                >
+                  Revalida
+                </span>
               }
               description={<SiteText k="home.revalida.desc" fallback="Preparação para o Revalida INEP." />}
               // Live counts — the same numbers as the sales page's "big numbers" band.
