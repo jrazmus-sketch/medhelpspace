@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, Clock, Lock, Unlock, CalendarClock } from "lucide-react";
 import type { CohortProduct } from "@/types/supabase";
-import { getCohortTiming } from "@/lib/cohort-timing";
+import { getCohortTiming, sixtyDayNoticeLines } from "@/lib/cohort-timing";
 import { SiteText } from "./site-text";
 import { PromoBanner, type PromoBannerData } from "./promo-banner";
 import { trackBuyClick, trackFreeSimulatorClick, trackTurmaSelect } from "@/lib/analytics/track";
@@ -41,6 +41,7 @@ export function PricingCTA({
   // Date-driven copy for the selected turma; recomputed client-side each render
   // so the countdown / 60D status is always current (the page itself is ISR).
   const timing = cohort ? getCohortTiming(cohort) : null;
+  const sixtyDayLines = sixtyDayNoticeLines(cohorts);
 
   useEffect(() => {
     const el = ref.current;
@@ -268,23 +269,29 @@ export function PricingCTA({
             <SiteText as="span" k="pricing.validity" fallback="Válido até a data da prova" />
           </div>
 
-          {/* Live MedHelp 60D status for the selected turma. */}
-          {timing && (
+          {/* MedHelp 60D status — one line per turma on sale, whichever is selected
+              ("…antes da prova de 2027.1" / "…de 2027.2", Karina 2026-11-06). Text in the
+              same lilac as the "BLACK FRIDAY" campaign name (--brand-text); box unchanged. */}
+          {sixtyDayLines.length > 0 && (
             <div className="mb-8 flex flex-col gap-3">
               <span
-                className="inline-flex items-center gap-2 self-start rounded-lg px-3 py-1.5 text-sm font-semibold"
+                className="inline-flex items-start gap-2 self-start rounded-lg px-3 py-1.5 text-sm font-semibold"
                 style={{
                   border: "1px solid color-mix(in srgb, var(--brand) 30%, transparent)",
                   background: "var(--lp-glow)",
-                  color: "var(--brand)",
+                  color: "var(--brand-text)",
                 }}
               >
-                {timing.is60dUnlocked ? (
-                  <Unlock className="h-4 w-4 shrink-0" />
+                {sixtyDayLines.every((l) => l.unlocked) ? (
+                  <Unlock className="mt-0.5 h-4 w-4 shrink-0" />
                 ) : (
-                  <Lock className="h-4 w-4 shrink-0" />
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0" />
                 )}
-                {timing.unlock60dLabel}
+                <span className="flex flex-col gap-1">
+                  {sixtyDayLines.map((l) => (
+                    <span key={l.text}>{l.text}</span>
+                  ))}
+                </span>
               </span>
             </div>
           )}
