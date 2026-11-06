@@ -60,3 +60,13 @@ test("the price box shows ONLY the selected turma's line, never both", () => {
   const block = src.slice(src.indexOf("{sixtyDay && ("), src.indexOf("{/* Feature list */}"));
   assert.doesNotMatch(block, /\.map\(/);
 });
+
+test("/loja: each card shows ITS turma's line, in the BLACK FRIDAY lilac (Karina 2026-11-06)", () => {
+  const src = readFileSync(path.join(process.cwd(), "src/app/loja/page.tsx"), "utf8");
+  assert.match(src, /sixtyDayNoticeLines\(\[cohort\]\)\[0\]/);
+  assert.doesNotMatch(src, /sixtyDayNoticeLines\(cohorts\)/);
+  const block = src.slice(src.indexOf("function IncludedList"));
+  assert.match(block, /\{sixtyDay\.text\}/);
+  assert.doesNotMatch(block, /unlock60dLabel/);
+  assert.match(block, /color: "var\(--brand-text\)"/);
+});
