@@ -11,7 +11,7 @@ import { Check, Lock, Unlock, Clock, CalendarClock } from "lucide-react";
 import { getCohortsForSale } from "@/lib/queries/cohort-products";
 import { getPromoBanner } from "@/lib/cohort-promotions";
 import { PromoBanner } from "@/components/landing/promo-banner";
-import { getCohortTiming, type CohortTiming } from "@/lib/cohort-timing";
+import { getCohortTiming, sixtyDayNoticeLines } from "@/lib/cohort-timing";
 import type { CohortProduct } from "@/types/supabase";
 
 // `key` is the site_content suffix (loja.included.<key>) — deliberately decoupled
@@ -312,6 +312,9 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
   // gradient border) is IDENTICAL per card so neither turma reads as promoted
   // over the other.
   const timing = getCohortTiming(cohort);
+  // THIS card's turma only — "…antes da prova de 2027.1" on the 2027.1 card, "…de 2027.2"
+  // on the 2027.2 card; never both in one card (Karina 2026-11-06, third reply).
+  const sixtyDay = sixtyDayNoticeLines([cohort])[0];
   return (
     // h-full down the whole wrapper chain so both grid cards stay equal height
     // and their "Comprar agora" CTAs bottom-align (via flex-1 body + mt-auto).
@@ -428,7 +431,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
               )}
             </div>
 
-            <IncludedList timing={timing} />
+            <IncludedList sixtyDay={sixtyDay} />
 
             <TrackedLink
               href={`/checkout?cohort=${cohort.slug}`}
@@ -446,7 +449,7 @@ function CohortCard({ cohort }: { cohort: CohortProduct }) {
   );
 }
 
-function IncludedList({ timing }: { timing: CohortTiming }) {
+function IncludedList({ sixtyDay }: { sixtyDay: { text: string; unlocked: boolean } }) {
   return (
     <ul className="flex flex-col gap-2">
       {INCLUDED.map((item) => (
@@ -455,21 +458,23 @@ function IncludedList({ timing }: { timing: CohortTiming }) {
           <SiteText as="span" k={`loja.included.${item.key}`} fallback={item.text} />
         </li>
       ))}
-      {/* MedHelp 60D — live unlock status for THIS cohort (computed, not editable):
-          "abre em N dias" / "abre em DD/MM", flipping to "já está liberado". */}
+      {/* MedHelp 60D status for THIS card's turma (computed, not editable): "…liberado 60 dias
+          antes da prova de 2027.1" while the exam date is unconfirmed, the live countdown once
+          it is. Text in the "BLACK FRIDAY" lilac (--brand-text); box and padlock unchanged. */}
       <li
         className={
-          timing.is60dUnlocked
-            ? "mt-1 flex items-start gap-2 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm font-semibold text-brand"
-            : "mt-1 flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 px-3 py-2 text-sm font-medium text-brand"
+          sixtyDay.unlocked
+            ? "mt-1 flex items-start gap-2 rounded-lg border border-brand/30 bg-brand/10 px-3 py-2 text-sm font-semibold"
+            : "mt-1 flex items-start gap-2 rounded-lg border border-brand/20 bg-brand/5 px-3 py-2 text-sm font-medium"
         }
+        style={{ color: "var(--brand-text)" }}
       >
-        {timing.is60dUnlocked ? (
+        {sixtyDay.unlocked ? (
           <Unlock className="mt-0.5 h-4 w-4 shrink-0" />
         ) : (
           <Lock className="mt-0.5 h-4 w-4 shrink-0" />
         )}
-        {timing.unlock60dLabel}
+        {sixtyDay.text}
       </li>
     </ul>
   );

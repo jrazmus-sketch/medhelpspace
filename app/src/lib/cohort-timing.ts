@@ -18,6 +18,9 @@ const NEAR_EXAM_DAYS = 120;
 // beyond it, a date ("abre em 16/11") reads better than a large number.
 const COUNTDOWN_60D_DAYS = 45;
 
+// The 60D line while a turma has no confirmed exam date.
+const GENERIC_60D_LABEL = "MedHelp 60D — liberado 60 dias antes da prova";
+
 export interface CohortTiming {
   daysToTest: number | null;
   examDateLabel: string | null;            // "15/09/2026"
@@ -94,7 +97,7 @@ export function getCohortTiming(
 
   let is60dUnlocked = false;
   let days60d: number | null = null;
-  let unlock60dLabel = "MedHelp 60D — liberado 60 dias antes da prova";
+  let unlock60dLabel = GENERIC_60D_LABEL;
 
   if (unlock60dDate) {
     const u = dateOnly(unlock60dDate);
@@ -111,6 +114,34 @@ export function getCohortTiming(
   }
 
   return { daysToTest, examDateLabel, isNearExam, examChip, is60dUnlocked, days60d, unlock60dLabel };
+}
+
+/** "Revalida 2027.1" → "2027.1" (the turma's period); the full name if it has none. */
+export function turmaPeriod(name: string): string {
+  return name.match(/\d{4}\.\d/)?.[0] ?? name;
+}
+
+/**
+ * The 60D notice line for each turma passed in. Callers pass ONE turma: the sales page
+ * the selected one, /loja each card's own — never both lines together (Karina
+ * 2026-11-06). While a turma's
+ * exam date is unconfirmed the line is "…antes da prova de 2027.1" — it names the
+ * turma, NEVER an exam month (INEP hasn't announced 2027). Once a date is confirmed,
+ * that turma's live countdown is kept, tagged with its period.
+ */
+export function sixtyDayNoticeLines(
+  cohorts: Pick<CohortProduct, "name" | "testDate" | "unlock60dDate" | "dateConfirmed">[],
+  now: Date = new Date(),
+): { text: string; unlocked: boolean }[] {
+  return cohorts.map((c) => {
+    const t = getCohortTiming(c, now);
+    const period = turmaPeriod(c.name);
+    const text =
+      t.unlock60dLabel === GENERIC_60D_LABEL
+        ? `${GENERIC_60D_LABEL} de ${period}`
+        : `${t.unlock60dLabel} · turma ${period}`;
+    return { text, unlocked: t.is60dUnlocked };
+  });
 }
 
 // ── Exam-date phase engine ───────────────────────────────────────────────────
