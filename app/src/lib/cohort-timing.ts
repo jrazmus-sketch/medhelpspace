@@ -122,8 +122,9 @@ export function turmaPeriod(name: string): string {
 }
 
 /**
- * The sales page's 60D notice: one line per turma on sale (Karina 2026-11-06), so
- * the student sees every turma's rule, not only the selected one's. While a turma's
+ * The 60D notice line for each turma passed in. Callers pass ONE turma: the sales page
+ * the selected one, /loja each card's own — never both lines together (Karina
+ * 2026-11-06). While a turma's
  * exam date is unconfirmed the line is "…antes da prova de 2027.1" — it names the
  * turma, NEVER an exam month (INEP hasn't announced 2027). Once a date is confirmed,
  * that turma's live countdown is kept, tagged with its period.
