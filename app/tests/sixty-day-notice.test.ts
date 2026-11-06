@@ -48,7 +48,15 @@ test("turmaPeriod falls back to the full name", () => {
 
 test("the notice text uses the BLACK FRIDAY lilac token, not the dark brand purple", () => {
   const src = readFileSync(path.join(process.cwd(), "src/components/landing/pricing-cta.tsx"), "utf8");
-  const block = src.slice(src.indexOf("sixtyDayLines.length > 0"), src.indexOf("{/* Feature list */}"));
+  const block = src.slice(src.indexOf("{sixtyDay && ("), src.indexOf("{/* Feature list */}"));
   assert.match(block, /color: "var\(--brand-text\)"/);
   assert.doesNotMatch(block, /color: "var\(--brand\)"/);
+});
+
+test("the price box shows ONLY the selected turma's line, never both", () => {
+  const src = readFileSync(path.join(process.cwd(), "src/components/landing/pricing-cta.tsx"), "utf8");
+  assert.match(src, /sixtyDayNoticeLines\(\[cohort\]\)\[0\]/);
+  assert.doesNotMatch(src, /sixtyDayNoticeLines\(cohorts\)/);
+  const block = src.slice(src.indexOf("{sixtyDay && ("), src.indexOf("{/* Feature list */}"));
+  assert.doesNotMatch(block, /\.map\(/);
 });
