@@ -195,8 +195,11 @@ async function snapshot(label) {
   console.log(`Wrote ${out} (${lessons.length} lessons, ${progress.length} progress rows)`);
 }
 
+// The parser is reused by scripts/apply-audiocards-missing-audio.js (2026-11-05).
+module.exports = { parseTranscript, transcriptHtml, fileSlug, BUNNY_DIR, CDN };
+
 // ── main ────────────────────────────────────────────────────────────────────────
-(async () => {
+if (require.main === module) (async () => {
   const args = process.argv.slice(2);
   if (args.includes('--snapshot')) return snapshot(args[args.indexOf('--snapshot') + 1] || 'snapshot');
 
