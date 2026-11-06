@@ -125,6 +125,8 @@ BEGIN
     head('ROLLBACK of audiocards-missing-audio-2026-11-05.sql') + rollback.join('\n\n') + '\nEND $do$;\n', 'utf8');
   console.log(`Urologia: +${added.length} cards (31–55)\nWrote parsed/audiocards-missing-audio-2026-11-05{,-rollback}.sql`);
 
+  if (process.argv.includes('--ic-flashcards')) writeIcFlashcards(NEW, OLD, out, head);
+
   if (process.argv.includes('--upload')) {
     const { BUNNY_STORAGE_HOSTNAME: HOST, BUNNY_STORAGE_ZONE: ZONE, BUNNY_API_KEY: KEY } = process.env;
     if (!HOST || !ZONE || !KEY) throw new Error('Missing BUNNY_STORAGE_HOSTNAME / BUNNY_STORAGE_ZONE / BUNNY_API_KEY');
@@ -140,3 +142,81 @@ BEGIN
     }
   }
 })().catch((e) => { console.error(e.message || e); process.exit(1); });
+
+/**
+ * C) Karina 2026-11-05, second reply: "Sim, quero que atualize" — the Cardiologia flashcard
+ * theme "Insuficiência Cardíaca" takes the rewritten 30 cards she sent with its audio.
+ * Unlike Urologia, NOT ONE question carries over, so this is a full replace: updating in
+ * place would move each card's review state onto a different question. She was told review
+ * of this theme restarts. The old cards + their review_schedule / flashcard_attempts /
+ * flashcard_progress rows are copied to *_bk_ic_20261105 (RLS on, revoked) first, so the
+ * rollback restores them with their original ids. The label is unchanged, so its
+ * flashcard_theme_topics row (keyed by label) still applies.
+ *   --ic-flashcards → parsed/flashcards-ic-2026-11-05{,-rollback}.sql
+ */
+function writeIcFlashcards(NEW, OLD, out, head) {
+  const fresh = parseTranscript(path.join(NEW, 'insuficiencia-cardiaca.md.docx'));
+  const prev = parseTranscript(path.join(OLD, 'clinica-medica/cardiologia/cardiologia__insuficiencia-cardiaca.md.docx'));
+  for (const p of [fresh, prev]) {
+    if (p.issues.length) throw new Error(`IC: ${p.issues.join('; ')}`);
+    if (p.cards.length !== 30 || p.cards.some((c) => c.blocks.length !== 2)) throw new Error('IC: expected 30 two-block cards');
+  }
+  const oldQs = new Set(prev.cards.map((c) => c.blocks[0]));
+  if (fresh.cards.some((c) => oldQs.has(c.blocks[0]))) throw new Error('IC: a question carries over — reconsider a full replace');
+
+  const BK = '20261105';
+  const T = ['flashcard_items', 'review_schedule', 'flashcard_attempts', 'flashcard_progress'];
+  const bk = (t) => `${t}_bk_ic_${BK}`;
+  const deck = `f.page_id = (SELECT id FROM pages WHERE slug = 'cardiologia-flashcards') AND f.group_label = 'Insuficiência Cardíaca'`;
+  const q = (c) => lit(c.blocks[0], 'q');
+  const values = fresh.cards.map((c, i) => `(${i + 1}, ${q(c)}, ${lit(c.blocks[1], 'a')})`).join(',\n    ');
+
+  const apply = `${head('Flashcards: Cardiologia · Insuficiência Cardíaca → Karina\'s rewritten 30 cards')}  IF (SELECT count(*) FROM flashcard_items f WHERE ${deck}) <> 30
+     OR EXISTS (SELECT 1 FROM flashcard_items f WHERE ${deck} AND (image_url IS NOT NULL OR tip IS NOT NULL))
+     OR NOT EXISTS (SELECT 1 FROM flashcard_items f WHERE ${deck} AND position = 1 AND text = ${q(prev.cards[0])})
+     OR NOT EXISTS (SELECT 1 FROM flashcard_items f WHERE ${deck} AND position = 30 AND text = ${q(prev.cards[29])}) THEN
+    RAISE EXCEPTION 'Insuficiência Cardíaca flashcards are not the expected old 30-card theme (or carry an image/tip)';
+  END IF;
+END $do$;
+
+CREATE TABLE ${bk('flashcard_items')} AS SELECT f.* FROM flashcard_items f WHERE ${deck};
+CREATE TABLE ${bk('review_schedule')} AS SELECT * FROM review_schedule WHERE item_type = 'flashcard' AND item_id IN (SELECT id FROM ${bk('flashcard_items')});
+CREATE TABLE ${bk('flashcard_attempts')} AS SELECT * FROM flashcard_attempts WHERE flashcard_item_id IN (SELECT id FROM ${bk('flashcard_items')});
+CREATE TABLE ${bk('flashcard_progress')} AS SELECT * FROM flashcard_progress WHERE flashcard_item_id IN (SELECT id FROM ${bk('flashcard_items')});
+${T.map((t) => `ALTER TABLE ${bk(t)} ENABLE ROW LEVEL SECURITY;\nREVOKE ALL ON ${bk(t)} FROM anon, authenticated;`).join('\n')}
+
+DELETE FROM review_schedule WHERE item_type = 'flashcard' AND item_id IN (SELECT id FROM ${bk('flashcard_items')});
+-- flashcard_attempts / flashcard_progress follow by ON DELETE CASCADE
+DELETE FROM flashcard_items WHERE id IN (SELECT id FROM ${bk('flashcard_items')});
+INSERT INTO flashcard_items (page_id, group_position, group_label, position, text, answer)
+SELECT (SELECT DISTINCT page_id FROM ${bk('flashcard_items')}), (SELECT DISTINCT group_position FROM ${bk('flashcard_items')}),
+       'Insuficiência Cardíaca', v.pos, v.q, v.a
+  FROM (VALUES
+    ${values}
+  ) AS v(pos, q, a);
+
+DO $do$
+BEGIN
+  IF (SELECT count(*) FROM flashcard_items f WHERE ${deck}) <> 30
+     OR NOT EXISTS (SELECT 1 FROM flashcard_items f WHERE ${deck} AND position = 1 AND text = ${q(fresh.cards[0])}) THEN
+    RAISE EXCEPTION 'Insuficiência Cardíaca is not the new 30 cards after the load';
+  END IF;
+END $do$;
+`;
+  const rollback = `${head('ROLLBACK of flashcards-ic-2026-11-05.sql (restores the old cards, ids and review state)')}  IF NOT EXISTS (SELECT 1 FROM flashcard_items f WHERE ${deck} AND position = 1 AND text = ${q(fresh.cards[0])}) THEN
+    RAISE EXCEPTION 'Insuficiência Cardíaca is not the new deck — nothing to roll back';
+  END IF;
+END $do$;
+
+DELETE FROM review_schedule WHERE item_type = 'flashcard' AND item_id IN (SELECT f.id FROM flashcard_items f WHERE ${deck});
+DELETE FROM flashcard_items f WHERE ${deck};
+INSERT INTO flashcard_items OVERRIDING SYSTEM VALUE SELECT * FROM ${bk('flashcard_items')};
+INSERT INTO flashcard_attempts OVERRIDING SYSTEM VALUE SELECT * FROM ${bk('flashcard_attempts')};
+INSERT INTO flashcard_progress SELECT * FROM ${bk('flashcard_progress')};
+INSERT INTO review_schedule OVERRIDING SYSTEM VALUE SELECT * FROM ${bk('review_schedule')};
+${T.map((t) => `DROP TABLE ${bk(t)};`).join('\n')}
+`;
+  fs.writeFileSync(path.join(out, 'flashcards-ic-2026-11-05.sql'), apply, 'utf8');
+  fs.writeFileSync(path.join(out, 'flashcards-ic-2026-11-05-rollback.sql'), rollback, 'utf8');
+  console.log('IC flashcards: 30 → 30 new cards\nWrote parsed/flashcards-ic-2026-11-05{,-rollback}.sql');
+}
