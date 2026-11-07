@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { CLINACT_COPY } from "@/lib/clinact/site-copy";
+import { CLINACT_SECTION_IDS } from "@/lib/analytics/landing-sections";
 import { SALES_IMAGE_SLOTS } from "@/lib/clinact/sales-images";
 import { annualPerMonth } from "@/lib/clinact/plans";
 
@@ -95,8 +96,11 @@ test("início: her title with 'decisão.' in lilac, audience, weekly line, and t
 
 test("the hero buttons land on the free-cases box and on the plans", () => {
   const src = read(SECTIONS);
-  assert.match(src, /export const ANCHOR_GRATUITOS = "casos-gratuitos";/);
-  assert.match(src, /export const ANCHOR_PLANOS = "planos";/);
+  // The anchors are also the GA4 section ids (Karina 2026-11-06), so they come from that list.
+  assert.match(src, /export const ANCHOR_GRATUITOS = CLINACT_SECTION_IDS\.freeCases;/);
+  assert.match(src, /export const ANCHOR_PLANOS = CLINACT_SECTION_IDS\.pricing;/);
+  assert.equal(CLINACT_SECTION_IDS.freeCases, "casos-gratuitos");
+  assert.equal(CLINACT_SECTION_IDS.pricing, "planos");
   const hero = src.slice(src.indexOf("function Hero("), src.indexOf("// ── 2."));
   assert.match(hero, /href=\{`#\$\{ANCHOR_GRATUITOS\}`\}/, "primary → #casos-gratuitos");
   assert.match(hero, /href=\{`#\$\{ANCHOR_PLANOS\}`\}/, "secondary → #planos");

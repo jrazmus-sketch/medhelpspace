@@ -10,11 +10,18 @@
 
 import { useEffect } from "react";
 import { LANDING_SECTIONS, SCROLL_MILESTONES, type LandingSection } from "@/lib/analytics/landing-sections";
-import { trackScrollDepth, trackSectionView } from "@/lib/analytics/track";
+import { trackScrollDepth, trackSectionView, type Product } from "@/lib/analytics/track";
 
 const SECTION_VIEW_RATIO = 0.35;
 
-export function LandingEvents({ sections = LANDING_SECTIONS }: { sections?: readonly LandingSection[] }) {
+export function LandingEvents({
+  sections = LANDING_SECTIONS,
+  product,
+}: {
+  sections?: readonly LandingSection[];
+  /** Sent as `product` on every event (the ClinAct page passes "clinact"). */
+  product?: Product;
+}) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -38,7 +45,7 @@ export function LandingEvents({ sections = LANDING_SECTIONS }: { sections?: read
             const section = byId.get(id);
             if (!section || seen.has(id)) continue;
             seen.add(id);
-            trackSectionView(section);
+            trackSectionView(section, product);
             observer?.unobserve(e.target);
           }
         },
@@ -62,7 +69,7 @@ export function LandingEvents({ sections = LANDING_SECTIONS }: { sections?: read
       for (const m of SCROLL_MILESTONES) {
         if (pct >= m && !fired.has(m)) {
           fired.add(m);
-          trackScrollDepth(m);
+          trackScrollDepth(m, product);
         }
       }
     };
@@ -78,7 +85,7 @@ export function LandingEvents({ sections = LANDING_SECTIONS }: { sections?: read
       observer?.disconnect();
       window.removeEventListener("scroll", onScroll);
     };
-  }, [sections]);
+  }, [sections, product]);
 
   return null;
 }

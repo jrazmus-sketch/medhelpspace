@@ -16,15 +16,19 @@ import { isSalesImageUrl } from "@/lib/clinact/sales-images";
  * Same click-to-load facade as the Revalida hero video: nothing from YouTube
  * loads until the visitor presses play — the frame is our cover image — then
  * the IFrame API mounts the real player (youtube-nocookie) and reports watch
- * milestones to GA4 under location "clinact".
+ * milestones to GA4 in the ClinAct family — click_play_clinact_video,
+ * watch_clinact_video_start, watch_clinact_video_25/50/75/90/100 with
+ * `video_percent` (Karina 2026-11-06; before that it shared the Revalida names
+ * click_play_video / watch_video_* with location "clinact").
  *
  * Renders NOTHING — not even the band or the title passed as `children` —
  * until a YouTube id is set in /admin/clinact/pagina (lib/clinact/sales-video.ts).
  */
 
 const LOCATION = "clinact";
+const FAMILY = "clinact_video";
 
-export function SalesVideo({ className, style, children }: { className: string; style: CSSProperties; children: ReactNode }) {
+export function SalesVideo({ id: sectionId, className, style, children }: { id: string; className: string; style: CSSProperties; children: ReactNode }) {
   const content = useSiteContent();
   const id = content[SALES_VIDEO_KEY]?.value;
   const uploaded = content["clinact.video.image"]?.value;
@@ -50,7 +54,7 @@ export function SalesVideo({ className, style, children }: { className: string; 
       for (const m of VIDEO_MILESTONES) {
         if (pct >= m && !sent.has(m)) {
           sent.add(m);
-          trackVideoProgress(m, LOCATION);
+          trackVideoProgress(m, LOCATION, FAMILY);
         }
       }
     };
@@ -72,7 +76,7 @@ export function SalesVideo({ className, style, children }: { className: string; 
               if (e.data === YT.PlayerState.PLAYING) {
                 if (!sent.has(0)) {
                   sent.add(0);
-                  trackVideoStart(LOCATION);
+                  trackVideoStart(LOCATION, FAMILY);
                 }
                 window.clearInterval(timer);
                 timer = window.setInterval(tick, 1000);
@@ -82,7 +86,7 @@ export function SalesVideo({ className, style, children }: { className: string; 
               }
               if (e.data === YT.PlayerState.ENDED && !sent.has(100)) {
                 sent.add(100);
-                trackVideoProgress(100, LOCATION);
+                trackVideoProgress(100, LOCATION, FAMILY);
               }
             },
           },
@@ -103,7 +107,7 @@ export function SalesVideo({ className, style, children }: { className: string; 
   const cover = isSalesImageUrl(uploaded) ? uploaded : youTubeThumbnail(id, thumb);
 
   return (
-    <section className={className} style={style}>
+    <section id={sectionId} className={className} style={style}>
       <div className="mx-auto max-w-4xl">
         {children}
         <div
@@ -118,7 +122,7 @@ export function SalesVideo({ className, style, children }: { className: string; 
             <button
               type="button"
               onClick={() => {
-                trackVideoPlay(LOCATION);
+                trackVideoPlay(LOCATION, FAMILY);
                 setMode("playing");
               }}
               className="group absolute inset-0 block h-full w-full cursor-pointer"

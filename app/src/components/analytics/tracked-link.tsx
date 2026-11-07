@@ -24,3 +24,24 @@ export function TrackedLink({ event, params, onClick, ...rest }: Props) {
     />
   );
 }
+
+/**
+ * The same, for a plain <a> — an in-page anchor (#casos-gratuitos), where a
+ * next/link would add nothing and the browser's own jump is what we want.
+ */
+export function TrackedAnchor({
+  event,
+  params,
+  onClick,
+  ...rest
+}: ComponentProps<"a"> & { event: string; params?: Record<string, unknown> }) {
+  return (
+    <a
+      {...rest}
+      onClick={(e) => {
+        trackEvent(event, params ?? {});
+        onClick?.(e);
+      }}
+    />
+  );
+}

@@ -15,6 +15,9 @@ import {
   type ClinactPlanKey,
 } from "@/lib/clinact/plans";
 import { todayKeyBR } from "@/lib/br-date";
+import { TrackedAnchor, TrackedLink } from "@/components/analytics/tracked-link";
+import { CLINACT_SECTION_IDS } from "@/lib/analytics/landing-sections";
+import { clinactPlanParam, clinactPlanSelectEventName } from "@/lib/analytics/track";
 import type { ClinactCopyKey } from "@/lib/clinact/site-copy";
 
 /**
@@ -67,9 +70,20 @@ const BTN_PRIMARY = `${BTN_PRIMARY_BASE} sm:w-auto`;
 const BTN_SECONDARY =
   "inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-foreground/25 px-6 py-3 text-center text-base font-semibold leading-snug text-foreground transition hover:-translate-y-px hover:bg-foreground/5 sm:w-auto sm:px-8";
 
-/** The in-page anchors the two hero buttons land on (her brief: #casos-gratuitos). */
-export const ANCHOR_GRATUITOS = "casos-gratuitos";
-export const ANCHOR_PLANOS = "planos";
+/**
+ * The in-page anchors the two hero buttons land on (her brief: #casos-gratuitos).
+ * They are also the ids GA4 watches (view_clinact_free_cases_section /
+ * view_clinact_pricing_section), so they come from the one list the tracker reads.
+ */
+export const ANCHOR_GRATUITOS = CLINACT_SECTION_IDS.freeCases;
+export const ANCHOR_PLANOS = CLINACT_SECTION_IDS.pricing;
+
+/**
+ * GA4 click_clinact_free_cases (Karina 2026-11-06). `location` says which button:
+ * a future free-cases CTA gets its own location, same event.
+ */
+const FREE_CASES_EVENT = "click_clinact_free_cases";
+const freeCasesParams = (location: "hero" | "free_cases_section") => ({ location, product: "clinact" });
 
 /**
  * Where the free cases start. Signup-first (her decision 1): no anonymous play.
@@ -134,9 +148,15 @@ function Hero({ hasAccess }: SectionProps) {
               <ClinactText k="clinact.hero.cta_assinante" />
             </Link>
           ) : (
-            <a href={`#${ANCHOR_GRATUITOS}`} className={BTN_PRIMARY} style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 55%, transparent)" }}>
+            <TrackedAnchor
+              href={`#${ANCHOR_GRATUITOS}`}
+              event={FREE_CASES_EVENT}
+              params={freeCasesParams("hero")}
+              className={BTN_PRIMARY}
+              style={{ boxShadow: "0 0 40px color-mix(in srgb, var(--brand) 55%, transparent)" }}
+            >
               <ClinactText k="clinact.hero.cta" />
-            </a>
+            </TrackedAnchor>
           )}
           <a href={`#${ANCHOR_PLANOS}`} className={BTN_SECONDARY}>
             <ClinactText k="clinact.hero.cta2" />
@@ -156,7 +176,7 @@ function Hero({ hasAccess }: SectionProps) {
  */
 function Video() {
   return (
-    <SalesVideo className={BAND} style={BAND_STYLE_BASE}>
+    <SalesVideo id={CLINACT_SECTION_IDS.video} className={BAND} style={BAND_STYLE_BASE}>
       <h2 className={`${H2} text-center`} style={DISPLAY}>
         <ClinactText k="clinact.video.title" />
       </h2>
@@ -175,7 +195,7 @@ const FORMAT_COPY: Record<CaseFormat, ClinactCopyKey> = {
 
 function Competencias() {
   return (
-    <section className={BAND} style={BAND_STYLE_ALT}>
+    <section id={CLINACT_SECTION_IDS.formats} className={BAND} style={BAND_STYLE_ALT}>
       <div className="mx-auto max-w-4xl">
         <h2 className={`${H2} text-center`} style={DISPLAY}>
           <ClinactText k="clinact.competencias.title" />
@@ -261,7 +281,7 @@ function DemoRow({ copy, phone, phoneLeft, glow }: { copy: React.ReactNode; phon
 function Casos() {
   const glow = FORMAT_COLOR_VARS.clinica_em_cena;
   return (
-    <section className={BAND} style={BAND_STYLE_BASE}>
+    <section id={CLINACT_SECTION_IDS.practice} className={BAND} style={BAND_STYLE_BASE}>
       <DemoRow
         glow={glow}
         copy={
@@ -299,7 +319,7 @@ function Casos() {
 
 function Evolucao() {
   return (
-    <section className={BAND} style={BAND_STYLE_ALT}>
+    <section id={CLINACT_SECTION_IDS.evolution} className={BAND} style={BAND_STYLE_ALT}>
       <DemoRow
         phoneLeft
         glow="var(--brand)"
@@ -344,7 +364,11 @@ function Strong({ k }: { k: ClinactCopyKey }) {
  */
 function Fundadora() {
   return (
-    <section className={`${BAND} relative isolate overflow-hidden`} style={{ ...BAND_STYLE_BASE, background: "var(--lp-alt-bg)" }}>
+    <section
+      id={CLINACT_SECTION_IDS.founder}
+      className={`${BAND} relative isolate overflow-hidden`}
+      style={{ ...BAND_STYLE_BASE, background: "var(--lp-alt-bg)" }}
+    >
       {/* Faint lilac glow behind the title — atmosphere, not a card. */}
       <div
         aria-hidden
@@ -416,6 +440,9 @@ function Fundadora() {
 
 // ── 5. Quatro casos gratuitos ──────────────────────────────────────────────
 
+const FREE_CTA =
+  "mt-9 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand-text px-4 py-3 text-center text-base font-bold leading-snug text-background transition hover:-translate-y-px hover:opacity-90 sm:w-auto sm:px-8";
+
 function Gratuitos({ hasAccess, isLoggedIn }: SectionProps) {
   return (
     // scroll-mt keeps the title in view when the hero button jumps here.
@@ -438,12 +465,20 @@ function Gratuitos({ hasAccess, isLoggedIn }: SectionProps) {
         <p className={`${LEAD} mx-auto mt-5 max-w-xl`}>
           <ClinactText k="clinact.gratuitos.lead" />
         </p>
-        <Link
-          href={hasAccess ? "/clinact/treinar" : tryHref(isLoggedIn)}
-          className="mt-9 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-brand-text px-4 py-3 text-center text-base font-bold leading-snug text-background transition hover:-translate-y-px hover:opacity-90 sm:w-auto sm:px-8"
-        >
-          {hasAccess ? <ClinactText k="clinact.gratuitos.cta_assinante" /> : <ClinactText k="clinact.gratuitos.cta" />}
-        </Link>
+        {hasAccess ? (
+          <Link href="/clinact/treinar" className={FREE_CTA}>
+            <ClinactText k="clinact.gratuitos.cta_assinante" />
+          </Link>
+        ) : (
+          <TrackedLink
+            href={tryHref(isLoggedIn)}
+            event={FREE_CASES_EVENT}
+            params={freeCasesParams("free_cases_section")}
+            className={FREE_CTA}
+          >
+            <ClinactText k="clinact.gratuitos.cta" />
+          </TrackedLink>
+        )}
       </div>
     </section>
   );
@@ -526,9 +561,21 @@ function Planos({ hasAccess, isLoggedIn }: SectionProps) {
                 {/* mt-auto pins the button to the card's foot, so the two buttons
                     line up even though only the annual card has the extra line. */}
                 <div className="mt-auto pt-7">
-                  <Link href={hasAccess ? "/clinact/treinar" : planHref(plan.key, isLoggedIn)} className={BTN_PRIMARY_BASE}>
-                    {hasAccess ? <ClinactText k="clinact.planos.cta_assinante" /> : <ClinactText k={copy.cta} />}
-                  </Link>
+                  {hasAccess ? (
+                    <Link href="/clinact/treinar" className={BTN_PRIMARY_BASE}>
+                      <ClinactText k="clinact.planos.cta_assinante" />
+                    </Link>
+                  ) : (
+                    // GA4 select_clinact_monthly | select_clinact_annual (Karina 2026-11-06).
+                    <TrackedLink
+                      href={planHref(plan.key, isLoggedIn)}
+                      event={clinactPlanSelectEventName(plan.key)}
+                      params={{ plan: clinactPlanParam(plan.key), product: "clinact" }}
+                      className={BTN_PRIMARY_BASE}
+                    >
+                      <ClinactText k={copy.cta} />
+                    </TrackedLink>
+                  )}
                 </div>
               </div>
             );

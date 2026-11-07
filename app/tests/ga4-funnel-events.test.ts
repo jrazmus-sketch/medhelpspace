@@ -2,8 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { LANDING_SECTIONS, SCROLL_MILESTONES, sectionViewEventName } from "@/lib/analytics/landing-sections";
-import { VIDEO_MILESTONES, turmaSelectEventName } from "@/lib/analytics/track";
+import {
+  CLINACT_LANDING_SECTIONS,
+  LANDING_SECTIONS,
+  SCROLL_MILESTONES,
+  sectionViewEventName,
+} from "@/lib/analytics/landing-sections";
+import { VIDEO_MILESTONES, clinactPlanParam, clinactPlanSelectEventName, turmaSelectEventName } from "@/lib/analytics/track";
+import { isTrackedPath } from "@/lib/analytics/config";
 
 // GA4 sales-page funnel (Karina 2026-09-30). Every event she asked for has a
 // single, stable name, and every place it must fire is wired.
@@ -86,10 +92,73 @@ test("the hero sales video: section id, click + watch milestones, YouTube only a
   assert.deepEqual([...VIDEO_MILESTONES], [25, 50, 75, 90]);
   assert.match(read("components/landing/hero-section.tsx"), /<HeroVideo \/>/);
   const track = read("lib/analytics/track.ts");
-  assert.ok(track.includes('"click_play_video"'), "click_play_video");
-  assert.ok(track.includes('"watch_video_start"'), "watch_video_start");
-  assert.match(track, /`watch_video_\$\{percent\}`/, "watch_video_25 … watch_video_100");
+  // The Revalida family is the default: click_play_video / watch_video_start / watch_video_N.
+  assert.match(track, /family: VideoFamily = "video"/);
+  assert.match(track, /`click_play_\$\{family\}`/);
+  assert.match(track, /`watch_\$\{family\}_start`/);
+  assert.match(track, /`watch_\$\{family\}_\$\{percent\}`/);
   // privacy-enhanced host, and nothing YouTube in the markup until mode leaves "poster"
   assert.match(video, /host: "https:\/\/www\.youtube-nocookie\.com"/);
   assert.match(video, /mode === "poster" \? \(/);
+});
+
+// ── ClinAct sales page (Karina 2026-11-06) ────────────────────────────────────
+
+test("ClinAct: her seven section events, on real ids, through the shared tracker", () => {
+  assert.deepEqual(
+    CLINACT_LANDING_SECTIONS.map((s) => sectionViewEventName(s.section)),
+    [
+      "view_clinact_video_section",
+      "view_clinact_formats_section",
+      "view_clinact_practice_section",
+      "view_clinact_evolution_section",
+      "view_clinact_founder_section",
+      "view_clinact_free_cases_section",
+      "view_clinact_pricing_section",
+    ],
+  );
+  const sections = read("components/clinact/sales/sections.tsx");
+  for (const key of ["formats", "practice", "evolution", "founder"]) {
+    assert.match(sections, new RegExp(`id=\{CLINACT_SECTION_IDS\.${key}\}`), key);
+  }
+  assert.match(sections, /<SalesVideo id=\{CLINACT_SECTION_IDS\.video\}/);
+  assert.match(sections, /ANCHOR_GRATUITOS = CLINACT_SECTION_IDS\.freeCases/);
+  assert.match(sections, /ANCHOR_PLANOS = CLINACT_SECTION_IDS\.pricing/);
+  assert.match(sections, /id=\{ANCHOR_GRATUITOS\}/);
+  assert.match(sections, /id=\{ANCHOR_PLANOS\}/);
+  assert.match(read("components/clinact/sales/sales-video.tsx"), /<section id=\{sectionId\}/);
+  assert.match(read("app/clinact/page.tsx"), /<LandingEvents sections=\{CLINACT_LANDING_SECTIONS\} product="clinact" \/>/);
+});
+
+test("ClinAct: free-cases CTA by location, plan buttons, video family", () => {
+  const sections = read("components/clinact/sales/sections.tsx");
+  assert.match(sections, /FREE_CASES_EVENT = "click_clinact_free_cases"/);
+  assert.match(sections, /freeCasesParams\("hero"\)/);
+  assert.match(sections, /freeCasesParams\("free_cases_section"\)/);
+  assert.equal(clinactPlanSelectEventName("mensal"), "select_clinact_monthly");
+  assert.equal(clinactPlanSelectEventName("anual"), "select_clinact_annual");
+  assert.equal(clinactPlanParam("anual"), "annual");
+  assert.match(sections, /event=\{clinactPlanSelectEventName\(plan\.key\)\}/);
+  const video = read("components/clinact/sales/sales-video.tsx");
+  assert.match(video, /const FAMILY = "clinact_video"/);
+  assert.match(video, /trackVideoPlay\(LOCATION, FAMILY\)/);
+  assert.match(video, /trackVideoStart\(LOCATION, FAMILY\)/);
+  assert.match(video, /trackVideoProgress\(m, LOCATION, FAMILY\)/);
+  assert.match(video, /trackVideoProgress\(100, LOCATION, FAMILY\)/);
+});
+
+test("ClinAct: begin_checkout + purchase carry product=clinact; member area untracked", () => {
+  const form = read("app/clinact/(membro)/assinar/subscribe-form.tsx");
+  assert.match(form, /trackClinactBeginCheckout\(selected\.key/);
+  assert.match(form, /trackClinactPurchase\(/);
+  const track = read("lib/analytics/track.ts");
+  assert.match(track, /product: "clinact"/);
+  assert.match(track, /trackEventThen\(\s*"purchase"/);
+  // Public journey tracked; subscriber area, Minha Evolução, account and preview not.
+  for (const p of ["/clinact", "/clinact/assinar", "/clinact/gratis", "/clinact/caso/x", "/revalida", "/signup"]) {
+    assert.ok(isTrackedPath(p), p);
+  }
+  for (const p of ["/clinact/treinar", "/clinact/treinar/casos", "/clinact/evolucao", "/clinact/assinatura", "/clinact/preview/t", "/app", "/admin/x"]) {
+    assert.ok(!isTrackedPath(p), p);
+  }
 });

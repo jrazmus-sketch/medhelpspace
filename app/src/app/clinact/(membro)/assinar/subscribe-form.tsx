@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { Check, Lock, ShieldCheck } from "lucide-react";
@@ -14,6 +14,7 @@ import {
   type TomadorType,
 } from "@/lib/br";
 import { EMPTY_TOMADOR, NotaFiscalFields } from "@/components/checkout/nota-fiscal-fields";
+import { trackClinactBeginCheckout, trackClinactPurchase } from "@/lib/analytics/track";
 
 /**
  * The three reassurances of the Revalida store (/loja) (Karina 2026-10-30:
@@ -96,6 +97,16 @@ export function SubscribeForm({
 
   const isPj = tomador.type === "pj";
   const selected = plans.find((p) => p.key === planKey) ?? plans[0];
+
+  // GA4 begin_checkout once per checkout open (Karina 2026-11-06), with
+  // product=clinact and the plan the page opened on; value = today's charge.
+  const beginTracked = useRef(false);
+  useEffect(() => {
+    if (beginTracked.current || !selected) return;
+    beginTracked.current = true;
+    trackClinactBeginCheckout(selected.key, selected.firstCents / 100);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const cardCpfFromNota = !isPj && sameCpf;
 
   function patch(p: Partial<NfseTomador>) {
@@ -157,6 +168,8 @@ export function SubscribeForm({
     if (hasErrors) return setError(errors?.[0] ?? "Dados do cartão inválidos.");
 
     setBusy(true);
+    // Paid → the button stays disabled until the redirect (≤ 1 s, see below).
+    let leaving = false;
     try {
       const res = await fetch("/api/clinact/assinar", {
         method: "POST",
@@ -172,7 +185,7 @@ export function SubscribeForm({
           expectedFirstCents: selected?.firstCents,
         }),
       });
-      const data = (await res.json()) as { error?: string; state?: string; priceChanged?: boolean };
+      const data = (await res.json()) as { error?: string; state?: string; subscriptionId?: string; priceChanged?: boolean };
       if (!res.ok) {
         setError(data.error ?? "Não foi possível concluir a assinatura.");
         // The promotion ended while the page was open: nothing was charged.
@@ -181,7 +194,13 @@ export function SubscribeForm({
         return;
       }
       if (data.state === "paid") {
-        router.push("/clinact/treinar");
+        // GA4 purchase (product=clinact, plan), sent BEFORE leaving: the library
+        // is a route GA does not track. The redirect waits at most 1 s for it.
+        leaving = true;
+        trackClinactPurchase(
+          { planKey: selected?.key ?? planKey, value: (selected?.firstCents ?? 0) / 100, subscriptionId: data.subscriptionId ?? attemptId },
+          () => router.push("/clinact/treinar"),
+        );
         return;
       }
       setPending(true);
@@ -192,7 +211,7 @@ export function SubscribeForm({
         "A conexão caiu durante o pagamento. Atualize a página em alguns instantes para ver se a assinatura foi criada antes de tentar de novo.",
       );
     } finally {
-      setBusy(false);
+      if (!leaving) setBusy(false);
     }
   }
 

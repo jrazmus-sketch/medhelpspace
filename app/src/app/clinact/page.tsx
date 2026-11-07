@@ -10,6 +10,8 @@ import { ClinactFooter } from "@/components/clinact/sales/clinact-footer";
 import { WhatsAppButton } from "@/components/marketing/whatsapp-button";
 import { WHATSAPP_GATE_KEY } from "@/lib/whatsapp";
 import { CLINACT_OG_TITLE, CLINACT_SHARE_METADATA } from "@/lib/clinact/metadata";
+import { LandingEvents } from "@/components/analytics/landing-events";
+import { CLINACT_LANDING_SECTIONS } from "@/lib/analytics/landing-sections";
 
 // Its own title + share card (lib/clinact/metadata.ts): without them every
 // /clinact share previewed as the Revalida card. `absolute` because the root
@@ -73,6 +75,9 @@ export default async function ClinactSalesPage() {
           2026-09-28 / 2026-11-01). Its own gate stays independent of the page's:
           it decides whether visitors see the button once the page is public. */}
       <WhatsAppButton product="clinact" published={whatsappPublished} />
+      {/* GA4 section views + scroll_25/50/75/90 (Karina 2026-11-06), the same
+          tracker as the Revalida page. Sends nothing without the GA tag. */}
+      <LandingEvents sections={CLINACT_LANDING_SECTIONS} product="clinact" />
     </div>
   );
 }

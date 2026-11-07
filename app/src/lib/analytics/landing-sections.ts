@@ -29,3 +29,30 @@ export function sectionViewEventName(section: string): string {
 }
 
 export const SCROLL_MILESTONES = [25, 50, 75, 90] as const;
+
+/**
+ * The ClinAct sales page (/clinact), Karina 2026-11-06 — her names, verbatim:
+ * view_clinact_video_section, _formats_, _practice_, _evolution_, _founder_,
+ * _free_cases_ and _pricing_. Same tracker and same "reached" rule as Revalida
+ * (35% of the block, or the block filling half the screen — tall blocks on a
+ * phone). The ids are on the sections in components/clinact/sales/.
+ */
+export const CLINACT_SECTION_IDS = {
+  video: "video-clinact",
+  formats: "formatos",
+  practice: "na-pratica",
+  evolution: "evolucao",
+  founder: "por-tras",
+  freeCases: "casos-gratuitos",
+  pricing: "planos",
+} as const;
+
+export const CLINACT_LANDING_SECTIONS: readonly LandingSection[] = [
+  { id: CLINACT_SECTION_IDS.video, section: "clinact_video" },
+  { id: CLINACT_SECTION_IDS.formats, section: "clinact_formats" },
+  { id: CLINACT_SECTION_IDS.practice, section: "clinact_practice" },
+  { id: CLINACT_SECTION_IDS.evolution, section: "clinact_evolution" },
+  { id: CLINACT_SECTION_IDS.founder, section: "clinact_founder" },
+  { id: CLINACT_SECTION_IDS.freeCases, section: "clinact_free_cases" },
+  { id: CLINACT_SECTION_IDS.pricing, section: "clinact_pricing" },
+];

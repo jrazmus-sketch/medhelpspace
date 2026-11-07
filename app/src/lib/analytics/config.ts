@@ -9,8 +9,35 @@
  */
 export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
 
-/** Route prefixes that must NEVER be tracked (authenticated / internal areas). */
-export const ANALYTICS_EXCLUDED_PREFIXES = ["/app", "/admin", "/suporte"] as const;
+/**
+ * Route prefixes that must NEVER be tracked (authenticated / internal areas).
+ *
+ * The ClinAct subscriber area is the ClinAct counterpart of /app (Karina
+ * 2026-11-06: "não contabilizar … páginas privadas que não façam parte da
+ * jornada pública"): the library, Minha Evolução, the subscription page and the
+ * admin's signed preview link. Deliberately NOT excluded: /clinact (the sales
+ * page), /clinact/assinar (the checkout — begin_checkout / purchase),
+ * /clinact/gratis and /clinact/caso — the free-cases funnel ends with the
+ * visitor opening one of the four free cases.
+ */
+export const ANALYTICS_EXCLUDED_PREFIXES = [
+  "/app",
+  "/admin",
+  "/suporte",
+  "/clinact/treinar",
+  "/clinact/evolucao",
+  "/clinact/assinatura",
+  "/clinact/preview",
+] as const;
+
+/**
+ * Set on a browser the first time an admin account is seen in it, and from
+ * then on NOTHING is sent from that browser (Karina 2026-11-06: "não
+ * contabilizar … testes internos"). A cookie, not just the role, so a returning
+ * admin is excluded on the very first paint — before the profile has loaded.
+ * To watch events in GA4 DebugView, use a private window with no admin login.
+ */
+export const INTERNAL_TRAFFIC_COOKIE = "mhs_internal";
 
 /**
  * Default analytics consent for a first-time visitor.
