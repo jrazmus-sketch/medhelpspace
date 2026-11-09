@@ -139,7 +139,7 @@ export async function sendMirrorEvent(
     if (!res.ok) {
       console.error("meta capi: mirror refused", input.eventName, res.status, await res.json().catch(() => null));
     } else if (process.env.NODE_ENV !== "production") {
-      console.info("meta capi: mirror sent", input.eventName, input.eventId, context.test_event_code ?? "live");
+      console.info("meta capi: mirror sent", input.eventName, input.eventId, context.url, context.test_event_code ?? "live");
     }
     return { sent: res.ok, status: res.status };
   } catch (err) {
