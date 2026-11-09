@@ -195,8 +195,8 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   billing "Pagos", Google Ads OCI purchases (order AND lead path) and GA4 `purchase`; never attributed to
   an ambassador. Derived from the amount, no column. Still markable "Teste interno"; "Estornar" on it
   only revokes access (refund route `couponOnly`).
-- **Meta Pixel + Conversions API (Karina 2026-11-04/09) — built in TEST MODE (`META_PIXEL_LIVE = false`
-  in `lib/meta/config.ts`).** One Pixel/dataset `1642376477393533` ("MedHelpSpace | Web") for both products.
+- **Meta Pixel + Conversions API (Karina 2026-11-04/09) — LIVE (`META_PIXEL_LIVE = true` in
+  `lib/meta/config.ts`).** One Pixel/dataset `1642376477393533` ("MedHelpSpace | Web") for both products.
   Pixel only on an ALLOWLIST (`META_PIXEL_PATHS`: /, /revalida, /loja, /checkout, /signup, /clinact,
   /clinact/gratis, /clinact/assinar — never /app, /admin, member areas, /clinact/caso) and only after an
   EXPLICIT "Aceitar" (`mhs_ads_consent`, separate from GA's opt-out cookie). PageView + InitiateCheckout in the
@@ -216,11 +216,13 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   `meta_capi_events` (event_id PK = `revalida_<order>` / `clinact_<SUBS_id>`) is the dedupe claim. Skips R$ 0,
   `internal_test`, admins / `mhs_internal` browsers. Test mode: `?meta_test=TESTxxxx` on any public URL makes
   that browser a Test Events browser (Pixel loads; CAPI events carry the code). Token
-  `META_CAPI_ACCESS_TOKEN` (system user, no expiry) in Vercel prod + `app/.env.local`. Going live = flip
-  the constant AFTER Karina approves the new banner + Privacidade text (the live policy still says "não
-  utilizamos cookies de rastreamento para publicidade"). Patch: `schema-patch-meta-capi.sql` (prod + local).
+  `META_CAPI_ACCESS_TOKEN` (system user, no expiry) in Vercel prod + `app/.env.local`. Went live together
+  with Karina's approved /privacidade text (item 3 Meta paragraph, item 6 GA + Meta Pixel) via
+  `schema-patch-privacidade-meta.sql` (rollback file restores the 2026-11-02 text; turn the constant off in the
+  same deploy). `?meta_test=` still works after go-live for Test Events checks. Patches:
+  `schema-patch-meta-capi.sql`, `schema-patch-privacidade-meta.sql` (prod + local).
   **Withdrawal (Karina 2026-11-10, item 4):** footer "Preferências de cookies" (`CookiePreferencesLink`, shown only
-  where Meta is active → invisible to the public in test mode) reopens the SAME banner; "Recusar" after a "granted"
+  where Meta is active) reopens the SAME banner; "Recusar" after a "granted"
   runs `withdrawMetaConsent()`: fbq consent revoke, `_fbp`/`_fbc` deleted (host-only + .medhelpspace.com.br), and
   `POST /api/meta/revoke` nulls `meta_capi` on ALL the signed-in user's orders + `clinact_subscriptions` row — so a Pix
   paid later sends no Purchase (capi.ts reads the context at send time). Signed out → cookie `mhs_meta_revoke=1`,

@@ -24,7 +24,7 @@ export const META_PIXEL_ID = "1642376477393533";
  * true = LIVE for every visitor who accepts the (new) cookie notice. Flip only
  * after Karina approves the new notice + Privacy Policy text.
  */
-export const META_PIXEL_LIVE = false;
+export const META_PIXEL_LIVE = true; // Karina approved the texts 2026-11-09 + validated in Test Events
 
 /** Advertising consent — set by the same banner as analytics, explicit only. */
 export const ADS_CONSENT_COOKIE = "mhs_ads_consent";

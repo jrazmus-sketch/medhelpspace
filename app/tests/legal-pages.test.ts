@@ -11,11 +11,29 @@ import { TERMOS_HTML, PRIVACIDADE_HTML } from "@/lib/legal-pages";
 
 const ROOT = path.resolve(import.meta.dirname, "..", "..");
 const PATCH = readFileSync(path.join(ROOT, "schema-patch-legal-clinact.sql"), "utf8");
+const META_PATCH = readFileSync(path.join(ROOT, "schema-patch-privacidade-meta.sql"), "utf8");
+const META_ROLLBACK = readFileSync(path.join(ROOT, "schema-patch-privacidade-meta-rollback.sql"), "utf8");
 const page = (slug: string) => readFileSync(path.join(ROOT, "app/src/app", slug, "page.tsx"), "utf8");
 
-test("the patch writes exactly lib/legal-pages.ts", () => {
+test("the patches write exactly lib/legal-pages.ts", () => {
   assert.ok(PATCH.includes(`$legal$${TERMOS_HTML}$legal$`));
-  assert.ok(PATCH.includes(`$legal$${PRIVACIDADE_HTML}$legal$`));
+  // /privacidade was last rewritten by the Meta patch (2026-11-09).
+  assert.ok(META_PATCH.includes(`$legal$${PRIVACIDADE_HTML}$legal$`));
+  // …and its rollback restores the 2026-11-02 text.
+  assert.ok(META_ROLLBACK.includes("Não utilizamos cookies de rastreamento para publicidade."));
+});
+
+test("Meta Pixel / Conversions API — Karina's approved sentences, verbatim (2026-11-09)", () => {
+  for (const t of [
+    "Se você aceitar os cookies de publicidade no aviso do site, compartilhamos com a Meta (Facebook e Instagram) informações sobre as visitas às nossas páginas públicas de venda e de cadastro, o início da contratação e a confirmação da compra (produto, plano ou turma e valor pago), para medir e aprimorar nossos anúncios.",
+    "Para fins de correspondência segura com a Meta, o e-mail, o telefone e um identificador interno da sua conta são transmitidos em formato hash.",
+    "Junto com esses eventos, também são enviados os identificadores dos cookies da própria Meta, o endereço IP e as informações do navegador.",
+    "Não enviamos dados de cartão, CPF, endereço residencial, informações de saúde, respostas aos casos ou o conteúdo estudado na plataforma.",
+    "cookies de análise (Google Analytics), para entender como as páginas públicas são usadas e melhorá-las. Você pode recusá-los no aviso de cookies;",
+    "cookies de publicidade (Meta Pixel), somente nas páginas públicas de venda, de contratação e de cadastro, para medir o resultado dos nossos anúncios. Eles só são ativados se você clicar em “Aceitar” no aviso de cookies.",
+  ]) assert.ok(PRIVACIDADE_HTML.includes(t), t);
+  assert.doesNotMatch(PRIVACIDADE_HTML, /Não utilizamos cookies de rastreamento para publicidade/);
+  assert.doesNotMatch(PRIVACIDADE_HTML, /sem possibilidade de leitura direta/);
 });
 
 test("both pages fall back to the same text", () => {
@@ -38,5 +56,7 @@ test("what she took out stays out", () => {
   // the old blanket no-refund sentence contradicted the 7-day guarantee.
   assert.doesNotMatch(TERMOS_HTML, /3, 5 e 7|Não há reembolso proporcional após a ativação/);
   assert.doesNotMatch(TERMOS_HTML, /exclusivamente a médicos/);
-  assert.doesNotMatch(PRIVACIDADE_HTML, /navegador/);
+  // No claim that card data is encrypted in the browser. ("informações do
+  // navegador" in the Meta paragraph is a different thing and is expected.)
+  assert.doesNotMatch(PRIVACIDADE_HTML, /criptografad\w* no (seu )?navegador/);
 });

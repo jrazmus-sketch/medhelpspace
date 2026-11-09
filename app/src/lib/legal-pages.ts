@@ -12,6 +12,10 @@
  * em lei", renewal + promotional prices, failed charges WITHOUT the PagBank
  * retry days (an operational rule that may change), and payment data
  * ("processados pelo PagBank", no claim about browser encryption).
+ *
+ * Meta Pixel / Conversions API (Karina 2026-11-09): item 3 gains the Meta
+ * paragraph and item 6 is rewritten (Google Analytics + Meta Pixel), in the
+ * wording she approved. Live row written by schema-patch-privacidade-meta.sql.
  */
 
 const MAIL = '<a href="mailto:contato@medhelpspace.com.br">contato@medhelpspace.com.br</a>';
@@ -49,14 +53,18 @@ export const PRIVACIDADE_HTML = [
   "<h2>2. Uso das informações</h2>",
   "<p>Os dados são utilizados para fornecer e melhorar o serviço, personalizar a experiência de aprendizado, processar pagamentos, emitir notas fiscais e enviar comunicações relacionadas à conta.</p>",
   "<h2>3. Compartilhamento</h2>",
-  "<p>Não vendemos nem compartilhamos seus dados pessoais com terceiros, exceto quando exigido por lei ou para operar serviços essenciais da plataforma: o PagBank, para o processamento do pagamento, e o Emissor Nacional da NFS-e, para a emissão da nota fiscal.</p>",
+  "<p>Não vendemos seus dados pessoais. Só os compartilhamos com terceiros quando exigido por lei, para operar serviços essenciais da plataforma (o PagBank, para o processamento do pagamento, e o Emissor Nacional da NFS-e, para a emissão da nota fiscal) ou, com o seu consentimento, para publicidade, como descrito abaixo.</p>",
   "<p>Os dados de pagamento são processados pelo PagBank. A MedHelpSpace não armazena o número completo do cartão nem o código de segurança.</p>",
+  "<p>Se você aceitar os cookies de publicidade no aviso do site, compartilhamos com a Meta (Facebook e Instagram) informações sobre as visitas às nossas páginas públicas de venda e de cadastro, o início da contratação e a confirmação da compra (produto, plano ou turma e valor pago), para medir e aprimorar nossos anúncios. Para fins de correspondência segura com a Meta, o e-mail, o telefone e um identificador interno da sua conta são transmitidos em formato hash. Junto com esses eventos, também são enviados os identificadores dos cookies da própria Meta, o endereço IP e as informações do navegador. Não enviamos dados de cartão, CPF, endereço residencial, informações de saúde, respostas aos casos ou o conteúdo estudado na plataforma.</p>",
   "<h2>4. Segurança</h2>",
   "<p>Utilizamos criptografia e boas práticas de segurança para proteger suas informações. O acesso aos dados é restrito à equipe autorizada.</p>",
   "<h2>5. Seus direitos (LGPD)</h2>",
   "<p>Nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento.</p>",
   "<h2>6. Cookies</h2>",
-  "<p>Utilizamos cookies técnicos necessários para o funcionamento da plataforma, como manutenção de sessão. Não utilizamos cookies de rastreamento para publicidade.</p>",
+  "<p>Utilizamos cookies técnicos, necessários para o funcionamento da plataforma, como a manutenção de sessão. Utilizamos também:</p>",
+  "<ul><li>cookies de análise (Google Analytics), para entender como as páginas públicas são usadas e melhorá-las. Você pode recusá-los no aviso de cookies;</li>",
+  "<li>cookies de publicidade (Meta Pixel), somente nas páginas públicas de venda, de contratação e de cadastro, para medir o resultado dos nossos anúncios. Eles só são ativados se você clicar em “Aceitar” no aviso de cookies.</li></ul>",
+  `<p>Os cookies de publicidade não são usados na área do aluno nem nos casos clínicos. Os cookies de análise registram apenas a visita às páginas, nunca as respostas aos casos nem o conteúdo estudado na área do aluno. Para mudar sua escolha, apague os cookies do site no seu navegador ou escreva para ${MAIL}.</p>`,
   "<h2>7. Comunicações pelo WhatsApp</h2>",
   "<p>Ao deixar seu e-mail em uma de nossas páginas gratuitas, você pode, opcionalmente, informar o seu número de WhatsApp e autorizar o recebimento de mensagens da MedHelpSpace com materiais e conteúdos educacionais, novidades, ofertas, descontos e cupons. O número só é coletado com o seu consentimento expresso, registrado com data, hora e a versão do texto aceito, e é usado exclusivamente para essas comunicações. Não compartilhamos o seu número com terceiros.</p>",
   `<p>Você pode cancelar a qualquer momento: basta responder <strong>SAIR</strong> a qualquer mensagem, fazer qualquer pedido claro nesse sentido pelo próprio WhatsApp, ou escrever para ${MAIL}. Registramos a revogação e deixamos de enviar mensagens.</p>`,
