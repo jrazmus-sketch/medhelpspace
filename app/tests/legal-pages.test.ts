@@ -31,6 +31,9 @@ test("Meta Pixel / Conversions API — Karina's approved sentences, verbatim (20
     "Não enviamos dados de cartão, CPF, endereço residencial, informações de saúde, respostas aos casos ou o conteúdo estudado na plataforma.",
     "cookies de análise (Google Analytics), para entender como as páginas públicas são usadas e melhorá-las. Você pode recusá-los no aviso de cookies;",
     "cookies de publicidade (Meta Pixel), somente nas páginas públicas de venda, de contratação e de cadastro, para medir o resultado dos nossos anúncios. Eles só são ativados se você clicar em “Aceitar” no aviso de cookies.",
+    // Her approval of the two consistency fixes (2026-11-09 16:49 BRT):
+    "Não vendemos seus dados pessoais. Só os compartilhamos com terceiros quando exigido por lei, para operar serviços essenciais da plataforma (o PagBank, para o processamento do pagamento, e o Emissor Nacional da NFS-e, para a emissão da nota fiscal) ou, com o seu consentimento, para publicidade, como descrito abaixo.",
+    "Os cookies de publicidade não são usados na área do aluno nem nos casos clínicos. Os cookies de análise registram apenas a visita às páginas, nunca as respostas aos casos nem o conteúdo estudado na área do aluno.",
   ]) assert.ok(PRIVACIDADE_HTML.includes(t), t);
   assert.doesNotMatch(PRIVACIDADE_HTML, /Não utilizamos cookies de rastreamento para publicidade/);
   assert.doesNotMatch(PRIVACIDADE_HTML, /sem possibilidade de leitura direta/);
