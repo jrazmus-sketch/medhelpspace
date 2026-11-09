@@ -201,7 +201,11 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   /clinact/gratis, /clinact/assinar — never /app, /admin, member areas, /clinact/caso) and only after an
   EXPLICIT "Aceitar" (`mhs_ads_consent`, separate from GA's opt-out cookie). PageView + InitiateCheckout in the
   browser (`disablePushState` + `allowDuplicatePageViews` + autoConfig off — fbevents drops every PageView
-  after the first without it). **Purchase is server-only** (CAPI): Revalida from `finalizePaidOrder`'s race
+  after the first without it). Each browser event is ALSO re-sent by the server via `POST /api/meta/event`
+  with the SAME event_id (`3cad04f`) — the Pixel's own request can carry no Test Events code, so in test mode
+  only server events show in Events Manager (Karina's TEST35482 run saw no PageView before this). The route
+  allowlists PageView/InitiateCheckout + META_PIXEL_PATHS, re-checks consent; `email` query params are scrubbed
+  from the URL before any event. **Purchase is server-only** (CAPI): Revalida from `finalizePaidOrder`'s race
   winner, ClinAct from `recordPaidInvoices` for occurrence 1 only (never renewals); context (fbp/fbc/IP/UA)
   frozen at checkout on `orders.meta_capi` / `clinact_subscriptions.meta_capi` ONLY with ads consent;
   `meta_capi_events` (event_id PK = `revalida_<order>` / `clinact_<SUBS_id>`) is the dedupe claim. Skips R$ 0,
