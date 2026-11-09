@@ -14,7 +14,8 @@ import {
   type TomadorType,
 } from "@/lib/br";
 import { EMPTY_TOMADOR, NotaFiscalFields } from "@/components/checkout/nota-fiscal-fields";
-import { trackClinactBeginCheckout, trackClinactPurchase } from "@/lib/analytics/track";
+import { clinactPlanParam, trackClinactBeginCheckout, trackClinactPurchase } from "@/lib/analytics/track";
+import { metaInitiateCheckout } from "@/lib/meta/pixel";
 
 /**
  * The three reassurances of the Revalida store (/loja) (Karina 2026-10-30:
@@ -105,6 +106,15 @@ export function SubscribeForm({
     if (beginTracked.current || !selected) return;
     beginTracked.current = true;
     trackClinactBeginCheckout(selected.key, selected.firstCents / 100);
+    // Meta InitiateCheckout — no-op unless the Pixel is loaded (consent etc.).
+    const plan = clinactPlanParam(selected.key);
+    metaInitiateCheckout({
+      product: "clinact",
+      contentId: `clinact_${plan}`,
+      contentName: `ClinAct ${plan === "annual" ? "anual" : "mensal"}`,
+      value: selected.firstCents / 100,
+      plan,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const cardCpfFromNota = !isPj && sameCpf;

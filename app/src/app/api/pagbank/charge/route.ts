@@ -26,6 +26,7 @@ import {
 import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { REF_COOKIE, resolveAttribution } from "@/lib/ambassadors/attribution";
 import { ADS_CLICK_COOKIE, decodeAdsClick } from "@/lib/ads-click";
+import { captureMetaContext } from "@/lib/meta/capi";
 
 // pt-BR error for both the credit-card in-flight guard (app-layer) and the
 // idx_orders_one_pending_card_per_user_cohort unique-violation (DB-layer) —
@@ -511,6 +512,11 @@ export async function POST(request: NextRequest) {
   // never passed through a lead form. Malformed or >90-day-old values are ignored.
   const adsClick = decodeAdsClick(request.cookies.get(ADS_CLICK_COOKIE)?.value, Date.now());
 
+  // Meta Conversions API context — frozen ONLY when the buyer accepted
+  // advertising cookies (null otherwise, and then no Purchase is ever sent).
+  // Never for a Matrícula gratuita. Swallows its own failures.
+  const metaCapi = isFullDiscount ? null : await captureMetaContext(request, user.id);
+
   // Create pending order. For 100%-off, we insert it as 'paid' immediately
   // (no PagBank round-trip below) and short-circuit to finalizePaidOrder.
   const initialStatus = isFullDiscount ? "pending" : "pending"; // both start pending; full-discount transitions below
@@ -530,6 +536,7 @@ export async function POST(request: NextRequest) {
       promotion_id: promotion?.id ?? null,
       gclid: adsClick?.gclid ?? null,
       ad_click_at: adsClick ? adsClick.landedAt.toISOString() : null,
+      meta_capi: metaCapi,
       currency: "BRL",
       payment_method: paymentMethod,
       status: initialStatus,

@@ -195,6 +195,21 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   billing "Pagos", Google Ads OCI purchases (order AND lead path) and GA4 `purchase`; never attributed to
   an ambassador. Derived from the amount, no column. Still markable "Teste interno"; "Estornar" on it
   only revokes access (refund route `couponOnly`).
+- **Meta Pixel + Conversions API (Karina 2026-11-04/09) — built in TEST MODE (`META_PIXEL_LIVE = false`
+  in `lib/meta/config.ts`).** One Pixel/dataset `1642376477393533` ("MedHelpSpace | Web") for both products.
+  Pixel only on an ALLOWLIST (`META_PIXEL_PATHS`: /, /revalida, /loja, /checkout, /signup, /clinact,
+  /clinact/gratis, /clinact/assinar — never /app, /admin, member areas, /clinact/caso) and only after an
+  EXPLICIT "Aceitar" (`mhs_ads_consent`, separate from GA's opt-out cookie). PageView + InitiateCheckout in the
+  browser (`disablePushState` + `allowDuplicatePageViews` + autoConfig off — fbevents drops every PageView
+  after the first without it). **Purchase is server-only** (CAPI): Revalida from `finalizePaidOrder`'s race
+  winner, ClinAct from `recordPaidInvoices` for occurrence 1 only (never renewals); context (fbp/fbc/IP/UA)
+  frozen at checkout on `orders.meta_capi` / `clinact_subscriptions.meta_capi` ONLY with ads consent;
+  `meta_capi_events` (event_id PK = `revalida_<order>` / `clinact_<SUBS_id>`) is the dedupe claim. Skips R$ 0,
+  `internal_test`, admins / `mhs_internal` browsers. Test mode: `?meta_test=TESTxxxx` on any public URL makes
+  that browser a Test Events browser (Pixel loads; CAPI events carry the code). Token
+  `META_CAPI_ACCESS_TOKEN` (system user, no expiry) in Vercel prod + `app/.env.local`. Going live = flip
+  the constant AFTER Karina approves the new banner + Privacidade text (the live policy still says "não
+  utilizamos cookies de rastreamento para publicidade"). Patch: `schema-patch-meta-capi.sql` (prod + local).
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a

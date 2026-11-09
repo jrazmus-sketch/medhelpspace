@@ -336,6 +336,20 @@ export async function finalizePaidOrder(
     console.error("lead convert flip failed", orderId, e);
   }
 
+  // Meta Conversions API Purchase — only the race winner gets here, so one
+  // order = one Purchase (meta_capi_events backs that up). Skips R$ 0, internal
+  // tests and buyers who did not accept advertising cookies. Awaited (serverless)
+  // and never throws. Lazy import: capi.ts is server-only, and this module is
+  // also loaded by unit tests.
+  if (expectedCents > 0) {
+    try {
+      const { sendRevalidaPurchase } = await import("@/lib/meta/capi");
+      await sendRevalidaPurchase(orderId);
+    } catch (e) {
+      console.error("meta capi: load failed", orderId, e);
+    }
+  }
+
   // Email idempotency: UNIQUE (user_id, kind, context_id) on email_log means
   // the second insert with the same context_id (order id) fails — never sends.
   const { error: logErr } = await admin

@@ -26,3 +26,24 @@ export function setStoredConsent(value: AnalyticsConsent): void {
 export function hasConsentChoice(): boolean {
   return getStoredConsent() !== null;
 }
+
+// ── Advertising (Meta) — explicit opt-in, its own cookie ─────────────────────
+// Separate from analytics on purpose: an "Aceitar" given when the notice spoke
+// only of analytics never counts as consent to advertising. No cookie = no ads.
+// The server reads the same cookie at checkout (lib/meta/capi.ts).
+
+const ADS_COOKIE_NAME = "mhs_ads_consent";
+
+export function getStoredAdsConsent(): AnalyticsConsent | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)mhs_ads_consent=([^;]+)/);
+  if (!match) return null;
+  const value = decodeURIComponent(match[1]);
+  return value === "granted" || value === "denied" ? value : null;
+}
+
+export function setStoredAdsConsent(value: AnalyticsConsent): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${ADS_COOKIE_NAME}=${value}; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`;
+  window.dispatchEvent(new Event("mhs-consent-change"));
+}

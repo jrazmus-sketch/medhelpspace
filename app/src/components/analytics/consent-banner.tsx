@@ -32,20 +32,37 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GA_MEASUREMENT_ID, isTrackedPath } from "@/lib/analytics/config";
-import { getStoredConsent, setStoredConsent } from "@/lib/analytics/consent";
+import {
+  getStoredAdsConsent,
+  getStoredConsent,
+  setStoredAdsConsent,
+  setStoredConsent,
+} from "@/lib/analytics/consent";
 import { updateConsent } from "@/lib/analytics/track";
+import { metaActiveInBrowser } from "@/lib/meta/pixel";
 
+// ADVERTISING (Meta, Karina 2026-11-09): when Meta is on for this browser
+// (META_PIXEL_LIVE, or a ?meta_test browser), the notice names advertising and
+// its "Aceitar" ALSO records mhs_ads_consent. A visitor who answered the old,
+// analytics-only notice is asked again — that answer never covered ads.
 export function AnalyticsConsentBanner() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
+  const [ads, setAds] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!GA_MEASUREMENT_ID) return;
-    if (getStoredConsent() !== null) return; // already chose — stay hidden
+    const decide = () => {
+      const metaOn = metaActiveInBrowser();
+      setAds(metaOn);
+      setVisible(getStoredConsent() === null || (metaOn && getStoredAdsConsent() === null));
+    };
     // Client-only: decide visibility after mount to avoid an SSR/client mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setVisible(true);
+    decide();
+    // Re-decide when a ?meta_test browser is recognised (MetaPixel fires this).
+    window.addEventListener("mhs-consent-change", decide);
+    return () => window.removeEventListener("mhs-consent-change", decide);
   }, []);
 
   const showing = visible && isTrackedPath(pathname);
@@ -74,6 +91,9 @@ export function AnalyticsConsentBanner() {
   if (!showing) return null;
 
   function choose(granted: boolean) {
+    // Ads first: setStoredConsent fires mhs-consent-change, and `decide` must
+    // then see BOTH answers or it would reopen the card.
+    if (ads) setStoredAdsConsent(granted ? "granted" : "denied");
     setStoredConsent(granted ? "granted" : "denied");
     if (!granted) updateConsent(false); // tell any already-loaded gtag to stop
     setVisible(false);
@@ -102,7 +122,9 @@ export function AnalyticsConsentBanner() {
           it is replacing while still being a notice with a link to the policy. */}
       <div className="rounded-xl border border-border/60 bg-surface-1/95 p-3.5 shadow-xl shadow-black/20 backdrop-blur supports-[backdrop-filter]:bg-surface-1/85">
         <p className="text-sm leading-snug text-foreground/75">
-          Usamos cookies de análise para melhorar sua experiência.{" "}
+          {ads
+            ? "Usamos cookies de análise e de publicidade (Meta)."
+            : "Usamos cookies de análise para melhorar sua experiência."}{" "}
           <Link
             href="/privacidade"
             className="font-medium text-brand underline underline-offset-2 hover:text-brand/80"

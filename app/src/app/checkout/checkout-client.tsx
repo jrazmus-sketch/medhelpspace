@@ -23,6 +23,7 @@ import {
 } from "@/lib/br";
 import type { InstallmentOption } from "@/lib/pagbank/types";
 import { trackBeginCheckout, trackPurchase } from "@/lib/analytics/track";
+import { metaInitiateCheckout } from "@/lib/meta/pixel";
 
 function fmtBRL(cents: number): string {
   return `R$ ${(cents / 100).toLocaleString("pt-BR", {
@@ -267,6 +268,14 @@ export function CheckoutClient({
     if (beginTracked.current) return;
     beginTracked.current = true;
     trackBeginCheckout({ turma: cohortSlug, turmaName: cohortName, value: amountCents / 100 });
+    // Meta InitiateCheckout — no-op unless the Pixel is loaded (consent etc.).
+    metaInitiateCheckout({
+      product: "revalida",
+      contentId: `revalida_${cohortSlug}`,
+      contentName: cohortName,
+      value: amountCents / 100,
+      turma: cohortSlug,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

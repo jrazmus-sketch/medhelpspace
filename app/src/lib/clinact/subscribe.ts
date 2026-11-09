@@ -29,6 +29,7 @@ import {
 } from "@/lib/pagbank/subscriptions";
 import type { NfseTomador } from "@/lib/br";
 import { recordPaidInvoices, recordPaidInvoicesFor } from "./invoices";
+import type { MetaContext } from "@/lib/meta/capi";
 
 /**
  * The ClinAct subscription flow: plan → subscriber (card encrypted in the
@@ -95,6 +96,12 @@ export type SubscribeInput = {
    * nothing is charged and the student is told the new price.
    */
   expectedFirstCents?: number;
+  /**
+   * Meta Conversions API context (lib/meta/capi.ts) — only when the student
+   * accepted advertising cookies. Stored on the subscription row; the Purchase
+   * is sent from recordPaidInvoices for the first paid invoice only.
+   */
+  metaCapi?: MetaContext | null;
 };
 
 export type SubscribeResult =
@@ -275,6 +282,8 @@ async function recordSubscription(input: {
   /** The cardholder typed at checkout — payment data, NOT the tomador. */
   billing: { name: string; taxId: string; phone: string };
   tomador: NfseTomador;
+  /** ALWAYS written: a new subscription never inherits the previous one's context. */
+  metaCapi: MetaContext | null;
 }): Promise<void> {
   const t = input.tomador;
   const admin = createAdminClient();
@@ -313,6 +322,7 @@ async function recordSubscription(input: {
       tomador_city: t.city,
       tomador_state: t.state,
       environment: getSubscriptionsEnv(),
+      meta_capi: input.metaCapi,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },
@@ -461,7 +471,7 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
       if (outcome.kind === "paid") {
         const found = await findSubscriptionByReference(referenceId);
         if (found) {
-          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador });
+          await recordSubscription({ userId: input.userId, referenceId, subscription: found, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador, metaCapi: input.metaCapi ?? null });
           await grantAccess(input.userId, paidUntilFrom(found, input.planKey));
           await recordPaidInvoicesFor(input.userId, found.id);
           await sendSubscriptionConfirmation(input.userId);
@@ -472,11 +482,11 @@ export async function subscribeToClinact(input: SubscribeInput): Promise<Subscri
         return { ok: true, state: "pending", subscriptionId: outcome.subscriptionId };
       }
     }
-    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador });
+    await recordSubscription({ userId: input.userId, referenceId, subscription: null, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador, metaCapi: input.metaCapi ?? null });
     return { ok: false, error: GENERIC_ERROR };
   }
 
-  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador });
+  await recordSubscription({ userId: input.userId, referenceId, subscription, customerId, planKey: input.planKey, planId, offer, couponId, card, billing, tomador: input.tomador, metaCapi: input.metaCapi ?? null });
 
   // 201 does NOT mean paid. Ask the invoice.
   const invoices = await invoicesOf(subscription.id);

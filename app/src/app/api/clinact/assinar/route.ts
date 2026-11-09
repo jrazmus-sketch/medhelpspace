@@ -5,6 +5,7 @@ import { checkRateLimit, getClientIp } from "@/lib/pagbank/rate-limit";
 import { isValidCpf, normalizeNfseTomador, onlyDigits, validateNfseTomador, type NfseTomador } from "@/lib/br";
 import { CLINACT_PLANS, type ClinactPlanKey } from "@/lib/clinact/plans";
 import { subscribeToClinact, subscriptionsUnavailable } from "@/lib/clinact/subscribe";
+import { captureMetaContext } from "@/lib/meta/capi";
 
 // ClinAct subscription checkout.
 //
@@ -118,6 +119,8 @@ export async function POST(request: NextRequest) {
     phone,
     tomador,
     expectedFirstCents: Number.isInteger(body.expectedFirstCents) ? body.expectedFirstCents : undefined,
+    // Meta Conversions API — null unless advertising cookies were accepted.
+    metaCapi: await captureMetaContext(request, user.id),
   });
 
   if (!result.ok) {

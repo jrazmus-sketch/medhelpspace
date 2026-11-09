@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSubscriptionsEnv, listInvoices, type PagBankInvoice } from "@/lib/pagbank/subscriptions";
 import { referencePeriod } from "./invoice-period";
 import type { ClinactPlanKey } from "./plans";
+import { sendClinactFirstPurchase } from "@/lib/meta/capi";
 
 /** Copied as-is from clinact_subscriptions onto each invoice row. */
 const TOMADOR_COLUMNS = [
@@ -81,6 +82,11 @@ export async function recordPaidInvoices(
       .from("clinact_invoices")
       .upsert(rows, { onConflict: "id", ignoreDuplicates: true });
     if (error) console.error("clinact invoices: record failed", subscriptionId, error);
+
+    // Meta Purchase for the subscription's FIRST paid charge only (never a
+    // renewal); deduplicated by meta_capi_events, so the cron and webhook
+    // re-reading the same invoices send nothing more. Never throws.
+    await sendClinactFirstPurchase(userId, subscriptionId, paid);
   } catch (err) {
     console.error("clinact invoices: record failed", subscriptionId, err);
   }
