@@ -12,7 +12,16 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { isMetaPixelPath, isValidMetaTestCode, META_PIXEL_ID, META_PIXEL_LIVE } from "@/lib/meta/config";
-import { buildPurchasePayload, normalizePhoneBR, asContext, type MetaContext } from "@/lib/meta/capi-payload";
+import {
+  buildMirrorPayload,
+  buildPurchasePayload,
+  isMirrorEvent,
+  isValidEventId,
+  normalizePhoneBR,
+  asContext,
+  sanitizeMirrorCustomData,
+  type MetaContext,
+} from "@/lib/meta/capi-payload";
 
 const SRC = path.join(process.cwd(), "src");
 const read = (rel: string) => readFileSync(path.join(SRC, rel), "utf8");
@@ -149,6 +158,60 @@ test("no browser-side Purchase for Meta, and the Pixel never auto-tracks", () =>
   const comp = read("components/analytics/meta-pixel.tsx");
   assert.match(comp, /fbq\.disablePushState = true/);
   assert.match(comp, /'autoConfig', false/);
+});
+
+test("browser mirror: only PageView / InitiateCheckout, untrusted fields stripped", () => {
+  assert.ok(isMirrorEvent("PageView") && isMirrorEvent("InitiateCheckout"));
+  assert.ok(!isMirrorEvent("Purchase"), "Purchase may only come from PagBank's confirmation");
+  assert.ok(isValidEventId("2f0c1a8e-1b2c-4d5e-8f90-123456789abc"));
+  assert.ok(!isValidEventId("x"));
+  assert.ok(!isValidEventId("abc def ghi"));
+  const clean = sanitizeMirrorCustomData({
+    currency: "BRL",
+    value: 20.9,
+    content_ids: ["clinact_monthly", "<script>"],
+    content_name: "ClinAct mensal",
+    content_type: "product",
+    num_items: 1,
+    product: "clinact",
+    plan: "monthly",
+    email: "a@b.com",
+    turma: "x@y",
+    em: ["hash"],
+  });
+  assert.deepEqual(clean, {
+    currency: "BRL",
+    value: 20.9,
+    content_ids: ["clinact_monthly"],
+    content_name: "ClinAct mensal",
+    content_type: "product",
+    num_items: 1,
+    product: "clinact",
+    plan: "monthly",
+  });
+});
+
+test("mirror payload: same event_id, test code, no custom data on PageView", () => {
+  const body = buildMirrorPayload({
+    eventName: "PageView",
+    eventId: "2f0c1a8e-1b2c-4d5e-8f90-123456789abc",
+    userId: null,
+    context: { ...ctx, test_event_code: "TEST35482" },
+    customData: { value: 1 },
+    eventTime: 1,
+  });
+  assert.equal(body.data[0].event_id, "2f0c1a8e-1b2c-4d5e-8f90-123456789abc");
+  assert.equal(body.test_event_code, "TEST35482");
+  assert.equal("custom_data" in body.data[0], false);
+  assert.equal("external_id" in (body.data[0].user_data as object), false);
+});
+
+test("browser events share one event_id between Pixel and server", () => {
+  const px = read("lib/meta/pixel.ts");
+  assert.match(px, /fbq\?\.\("track", name, params \?\? \{\}, \{ eventID: eventId \}\)/);
+  assert.match(px, /JSON\.stringify\(\{ name, eventId,/);
+  assert.match(px, /scrubUrlForMeta\(\);\s*\n\s*const eventId/);
+  assert.match(read("app/api/meta/event/route.ts"), /isMetaPixelPath\(page\.pathname\)/);
 });
 
 test("the CAPI context is captured only with advertising consent", () => {

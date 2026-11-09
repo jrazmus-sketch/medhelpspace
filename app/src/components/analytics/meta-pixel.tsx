@@ -30,7 +30,7 @@ import {
   isMetaPixelPath,
   isValidMetaTestCode,
 } from "@/lib/meta/config";
-import { metaActiveInBrowser, metaTestCode } from "@/lib/meta/pixel";
+import { metaActiveInBrowser, metaPageView, metaTestCode } from "@/lib/meta/pixel";
 import { getStoredAdsConsent } from "@/lib/analytics/consent";
 import { INTERNAL_TRAFFIC_COOKIE } from "@/lib/analytics/config";
 import { useAuth } from "@/providers/auth-provider";
@@ -97,7 +97,7 @@ export function MetaPixel() {
     if (!ready || !permitted || !allowedHere) return;
     if (lastTracked.current === pathname) return;
     lastTracked.current = pathname;
-    window.fbq?.("track", "PageView");
+    metaPageView(); // browser + server copy, one event_id
   }, [ready, permitted, allowedHere, pathname]);
 
   useEffect(() => {

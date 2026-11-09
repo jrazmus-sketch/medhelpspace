@@ -11,7 +11,13 @@ import {
   META_TEST_COOKIE,
   isValidMetaTestCode,
 } from "./config";
-import { asContext, buildPurchasePayload, type MetaContext } from "./capi-payload";
+import {
+  asContext,
+  buildMirrorPayload,
+  buildPurchasePayload,
+  type MetaContext,
+  type MirrorEvent,
+} from "./capi-payload";
 
 export type { MetaContext };
 
@@ -58,7 +64,11 @@ function pageUrl(referer: string | null): string | null {
  * The context to freeze on the order / subscription, or null when no Purchase
  * may ever be sent for it. Call from the checkout route (the buyer's request).
  */
-export async function captureMetaContext(request: NextRequest, userId: string): Promise<MetaContext | null> {
+export async function captureMetaContext(
+  request: NextRequest,
+  userId: string | null,
+  pageUrlOverride?: string | null,
+): Promise<MetaContext | null> {
   try {
     const test = request.cookies.get(META_TEST_COOKIE)?.value ?? null;
     const testCode = isValidMetaTestCode(test) ? test.toUpperCase() : null;
@@ -67,12 +77,14 @@ export async function captureMetaContext(request: NextRequest, userId: string): 
 
     if (!testCode) {
       if (request.cookies.get(INTERNAL_TRAFFIC_COOKIE)?.value === "1") return null;
-      const { data: profile } = await createAdminClient()
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-      if (profile?.role && profile.role !== "member") return null;
+      if (userId) {
+        const { data: profile } = await createAdminClient()
+          .from("profiles")
+          .select("role")
+          .eq("id", userId)
+          .maybeSingle();
+        if (profile?.role && profile.role !== "member") return null;
+      }
     }
 
     const ip = getClientIp(request.headers);
@@ -82,13 +94,57 @@ export async function captureMetaContext(request: NextRequest, userId: string): 
       fbc: request.cookies.get("_fbc")?.value ?? null,
       ip: ip && ip !== "unknown" ? ip : null,
       ua: request.headers.get("user-agent"),
-      url: pageUrl(request.headers.get("referer")),
+      url: pageUrl(pageUrlOverride ?? request.headers.get("referer")),
       test_event_code: testCode,
       captured_at: new Date().toISOString(),
     };
   } catch (err) {
     console.error("meta capi: capture failed", err);
     return null;
+  }
+}
+
+/**
+ * Server mirror of a browser PageView / InitiateCheckout (same event_id, so
+ * Meta deduplicates). Same gates as the Pixel: consent, live-or-test, not an
+ * internal browser. No DB claim — these are not sales; Meta's event_id dedup
+ * is enough. Returns Meta's answer for logging only.
+ */
+export async function sendMirrorEvent(
+  request: NextRequest,
+  input: { eventName: MirrorEvent; eventId: string; pageUrl: string; userId: string | null; customData: Record<string, unknown> },
+): Promise<{ sent: boolean; status?: number }> {
+  try {
+    const token = process.env.META_CAPI_ACCESS_TOKEN;
+    if (!token) return { sent: false };
+    const context = await captureMetaContext(request, input.userId, input.pageUrl);
+    if (!context) return { sent: false };
+    const body = buildMirrorPayload({
+      eventName: input.eventName,
+      eventId: input.eventId,
+      userId: input.userId,
+      context,
+      customData: input.customData,
+      eventTime: Math.floor(Date.now() / 1000),
+    });
+    const res = await fetch(
+      `https://graph.facebook.com/${GRAPH_VERSION}/${META_PIXEL_ID}/events?access_token=${encodeURIComponent(token)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      },
+    );
+    if (!res.ok) {
+      console.error("meta capi: mirror refused", input.eventName, res.status, await res.json().catch(() => null));
+    } else if (process.env.NODE_ENV !== "production") {
+      console.info("meta capi: mirror sent", input.eventName, input.eventId, context.test_event_code ?? "live");
+    }
+    return { sent: res.ok, status: res.status };
+  } catch (err) {
+    console.error("meta capi: mirror failed", input.eventName, err);
+    return { sent: false };
   }
 }
 

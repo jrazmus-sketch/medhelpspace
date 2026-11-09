@@ -1,7 +1,8 @@
 // Browser side of the Meta Pixel. Every call is a safe no-op unless the Pixel is
 // actually loaded (allowed page + advertising consent + live or test browser),
-// so callers never need to guard. Purchase is NOT here on purpose: it is sent
-// only by the server (lib/meta/capi.ts), from PagBank's confirmation.
+// so callers never need to guard. Each event also goes to /api/meta/event, which
+// re-sends it from the server with the same event_id (see track()). Purchase is
+// NOT here on purpose: only the server sends it, from PagBank's confirmation.
 
 import {
   META_PIXEL_LIVE,
@@ -35,21 +36,68 @@ const POLL_MS = 250;
 /**
  * fbq loads after hydration (and only after consent), so an event fired on page
  * open waits up to 10 s for it, then is dropped — never queued anywhere Meta
- * could read it later.
+ * could read it later. fbq existing = every gate in MetaPixel passed.
  */
-function fbq(...args: unknown[]): void {
+function whenFbq(run: () => void): void {
   if (typeof window === "undefined") return;
-  if (typeof window.fbq === "function") return window.fbq(...args);
+  if (typeof window.fbq === "function") return run();
   let waited = 0;
   const timer = window.setInterval(() => {
     waited += POLL_MS;
     if (typeof window.fbq === "function") {
       window.clearInterval(timer);
-      window.fbq(...args);
+      run();
     } else if (waited >= WAIT_MS) {
       window.clearInterval(timer);
     }
   }, POLL_MS);
+}
+
+/**
+ * The Pixel reports the full address bar to Meta. Nothing personal may ride on
+ * it: an `email` parameter (the checkout accepts ?email= to prefill) or any
+ * value with an "@" is removed from the URL before the first event is sent.
+ */
+function scrubUrlForMeta(): void {
+  const url = new URL(window.location.href);
+  let changed = false;
+  for (const [k, v] of [...url.searchParams]) {
+    if (k.toLowerCase() === "email" || v.includes("@")) {
+      url.searchParams.delete(k);
+      changed = true;
+    }
+  }
+  if (changed) window.history.replaceState(window.history.state, "", url.toString());
+}
+
+function newEventId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+/**
+ * One event, two channels, ONE event_id: the Pixel in the browser and the same
+ * event from our server (Conversions API). Meta keeps one of the pair. The
+ * server copy is what carries the Test Events code in test mode, and what still
+ * arrives when an ad blocker eats the Pixel. The server re-checks consent.
+ */
+function track(name: "PageView" | "InitiateCheckout", params?: Record<string, unknown>): void {
+  whenFbq(() => {
+    scrubUrlForMeta();
+    const eventId = newEventId();
+    window.fbq?.("track", name, params ?? {}, { eventID: eventId });
+    fetch("/api/meta/event", {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, eventId, url: window.location.href, customData: params ?? {} }),
+    }).catch(() => {});
+  });
+}
+
+/** PageView — called by MetaPixel once per allowed page visit. */
+export function metaPageView(): void {
+  track("PageView");
 }
 
 /**
@@ -64,7 +112,7 @@ export function metaInitiateCheckout(input: {
   plan?: string;
   turma?: string;
 }): void {
-  fbq("track", "InitiateCheckout", {
+  track("InitiateCheckout", {
     currency: "BRL",
     value: input.value,
     content_type: "product",
