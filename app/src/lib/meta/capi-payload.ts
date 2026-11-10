@@ -109,6 +109,19 @@ export function buildMirrorPayload(input: {
   };
 }
 
+/**
+ * The ONLY product fields a Purchase may carry besides value / currency (Karina
+ * 2026-11-09): which product, which turma or plan. No order number, no payment
+ * method — a field added by a caller later is dropped here, not sent.
+ */
+export const PURCHASE_CUSTOM_FIELDS = ["content_ids", "content_name", "product", "plan", "turma"] as const;
+
+function pickPurchaseFields(raw: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of PURCHASE_CUSTOM_FIELDS) if (raw[k] !== undefined) out[k] = raw[k];
+  return out;
+}
+
 export function buildPurchasePayload(input: {
   eventId: string;
   valueCents: number;
@@ -147,7 +160,7 @@ export function buildPurchasePayload(input: {
           value: Math.round(input.valueCents) / 100,
           content_type: "product",
           num_items: 1,
-          ...input.customData,
+          ...pickPurchaseFields(input.customData),
         },
       },
     ],

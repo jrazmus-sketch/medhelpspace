@@ -58,6 +58,47 @@ export function isMetaPixelPath(pathname: string): boolean {
   return (META_PIXEL_PATHS as readonly string[]).includes(p);
 }
 
+/**
+ * Query parameters the BROWSER Pixel may carry to Meta (Karina 2026-11-09, data
+ * minimisation). The Pixel always reports the full address bar, so this is the
+ * only way to bound what it sends. Just `fbclid`: it is what Meta needs to tie a
+ * visit to the ad click (it becomes the _fbc cookie). Everything else stays on
+ * the site — utm_* (GA4 + first-touch cookie already read them), next (it can
+ * name a clinical case or a member page), cupom, cohort, plano, email, tokens.
+ */
+export const META_BROWSER_URL_PARAMS = ["fbclid"] as const;
+
+/**
+ * May the browser Pixel fire on this address? Only when the query carries
+ * nothing but META_BROWSER_URL_PARAMS and there is no #fragment (auth redirects
+ * can carry tokens there). When false the event still goes, from the SERVER only,
+ * with the address cut to origin + path.
+ */
+export function browserUrlSafeForMeta(href: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return false;
+  }
+  if (url.hash && url.hash !== "#") return false;
+  for (const key of url.searchParams.keys()) {
+    if (!(META_BROWSER_URL_PARAMS as readonly string[]).includes(key)) return false;
+  }
+  return true;
+}
+
+/** The ad-click id from a query string, when it has a sane shape. */
+export function fbclidFrom(search: string): string | null {
+  const v = new URLSearchParams(search).get("fbclid");
+  return v && /^[A-Za-z0-9_-]{1,500}$/.test(v) ? v : null;
+}
+
+/** Meta's documented _fbc format: fb.<subdomain index>.<creation ms>.<fbclid>. */
+export function fbcFromFbclid(fbclid: string, nowMs: number): string {
+  return `fb.1.${nowMs}.${fbclid}`;
+}
+
 /** Read one cookie from a `document.cookie`-style string. */
 export function readCookie(cookieString: string, name: string): string | null {
   const m = cookieString.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));

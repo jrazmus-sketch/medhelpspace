@@ -7,6 +7,9 @@
 import {
   META_PIXEL_LIVE,
   META_TEST_COOKIE,
+  browserUrlSafeForMeta,
+  fbcFromFbclid,
+  fbclidFrom,
   isValidMetaTestCode,
   readCookie,
 } from "./config";
@@ -53,21 +56,22 @@ function whenFbq(run: () => void): void {
   }, POLL_MS);
 }
 
+const FBC_MAX_AGE_SECONDS = 90 * 24 * 60 * 60;
+
 /**
- * The Pixel reports the full address bar to Meta. Nothing personal may ride on
- * it: an `email` parameter (the checkout accepts ?email= to prefill) or any
- * value with an "@" is removed from the URL before the first event is sent.
+ * An ad click lands with ?fbclid=…. fbevents.js turns it into the _fbc cookie
+ * only when it fires an event on that address — and the browser event is skipped
+ * whenever the address carries anything else (utm_*, next…). So the cookie is
+ * written here, in Meta's documented format, and the later server events
+ * (PageView, InitiateCheckout, the Purchase context) still carry the click.
+ * Only runs once the Pixel is permitted (consent given), like everything here.
  */
-function scrubUrlForMeta(): void {
-  const url = new URL(window.location.href);
-  let changed = false;
-  for (const [k, v] of [...url.searchParams]) {
-    if (k.toLowerCase() === "email" || v.includes("@")) {
-      url.searchParams.delete(k);
-      changed = true;
-    }
-  }
-  if (changed) window.history.replaceState(window.history.state, "", url.toString());
+function rememberAdClick(): void {
+  const fbclid = fbclidFrom(window.location.search);
+  if (!fbclid || readCookie(document.cookie, "_fbc")) return;
+  const domain = window.location.hostname.endsWith("medhelpspace.com.br") ? "; domain=.medhelpspace.com.br" : "";
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `_fbc=${fbcFromFbclid(fbclid, Date.now())}; path=/; max-age=${FBC_MAX_AGE_SECONDS}; SameSite=Lax${domain}${secure}`;
 }
 
 function newEventId(): string {
@@ -80,17 +84,30 @@ function newEventId(): string {
  * event from our server (Conversions API). Meta keeps one of the pair. The
  * server copy is what carries the Test Events code in test mode, and what still
  * arrives when an ad blocker eats the Pixel. The server re-checks consent.
+ *
+ * The Pixel reports the whole address bar (it cannot be told otherwise), so it
+ * fires ONLY on an address with nothing but fbclid in it (browserUrlSafeForMeta).
+ * Any other address — /signup?next=…, /checkout?cohort=…&cupom=…, utm links —
+ * goes from the server alone, which only ever sends origin + path. The browser
+ * hands the server origin + path too: the query never leaves this page.
  */
 function track(name: "PageView" | "InitiateCheckout", params?: Record<string, unknown>): void {
   whenFbq(() => {
-    scrubUrlForMeta();
+    rememberAdClick();
     const eventId = newEventId();
-    window.fbq?.("track", name, params ?? {}, { eventID: eventId });
+    if (browserUrlSafeForMeta(window.location.href)) {
+      window.fbq?.("track", name, params ?? {}, { eventID: eventId });
+    }
     fetch("/api/meta/event", {
       method: "POST",
       keepalive: true,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, eventId, url: window.location.href, customData: params ?? {} }),
+      body: JSON.stringify({
+        name,
+        eventId,
+        url: `${window.location.origin}${window.location.pathname}`,
+        customData: params ?? {},
+      }),
     }).catch(() => {});
   });
 }

@@ -515,7 +515,8 @@ export async function POST(request: NextRequest) {
   // Meta Conversions API context — frozen ONLY when the buyer accepted
   // advertising cookies (null otherwise, and then no Purchase is ever sent).
   // Never for a Matrícula gratuita. Swallows its own failures.
-  const metaCapi = isFullDiscount ? null : await captureMetaContext(request, user.id);
+  // The page is named here: the Referer is only the domain (strict-origin).
+  const metaCapi = isFullDiscount ? null : await captureMetaContext(request, user.id, `${request.nextUrl.origin}/checkout`);
 
   // Create pending order. For 100%-off, we insert it as 'paid' immediately
   // (no PagBank round-trip below) and short-circuit to finalizePaidOrder.

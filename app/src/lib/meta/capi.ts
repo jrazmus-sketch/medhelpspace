@@ -50,10 +50,10 @@ const TIMEOUT_MS = 5000;
 /** Meta refuses events older than 7 days. */
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-function pageUrl(referer: string | null): string | null {
-  if (!referer) return null;
+function pageUrl(raw: string | null): string | null {
+  if (!raw) return null;
   try {
-    const u = new URL(referer);
+    const u = new URL(raw);
     return `${u.origin}${u.pathname}`;
   } catch {
     return null;
@@ -67,7 +67,12 @@ function pageUrl(referer: string | null): string | null {
 export async function captureMetaContext(
   request: NextRequest,
   userId: string | null,
-  pageUrlOverride?: string | null,
+  /**
+   * The page the event belongs to — given by the caller, never read from the
+   * Referer: the site sends `Referrer-Policy: strict-origin` (Karina 2026-11-09),
+   * so a Referer is only ever the domain. Query string is cut either way.
+   */
+  pageUrlForEvent: string,
 ): Promise<MetaContext | null> {
   try {
     const test = request.cookies.get(META_TEST_COOKIE)?.value ?? null;
@@ -94,7 +99,7 @@ export async function captureMetaContext(
       fbc: request.cookies.get("_fbc")?.value ?? null,
       ip: ip && ip !== "unknown" ? ip : null,
       ua: request.headers.get("user-agent"),
-      url: pageUrl(pageUrlOverride ?? request.headers.get("referer")),
+      url: pageUrl(pageUrlForEvent),
       test_event_code: testCode,
       captured_at: new Date().toISOString(),
     };
@@ -215,7 +220,7 @@ export async function sendRevalidaPurchase(orderId: string): Promise<void> {
     const admin = createAdminClient();
     const { data: order } = await admin
       .from("orders")
-      .select("user_id, cohort_id, amount_cents, payment_method, billing_phone, meta_capi, internal_test, status")
+      .select("user_id, cohort_id, amount_cents, billing_phone, meta_capi, internal_test, status")
       .eq("id", orderId)
       .maybeSingle();
     if (!order || order.status !== "paid" || order.internal_test) return;
@@ -241,8 +246,8 @@ export async function sendRevalidaPurchase(orderId: string): Promise<void> {
         content_name: (cohort?.name as string | null) ?? slug,
         product: "revalida",
         turma: slug,
-        order_id: orderId,
-        payment_type: order.payment_method,
+        // No order number, no payment method (Karina 2026-11-09, minimisation):
+        // dedup rides on event_id + meta_capi_events, never on custom data.
       },
     });
   } catch (err) {
@@ -291,7 +296,6 @@ export async function sendClinactFirstPurchase(
         content_name: `ClinAct ${plan === "annual" ? "anual" : "mensal"}`,
         product: "clinact",
         plan,
-        payment_type: "card",
       },
     });
   } catch (err) {

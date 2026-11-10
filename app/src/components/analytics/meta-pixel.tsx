@@ -51,15 +51,20 @@ export function MetaPixel() {
   const lastTracked = useRef<string | null>(null);
 
   // ?meta_test=TEST123 → this browser (session) becomes a Test Events browser;
-  // ?meta_test=off → back to normal. Read once, on the landing URL.
+  // ?meta_test=off → back to normal. Read once, on the landing URL, then taken
+  // out of the address bar: it is ours, nothing else reads it, and leaving it
+  // there would make the landing page a server-only event (see pixel.ts track()).
   useEffect(() => {
-    const value = new URLSearchParams(window.location.search).get(META_TEST_PARAM);
+    const url = new URL(window.location.href);
+    const value = url.searchParams.get(META_TEST_PARAM);
     if (value === null) return;
     if (value === "off") {
       document.cookie = `${META_TEST_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
     } else if (isValidMetaTestCode(value)) {
       document.cookie = `${META_TEST_COOKIE}=${encodeURIComponent(value.toUpperCase())}; path=/; SameSite=Lax`;
     }
+    url.searchParams.delete(META_TEST_PARAM);
+    window.history.replaceState(window.history.state, "", url.toString());
     window.dispatchEvent(new Event("mhs-consent-change"));
   }, []);
 

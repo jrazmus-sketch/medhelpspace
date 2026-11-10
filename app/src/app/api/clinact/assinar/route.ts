@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
     tomador,
     expectedFirstCents: Number.isInteger(body.expectedFirstCents) ? body.expectedFirstCents : undefined,
     // Meta Conversions API — null unless advertising cookies were accepted.
-    metaCapi: await captureMetaContext(request, user.id),
+    // The page is named here: the Referer is only the domain (strict-origin).
+    metaCapi: await captureMetaContext(request, user.id, `${request.nextUrl.origin}/clinact/assinar`),
   });
 
   if (!result.ok) {

@@ -11,7 +11,16 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { isMetaPixelPath, isValidMetaTestCode, META_PIXEL_ID, META_PIXEL_LIVE } from "@/lib/meta/config";
+import {
+  browserUrlSafeForMeta,
+  fbcFromFbclid,
+  fbclidFrom,
+  isMetaPixelPath,
+  isValidMetaTestCode,
+  META_BROWSER_URL_PARAMS,
+  META_PIXEL_ID,
+  META_PIXEL_LIVE,
+} from "@/lib/meta/config";
 import {
   buildMirrorPayload,
   buildPurchasePayload,
@@ -209,9 +218,95 @@ test("mirror payload: same event_id, test code, no custom data on PageView", () 
 test("browser events share one event_id between Pixel and server", () => {
   const px = read("lib/meta/pixel.ts");
   assert.match(px, /fbq\?\.\("track", name, params \?\? \{\}, \{ eventID: eventId \}\)/);
-  assert.match(px, /JSON\.stringify\(\{ name, eventId,/);
-  assert.match(px, /scrubUrlForMeta\(\);\s*\n\s*const eventId/);
+  assert.match(px, /JSON\.stringify\(\{\s*name,\s*eventId,/);
   assert.match(read("app/api/meta/event/route.ts"), /isMetaPixelPath\(page\.pathname\)/);
+});
+
+// ── Karina 2026-11-09 audit fixes (A, B, C) ─────────────────────────────────
+
+test("A: the browser Pixel fires only on an address with nothing but fbclid", () => {
+  const base = "https://www.medhelpspace.com.br";
+  for (const ok of ["/", "/revalida", "/loja", "/clinact?fbclid=IwAR0abc_DEF-123"]) {
+    assert.ok(browserUrlSafeForMeta(base + ok), ok);
+  }
+  for (const bad of [
+    "/signup?next=%2Fclinact%2Fcaso%2Fteste-auditoria-claude", // the audit's finding A
+    "/signup?next=%2Fapp%2Fcardiologia",
+    "/signup?next=%2Fclinact%2Fgratis", // even a harmless next: minimisation
+    "/checkout?cohort=revalida-2027-1&cupom=BLACK50",
+    "/clinact/assinar?plano=mensal",
+    "/checkout?email=aluna%40example.com",
+    "/revalida?utm_source=instagram&utm_medium=paid_social",
+    "/revalida?fbclid=abc&utm_campaign=x",
+    "/?meta_test=TEST35482",
+    "/#access_token=eyJhbGciOi", // auth fragments never ride along
+  ]) {
+    assert.ok(!browserUrlSafeForMeta(base + bad), bad);
+  }
+  assert.ok(!browserUrlSafeForMeta("not a url"));
+  assert.deepEqual([...META_BROWSER_URL_PARAMS], ["fbclid"]);
+});
+
+test("A: the server copy is origin + path, from the browser AND re-cut on the server", () => {
+  const px = read("lib/meta/pixel.ts");
+  assert.match(px, /if \(browserUrlSafeForMeta\(window\.location\.href\)\) \{\s*\n\s*window\.fbq\?\.\("track"/);
+  assert.match(px, /url: `\$\{window\.location\.origin\}\$\{window\.location\.pathname\}`/);
+  assert.ok(!/url: window\.location\.href/.test(px), "the full address never leaves the page");
+  assert.match(read("app/api/meta/event/route.ts"), /pageUrl: `\$\{page\.origin\}\$\{page\.pathname\}`/);
+  // The test-code parameter is taken out of the address bar once read.
+  assert.match(read("components/analytics/meta-pixel.tsx"), /url\.searchParams\.delete\(META_TEST_PARAM\)/);
+});
+
+test("A: an ad click survives a server-only landing, in Meta's _fbc format", () => {
+  assert.equal(fbclidFrom("?utm_source=x&fbclid=IwAR0abc_DEF-123"), "IwAR0abc_DEF-123");
+  assert.equal(fbclidFrom("?fbclid=bad%20value"), null);
+  assert.equal(fbclidFrom(""), null);
+  assert.equal(fbcFromFbclid("IwAR0abc", 1794243000000), "fb.1.1794243000000.IwAR0abc");
+});
+
+test("B: the whole site sends only its domain as the previous page", () => {
+  // next.config.ts uses __dirname, so it is read as text, not imported.
+  const cfg = readFileSync(path.join(process.cwd(), "next.config.ts"), "utf8");
+  assert.match(
+    cfg,
+    /source: "\/:path\*",\s*\n\s*headers: \[\{ key: "Referrer-Policy", value: "strict-origin" \}\]/,
+  );
+  // The checkout context names its page instead of reading the Referer.
+  assert.ok(!/headers\.get\("referer"\)/.test(read("lib/meta/capi.ts")));
+  assert.match(read("app/api/pagbank/charge/route.ts"), /captureMetaContext\(request, user\.id, `\$\{request\.nextUrl\.origin\}\/checkout`\)/);
+  assert.match(read("app/api/clinact/assinar/route.ts"), /captureMetaContext\(request, user\.id, `\$\{request\.nextUrl\.origin\}\/clinact\/assinar`\)/);
+});
+
+test("C: Purchase carries value, currency and product only — no order number, no payment method", () => {
+  const body = buildPurchasePayload({
+    eventId: "revalida_abc",
+    valueCents: 299700,
+    userId: "u",
+    email: null,
+    phone: null,
+    context: ctx,
+    customData: {
+      content_ids: ["revalida_revalida-2027-1"],
+      content_name: "Turma 2027.1",
+      product: "revalida",
+      turma: "revalida-2027-1",
+      order_id: "11111111-2222-3333-4444-555555555555",
+      payment_type: "pix",
+    },
+    eventTime: 1,
+  });
+  assert.deepEqual(body.data[0].custom_data, {
+    currency: "BRL",
+    value: 2997,
+    content_type: "product",
+    num_items: 1,
+    content_ids: ["revalida_revalida-2027-1"],
+    content_name: "Turma 2027.1",
+    product: "revalida",
+    turma: "revalida-2027-1",
+  });
+  assert.equal(body.data[0].event_id, "revalida_abc", "dedup id unchanged");
+  assert.ok(!/order_id:|payment_type:/.test(read("lib/meta/capi.ts")));
 });
 
 test("the CAPI context is captured only with advertising consent", () => {

@@ -18,6 +18,22 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "100mb",
     },
   },
+  async headers() {
+    return [
+      {
+        // Any page that opens another — on this site or elsewhere — tells it only
+        // our DOMAIN, never the path or query it came from (Karina 2026-11-09).
+        // Browsers already did that across sites; this extends it to our own
+        // pages, so a student page or clinical-case address can never ride along
+        // as "previous page" (document.referrer) into a page the Meta Pixel is on.
+        // Nothing on the site needs the full internal referrer: the first-touch
+        // cookie and the funnels only read EXTERNAL referrers, and the Meta
+        // checkout context names its page explicitly.
+        source: "/:path*",
+        headers: [{ key: "Referrer-Policy", value: "strict-origin" }],
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

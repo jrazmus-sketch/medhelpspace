@@ -204,8 +204,13 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   after the first without it). Each browser event is ALSO re-sent by the server via `POST /api/meta/event`
   with the SAME event_id (`3cad04f`) — the Pixel's own request can carry no Test Events code, so in test mode
   only server events show in Events Manager (Karina's TEST35482 run saw no PageView before this). The route
-  allowlists PageView/InitiateCheckout + META_PIXEL_PATHS, re-checks consent; `email` query params are scrubbed
-  from the URL before any event. **Purchase is server-only** (CAPI): Revalida from `finalizePaidOrder`'s race
+  allowlists PageView/InitiateCheckout + META_PIXEL_PATHS, re-checks consent. **Audit fixes (Karina 2026-11-09):**
+  (A) the browser Pixel fires ONLY on an address whose query is nothing but `fbclid` and has no #fragment
+  (`browserUrlSafeForMeta`) — any other address (`/signup?next=…`, `?cohort/cupom/plano`, utm links) goes
+  SERVER-ONLY; the browser hands the server origin+path only, and an fbclid is kept as `_fbc` client-side;
+  (B) site-wide `Referrer-Policy: strict-origin` (next.config) — never read the Referer for a page URL, the
+  checkout routes name their page in `captureMetaContext(request, userId, pageUrl)`; (C) Purchase custom_data
+  is an allowlist (`PURCHASE_CUSTOM_FIELDS`): no order id, no payment method. **Purchase is server-only** (CAPI): Revalida from `finalizePaidOrder`'s race
   winner, ClinAct from `recordPaidInvoices` for occurrence 1 only (never renewals); context (fbp/fbc/IP/UA)
   frozen at checkout on `orders.meta_capi` / `clinact_subscriptions.meta_capi` ONLY with ads consent;
   `meta_capi_events` (event_id PK = `revalida_<order>` / `clinact_<SUBS_id>`) is the dedupe claim. Skips R$ 0,
