@@ -1,3 +1,4 @@
+import { CookiePreferencesLink } from "@/components/analytics/cookie-preferences-link";
 import Link from "next/link";
 import { SiteText } from "./site-text";
 import { FooterAccessLinks } from "./footer-access-links";
@@ -71,6 +72,7 @@ export function LandingFooter() {
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/termos" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Termos de Uso</Link></li>
               <li><Link href="/privacidade" className="transition-colors" style={{ color: "var(--lp-fg-40)" }}>Política de Privacidade</Link></li>
+              <CookiePreferencesLink asListItem className="text-left transition-colors" style={{ color: "var(--lp-fg-40)" }} />
             </ul>
             <div className="mt-5">
               <p className="mb-2 text-xs" style={{ color: "var(--lp-fg-25)" }}>Pagamento seguro via</p>

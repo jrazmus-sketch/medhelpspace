@@ -30,7 +30,13 @@ import {
   isMetaPixelPath,
   isValidMetaTestCode,
 } from "@/lib/meta/config";
-import { metaActiveInBrowser, metaPageView, metaTestCode } from "@/lib/meta/pixel";
+import {
+  metaActiveInBrowser,
+  metaPageView,
+  metaRevokePending,
+  metaTestCode,
+  revokeMetaOnServer,
+} from "@/lib/meta/pixel";
 import { getStoredAdsConsent } from "@/lib/analytics/consent";
 import { INTERNAL_TRAFFIC_COOKIE } from "@/lib/analytics/config";
 import { useAuth } from "@/providers/auth-provider";
@@ -43,7 +49,8 @@ type Gate = { active: boolean; consent: boolean; internal: boolean; testing: boo
 
 export function MetaPixel() {
   const pathname = usePathname();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+  const userId = user?.id ?? null;
   const isAdminProfile = !!profile?.role && profile.role !== "member";
   const [gate, setGate] = useState<Gate | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -67,6 +74,12 @@ export function MetaPixel() {
     window.history.replaceState(window.history.state, "", url.toString());
     window.dispatchEvent(new Event("mhs-consent-change"));
   }, []);
+
+  // "Recusar" pressed while signed out (Karina 2026-11-09, item 4): the server
+  // could not tell whose orders to clean. Do it now that someone is signed in.
+  useEffect(() => {
+    if (userId && metaRevokePending()) void revokeMetaOnServer();
+  }, [userId]);
 
   // Resolve the gate after mount (cookies are client-only) and keep it in sync
   // with the banner.

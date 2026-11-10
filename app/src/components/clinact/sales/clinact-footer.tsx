@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CookiePreferencesLink } from "@/components/analytics/cookie-preferences-link";
 import { ClinactText } from "@/components/clinact/clinact-text";
 import { SocialLinks } from "@/components/marketing/social-links";
 import { ANCHOR_GRATUITOS, ANCHOR_PLANOS } from "@/components/clinact/sales/sections";
@@ -68,6 +69,7 @@ export function ClinactFooter() {
                   Política de Privacidade
                 </Link>
               </li>
+              <CookiePreferencesLink asListItem className={`${LINK} text-left`} />
             </ul>
             <p className="mt-4 text-xs text-foreground/55">Pagamento seguro via PagBank</p>
           </div>

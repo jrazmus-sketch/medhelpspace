@@ -99,6 +99,39 @@ export function fbcFromFbclid(fbclid: string, nowMs: number): string {
   return `fb.1.${nowMs}.${fbclid}`;
 }
 
+// ── Withdrawal of consent (Karina 2026-11-09, item 4) ────────────────────────
+// "Preferências de cookies" reopens the same notice; "Recusar" then stops the
+// Pixel, deletes Meta's own cookies, and asks the server to forget the Meta
+// context frozen on the person's orders / subscription — so a Pix paid later
+// can no longer produce a Purchase.
+
+/** Meta's own browser cookies (browser id, ad click). */
+export const META_BROWSER_COOKIES = ["_fbp", "_fbc"] as const;
+
+/**
+ * Set when "Recusar" happened while nobody was signed in: the next time this
+ * browser has a signed-in user, the server cleanup runs for them.
+ */
+export const META_REVOKE_PENDING_COOKIE = "mhs_meta_revoke";
+
+/** Fired on window to reopen the consent notice (footer link). */
+export const CONSENT_OPEN_EVENT = "mhs-consent-open";
+
+/**
+ * Cookie strings that delete the Meta cookies. fbevents.js writes them on the
+ * registrable domain (.medhelpspace.com.br) and our _fbc helper does the same,
+ * but a host-only copy is deleted too, so no variant survives.
+ */
+export function metaCookieDeletions(hostname: string): string[] {
+  const domains: string[] = [""];
+  if (hostname === "medhelpspace.com.br" || hostname.endsWith(".medhelpspace.com.br")) {
+    domains.push("; domain=.medhelpspace.com.br");
+  }
+  return META_BROWSER_COOKIES.flatMap((name) =>
+    domains.map((d) => `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${d}`),
+  );
+}
+
 /** Read one cookie from a `document.cookie`-style string. */
 export function readCookie(cookieString: string, name: string): string | null {
   const m = cookieString.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));

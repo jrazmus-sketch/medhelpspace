@@ -6,13 +6,16 @@
 
 import {
   META_PIXEL_LIVE,
+  META_REVOKE_PENDING_COOKIE,
   META_TEST_COOKIE,
   browserUrlSafeForMeta,
   fbcFromFbclid,
   fbclidFrom,
   isValidMetaTestCode,
+  metaCookieDeletions,
   readCookie,
 } from "./config";
+import { getStoredAdsConsent } from "@/lib/analytics/consent";
 
 declare global {
   interface Window {
@@ -93,6 +96,9 @@ function newEventId(): string {
  */
 function track(name: "PageView" | "InitiateCheckout", params?: Record<string, unknown>): void {
   whenFbq(() => {
+    // fbq stays defined after a withdrawal (a script cannot be unloaded), so the
+    // consent cookie is re-read at the moment of sending, every time.
+    if (getStoredAdsConsent() !== "granted") return;
     rememberAdClick();
     const eventId = newEventId();
     if (browserUrlSafeForMeta(window.location.href)) {
@@ -140,4 +146,59 @@ export function metaInitiateCheckout(input: {
     ...(input.plan ? { plan: input.plan } : {}),
     ...(input.turma ? { turma: input.turma } : {}),
   });
+}
+
+// ── Withdrawal of consent ────────────────────────────────────────────────────
+
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+function setRevokePending(on: boolean): void {
+  document.cookie = on
+    ? `${META_REVOKE_PENDING_COOKIE}=1; path=/; max-age=${ONE_YEAR_SECONDS}; SameSite=Lax`
+    : `${META_REVOKE_PENDING_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+export function metaRevokePending(): boolean {
+  if (typeof document === "undefined") return false;
+  return readCookie(document.cookie, META_REVOKE_PENDING_COOKIE) === "1";
+}
+
+/**
+ * Ask the server to forget the Meta context frozen on the signed-in person's
+ * orders and ClinAct subscription. Anyone not signed in → remembered in this
+ * browser and retried at the next sign-in (MetaPixel). Never throws.
+ */
+export async function revokeMetaOnServer(): Promise<void> {
+  try {
+    const res = await fetch("/api/meta/revoke", { method: "POST", keepalive: true });
+    const body = (await res.json().catch(() => null)) as { signedIn?: boolean } | null;
+    if (res.ok && body?.signedIn) setRevokePending(false);
+    else setRevokePending(true);
+  } catch {
+    setRevokePending(true);
+  }
+}
+
+/**
+ * "Recusar" (first answer or a later change of mind): the Pixel stops sending
+ * now (fbq consent revoke — MetaPixel also does it on the cookie change), Meta's
+ * cookies are deleted, and the server forgets what it kept for a Purchase.
+ * The consent cookie itself is written by the banner before this runs, so the
+ * server already refuses every new event for this browser.
+ */
+export function withdrawMetaConsent(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (typeof window.fbq === "function") window.fbq("consent", "revoke");
+  } catch {
+    /* the Pixel may be half-loaded; the cookie gate still holds */
+  }
+  for (const c of metaCookieDeletions(window.location.hostname)) document.cookie = c;
+  void revokeMetaOnServer();
+}
+
+/** "Aceitar" again: a withdrawal still waiting for a sign-in is no longer wanted. */
+export function clearMetaRevokePending(): void {
+  if (typeof document === "undefined") return;
+  setRevokePending(false);
 }

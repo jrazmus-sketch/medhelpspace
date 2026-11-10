@@ -39,17 +39,35 @@ import {
   setStoredConsent,
 } from "@/lib/analytics/consent";
 import { updateConsent } from "@/lib/analytics/track";
-import { metaActiveInBrowser } from "@/lib/meta/pixel";
+import { clearMetaRevokePending, metaActiveInBrowser, withdrawMetaConsent } from "@/lib/meta/pixel";
+import { CONSENT_OPEN_EVENT } from "@/lib/meta/config";
 
 // ADVERTISING (Meta, Karina 2026-11-09): when Meta is on for this browser
 // (META_PIXEL_LIVE, or a ?meta_test browser), the notice names advertising and
 // its "Aceitar" ALSO records mhs_ads_consent. A visitor who answered the old,
 // analytics-only notice is asked again — that answer never covered ads.
+//
+// WITHDRAWAL (Karina 2026-11-09, item 4): the footer's "Preferências de cookies"
+// fires CONSENT_OPEN_EVENT and this same notice reopens, whatever was answered
+// before. "Recusar" on an advertising notice runs withdrawMetaConsent(): Pixel
+// stopped, Meta cookies deleted, Meta context on pending orders forgotten.
 export function AnalyticsConsentBanner() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [ads, setAds] = useState(false);
+  // Reopened on purpose (footer link) → shown on any page, not only tracked ones.
+  const [forced, setForced] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const open = () => {
+      setAds(metaActiveInBrowser());
+      setForced(true);
+      setVisible(true);
+    };
+    window.addEventListener(CONSENT_OPEN_EVENT, open);
+    return () => window.removeEventListener(CONSENT_OPEN_EVENT, open);
+  }, []);
 
   useEffect(() => {
     if (!GA_MEASUREMENT_ID) return;
@@ -65,7 +83,7 @@ export function AnalyticsConsentBanner() {
     return () => window.removeEventListener("mhs-consent-change", decide);
   }, []);
 
-  const showing = visible && isTrackedPath(pathname);
+  const showing = visible && (forced || isTrackedPath(pathname));
 
   // Reserve the card's height at the end of the page so nothing can end up
   // permanently underneath it. MEASURED, not a fixed class: the copy wraps to
@@ -93,9 +111,20 @@ export function AnalyticsConsentBanner() {
   function choose(granted: boolean) {
     // Ads first: setStoredConsent fires mhs-consent-change, and `decide` must
     // then see BOTH answers or it would reopen the card.
-    if (ads) setStoredAdsConsent(granted ? "granted" : "denied");
+    // Only a real withdrawal (was "granted") needs the cleanup: without consent
+    // nothing was ever kept for Meta, on this browser or on the server.
+    const wasGranted = getStoredAdsConsent() === "granted";
+    // A "Recusar" always covers ads consent already given, even on a notice that
+    // no longer mentions Meta (e.g. a test browser whose code has expired).
+    const answersAds = ads || (wasGranted && !granted);
+    if (answersAds) setStoredAdsConsent(granted ? "granted" : "denied");
     setStoredConsent(granted ? "granted" : "denied");
     if (!granted) updateConsent(false); // tell any already-loaded gtag to stop
+    if (answersAds) {
+      if (granted) clearMetaRevokePending();
+      else if (wasGranted) withdrawMetaConsent(); // after the cookie write: the server sees "denied"
+    }
+    setForced(false);
     setVisible(false);
   }
 

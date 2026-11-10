@@ -1,3 +1,4 @@
+import { CookiePreferencesLink } from "@/components/analytics/cookie-preferences-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteText } from "@/components/landing/site-text";
@@ -209,6 +210,7 @@ export default async function HomePage() {
           <nav aria-label="Links legais e contato" className="flex flex-wrap items-center justify-center gap-x-4" style={{ color: "var(--lp-fg-75)" }}>
             <Link href="/termos" className={FOOT_LINK}>Termos de Uso</Link>
             <Link href="/privacidade" className={FOOT_LINK}>Política de Privacidade</Link>
+            <CookiePreferencesLink className={FOOT_LINK} />
             <a href="mailto:contato@medhelpspace.com.br" className={FOOT_LINK}>contato@medhelpspace.com.br</a>
           </nav>
         </div>

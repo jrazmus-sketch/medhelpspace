@@ -219,6 +219,13 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   `META_CAPI_ACCESS_TOKEN` (system user, no expiry) in Vercel prod + `app/.env.local`. Going live = flip
   the constant AFTER Karina approves the new banner + Privacidade text (the live policy still says "não
   utilizamos cookies de rastreamento para publicidade"). Patch: `schema-patch-meta-capi.sql` (prod + local).
+  **Withdrawal (Karina 2026-11-10, item 4):** footer "Preferências de cookies" (`CookiePreferencesLink`, shown only
+  where Meta is active → invisible to the public in test mode) reopens the SAME banner; "Recusar" after a "granted"
+  runs `withdrawMetaConsent()`: fbq consent revoke, `_fbp`/`_fbc` deleted (host-only + .medhelpspace.com.br), and
+  `POST /api/meta/revoke` nulls `meta_capi` on ALL the signed-in user's orders + `clinact_subscriptions` row — so a Pix
+  paid later sends no Purchase (capi.ts reads the context at send time). Signed out → cookie `mhs_meta_revoke=1`,
+  finished by MetaPixel at the next sign-in. `track()` re-reads consent at send time (fbq outlives a withdrawal).
+  Meta domain verification tag is in the root layout `verification.other` — keep it (Meta re-checks).
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a

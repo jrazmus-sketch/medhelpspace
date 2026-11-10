@@ -18,6 +18,8 @@ import {
   isMetaPixelPath,
   isValidMetaTestCode,
   META_BROWSER_URL_PARAMS,
+  META_BROWSER_COOKIES,
+  metaCookieDeletions,
   META_PIXEL_ID,
   META_PIXEL_LIVE,
 } from "@/lib/meta/config";
@@ -313,4 +315,61 @@ test("the CAPI context is captured only with advertising consent", () => {
   const capi = read("lib/meta/capi.ts");
   assert.match(capi, /ADS_CONSENT_COOKIE\)\?\.value !== "granted"\) return null/);
   assert.equal(typeof META_PIXEL_LIVE, "boolean");
+});
+
+// ── Item 4: withdrawal of consent (Karina 2026-11-09) ─────────────────────────
+
+const readApp = (rel: string) => readFileSync(path.join(process.cwd(), rel), "utf8");
+
+test("withdrawal: both Meta cookies are deleted, on the registrable domain AND host-only", () => {
+  assert.deepEqual([...META_BROWSER_COOKIES], ["_fbp", "_fbc"]);
+  const prod = metaCookieDeletions("www.medhelpspace.com.br");
+  for (const name of META_BROWSER_COOKIES) {
+    assert.ok(prod.some((c) => c.startsWith(`${name}=;`) && c.includes("max-age=0") && c.includes("domain=.medhelpspace.com.br")));
+    assert.ok(prod.some((c) => c.startsWith(`${name}=;`) && c.includes("max-age=0") && !c.includes("domain=")));
+  }
+  // Never a foreign domain; localhost only gets host-only deletions.
+  assert.ok(metaCookieDeletions("localhost").every((c) => !c.includes("domain=")));
+});
+
+test("withdrawal: the server clears ONLY the Meta context, only for the signed-in person", () => {
+  const src = readApp("src/app/api/meta/revoke/route.ts");
+  const updates = [...src.matchAll(/\.update\(([^)]*)\)/g)].map((m) => m[1].trim());
+  assert.deepEqual(updates, ["{ meta_capi: null }", "{ meta_capi: null }"]);
+  assert.match(src, /from\("orders"\)\.update\(\{ meta_capi: null \}\)\.eq\("user_id", userId\)/);
+  assert.match(src, /from\("clinact_subscriptions"\)\.update\(\{ meta_capi: null \}\)\.eq\("user_id", userId\)/);
+  assert.match(src, /auth\.getUser\(\)/);
+  // Never touches payments, access or subscriptions themselves.
+  assert.doesNotMatch(src, /\.delete\(|\.insert\(|grantAccess|user_product_access|user_cohort_memberships/);
+});
+
+test("withdrawal: a pending payment's Purchase reads the context at send time", () => {
+  // So clearing meta_capi before PagBank confirms means no Purchase is sent.
+  const capi = readApp("src/lib/meta/capi.ts");
+  assert.match(capi, /\.select\("user_id, cohort_id, amount_cents, billing_phone, meta_capi, internal_test, status"\)/);
+  assert.match(capi, /const context = asContext\(order\.meta_capi\);\s*if \(!context\) return;/);
+  assert.match(capi, /const context = asContext\(sub\.meta_capi\);\s*if \(!context\) return;/);
+});
+
+test("withdrawal: the notice reopens from the footer and Recusar runs the cleanup", () => {
+  const banner = readApp("src/components/analytics/consent-banner.tsx");
+  assert.match(banner, /addEventListener\(CONSENT_OPEN_EVENT/);
+  assert.match(banner, /else if \(wasGranted\) withdrawMetaConsent\(\)/);
+  // The ads cookie is written BEFORE the cleanup, so the server already sees "denied".
+  assert.ok(banner.indexOf("setStoredAdsConsent(granted") < banner.indexOf("withdrawMetaConsent();"));
+  const pixel = readApp("src/lib/meta/pixel.ts");
+  assert.match(pixel, /fbq\("consent", "revoke"\)/);
+  assert.match(pixel, /metaCookieDeletions\(window\.location\.hostname\)/);
+  // Every browser event re-reads consent at send time (fbq outlives a withdrawal).
+  assert.match(pixel, /if \(getStoredAdsConsent\(\) !== "granted"\) return;\s*rememberAdClick\(\);/);
+  for (const f of ["src/app/page.tsx", "src/components/landing/landing-footer.tsx", "src/components/clinact/sales/clinact-footer.tsx"]) {
+    assert.match(readApp(f), /<CookiePreferencesLink/, f);
+  }
+  // Test mode adds nothing to the public footer: the link shows only where Meta is active.
+  assert.match(readApp("src/components/analytics/cookie-preferences-link.tsx"), /setShow\(metaActiveInBrowser\(\)\)/);
+});
+
+test("withdrawal: a Recusar made while signed out is finished at the next sign-in", () => {
+  const comp = readApp("src/components/analytics/meta-pixel.tsx");
+  assert.match(comp, /if \(userId && metaRevokePending\(\)\) void revokeMetaOnServer\(\);/);
 });
