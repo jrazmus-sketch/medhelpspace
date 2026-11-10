@@ -123,7 +123,24 @@ export async function sendMirrorEvent(
     const token = process.env.META_CAPI_ACCESS_TOKEN;
     if (!token) return { sent: false };
     const context = await captureMetaContext(request, input.userId, input.pageUrl);
-    if (!context) return { sent: false };
+    if (!context) {
+      // Test Events browser that still sent nothing → say why (Karina 2026-11-10:
+      // "verifique se o código de teste está sendo transmitido"). Normal
+      // visitors are never logged.
+      const testCookie = request.cookies.get(META_TEST_COOKIE)?.value;
+      if (testCookie) {
+        console.info(
+          "meta capi: test mirror NOT sent",
+          JSON.stringify({
+            event: input.eventName,
+            event_id: input.eventId,
+            test_cookie: isValidMetaTestCode(testCookie) ? testCookie.toUpperCase() : "invalid",
+            ads_consent: request.cookies.get(ADS_CONSENT_COOKIE)?.value ?? null,
+          }),
+        );
+      }
+      return { sent: false };
+    }
     const body = buildMirrorPayload({
       eventName: input.eventName,
       eventId: input.eventId,
@@ -141,8 +158,28 @@ export async function sendMirrorEvent(
         signal: AbortSignal.timeout(TIMEOUT_MS),
       },
     );
-    if (!res.ok) {
-      console.error("meta capi: mirror refused", input.eventName, res.status, await res.json().catch(() => null));
+    const reply = (await res.json().catch(() => null)) as
+      | { events_received?: number; messages?: unknown; fbtrace_id?: string; error?: unknown }
+      | null;
+    if (context.test_event_code) {
+      // TEST MODE ONLY: Meta's full reply, so a missing event in Test Events can
+      // be explained (e.g. "does not match an active Test Events session"). No
+      // personal data: event, id, code, status and Meta's own answer.
+      console.info(
+        "meta capi: test mirror reply",
+        JSON.stringify({
+          event: input.eventName,
+          event_id: input.eventId,
+          test_event_code: context.test_event_code,
+          status: res.status,
+          events_received: reply?.events_received ?? null,
+          messages: reply?.messages ?? null,
+          fbtrace_id: reply?.fbtrace_id ?? null,
+          error: reply?.error ?? null,
+        }),
+      );
+    } else if (!res.ok) {
+      console.error("meta capi: mirror refused", input.eventName, res.status, reply);
     } else if (process.env.NODE_ENV !== "production") {
       console.info("meta capi: mirror sent", input.eventName, input.eventId, context.url, context.test_event_code ?? "live");
     }

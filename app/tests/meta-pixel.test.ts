@@ -373,3 +373,15 @@ test("withdrawal: a Recusar made while signed out is finished at the next sign-i
   const comp = readApp("src/components/analytics/meta-pixel.tsx");
   assert.match(comp, /if \(userId && metaRevokePending\(\)\) void revokeMetaOnServer\(\);/);
 });
+
+test("test mode: Meta's reply to a mirrored event is logged, without personal data (Karina 2026-11-10)", () => {
+  const src = readApp("src/lib/meta/capi.ts");
+  const fn = src.slice(src.indexOf("export async function sendMirrorEvent"), src.indexOf("async function sendPurchase"));
+  // Logged only for a Test Events browser…
+  assert.match(fn, /if \(context\.test_event_code\) \{\s*\/\/[^]*?console\.info\(\s*"meta capi: test mirror reply"/);
+  assert.match(fn, /if \(testCookie\) \{\s*console\.info\(\s*"meta capi: test mirror NOT sent"/);
+  // …with Meta's warnings, and never the hashed identifiers, IP, user agent or cookies.
+  assert.match(fn, /messages: reply\?\.messages/);
+  const logged = [...fn.matchAll(/console\.info\(([^]*?)\);/g)].map((m) => m[1]).join("\n");
+  assert.doesNotMatch(logged, /user_data|context\.ip|context\.ua|context\.fbp|context\.fbc|userId|body\b/);
+});
