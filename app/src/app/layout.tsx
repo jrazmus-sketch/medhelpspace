@@ -49,6 +49,12 @@ export const metadata: Metadata = {
   // <meta name="google-site-verification" content="…"> in <head> on every page.
   verification: {
     google: "clZiznT9gN2S0fepnRETppbt5XkUPxr1c0FQhFAGaHA",
+    // Meta Business domain verification for medhelpspace.com.br (Karina 2026-11-09).
+    // Must STAY after verification too — Meta re-checks it. Renders
+    // <meta name="facebook-domain-verification" content="…">.
+    other: {
+      "facebook-domain-verification": "m6sqwvt7c5ze3clae125v7m36wylq7",
+    },
   },
   openGraph: {
     siteName: "MedHelpSpace",
