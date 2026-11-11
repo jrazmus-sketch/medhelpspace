@@ -23,6 +23,15 @@ test("the patches write exactly lib/legal-pages.ts", () => {
   assert.ok(META_ROLLBACK.includes("Não utilizamos cookies de rastreamento para publicidade."));
 });
 
+test("item 6 points to the footer link — Karina's sentence, verbatim (2026-11-10)", () => {
+  const sentence =
+    "Para mudar sua escolha, use o link 'Preferências de cookies', no rodapé do site, ou escreva para ";
+  assert.ok(PRIVACIDADE_HTML.includes(sentence));
+  assert.ok(!PRIVACIDADE_HTML.includes("apague os cookies do site no seu navegador"));
+  const patch = readFileSync(path.join(ROOT, "schema-patch-privacidade-cookie-prefs.sql"), "utf8");
+  assert.ok(patch.includes(`$new$${sentence}$new$`));
+});
+
 test("Meta Pixel / Conversions API — Karina's approved sentences, verbatim (2026-11-09)", () => {
   for (const t of [
     "Se você aceitar os cookies de publicidade no aviso do site, compartilhamos com a Meta (Facebook e Instagram) informações sobre as visitas às nossas páginas públicas de venda e de cadastro, o início da contratação e a confirmação da compra (produto, plano ou turma e valor pago), para medir e aprimorar nossos anúncios.",
