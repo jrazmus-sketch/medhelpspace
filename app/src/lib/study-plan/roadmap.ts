@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildPageProgress, isPageMastered, type Signals } from "./derive";
+import { buildTopicProgress, topicQuizHref } from "./topic-questions";
+import { loadTopicQuestionIndex } from "./topic-questions-server";
 
 /**
  * Roadmap ("Roteiro") data — a read-only projection of the full incidence-ranked
@@ -22,6 +24,11 @@ import { buildPageProgress, isPageMastered, type Signals } from "./derive";
  *     211 topics, but the 12 sub-topics that share a coarse source page (e.g. the
  *     7 urology topics on one 30-question page) were flipping to "Dominado" after
  *     2–6 answers, which also inflated the "N dominados" headline.
+ *
+ * R1 (Karina 2026-11-12): when the topic → original-question index is available,
+ * a topic's status, accuracy and link come from ITS OWN originals (latest attempt on
+ * any copy), not from the whole section — "Artrite Infecciosa" inside Ortopedia is
+ * judged on its 4 questions and opens only them. Same rule in the daily plan.
  */
 
 export type RoadmapStatus = "nao_iniciado" | "em_andamento" | "dominado";
@@ -60,10 +67,10 @@ const TIER_LABEL: Record<string, string> = {
 export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
   const admin = createAdminClient();
 
-  const [topicsRes, specialtiesRes, attemptsRes, questionCountsRes] = await Promise.all([
+  const [topicsRes, specialtiesRes, attemptsRes, questionCountsRes, topicIndex] = await Promise.all([
     admin
       .from("topics")
-      .select("id, name, specialty_id, source_page_id, incidence_count, priority_tier")
+      .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier")
       .not("priority_tier", "is", null)
       .order("incidence_count", { ascending: false }),
     admin.from("specialties").select("id, name, slug"),
@@ -76,6 +83,7 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
     // Real per-page question totals. If the view is unavailable each topic falls
     // back to its own incidence_count (correct for 199 of 211).
     admin.from("quiz_page_question_counts").select("page_id, question_count"),
+    loadTopicQuestionIndex(admin),
   ]);
 
   const specialties = (specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[];
@@ -83,18 +91,30 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
 
   // Source-page slugs for building the quiz link.
   const topicsRaw = (topicsRes.data ?? []) as {
-    id: number; name: string; specialty_id: number | null;
+    id: number; name: string; slug: string; specialty_id: number | null;
     source_page_id: number | null; incidence_count: number; priority_tier: string;
   }[];
-  const sourcePageIds = [...new Set(topicsRaw.map((t) => t.source_page_id).filter((v): v is number => v != null))];
+  const sourcePageIds = [
+    ...new Set([
+      ...topicsRaw.map((t) => t.source_page_id).filter((v): v is number => v != null),
+      ...(topicIndex ? [...topicIndex.mainSectionOfTopic.values()] : []),
+    ]),
+  ];
   const pageSlugById = new Map<number, string>();
+  const pageInfoById = new Map<number, { slug: string; specialty_id: number | null }>();
   if (sourcePageIds.length > 0) {
-    const { data: pages } = await admin.from("pages").select("id, slug").in("id", sourcePageIds);
-    for (const p of pages ?? []) pageSlugById.set(p.id as number, p.slug as string);
+    const { data: pages } = await admin.from("pages").select("id, slug, specialty_id").in("id", sourcePageIds);
+    for (const p of pages ?? []) {
+      pageSlugById.set(p.id as number, p.slug as string);
+      pageInfoById.set(p.id as number, { slug: p.slug as string, specialty_id: (p.specialty_id as number | null) ?? null });
+    }
   }
+  const specSlugById = new Map(specialties.map((s) => [s.id, s.slug]));
 
   // Per-page progress — the SAME computation the daily plan uses.
-  const byPage = buildPageProgress((attemptsRes.data ?? []) as Signals["quizAttempts"]);
+  const attempts = (attemptsRes.data ?? []) as Signals["quizAttempts"];
+  const byPage = buildPageProgress(attempts);
+  const byTopic = topicIndex ? buildTopicProgress(attempts, topicIndex) : null;
   const questionCounts = new Map<number, number>();
   for (const r of questionCountsRes.data ?? []) {
     questionCounts.set(Number(r.page_id), Number(r.question_count));
@@ -111,12 +131,17 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
     const spec = specById.get(t.specialty_id);
     if (!spec) continue;
 
-    const tally = t.source_page_id != null ? byPage.get(t.source_page_id) : undefined;
+    const origins = topicIndex?.originsOfTopic.get(t.id);
+    const topicMode = !!(topicIndex && byTopic && origins && origins.size > 0);
+    const tally = topicMode
+      ? byTopic!.get(t.id)
+      : t.source_page_id != null ? byPage.get(t.source_page_id) : undefined;
     const n = tally?.answered ?? 0;
     const accuracy = n > 0 ? tally!.correct / n : null;
-    const totalQuestions =
-      (t.source_page_id != null ? questionCounts.get(t.source_page_id) : undefined)
-      ?? t.incidence_count;
+    const totalQuestions = topicMode
+      ? origins!.size
+      : (t.source_page_id != null ? questionCounts.get(t.source_page_id) : undefined)
+        ?? t.incidence_count;
     let status: RoadmapStatus;
     if (n === 0) status = "nao_iniciado";
     else if (isPageMastered(tally, totalQuestions)) status = "dominado";
@@ -125,8 +150,11 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
     if (status !== "nao_iniciado") started++;
     if (status === "dominado") mastered++;
 
+    const topicLink = topicMode
+      ? topicQuizHref(topicIndex!, { id: t.id, slug: t.slug }, pageInfoById, specSlugById, spec.slug)
+      : null;
     const quizSlug = t.source_page_id != null ? pageSlugById.get(t.source_page_id) : undefined;
-    const href = quizSlug ? `/app/${spec.slug}/${quizSlug}` : `/app/${spec.slug}`;
+    const href = topicLink?.href ?? (quizSlug ? `/app/${spec.slug}/${quizSlug}` : `/app/${spec.slug}`);
 
     const arr = tierMap.get(t.priority_tier) ?? [];
     arr.push({

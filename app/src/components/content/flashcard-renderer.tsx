@@ -7,31 +7,17 @@ import { getAudiocardsSlugForSpecialty } from "@/lib/audiocards/discovery";
 import { FlashcardPlayer } from "./flashcard-player";
 import type { CardGroup } from "./flashcard-player";
 import { FlashcardHub } from "./flashcard-hub";
+import { flashcardGroupSlug } from "@/lib/flashcard-group-slug";
 import type { CategoryCardData } from "./flashcard-hub";
 
 function stripTags(html: string): string {
   return html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
 }
 
-// Stable, shareable per-group identifier for the ?grupo= deep link. Derived from
-// the group label (accent-stripped) with a position fallback; collisions are
-// disambiguated by appending the group position so two groups never share a slug.
-function slugifyLabel(label: string | null, position: number): string {
-  if (!label) return `grupo-${position}`;
-  const base = label
-    .normalize("NFD")
-    // Drop combining diacritical marks (U+0300–U+036F) so "Congênita" → "congenita".
-    .split("")
-    .filter((ch) => {
-      const code = ch.charCodeAt(0);
-      return code < 0x0300 || code > 0x036f;
-    })
-    .join("")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return base || `grupo-${position}`;
-}
+// Stable, shareable per-group identifier for the ?grupo= deep link (shared with the
+// study plan, which deep-links a topic to its group); collisions are disambiguated
+// below by appending the group position so two groups never share a slug.
+const slugifyLabel = flashcardGroupSlug;
 
 export async function FlashcardRenderer({
   pageId,

@@ -123,8 +123,10 @@ export function QuizPlayer({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             questionId: question.id,
-            pageId,
-            specialtyId,
+            // R1 topic view: a question may come from another section — record
+            // the attempt under the section/specialty the record belongs to.
+            pageId: question.page_id ?? pageId,
+            specialtyId: question.page_id != null ? question.specialty_id ?? null : specialtyId,
             isCorrect: correct,
           }),
         });

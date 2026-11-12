@@ -30,6 +30,8 @@
 
 import { GAP_ERROR_CATEGORIES, type QuizErrorCategory } from "@/lib/quiz-errors";
 import { todayKeyBR, toDateKeyBR, dayOfWeekForKey, addDaysKey, diffDaysKey } from "@/lib/br-date";
+import { flashcardGroupSlug } from "@/lib/flashcard-group-slug";
+import { buildTopicProgress, topicQuizHref, type TopicQuestionIndex } from "./topic-questions";
 
 export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
@@ -156,6 +158,13 @@ export type Signals = {
    * equals the question count for 199 of 211 topics.
    */
   questionCountsByPageId?: Map<number, number>;
+  /**
+   * R1: which ORIGINAL questions belong to each topic (topic_question_links). When a
+   * topic has originals here, its quiz item opens ONLY them (`?tema=` on its main
+   * section) and its progress/mastery is computed over them. Absent/null (view not
+   * applied, funnel preview) → the section-based behaviour below, unchanged.
+   */
+  topicIndex?: TopicQuestionIndex | null;
 };
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -459,6 +468,8 @@ export function derivePlan(args: {
   // (e.g. the 7 urology sub-topics on page 90242), and the plan must not list
   // the same link three times.
   const emittedQuizPages = new Set<number>();
+  const topicIndex = signals.topicIndex ?? null;
+  const topicProgress = topicIndex ? buildTopicProgress(signals.quizAttempts, topicIndex) : new Map();
 
   // ── Topic → content pointers (from topic_content) ────────────────────────
   const contentByTopic = new Map<number, TopicContentRow[]>();
@@ -502,6 +513,14 @@ export function derivePlan(args: {
     maxGapErrors > 0 ? (gapErrorBySpec.get(specId) ?? 0) / maxGapErrors : 0;
 
   const specialtyById = new Map(specialties.map((s) => [s.id, s]));
+  const specialtySlugById = new Map(specialties.map((s) => [s.id, s.slug]));
+  // A content page lives under ITS OWN specialty — a topic that moved specialty
+  // (Artrite Infecciosa → Outros) must not open its Reumatologia flashcard deck
+  // under Outros breadcrumbs.
+  const pageHref = (p: PageRow, fallbackSpecSlug: string): string => {
+    const own = p.specialty_id != null ? specialtySlugById.get(p.specialty_id) : undefined;
+    return `/app/${own ?? fallbackSpecSlug}/${p.slug}`;
+  };
   const isMemorecardsPage = (p: PageRow): boolean =>
     p.type === "h5p-quiz" && p.content_module_id === MEDHELP_60D_MODULE_ID;
 
@@ -535,8 +554,56 @@ export function derivePlan(args: {
     return pid != null ? pageById.get(pid) ?? null : null;
   };
 
+  // One quiz item, section-based or topic-based (R1) alike.
+  const quizItem = (
+    topic: TopicRow,
+    specName: string,
+    progress: { answered: number; correct: number } | undefined,
+    totalQuestions: number,
+    href: string,
+    pageId: number,
+    weakness: number,
+    gapWeight: number,
+  ): PlanItem => {
+    const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
+    const answered = progress?.answered ?? 0;
+    const inProgress = answered > 0;
+    // Clamp: a question deleted after being answered would otherwise read
+    // "18 de 15 questões".
+    const shownAnswered = Math.min(answered, totalQuestions);
+    // Fully answered but still under the 70% bar — say so, because
+    // "retome de onde parou" on a 20-de-20 item reads as a bug.
+    const accuracyPct = inProgress ? Math.round((progress!.correct / answered) * 100) : 0;
+    const needsAccuracy = inProgress && answered >= totalQuestions;
+    return {
+      kind: "quiz",
+      title: topic.name,
+      subtitle: needsAccuracy
+        ? `${specName} · ${accuracyPct}% de acerto · revise os erros`
+        : inProgress
+          ? `${specName} · ${shownAnswered} de ${totalQuestions} questões`
+          : `${specName} · ${tierLabel} · ${topic.incidence_count} no exame`,
+      href,
+      estimatedMinutes: Math.round(15 * minutesScale),
+      iconHint: "quiz",
+      reason: needsAccuracy
+        ? `Você respondeu tudo, mas ainda está em ${accuracyPct}% — refaça para fixar`
+        : inProgress
+          ? "Retome de onde parou neste tema"
+          : gapWeight >= 0.5
+          ? "Você tem errado por conteúdo aqui — reforce este tema"
+          : weakness > 0.5
+            ? "Ponto fraco + alta incidência no Revalida"
+            : topic.priority_tier === "A"
+              ? "Tema de altíssima incidência no Revalida"
+              : "Próximo tema por incidência no exame",
+      specialtyId: topic.specialty_id as number,
+      pageId,
+    };
+  };
+
   const items: PlanItem[] = [];
-  const seenFlashcardDecks = new Set<number>();
+  const seenFlashcardDecks = new Set<string>();
   let surfaced = 0;
   for (const { topic, weakness, gapWeight } of rankedTopics) {
     if (surfaced >= topicsToday) break;
@@ -549,7 +616,20 @@ export function derivePlan(args: {
     // is MASTERED (every question answered, currently ≥70% right). Partially
     // answered pages come back with their progress shown, so an interrupted
     // topic is resumed instead of silently dropped.
-    if (allowedTypes.has("quiz")) {
+    // R1: the topic's own originals, when the index knows them.
+    const topicOrigins = topicIndex?.originsOfTopic.get(topic.id);
+    const topicLink =
+      topicIndex && topicOrigins && topicOrigins.size > 0
+        ? topicQuizHref(topicIndex, topic, pageById, specialtySlugById, specInfo.slug)
+        : null;
+    if (allowedTypes.has("quiz") && topicLink && topicOrigins) {
+      const totalQuestions = topicOrigins.size;
+      const progress = topicProgress.get(topic.id);
+      if (!isPageMastered(progress, totalQuestions)) {
+        items.push(quizItem(topic, specInfo.name, progress, totalQuestions, topicLink.href, topicLink.pageId, weakness, gapWeight));
+        emitted = true;
+      }
+    } else if (allowedTypes.has("quiz")) {
       const quizPage = contentPageFor(topic, "quiz");
       if (quizPage && !emittedQuizPages.has(quizPage.id)) {
         const progress = pageProgress.get(quizPage.id);
@@ -564,41 +644,7 @@ export function derivePlan(args: {
             ? viewCount
             : topic.incidence_count;
         if (totalQuestions > 0 && !isPageMastered(progress, totalQuestions)) {
-          const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
-          const answered = progress?.answered ?? 0;
-          const inProgress = answered > 0;
-          // Clamp: a question deleted after being answered would otherwise read
-          // "18 de 15 questões".
-          const shownAnswered = Math.min(answered, totalQuestions);
-          // Fully answered but still under the 70% bar — say so, because
-          // "retome de onde parou" on a 20-de-20 item reads as a bug.
-          const accuracyPct = inProgress ? Math.round((progress!.correct / answered) * 100) : 0;
-          const needsAccuracy = inProgress && answered >= totalQuestions;
-          items.push({
-            kind: "quiz",
-            title: topic.name,
-            subtitle: needsAccuracy
-              ? `${specInfo.name} · ${accuracyPct}% de acerto · revise os erros`
-              : inProgress
-                ? `${specInfo.name} · ${shownAnswered} de ${totalQuestions} questões`
-                : `${specInfo.name} · ${tierLabel} · ${topic.incidence_count} no exame`,
-            href: `/app/${specInfo.slug}/${quizPage.slug}`,
-            estimatedMinutes: Math.round(15 * minutesScale),
-            iconHint: "quiz",
-            reason: needsAccuracy
-              ? `Você respondeu tudo, mas ainda está em ${accuracyPct}% — refaça para fixar`
-              : inProgress
-                ? "Retome de onde parou neste tema"
-                : gapWeight >= 0.5
-                ? "Você tem errado por conteúdo aqui — reforce este tema"
-                : weakness > 0.5
-                  ? "Ponto fraco + alta incidência no Revalida"
-                  : topic.priority_tier === "A"
-                    ? "Tema de altíssima incidência no Revalida"
-                    : "Próximo tema por incidência no exame",
-            specialtyId: topic.specialty_id as number,
-            pageId: quizPage.id,
-          });
+          items.push(quizItem(topic, specInfo.name, progress, totalQuestions, pageHref(quizPage, specInfo.slug), quizPage.id, weakness, gapWeight));
           emittedQuizPages.add(quizPage.id);
           emitted = true;
         }
@@ -633,21 +679,31 @@ export function derivePlan(args: {
     // FLASHCARDS — memorize the topic's key points (deduped per deck page).
     if (allowedTypes.has("flashcards")) {
       const fc = topicRows.find((c) => c.resource_type === "flashcards");
-      if (fc?.page_id != null && !seenFlashcardDecks.has(fc.page_id)) {
+      // R1: the topic's own group (?grupo=) when the link names one, so the deck
+      // opens on this topic instead of the whole specialty grid. Dedupe per
+      // deck+group: two topics of one deck are two different items now.
+      const groupLabel =
+        fc?.question_filter && typeof fc.question_filter === "object"
+          ? ((fc.question_filter as { group_label?: unknown }).group_label as string | undefined)
+          : undefined;
+      const withGroup = Boolean(topicIndex && groupLabel);
+      const fcKey = fc?.page_id != null ? `${fc.page_id}|${withGroup ? groupLabel : ""}` : null;
+      if (fc?.page_id != null && fcKey && !seenFlashcardDecks.has(fcKey)) {
         const deck = pageById.get(fc.page_id);
         if (deck) {
+          const deckHref = pageHref(deck, specInfo.slug);
           items.push({
             kind: "flashcards",
             title: topic.name,
             subtitle: `${specInfo.name} · flashcards`,
-            href: `/app/${specInfo.slug}/${deck.slug}`,
+            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(flashcardGroupSlug(groupLabel!))}` : deckHref,
             estimatedMinutes: Math.round(8 * minutesScale),
             iconHint: "flashcards",
             reason: "Memorize os pontos-chave do tema",
             specialtyId: topic.specialty_id as number,
             pageId: deck.id,
           });
-          seenFlashcardDecks.add(fc.page_id);
+          seenFlashcardDecks.add(fcKey);
           emitted = true;
         }
       }
@@ -661,7 +717,7 @@ export function derivePlan(args: {
           kind: "audio",
           title: topic.name,
           subtitle: `${specInfo.name} · áudio`,
-          href: `/app/${specInfo.slug}/${audioPage.slug}`,
+          href: pageHref(audioPage, specInfo.slug),
           estimatedMinutes: Math.round(12 * minutesScale),
           iconHint: "audio",
           reason: "Reforço em áudio para o tema de hoje",

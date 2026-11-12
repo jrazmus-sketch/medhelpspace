@@ -25,10 +25,10 @@ export default async function ContentPage({
   searchParams,
 }: {
   params: Promise<{ specialty: string; slug: string }>;
-  searchParams: Promise<{ s?: string; grupo?: string }>;
+  searchParams: Promise<{ s?: string; grupo?: string; tema?: string }>;
 }) {
   const { slug, specialty } = await params;
-  const { s, grupo } = await searchParams;
+  const { s, grupo, tema } = await searchParams;
   const admin = createAdminClient();
 
   const { data: page } = await admin
@@ -174,6 +174,7 @@ export default async function ContentPage({
         specialtySlug={specialty}
         pageSlug={slug}
         grupo={grupo}
+        tema={tema}
         backHref={voltarFallback}
       />
     </div>
@@ -234,6 +235,7 @@ function PageBody({
   specialtySlug,
   pageSlug,
   grupo,
+  tema,
   backHref,
 }: {
   page: { id: number; title: string; type: string; view: string | null; track_id: number | null; content_module_id: number | null };
@@ -241,6 +243,7 @@ function PageBody({
   specialtySlug: string;
   pageSlug: string;
   grupo?: string;
+  tema?: string;
   backHref: string;
 }) {
   switch (page.type) {
@@ -276,7 +279,7 @@ function PageBody({
             grupo={grupo}
           />
         );
-      return <QuizRenderer pageId={page.id} />;
+      return <QuizRenderer pageId={page.id} tema={tema} sectionHref={`/app/${specialtySlug}/${pageSlug}`} />;
     case "blurb-nav-hub":
       return <BlurbNavHubRenderer pageId={page.id} />;
     default:

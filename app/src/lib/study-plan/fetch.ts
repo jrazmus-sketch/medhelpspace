@@ -10,6 +10,7 @@ import {
   type Intensity,
   type WeaknessSensitivity,
 } from "./derive";
+import { loadTopicQuestionIndex } from "./topic-questions-server";
 
 /**
  * Fetch ALL published pages that carry a specialty, paginating past PostgREST's
@@ -61,6 +62,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     topicsRes,
     topicContentRes,
     questionCountsRes,
+    topicIndex,
   ] = await Promise.all([
     admin
       .from("study_plans")
@@ -118,6 +120,8 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     // 1000-row cap. If the view is missing (patch not applied yet) this simply
     // returns an error and every topic falls back to its own incidence_count.
     admin.from("quiz_page_question_counts").select("page_id, question_count"),
+    // R1: topic → its own original questions (null → section-based fallback).
+    loadTopicQuestionIndex(admin),
   ]);
 
   // Build prefs object, applying defaults for missing fields
@@ -190,6 +194,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     lessonsByPageId,
     pauses: (pausesRes.data ?? []) as Signals["pauses"],
     questionCountsByPageId,
+    topicIndex,
   };
 
   return derivePlan({

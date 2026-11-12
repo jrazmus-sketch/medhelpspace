@@ -1,7 +1,14 @@
 import { themeSlug, themeTitle } from "@/lib/memorecards-shared";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { todayKeyBR } from "@/lib/br-date";
-import { REMEDIATION_LABELS, resumoSlugFor, revalidaUpSlugFor, type Remediation } from "@/lib/review/remediation";
+import {
+  REMEDIATION_LABELS,
+  pickRemediation,
+  resumoSlugFor,
+  revalidaUpSlugFor,
+  type Remediation,
+  type TopicLinks,
+} from "@/lib/review/remediation";
 
 /**
  * Server-side review queries. Per the project's data-fetching invariant these
@@ -173,9 +180,11 @@ export async function getReviewItems(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const quizById = new Map((quizRes.data ?? []).map((qq: any) => [qq.id as number, qq]));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const quizPageIds = [...new Set((quizRes.data ?? []).map((qq: any) => qq.page_id as number).filter(Boolean))];
-  const remediationByPage = await remediationFor(admin, quizPageIds);
+  const remediationByQuestion = await remediationForQuestions(
+    admin,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (quizRes.data ?? []).map((qq: any) => ({ id: qq.id as number, page_id: qq.page_id as number })),
+  );
 
   const items: ReviewItem[] = [];
   for (const r of sched) {
@@ -203,7 +212,7 @@ export async function getReviewItems(
           answers: Array.isArray(qq.answers) ? qq.answers : [],
           explanation_html: qq.explanation_html ?? null,
           media_url: qq.media_url ?? null,
-          remediation: remediationByPage.get(qq.page_id as number) ?? null,
+          remediation: remediationByQuestion.get(qq.id as number) ?? null,
         });
       }
     }
@@ -234,7 +243,6 @@ export async function getPageReviewItems(pageId: number, limit = 60): Promise<Re
   if (!page) return [];
 
   const specialtyId = (page.specialty_id as number | null) ?? null;
-  const remediation = (await remediationFor(admin, [pageId])).get(pageId) ?? null;
 
   const [quizRes, flashRes] = await Promise.all([
     admin
@@ -252,6 +260,12 @@ export async function getPageReviewItems(pageId: number, limit = 60): Promise<Re
       .limit(limit),
   ]);
 
+  const remediationByQuestion = await remediationForQuestions(
+    admin,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((quizRes.data ?? []) as any[]).map((qq) => ({ id: qq.id as number, page_id: pageId })),
+  );
+
   const items: ReviewItem[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const qq of (quizRes.data ?? []) as any[]) {
@@ -263,7 +277,7 @@ export async function getPageReviewItems(pageId: number, limit = 60): Promise<Re
       answers: Array.isArray(qq.answers) ? qq.answers : [],
       explanation_html: qq.explanation_html ?? null,
       media_url: qq.media_url ?? null,
-      remediation,
+      remediation: remediationByQuestion.get(qq.id as number) ?? null,
     });
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -458,6 +472,92 @@ export async function getReviewStats(userId: string): Promise<ReviewStats> {
 }
 
 // ── Remediation: a missed question → the topic's Resumo (else Revalida Up) ─────
+
+/**
+ * R1 (Karina 2026-11-12): the link follows the QUESTION's own Meu Plano topic, not
+ * the section it is filed in — an artrite séptica question inside Outros › Ortopedia
+ * goes to Artrite Infecciosa's Resumo, an osteomielite one to Osteomielite's.
+ * Rules in pickRemediation (lib/review/remediation.ts). Records not identified yet
+ * (or the R1 tables missing) keep the section-based link below.
+ */
+async function remediationForQuestions(
+  admin: ReturnType<typeof createAdminClient>,
+  questions: { id: number; page_id: number }[],
+): Promise<Map<number, Remediation>> {
+  const out = new Map<number, Remediation>();
+  if (questions.length === 0) return out;
+  const pageIds = [...new Set(questions.map((q) => q.page_id).filter(Boolean))];
+  const [byPage, { data: origins, error: originErr }] = await Promise.all([
+    remediationFor(admin, pageIds),
+    admin
+      .from("quiz_questions")
+      .select("id, exam_question_id")
+      .in("id", questions.map((q) => q.id))
+      .not("exam_question_id", "is", null),
+  ]);
+
+  const originOf = new Map<number, number>();
+  if (!originErr) for (const r of origins ?? []) originOf.set(Number(r.id), Number(r.exam_question_id));
+
+  const examIds = [...new Set(originOf.values())];
+  const [{ data: exams }, { data: sectionLinks }] = await Promise.all([
+    examIds.length
+      ? admin.from("exam_questions").select("id, topic_id").in("id", examIds)
+      : Promise.resolve({ data: [] as { id: number; topic_id: number | null }[] }),
+    pageIds.length
+      ? admin.from("topic_question_links").select("page_id, topic_id").eq("is_primary", true).in("page_id", pageIds).limit(5000)
+      : Promise.resolve({ data: [] as { page_id: number; topic_id: number }[] }),
+  ]);
+  const topicOfExam = new Map((exams ?? []).map((e) => [Number(e.id), e.topic_id == null ? null : Number(e.topic_id)]));
+  const topicsOfSection = new Map<number, Set<number>>();
+  for (const l of sectionLinks ?? []) {
+    const s = topicsOfSection.get(Number(l.page_id)) ?? new Set<number>();
+    s.add(Number(l.topic_id));
+    topicsOfSection.set(Number(l.page_id), s);
+  }
+
+  // The topics' own Resumo / Revalida Up (published pages only).
+  const topicIds = [...new Set([...topicOfExam.values()].filter((t): t is number => t != null))];
+  const { data: tc } = topicIds.length
+    ? await admin.from("topic_content").select("topic_id, resource_type, page_id").in("topic_id", topicIds).in("resource_type", ["resumo", "revalida_up"])
+    : { data: [] as { topic_id: number; resource_type: string; page_id: number }[] };
+  const tcPageIds = [...new Set((tc ?? []).map((r) => Number(r.page_id)))];
+  const { data: tcPages } = tcPageIds.length
+    ? await admin.from("pages").select("id, slug, specialty_id, view").eq("status", "publish").in("id", tcPageIds)
+    : { data: [] as { id: number; slug: string; specialty_id: number | null; view: string | null }[] };
+  const specIds = [...new Set((tcPages ?? []).map((p) => p.specialty_id).filter(Boolean))] as number[];
+  const { data: specs } = specIds.length
+    ? await admin.from("specialties").select("id, slug").in("id", specIds)
+    : { data: [] as { id: number; slug: string }[] };
+  const specSlug = new Map((specs ?? []).map((s) => [Number(s.id), s.slug as string]));
+  const pageOk = new Map((tcPages ?? []).map((p) => [Number(p.id), p]));
+  const links = new Map<number, TopicLinks>();
+  for (const r of tc ?? []) {
+    const p = pageOk.get(Number(r.page_id));
+    if (!p) continue;
+    const want = r.resource_type === "resumo" ? "resumos" : "revalida-up";
+    if (p.view !== want) continue;
+    const ss = p.specialty_id ? specSlug.get(Number(p.specialty_id)) : null;
+    const href = ss ? `/app/${ss}/${p.slug}` : `/app/${p.slug}`;
+    const cur = links.get(Number(r.topic_id)) ?? {};
+    if (r.resource_type === "resumo") cur.resumoHref ??= href;
+    else cur.revalidaUpHref ??= href;
+    links.set(Number(r.topic_id), cur);
+  }
+
+  for (const q of questions) {
+    const origin = originOf.get(q.id);
+    const r = pickRemediation({
+      identified: origin != null,
+      topicId: origin != null ? topicOfExam.get(origin) ?? null : null,
+      topicLinks: links,
+      sectionTopics: topicsOfSection.get(q.page_id) ?? new Set(),
+      sectionRemediation: byPage.get(q.page_id) ?? null,
+    });
+    if (r) out.set(q.id, r);
+  }
+  return out;
+}
 
 /**
  * For each Questões page: its topic's Resumo page (Karina's choice), else its
