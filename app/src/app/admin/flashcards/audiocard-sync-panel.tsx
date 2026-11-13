@@ -30,7 +30,7 @@ export function AudiocardSyncPanel({ rows, okCount, total }: { rows: SyncRow[]; 
             <li key={r.group_id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div className="min-w-0">
                 <p className="font-medium break-words">{r.label}</p>
-                <p className="text-xs text-muted-foreground">{r.deck}</p>
+                <p className="text-sm text-muted-foreground">{r.deck}</p>
               </div>
               <div className="text-sm sm:text-right">
                 <p className="font-medium">{t(`flashcardsAdmin.status.${r.status}`)}</p>

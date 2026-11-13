@@ -597,7 +597,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                   title={t("pageEdit.moveUp")}
                   className={cn(
                     "rounded p-1.5 transition-colors",
-                    idx === 0
+                    idx === 0 || (lesson.id !== null && lesson.id in generatedLessons)
                       ? "pointer-events-none opacity-25"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
@@ -611,7 +611,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                   title={t("pageEdit.moveDown")}
                   className={cn(
                     "rounded p-1.5 transition-colors",
-                    idx === lessonDrafts.length - 1
+                    idx === lessonDrafts.length - 1 || (lesson.id !== null && lesson.id in generatedLessons)
                       ? "pointer-events-none opacity-25"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
