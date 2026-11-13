@@ -473,6 +473,7 @@ export function FlashcardPlayer({
               table="flashcard_items"
               id={card.id}
               field="text"
+              askChangeKind
               className="text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
               html={safe(card.text)}
               editHtml={card.text}
@@ -492,6 +493,7 @@ export function FlashcardPlayer({
               table="flashcard_items"
               id={card.id}
               field="answer"
+              askChangeKind
               className="text-foreground [&_p]:mb-2 [&_strong]:font-semibold"
               html={safe(card.answer)}
               editHtml={card.answer}

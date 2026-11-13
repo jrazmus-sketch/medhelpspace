@@ -2292,12 +2292,42 @@
     "asrCards": "Trechos para ouvir: {{count}}",
     "status": {
       "em_dia": "Em dia",
-      "texto_alterado_apos_gravacao": "Texto alterado depois da gravação",
+      "texto_alterado_apos_gravacao": "Texto alterado depois da gravação (editorial)",
       "narracao_difere_do_texto": "Narração difere do texto",
       "sem_audio": "Sem áudio",
       "sem_gravacao_registrada": "Gravação sem registro do texto",
       "audio_trocado_sem_registro": "Áudio trocado sem registro",
-      "sem_audiocard": "Sem AudioCard"
-    }
+      "sem_audiocard": "Sem AudioCard",
+      "regravacao_necessaria": "Alteração clínica — regravar (áudio suspenso)",
+      "audio_suspenso": "Áudio suspenso",
+      "avaliacao_pendente": "Alteração pendente de avaliação",
+      "correcao_editorial_conferida": "Correção editorial conferida"
+    },
+    "kind": {
+      "editorial": "Editorial",
+      "clinica": "Clínica",
+      "nao_esclarecida": "Não esclarecida",
+      "editorial_conferida": "Editorial (conferida)"
+    },
+    "card": "Cartão {{n}}",
+    "sideQ": "pergunta",
+    "sideA": "resposta",
+    "opInsert": "cartão novo",
+    "opDelete": "cartão retirado",
+    "by": "{{who}} · {{when}}",
+    "unknownAuthor": "autor não registrado",
+    "before": "Antes",
+    "after": "Depois",
+    "classifyAs": "Tipo da alteração",
+    "confirmEditorial": "Conferi o áudio: a narração continua coerente",
+    "suspend": "Suspender o áudio",
+    "suspendReason": "Motivo da suspensão",
+    "suspendConfirm": "Suspender",
+    "lift": "Liberar o áudio",
+    "suspendedBecause": "Suspenso: {{reason}}",
+    "saved": "Salvo",
+    "saveError": "Erro ao salvar",
+    "tierHelp": "Editorial: o áudio continua, com aviso até a conferência. Clínica: o áudio fica suspenso para os alunos até a regravação (o arquivo é preservado). Não esclarecida: fica pendente para avaliação.",
+    "noLog": "Diferença anterior ao registro de alterações"
   }
 }

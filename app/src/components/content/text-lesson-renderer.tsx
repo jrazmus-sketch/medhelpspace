@@ -186,13 +186,13 @@ export async function TextLessonRenderer({
   audioLabel?: string;
 }) {
   const supabase = createAdminClient();
-  const { data: lessons } = await supabase
+  const { data: lessonRows } = await supabase
     .from("lessons")
     .select("id, position, title, body_html, audio_url")
     .eq("page_id", pageId)
     .order("position");
 
-  if (!lessons || lessons.length === 0) {
+  if (!lessonRows || lessonRows.length === 0) {
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
 
@@ -201,8 +201,21 @@ export async function TextLessonRenderer({
   const { data: generated } = await supabase
     .from("flashcard_groups")
     .select("audiocard_lesson_id")
-    .in("audiocard_lesson_id", lessons.map((l) => l.id));
+    .in("audiocard_lesson_id", lessonRows.map((l) => l.id));
   const generatedIds = new Set((generated ?? []).map((g) => g.audiocard_lesson_id as number));
+
+  // Single source (TEST): an AudioCard whose text changed clinically after the recording (or that an admin
+  // suspended) must not play as if it were in sync — the player is hidden, the file is kept, the text shows.
+  // Where the change-log patch is absent the column doesn't exist, the query errors, and nothing is hidden.
+  const { data: held } = generatedIds.size
+    ? await supabase
+        .from("audiocard_sync_status")
+        .select("lesson_id")
+        .eq("audio_suspended", true)
+        .in("lesson_id", [...generatedIds])
+    : { data: [] as { lesson_id: number }[] };
+  const suspendedIds = new Set((held ?? []).map((h) => h.lesson_id as number));
+  const lessons = lessonRows.map((l) => (suspendedIds.has(l.id) ? { ...l, audio_url: null } : l));
 
   // Fetch user's completed lessons + saved audio positions for this page
   let completedIds: number[] = [];
@@ -274,6 +287,13 @@ export async function TextLessonRenderer({
               value={activeLesson.title}
             />
           </h2>
+        )}
+
+        {suspendedIds.has(activeLesson.id) && (
+          <p className="mb-4 rounded-lg border border-border bg-surface-1 px-4 py-3 text-sm text-muted-foreground">
+            O áudio deste tema está sendo regravado para acompanhar uma atualização do conteúdo. O texto abaixo já
+            está atualizado.
+          </p>
         )}
 
         {/* Audio player */}

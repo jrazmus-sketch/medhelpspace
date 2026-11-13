@@ -18,7 +18,7 @@
  *   • --apply runs in one transaction and first copies every card and AudioCard it may touch into backup
  *     tables (suffix = run time), so each run can be reverted.
  *
- *   node scripts/import-cards-single-source.js --delivery d.json [--apply] [--accept "Choque#25"] [--retire]
+ *   node scripts/import-cards-single-source.js --delivery d.json [--apply] [--accept "Choque#25"] [--retire] [--kind editorial|clinica|nao_esclarecida] [--actor <uuid>]
  *   node scripts/import-cards-single-source.js --from-v2-sql parsed/audiocards-v2-import.sql --date 2026-11-04 --out d.json
  * Delivery JSON: { "date": "YYYY-MM-DD", "themes": [{ "deck": "emergencia-flashcards", "label": "Choque",
  *                   "cards": [{ "q": "…", "a": "…" }], "audio_url": "https://…" (optional) }] }
@@ -63,8 +63,15 @@ async function plan(tx, delivery, { accept = [], retire = false } = {}) {
   return out;
 }
 
-/** Apply a plan inside the caller's transaction. Returns the backup suffix. */
-async function apply(tx, delivery, planned) {
+/**
+ * Apply a plan inside the caller's transaction. Returns the backup suffix.
+ * Every card change lands in flashcard_item_changes as source 'import'; its type is the delivery's
+ * `change_kind` (or opts.kind), else 'nao_esclarecida' — the importer never decides it is only editorial.
+ */
+async function apply(tx, delivery, planned, opts = {}) {
+  const kind = opts.kind || delivery.change_kind || 'nao_esclarecida';
+  await tx`select set_config('app.change_source', 'import', true), set_config('app.change_kind', ${kind}, true),
+                  set_config('app.actor_id', ${opts.actor || ''}, true)`;
   const suffix = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
   const groups = planned.map((t) => t.group_id).filter(Boolean);
   await tx.unsafe(`create table flashcard_items_bk_import_${suffix} as select * from flashcard_items where group_id = any($1)`, [groups]);
@@ -138,7 +145,7 @@ if (require.main === module) {
       console.log(JSON.stringify(summary(p)));
       for (const t of p) for (const o of t.ops.filter((x) => x.kind === 'conflito'))
         console.log(`  CONFLITO ${t.label} #${o.pos}: ${o.motivo}\n     plataforma: ${o.atual.q} → ${o.atual.a}\n     entrega:    ${o.entrega.q} → ${o.entrega.a}`);
-      if (has('--apply')) console.log('backup suffix', await apply(tx, delivery, p));
+      if (has('--apply')) console.log('backup suffix', await apply(tx, delivery, p, { kind: arg('--kind'), actor: arg('--actor') }));
       else console.log('(simulação: nada gravado — use --apply)');
     });
     await sql.end();

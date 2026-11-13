@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isCardChangeKind, type CardChangeKind } from "@/lib/card-change-kind";
 import { safe } from "@/lib/sanitize";
 import { mirrorQuizQuestionToFunnel } from "@/lib/simulado/mirror";
 
@@ -70,6 +71,7 @@ export async function updateScalarField(
   id: number,
   field: string,
   rawValue: string,
+  changeKind?: CardChangeKind,
 ): Promise<void> {
   const { user } = await requireAdmin();
   const key = `${table}.${field}`;
@@ -110,10 +112,20 @@ export async function updateScalarField(
     : null;
   if (beforeValue === cleanValue) return;
 
-  const { error } = await admin
-    .from(table)
-    .update({ [field]: cleanValue })
-    .eq("id", id);
+  // A card's text goes through edit_flashcard_card so the change log records who changed it, when, and
+  // the type the editor chose. Not chosen = "não esclarecida": it waits for Karina, never assumed editorial.
+  const isCard = table === "flashcard_items" && (field === "text" || field === "answer");
+  const kind: CardChangeKind = isCardChangeKind(changeKind) ? changeKind : "nao_esclarecida";
+  let error: { message: string; code?: string } | null = null;
+  if (isCard) {
+    ({ error } = await admin.rpc("edit_flashcard_card", {
+      p_item_id: id, p_field: field, p_value: cleanValue, p_kind: kind, p_actor: user.id, p_source: "editor",
+    }));
+    // Database without the change-log patch: plain update, as before.
+    if (error?.code === "PGRST202") ({ error } = await admin.from(table).update({ [field]: cleanValue }).eq("id", id));
+  } else {
+    ({ error } = await admin.from(table).update({ [field]: cleanValue }).eq("id", id));
+  }
   if (error) throw new Error(error.message);
 
   await writeAudit(user.id, {
@@ -122,6 +134,7 @@ export async function updateScalarField(
     field,
     before: beforeValue,
     after: cleanValue,
+    ...(isCard ? { change_kind: kind } : {}),
   });
 
   // The free simulado keeps its own copy of these 100 questions and has no

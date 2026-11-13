@@ -2292,12 +2292,42 @@
     "asrCards": "Passages to listen to: {{count}}",
     "status": {
       "em_dia": "Up to date",
-      "texto_alterado_apos_gravacao": "Text changed after the recording",
+      "texto_alterado_apos_gravacao": "Text changed after recording (editorial)",
       "narracao_difere_do_texto": "Narration differs from the text",
       "sem_audio": "No audio",
       "sem_gravacao_registrada": "Recording without its text on record",
       "audio_trocado_sem_registro": "Audio replaced without a record",
-      "sem_audiocard": "No AudioCard"
-    }
+      "sem_audiocard": "No AudioCard",
+      "regravacao_necessaria": "Clinical change — re-record (audio suspended)",
+      "audio_suspenso": "Audio suspended",
+      "avaliacao_pendente": "Change pending evaluation",
+      "correcao_editorial_conferida": "Editorial fix confirmed"
+    },
+    "kind": {
+      "editorial": "Editorial",
+      "clinica": "Clinical",
+      "nao_esclarecida": "Not clarified",
+      "editorial_conferida": "Editorial (confirmed)"
+    },
+    "card": "Card {{n}}",
+    "sideQ": "question",
+    "sideA": "answer",
+    "opInsert": "new card",
+    "opDelete": "card removed",
+    "by": "{{who}} · {{when}}",
+    "unknownAuthor": "author not recorded",
+    "before": "Before",
+    "after": "After",
+    "classifyAs": "Type of change",
+    "confirmEditorial": "I checked the audio: the narration is still coherent",
+    "suspend": "Suspend the audio",
+    "suspendReason": "Reason for suspending",
+    "suspendConfirm": "Suspend",
+    "lift": "Restore the audio",
+    "suspendedBecause": "Suspended: {{reason}}",
+    "saved": "Saved",
+    "saveError": "Could not save",
+    "tierHelp": "Editorial: the audio stays, with a warning until checked. Clinical: the audio is suspended for students until re-recorded (the file is kept). Not clarified: pending evaluation.",
+    "noLog": "Difference from before the change log existed"
   }
 }

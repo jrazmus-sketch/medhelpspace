@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Check, Loader2, X } from "lucide-react";
 import { useEditMode } from "@/providers/edit-mode-provider";
 import { updateScalarField, updateQuizAnswerField } from "@/actions/inline-edit";
+import type { CardChangeKind } from "@/lib/card-change-kind";
 
 // Consumers pass already-sanitized HTML (via lib/sanitize#safe).
 // Server actions re-sanitize on save. This wrapper exists so we can keep the
@@ -33,6 +34,11 @@ type Common = {
   readOnly?: boolean;
   /** Element tag for the display wrapper. Defaults: plain → span, rich/answer → div. */
   as?: "span" | "div";
+  /**
+   * Single source (TEST): a Flashcard's text. The save bar asks the type of change (editorial / clínica /
+   * não sei) — it decides whether the AudioCard's audio stays, is suspended, or waits for evaluation.
+   */
+  askChangeKind?: boolean;
 };
 
 type PlainProps = Common & {
@@ -105,6 +111,7 @@ function EditableInner(props: Props) {
   const [original, setOriginal] = useState<string | null>(null);
   const editing = original !== null;
   const [pending, startTransition] = useTransition();
+  const [changeKind, setChangeKind] = useState<CardChangeKind>("nao_esclarecida");
   const editRef = useRef<HTMLElement | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
@@ -122,6 +129,7 @@ function EditableInner(props: Props) {
 
   function exit() {
     setOriginal(null);
+    setChangeKind("nao_esclarecida");
   }
 
   useEffect(() => {
@@ -170,7 +178,8 @@ function EditableInner(props: Props) {
             newValue,
           );
         } else {
-          await updateScalarField(props.table, props.id, props.field, newValue);
+          await updateScalarField(props.table, props.id, props.field, newValue,
+            props.askChangeKind ? changeKind : undefined);
         }
         toast.success("Salvo");
         exit();
@@ -271,6 +280,8 @@ function EditableInner(props: Props) {
           onSave={save}
           onCancel={cancel}
           pending={pending}
+          changeKind={props.askChangeKind ? changeKind : undefined}
+          onChangeKind={setChangeKind}
         />
       </Tag>
     );
@@ -295,6 +306,8 @@ function EditableInner(props: Props) {
         onSave={save}
         onCancel={cancel}
         pending={pending}
+        changeKind={props.askChangeKind ? changeKind : undefined}
+        onChangeKind={setChangeKind}
       />
     </Tag>
   );
@@ -307,11 +320,16 @@ function FloatingSaveBar({
   onSave,
   onCancel,
   pending,
+  changeKind,
+  onChangeKind,
 }: {
   anchorRef: React.RefObject<HTMLElement | null>;
   onSave: () => void;
   onCancel: () => void;
   pending: boolean;
+  /** When set, a "type of change" picker is shown before Salvar. */
+  changeKind?: CardChangeKind;
+  onChangeKind?: (k: CardChangeKind) => void;
 }) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -341,6 +359,24 @@ function FloatingSaveBar({
       contentEditable={false}
       onMouseDown={(e) => e.preventDefault()}
     >
+      {changeKind && onChangeKind && (
+        <label className="flex items-center gap-1 px-1 text-muted-foreground">
+          <span className="hidden sm:inline">Tipo:</span>
+          <select
+            value={changeKind}
+            onMouseDown={(e) => e.stopPropagation()}
+            onChange={(e) => onChangeKind(e.target.value as CardChangeKind)}
+            disabled={pending}
+            aria-label="Tipo de alteração"
+            title="Editorial: o áudio continua. Clínica: o áudio fica suspenso até a regravação. Não sei: fica pendente para avaliação."
+            className="min-h-7 rounded border border-border bg-background px-1 text-xs text-foreground"
+          >
+            <option value="nao_esclarecida">Não sei (avaliar depois)</option>
+            <option value="editorial">Editorial (o áudio continua)</option>
+            <option value="clinica">Clínica (regravar o áudio)</option>
+          </select>
+        </label>
+      )}
       <button
         type="button"
         onMouseDown={(e) => {

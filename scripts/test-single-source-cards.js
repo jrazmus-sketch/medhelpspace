@@ -48,7 +48,7 @@ async function group(tx, label, deckSlug) {
     const [l] = await tx`select body_html from lessons where id = ${g.audiocard_lesson_id}`;
     ok(l.body_html.includes('<h3 class="ac-card">Card 25</h3><p class="ac-q">') && l.body_html.includes('<p class="ac-a">TEXTO DE TESTE</p>'), 'transcript not regenerated');
     const [s] = await tx`select status, changed_since_recording from audiocard_sync_status where group_id = ${g.id}`;
-    eq(s.status, 'texto_alterado_apos_gravacao', 'status'); eq(JSON.stringify(s.changed_since_recording), '[25]', 'changed cards');
+    eq(s.status, 'avaliacao_pendente', 'status'); eq(JSON.stringify(s.changed_since_recording), '[25]', 'changed cards');
   });
 
   await t('writing an AudioCard transcript directly is refused', async (tx) => {
@@ -85,7 +85,7 @@ async function group(tx, label, deckSlug) {
     const [l] = await tx`select body_html from lessons where id = ${g.audiocard_lesson_id}`;
     ok(!l.body_html.includes('Card 30<'), 'card 30 still in transcript');
     const [s] = await tx`select status, changed_since_recording from audiocard_sync_status where group_id = ${g.id}`;
-    eq(s.status, 'texto_alterado_apos_gravacao', 'status'); eq(JSON.stringify(s.changed_since_recording), '[30]', 'changed');
+    eq(s.status, 'avaliacao_pendente', 'status'); eq(JSON.stringify(s.changed_since_recording), '[30]', 'changed');
   });
 
   await t('renaming a group renames its cards and its AudioCard', async (tx) => {
@@ -174,7 +174,7 @@ async function group(tx, label, deckSlug) {
     const { g, d } = await choqueDelivery(tx, '2026-12-01');
     await imp.apply(tx, d, await imp.plan(tx, d));
     const [st] = await tx`select status, changed_since_recording from audiocard_sync_status where group_id = ${g.id}`;
-    eq(st.status, 'texto_alterado_apos_gravacao', 'status'); eq(JSON.stringify(st.changed_since_recording), '[25,31]', 'changed cards');
+    eq(st.status, 'avaliacao_pendente', 'status'); eq(JSON.stringify(st.changed_since_recording), '[25,31]', 'changed cards');
   });
 
   await t('import: a card edited on the platform after the delivery date is a conflict and is left untouched', async (tx) => {
@@ -195,6 +195,117 @@ async function group(tx, label, deckSlug) {
     const g = await group(tx, 'Tema Novo de Teste', 'emergencia-flashcards');
     ok(g.lesson_title === 'Tema Novo de Teste', 'AudioCard missing');
     eq(g.body_html, '<h3 class="ac-card">Card 1</h3><p class="ac-q">P1?</p><p class="ac-a">R1.</p><h3 class="ac-card">Card 2</h3><p class="ac-q">P2?</p><p class="ac-a">R2.</p>', 'transcript');
+  });
+
+  // ── Part 2: change log + Karina's three tiers (schema-patch-single-source-change-log.sql) ──────────
+  const actorOf = async (tx) => (await tx`select id from auth.users order by created_at limit 1`)[0].id;
+  const st = async (tx, g) => (await tx`select status, audio_suspended, changes, changed_since_recording from audiocard_sync_status where group_id = ${g.id}`)[0];
+  const choque = async (tx) => {
+    const g = await group(tx, 'Choque', 'emergencia-flashcards');
+    const [c] = await tx`select id, text, answer from flashcard_items where group_id = ${g.id} and position = 25`;
+    const [s0] = await tx`select status from audiocard_sync_status where group_id = ${g.id}`;
+    eq(s0.status, 'em_dia', 'Choque must start in sync for these tests');
+    return { g, c };
+  };
+
+  await t('tier A: an editorial edit is logged with author, source and type; the audio stays; confirming clears the warning', async (tx) => {
+    const { g, c } = await choque(tx); const actor = await actorOf(tx);
+    await tx`select edit_flashcard_card(${c.id}, 'answer', ${c.answer + ' Revisado.'}, 'editorial', ${actor}, 'editor')`;
+    const [log] = await tx`select * from flashcard_item_changes where item_id = ${c.id} order by id desc limit 1`;
+    eq(log.op, 'update', 'op'); eq(log.change_kind, 'editorial', 'kind'); eq(log.source, 'editor', 'source');
+    eq(String(log.changed_by), String(actor), 'author'); eq(log.old_answer, c.answer, 'before'); eq(log.new_answer, c.answer + ' Revisado.', 'after');
+    ok(log.changed_at, 'date');
+    let s = await st(tx, g);
+    eq(s.status, 'texto_alterado_apos_gravacao', 'status'); eq(s.audio_suspended, false, 'audio suspended on an editorial change');
+    eq(JSON.stringify(s.changes), '[{"kind":"editorial","position":25}]', 'changes');
+    const [{ n }] = await tx`select confirm_audiocard_editorial(${g.id}, ${actor}) n`; eq(n, 1, 'confirmed');
+    s = await st(tx, g); eq(s.status, 'correcao_editorial_conferida', 'after confirming'); eq(s.audio_suspended, false, 'suspended');
+  });
+
+  await t('tier B: a clinical edit suspends the audio for students (file kept) until a new recording is registered', async (tx) => {
+    const { g, c } = await choque(tx); const actor = await actorOf(tx);
+    const [before] = await tx`select audio_url from lessons where id = ${g.audiocard_lesson_id}`;
+    await tx`select edit_flashcard_card(${c.id}, 'answer', ${'Dose nova de teste.'}, 'clinica', ${actor}, 'editor')`;
+    let s = await st(tx, g);
+    eq(s.status, 'regravacao_necessaria', 'status'); eq(s.audio_suspended, true, 'audio not suspended');
+    const [after] = await tx`select audio_url from lessons where id = ${g.audiocard_lesson_id}`;
+    eq(after.audio_url, before.audio_url, 'the audio file/URL must be preserved');
+    // confirming the editorial changes never lifts a clinical one
+    await tx`select confirm_audiocard_editorial(${g.id}, ${actor})`;
+    eq((await st(tx, g)).status, 'regravacao_necessaria', 'confirm lifted a clinical change');
+    // a new recording of the current text clears it
+    const cards = await tx`select position, audiocard_card_text(text) as text, audiocard_card_text(answer) as answer from flashcard_items where group_id = ${g.id} order by position`;
+    await tx`insert into audiocard_recordings (lesson_id, audio_url, recorded_cards, recorded_at, source)
+      values (${g.audiocard_lesson_id}, ${before.audio_url}, ${tx.json(cards)}, now(), 'manual')`;
+    s = await st(tx, g); eq(s.status, 'em_dia', 'after re-recording'); eq(s.audio_suspended, false, 'still suspended');
+  });
+
+  await t('tier C: an unclassified change is pending for Karina, never decided automatically; classifying it moves the tier', async (tx) => {
+    const { g, c } = await choque(tx); const actor = await actorOf(tx);
+    await tx`update flashcard_items set answer = ${'Sem tipo informado.'} where id = ${c.id}`;   // e.g. a raw SQL fix
+    let s = await st(tx, g); eq(s.status, 'avaliacao_pendente', 'status'); eq(s.audio_suspended, false, 'suspended');
+    const [log] = await tx`select id, change_kind, source from flashcard_item_changes where item_id = ${c.id} order by id desc limit 1`;
+    eq(log.change_kind, 'nao_esclarecida', 'default kind'); eq(log.source, 'sql', 'source');
+    await tx`select classify_flashcard_changes(${[log.id]}, 'clinica', ${actor})`;
+    s = await st(tx, g); eq(s.status, 'regravacao_necessaria', 'classified clinical'); eq(s.audio_suspended, true, 'suspended');
+    await tx`select classify_flashcard_changes(${[log.id]}, 'editorial', ${actor})`;
+    s = await st(tx, g); eq(s.status, 'texto_alterado_apos_gravacao', 'classified editorial'); eq(s.audio_suspended, false, 'suspended');
+    const [l2] = await tx`select classified_by, classified_at from flashcard_item_changes where id = ${log.id}`;
+    eq(String(l2.classified_by), String(actor), 'classified by'); ok(l2.classified_at, 'classified at');
+  });
+
+  await t('the most severe change wins: a later editorial touch never hides an earlier clinical change', async (tx) => {
+    const { g, c } = await choque(tx); const actor = await actorOf(tx);
+    await tx`select edit_flashcard_card(${c.id}, 'answer', ${'Conduta nova.'}, 'clinica', ${actor}, 'editor')`;
+    await tx`select edit_flashcard_card(${c.id}, 'answer', ${'Conduta nova!'}, 'editorial', ${actor}, 'editor')`;
+    eq((await st(tx, g)).status, 'regravacao_necessaria', 'status');
+  });
+
+  await t('restoring the narrated text clears the warning, and the history keeps both edits', async (tx) => {
+    const { g, c } = await choque(tx); const actor = await actorOf(tx);
+    await tx`select edit_flashcard_card(${c.id}, 'answer', ${'Temporário.'}, 'clinica', ${actor}, 'editor')`;
+    await tx`select edit_flashcard_card(${c.id}, 'answer', ${c.answer}, 'editorial', ${actor}, 'editor')`;
+    eq((await st(tx, g)).status, 'em_dia', 'status');
+    const [{ n }] = await tx`select count(*)::int n from flashcard_item_changes where item_id = ${c.id}`; eq(n, 2, 'history');
+  });
+
+  await t('manual suspension needs a reason, keeps the file, and can be lifted', async (tx) => {
+    const { g } = await choque(tx); const actor = await actorOf(tx);
+    let err = null;
+    try { await tx`savepoint s`; await tx`select set_audiocard_suspension(${g.audiocard_lesson_id}, true, '', ${actor})`; }
+    catch (e) { err = e; await tx`rollback to savepoint s`; }
+    ok(err && /motivo/.test(err.message), 'suspension without a reason was accepted');
+    await tx`select set_audiocard_suspension(${g.audiocard_lesson_id}, true, 'A narração cita a dose antiga', ${actor})`;
+    let s = await st(tx, g); eq(s.status, 'audio_suspenso', 'status'); eq(s.audio_suspended, true, 'suspended');
+    await tx`select set_audiocard_suspension(${g.audiocard_lesson_id}, false, null, ${actor})`;
+    s = await st(tx, g); eq(s.status, 'em_dia', 'lifted'); eq(s.audio_suspended, false, 'still suspended');
+  });
+
+  await t('deleting and inserting cards is logged; an import is logged as source "import" with the delivery type', async (tx) => {
+    const g = await group(tx, 'Choque', 'emergencia-flashcards');
+    const [c] = await tx`select id from flashcard_items where group_id = ${g.id} order by position desc limit 1`;
+    await tx`delete from flashcard_items where id = ${c.id}`;
+    const [d] = await tx`select op, old_text from flashcard_item_changes where item_id = ${c.id}`;
+    eq(d.op, 'delete', 'delete logged'); ok(d.old_text, 'deleted text kept');
+    const { plan, apply } = require('./import-cards-single-source');
+    const cards = await tx`select text as q, answer as a from flashcard_items where group_id = ${g.id} order by position`;
+    const delivery = { date: '2099-01-01', change_kind: 'editorial',
+      themes: [{ deck: 'emergencia-flashcards', label: 'Choque', cards: [...cards, { q: 'Pergunta importada?', a: 'Resposta importada.' }] }] };
+    await apply(tx, delivery, await plan(tx, delivery, {}));
+    const [i] = await tx`select op, source, change_kind from flashcard_item_changes where new_text = 'Pergunta importada?'`;
+    ok(i, 'import not logged'); eq(i.op, 'insert', 'op'); eq(i.source, 'import', 'source'); eq(i.change_kind, 'editorial', 'kind');
+  });
+
+  await t('members cannot read the change log or call the tier functions', async (tx) => {
+    const [r] = await tx`select
+      has_table_privilege('authenticated', 'public.flashcard_item_changes', 'select') a,
+      has_table_privilege('anon', 'public.flashcard_item_changes', 'select') b,
+      has_function_privilege('authenticated', 'public.edit_flashcard_card(bigint,text,text,text,uuid,text)', 'execute') c,
+      has_function_privilege('authenticated', 'public.classify_flashcard_changes(bigint[],text,uuid)', 'execute') d,
+      has_function_privilege('authenticated', 'public.set_audiocard_suspension(bigint,boolean,text,uuid)', 'execute') e,
+      has_function_privilege('anon', 'public.confirm_audiocard_editorial(bigint,uuid)', 'execute') f,
+      has_function_privilege('anon', 'public.stamp_flashcard_changes(bigint[],uuid,text,timestamptz)', 'execute') g`;
+    for (const k of 'abcdefg') eq(r[k], false, `privilege ${k}`);
   });
 
   await t('nothing an anonymous or signed-in member can call writes cards', async (tx) => {

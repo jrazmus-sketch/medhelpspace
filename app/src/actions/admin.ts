@@ -1195,8 +1195,11 @@ export type FlashcardInput = {
 };
 
 export async function updateFlashcards(pageId: number, cards: FlashcardInput[]) {
-  await requireContentRole();
+  const ctx = await requireContentRole();
   const admin = createAdminClient();
+  // Single source (TEST): the change log can't see the author through the REST client — stamp it after.
+  const since = new Date(Date.now() - 5_000).toISOString();
+  const touched: number[] = [];
 
   const { data: existing } = await admin
     .from("flashcard_items")
@@ -1208,6 +1211,7 @@ export async function updateFlashcards(pageId: number, cards: FlashcardInput[]) 
   const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
   if (toDelete.length > 0) {
     await admin.from("flashcard_items").delete().in("id", toDelete);
+    touched.push(...toDelete);
   }
 
   for (const c of cards) {
@@ -1223,9 +1227,17 @@ export async function updateFlashcards(pageId: number, cards: FlashcardInput[]) 
     };
     if (c.id !== null) {
       await admin.from("flashcard_items").update(payload).eq("id", c.id);
+      touched.push(c.id);
     } else {
-      await admin.from("flashcard_items").insert({ page_id: pageId, ...payload });
+      const { data: ins } = await admin.from("flashcard_items").insert({ page_id: pageId, ...payload }).select("id").single();
+      if (ins) touched.push(ins.id as number);
     }
+  }
+  if (touched.length > 0) {
+    // Ignored where the change-log patch is absent (function not found).
+    await admin.rpc("stamp_flashcard_changes", {
+      p_item_ids: touched, p_actor: ctx.user.id, p_source: "page_editor", p_since: since,
+    });
   }
 
   revalidatePath(`/admin/pages/${pageId}/edit`);
