@@ -94,8 +94,19 @@ export default async function PageEditPage({
     target_type: r.target_page?.type ?? null,
   }));
 
+  // AudioCards generated from a Flashcards group (single source): read-only here, edited in the deck.
+  const lessonIds = ((lessonsRes.data ?? []) as LessonRow[]).map((l) => l.id);
+  const { data: generatedRows } = lessonIds.length
+    ? await admin.from("flashcard_groups").select("audiocard_lesson_id, label, page_id").in("audiocard_lesson_id", lessonIds)
+    : { data: [] };
+  const generatedLessons: Record<number, GeneratedLesson> = {};
+  for (const g of (generatedRows ?? []) as { audiocard_lesson_id: number; label: string; page_id: number }[]) {
+    generatedLessons[g.audiocard_lesson_id] = { label: g.label, deckPageId: g.page_id };
+  }
+
   return (
     <PageEditClient
+      generatedLessons={generatedLessons}
       page={page as PageRow}
       specialties={(specialties ?? []) as SpecialtyOption[]}
       tracks={(tracks ?? []) as TrackOption[]}
@@ -129,6 +140,8 @@ export type PageRow = {
 export type SpecialtyOption = { id: number; name: string; slug: string };
 export type TrackOption = { id: number; name: string };
 export type ModuleOption = { id: number; name: string };
+
+export type GeneratedLesson = { label: string; deckPageId: number };
 
 export type LessonRow = {
   id: number;

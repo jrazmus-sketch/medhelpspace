@@ -941,7 +941,9 @@
     "headingChangeBody": "Esta edição muda o nível dos títulos abaixo. Isso altera o destaque visual na página dos alunos. Se não foi intencional, volte e use Desfazer.",
     "headingChangeItem": "“{{text}}”: H{{from}} → H{{to}}",
     "headingChangeBack": "Voltar e revisar",
-    "headingChangeAction": "Salvar mesmo assim"
+    "headingChangeAction": "Salvar mesmo assim",
+    "generatedTranscript": "A transcrição deste AudioCard é gerada a partir do grupo de Flashcards \"{{label}}\". Para alterar o texto, edite os cartões.",
+    "generatedTranscriptLink": "Editar os cartões em Flashcards →"
   },
   "quizEditor": {
     "title": "Questões",
@@ -2274,5 +2276,28 @@
     "visualMode": "Voltar ao editor visual",
     "preservedBlock": "Tabela/figura protegida — para alterar o conteúdo, use Código HTML",
     "lossyWarning": "Este texto tem formatação que o editor visual não consegue manter, por isso ele abriu em Código HTML. Corrija palavras diretamente aqui, sem mexer nas marcações entre < >, e a formatação fica intacta."
+  },
+  "flashcardsAdmin": {
+    "title": "Flashcards",
+    "total": "Total de itens",
+    "editorSoon": "Editor de conteúdo disponível em breve. Para edições, contate o desenvolvedor.",
+    "syncTitle": "AudioCards × Flashcards",
+    "syncIntro": "Cada AudioCard é gerado a partir do seu grupo de Flashcards. Aqui aparecem os que precisam de atenção.",
+    "allOk": "Todos os {{count}} AudioCards estão em dia.",
+    "okCount": "{{count}} em dia",
+    "colGroup": "Grupo",
+    "colStatus": "Situação",
+    "colDetail": "Detalhe",
+    "changedCards": "Cartões alterados depois da gravação: {{list}}",
+    "asrCards": "Trechos para ouvir: {{count}}",
+    "status": {
+      "em_dia": "Em dia",
+      "texto_alterado_apos_gravacao": "Texto alterado depois da gravação",
+      "narracao_difere_do_texto": "Narração difere do texto",
+      "sem_audio": "Sem áudio",
+      "sem_gravacao_registrada": "Gravação sem registro do texto",
+      "audio_trocado_sem_registro": "Áudio trocado sem registro",
+      "sem_audiocard": "Sem AudioCard"
+    }
   }
 }

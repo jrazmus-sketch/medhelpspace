@@ -89,13 +89,14 @@ type Props = {
   lessons: LessonRow[];
   quizQuestions: QuizQuestionRow[];
   flashcards: FlashcardRow[];
+  generatedLessons?: Record<number, import("./page").GeneratedLesson>;
   navItems: import("./page").NavItemRow[];
   isQuiz: boolean;
   isFlashcards: boolean;
   isHub: boolean;
 };
 
-export function PageEditClient({ page, specialties, tracks, modules, lessons, quizQuestions, flashcards, navItems, isQuiz, isFlashcards, isHub }: Props) {
+export function PageEditClient({ page, specialties, tracks, modules, lessons, quizQuestions, flashcards, navItems, isQuiz, isFlashcards, isHub, generatedLessons = {} }: Props) {
   const { t } = useTranslation();
 
   const [title, setTitle] = useState(page.title);
@@ -574,6 +575,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                 <input
                   type="text"
                   value={lesson.title}
+                  readOnly={lesson.id !== null && lesson.id in generatedLessons}
                   onChange={(e) => patchLesson(idx, { title: e.target.value })}
                   placeholder={t("pageEdit.lessonTitle")}
                   className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-brand/60 focus:ring-1 focus:ring-brand/30"
@@ -591,7 +593,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                 <button
                   type="button"
                   onClick={() => moveLesson(idx, "up")}
-                  disabled={idx === 0}
+                  disabled={idx === 0 || (lesson.id !== null && lesson.id in generatedLessons)}
                   title={t("pageEdit.moveUp")}
                   className={cn(
                     "rounded p-1.5 transition-colors",
@@ -605,7 +607,7 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                 <button
                   type="button"
                   onClick={() => moveLesson(idx, "down")}
-                  disabled={idx === lessonDrafts.length - 1}
+                  disabled={idx === lessonDrafts.length - 1 || (lesson.id !== null && lesson.id in generatedLessons)}
                   title={t("pageEdit.moveDown")}
                   className={cn(
                     "rounded p-1.5 transition-colors",
@@ -616,25 +618,39 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
                 </button>
-                <button
+                {!(lesson.id !== null && lesson.id in generatedLessons) && <button
                   type="button"
                   onClick={() => removeLesson(idx)}
                   title={t("pageEdit.deleteLesson")}
                   className="rounded p-1.5 text-destructive transition-colors hover:bg-destructive/10"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </button>}
               </div>
 
               {/* Expanded: body editor + audio URL */}
               {lesson.open && (
                 <div className="space-y-3 pl-7">
-                  <RichTextEditor
-                    content={lesson.body_html}
-                    onChange={(html) => patchLesson(idx, { body_html: html })}
-                    placeholder={t("pageEdit.lessonBody")}
-                    minHeight="200px"
-                  />
+                  {lesson.id !== null && lesson.id in generatedLessons ? (
+                    <div className="rounded-lg border border-border bg-surface-1 px-4 py-3 text-sm">
+                      <p className="text-muted-foreground">
+                        {t("pageEdit.generatedTranscript", { label: generatedLessons[lesson.id].label })}
+                      </p>
+                      <Link
+                        href={`/admin/pages/${generatedLessons[lesson.id].deckPageId}/edit`}
+                        className="mt-2 inline-block font-medium text-brand-text underline-offset-4 hover:underline"
+                      >
+                        {t("pageEdit.generatedTranscriptLink")}
+                      </Link>
+                    </div>
+                  ) : (
+                    <RichTextEditor
+                      content={lesson.body_html}
+                      onChange={(html) => patchLesson(idx, { body_html: html })}
+                      placeholder={t("pageEdit.lessonBody")}
+                      minHeight="200px"
+                    />
+                  )}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">{t("pageEdit.lessonAudioUrl")}</label>
                     <AudioUploader

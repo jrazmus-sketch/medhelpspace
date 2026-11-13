@@ -86,6 +86,19 @@ export async function updateScalarField(
 
   const admin = createAdminClient();
 
+  // Single source: an AudioCard linked to a Flashcards group has its title and transcript generated
+  // from the cards. Edit the Flashcards instead (the database refuses the write anyway).
+  if (table === "lessons" && (field === "body_html" || field === "title")) {
+    const { data: linked } = await admin
+      .from("flashcard_groups")
+      .select("label")
+      .eq("audiocard_lesson_id", id)
+      .maybeSingle();
+    if (linked) {
+      throw new Error(`Este AudioCard é gerado a partir do grupo de Flashcards "${linked.label}". Edite os cartões em Flashcards.`);
+    }
+  }
+
   const { data: before, error: readErr } = await admin
     .from(table)
     .select(field)

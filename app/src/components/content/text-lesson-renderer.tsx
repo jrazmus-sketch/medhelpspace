@@ -196,6 +196,14 @@ export async function TextLessonRenderer({
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
 
+  // AudioCards whose transcript is generated from a Flashcards group (single source): their title and
+  // transcript are edited in the Flashcards, never here.
+  const { data: generated } = await supabase
+    .from("flashcard_groups")
+    .select("audiocard_lesson_id")
+    .in("audiocard_lesson_id", lessons.map((l) => l.id));
+  const generatedIds = new Set((generated ?? []).map((g) => g.audiocard_lesson_id as number));
+
   // Fetch user's completed lessons + saved audio positions for this page
   let completedIds: number[] = [];
   const positionByLesson = new Map<number, number>();
@@ -261,6 +269,7 @@ export async function TextLessonRenderer({
               variant="plain"
               table="lessons"
               id={activeLesson.id}
+                readOnly={generatedIds.has(activeLesson.id)}
               field="title"
               value={activeLesson.title}
             />
@@ -280,6 +289,7 @@ export async function TextLessonRenderer({
                 variant="plain"
                 table="lessons"
                 id={activeLesson.id}
+                readOnly={generatedIds.has(activeLesson.id)}
                 field="title"
                 value={activeLesson.title}
               />
@@ -300,6 +310,7 @@ export async function TextLessonRenderer({
                 variant="rich"
                 table="lessons"
                 id={activeLesson.id}
+                readOnly={generatedIds.has(activeLesson.id)}
                 field="body_html"
                 className="prose-content prose-transcript"
                 html={safe(processHtml(activeLesson.body_html))}
@@ -327,6 +338,7 @@ export async function TextLessonRenderer({
                   variant="rich"
                   table="lessons"
                   id={activeLesson.id}
+                readOnly={generatedIds.has(activeLesson.id)}
                   field="body_html"
                   className="prose-content prose-transcript"
                   html={safe(processHtml(activeLesson.body_html))}
@@ -340,6 +352,7 @@ export async function TextLessonRenderer({
               variant="rich"
               table="lessons"
               id={activeLesson.id}
+                readOnly={generatedIds.has(activeLesson.id)}
               field="body_html"
               className={`prose-content${isTranscript ? " prose-transcript" : ""}`}
               html={safe(processHtml(activeLesson.body_html))}

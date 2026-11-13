@@ -941,7 +941,9 @@
     "headingChangeBody": "This edit changes the level of the headings below, which changes how they look on the student page. If it was not intentional, go back and use Undo.",
     "headingChangeItem": "“{{text}}”: H{{from}} → H{{to}}",
     "headingChangeBack": "Go back and review",
-    "headingChangeAction": "Save anyway"
+    "headingChangeAction": "Save anyway",
+    "generatedTranscript": "This AudioCard's transcript is generated from the Flashcards group \"{{label}}\". To change the text, edit the cards.",
+    "generatedTranscriptLink": "Edit the cards in Flashcards →"
   },
   "quizEditor": {
     "title": "Questions",
@@ -2274,5 +2276,28 @@
     "visualMode": "Back to the visual editor",
     "preservedBlock": "Protected table/figure — to change what is inside, use HTML code",
     "lossyWarning": "This text has formatting the visual editor cannot keep, so it opened as HTML code. Fix words directly here, leaving the tags between < > alone, and the formatting stays intact."
+  },
+  "flashcardsAdmin": {
+    "title": "Flashcards",
+    "total": "Total items",
+    "editorSoon": "Content editor coming soon. For edits, contact the developer.",
+    "syncTitle": "AudioCards × Flashcards",
+    "syncIntro": "Each AudioCard is generated from its Flashcards group. The ones that need attention are listed here.",
+    "allOk": "All {{count}} AudioCards are up to date.",
+    "okCount": "{{count}} up to date",
+    "colGroup": "Group",
+    "colStatus": "Status",
+    "colDetail": "Detail",
+    "changedCards": "Cards changed after the recording: {{list}}",
+    "asrCards": "Passages to listen to: {{count}}",
+    "status": {
+      "em_dia": "Up to date",
+      "texto_alterado_apos_gravacao": "Text changed after the recording",
+      "narracao_difere_do_texto": "Narration differs from the text",
+      "sem_audio": "No audio",
+      "sem_gravacao_registrada": "Recording without its text on record",
+      "audio_trocado_sem_registro": "Audio replaced without a record",
+      "sem_audiocard": "No AudioCard"
+    }
   }
 }

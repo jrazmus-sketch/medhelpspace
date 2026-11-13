@@ -29,6 +29,8 @@ type ScalarTable =
 
 type Common = {
   className?: string;
+  /** Never editable, even in edit mode (e.g. an AudioCard transcript generated from the Flashcards). */
+  readOnly?: boolean;
   /** Element tag for the display wrapper. Defaults: plain → span, rich/answer → div. */
   as?: "span" | "div";
 };
@@ -81,7 +83,7 @@ const INHERIT_STYLE: CSSProperties = {
 
 export function EditableText(props: Props) {
   const { active } = useEditMode();
-  if (!active) return <Display {...props} />;
+  if (!active || props.readOnly) return <Display {...props} />;
   return <EditableInner {...props} />;
 }
 

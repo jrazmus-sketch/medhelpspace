@@ -1033,12 +1033,24 @@ export async function updateLessons(pageId: number, lessons: LessonInput[]) {
     lessons.filter((l) => l.id !== null).map((l) => l.id as number),
   );
 
-  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id));
+  // Single source: AudioCards generated from a Flashcards group keep their title, transcript and order
+  // from the group. Only the audio is edited here; they are never deleted from this editor.
+  const { data: generatedRows } = await admin
+    .from("flashcard_groups")
+    .select("audiocard_lesson_id")
+    .in("audiocard_lesson_id", [...existingIds]);
+  const generated = new Set((generatedRows ?? []).map((g) => g.audiocard_lesson_id as number));
+
+  const toDelete = [...existingIds].filter((id) => !incomingIds.has(id) && !generated.has(id));
   if (toDelete.length > 0) {
     await admin.from("lessons").delete().in("id", toDelete);
   }
 
   for (const lesson of lessons) {
+    if (lesson.id !== null && generated.has(lesson.id)) {
+      await admin.from("lessons").update({ audio_url: lesson.audio_url || null }).eq("id", lesson.id);
+      continue;
+    }
     if (lesson.id !== null) {
       await admin
         .from("lessons")
