@@ -29,6 +29,8 @@ const WHISPER = arg('--whisper', process.env.WHISPER_BIN || 'whisper');
 const SRT_DIR = arg('--srt-dir', null);
 const TEXT = arg('--text', 'current');
 const THRESHOLD = Number(arg('--threshold', '0.8'));
+const REPORT = arg('--report', null);
+const report = [];
 const sql = postgres(URL, { max: 1, onnotice: () => {} });
 
 const NUM = { um: '1', uma: '1', dois: '2', duas: '2', tres: '3', quatro: '4', cinco: '5', seis: '6', sete: '7', oito: '8',
@@ -70,20 +72,62 @@ function lcs(x, y) { // token LCS length with fuzzy equality
     prev = cur; }
   return prev[n];
 }
-function srtText(file) {
-  return fs.readFileSync(file, 'utf8').split(/\r?\n/).filter((l) => l && !/^\d+$/.test(l) && !/-->/.test(l)).join(' ');
+function parseSrt(file) {
+  const out = [];
+  for (const block of fs.readFileSync(file, 'utf8').split(/\r?\n\r?\n/)) {
+    const m = block.match(/(\d+):(\d+):(\d+),(\d+)\s*-->\s*(\d+):(\d+):(\d+),(\d+)\s*\r?\n([\s\S]*)/);
+    if (!m) continue;
+    const t = (h, mi, se, ms) => +h * 3600 + +mi * 60 + +se + +ms / 1000;
+    out.push({ start: t(m[1], m[2], m[3], m[4]), end: t(m[5], m[6], m[7], m[8]), text: m[9].replace(/\r?\n/g, ' ') });
+  }
+  return out;
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function download(url, file) { // the CDN occasionally drops a connection: retry, never crash the run
+  for (let i = 1; ; i++) {
+    try {
+      const res = await fetch(url); if (!res.ok) throw new Error(`audio ${res.status}`);
+      fs.writeFileSync(file, Buffer.from(await res.arrayBuffer())); return;
+    } catch (e) { if (i >= 4) throw e; await sleep(5000 * i); }
+  }
+}
+function whisper(file, dir, fmt) {
+  execFileSync(WHISPER, [file, '--model', 'large-v3-turbo', '--language', 'pt', '--output_format', fmt, '--output_dir', dir, '--verbose', 'False'],
+    { stdio: 'ignore', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
 }
 
 async function heard(audioUrl) {
-  const base = path.basename(audioUrl).replace(/-A\.mp3$/i, '').replace(/\.mp3$/i, '');
-  if (SRT_DIR && fs.existsSync(path.join(SRT_DIR, base + '.srt'))) return srtText(path.join(SRT_DIR, base + '.srt'));
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'asr-'));
-  const mp3 = path.join(dir, base + '.mp3');
-  const res = await fetch(audioUrl); if (!res.ok) throw new Error(`audio ${res.status}`);
-  fs.writeFileSync(mp3, Buffer.from(await res.arrayBuffer()));
-  execFileSync(WHISPER, [mp3, '--model', 'large-v3-turbo', '--language', 'pt', '--output_format', 'srt', '--output_dir', dir, '--verbose', 'False'],
-    { stdio: 'ignore', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
-  return srtText(path.join(dir, base + '.srt'));
+  // <specialty folder>__<file>: two specialties can have an audio with the same file name.
+  const base = `${path.basename(path.dirname(new globalThis.URL(audioUrl).pathname))}__${path.basename(audioUrl).replace(/-A\.mp3$/i, '').replace(/\.mp3$/i, '')}`;
+  // With --srt-dir the transcript is kept there, so an interrupted run resumes where it stopped.
+  const dir = SRT_DIR || fs.mkdtempSync(path.join(os.tmpdir(), 'asr-'));
+  fs.mkdirSync(dir, { recursive: true });
+  const mp3 = path.join(dir, base + '.mp3'), srt = path.join(dir, base + '.srt');
+  if (!fs.existsSync(srt)) {
+    if (!fs.existsSync(mp3)) await download(audioUrl, mp3);
+    whisper(mp3, dir, 'srt');
+  }
+  return { segments: parseSrt(srt), mp3, url: audioUrl, dir };
+}
+
+// Whisper, on a whole file, sometimes drops a sentence inside a long segment. Before reporting a card,
+// transcribe just that stretch of audio again and look for the words there.
+async function secondPass(a, from, to, T) {
+  if (!fs.existsSync(a.mp3)) await download(a.url, a.mp3);
+  const clipDir = fs.mkdtempSync(path.join(os.tmpdir(), 'asr-clip-'));
+  const clip = path.join(clipDir, 'clip.mp3');
+  execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-ss', String(Math.max(0, from)), '-to', String(to), '-i', a.mp3, clip], { stdio: 'ignore' });
+  whisper(clip, clipDir, 'txt');
+  const C = toks(fs.readFileSync(path.join(clipDir, 'clip.txt'), 'utf8'));
+  fs.rmSync(clipDir, { recursive: true, force: true });
+  let best = 0;
+  for (let s = 0; s < C.length; s++) for (const w of [T.length - 2, T.length, T.length + 3]) {
+    if (w <= 0 || s + w > C.length) continue;
+    best = Math.max(best, lcs(T, C.slice(s, s + w)) / T.length);
+  }
+  const joined = C.slice(0, -1).map((h, i) => h + C[i + 1]);
+  const missing = T.filter((t) => t.length >= 4 && !STOP.has(t) && !UNITS.has(t) && !C.some((h) => same(t, h)) && !joined.some((h) => same(t, h)));
+  return { ok: best >= THRESHOLD && !missing.length, best, missing, heard: C.join(' ') };
 }
 
 (async () => {
@@ -94,14 +138,19 @@ async function heard(audioUrl) {
   if (!labels && !has('--all')) { console.error('use --labels or --all'); process.exit(2); }
   const snap = TEXT.startsWith('json:') ? require(path.resolve(TEXT.slice(5))) : null;
   let total = 0;
+  const failed = [];
   for (const g of groups) {
+   try {
     const cards = snap
       ? snap.fc.filter((f) => f.page_slug === g.deck && f.group_label === g.label).sort((a, b) => a.position - b.position)
       : await sql`select position, text, answer from flashcard_items where group_id = ${g.id} order by position`;
-    const H = toks(await heard(g.audio_url));
+    const a = await heard(g.audio_url);
+    const H = [], segOf = [];
+    a.segments.forEach((sg, i) => { for (const t of toks(sg.text)) { H.push(t); segOf.push(i); } });
     let cursor = 0; const mism = [];
     for (const c of cards) for (const [side, txt] of [['question', c.text], ['answer', c.answer]]) {
       const T = toks(txt); if (!T.length) continue;
+      const anchor = cursor;   // where the previous card side ended in the transcript
       let best = 0, bestAt = cursor, bestLen = T.length;
       const from = Math.max(0, cursor - 10), to = Math.min(H.length, cursor + T.length * 4 + 60);
       for (let s = from; s < to; s++) for (const w of [T.length - 2, T.length, T.length + 3]) {
@@ -111,20 +160,39 @@ async function heard(audioUrl) {
       }
       if (best >= 0.5) cursor = bestAt + bestLen;
       const win = H.slice(Math.max(0, bestAt - 3), bestAt + bestLen + 3);
-      const joined = win.slice(0, -1).map((h, i) => h + win[i + 1]);   // "por que" → "porque", "tubulo viloso"
+      const joined = win.slice(0, -1).map((h, i) => h + win[i + 1]);   // "por que" -> "porque", "tubulo viloso"
       const missing = T.filter((t) => t.length >= 4 && !STOP.has(t) && !UNITS.has(t) && !win.some((h) => same(t, h)) && !joined.some((h) => same(t, h)));
       if (best < THRESHOLD || missing.length) {
-        mism.push({ position: c.position, side, score: +best.toFixed(2), expected: norm(txt), heard: H.slice(bestAt, bestAt + bestLen).join(' '), missing_words: missing });
+        // Re-listen from where the previous side ended: when Whisper dropped this side, the best match lies
+        // somewhere later and must not decide where to listen. At most 90 s.
+        const t0 = Math.max(0, Math.min(anchor, bestAt) - 8);
+        const t1 = Math.min(H.length - 1, Math.max(anchor + T.length + 12, bestAt + bestLen + 8));
+        const s0 = a.segments[segOf[Math.min(H.length - 1, t0)]] || a.segments[0];
+        let s1 = a.segments[segOf[t1]] || a.segments[a.segments.length - 1];
+        if (s1.end - s0.start > 90) s1 = { end: s0.start + 90 };
+        const p2 = await secondPass(a, s0.start - 2, s1.end + 2, T);
+        if (p2.ok) continue;   // the words are in the audio: whole-file transcription had dropped them
+        mism.push({ position: c.position, side, score: +p2.best.toFixed(2),
+          at: `${Math.floor(s0.start / 60)}:${String(Math.floor(s0.start % 60)).padStart(2, '0')}`,
+          expected: norm(txt), heard: p2.heard, missing_words: p2.missing });
       }
     }
+    if (!mism.length && SRT_DIR && fs.existsSync(a.mp3)) fs.rmSync(a.mp3);   // keep the audio only where a person must listen
     total += mism.length;
+    report.push({ deck: g.deck, label: g.label, cards: cards.length, mismatches: mism });
+    if (REPORT) fs.writeFileSync(REPORT, JSON.stringify(report, null, 1));
     console.log(`\n${g.deck.replace('-flashcards', '')} › ${g.label}: ${cards.length} cartões, ${mism.length} divergência(s)`);
-    for (const m of mism) console.log(`  card ${m.position} ${m.side} (${m.score}) palavras não ouvidas: ${m.missing_words.join(' ')}\n     ouvido: ${m.heard}`);
+    for (const m of mism) console.log(`  card ${m.position} ${m.side} (~${m.at}) palavras não ouvidas: ${m.missing_words.join(' ')}\n     ouvido: ${m.heard}`);
     if (has('--apply')) {
       await sql`update audiocard_recordings set asr_checked_at = now(), asr_model = 'whisper large-v3-turbo', asr_mismatches = ${sql.json(mism)}
         where id = (select id from audiocard_recordings where lesson_id = ${g.lesson_id} order by recorded_at desc, id desc limit 1)`;
     }
+   } catch (e) {
+    failed.push(`${g.deck}/${g.label}: ${e.message}`);
+    console.log(`\n${g.deck.replace('-flashcards', '')} › ${g.label}: ERRO (${e.message}) — rode de novo para retomar`);
+   }
   }
+  if (failed.length) console.log(`\n${failed.length} AudioCard(s) com erro:\n  ${failed.join('\n  ')}`);
   console.log(`\n${groups.length} AudioCards verificados, ${total} divergência(s).`);
   await sql.end();
 })().catch(async (e) => { console.error(e); await sql.end(); process.exit(1); });
