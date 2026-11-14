@@ -33,7 +33,8 @@ import { todayKeyBR, toDateKeyBR, dayOfWeekForKey, addDaysKey, diffDaysKey } fro
 
 export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
-export type ContentType = "quiz" | "simulado" | "lesson" | "audio" | "flashcards" | "memorecards";
+export type ContentType =
+  | "quiz" | "simulado" | "lesson" | "audio" | "flashcards" | "memorecards" | "revalida_up";
 export type WeaknessSensitivity = "strict" | "balanced" | "off";
 
 export type IntensitySpec = {
@@ -251,8 +252,9 @@ export function defaultPrefs(): StudyPlanPrefs {
     weakness_sensitivity: "balanced",
     include_60d: true,
     flashcard_daily_cap: null,
-    preferred_content_types: ["quiz", "simulado", "flashcards", "audio", "memorecards"],
-    content_type_weights: { quiz: 30, simulado: 20, lesson: 10, audio: 15, flashcards: 20, memorecards: 5 },
+    preferred_content_types: ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"],
+    // Read but not used to size anything (see schema-patch-planner-content-types-default.sql).
+    content_type_weights: { quiz: 30, simulado: 20, lesson: 10, audio: 15, flashcards: 20, memorecards: 5, revalida_up: 0 },
     intensification_start_days: 60,
     focus_specialty_ids: [],
     excluded_specialty_ids: [],
@@ -527,7 +529,7 @@ export function derivePlan(args: {
   // Generic narrative "lesson" items are intentionally dropped — Karina's plan
   // keeps narrative summaries out of the schedule.
   const topicsToday = Math.max(1, Math.round((spec.specialtiesPerDay + 1) * minutesScale));
-  const contentPageFor = (t: TopicRow, kind: "quiz" | "medvoice"): PageRow | null => {
+  const contentPageFor = (t: TopicRow, kind: "quiz" | "medvoice" | "revalida_up"): PageRow | null => {
     const tc = (contentByTopic.get(t.id) ?? []).find((c) => c.resource_type === kind);
     const pid = tc?.page_id ?? (kind === "quiz" ? t.source_page_id : null);
     return pid != null ? pageById.get(pid) ?? null : null;
@@ -600,6 +602,31 @@ export function derivePlan(args: {
           emittedQuizPages.add(quizPage.id);
           emitted = true;
         }
+      }
+    }
+
+    // REVALIDA UP — the topic's exam patterns, between Questões and Flashcards
+    // (Karina's order: Questões → Revalida Up → Flashcards). Linked through
+    // topic_content; the link uses the PAGE's specialty, because a Revalida Up
+    // page can sit under another specialty than its topic (e.g. the GI topics
+    // filed under Cirurgia Geral, the Outros areas).
+    if (allowedTypes.has("revalida_up")) {
+      const ruPage = contentPageFor(topic, "revalida_up");
+      if (ruPage && ruPage.view === "revalida-up") {
+        const ruSpec =
+          (ruPage.specialty_id != null ? specialtyById.get(ruPage.specialty_id) : null) ?? specInfo;
+        items.push({
+          kind: "revalida_up",
+          title: topic.name,
+          subtitle: `${specInfo.name} · Revalida Up`,
+          href: `/app/${ruSpec.slug}/${ruPage.slug}`,
+          estimatedMinutes: Math.round(6 * minutesScale),
+          iconHint: "revalida_up",
+          reason: "Veja como o tema cai na prova",
+          specialtyId: topic.specialty_id as number,
+          pageId: ruPage.id,
+        });
+        emitted = true;
       }
     }
 

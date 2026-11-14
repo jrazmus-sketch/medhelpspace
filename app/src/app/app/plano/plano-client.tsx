@@ -27,6 +27,7 @@ const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number
   audio: Headphones,
   flashcards: Layers,
   memorecards: Sparkles,
+  revalida_up: Target,
 };
 
 const ITEM_COLOR: Record<PlanItem["iconHint"], string> = {
@@ -36,6 +37,7 @@ const ITEM_COLOR: Record<PlanItem["iconHint"], string> = {
   audio: "var(--c-medvoice)",
   flashcards: "#a78bfa",
   memorecards: "#7c3aed",
+  revalida_up: "var(--c-revalida)",
 };
 
 const INTENSITY_LABEL: Record<Intensity, { label: string; sub: string }> = {
@@ -50,7 +52,7 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 // checkbox for it changed nothing. AudioCards are never scheduled either — audio
 // is passive and repeats the Flashcards (Karina, 2026-06-30). Same list as the
 // calibration wizard, plus the 60D MemoreCards.
-const PLAN_CONTENT_TYPES: ContentType[] = ["quiz", "simulado", "flashcards", "audio", "memorecards"];
+const PLAN_CONTENT_TYPES: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   quiz: "Questões",
@@ -59,6 +61,7 @@ const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   audio: "MedVoice (áudio)",
   flashcards: "Flashcards",
   memorecards: "MemoreCards (60D)",
+  revalida_up: "Revalida Up",
 };
 
 type PauseRow = { id: number; pause_from: string; pause_until: string; reason: string | null };
@@ -1166,11 +1169,12 @@ function availabilitySummary(p: StudyPlanPrefs): string {
 function contentSummary(p: StudyPlanPrefs, specialties: Specialty[]): string {
   const focusCount = p.focus_specialty_ids.length;
   const excludedCount = p.excluded_specialty_ids.length;
-  const typeCount = p.preferred_content_types.length;
+  // Count only what the picker offers (an old row may still carry "lesson").
+  const typeCount = p.preferred_content_types.filter((t) => PLAN_CONTENT_TYPES.includes(t)).length;
   const parts: string[] = [];
   if (focusCount > 0) parts.push(`${focusCount} focada${focusCount !== 1 ? "s" : ""}`);
   if (excludedCount > 0) parts.push(`${excludedCount} excluída${excludedCount !== 1 ? "s" : ""}`);
-  parts.push(`${typeCount}/5 tipos`);
+  parts.push(`${typeCount}/${PLAN_CONTENT_TYPES.length} tipos`);
   return parts.join(" · ");
 }
 

@@ -405,3 +405,48 @@ test("every emitted item has a usable href and a positive duration", () => {
     plan.items.reduce((s, i) => s + i.estimatedMinutes, 0),
   );
 });
+
+// ── Revalida Up in the plan (Karina 2026-11-14) ─────────────────────────────
+
+// Arritmias' Revalida Up page is filed under Pediatria here on purpose: the link
+// must follow the PAGE's specialty (the GI topics filed under Cirurgia Geral).
+const RU_PAGES: PageRow[] = [
+  ...PAGES,
+  { id: 300, slug: "arritmias-revalida-up", title: "Arritmias Revalida Up", type: "plain-content", specialty_id: 2, track_id: null, content_module_id: null, view: "revalida-up" },
+  { id: 400, slug: "arritmias-flashcards", title: "Flashcards", type: "h5p-quiz", specialty_id: 1, track_id: null, content_module_id: null, view: "quiz" },
+];
+const RU_CONTENT: TopicContentRow[] = [
+  ...TOPIC_CONTENT,
+  { topic_id: 1, resource_type: "revalida_up", page_id: 300, question_filter: null },
+  { topic_id: 1, resource_type: "flashcards", page_id: 400, question_filter: null },
+];
+
+test("Revalida Up is on by default and sits between Questões and Flashcards", () => {
+  assert.ok(defaultPrefs().preferred_content_types.includes("revalida_up"));
+  const plan = withFrozenTime(MORNING_BRT, () => run({ pages: RU_PAGES, topicContent: RU_CONTENT }));
+  const kinds = plan.items.filter((i) => i.title === "Arritmias").map((i) => i.kind);
+  assert.deepEqual(kinds, ["quiz", "revalida_up", "flashcards"]);
+  const ru = plan.items.find((i) => i.kind === "revalida_up")!;
+  assert.equal(ru.href, "/app/pediatria/arritmias-revalida-up");
+  assert.equal(ru.pageId, 300);
+});
+
+test("unchecking Revalida Up removes it and leaves the rest of the topic alone", () => {
+  const types: ContentType[] = ["quiz", "simulado", "flashcards", "audio", "memorecards"];
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ pages: RU_PAGES, topicContent: RU_CONTENT, prefs: { preferred_content_types: types } }));
+  assert.equal(plan.items.some((i) => i.kind === "revalida_up"), false);
+  assert.deepEqual(plan.items.filter((i) => i.title === "Arritmias").map((i) => i.kind), ["quiz", "flashcards"]);
+});
+
+test("Revalida Up alone still schedules the topic (no quiz needed)", () => {
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ pages: RU_PAGES, topicContent: RU_CONTENT, prefs: { preferred_content_types: ["revalida_up"] } }));
+  assert.deepEqual(plan.items.map((i) => i.kind), ["revalida_up"]);
+});
+
+test("a revalida_up link to a page that is not a Revalida Up page is ignored", () => {
+  const content: TopicContentRow[] = [...TOPIC_CONTENT, { topic_id: 1, resource_type: "revalida_up", page_id: 100, question_filter: null }];
+  const plan = withFrozenTime(MORNING_BRT, () => run({ topicContent: content }));
+  assert.equal(plan.items.some((i) => i.kind === "revalida_up"), false);
+});
