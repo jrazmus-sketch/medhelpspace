@@ -182,9 +182,29 @@ export async function FlashcardRenderer({
   }
 
   // Resolve the active group: single-group decks skip the grid; otherwise a valid
-  // ?grupo= slug selects its category. Anything else falls through to the grid.
+  // ?grupo= slug selects its category. No ?grupo= → the grid.
   const selectedGroup =
     groups.length === 1 ? groups[0] : grupo ? groupBySlug.get(grupo) ?? null : null;
+
+  // A ?grupo= that names no group of this deck (e.g. a Meu Plano topic whose group was renamed or does not
+  // exist) must NOT silently open the whole deck — Karina 2026-11-13: say there are no Flashcards linked to
+  // the topic, and let the student choose to browse the deck.
+  if (!selectedGroup && grupo && groups.length > 1) {
+    return (
+      <div className="space-y-4 rounded-xl border border-border bg-surface-1 p-5">
+        <p className="text-base font-medium text-foreground">Ainda não há Flashcards vinculados a este tema.</p>
+        <p className="text-sm text-muted-foreground">
+          O tema que você abriu não tem um grupo de Flashcards correspondente neste baralho.
+        </p>
+        <a
+          href={basePath}
+          className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm font-medium text-foreground hover:bg-accent"
+        >
+          Ver todos os grupos de Flashcards
+        </a>
+      </div>
+    );
+  }
 
   // ── Grid view (multi-category deck, no/invalid ?grupo=) ─────────────────────────
   if (!selectedGroup) {

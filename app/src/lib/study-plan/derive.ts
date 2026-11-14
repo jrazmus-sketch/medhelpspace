@@ -686,8 +686,11 @@ export function derivePlan(args: {
         fc?.question_filter && typeof fc.question_filter === "object"
           ? ((fc.question_filter as { group_label?: unknown }).group_label as string | undefined)
           : undefined;
-      const withGroup = Boolean(topicIndex && groupLabel);
-      const fcKey = fc?.page_id != null ? `${fc.page_id}|${withGroup ? groupLabel : ""}` : null;
+      // A link that names no group falls back to the TOPIC's name as the group (Karina 2026-11-13: a topic
+      // without a valid group never opens the whole deck; the deck says no Flashcards are linked instead).
+      const effectiveGroup = groupLabel ?? (topicIndex ? topic.name : undefined);
+      const withGroup = Boolean(topicIndex && effectiveGroup);
+      const fcKey = fc?.page_id != null ? `${fc.page_id}|${withGroup ? effectiveGroup : ""}` : null;
       if (fc?.page_id != null && fcKey && !seenFlashcardDecks.has(fcKey)) {
         const deck = pageById.get(fc.page_id);
         if (deck) {
@@ -696,7 +699,7 @@ export function derivePlan(args: {
             kind: "flashcards",
             title: topic.name,
             subtitle: `${specInfo.name} · flashcards`,
-            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(flashcardGroupSlug(groupLabel!))}` : deckHref,
+            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(flashcardGroupSlug(effectiveGroup!))}` : deckHref,
             estimatedMinutes: Math.round(8 * minutesScale),
             iconHint: "flashcards",
             reason: "Memorize os pontos-chave do tema",

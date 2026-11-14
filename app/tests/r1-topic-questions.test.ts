@@ -14,6 +14,8 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { withFrozenTime, MORNING_BRT } from "./helpers/freeze-time";
 import {
   derivePlan, defaultPrefs,
@@ -177,6 +179,31 @@ test("without the R1 index the plan is unchanged (one item per shared section)",
   assert.equal(ortho[0].href, "/app/outros/ortopedia");
   const fc = plan.items.find((i) => i.kind === "flashcards");
   assert.equal(fc?.href, "/app/reumatologia/reumatologia-flashcards", "deck link without ?grupo=");
+});
+
+test("a flashcards link that names no group never opens the whole deck (Karina 2026-11-13)", () => {
+  const content: TopicContentRow[] = [
+    ...TOPIC_CONTENT.filter((c) => c.resource_type !== "flashcards"),
+    { topic_id: 103, resource_type: "flashcards", page_id: 700, question_filter: null },
+  ];
+  const plan = withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: { ...defaultPrefs(), intensity: "intenso" },
+    cohort: { test_date: "2027-01-15" },
+    specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: content,
+    signals: {
+      quizAttempts: [], lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],
+      questionCountsByPageId: new Map([[500, 6], [600, 5]]), topicIndex: INDEX,
+    },
+  }));
+  const fc = plan.items.find((i) => i.kind === "flashcards" && i.title === "Artrite Infecciosa");
+  assert.equal(fc?.href, "/app/reumatologia/reumatologia-flashcards?grupo=artrite-infecciosa",
+    "falls back to the topic's own name as the group, never the bare deck");
+});
+
+test("the deck says no Flashcards are linked when ?grupo= names no group (never the whole deck)", () => {
+  const src = readFileSync(path.join(process.cwd(), "src/components/content/flashcard-renderer.tsx"), "utf8");
+  assert.match(src, /Ainda não há Flashcards vinculados a este tema\./);
+  assert.match(src, /!selectedGroup && grupo && groups\.length > 1/);
 });
 
 test("flashcardGroupSlug matches the deck renderer's ?grupo= slugs", () => {
