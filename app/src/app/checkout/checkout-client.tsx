@@ -747,7 +747,7 @@ export function CheckoutClient({
                       autoComplete="name"
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="Dra. Maria Silva"
+                      placeholder="Maria Silva"
                       className="rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-foreground/30 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
                     />
                   </div>
