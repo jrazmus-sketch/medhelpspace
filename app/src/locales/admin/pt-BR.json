@@ -936,7 +936,12 @@
     "confirmPublishAction": "Publicar e salvar",
     "confirmUnpublishTitle": "Voltar para rascunho?",
     "confirmUnpublishBody": "Esta página deixará de ser visível para os membros — somente a equipe administrativa poderá vê-la.",
-    "confirmUnpublishAction": "Salvar como rascunho"
+    "confirmUnpublishAction": "Salvar como rascunho",
+    "headingChangeTitle": "Nível de título alterado",
+    "headingChangeBody": "Esta edição muda o nível dos títulos abaixo. Isso altera o destaque visual na página dos alunos. Se não foi intencional, volte e use Desfazer.",
+    "headingChangeItem": "“{{text}}”: H{{from}} → H{{to}}",
+    "headingChangeBack": "Voltar e revisar",
+    "headingChangeAction": "Salvar mesmo assim"
   },
   "quizEditor": {
     "title": "Questões",

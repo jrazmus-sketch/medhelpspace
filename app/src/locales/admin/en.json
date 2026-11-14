@@ -936,7 +936,12 @@
     "confirmPublishAction": "Publish and save",
     "confirmUnpublishTitle": "Move back to draft?",
     "confirmUnpublishBody": "This page will no longer be visible to members — only the admin team will be able to see it.",
-    "confirmUnpublishAction": "Save as draft"
+    "confirmUnpublishAction": "Save as draft",
+    "headingChangeTitle": "Heading level changed",
+    "headingChangeBody": "This edit changes the level of the headings below, which changes how they look on the student page. If it was not intentional, go back and use Undo.",
+    "headingChangeItem": "“{{text}}”: H{{from}} → H{{to}}",
+    "headingChangeBack": "Go back and review",
+    "headingChangeAction": "Save anyway"
   },
   "quizEditor": {
     "title": "Questions",

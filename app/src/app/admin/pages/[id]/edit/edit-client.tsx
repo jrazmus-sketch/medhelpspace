@@ -7,6 +7,7 @@ import { updatePageMetadata, updateLessons, savePageBody } from "@/actions/admin
 import type { PageRow, SpecialtyOption, TrackOption, ModuleOption, LessonRow, QuizQuestionRow, FlashcardRow } from "./page";
 import type { SectionEditorHandle } from "./section-editor-handle";
 import { RichTextEditor } from "@/components/admin/rich-text-editor";
+import { headingLevelChanges, type HeadingLevelChange } from "@/lib/heading-level-changes";
 import { AudioUploader } from "@/components/admin/audio-uploader";
 import { QuizEditor } from "./quiz-editor";
 import { FlashcardEditor } from "./flashcard-editor";
@@ -120,6 +121,8 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Headings whose level changed in this edit (see lib/heading-level-changes.ts) — confirmed before saving.
+  const [headingChanges, setHeadingChanges] = useState<HeadingLevelChange[] | null>(null);
 
   // The active content section (quiz / flashcards / nav items) registers an
   // imperative save() here so the single page-level Save commits it alongside
@@ -221,7 +224,31 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
 
   // A status change (publish ↔ draft) flips member visibility, so confirm it
   // before saving. Any other edit saves straight away.
+  // A heading command run while the cursor still sits at the start of the text silently
+  // changes the FIRST heading's level (Karina 2026-11-13: five saves turned it into an H4).
+  function pendingHeadingChanges(): HeadingLevelChange[] {
+    const changes: HeadingLevelChange[] = [];
+    if (showBody) changes.push(...headingLevelChanges(lessons[0]?.body_html ?? "", bodyHtml));
+    if (showLessons) {
+      for (const d of lessonDrafts) {
+        const original = lessons.find((l) => l.id === d.id);
+        if (original) changes.push(...headingLevelChanges(original.body_html ?? "", d.body_html));
+      }
+    }
+    return changes;
+  }
+
   function handleSaveClick() {
+    const changes = pendingHeadingChanges();
+    if (changes.length > 0) {
+      setHeadingChanges(changes);
+      return;
+    }
+    continueAfterHeadingCheck();
+  }
+
+  function continueAfterHeadingCheck() {
+    setHeadingChanges(null);
     if (status !== originalStatus) {
       setConfirmOpen(true);
       return;
@@ -690,6 +717,45 @@ export function PageEditClient({ page, specialties, tracks, modules, lessons, qu
           {saving ? t("common.loading") : t("pageEdit.saveAll")}
         </button>
       </div>
+
+      {/* Heading-level change confirmation — names every heading whose level this edit changed */}
+      {headingChanges && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setHeadingChanges(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border border-border bg-surface-1 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-semibold">{t("pageEdit.headingChangeTitle")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{t("pageEdit.headingChangeBody")}</p>
+            <ul className="mt-3 max-h-60 space-y-1 overflow-y-auto text-sm">
+              {headingChanges.map((c, i) => (
+                <li key={i} className="break-words">
+                  {t("pageEdit.headingChangeItem", { text: c.text, from: c.from, to: c.to })}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                onClick={() => setHeadingChanges(null)}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("pageEdit.headingChangeBack")}
+              </button>
+              <button
+                onClick={continueAfterHeadingCheck}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand px-4 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
+              >
+                {t("pageEdit.headingChangeAction")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Publish / unpublish confirmation — status changes flip member visibility */}
       {confirmOpen && (
