@@ -1,11 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AudiocardSyncPanel, type SyncRow, type SyncChange } from "./audiocard-sync-panel";
+import { AudiocardSyncPanel, type SyncRow, type SyncChange, type SyncDecision } from "./audiocard-sync-panel";
 import { FlashcardsHeader } from "./flashcards-header";
 
 export const metadata = { title: "Flashcards" };
 
-// Statuses that need no action (the panel lists everything else).
-const OK_STATUSES = new Set(["em_dia", "correcao_editorial_conferida"]);
+// Statuses that need no action (the panel lists everything else). "alteracao_conferida" = every change since
+// the recording got her decision "o áudio continua adequado" — it stops being a pending item (Karina 2026-11-14).
+const OK_STATUSES = new Set(["em_dia", "alteracao_conferida"]);
 
 const plain = (h: string | null) =>
   (h ?? "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
@@ -34,11 +35,23 @@ export default async function FlashcardsPage() {
     const { data: logRows } = groupIds.length
       ? await admin
           .from("flashcard_item_changes")
-          .select("id, group_id, position, op, old_text, new_text, old_answer, new_answer, change_kind, source, changed_by, changed_at, reviewed_at")
+          .select("id, group_id, position, op, old_text, new_text, old_answer, new_answer, change_kind, source, changed_by, changed_at, reviewed_by, reviewed_at, review_decision")
           .in("group_id", groupIds)
           .order("changed_at", { ascending: false })
       : { data: [] };
-    const authors = [...new Set((logRows ?? []).map((r) => r.changed_by as string | null).filter(Boolean))] as string[];
+    // Her decisions on these AudioCards (latest first) — kept, suspended, lifted — with date and cards.
+    const lessonIds = open.map((s) => s.lesson_id as number | null).filter((n): n is number => n !== null);
+    const { data: decisionRows } = lessonIds.length
+      ? await admin
+          .from("audiocard_audio_decisions")
+          .select("id, lesson_id, decision, reason, positions, decided_by, decided_at")
+          .in("lesson_id", lessonIds)
+          .order("decided_at", { ascending: false })
+      : { data: [] };
+    const authors = [...new Set([
+      ...(logRows ?? []).flatMap((r) => [r.changed_by as string | null, r.reviewed_by as string | null]),
+      ...(decisionRows ?? []).map((d) => d.decided_by as string | null),
+    ].filter(Boolean))] as string[];
     const { data: profiles } = authors.length
       ? await admin.from("profiles").select("id, display_name, email").in("id", authors)
       : { data: [] };
@@ -58,6 +71,13 @@ export default async function FlashcardsPage() {
           answer: r.old_answer !== r.new_answer ? { before: plain(r.old_answer as string), after: plain(r.new_answer as string) } : null,
           kind: r.change_kind as SyncChange["kind"],
           reviewed: !!r.reviewed_at,
+          decision: r.reviewed_at
+            ? {
+                kind: (r.review_decision ?? "audio_mantido") as "audio_mantido" | "audio_suspenso",
+                who: r.reviewed_by ? nameOf.get(r.reviewed_by as string) || null : null,
+                when: brDateTime(r.reviewed_at as string),
+              }
+            : null,
           author: r.changed_by ? nameOf.get(r.changed_by as string) || null : null,
           when: brDateTime(r.changed_at as string),
           source: r.source as string,
@@ -74,6 +94,17 @@ export default async function FlashcardsPage() {
         audio_suspended: !!s.audio_suspended,
         suspended_reason: (s.suspended_reason ?? null) as string | null,
         changes,
+        decisions: (decisionRows ?? [])
+          .filter((d) => d.lesson_id === s.lesson_id)
+          .slice(0, 5)
+          .map((d) => ({
+            id: d.id as number,
+            decision: d.decision as SyncDecision["decision"],
+            reason: (d.reason ?? null) as string | null,
+            positions: (d.positions ?? []) as number[],
+            who: d.decided_by ? nameOf.get(d.decided_by as string) || null : null,
+            when: brDateTime(d.decided_at as string),
+          })),
       };
     });
     panel = <AudiocardSyncPanel rows={rows} okCount={status.length - rows.length} total={status.length} />;

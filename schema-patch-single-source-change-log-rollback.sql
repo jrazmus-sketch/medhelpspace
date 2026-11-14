@@ -10,7 +10,10 @@ drop function if exists public.edit_flashcard_card(bigint, text, text, text, uui
 drop function if exists public.stamp_flashcard_changes(bigint[], uuid, text, timestamptz);
 drop function if exists public.classify_flashcard_changes(bigint[], text, uuid);
 drop function if exists public.confirm_audiocard_editorial(bigint, uuid);
+drop function if exists public.confirm_audiocard_changes(bigint, uuid, bigint[]);
+drop function if exists public.audiocard_pending_changes(bigint);
 drop function if exists public.set_audiocard_suspension(bigint, boolean, text, uuid);
+drop table if exists public.audiocard_audio_decisions;
 drop table if exists public.flashcard_item_changes;
 alter table public.audiocard_recordings drop column if exists suspended_at;
 alter table public.audiocard_recordings drop column if exists suspended_by;

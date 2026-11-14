@@ -2,6 +2,7 @@
 
 /**
  * Single source (TEST): actions behind the AudioCards × Flashcards panel — Karina's three tiers.
+ * Rule (Karina 2026-11-14): the system identifies and alerts; SHE decides whether the audio stays or is suspended.
  * Content roles only (super_admin, content_admin). Every action is written to admin_audit_log.
  */
 import { revalidatePath } from "next/cache";
@@ -39,12 +40,19 @@ export async function classifyCardChanges(changeIds: number[], kind: string): Pr
   done();
 }
 
-/** Tier A: the narration was checked and is still coherent — clears the editorial warning of one group. */
-export async function confirmAudiocardEditorial(groupId: number): Promise<void> {
+/**
+ * Her decision "o áudio continua adequado": keeps the audio published and clears the pending changes of one
+ * AudioCard (all of them, or the ones given), whatever their type. Recorded with date, author and cards.
+ */
+export async function confirmAudiocardChanges(lessonId: number, changeIds?: number[]): Promise<void> {
   const user = await requireContentAdmin();
-  const { error } = await createAdminClient().rpc("confirm_audiocard_editorial", { p_group_id: groupId, p_actor: user.id });
+  if (!Number.isInteger(lessonId) || lessonId <= 0) throw new Error("AudioCard inválido");
+  const ids = changeIds?.filter((n) => Number.isInteger(n) && n > 0);
+  const { data, error } = await createAdminClient().rpc("confirm_audiocard_changes", {
+    p_lesson_id: lessonId, p_actor: user.id, p_change_ids: ids && ids.length ? ids : null,
+  });
   if (error) throw new Error(error.message);
-  await audit(user.id, "audiocard_editorial_confirm", { group_id: groupId });
+  await audit(user.id, "audiocard_audio_keep", { lesson_id: lessonId, change_ids: ids ?? null, covered: data });
   done();
 }
 

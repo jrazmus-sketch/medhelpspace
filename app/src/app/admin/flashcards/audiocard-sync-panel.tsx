@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import "@/lib/i18n";
-import { classifyCardChanges, confirmAudiocardEditorial, setAudiocardSuspension } from "@/actions/audiocard-sync";
+import { classifyCardChanges, confirmAudiocardChanges, setAudiocardSuspension } from "@/actions/audiocard-sync";
 import { CARD_CHANGE_KINDS, type CardChangeKind } from "@/lib/card-change-kind";
 
 export type SyncChange = {
@@ -16,9 +16,20 @@ export type SyncChange = {
   answer: { before: string; after: string } | null;
   kind: CardChangeKind;
   reviewed: boolean;
+  /** Her decision on this change (null = still pending). */
+  decision: { kind: "audio_mantido" | "audio_suspenso"; who: string | null; when: string } | null;
   author: string | null;
   when: string;
   source: string;
+};
+
+export type SyncDecision = {
+  id: number;
+  decision: "audio_mantido" | "audio_suspenso" | "audio_liberado";
+  reason: string | null;
+  positions: number[];
+  who: string | null;
+  when: string;
 };
 
 export type SyncRow = {
@@ -34,13 +45,16 @@ export type SyncRow = {
   audio_suspended: boolean;
   suspended_reason: string | null;
   changes: SyncChange[];
+  decisions: SyncDecision[];
 };
 
-// Status → visual weight. Clinical / suspended read as alerts; pending as a warning; editorial as info.
+// Status → visual weight. A clinical change and a suspended audio read as alerts; the rest as a warning.
+// Nothing here ever suspends an audio by itself — only her button does (Karina 2026-11-14).
 const TONE: Record<string, string> = {
-  regravacao_necessaria: "border-destructive/40 bg-destructive/5",
+  revisao_clinica_pendente: "border-destructive/50 bg-destructive/5",
   audio_suspenso: "border-destructive/40 bg-destructive/5",
   avaliacao_pendente: "border-brand/40 bg-brand/5",
+  texto_alterado_apos_gravacao: "border-brand/30",
 };
 
 /** Single source (TEST): AudioCards whose audio may no longer match the text of their Flashcards group. */
@@ -78,8 +92,9 @@ function GroupRow({ row: r }: { row: SyncRow }) {
       catch (e) { toast.error(e instanceof Error ? e.message : t("flashcardsAdmin.saveError")); }
     });
 
-  const hasEditorialPending = r.changes.some((c) => c.kind === "editorial" && !c.reviewed);
-  const manuallySuspended = r.status === "audio_suspenso" || (r.audio_suspended && !!r.suspended_reason);
+  const pendingChanges = r.changes.filter((c) => !c.reviewed);
+  const hasClinicalPending = pendingChanges.some((c) => c.kind === "clinica");
+  const awaitingDecision = pendingChanges.length > 0 || r.unlogged.length > 0;
 
   return (
     <li className={`space-y-3 rounded-lg border p-3 ${TONE[r.status] ?? "border-border"}`}>
@@ -89,7 +104,9 @@ function GroupRow({ row: r }: { row: SyncRow }) {
           <p className="text-sm text-muted-foreground">{r.deck}</p>
         </div>
         <div className="text-sm sm:text-right">
-          <p className="font-medium">{t(`flashcardsAdmin.status.${r.status}`)}</p>
+          <p className={`font-medium ${r.status === "revisao_clinica_pendente" ? "text-destructive" : ""}`}>
+            {t(`flashcardsAdmin.status.${r.status}`)}
+          </p>
           {r.changed_since_recording.length > 0 && (
             <p className="text-muted-foreground">
               {t("flashcardsAdmin.changedCards", { list: r.changed_since_recording.join(", ") })}
@@ -98,11 +115,17 @@ function GroupRow({ row: r }: { row: SyncRow }) {
           {r.asr_mismatch_count > 0 && (
             <p className="text-muted-foreground">{t("flashcardsAdmin.asrCards", { count: r.asr_mismatch_count })}</p>
           )}
-          {r.suspended_reason && (
+          {r.audio_suspended && r.suspended_reason && (
             <p className="text-muted-foreground break-words">{t("flashcardsAdmin.suspendedBecause", { reason: r.suspended_reason })}</p>
           )}
         </div>
       </div>
+
+      {hasClinicalPending && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-foreground">
+          {t("flashcardsAdmin.clinicalAlert")}
+        </p>
+      )}
 
       {r.changes.length > 0 && (
         <ul className="space-y-2">
@@ -144,8 +167,28 @@ function GroupRow({ row: r }: { row: SyncRow }) {
               })}
               <p className="text-muted-foreground">
                 {t("flashcardsAdmin.by", { who: c.author || t("flashcardsAdmin.unknownAuthor"), when: c.when })}
-                {c.reviewed && ` · ${t("flashcardsAdmin.kind.editorial_conferida")}`}
               </p>
+              {c.decision ? (
+                <p className="text-muted-foreground">
+                  {t(`flashcardsAdmin.decision.${c.decision.kind}`, {
+                    who: c.decision.who || t("flashcardsAdmin.unknownAuthor"), when: c.decision.when,
+                  })}
+                </p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{t("flashcardsAdmin.awaiting")}</span>
+                  {r.lesson_id !== null && pendingChanges.length > 1 && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run(() => confirmAudiocardChanges(r.lesson_id as number, [c.id]))}
+                      className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-accent disabled:opacity-50"
+                    >
+                      {t("flashcardsAdmin.keepThisCard")}
+                    </button>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -158,17 +201,17 @@ function GroupRow({ row: r }: { row: SyncRow }) {
 
       {r.lesson_id !== null && (
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {hasEditorialPending && (
+          {pendingChanges.length > 0 && (
             <button
               type="button"
               disabled={pending}
-              onClick={() => run(() => confirmAudiocardEditorial(r.group_id))}
+              onClick={() => run(() => confirmAudiocardChanges(r.lesson_id as number))}
               className="min-h-11 rounded-md bg-brand px-3 text-sm font-medium text-brand-fg hover:opacity-90 disabled:opacity-50"
             >
-              {t("flashcardsAdmin.confirmEditorial")}
+              {t("flashcardsAdmin.confirmKeep")}
             </button>
           )}
-          {manuallySuspended ? (
+          {r.audio_suspended ? (
             <button
               type="button"
               disabled={pending}
@@ -177,7 +220,7 @@ function GroupRow({ row: r }: { row: SyncRow }) {
             >
               {t("flashcardsAdmin.lift")}
             </button>
-          ) : r.audio_suspended ? null /* already suspended by a clinical change: re-record or reclassify */ : reasonOpen ? (
+          ) : reasonOpen ? (
             <form
               className="flex w-full flex-col gap-2 sm:flex-row"
               onSubmit={(e) => {
@@ -211,6 +254,26 @@ function GroupRow({ row: r }: { row: SyncRow }) {
               {t("flashcardsAdmin.suspend")}
             </button>
           )}
+        </div>
+      )}
+      {awaitingDecision && !r.audio_suspended && (
+        <p className="text-sm text-muted-foreground">{t("flashcardsAdmin.stillPublished")}</p>
+      )}
+
+      {r.decisions.length > 0 && (
+        <div className="space-y-1 border-t border-border pt-2 text-sm">
+          <p className="font-medium">{t("flashcardsAdmin.decisionsTitle")}</p>
+          <ul className="space-y-0.5 text-muted-foreground">
+            {r.decisions.map((d) => (
+              <li key={d.id} className="break-words">
+                {t(`flashcardsAdmin.decisionLog.${d.decision}`, {
+                  who: d.who || t("flashcardsAdmin.unknownAuthor"), when: d.when,
+                })}
+                {d.positions.length > 0 && ` · ${t("flashcardsAdmin.cardsList", { list: d.positions.join(", ") })}`}
+                {d.reason && ` · ${d.reason}`}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </li>

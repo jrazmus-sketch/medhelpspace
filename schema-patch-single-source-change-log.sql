@@ -6,13 +6,18 @@
 --      editorial        — punctuation, accents, agreement, formatting, equivalent terminology
 --      clinica          — doses, diagnostic criteria, treatment, contraindications, conduct…
 --      nao_esclarecida  — not stated (the default): goes to Karina, never decided automatically
--- 2. Audio vs text, Karina's three tiers (her e-mail of 2026-11-13 21:31 UTC):
---      A editorial → the audio stays; the panel warns until someone confirms the narration is coherent
---      B clinica   → re-recording needed; the audio player is SUSPENDED for students (file kept, nothing
---                    deleted) until a new recording is registered or the change is reclassified
---      C nao_esclarecida → pending her evaluation; the audio stays until she classifies it
---    An admin can also suspend an audio by hand (e.g. the narration itself says something clinically
---    different), and lift it. A new recording clears everything recorded before it.
+-- 2. Audio vs text, Karina's three tiers — RULE (her e-mail of 2026-11-14 00:34 UTC, which replaces the
+--    13/11 21:31 reading): "o sistema identifica e alerta; eu avalio e decido". NOTHING is suspended
+--    automatically, whatever the type. The audio stays published until SHE decides.
+--      A editorial       → warning in the admin panel ("Texto alterado depois da gravação")
+--      B clinica         → a more evident alert: the change may need review or re-recording
+--      C nao_esclarecida → pending her evaluation
+--    Her decision, per AudioCard, with date, author and the cards it covers (audiocard_audio_decisions):
+--      "o áudio continua adequado" (audio_mantido) → those changes stop being pending
+--      "suspender" (with a reason)                 → the player is hidden for students (file and URL kept)
+--      "liberar"                                   → the player comes back
+--    A change made AFTER a decision raises a new alert. A new recording clears everything before it.
+--    Warnings live in the admin panel only; students see nothing unless the audio is suspended.
 -- Idempotent: safe to re-run.
 
 begin;
@@ -41,9 +46,16 @@ create table if not exists public.flashcard_item_changes (
   changed_at    timestamptz not null default now(),
   classified_by uuid references auth.users(id) on delete set null,
   classified_at timestamptz,
-  reviewed_by   uuid references auth.users(id) on delete set null,  -- editorial: narration confirmed coherent
+  reviewed_by   uuid references auth.users(id) on delete set null,  -- her decision on this change (any type)
   reviewed_at   timestamptz
 );
+alter table public.flashcard_item_changes add column if not exists review_decision text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'flashcard_item_changes_review_decision_check') then
+    alter table public.flashcard_item_changes add constraint flashcard_item_changes_review_decision_check
+      check (review_decision is null or review_decision in ('audio_mantido', 'audio_suspenso'));
+  end if;
+end $$;
 create index if not exists flashcard_item_changes_item_idx  on public.flashcard_item_changes (item_id, changed_at desc);
 create index if not exists flashcard_item_changes_group_idx on public.flashcard_item_changes (group_id, changed_at desc);
 alter table public.flashcard_item_changes enable row level security;   -- service role only, no policies
@@ -113,49 +125,97 @@ returns integer language plpgsql security definer set search_path = public as $$
 declare n int;
 begin
   if p_kind not in ('editorial', 'clinica', 'nao_esclarecida') then raise exception 'tipo de alteração inválido: %', p_kind; end if;
+  -- Classifying never touches her decision: the type is about the text, the decision about the audio.
   update public.flashcard_item_changes
-     set change_kind = p_kind, classified_by = p_actor, classified_at = now(),
-         reviewed_by = case when p_kind = 'editorial' then reviewed_by end,
-         reviewed_at = case when p_kind = 'editorial' then reviewed_at end
+     set change_kind = p_kind, classified_by = p_actor, classified_at = now()
    where id = any(p_change_ids);
   get diagnostics n = row_count;
   return n;
 end $$;
 
--- Tier A: "I listened, the narration is still coherent" — clears the editorial warning of one AudioCard.
--- Never touches clinical or unclassified changes.
-create or replace function public.confirm_audiocard_editorial(p_group_id bigint, p_actor uuid)
-returns integer language sql security definer set search_path = public as $$
-  with u as (
-    update public.flashcard_item_changes set reviewed_by = p_actor, reviewed_at = now()
-     where group_id = p_group_id and change_kind = 'editorial' and reviewed_at is null
-    returning 1)
-  select count(*)::int from u;
-$$;
+-- Her decisions about an AudioCard's audio, one row each, never updated or deleted.
+create table if not exists public.audiocard_audio_decisions (
+  id          bigint generated always as identity primary key,
+  lesson_id   bigint not null,          -- the AudioCard (no FK: the record outlives the lesson)
+  group_id    bigint,
+  decision    text not null check (decision in ('audio_mantido', 'audio_suspenso', 'audio_liberado')),
+  reason      text,
+  change_ids  bigint[] not null default '{}',
+  positions   int[] not null default '{}',   -- the cards the decision covers
+  decided_by  uuid references auth.users(id) on delete set null,
+  decided_at  timestamptz not null default now()
+);
+create index if not exists audiocard_audio_decisions_lesson_idx on public.audiocard_audio_decisions (lesson_id, decided_at desc);
+alter table public.audiocard_audio_decisions enable row level security;   -- service role only, no policies
+revoke all on public.audiocard_audio_decisions from anon, authenticated;
 
 -- 2. Manual suspension of an audio (file and URL untouched) -----------------------------------------
 alter table public.audiocard_recordings add column if not exists suspended_at timestamptz;
 alter table public.audiocard_recordings add column if not exists suspended_by uuid references auth.users(id) on delete set null;
 alter table public.audiocard_recordings add column if not exists suspended_reason text;
 
+-- The changes still waiting for her decision on one AudioCard (since its latest recording).
+create or replace function public.audiocard_pending_changes(p_lesson_id bigint)
+returns table (change_id bigint, group_id bigint, card_position int)
+language sql stable security definer set search_path = public as $$
+  select ch.id, ch.group_id, ch.position::int
+  from public.flashcard_groups g
+  join public.flashcard_item_changes ch on ch.group_id = g.id
+  where g.audiocard_lesson_id = p_lesson_id
+    and ch.reviewed_at is null
+    and ch.changed_at > coalesce((select max(r.recorded_at) from public.audiocard_recordings r where r.lesson_id = p_lesson_id), '-infinity');
+$$;
+
+-- "O áudio continua adequado": keeps it published and clears the pending changes (all of them, or the ones
+-- given), whatever their type. Records the decision. Returns how many changes it covered.
+drop function if exists public.confirm_audiocard_editorial(bigint, uuid);
+create or replace function public.confirm_audiocard_changes(p_lesson_id bigint, p_actor uuid, p_change_ids bigint[] default null)
+returns integer language plpgsql security definer set search_path = public as $$
+declare ids bigint[]; pos int[]; gid bigint;
+begin
+  select array_agg(change_id), array_agg(distinct card_position), min(group_id) into ids, pos, gid
+    from public.audiocard_pending_changes(p_lesson_id)
+   where p_change_ids is null or change_id = any(p_change_ids);
+  if ids is null then return 0; end if;
+  update public.flashcard_item_changes
+     set reviewed_by = p_actor, reviewed_at = now(), review_decision = 'audio_mantido'
+   where id = any(ids);
+  insert into public.audiocard_audio_decisions (lesson_id, group_id, decision, change_ids, positions, decided_by)
+  values (p_lesson_id, gid, 'audio_mantido', ids, coalesce(pos, '{}'), p_actor);
+  return array_length(ids, 1);
+end $$;
+
+-- Her manual decision to suspend (reason required) or to bring the audio back. Suspending also settles
+-- the pending changes (decision 'audio_suspenso'); a later change raises a new alert.
 create or replace function public.set_audiocard_suspension(p_lesson_id bigint, p_suspend boolean, p_reason text, p_actor uuid)
 returns void language plpgsql security definer set search_path = public as $$
-declare rid bigint;
+declare rid bigint; ids bigint[]; pos int[]; gid bigint;
 begin
   select id into rid from public.audiocard_recordings where lesson_id = p_lesson_id order by recorded_at desc, id desc limit 1;
   if rid is null then raise exception 'AudioCard % sem gravação registrada', p_lesson_id; end if;
   if p_suspend and coalesce(trim(p_reason), '') = '' then raise exception 'informe o motivo da suspensão'; end if;
+  select g.id into gid from public.flashcard_groups g where g.audiocard_lesson_id = p_lesson_id;
+  if p_suspend then
+    select array_agg(change_id), array_agg(distinct card_position) into ids, pos from public.audiocard_pending_changes(p_lesson_id);
+    update public.flashcard_item_changes
+       set reviewed_by = p_actor, reviewed_at = now(), review_decision = 'audio_suspenso'
+     where id = any(coalesce(ids, '{}'));
+  end if;
   update public.audiocard_recordings
      set suspended_at = case when p_suspend then now() end,
          suspended_by = case when p_suspend then p_actor end,
          suspended_reason = case when p_suspend then p_reason end
    where id = rid;
+  insert into public.audiocard_audio_decisions (lesson_id, group_id, decision, reason, change_ids, positions, decided_by)
+  values (p_lesson_id, gid, case when p_suspend then 'audio_suspenso' else 'audio_liberado' end,
+          case when p_suspend then p_reason end, coalesce(ids, '{}'), coalesce(pos, '{}'), p_actor);
 end $$;
 
 revoke execute on function public.edit_flashcard_card(bigint, text, text, text, uuid, text) from public, anon, authenticated;
 revoke execute on function public.stamp_flashcard_changes(bigint[], uuid, text, timestamptz) from public, anon, authenticated;
 revoke execute on function public.classify_flashcard_changes(bigint[], text, uuid) from public, anon, authenticated;
-revoke execute on function public.confirm_audiocard_editorial(bigint, uuid) from public, anon, authenticated;
+revoke execute on function public.audiocard_pending_changes(bigint) from public, anon, authenticated;
+revoke execute on function public.confirm_audiocard_changes(bigint, uuid, bigint[]) from public, anon, authenticated;
 revoke execute on function public.set_audiocard_suspension(bigint, boolean, text, uuid) from public, anon, authenticated;
 revoke execute on function public.flashcard_items_log_change() from public, anon, authenticated;
 
@@ -181,13 +241,15 @@ diff as (   -- cards whose current text is not the text the latest recording nar
      where not exists (select 1 from public.flashcard_items f where f.group_id = c.group_id and f.position = (e->>'position')::int)
   ) x
 ),
-judged as (  -- the most severe type among the changes logged since the recording; no log = not clarified
+judged as (  -- the most severe type among the changes still awaiting her decision; all decided = 'conferida';
+             -- a difference with no log at all = not clarified
   select d.group_id, d.position,
          coalesce((
-           select case max(case when ch.change_kind = 'clinica' then 3
+           select case max(case when ch.reviewed_at is not null then 0
+                                when ch.change_kind = 'clinica' then 3
                                 when ch.change_kind = 'nao_esclarecida' then 2
-                                when ch.reviewed_at is null then 1 else 0 end)
-                    when 3 then 'clinica' when 2 then 'nao_esclarecida' when 1 then 'editorial' when 0 then 'editorial_conferida' end
+                                else 1 end)
+                    when 3 then 'clinica' when 2 then 'nao_esclarecida' when 1 then 'editorial' when 0 then 'conferida' end
              from public.flashcard_item_changes ch
             where ch.changed_at > d.recorded_at
               and ((d.item_id is not null and ch.item_id = d.item_id)
@@ -204,19 +266,18 @@ select c.group_id, c.label, c.deck_page_id, c.lesson_id, c.audio_url, c.recordin
          when c.audio_url is null then 'sem_audio'
          when r.id is null then 'sem_gravacao_registrada'
          when r.audio_url is distinct from c.audio_url then 'audio_trocado_sem_registro'
-         when exists (select 1 from judged j where j.group_id = c.group_id and j.kind = 'clinica') then 'regravacao_necessaria'
-         when r.suspended_at is not null then 'audio_suspenso'
+         when exists (select 1 from judged j where j.group_id = c.group_id and j.kind = 'clinica') then 'revisao_clinica_pendente'
          when exists (select 1 from judged j where j.group_id = c.group_id and j.kind = 'nao_esclarecida') then 'avaliacao_pendente'
          when exists (select 1 from judged j where j.group_id = c.group_id and j.kind = 'editorial') then 'texto_alterado_apos_gravacao'
+         when r.suspended_at is not null then 'audio_suspenso'
          when coalesce(jsonb_array_length(r.asr_mismatches), 0) > 0 then 'narracao_difere_do_texto'
-         when exists (select 1 from judged j where j.group_id = c.group_id) then 'correcao_editorial_conferida'
+         when exists (select 1 from judged j where j.group_id = c.group_id) then 'alteracao_conferida'
          else 'em_dia'
        end as status,
        coalesce((select jsonb_agg(jsonb_build_object('position', j.position, 'kind', j.kind) order by j.position)
                    from judged j where j.group_id = c.group_id), '[]'::jsonb) as changes,
-       (r.audio_url is not distinct from c.audio_url and c.audio_url is not null and
-        (r.suspended_at is not null
-         or exists (select 1 from judged j where j.group_id = c.group_id and j.kind = 'clinica'))) as audio_suspended,
+       -- ONLY her manual suspension hides the player — never a change by itself (Karina 2026-11-14).
+       (r.audio_url is not distinct from c.audio_url and c.audio_url is not null and r.suspended_at is not null) as audio_suspended,
        r.suspended_at, r.suspended_reason
 from cur c left join public.audiocard_recordings r on r.id = c.recording_id;
 

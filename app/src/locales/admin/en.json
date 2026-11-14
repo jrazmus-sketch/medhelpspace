@@ -2292,22 +2292,21 @@
     "asrCards": "Passages to listen to: {{count}}",
     "status": {
       "em_dia": "Up to date",
-      "texto_alterado_apos_gravacao": "Text changed after recording (editorial)",
+      "texto_alterado_apos_gravacao": "Text changed after the recording (editorial)",
       "narracao_difere_do_texto": "Narration differs from the text",
       "sem_audio": "No audio",
       "sem_gravacao_registrada": "Recording without its text on record",
       "audio_trocado_sem_registro": "Audio replaced without a record",
       "sem_audiocard": "No AudioCard",
-      "regravacao_necessaria": "Clinical change — re-record (audio suspended)",
       "audio_suspenso": "Audio suspended",
-      "avaliacao_pendente": "Change pending evaluation",
-      "correcao_editorial_conferida": "Editorial fix confirmed"
+      "avaliacao_pendente": "Change awaiting evaluation",
+      "revisao_clinica_pendente": "Clinical change — may need review or re-recording",
+      "alteracao_conferida": "Change checked — audio kept"
     },
     "kind": {
       "editorial": "Editorial",
       "clinica": "Clinical",
-      "nao_esclarecida": "Not clarified",
-      "editorial_conferida": "Editorial (confirmed)"
+      "nao_esclarecida": "Not clarified"
     },
     "card": "Card {{n}}",
     "sideQ": "question",
@@ -2319,7 +2318,6 @@
     "before": "Before",
     "after": "After",
     "classifyAs": "Type of change",
-    "confirmEditorial": "I checked the audio: the narration is still coherent",
     "suspend": "Suspend the audio",
     "suspendReason": "Reason for suspending",
     "suspendConfirm": "Suspend",
@@ -2327,7 +2325,23 @@
     "suspendedBecause": "Suspended: {{reason}}",
     "saved": "Saved",
     "saveError": "Could not save",
-    "tierHelp": "Editorial: the audio stays, with a warning until checked. Clinical: the audio is suspended for students until re-recorded (the file is kept). Not clarified: pending evaluation.",
-    "noLog": "Difference from before the change log existed"
+    "tierHelp": "The system flags and alerts; you decide. No audio is ever suspended automatically. Editorial: a warning in the panel. Clinical: a prominent alert — it may need review or re-recording. Unclear: pending your evaluation. In every case the audio stays published until you choose to keep or suspend it.",
+    "noLog": "Difference from before the change log existed",
+    "confirmKeep": "The audio is still adequate — keep it published",
+    "keepThisCard": "Keep the audio for this card",
+    "awaiting": "Awaiting your decision",
+    "clinicalAlert": "Clinical change: the audio may need review or re-recording. It stays published until you decide — listen to the passage and choose to keep or suspend it.",
+    "stillPublished": "The audio stays published for students until you decide.",
+    "decisionsTitle": "Recorded decisions",
+    "cardsList": "cards {{list}}",
+    "decision": {
+      "audio_mantido": "Audio kept by {{who}} on {{when}}",
+      "audio_suspenso": "Audio suspended by {{who}} on {{when}}"
+    },
+    "decisionLog": {
+      "audio_mantido": "Audio kept — {{who}}, {{when}}",
+      "audio_suspenso": "Audio suspended — {{who}}, {{when}}",
+      "audio_liberado": "Audio restored — {{who}}, {{when}}"
+    }
   }
 }

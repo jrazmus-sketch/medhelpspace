@@ -2298,16 +2298,15 @@
       "sem_gravacao_registrada": "Gravação sem registro do texto",
       "audio_trocado_sem_registro": "Áudio trocado sem registro",
       "sem_audiocard": "Sem AudioCard",
-      "regravacao_necessaria": "Alteração clínica — regravar (áudio suspenso)",
       "audio_suspenso": "Áudio suspenso",
       "avaliacao_pendente": "Alteração pendente de avaliação",
-      "correcao_editorial_conferida": "Correção editorial conferida"
+      "revisao_clinica_pendente": "Alteração clínica — pode exigir revisão ou regravação",
+      "alteracao_conferida": "Alteração conferida — áudio mantido"
     },
     "kind": {
       "editorial": "Editorial",
       "clinica": "Clínica",
-      "nao_esclarecida": "Não esclarecida",
-      "editorial_conferida": "Editorial (conferida)"
+      "nao_esclarecida": "Não esclarecida"
     },
     "card": "Cartão {{n}}",
     "sideQ": "pergunta",
@@ -2319,7 +2318,6 @@
     "before": "Antes",
     "after": "Depois",
     "classifyAs": "Tipo da alteração",
-    "confirmEditorial": "Conferi o áudio: a narração continua coerente",
     "suspend": "Suspender o áudio",
     "suspendReason": "Motivo da suspensão",
     "suspendConfirm": "Suspender",
@@ -2327,7 +2325,23 @@
     "suspendedBecause": "Suspenso: {{reason}}",
     "saved": "Salvo",
     "saveError": "Erro ao salvar",
-    "tierHelp": "Editorial: o áudio continua, com aviso até a conferência. Clínica: o áudio fica suspenso para os alunos até a regravação (o arquivo é preservado). Não esclarecida: fica pendente para avaliação.",
-    "noLog": "Diferença anterior ao registro de alterações"
+    "tierHelp": "O sistema identifica e alerta; você decide. Nenhum áudio é suspenso automaticamente. Editorial: aviso no painel. Clínica: alerta em destaque — pode exigir revisão ou regravação. Não esclarecida: pendente para sua avaliação. Em todos os casos o áudio continua publicado até você escolher mantê-lo ou suspendê-lo.",
+    "noLog": "Diferença anterior ao registro de alterações",
+    "confirmKeep": "O áudio continua adequado — manter publicado",
+    "keepThisCard": "Manter o áudio para este cartão",
+    "awaiting": "Aguardando sua decisão",
+    "clinicalAlert": "Alteração clínica: pode exigir revisão ou regravação do áudio. O áudio continua publicado até a sua decisão — ouça o trecho e escolha manter ou suspender.",
+    "stillPublished": "O áudio continua publicado para os alunos até a sua decisão.",
+    "decisionsTitle": "Decisões registradas",
+    "cardsList": "cartões {{list}}",
+    "decision": {
+      "audio_mantido": "Áudio mantido por {{who}} em {{when}}",
+      "audio_suspenso": "Áudio suspenso por {{who}} em {{when}}"
+    },
+    "decisionLog": {
+      "audio_mantido": "Áudio mantido — {{who}}, {{when}}",
+      "audio_suspenso": "Áudio suspenso — {{who}}, {{when}}",
+      "audio_liberado": "Áudio liberado — {{who}}, {{when}}"
+    }
   }
 }

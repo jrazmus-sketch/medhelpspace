@@ -204,8 +204,9 @@ export async function TextLessonRenderer({
     .in("audiocard_lesson_id", lessonRows.map((l) => l.id));
   const generatedIds = new Set((generated ?? []).map((g) => g.audiocard_lesson_id as number));
 
-  // Single source (TEST): an AudioCard whose text changed clinically after the recording (or that an admin
-  // suspended) must not play as if it were in sync — the player is hidden, the file is kept, the text shows.
+  // Single source (TEST): an AudioCard whose audio Karina SUSPENDED by hand is not played — the player is
+  // hidden, the file is kept, the text shows. A text change never hides it by itself (Karina 2026-11-14: "o
+  // sistema identifica e alerta; eu avalio e decido"); its warnings stay in the admin panel.
   // Where the change-log patch is absent the column doesn't exist, the query errors, and nothing is hidden.
   const { data: held } = generatedIds.size
     ? await supabase
@@ -291,7 +292,7 @@ export async function TextLessonRenderer({
 
         {suspendedIds.has(activeLesson.id) && (
           <p className="mb-4 rounded-lg border border-border bg-surface-1 px-4 py-3 text-sm text-muted-foreground">
-            O áudio deste tema está sendo regravado para acompanhar uma atualização do conteúdo. O texto abaixo já
+            O áudio deste tema está temporariamente indisponível enquanto passa por revisão. O texto abaixo já
             está atualizado.
           </p>
         )}
