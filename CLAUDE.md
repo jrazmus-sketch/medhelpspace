@@ -228,6 +228,16 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   paid later sends no Purchase (capi.ts reads the context at send time). Signed out → cookie `mhs_meta_revoke=1`,
   finished by MetaPixel at the next sign-in. `track()` re-reads consent at send time (fbq outlives a withdrawal).
   Meta domain verification tag is in the root layout `verification.other` — keep it (Meta re-checks).
+- **Single source Flashcards × AudioCards — LIVE on prod + local (Karina authorized 2026-11-14).**
+  `flashcard_groups` holds each group and its DIRECT AudioCard link (`audiocard_lesson_id`, never matched by
+  title again); every AudioCard transcript (`lessons.body_html` on `<spec>-audiocards`) is GENERATED from its
+  cards by trigger — a direct write to it is REFUSED (`audiocard_transcript_generated`): edit the Flashcards.
+  Every card change is logged (`flashcard_item_changes`, type editorial/clinica/nao_esclarecida, author).
+  **No audio is ever suspended automatically** — the admin panel only warns; Karina decides
+  (`confirm_audiocard_changes`, `set_audiocard_suspension`). Reorganizations move a group with
+  `move_flashcard_group()` (same ids, AudioCard follows). Patches: `schema-patch-single-source-cards.sql` +
+  `schema-patch-single-source-change-log.sql` (each with `-rollback.sql`); pre-switch backup
+  `*_bk_ss_20261114` + `lessons_audiocards_bk_single_source`.
 - **MemoreCards v2 — LIVE (2026-09-22, `33d7024`), stays in MedHelp 60D.** Replaces the legacy
   `*-memorecards` pages (those URLs now redirect). Image cards in `memorecard_items`, keyed to the
   **Revalida Up topic page** (`view='revalida-up'`) — Revalida Up's topic list IS the structure; a
