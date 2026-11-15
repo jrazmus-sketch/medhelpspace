@@ -8,6 +8,8 @@ import { recordLessonCompletion } from "@/actions/lesson-completions";
 interface SidebarEntry {
   id: number;
   title: string;
+  /** Area shown above the title (AudioCards of a group with an area, e.g. "Ortopedia"). */
+  area?: string | null;
 }
 
 // Server-side persistence via lesson_completions table — cross-device synced.
@@ -92,7 +94,14 @@ export function LessonSidebar({
                   </span>
                 )}
               </span>
-              {e.title}
+              {e.area ? (
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold uppercase tracking-wide opacity-70">{e.area}</span>
+                  {e.title}
+                </span>
+              ) : (
+                e.title
+              )}
             </Link>
           </li>
         );

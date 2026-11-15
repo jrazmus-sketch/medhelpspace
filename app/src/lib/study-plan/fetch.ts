@@ -11,6 +11,7 @@ import {
   type WeaknessSensitivity,
 } from "./derive";
 import { loadTopicQuestionIndex } from "./topic-questions-server";
+import { fetchTopicContent } from "./topic-content";
 
 /**
  * Fetch ALL published pages that carry a specialty, paginating past PostgREST's
@@ -112,9 +113,8 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     admin
       .from("topics")
       .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier, is_pinned"),
-    admin
-      .from("topic_content")
-      .select("topic_id, resource_type, page_id, question_filter"),
+    // R4b: includes the stable Flashcards group id; paginated (see topic-content.ts).
+    fetchTopicContent(admin),
     // How many questions each quiz page holds — the denominator of the mastery
     // check. One row per quiz page (~200), comfortably under PostgREST's
     // 1000-row cap. If the view is missing (patch not applied yet) this simply

@@ -5,6 +5,8 @@ import { getSpecialtyAccent } from "@/components/content/specialty-icon";
 export interface CategoryCardData {
   slug: string;
   label: string;
+  /** Area shown above the name (e.g. "Ortopedia" inside Outros); never part of the name. */
+  area?: string | null;
   total: number; // cards in this group
   due: number; // cards due for review today (SM-2)
   answered: number; // distinct cards with at least one attempt
@@ -59,8 +61,17 @@ export function FlashcardHub({
             />
             <div className="flex h-full flex-col justify-between gap-3 pl-4 pr-3 py-3.5 sm:py-4">
               <div className="flex items-start justify-between gap-2">
-                <span className="min-w-0 font-medium leading-snug break-words text-foreground group-hover:text-brand transition-colors">
-                  {cat.label}
+                {/* hyphens-auto (page lang pt-BR): long names like "Musculoesqueléticas" break at a syllable
+                    with a hyphen on a 375px phone instead of mid-syllable */}
+                <span className="min-w-0 leading-snug break-words hyphens-auto [hyphenate-limit-chars:10_4_4]">
+                  {cat.area && (
+                    <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {cat.area}
+                    </span>
+                  )}
+                  <span className="font-medium text-foreground group-hover:text-brand transition-colors">
+                    {cat.label}
+                  </span>
                 </span>
                 <ChevronRight
                   size={16}

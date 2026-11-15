@@ -139,6 +139,8 @@ export type TopicContentRow = {
   resource_type: string;          // quiz | simulado | flashcards | medvoice | revalida_up
   page_id: number | null;
   question_filter: unknown | null;
+  /** R4b: the Flashcards group this link opens, by stable id. Absent before schema-patch-r4b. */
+  flashcard_group_id?: number | null;
 };
 
 export type CohortInfo = {
@@ -689,8 +691,12 @@ export function derivePlan(args: {
       // A link that names no group falls back to the TOPIC's name as the group (Karina 2026-11-13: a topic
       // without a valid group never opens the whole deck; the deck says no Flashcards are linked instead).
       const effectiveGroup = groupLabel ?? (topicIndex ? topic.name : undefined);
-      const withGroup = Boolean(topicIndex && effectiveGroup);
-      const fcKey = fc?.page_id != null ? `${fc.page_id}|${withGroup ? effectiveGroup : ""}` : null;
+      // R4b: a link that carries the group's stable id opens it by id — a renamed or moved group keeps its
+      // link (the database keeps the link's deck page_id = the group's deck).
+      const groupId = fc?.flashcard_group_id ?? null;
+      const withGroup = Boolean(topicIndex && (groupId != null || effectiveGroup));
+      const groupParam = groupId != null ? String(groupId) : effectiveGroup ? flashcardGroupSlug(effectiveGroup) : "";
+      const fcKey = fc?.page_id != null ? `${fc.page_id}|${withGroup ? groupParam : ""}` : null;
       if (fc?.page_id != null && fcKey && !seenFlashcardDecks.has(fcKey)) {
         const deck = pageById.get(fc.page_id);
         if (deck) {
@@ -699,7 +705,7 @@ export function derivePlan(args: {
             kind: "flashcards",
             title: topic.name,
             subtitle: `${specInfo.name} · flashcards`,
-            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(flashcardGroupSlug(effectiveGroup!))}` : deckHref,
+            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(groupParam)}` : deckHref,
             estimatedMinutes: Math.round(8 * minutesScale),
             iconHint: "flashcards",
             reason: "Memorize os pontos-chave do tema",

@@ -204,6 +204,20 @@ export async function TextLessonRenderer({
     .in("audiocard_lesson_id", lessonRows.map((l) => l.id));
   const generatedIds = new Set((generated ?? []).map((g) => g.audiocard_lesson_id as number));
 
+  // The area of the AudioCard's group (e.g. "Ortopedia" inside Outros), shown above the title. A separate
+  // read: where the column does not exist yet it simply errors and no area is shown.
+  const areaByLesson = new Map<number, string>();
+  if (generatedIds.size) {
+    const { data: areas } = await supabase
+      .from("flashcard_groups")
+      .select("audiocard_lesson_id, area")
+      .in("audiocard_lesson_id", [...generatedIds])
+      .not("area", "is", null);
+    for (const a of (areas ?? []) as { audiocard_lesson_id: number; area: string | null }[]) {
+      if (a.area) areaByLesson.set(a.audiocard_lesson_id, a.area);
+    }
+  }
+
   // Single source (TEST): an AudioCard whose audio Karina SUSPENDED by hand is not played — the player is
   // hidden, the file is kept, the text shows. A text change never hides it by itself (Karina 2026-11-14: "o
   // sistema identifica e alerta; eu avalio e decido"); its warnings stay in the admin panel.
@@ -250,7 +264,7 @@ export async function TextLessonRenderer({
   }
   const completedSet = new Set(completedIds);
 
-  const entries = lessons.map((l) => ({ id: l.id, title: l.title }));
+  const entries = lessons.map((l) => ({ id: l.id, title: l.title, area: areaByLesson.get(l.id) ?? null }));
 
   const activeIdx = selectedLessonId
     ? Math.max(0, lessons.findIndex((l) => l.id === selectedLessonId))
@@ -276,6 +290,11 @@ export async function TextLessonRenderer({
       />
 
       <div className="flex-1 min-w-0">
+        {areaByLesson.has(activeLesson.id) && (
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {areaByLesson.get(activeLesson.id)}
+          </p>
+        )}
         {/* Section title — hidden when audio is present (the player absorbs it as its track name) */}
         {!activeLesson.audio_url && (
           <h2 className="text-xl font-bold mb-4 pb-2 border-b-2 border-brand text-foreground">

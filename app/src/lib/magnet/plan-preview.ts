@@ -9,6 +9,7 @@ import {
 } from "@/lib/study-plan/derive";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllSpecialtyPages } from "@/lib/study-plan/fetch";
+import { fetchTopicContent } from "@/lib/study-plan/topic-content";
 
 // Builds a PERSONALIZED study-plan preview from the magnet quiz result, reusing
 // the exact same pure engine the member dashboard uses (lib/study-plan/derive).
@@ -74,9 +75,7 @@ export async function buildPlanPreview(
       admin
         .from("topics")
         .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier, is_pinned"),
-      admin
-        .from("topic_content")
-        .select("topic_id, resource_type, page_id, question_filter"),
+      fetchTopicContent(admin),
     ]);
 
   // Weak specialties = the ones the lead got wrong; pinned as plan focus so the

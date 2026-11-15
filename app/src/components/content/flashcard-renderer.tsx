@@ -33,7 +33,7 @@ export async function FlashcardRenderer({
   const supabase = createAdminClient();
   const { data: cards } = await supabase
     .from("flashcard_items")
-    .select("id, group_position, group_label, position, text, answer, image_url, tip")
+    .select("id, group_id, group_position, group_label, position, text, answer, image_url, tip")
     .eq("page_id", pageId)
     .order("group_position")
     .order("position");
@@ -114,6 +114,28 @@ export async function FlashcardRenderer({
     return [2, prog.due_date, originalIdx]; // future-due
   }
 
+  // Single source: each group's stable id (Meu Plano links open a group by id — R4b) and the optional
+  // area shown above its name (e.g. "Ortopedia" inside Outros). Absent before the patches → no area.
+  const groupIdByPosition = new Map<number, number>();
+  for (const card of cards) {
+    const gid = (card as { group_id?: number | null }).group_id;
+    if (gid != null && !groupIdByPosition.has(card.group_position)) groupIdByPosition.set(card.group_position, gid);
+  }
+  const areaByGroupId = new Map<number, string>();
+  if (!USE_MOCK_DATA && groupIdByPosition.size > 0) {
+    const { data: groupRows } = await supabase
+      .from("flashcard_groups")
+      .select("id, area")
+      .in("id", [...groupIdByPosition.values()]);
+    for (const g of (groupRows ?? []) as { id: number; area?: string | null }[]) {
+      if (g.area) areaByGroupId.set(g.id, g.area);
+    }
+  }
+  const areaOf = (position: number): string | null => {
+    const gid = groupIdByPosition.get(position);
+    return gid != null ? areaByGroupId.get(gid) ?? null : null;
+  };
+
   const groupMap = new Map<number, CardGroup>();
   for (const card of cards) {
     if (!groupMap.has(card.group_position)) {
@@ -183,8 +205,15 @@ export async function FlashcardRenderer({
 
   // Resolve the active group: single-group decks skip the grid; otherwise a valid
   // ?grupo= slug selects its category. No ?grupo= → the grid.
+  // ?grupo= is either the group's slug (hub cards, shareable) or its stable id (Meu Plano links, R4b).
+  const byId = (value: string): CardGroup | null => {
+    if (!/^\d+$/.test(value)) return null;
+    const id = Number(value);
+    for (const g of groups) if (groupIdByPosition.get(g.position) === id) return g;
+    return null;
+  };
   const selectedGroup =
-    groups.length === 1 ? groups[0] : grupo ? groupBySlug.get(grupo) ?? null : null;
+    groups.length === 1 ? groups[0] : grupo ? groupBySlug.get(grupo) ?? byId(grupo) : null;
 
   // A ?grupo= that names no group of this deck (e.g. a Meu Plano topic whose group was renamed or does not
   // exist) must NOT silently open the whole deck — Karina 2026-11-13: say there are no Flashcards linked to
@@ -213,6 +242,7 @@ export async function FlashcardRenderer({
       return {
         slug: slugByPosition.get(g.position)!,
         label: g.label ?? `Grupo ${g.position}`,
+        area: areaOf(g.position),
         total: g.cards.length,
         due: groupDue(g),
         answered: acc.answered,

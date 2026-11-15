@@ -206,6 +206,72 @@ test("the deck says no Flashcards are linked when ?grupo= names no group (never 
   assert.match(src, /!selectedGroup && grupo && groups\.length > 1/);
 });
 
+// ── R4b: stable group ids ─────────────────────────────────────────────────────
+
+function runWith(content: TopicContentRow[], pages: PageRow[] = PAGES) {
+  return withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: { ...defaultPrefs(), intensity: "intenso" },
+    cohort: { test_date: "2027-01-15" },
+    specialties: SPECIALTIES, pages, topics: TOPICS, topicContent: content,
+    signals: {
+      quizAttempts: [], lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],
+      questionCountsByPageId: new Map([[500, 6], [600, 5]]), topicIndex: INDEX,
+    },
+  }));
+}
+
+test("R4b: a link with the group's id opens the group BY ID, whatever its name says", () => {
+  const content: TopicContentRow[] = [
+    ...TOPIC_CONTENT.filter((c) => c.resource_type !== "flashcards"),
+    // an old spelling of the name — the id is what counts
+    { topic_id: 103, resource_type: "flashcards", page_id: 700, question_filter: { group_label: "artrite infecciosa" }, flashcard_group_id: 37 },
+  ];
+  const fc = runWith(content).items.find((i) => i.kind === "flashcards" && i.title === "Artrite Infecciosa");
+  assert.equal(fc?.href, "/app/reumatologia/reumatologia-flashcards?grupo=37");
+});
+
+test("R4b: a group moved to Outros (Ortopedia) takes its plan link along — the deck is the group's deck", () => {
+  const outrosDeck: PageRow = { id: 701, slug: "outros-flashcards", title: "Flashcards", type: "h5p-quiz", specialty_id: 18, track_id: 3, content_module_id: null, view: null };
+  const content: TopicContentRow[] = [
+    ...TOPIC_CONTENT.filter((c) => c.resource_type !== "flashcards"),
+    // the database keeps page_id = the group's deck (trigger), so after the move it is the Outros deck
+    { topic_id: 103, resource_type: "flashcards", page_id: 701, question_filter: { group_label: "Artrite Infecciosa" }, flashcard_group_id: 37 },
+    { topic_id: 129, resource_type: "flashcards", page_id: 701, question_filter: { group_label: "Trauma e Infecções Musculoesqueléticas" }, flashcard_group_id: 170 },
+  ];
+  const items = runWith(content, [...PAGES, outrosDeck]).items.filter((i) => i.kind === "flashcards");
+  assert.equal(items.find((i) => i.title === "Artrite Infecciosa")?.href, "/app/outros/outros-flashcards?grupo=37");
+  assert.equal(items.find((i) => i.title.startsWith("Osteomielite"))?.href, "/app/outros/outros-flashcards?grupo=170",
+    "each Ortopedia topic opens ITS group, never the other one");
+});
+
+test("R4b: Coluna — two topics opening the SAME unified group appear once (no duplicated review)", () => {
+  const neuroDeck: PageRow = { id: 702, slug: "neurologia-flashcards", title: "Flashcards", type: "h5p-quiz", specialty_id: 9, track_id: 3, content_module_id: null, view: null };
+  const content: TopicContentRow[] = [
+    ...TOPIC_CONTENT,
+    { topic_id: 76, resource_type: "flashcards", page_id: 702, question_filter: { group_label: "Coluna Vertebral e Trauma Raquimedular" }, flashcard_group_id: 31 },
+    { topic_id: 123, resource_type: "flashcards", page_id: 702, question_filter: { group_label: "Coluna Vertebral e Trauma Raquimedular" }, flashcard_group_id: 31 },
+  ];
+  const plan = runWith(content, [...PAGES, neuroDeck]);
+  const fc = plan.items.filter((i) => i.kind === "flashcards" && i.href.endsWith("?grupo=31"));
+  assert.equal(fc.length, 1, "one Flashcards item for the unified group");
+  const quiz = plan.items.filter((i) => i.kind === "quiz" && i.pageId === 600);
+  assert.equal(quiz.length, 2, "the two topics stay separate, each with its own questions");
+});
+
+test("R4b: the deck accepts ?grupo=<id> as well as the shareable slug", () => {
+  const src = readFileSync(path.join(process.cwd(), "src/components/content/flashcard-renderer.tsx"), "utf8");
+  assert.match(src, /groupBySlug\.get\(grupo\) \?\? byId\(grupo\)/);
+  assert.match(src, /\.select\("id, group_id, group_position/);
+});
+
+test("R4b: the plan reads topic_content through the paginated, id-aware fetcher", () => {
+  for (const f of ["src/lib/study-plan/fetch.ts", "src/lib/magnet/plan-preview.ts"]) {
+    const src = readFileSync(path.join(process.cwd(), f), "utf8");
+    assert.match(src, /fetchTopicContent\(admin\)/, f);
+    assert.doesNotMatch(src, /from\("topic_content"\)/, `${f} must not read topic_content directly (1000-row cap)`);
+  }
+});
+
 test("flashcardGroupSlug matches the deck renderer's ?grupo= slugs", () => {
   assert.equal(flashcardGroupSlug("Coluna Vertebral e Trauma Raquimedular"), "coluna-vertebral-e-trauma-raquimedular");
   assert.equal(flashcardGroupSlug("Cardiopatia Congênita"), "cardiopatia-congenita");
