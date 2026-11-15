@@ -87,6 +87,8 @@ export function AdminHeader() {
       items: [
         { href: "/admin/pages", label: t("nav.pages") },
         { href: "/admin/hubs", label: t("nav.hubs") },
+        // Flashcards × AudioCards panel (single source) — was reachable only from the dashboard's Biblioteca strip.
+        { href: "/admin/flashcards", label: t("nav.flashcards"), show: isSuperAdmin() || isContentAdmin() },
         { href: "/admin/notifications", label: t("nav.notifications") },
         { href: "/admin/email-templates", label: t("nav.emailTemplates"), show: isContentAdmin() },
         { href: "/admin/estudio", label: t("nav.studio"), show: isSuperAdmin() || isContentAdmin() },

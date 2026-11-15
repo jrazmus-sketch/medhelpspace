@@ -2280,7 +2280,7 @@
   "flashcardsAdmin": {
     "title": "Flashcards",
     "total": "Total items",
-    "editorSoon": "Content editor coming soon. For edits, contact the developer.",
+    "editorSoon": "To edit a card: open the student deck (Estudar → Flashcards), turn on \"Edição rápida\" in the admin bar and click the text — the editor asks for the type of change. You can also edit in Content → Pages, on the Flashcards deck. Every change is logged and shows in the panel below when it changes the text of an AudioCard that is already recorded.",
     "syncTitle": "AudioCards × Flashcards",
     "syncIntro": "Each AudioCard is generated from its Flashcards group. The ones that need attention are listed here.",
     "allOk": "All {{count}} AudioCards are up to date.",

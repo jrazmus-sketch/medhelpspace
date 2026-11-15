@@ -2280,7 +2280,7 @@
   "flashcardsAdmin": {
     "title": "Flashcards",
     "total": "Total de itens",
-    "editorSoon": "Editor de conteúdo disponível em breve. Para edições, contate o desenvolvedor.",
+    "editorSoon": "Para editar um cartão: abra o deck do aluno (Estudar → Flashcards), ative \"Edição rápida\" na barra de admin e clique no texto — o editor pergunta o tipo da alteração. Também é possível editar em Conteúdo → Páginas, no deck de Flashcards. Toda alteração fica registrada e aparece no quadro abaixo quando muda o texto de um AudioCard já gravado.",
     "syncTitle": "AudioCards × Flashcards",
     "syncIntro": "Cada AudioCard é gerado a partir do seu grupo de Flashcards. Aqui aparecem os que precisam de atenção.",
     "allOk": "Todos os {{count}} AudioCards estão em dia.",
