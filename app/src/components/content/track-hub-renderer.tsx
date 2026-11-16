@@ -18,6 +18,10 @@ export async function TrackHubRenderer({
       .from("pages")
       .select("id, slug, title, specialty_id")
       .eq("track_id", trackId)
+      // Published only: a retired draft deck (e.g. retirados-cirurgia-geral-flashcards,
+      // 2026-11-15) gave Cirurgia Geral a 2nd page, which flipped the whole hub out of
+      // the accordion into the long per-page fallback list (Karina 2026-11-16).
+      .eq("status", "publish")
       .neq("id", excludePageId)
       .order("title"),
     admin
