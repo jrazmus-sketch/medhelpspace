@@ -59,7 +59,7 @@ const FAQS = [
   },
   {
     q: "O MedHelpSpace prepara para a 2ª fase (prova prática)?",
-    a: "O foco do MedHelpSpace é a 1ª etapa — a prova teórica, que é o primeiro filtro do Revalida e onde a maior parte dos candidatos para. Aqui você treina o raciocínio, as questões e a fixação para passar dessa fase com segurança. A 2ª etapa (estações práticas) é presencial e tem uma preparação própria — o MedHelpSpace não cobre essa parte.",
+    a: "O foco do MedHelpSpace é a 1ª etapa — a prova teórica, que é o primeiro filtro do Revalida e onde a maior parte dos candidatos para. Aqui você treina o raciocínio, as questões e a fixação para passar dessa fase com segurança.",
   },
   {
     q: "Tem mensalidade?",
