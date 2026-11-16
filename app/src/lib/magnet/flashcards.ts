@@ -259,6 +259,27 @@ type LightItem = { id: number; page_id: number; group_label: string | null; grou
  * Two-step fetch: rank on lightweight (id, label) rows, hydrate full text for the 50.
  */
 export async function getWeightedRevalidaDeck(): Promise<MagnetFlashcard[]> {
+  // Frozen deck first (Karina 2026-11-16): the Meu Plano incidence switch must not
+  // change the free 50. free_flashcard_deck holds them in member order; the ranking
+  // below only runs when it is empty/missing, or tops up if a frozen card was deleted.
+  const admin = createAdminClient();
+  const { data: frozen, error: frozenErr } = await admin
+    .from("free_flashcard_deck")
+    .select("flashcard_item_id")
+    .order("position");
+  const frozenIds = frozenErr ? [] : (frozen ?? []).map((r) => r.flashcard_item_id as number);
+  if (frozenIds.length >= FREE_DECK_SIZE) return getFlashcardsByIds(frozenIds.slice(0, FREE_DECK_SIZE));
+  const computed = await computeWeightedDeckIds();
+  if (frozenIds.length === 0) return getFlashcardsByIds(computed);
+  const have = new Set(frozenIds);
+  const topUp = computed.filter((id) => !have.has(id)).slice(0, FREE_DECK_SIZE - frozenIds.length);
+  return getFlashcardsByIds([...frozenIds, ...topUp]);
+}
+
+const FREE_DECK_SIZE = 50;
+
+/** The incidence ranking that picked the free deck (seed source / fallback only). */
+async function computeWeightedDeckIds(): Promise<number[]> {
   const admin = createAdminClient();
   const specialtyIds = WEIGHTED_DECK_PLAN.map((p) => p.specialtyId);
 
@@ -398,6 +419,5 @@ export async function getWeightedRevalidaDeck(): Promise<MagnetFlashcard[]> {
     }
   }
 
-  // 6) Hydrate full card content for the chosen 50, preserving order.
-  return getFlashcardsByIds(orderedIds);
+  return orderedIds;
 }
