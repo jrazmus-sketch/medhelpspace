@@ -90,10 +90,12 @@ export async function getPageSiblings(pageId: number): Promise<PageSiblingsResul
   const { data: nextRow } = await admin
     .from("nav_items")
     .select(
-      "target_page:pages!target_page_id(slug, title, specialty:specialties!specialty_id(slug))",
+      "target_page:pages!target_page_id!inner(slug, title, status, specialty:specialties!specialty_id(slug))",
     )
     .eq("source_page_id", navLookup.source_page_id)
     .gt("position", navLookup.position)
+    // Skip cards whose page is not published (e.g. R5, 2026-11-16) — never "next" into a 404.
+    .eq("target_page.status", "publish")
     .not("target_page_id", "is", null)
     .order("position")
     .limit(1)

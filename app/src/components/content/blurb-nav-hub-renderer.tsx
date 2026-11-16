@@ -10,6 +10,7 @@ type TargetPage = {
   id: number;
   slug: string;
   type: string;
+  status: string;
   specialty: { slug: string } | null;
 };
 
@@ -37,13 +38,17 @@ export async function BlurbNavHubRenderer({ pageId }: { pageId: number }) {
   const { data: items } = await admin
     .from("nav_items")
     .select(
-      "id, label, position, target_page:pages!target_page_id(id, slug, type, specialty:specialties!specialty_id(slug))",
+      "id, label, position, target_page:pages!target_page_id(id, slug, type, status, specialty:specialties!specialty_id(slug))",
     )
     .eq("source_page_id", pageId)
     .not("target_page_id", "is", null)
     .order("position");
 
-  const rows = (items ?? []) as unknown as NavItemRow[];
+  // A card whose target was taken out of the published set (e.g. Cirurgia Geral ›
+  // Trauma Raquimedular, R5 2026-11-16) is hidden instead of leading to a 404.
+  const rows = ((items ?? []) as unknown as NavItemRow[]).filter(
+    (r) => r.target_page == null || r.target_page.status === "publish",
+  );
   if (rows.length === 0) {
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }

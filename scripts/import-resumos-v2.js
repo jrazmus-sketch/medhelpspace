@@ -95,6 +95,12 @@ const FILE_SLUG_OVERRIDES = {
 
 // New file slug → the LIVE slug it replaces, which is KEPT (see header: remediation
 // links and student URLs resolve by these slugs).
+// Karina 2026-11-16: Cardiopatia Congênita Resumo moved Cardiologia → Pediatria
+// (schema-patch-cardiopatia-congenita-pediatria.sql). Keyed by the LIVE slug.
+const SPECIALTY_OVERRIDES = {
+  "cardiopatia-congenita-resumos": "pediatria",
+};
+
 const MATCH = {
   "diabetes-mellitus-resumos": "diabetes-resumos",
   "doenca-das-adrenais-resumos": "doencas-das-adrenais-resumos",
@@ -445,8 +451,10 @@ function buildRows() {
     const parts = rel.split("/");
     const top = parts[0];
     const sub = parts.length > 2 ? parts[1] : null;
-    const specialty = top === "clinica-medica" ? sub : top === "outros" ? "outros" : top;
     const fileSlug = FILE_SLUG_OVERRIDES[rel] || parts[parts.length - 1].replace(/\.md\.docx$|\.docx$/, "");
+    const folderSpecialty = top === "clinica-medica" ? sub : top === "outros" ? "outros" : top;
+    // A specialty Karina moved in writing wins over the delivery folder (else a re-import moves it back).
+    const specialty = SPECIALTY_OVERRIDES[MATCH[fileSlug] || fileSlug] || folderSpecialty;
     const source = FILE_REPLACEMENTS[rel] ? path.join(__dirname, "..", FILE_REPLACEMENTS[rel]) : file;
     if (!fs.existsSync(source)) { warnings.push(`${rel}: replacement ${FILE_REPLACEMENTS[rel]} not found`); continue; }
     const r = convert(source, fileSlug);
