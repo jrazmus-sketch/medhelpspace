@@ -44,6 +44,8 @@ export type ActionCenter = {
     unread: boolean;
   }[];
   drafts: number;
+  /** Revalida Up ↔ Meu Plano link problems (view revalida_up_link_check; 0 where the view is absent). */
+  ruLinkIssues: number;
   // billing-only
   nfseReady: number;
   nfseAtRisk: number; // ready + already past its competência (purchase) month
@@ -416,6 +418,8 @@ export async function getAdminDashboardData(opts: {
   const openTickets = (tickets as Awaited<ReturnType<typeof getSupportTicketsList>>)
     .filter((t) => t.status === "open" || t.status === "in_progress")
     .slice(0, 5);
+  // Revalida Up pages no Meu Plano topic opens, or links to unpublished pages (Karina 2026-11-15). Warn only.
+  const ruRes = await admin.from("revalida_up_link_check").select("page_id", { count: "exact", head: true });
   const actions: ActionCenter = {
     supportOpen: supportOpen as number,
     recentTickets: openTickets.map((t) => ({
@@ -426,6 +430,7 @@ export async function getAdminDashboardData(opts: {
       unread: !!t.admin_unread,
     })),
     drafts: content.drafts,
+    ruLinkIssues: ruRes.error ? 0 : ruRes.count ?? 0,
     nfseReady,
     nfseAtRisk,
     nfseUpcoming,

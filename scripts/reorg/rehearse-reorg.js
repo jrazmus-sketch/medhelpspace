@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Integrated rehearsal of the reorganization (R4b → R1 → R2 → Ortopedia → union function → Coluna TEST) on a
+// Integrated rehearsal of the reorganization (R4b → R1 → R2 → Ortopedia → TRM-CG retirement → Revalida Up links) on a
 // FULL COPY OF PRODUCTION restored into an isolated local Supabase (port 56322, personal data left out).
 //
 //   node scripts/reorg/rehearse-reorg.js            → apply each step + checks, re-run test, rollback chain
@@ -22,8 +22,9 @@ const STEPS = [
   { key: 'R1', apply: ['schema-patch-exam-questions.sql', DATA], rollback: ['schema-patch-exam-questions-rollback.sql'], rerun: true },
   { key: 'R2', apply: ['schema-patch-r2-topics-reorg.sql', DATA], rollback: ['schema-patch-r2-topics-reorg-rollback.sql'], rerun: true },
   { key: 'Ortopedia', apply: ['schema-patch-ortopedia-flashcard-groups.sql'], rollback: ['schema-patch-ortopedia-flashcard-groups-rollback.sql'], rerun: true },
-  { key: 'Fusão (função)', apply: ['schema-patch-merge-flashcard-groups.sql'], rollback: ['schema-patch-merge-flashcard-groups-rollback.sql'], rerun: true },
-  { key: 'Coluna (teste)', apply: ['scripts/reorg/coluna-merge-TEST-ONLY.sql'], rollback: ['scripts/reorg/coluna-merge-TEST-ONLY-rollback.sql'], rerun: false },
+  // Karina 2026-11-15: NO 55-card union; the old Cirurgia Geral TRM materials leave the published area instead.
+  { key: 'TRM Cirurgia Geral (retirada)', apply: ['schema-patch-trm-cirurgia-geral-retirada.sql'], rollback: ['schema-patch-trm-cirurgia-geral-retirada-rollback.sql'], rerun: true },
+  { key: 'Revalida Up (24 vínculos)', apply: ['schema-patch-revalida-up-topic-links.sql'], rollback: ['schema-patch-revalida-up-topic-links-rollback.sql'], rerun: true },
 ];
 const PII = new Set(('admin_alerts admin_alerts_seen admin_notification_prefs admin_audit_log ambassador_clicks ambassadors app_errors ' +
   'announcement_reads announcement_dismissals clinact_invoices clinact_subscription_events clinact_subscriptions commissions ' +
@@ -80,13 +81,30 @@ async function snapshot(db) {
     }
     S.flashPages = await t`select id, specialty_id from pages where track_id = 3 and status='publish' and specialty_id is not null`;
     S.status = await t`select status, count(*)::int n from audiocard_sync_status group by 1 order by 1`;
+    S.suspended = (await t`select count(*)::int n from audiocard_sync_status where audio_suspended`)[0].n;
+    S.publishedGroups = (await t`select count(*)::int n from flashcard_groups g join pages p on p.id=g.page_id where p.status='publish'`)[0].n;
+    S.ruCheck = (await t`select to_regclass('public.revalida_up_link_check') is not null r`)[0].r
+      ? await t`select issue, page_id, slug, topic_name from revalida_up_link_check order by issue, slug` : null;
+    S.ruUnlinkedRaw = await t`select p.id, p.slug from pages p where p.view='revalida-up' and p.status='publish'
+      and not exists (select 1 from topic_content c where c.resource_type='revalida_up' and c.page_id=p.id) order by p.slug`;
+    const gid = (await has('topic_content', 'flashcard_group_id')) ? 'c.flashcard_group_id' : 'null::bigint';
+    S.newTopics = await t.unsafe(`select t.slug, t.name, t.incidence_count, s.slug spec,
+      (select string_agg(c.resource_type||':'||p.slug||coalesce('#'||${gid},''), ' ' order by c.resource_type) from topic_content c join pages p on p.id=c.page_id where c.topic_id=t.id) links
+      from topics t join specialties s on s.id=t.specialty_id where t.slug in ('cerume-impactado','epistaxe','hipertrofia-adenoideana','fistulas-urinarias') order by t.slug`);
+    S.trmLinks = await t.unsafe(`select c.resource_type, p.slug, p.status, ${gid} flashcard_group_id from topic_content c join topics t on t.id=c.topic_id join pages p on p.id=c.page_id where t.slug='trauma-raquimedular' order by 1`);
     S.r1 = (await t`select to_regclass('public.exam_questions') is not null r`)[0].r
       ? (await t`select (select count(*)::int from exam_questions) originals, (select count(*)::int from exam_questions where topic_id is not null) with_topic,
                        (select count(*)::int from exam_question_registry where registered) registered,
                        (select count(*)::int from quiz_questions q join pages p on p.id=q.page_id where p.view='quiz' and p.status='publish') records,
                        (select count(*)::int from quiz_questions q join pages p on p.id=q.page_id where p.view='quiz' and p.status='publish' and q.exam_question_id is not null) records_linked,
                        (select count(*)::int from topic_question_links) topic_links,
-                       (select count(*)::int from topic_content where resource_type='resumo') resumo_links`)[0]
+                       (select count(*)::int from topic_content where resource_type='resumo') resumo_links,
+                       (select count(*)::int from exam_questions where topic_status='aprovado') approved,
+                       (select count(*)::int from exam_questions where topic_status='proposto' and topic_note like 'A REVER%') doubtful,
+                       (select string_agg(q.id::text, ',') from quiz_questions q join pages p on p.id=q.page_id where p.view='quiz' and p.status='publish' and q.exam_question_id is null) unlinked_records,
+                       (select string_agg(e.edition||' Q'||e.number, ', ' order by e.edition, e.number) from exam_questions e join topics t on t.id=e.topic_id where t.slug in ('cerume-impactado','epistaxe','hipertrofia-adenoideana','fistulas-urinarias')) new_topic_questions,
+                       (select count(*)::int from topic_question_links l join exam_questions e on e.id=l.exam_question_id
+                         where l.is_primary and l.topic_id is distinct from e.topic_id) wrong_primary_links`)[0]
       : null;
     return S;
   });
@@ -138,8 +156,10 @@ function checkState(label, S0, S, expect) {
   check(`${label}: AudioCards — ${S.audiocards.length} aulas, nenhum arquivo de áudio trocado ou removido`, S.audiocards.length === S0.audiocards.length && audioChanged.length === 0, audioChanged);
   const trChanged = [...a0.keys()].filter((k) => a.get(k).h !== a0.get(k).h).map((k) => a0.get(k).title).sort();
   check(`${label}: transcrições alteradas só onde previsto`, JSON.stringify(trChanged) === JSON.stringify((expect.transcripts || []).sort()), trChanged);
-  const unpublished = [...a.values()].filter((l) => l.status !== 'publish').map((l) => l.title);
-  check(`${label}: nenhum AudioCard despublicado`, unpublished.length === 0, unpublished);
+  const unpublished = [...a.values()].filter((l) => l.status !== 'publish').map((l) => l.title).sort();
+  const expUnpub = (expect.unpublishedAudiocards || []).slice().sort();
+  check(expUnpub.length ? `${label}: AudioCards fora da área publicada — só os previstos (${expUnpub.join(', ')})` : `${label}: nenhum AudioCard despublicado`,
+    JSON.stringify(unpublished) === JSON.stringify(expUnpub), unpublished);
   // Student history: untouched (Revisão: only the denormalised specialty of moved cards may follow the deck)
   const hChanged = Object.keys(S0.history).filter((t) => JSON.stringify(S0.history[t]) !== JSON.stringify(S.history[t]));
   check(`${label}: históricos dos alunos (tentativas, conclusões, progresso, planos) idênticos`, hChanged.length === 0, hChanged);
@@ -207,14 +227,38 @@ async function apply(db, files) {
   // cards whose own group, deck or position changes (groups that only shift place in a deck keep their cards)
   const orto = [G.time.id, G.ai.id];
   void cgAfter; void reumaAfter; void outrosAfter;
+  const R2P = ['artrite-infecciosa: Artrite Infecciosa → Monoartrite Aguda'];
+  const TRMP = [...R2P, 'trauma-raquimedular-revalida-up: Trauma Raquimedular Revalida Up → Trauma Raquimedular Revalida Up',
+    'retirados-cirurgia-geral-flashcards: undefined → Cirurgia Geral Flashcards — materiais retirados (não publicados)',
+    'retirados-cirurgia-geral-audiocards: undefined → Cirurgia Geral AudioCards — materiais retirados (não publicados)'];
   const EXPECT = {
     'R4b': {},
     'R1': {},
-    'R2': { pages: ['artrite-infecciosa: Artrite Infecciosa → Monoartrite Aguda'] },
-    'Ortopedia': { pages: ['artrite-infecciosa: Artrite Infecciosa → Monoartrite Aguda'], movedGroups: orto },
-    'Fusão (função)': { pages: ['artrite-infecciosa: Artrite Infecciosa → Monoartrite Aguda'], movedGroups: orto },
-    'Coluna (teste)': { pages: ['artrite-infecciosa: Artrite Infecciosa → Monoartrite Aguda'],
-      movedGroups: [...orto, G.trmCG.id, G.coluna.id], transcripts: ['Coluna Vertebral e Trauma Raquimedular'] },
+    'R2': { pages: R2P },
+    'Ortopedia': { pages: R2P, movedGroups: orto },
+    'TRM Cirurgia Geral (retirada)': { pages: TRMP, movedGroups: [...orto, G.trmCG.id], unpublishedAudiocards: ['Trauma Raquimedular'] },
+    'Revalida Up (24 vínculos)': { pages: TRMP, movedGroups: [...orto, G.trmCG.id], unpublishedAudiocards: ['Trauma Raquimedular'] },
+  };
+  const LAST = EXPECT['Revalida Up (24 vínculos)'];
+
+  // Karina's item 9 + the TRM/Revalida Up/new-topic specifics, on the final state.
+  const finalChecks = (label, S) => {
+    console.log(`
+▶ ${label}: verificações específicas`);
+    const gTotal0 = S0.groups.length;
+    check(`${label}: grupos de Flashcards — ${S.groups.length} guardados (nenhum apagado); publicados ${S0.publishedGroups} → ${S.publishedGroups}`,
+      S.groups.length === gTotal0 && S.publishedGroups === S0.publishedGroups - 1, { total: S.groups.length, published: S.publishedGroups });
+    check(`${label}: nenhum áudio suspenso; situação da fonte única igual à de antes`, S.suspended === 0 && JSON.stringify(S.status) === JSON.stringify(S0.status), S.status);
+    const trm = Object.fromEntries(S.trmLinks.map((l) => [l.resource_type, l]));
+    check(`${label}: Trauma Raquimedular abre Questões de Coluna, Flashcards e Revalida Up de Neurologia (publicados)`,
+      trm.quiz?.slug === 'patologias-da-coluna-vertebral' && trm.flashcards?.slug === 'neurologia-flashcards' && String(trm.flashcards?.flashcard_group_id) === String(G.coluna.id)
+      && trm.revalida_up?.slug === 'coluna-vertebral-trauma-raquimedular-revalida-up' && S.trmLinks.every((l) => l.status === 'publish'), S.trmLinks);
+    check(`${label}: Revalida Up sem tema — 25 antes, só "Trauma e Infecções Musculoesqueléticas" depois; nenhum vínculo inválido`,
+      S0.ruUnlinkedRaw.length === 25 && S.ruCheck && S.ruCheck.length === 1 && S.ruCheck[0].issue === 'pagina_sem_tema' && String(S.ruCheck[0].page_id) === '91012', S.ruCheck);
+    check(`${label}: 4 temas novos (Outros), incidência 1 cada, abrem Questões + Revalida Up + grupo da área`,
+      S.newTopics.length === 4 && S.newTopics.every((t) => t.spec === 'outros' && t.incidence_count === 1 && /flashcards:outros-flashcards#\d+/.test(t.links) && /quiz:(otorrinolaringologia|urologia)\b/.test(t.links) && /revalida_up:(otorrinolaringologia|urologia)-revalida-up/.test(t.links)), S.newTopics);
+    check(`${label}: R1 — todos os ${S.r1.records} registros publicados ligados à questão original; 27 classificações duvidosas mantidas para revisão; vínculos principais coerentes`,
+      S.r1.records === S.r1.records_linked && S.r1.unlinked_records == null && S.r1.doubtful === 27 && S.r1.wrong_primary_links === 0 && (S.r1.new_topic_questions || '').split(', ').length === 4, S.r1);
   };
 
   // ── 1. apply, step by step ──
@@ -226,9 +270,12 @@ async function apply(db, files) {
     checkState(s.key, S0, await snapshot(db), { ...EXPECT[s.key], __baselineBroken: baselineBroken });
   }
   const SF = await snapshot(db);
+  finalChecks('estado final', SF);
   report.final = {
     groups: SF.groups.length, outros: SF.groups.filter((x) => x.deck === 'outros-flashcards').sort((a, b) => a.position - b.position).map((x) => x.label),
     coluna: SF.cards.filter((c) => String(c.group_id) === String(G.coluna.id)).length, r1: SF.r1, audiocardStatus: SF.status,
+    publishedGroups: { before: S0.publishedGroups, after: SF.publishedGroups }, suspended: SF.suspended, ruCheck: SF.ruCheck,
+    ruUnlinkedBefore: S0.ruUnlinkedRaw.length, newTopics: SF.newTopics, trmLinks: SF.trmLinks,
     links: { before: S0.links.length, after: SF.links.length },
   };
   // the plan links that changed destination, for the report
@@ -247,7 +294,7 @@ async function apply(db, files) {
   for (const s of STEPS.filter((x) => x.rerun)) await apply(db, s.apply);
   const d = diffFp(before, await fingerprint(db));
   report.rerun = d;
-  check('reexecução das etapas R4b, R1, R2, Ortopedia e função de fusão não altera nada', d.length === 0, d);
+  check('reexecução de todas as etapas não altera nada', d.length === 0, d);
 
   // ── 3. rollback chain: each rollback must land EXACTLY on the state before its step ──
   console.log('\n▶ rollback chain');
@@ -265,7 +312,8 @@ async function apply(db, files) {
   // check again, and the same final organisation (groups, Outros, Coluna, links, R1 coverage, statuses).
   for (const s of STEPS) await apply(db, s.apply);
   const SR = await snapshot(db);
-  checkState('reaplicação completa', S0, SR, { ...EXPECT['Coluna (teste)'], __baselineBroken: baselineBroken });
+  checkState('reaplicação completa', S0, SR, { ...LAST, __baselineBroken: baselineBroken });
+  finalChecks('reaplicação completa', SR);
   const summary = (S) => ({ groups: S.groups.map((x) => `${x.id}@${x.deck}#${x.position}`).sort(), cards: S.cards.map((c) => `${c.id}:${c.group_id}:${c.position}`).sort(),
     // new topics get new ids on a second application → compare links by topic SLUG
     links: S.links.map((l) => `${S.topics.find((t) => String(t.id) === String(l.topic_id))?.slug}|${l.resource_type}|${l.page_id}|${l.flashcard_group_id ?? ''}`).sort(), r1: S.r1, status: S.status,

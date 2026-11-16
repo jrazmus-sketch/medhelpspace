@@ -58,7 +58,11 @@ const TONE: Record<string, string> = {
 };
 
 /** Single source (TEST): AudioCards whose audio may no longer match the text of their Flashcards group. */
-export function AudiocardSyncPanel({ rows, okCount, total }: { rows: SyncRow[]; okCount: number; total: number }) {
+export function AudiocardSyncPanel({ rows, okCount, total, retired = [] }: {
+  rows: SyncRow[]; okCount: number; total: number;
+  /** Groups kept on a draft page, out of the published area (not counted above). */
+  retired?: string[];
+}) {
   const { t } = useTranslation();
   return (
     <section className="space-y-3 rounded-xl border border-border bg-surface-1 p-4">
@@ -74,6 +78,11 @@ export function AudiocardSyncPanel({ rows, okCount, total }: { rows: SyncRow[]; 
         <ul className="space-y-3">
           {rows.map((r) => <GroupRow key={r.group_id} row={r} />)}
         </ul>
+      )}
+      {retired.length > 0 && (
+        <p className="break-words text-sm text-muted-foreground">
+          {t("flashcardsAdmin.retired", { count: retired.length, list: retired.join("; ") })}
+        </p>
       )}
     </section>
   );

@@ -244,7 +244,7 @@ test("R4b: a group moved to Outros (Ortopedia) takes its plan link along — the
     "each Ortopedia topic opens ITS group, never the other one");
 });
 
-test("R4b: Coluna — two topics opening the SAME unified group appear once (no duplicated review)", () => {
+test("Coluna — Patologias da Coluna and Trauma Raquimedular both open the Neurologia group: one item, not two", () => {
   const neuroDeck: PageRow = { id: 702, slug: "neurologia-flashcards", title: "Flashcards", type: "h5p-quiz", specialty_id: 9, track_id: 3, content_module_id: null, view: null };
   const content: TopicContentRow[] = [
     ...TOPIC_CONTENT,
@@ -253,9 +253,47 @@ test("R4b: Coluna — two topics opening the SAME unified group appear once (no 
   ];
   const plan = runWith(content, [...PAGES, neuroDeck]);
   const fc = plan.items.filter((i) => i.kind === "flashcards" && i.href.endsWith("?grupo=31"));
-  assert.equal(fc.length, 1, "one Flashcards item for the unified group");
+  assert.equal(fc.length, 1, "one Flashcards item for the shared Neurologia group");
   const quiz = plan.items.filter((i) => i.kind === "quiz" && i.pageId === 600);
   assert.equal(quiz.length, 2, "the two topics stay separate, each with its own questions");
+});
+
+test("Revalida Up — two topics sharing one page on the same day give ONE Revalida Up item (Karina 2026-11-15)", () => {
+  const neuroRu: PageRow = { id: 90074, slug: "coluna-vertebral-trauma-raquimedular-revalida-up", title: "Coluna Vertebral e Trauma Raquimedular Revalida Up", type: "plain-content", specialty_id: 9, track_id: null, content_module_id: null, view: "revalida-up" };
+  const content: TopicContentRow[] = [
+    ...TOPIC_CONTENT,
+    { topic_id: 76, resource_type: "revalida_up", page_id: 90074, question_filter: null },
+    { topic_id: 123, resource_type: "revalida_up", page_id: 90074, question_filter: null },
+  ];
+  const plan = runWith(content, [...PAGES, neuroRu]);
+  assert.equal(plan.items.filter((i) => i.kind === "quiz" && i.pageId === 600).length, 2, "both topics are on the day");
+  const ru = plan.items.filter((i) => i.kind === "revalida_up" && i.pageId === 90074);
+  assert.equal(ru.length, 1, "the shared Revalida Up page appears once");
+  assert.equal(ru[0].href, "/app/neurologia/coluna-vertebral-trauma-raquimedular-revalida-up");
+});
+
+test("TRM retirement: unpublishes by moving to draft pages — never deletes a card, lesson or page", () => {
+  const src = readFileSync(path.join(process.cwd(), "..", "schema-patch-trm-cirurgia-geral-retirada.sql"), "utf8");
+  assert.doesNotMatch(src, /DELETE\s+FROM\s+(flashcard_items|flashcard_groups|lessons|pages|audiocard)/i);
+  assert.match(src, /move_flashcard_group\(g_trm, ret/);
+  assert.match(src, /status = 'draft'/);
+  assert.match(src, /a Meu Plano link still points at the retired materials/);
+});
+
+test("the 55-card Coluna union is not part of this release (Karina 2026-11-15: do not run it in production)", () => {
+  for (const f of ["schema-patch-merge-flashcard-groups.sql", "scripts/reorg/coluna-merge-TEST-ONLY.sql"]) {
+    assert.throws(() => readFileSync(path.join(process.cwd(), "..", f), "utf8"), /ENOENT/, `${f} must not ship`);
+  }
+});
+
+test("admin: retired groups are kept out of the AudioCards count; Revalida Up links are checked, never auto-linked", () => {
+  const fc = readFileSync(path.join(process.cwd(), "src/app/admin/flashcards/page.tsx"), "utf8");
+  assert.match(fc, /publishedDecks\.has\(s\.deck_page_id/);
+  const dash = readFileSync(path.join(process.cwd(), "src/lib/admin/dashboard-stats.ts"), "utf8");
+  assert.match(dash, /from\("revalida_up_link_check"\)/);
+  const chk = readFileSync(path.join(process.cwd(), "..", "scripts/check-revalida-up-links.js"), "utf8");
+  assert.match(chk, /begin\('read only'/);
+  assert.doesNotMatch(chk, /insert\s+into|update\s+topic_content/i);
 });
 
 test("R4b: the deck accepts ?grupo=<id> as well as the shareable slug", () => {

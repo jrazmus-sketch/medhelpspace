@@ -1,8 +1,8 @@
 -- schema-patch-r2-topics-reorg.sql
 --
 -- R2 (Karina 2026-11-12) — Meu Plano topics follow the CURRENT classification of the questions.
--- TEST ONLY: production waits for Karina's authorization (2026-11-15: "Não autorizo ainda a publicação
--- da R1, R2, R4b ou das transferências estruturais").
+-- AUTHORIZED for production by Karina 2026-11-15 (21:55 UTC), in the order R4b → R1 → R2 → Ortopedia,
+-- together with the four new Outros topics below (her item 2).
 --
 --   • Artrite Infecciosa (103): its artrite séptica questions now live in Outros › Ortopedia → the topic
 --     moves to Outros, quiz link → ortopedia. Its materials (Revalida Up, the "Artrite Infecciosa"
@@ -88,6 +88,47 @@ INSERT INTO topic_content (topic_id, resource_type, page_id)
 SELECT t.id, 'quiz', t.source_page_id FROM topics t
  WHERE t.slug IN ('espondiloartrites', 'monoartrite-aguda')
    AND NOT EXISTS (SELECT 1 FROM topic_content c WHERE c.topic_id = t.id AND c.resource_type = 'quiz');
+
+-- Four low-recurrence Outros subjects get their OWN plan topic (Karina 2026-11-15, item 2): Cerume Impactado
+-- (2021 Q5), Epistaxe (2026.1 Q24), Hipertrofia Adenoideana (2026.1 Q30) — Otorrinolaringologia; Fístulas
+-- Urinárias (2023.2 Q42) — Urologia. Statistics only: the questions STAY in their current sections (no new
+-- section, no new Flashcards/AudioCards/Revalida Up group). Each topic opens the EXISTING material that has
+-- its content — the area's Revalida Up page (insights ① ⑦ ⑧ Otorrino, ⑮ Urologia) and the area's Flashcards
+-- group (Otorrino cards 1–4, 24–27, 28–29; Urologia cards 27–28), by the group's stable id (R4b must run first).
+-- incidence_count = 1 each = its distinct original question.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'topic_content' AND column_name = 'flashcard_group_id')
+     OR (SELECT count(*) FROM pages WHERE slug IN ('otorrinolaringologia', 'urologia', 'otorrinolaringologia-revalida-up',
+                                                   'urologia-revalida-up', 'outros-flashcards') AND status = 'publish') <> 5
+     OR (SELECT count(*) FROM flashcard_groups g JOIN pages p ON p.id = g.page_id
+          WHERE p.slug = 'outros-flashcards' AND g.label IN ('Otorrinolaringologia', 'Urologia')) <> 2 THEN
+    RAISE EXCEPTION 'R2 (temas novos): run R4b first / unexpected Outros state - nothing changed';
+  END IF;
+END $$;
+INSERT INTO topics (name, slug, specialty_id, source_page_id, incidence_count, exam_cycle_source, notes)
+SELECT v.name, v.slug, (SELECT id FROM specialties WHERE slug = 'outros'), (SELECT id FROM pages WHERE slug = v.section),
+       1, '2020-2026.1', 'Karina 2026-11-15: tema próprio no Meu Plano (' || v.q || '); questões continuam na seção ' || v.section || '.'
+FROM (VALUES ('Cerume Impactado', 'cerume-impactado', 'otorrinolaringologia', '2021 Q5'),
+             ('Epistaxe', 'epistaxe', 'otorrinolaringologia', '2026.1 Q24'),
+             ('Hipertrofia Adenoideana', 'hipertrofia-adenoideana', 'otorrinolaringologia', '2026.1 Q30'),
+             ('Fístulas Urinárias', 'fistulas-urinarias', 'urologia', '2023.2 Q42')) v(name, slug, section, q)
+ON CONFLICT (slug) DO NOTHING;
+INSERT INTO topic_content (topic_id, resource_type, page_id, note)
+SELECT t.id, x.kind, (SELECT id FROM pages WHERE slug = x.page), 'Karina 2026-11-15'
+FROM topics t
+JOIN (VALUES ('otorrinolaringologia', 'quiz', 'otorrinolaringologia'), ('otorrinolaringologia', 'revalida_up', 'otorrinolaringologia-revalida-up'),
+             ('urologia', 'quiz', 'urologia'), ('urologia', 'revalida_up', 'urologia-revalida-up')) x(section, kind, page)
+  ON x.section = (SELECT slug FROM pages WHERE id = t.source_page_id)
+WHERE t.slug IN ('cerume-impactado', 'epistaxe', 'hipertrofia-adenoideana', 'fistulas-urinarias')
+  AND NOT EXISTS (SELECT 1 FROM topic_content c WHERE c.topic_id = t.id AND c.resource_type = x.kind);
+INSERT INTO topic_content (topic_id, resource_type, page_id, flashcard_group_id, question_filter, note)
+SELECT t.id, 'flashcards', g.page_id, g.id, jsonb_build_object('group_label', g.label), 'Karina 2026-11-15'
+FROM topics t
+JOIN flashcard_groups g ON g.label = CASE WHEN t.slug = 'fistulas-urinarias' THEN 'Urologia' ELSE 'Otorrinolaringologia' END
+JOIN pages d ON d.id = g.page_id AND d.slug = 'outros-flashcards'
+WHERE t.slug IN ('cerume-impactado', 'epistaxe', 'hipertrofia-adenoideana', 'fistulas-urinarias')
+  AND NOT EXISTS (SELECT 1 FROM topic_content c WHERE c.topic_id = t.id AND c.resource_type = 'flashcards');
 
 -- Section "Artrite Infecciosa" (Reumatologia) → "Monoartrite Aguda" (title + hub card only)
 UPDATE pages SET title = 'Monoartrite Aguda' WHERE slug = 'artrite-infecciosa' AND title <> 'Monoartrite Aguda';

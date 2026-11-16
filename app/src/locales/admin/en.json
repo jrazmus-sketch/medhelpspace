@@ -494,7 +494,8 @@
     "collectingData": "Collecting data…",
     "analyticsUnavailable": "Metrics temporarily unavailable.",
     "analyticsNotConnected": "Connect Google Analytics",
-    "analyticsNotConnectedSub": "Add the GA4 service account to see traffic, sources and conversions here."
+    "analyticsNotConnectedSub": "Add the GA4 service account to see traffic, sources and conversions here.",
+    "ruLinks": "Revalida Up pages with no Meu Plano topic"
   },
   "pages": {
     "title": "Pages",
@@ -2342,6 +2343,19 @@
       "audio_mantido": "Audio kept — {{who}}, {{when}}",
       "audio_suspenso": "Audio suspended — {{who}}, {{when}}",
       "audio_liberado": "Audio restored — {{who}}, {{when}}"
-    }
+    },
+    "retired": "Outside the published area and not counted above ({{count}}): {{list}}. The group, its cards, audio and transcript are preserved; nothing was deleted."
+  },
+  "revalidaUpLinks": {
+    "title": "Revalida Up × Meu Plano",
+    "intro": "Automatic check of the links between Revalida Up pages and Meu Plano topics. It runs every time this screen opens, including after imports, renames and specialty changes.",
+    "rule": "The system only warns. No link is ever created automatically: each case waits for a decision.",
+    "allOk": "Every published Revalida Up page is linked to a Meu Plano topic, and no link points at a page outside the published area.",
+    "missingTitle": "Published pages with no topic ({{count}})",
+    "missingHelp": "These pages never appear in Meu Plano because no topic opens them.",
+    "invalidTitle": "Links pointing at a page outside the published area ({{count}})",
+    "invalidHelp": "The topic below opens a page that is not published as a Revalida Up page.",
+    "topic": "Topic: {{name}}",
+    "edit": "Open the page"
   }
 }

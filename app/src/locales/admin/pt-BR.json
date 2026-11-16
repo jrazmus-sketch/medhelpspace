@@ -494,7 +494,8 @@
     "collectingData": "Coletando dados…",
     "analyticsUnavailable": "Métricas temporariamente indisponíveis.",
     "analyticsNotConnected": "Conecte o Google Analytics",
-    "analyticsNotConnectedSub": "Adicione a conta de serviço do GA4 para ver tráfego, fontes e conversões aqui."
+    "analyticsNotConnectedSub": "Adicione a conta de serviço do GA4 para ver tráfego, fontes e conversões aqui.",
+    "ruLinks": "Revalida Up sem tema no Meu Plano"
   },
   "pages": {
     "title": "Páginas",
@@ -2342,6 +2343,19 @@
       "audio_mantido": "Áudio mantido — {{who}}, {{when}}",
       "audio_suspenso": "Áudio suspenso — {{who}}, {{when}}",
       "audio_liberado": "Áudio liberado — {{who}}, {{when}}"
-    }
+    },
+    "retired": "Fora da área publicada e fora da contagem acima ({{count}}): {{list}}. O grupo, os cartões, o áudio e a transcrição estão preservados; nada foi apagado."
+  },
+  "revalidaUpLinks": {
+    "title": "Revalida Up × Meu Plano",
+    "intro": "Conferência automática dos vínculos entre as páginas do Revalida Up e os temas do Meu Plano. Ela é refeita sempre que esta tela abre, inclusive depois de importações, renomeações e mudanças de especialidade.",
+    "rule": "O sistema apenas avisa. Nenhum vínculo é criado automaticamente: cada caso aguarda a sua decisão.",
+    "allOk": "Todas as páginas publicadas do Revalida Up estão vinculadas a um tema do Meu Plano, e nenhum vínculo aponta para uma página fora da área publicada.",
+    "missingTitle": "Páginas publicadas sem tema ({{count}})",
+    "missingHelp": "Estas páginas não aparecem no Meu Plano porque nenhum tema as abre.",
+    "invalidTitle": "Vínculos que apontam para uma página fora da área publicada ({{count}})",
+    "invalidHelp": "O tema abaixo abre uma página que não está publicada como Revalida Up.",
+    "topic": "Tema: {{name}}",
+    "edit": "Abrir a página"
   }
 }

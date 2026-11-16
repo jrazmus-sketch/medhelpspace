@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   LifeBuoy, FileText, Receipt, FileEdit, QrCode, AlertTriangle, CheckCircle2,
   TrendingUp, TrendingDown, GraduationCap, CalendarClock, Users, UserPlus,
-  Activity, ChevronRight, History, BarChart3, Globe,
+  Activity, ChevronRight, History, BarChart3, Globe, Unlink,
 } from "lucide-react";
 import type { DashboardData } from "@/lib/admin/dashboard-stats";
 import type { AnalyticsStats } from "@/lib/admin/analytics-stats";
@@ -119,6 +119,12 @@ export function AdminDashboardClient({
     tiles.push({ key: "drafts", node: (
       <ActionTile href="/admin/pages?status=draft" icon={FileEdit} count={actions.drafts}
         label={t("dashboard.draftsToReview")} tone="amber" />
+    )});
+  }
+  if (actions.ruLinkIssues > 0) {
+    tiles.push({ key: "ru-links", node: (
+      <ActionTile href="/admin/revalida-up" icon={Unlink} count={actions.ruLinkIssues}
+        label={t("dashboard.ruLinks")} tone="amber" />
     )});
   }
   if (canSeeBilling && actions.pendingPix > 0) {

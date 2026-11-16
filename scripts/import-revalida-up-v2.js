@@ -437,7 +437,9 @@ GROUP BY s.slug ORDER BY s.slug;
   }
   console.log(`\n  Apply (one database at a time — review the SQL first):`);
   console.log(`    DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:55322/postgres" node scripts/run-sql.js parsed/revalida-up-v2-import.sql   # local`);
-  console.log(`    node scripts/run-sql.js parsed/revalida-up-v2-import.sql                                                                   # prod\n`);
+  console.log(`    node scripts/run-sql.js parsed/revalida-up-v2-import.sql                                                                   # prod`);
+  console.log(`\n  Then, on EACH database, check the Meu Plano links (Karina 2026-11-15 — warns only, never links):`);
+  console.log(`    node scripts/check-revalida-up-links.js   (same DATABASE_URL as the apply)\n`);
 }
 
 main();

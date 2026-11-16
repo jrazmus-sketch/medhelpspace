@@ -25,10 +25,23 @@ export default async function FlashcardsPage() {
     .select("group_id, label, deck_page_id, lesson_id, recorded_at, status, changed_since_recording, asr_mismatch_count, changes, audio_suspended, suspended_reason");
   let panel = null;
   if (!error && status) {
-    const open = status.filter((s) => !OK_STATUSES.has(s.status as string));
-    const decks = [...new Set(open.map((s) => s.deck_page_id as number))];
-    const { data: pages } = decks.length ? await admin.from("pages").select("id, title").in("id", decks) : { data: [] };
+    // Only groups in a PUBLISHED deck count. A group retired from the published area (e.g. Cirurgia Geral ›
+    // Trauma Raquimedular, Karina 2026-11-15) is kept intact on a draft page and listed apart.
+    const allDecks = [...new Set(status.map((s) => s.deck_page_id as number))];
+    const { data: pages } = allDecks.length
+      ? await admin.from("pages").select("id, title, status, specialties(name)").in("id", allDecks)
+      : { data: [] };
     const deckTitle = new Map((pages ?? []).map((p) => [p.id as number, p.title as string]));
+    const deckSpecialty = new Map((pages ?? []).map((p) => {
+      const sp = p.specialties as unknown as { name: string } | { name: string }[] | null;
+      return [p.id as number, (Array.isArray(sp) ? sp[0]?.name : sp?.name) ?? ""];
+    }));
+    const publishedDecks = new Set((pages ?? []).filter((p) => p.status === "publish").map((p) => p.id as number));
+    const live = status.filter((s) => publishedDecks.has(s.deck_page_id as number));
+    const retired = status
+      .filter((s) => !publishedDecks.has(s.deck_page_id as number))
+      .map((s) => [deckSpecialty.get(s.deck_page_id as number), s.label as string].filter(Boolean).join(" › "));
+    const open = live.filter((s) => !OK_STATUSES.has(s.status as string));
 
     // The logged changes behind each open group (since its latest recording), with author names.
     const groupIds = open.map((s) => s.group_id as number);
@@ -107,7 +120,7 @@ export default async function FlashcardsPage() {
           })),
       };
     });
-    panel = <AudiocardSyncPanel rows={rows} okCount={status.length - rows.length} total={status.length} />;
+    panel = <AudiocardSyncPanel rows={rows} okCount={live.length - rows.length} total={live.length} retired={retired} />;
   }
 
   return (

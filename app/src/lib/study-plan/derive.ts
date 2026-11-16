@@ -606,6 +606,9 @@ export function derivePlan(args: {
 
   const items: PlanItem[] = [];
   const seenFlashcardDecks = new Set<string>();
+  // One Revalida Up page per day, even when two topics share it (Patologias da Coluna Vertebral + Trauma
+  // Raquimedular → the Neurologia page; the Outros areas): Karina 2026-11-15, no duplicated tasks.
+  const seenRevalidaUpPages = new Set<number>();
   let surfaced = 0;
   for (const { topic, weakness, gapWeight } of rankedTopics) {
     if (surfaced >= topicsToday) break;
@@ -660,7 +663,8 @@ export function derivePlan(args: {
     // filed under Cirurgia Geral, the Outros areas).
     if (allowedTypes.has("revalida_up")) {
       const ruPage = contentPageFor(topic, "revalida_up");
-      if (ruPage && ruPage.view === "revalida-up") {
+      if (ruPage && ruPage.view === "revalida-up" && !seenRevalidaUpPages.has(ruPage.id)) {
+        seenRevalidaUpPages.add(ruPage.id);
         const ruSpec =
           (ruPage.specialty_id != null ? specialtyById.get(ruPage.specialty_id) : null) ?? specInfo;
         items.push({

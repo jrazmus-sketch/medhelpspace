@@ -1,7 +1,7 @@
 -- schema-patch-ortopedia-flashcard-groups.sql
 --
 -- Ortopedia in Outros (Karina 2026-11-13/14: structure approved, "identificação 'Ortopedia' acima dos dois
--- grupos, sem mudar os títulos"). TEST ONLY until she authorizes the structural transfers.
+-- grupos, sem mudar os títulos"). AUTHORIZED for production by Karina 2026-11-15 (step 4 of R4b → R1 → R2 → Ortopedia).
 --
 --   • "Trauma e Infecções Musculoesqueléticas" (Cirurgia Geral, 22 cards) and "Artrite Infecciosa"
 --     (Reumatologia, 28 cards) move to Outros, in the order Oftalmologia → Ortopedia (these two) →
@@ -49,7 +49,7 @@ ALTER TABLE topic_content_bk_orto_fc ENABLE ROW LEVEL SECURITY;
 ALTER TABLE flashcard_theme_topics_bk_orto_fc ENABLE ROW LEVEL SECURITY;
 ALTER TABLE review_schedule_bk_orto_fc ENABLE ROW LEVEL SECURITY;
 
--- ── the reorganization log (shared with merge_flashcard_groups) ───────────────────────────────────
+-- ── the reorganization log (moves + retirements) ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS flashcard_group_moves (
   id             bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   item_id        bigint NOT NULL,          -- no FK: the history outlives a card
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS flashcard_group_moves (
   to_label       text,
   to_deck_id     bigint,
   to_position    smallint,
-  operation      text NOT NULL CHECK (operation IN ('move_group', 'merge_groups')),
+  operation      text NOT NULL CHECK (operation IN ('move_group', 'retire_group')),
   reason         text,
   moved_by       uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   moved_at       timestamptz NOT NULL DEFAULT now()
