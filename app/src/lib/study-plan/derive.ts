@@ -20,6 +20,18 @@
  *  - questionsTarget/lessonsTarget now actually drive plan size (fixed dead values)
  *  - error-classification tilt: specialties with knowledge-gap errors surface sooner
  *
+ * V3 (Karina 2026-11-17 — a schedule, not a list of suggestions):
+ *  - the day is filled by MINUTES, never above the student's time: Revisão first,
+ *    then the week's simulado and MemoreCards (last 60 days), then new content
+ *    (lib/study-plan/schedule.ts);
+ *  - each material of a topic finishes on its own evidence and the topic leaves
+ *    only when every selected one is done;
+ *  - time estimates come from study_plan_settings (/admin/plano) and from the
+ *    student's own pace (lib/study-plan/pace.ts);
+ *  - the same schedule, run to the eve of the exam, is the FORECAST: what is
+ *    expected before the exam, what is not, and what would widen the coverage;
+ *  - nothing is stored: the plan is re-derived from real progress on every load.
+ *
  * V2.1 (planner audit fixes):
  *  - every "today" is the STUDENT's day in America/São_Paulo, never the server's
  *    UTC day (see lib/br-date.ts). Vercel runs UTC, so the old code rolled over
@@ -32,6 +44,16 @@ import { GAP_ERROR_CATEGORIES, type QuizErrorCategory } from "@/lib/quiz-errors"
 import { todayKeyBR, toDateKeyBR, dayOfWeekForKey, addDaysKey, diffDaysKey } from "@/lib/br-date";
 import { flashcardGroupSlug } from "@/lib/flashcard-group-slug";
 import { buildTopicProgress, topicQuizHref, type TopicQuestionIndex } from "./topic-questions";
+import { DEFAULT_PLAN_SETTINGS, type PlanSettings } from "./settings";
+import { withReviewOutcomes, questionsInReview, type QuestionReviewRow } from "./review-outcomes";
+import {
+  medianGapSeconds, resolvePace, QUESTION_GAP_MIN_S, QUESTION_GAP_MAX_S,
+  type PaceMode, type ResolvedPace,
+} from "./pace";
+import {
+  simulateSchedule,
+  type DayCalendar, type ScheduleInput, type ScheduleResult, type ScheduledDay, type WorkActivity,
+} from "./schedule";
 
 export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
@@ -62,6 +84,9 @@ export type PlanItem = {
   reason: string;
   specialtyId?: number;
   pageId?: number;
+  /** The topic this item belongs to, and how many of its units (questions, cards) are on today. */
+  topicId?: number;
+  units?: number;
 };
 
 export type PauseReason =
@@ -87,6 +112,60 @@ export type DerivedPlan = {
     specialtiesTouched: number;
   };
   coverageWarning: { excludedCount: number; percentOfExam: number } | null;
+  /** The day's time (minutes) and how much of it today's answers already used. */
+  todayBudgetMinutes: number;
+  todayDoneMinutes: number;
+  /** Today's time is used up while work remains (≠ "nothing left to study"). */
+  dayComplete: boolean;
+  /** The time estimates in force for this student (lib/study-plan/pace.ts). */
+  pace: ResolvedPace;
+  /** What is expected before the exam. null when the exam date is unknown. */
+  forecast: PlanForecast | null;
+  /** Every study day from today to the exam with the minutes placed on it (checks/reports; not rendered). */
+  scheduleDays: ScheduledDay[];
+};
+
+export type ForecastTopic = { id: number; name: string; specialtyName: string; tier: string | null };
+
+export type ForecastHint =
+  | { kind: "minutes"; extraMinutesPerDay: number; expectedTopics: number; coversAll: boolean }
+  | { kind: "day"; dayName: string; expectedTopics: number; coversAll: boolean };
+
+export type PlanForecast = {
+  /** Topics with something still to do in the selected materials (Y) / expected before the exam (X). */
+  pendingTopics: number;
+  expectedTopics: number;
+  /** In priority order — the ones the schedule does not reach before the exam. */
+  notExpected: ForecastTopic[];
+  /** Topics whose selected materials are all done. */
+  completedTopics: number;
+  /**
+   * Topics the schedule reaches before the exam WITHOUT finishing — so "0 expected"
+   * (no topic concluded in full) is never read as "nothing will be studied".
+   */
+  partialTopics: number;
+  /**
+   * Topics with nothing left to schedule but not concluded: every question
+   * answered, accuracy still below 70%, the wrong ones coming back in the Revisão.
+   */
+  inReviewTopics: number;
+  studyDaysLeft: number;
+  minutesPerStudyDay: number;
+  /** Minutes still to study / of new content that fit before the exam / actually placed on days. */
+  pendingMinutes: number;
+  capacityMinutes: number;
+  scheduledMinutes: number;
+  /** Day the last expected topic ends, when everything fits. */
+  finishDay: string | null;
+  /** What would widen the coverage. */
+  hints: ForecastHint[];
+  scope: {
+    /** The materials counted, in plan order. */
+    countedTypes: ContentType[];
+    /** Topics whose MedVoice was left out (it is scheduled only before the last-60-days phase). */
+    audioLeftOutTopics: number;
+    excludedSpecialties: number;
+  };
 };
 
 // ── Inputs ────────────────────────────────────────────────────────────────────
@@ -108,6 +187,7 @@ export type StudyPlanPrefs = {
   excluded_specialty_ids: number[];   // from study_plan_excluded_specialties
   email_weekly_summary: boolean;      // Monday recap email (default on)
   email_daily_plan: boolean;          // opt-in daily plan email (default off)
+  pace_mode: PaceMode;                // "Ritmo de estudo" (default auto)
 };
 
 export type SpecialtyRow = { id: number; name: string; slug: string };
@@ -167,11 +247,51 @@ export type Signals = {
    * applied, funnel preview) → the section-based behaviour below, unchanged.
    */
   topicIndex?: TopicQuestionIndex | null;
+  /**
+   * Sizes of each material (views study_plan_*). Absent (funnel preview, patch
+   * not applied) → a material has no "done" signal of its own and follows the
+   * questions instead, so it can never stall the plan.
+   */
+  catalog?: {
+    /** flashcard_groups.id → cards in the group */
+    flashcardGroupSizes: Map<number, number>;
+    /** Revalida Up page → its one lesson and its number of insights */
+    revalidaUpPages: Map<number, { lessonId: number; insights: number }>;
+    /** MedVoice lesson → measured audio length (null = not measured) */
+    medvoiceLessons: Map<number, { durationSeconds: number | null }>;
+  } | null;
+  /** The student's Flashcards facts (function study_plan_flashcard_facts). */
+  flashcards?: {
+    /** group → distinct cards answered at least once */
+    seenByGroup: Map<number, number>;
+    paceSeconds: number | null;
+    paceSamples: number;
+    attemptsToday: number;
+  } | null;
+  /** MedVoice lesson → seconds already heard (lesson_progress). */
+  audioPositions?: Map<number, number>;
+  /** Ids of the simulado pages (pages.view = 'simulados'), to know the week's simulado was done. */
+  simuladoPageIds?: Set<number>;
+  /**
+   * The student's questions in the Revisão (review_schedule). Absent → the plan
+   * knows nothing about the Revisão and asks again itself for questions answered
+   * below 70% (the behaviour before 2026-11-17).
+   */
+  questionReview?: QuestionReviewRow[] | null;
+  /** Review items graded today (a Revisão session writes no attempt row). */
+  reviewedToday?: number;
 };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const MEDHELP_60D_MODULE_ID = 1;
+
+/** Sizes assumed when the catalog is unavailable (funnel preview). */
+const FALLBACK_REVALIDA_UP_INSIGHTS = 4;
+const FALLBACK_FLASHCARDS = 16;
+/** "With N more minutes a day…" — the steps tried for the coverage hint. */
+const EXTRA_MINUTES_LADDER = [15, 30, 45, 60, 90, 120];
+/** The materials the forecast counts, in plan order (Resumos are never scheduled). */
+const FORECAST_TYPES: ContentType[] = ["quiz", "revalida_up", "flashcards", "audio"];
 
 const DAY_NAMES_PT = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
@@ -271,6 +391,7 @@ export function defaultPrefs(): StudyPlanPrefs {
     excluded_specialty_ids: [],
     email_weekly_summary: true,
     email_daily_plan: false,
+    pace_mode: "auto",
   };
 }
 
@@ -284,6 +405,12 @@ export function derivePlan(args: {
   topics: TopicRow[];
   topicContent: TopicContentRow[];
   signals: Signals;
+  /** Time estimates (study_plan_settings). Omitted → the code defaults. */
+  settings?: PlanSettings;
+  /** The student's "Ritmo de estudo". Omitted → auto. */
+  paceMode?: PaceMode;
+  /** "Adiantar": extra minutes the student asked for today. */
+  extraMinutesToday?: number;
 }): DerivedPlan {
   const { prefs, cohort, specialties, pages, topics, topicContent, signals } = args;
 
@@ -400,44 +527,42 @@ export function derivePlan(args: {
     nextAvailableDate = nextDayMatchingMask(todayKey, prefs.available_days & ~prefs.recurring_off_days, signals.pauses);
   }
 
-  // ── Early return for paused state — don't waste compute on items ─────────
-  if (paused) {
-    return {
-      phase,
-      daysToExam,
-      intensity: effectiveIntensity,
-      baseIntensity: prefs.intensity,
-      intensitySpec: spec,
-      items: [],
-      totalEstimatedMinutes: 0,
-      weakestSpecialties: allRanked
-        .slice()
-        .sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
-        .slice(0, 5)
-        .map((r) => ({ id: r.id, name: r.name, accuracy: r.accuracy, attempts: r.attempts })),
-      paused: true,
-      pauseReason,
-      nextAvailableDate,
-      progressToday,
-      coverageWarning,
-    };
-  }
-
-  // ── Compute daily minute budget ──────────────────────────────────────────
-  let dailyMinutes = spec.minutesPerDay;
-  if (prefs.weekly_hours != null) {
-    const daysAvailable = countBits(prefs.available_days & ~prefs.recurring_off_days);
-    if (daysAvailable > 0) {
-      dailyMinutes = Math.round((prefs.weekly_hours * 60) / daysAvailable);
+  // ── The student's calendar and daily time ────────────────────────────────
+  // (No early return when today is paused: the forecast below is still wanted.)
+  const settings = args.settings ?? DEFAULT_PLAN_SETTINGS;
+  const studyDayMask = prefs.available_days & ~prefs.recurring_off_days;
+  const daysAvailable = countBits(studyDayMask);
+  const minutesForDay = (dayKey: string): number => {
+    if (prefs.weekly_hours != null && daysAvailable > 0) {
+      return Math.round((prefs.weekly_hours * 60) / daysAvailable);
     }
-  }
-  const minutesScale = dailyMinutes / spec.minutesPerDay;
+    const temp =
+      prefs.temp_intensity != null &&
+      prefs.temp_intensity_until != null &&
+      prefs.temp_intensity_until >= dayKey;
+    return INTENSITY[temp ? prefs.temp_intensity! : prefs.intensity].minutesPerDay;
+  };
+  const dailyMinutes = minutesForDay(todayKey);
 
-  // Effective targets (now actually USED — fixes Algorithm Engineer's dead-value finding)
+  // ── The student's pace (lib/study-plan/pace.ts) ──────────────────────────
+  const pace = resolvePace({
+    mode: args.paceMode ?? prefs.pace_mode ?? "auto",
+    settings,
+    question: medianGapSeconds(
+      signals.quizAttempts.map((a) => a.created_at),
+      QUESTION_GAP_MIN_S,
+      QUESTION_GAP_MAX_S,
+    ),
+    flashcard: {
+      medianSeconds: signals.flashcards?.paceSeconds ?? null,
+      samples: signals.flashcards?.paceSamples ?? 0,
+    },
+  });
+
   const effectiveSpec: IntensitySpec = {
     minutesPerDay: dailyMinutes,
-    questionsTarget: Math.round(spec.questionsTarget * minutesScale),
-    lessonsTarget: Math.round(spec.lessonsTarget * minutesScale),
+    questionsTarget: Math.round(dailyMinutes / pace.minutesPerQuestion),
+    lessonsTarget: spec.lessonsTarget,
     specialtiesPerDay: spec.specialtiesPerDay,
   };
 
@@ -464,14 +589,53 @@ export function derivePlan(args: {
 
   // ── Content type prefs + per-page quiz progress ──────────────────────────
   const allowedTypes = new Set(prefs.preferred_content_types);
-  const pageProgress = buildPageProgress(signals.quizAttempts);
+  // Mastery sees what the Revisão knows: a question answered right later, in a
+  // review session, counts as right (review-outcomes.ts). Everything else below
+  // (today's counts, pace, specialty accuracy) keeps the real attempts.
+  const masteryAttempts = withReviewOutcomes(signals.quizAttempts, signals.questionReview);
+  const inReview = questionsInReview(signals.questionReview);
+  const pageProgress = buildPageProgress(masteryAttempts);
   const questionCounts = signals.questionCountsByPageId ?? new Map<number, number>();
   // Pages already emitted in THIS run — three topics can share one quiz page
   // (e.g. the 7 urology sub-topics on page 90242), and the plan must not list
   // the same link three times.
   const emittedQuizPages = new Set<number>();
   const topicIndex = signals.topicIndex ?? null;
-  const topicProgress = topicIndex ? buildTopicProgress(signals.quizAttempts, topicIndex) : new Map();
+  const topicProgress = topicIndex ? buildTopicProgress(masteryAttempts, topicIndex) : new Map();
+  // Latest verdict per question record, and the records of each original — to
+  // find WHICH questions of a topic are currently wrong.
+  const latestVerdict = new Map<number, { correct: boolean; at: string; pageId: number }>();
+  for (const a of masteryAttempts) {
+    if (a.question_id == null) continue;
+    const prev = latestVerdict.get(a.question_id);
+    if (!prev || a.created_at > prev.at || (a.created_at === prev.at && prev.correct && !a.is_correct)) {
+      latestVerdict.set(a.question_id, { correct: a.is_correct, at: a.created_at, pageId: a.page_id });
+    }
+  }
+  const recordsOfOrigin = new Map<number, number[]>();
+  for (const [questionId, origin] of topicIndex?.originOfQuestion ?? []) {
+    const list = recordsOfOrigin.get(origin);
+    if (list) list.push(questionId);
+    else recordsOfOrigin.set(origin, [questionId]);
+  }
+  /** The question records of a topic (or of a section) whose latest answer is wrong. */
+  const wrongQuestions = (origins: Set<number> | undefined, sectionPageId: number | null): number[] => {
+    const out: number[] = [];
+    if (origins) {
+      for (const origin of origins) {
+        // One original may have two records: the most recently answered one speaks for it.
+        let best: { id: number; at: string; correct: boolean } | null = null;
+        for (const id of recordsOfOrigin.get(origin) ?? []) {
+          const v = latestVerdict.get(id);
+          if (v && (!best || v.at > best.at)) best = { id, at: v.at, correct: v.correct };
+        }
+        if (best && !best.correct) out.push(best.id);
+      }
+    } else if (sectionPageId != null) {
+      for (const [id, v] of latestVerdict) if (v.pageId === sectionPageId && !v.correct) out.push(id);
+    }
+    return out;
+  };
 
   // ── Topic → content pointers (from topic_content) ────────────────────────
   const contentByTopic = new Map<number, TopicContentRow[]>();
@@ -523,8 +687,6 @@ export function derivePlan(args: {
     const own = p.specialty_id != null ? specialtySlugById.get(p.specialty_id) : undefined;
     return `/app/${own ?? fallbackSpecSlug}/${p.slug}`;
   };
-  const isMemorecardsPage = (p: PageRow): boolean =>
-    p.type === "h5p-quiz" && p.content_module_id === MEDHELP_60D_MODULE_ID;
 
   const rankedTopics = topics
     .filter(
@@ -546,82 +708,69 @@ export function derivePlan(args: {
     })
     .sort((a, b) => b.score - a.score);
 
-  // ── Build items: walk ranked topics, surface each topic's content ────────
-  // Generic narrative "lesson" items are intentionally dropped — Karina's plan
-  // keeps narrative summaries out of the schedule.
-  const topicsToday = Math.max(1, Math.round((spec.specialtiesPerDay + 1) * minutesScale));
+  // ── The work still to do, in priority order ──────────────────────────────
+  // Every topic contributes ONE activity per material the student selected and
+  // has not finished. Each material finishes on its own evidence (Karina
+  // 2026-11-17) — nothing is ever marked done on the student's behalf:
+  //   Questões     every question answered, currently ≥70% right
+  //   Revalida Up  the page concluded (its lesson is in lesson_completions)
+  //   Flashcards   every card of the topic's group answered at least once
+  //   MedVoice     the lesson concluded
+  // A topic leaves the plan only when all of them are done. Generic narrative
+  // "lesson" items are intentionally absent — Resumos stay out of the schedule.
   const contentPageFor = (t: TopicRow, kind: "quiz" | "medvoice" | "revalida_up"): PageRow | null => {
     const tc = (contentByTopic.get(t.id) ?? []).find((c) => c.resource_type === kind);
     const pid = tc?.page_id ?? (kind === "quiz" ? t.source_page_id : null);
     return pid != null ? pageById.get(pid) ?? null : null;
   };
 
-  // One quiz item, section-based or topic-based (R1) alike.
-  const quizItem = (
-    topic: TopicRow,
-    specName: string,
-    progress: { answered: number; correct: number } | undefined,
-    totalQuestions: number,
-    href: string,
-    pageId: number,
-    weakness: number,
-    gapWeight: number,
-  ): PlanItem => {
-    const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
-    const answered = progress?.answered ?? 0;
-    const inProgress = answered > 0;
-    // Clamp: a question deleted after being answered would otherwise read
-    // "18 de 15 questões".
-    const shownAnswered = Math.min(answered, totalQuestions);
-    // Fully answered but still under the 70% bar — say so, because
-    // "retome de onde parou" on a 20-de-20 item reads as a bug.
-    const accuracyPct = inProgress ? Math.round((progress!.correct / answered) * 100) : 0;
-    const needsAccuracy = inProgress && answered >= totalQuestions;
-    return {
-      kind: "quiz",
-      title: topic.name,
-      subtitle: needsAccuracy
-        ? `${specName} · ${accuracyPct}% de acerto · revise os erros`
-        : inProgress
-          ? `${specName} · ${shownAnswered} de ${totalQuestions} questões`
-          : `${specName} · ${tierLabel} · ${topic.incidence_count} no exame`,
-      href,
-      estimatedMinutes: Math.round(15 * minutesScale),
-      iconHint: "quiz",
-      reason: needsAccuracy
-        ? `Você respondeu tudo, mas ainda está em ${accuracyPct}% — refaça para fixar`
-        : inProgress
-          ? "Retome de onde parou neste tema"
-          : gapWeight >= 0.5
-          ? "Você tem errado por conteúdo aqui — reforce este tema"
-          : weakness > 0.5
-            ? "Ponto fraco + alta incidência no Revalida"
-            : topic.priority_tier === "A"
-              ? "Tema de altíssima incidência no Revalida"
-              : "Próximo tema por incidência no exame",
-      specialtyId: topic.specialty_id as number,
-      pageId,
-    };
-  };
+  const catalog = signals.catalog ?? null;
+  const completedLessons = new Set(signals.lessonCompletions.map((c) => c.lesson_id));
+  const seenByGroup = signals.flashcards?.seenByGroup ?? new Map<number, number>();
 
-  const items: PlanItem[] = [];
+  type QueueMeta = {
+    topic: TopicRow;
+    specName: string;
+    weakness: number;
+    gapWeight: number;
+    href: string;
+    pageId: number;
+    /** Size of the whole material (questions / cards / insights), for the subtitle. */
+    unitsTotal: number;
+    progress?: PageProgress;
+    /** Questões: everything answered but below the bar → only the wrong ones are redone. */
+    redo?: boolean;
+  };
+  // Collected per topic first: a topic the student has STARTED stays ahead of the
+  // ones not started yet, so what was begun is finished before something new
+  // opens (the ranking shifts a little every day with the student's accuracy).
+  type TopicWork = { topic: TopicRow; started: boolean; acts: WorkActivity[]; metas: QueueMeta[] };
+  const work: TopicWork[] = [];
   const seenFlashcardDecks = new Set<string>();
-  // One Revalida Up page per day, even when two topics share it (Patologias da Coluna Vertebral + Trauma
+  // One Revalida Up page once, even when two topics share it (Patologias da Coluna Vertebral + Trauma
   // Raquimedular → the Neurologia page; the Outros areas): Karina 2026-11-15, no duplicated tasks.
   const seenRevalidaUpPages = new Set<number>();
-  let surfaced = 0;
+  /** Topics that have at least one material of the selected types / still have work. */
+  let topicsInScope = 0;
+  const pendingTopics: TopicRow[] = [];
+  /** Nothing left to schedule, not concluded: below 70% with the wrong questions in the Revisão. */
+  let inReviewTopics = 0;
+
   for (const { topic, weakness, gapWeight } of rankedTopics) {
-    if (surfaced >= topicsToday) break;
     const specInfo = specialtyById.get(topic.specialty_id as number);
     if (!specInfo) continue;
     const topicRows = contentByTopic.get(topic.id) ?? [];
-    let emitted = false;
+    const queue: WorkActivity[] = [];
+    const meta: QueueMeta[] = [];
+    let hasMaterial = false;
+    // Any material of the topic already touched (or finished).
+    let started = false;
+    // Its questions are all answered, below 70%, and the Revisão is bringing the wrong ones back.
+    let questionsInRevisao = false;
+    const base = { topic, specName: specInfo.name, weakness, gapWeight };
 
-    // QUIZ — the primary driver. A topic stays in rotation until its quiz page
-    // is MASTERED (every question answered, currently ≥70% right). Partially
-    // answered pages come back with their progress shown, so an interrupted
-    // topic is resumed instead of silently dropped.
-    // R1: the topic's own originals, when the index knows them.
+    // QUESTÕES — R1: the topic's own originals, when the index knows them;
+    // otherwise its section (shared by several topics → listed once).
     const topicOrigins = topicIndex?.originsOfTopic.get(topic.id);
     const topicLink =
       topicIndex && topicOrigins && topicOrigins.size > 0
@@ -632,63 +781,96 @@ export function derivePlan(args: {
     // The page's real question count, falling back to the topic's incidence
     // (equal for 199 of 211 topics) when the view is unavailable or returns
     // something unusable. A total of 0 means the page has nothing to answer:
-    // scheduling it would pin an item that can never be completed, so it is
-    // skipped rather than shown forever.
+    // scheduling it would pin an item that can never be completed.
     const viewCount = quizPage ? questionCounts.get(quizPage.id) : undefined;
     const quizTotal = topicLink && topicOrigins
       ? topicOrigins.size
       : typeof viewCount === "number" && Number.isFinite(viewCount) && viewCount > 0
         ? viewCount
         : topic.incidence_count;
+    const hasQuiz = Boolean(topicLink || (quizPage && quizTotal > 0));
+    const quizMastered = hasQuiz && isPageMastered(quizProgress, quizTotal);
 
-    // A topic whose questions are MASTERED leaves the plan entirely — Revalida Up,
-    // Flashcards and MedVoice included — whatever content types are selected. Before
-    // (bug found 2026-11-16) only the quiz item was retired: the topic's other items
-    // kept its slot every day, so the plan stalled on the same top 3–5 topics forever.
-    // What the student already studied keeps coming back through the Revisão.
-    if ((topicLink || quizPage) && isPageMastered(quizProgress, quizTotal)) continue;
-
-    if (allowedTypes.has("quiz") && topicLink) {
-      items.push(quizItem(topic, specInfo.name, quizProgress, quizTotal, topicLink.href, topicLink.pageId, weakness, gapWeight));
-      emitted = true;
-    } else if (allowedTypes.has("quiz") && quizPage && !emittedQuizPages.has(quizPage.id) && quizTotal > 0) {
-      items.push(quizItem(topic, specInfo.name, quizProgress, quizTotal, pageHref(quizPage, specInfo.slug), quizPage.id, weakness, gapWeight));
-      emittedQuizPages.add(quizPage.id);
-      emitted = true;
+    if (allowedTypes.has("quiz") && hasQuiz && !(quizPage && emittedQuizPages.has(quizPage.id))) {
+      hasMaterial = true;
+      if (quizPage) emittedQuizPages.add(quizPage.id);
+      if ((quizProgress?.answered ?? 0) > 0) started = true;
+      if (!quizMastered) {
+        const answered = Math.min(quizProgress?.answered ?? 0, quizTotal);
+        const answeredAll = answered >= quizTotal;
+        // Every question answered, still below 70% (Karina 2026-11-17): the wrong
+        // ones are ALREADY scheduled in the Revisão, which has its own time in the
+        // day — asking for them here too would be the same work twice. The plan
+        // only asks again for a wrong question the Revisão is NOT bringing back
+        // (suspended there, or never enrolled), so there is always a next activity
+        // with real minutes, never a zero-length item, and the topic never blocks
+        // the ones after it.
+        let units = quizTotal - answered;
+        if (answeredAll) {
+          const wrong = wrongQuestions(topicLink ? topicOrigins : undefined, quizPage?.id ?? null);
+          const notInReview = inReview ? wrong.filter((id) => !inReview.has(id)) : wrong;
+          // Without per-question evidence (legacy attempts) fall back to the tally.
+          units = wrong.length > 0
+            ? notInReview.length
+            : Math.max(1, Math.min(quizTotal, (quizProgress?.answered ?? 0) - (quizProgress?.correct ?? 0)));
+          if (units === 0) questionsInRevisao = true;
+        }
+        if (units > 0) {
+          queue.push({
+            kind: "quiz",
+            topicId: topic.id,
+            unitsRemaining: units,
+            minutesPerUnit: pace.minutesPerQuestion,
+            divisible: true,
+            minChunkUnits: 1,
+          });
+          meta.push({
+            ...base,
+            href: topicLink ? topicLink.href : pageHref(quizPage!, specInfo.slug),
+            pageId: topicLink ? topicLink.pageId : quizPage!.id,
+            unitsTotal: quizTotal,
+            progress: quizProgress,
+            redo: answeredAll,
+          });
+        }
+      }
     }
 
     // REVALIDA UP — the topic's exam patterns, between Questões and Flashcards
-    // (Karina's order: Questões → Revalida Up → Flashcards). Linked through
-    // topic_content; the link uses the PAGE's specialty, because a Revalida Up
-    // page can sit under another specialty than its topic (e.g. the GI topics
-    // filed under Cirurgia Geral, the Outros areas).
+    // (Karina's order). The link uses the PAGE's specialty, because a Revalida Up
+    // page can sit under another specialty than its topic.
     if (allowedTypes.has("revalida_up")) {
       const ruPage = contentPageFor(topic, "revalida_up");
       if (ruPage && ruPage.view === "revalida-up" && !seenRevalidaUpPages.has(ruPage.id)) {
         seenRevalidaUpPages.add(ruPage.id);
-        const ruSpec =
-          (ruPage.specialty_id != null ? specialtyById.get(ruPage.specialty_id) : null) ?? specInfo;
-        items.push({
-          kind: "revalida_up",
-          title: topic.name,
-          subtitle: `${specInfo.name} · Revalida Up`,
-          href: `/app/${ruSpec.slug}/${ruPage.slug}`,
-          estimatedMinutes: Math.round(6 * minutesScale),
-          iconHint: "revalida_up",
-          reason: "Veja como o tema cai na prova",
-          specialtyId: topic.specialty_id as number,
-          pageId: ruPage.id,
-        });
-        emitted = true;
+        hasMaterial = true;
+        const info = catalog?.revalidaUpPages.get(ruPage.id);
+        // Without the catalog (funnel preview) there is no "concluded" signal: the
+        // material then follows the questions, so it can never stall the plan.
+        const done = info ? completedLessons.has(info.lessonId) : quizMastered;
+        if (done && info) started = true;
+        if (!done) {
+          const insights = info?.insights ?? FALLBACK_REVALIDA_UP_INSIGHTS;
+          const ruSpec =
+            (ruPage.specialty_id != null ? specialtyById.get(ruPage.specialty_id) : null) ?? specInfo;
+          queue.push({
+            kind: "revalida_up",
+            topicId: topic.id,
+            unitsRemaining: 1,
+            minutesPerUnit: insights * pace.minutesPerRevalidaUpInsight,
+            divisible: false,
+            minChunkUnits: 1,
+          });
+          meta.push({ ...base, href: `/app/${ruSpec.slug}/${ruPage.slug}`, pageId: ruPage.id, unitsTotal: insights });
+        }
       }
     }
 
-    // FLASHCARDS — memorize the topic's key points (deduped per deck page).
+    // FLASHCARDS — the topic's own group (deduped per deck + group).
     if (allowedTypes.has("flashcards")) {
       const fc = topicRows.find((c) => c.resource_type === "flashcards");
       // R1: the topic's own group (?grupo=) when the link names one, so the deck
-      // opens on this topic instead of the whole specialty grid. Dedupe per
-      // deck+group: two topics of one deck are two different items now.
+      // opens on this topic instead of the whole specialty grid.
       const groupLabel =
         fc?.question_filter && typeof fc.question_filter === "object"
           ? ((fc.question_filter as { group_label?: unknown }).group_label as string | undefined)
@@ -702,59 +884,285 @@ export function derivePlan(args: {
       const withGroup = Boolean(topicIndex && (groupId != null || effectiveGroup));
       const groupParam = groupId != null ? String(groupId) : effectiveGroup ? flashcardGroupSlug(effectiveGroup) : "";
       const fcKey = fc?.page_id != null ? `${fc.page_id}|${withGroup ? groupParam : ""}` : null;
-      if (fc?.page_id != null && fcKey && !seenFlashcardDecks.has(fcKey)) {
-        const deck = pageById.get(fc.page_id);
-        if (deck) {
+      const deck = fc?.page_id != null ? pageById.get(fc.page_id) : undefined;
+      if (deck && fcKey && !seenFlashcardDecks.has(fcKey)) {
+        seenFlashcardDecks.add(fcKey);
+        hasMaterial = true;
+        const size = groupId != null ? catalog?.flashcardGroupSizes.get(Number(groupId)) : undefined;
+        const known = typeof size === "number" && size > 0;
+        const seen = known ? Math.min(size, seenByGroup.get(Number(groupId)) ?? 0) : 0;
+        const cardsLeft = known ? size - seen : FALLBACK_FLASHCARDS;
+        const done = known ? cardsLeft <= 0 : quizMastered;
+        if (seen > 0) started = true;
+        if (!done) {
           const deckHref = pageHref(deck, specInfo.slug);
-          items.push({
+          queue.push({
             kind: "flashcards",
-            title: topic.name,
-            subtitle: `${specInfo.name} · flashcards`,
-            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(groupParam)}` : deckHref,
-            estimatedMinutes: Math.round(8 * minutesScale),
-            iconHint: "flashcards",
-            reason: "Memorize os pontos-chave do tema",
-            specialtyId: topic.specialty_id as number,
-            pageId: deck.id,
+            topicId: topic.id,
+            unitsRemaining: cardsLeft,
+            minutesPerUnit: pace.secondsPerFlashcard / 60,
+            divisible: true,
+            minChunkUnits: 5,
           });
-          seenFlashcardDecks.add(fcKey);
-          emitted = true;
+          meta.push({
+            ...base,
+            href: withGroup ? `${deckHref}?grupo=${encodeURIComponent(groupParam)}` : deckHref,
+            pageId: deck.id,
+            unitsTotal: known ? size : FALLBACK_FLASHCARDS,
+          });
         }
       }
     }
 
-    // AUDIO (MedVoice) — foundation only, opt-in, when the topic has it.
+    // MEDVOICE — its real length; scheduled only in the foundation phase (the
+    // schedule leaves it out on days closer to the exam).
+    // Once today is past that phase it will never be scheduled again, so it is
+    // not counted as pending either.
     if (phase === "foundation" && allowedTypes.has("audio")) {
-      const audioPage = contentPageFor(topic, "medvoice");
+      const mv = topicRows.find((c) => c.resource_type === "medvoice");
+      const audioPage = mv?.page_id != null ? pageById.get(mv.page_id) ?? null : null;
       if (audioPage) {
-        items.push({
-          kind: "audio",
-          title: topic.name,
-          subtitle: `${specInfo.name} · áudio`,
-          href: pageHref(audioPage, specInfo.slug),
-          estimatedMinutes: Math.round(12 * minutesScale),
-          iconHint: "audio",
-          reason: "Reforço em áudio para o tema de hoje",
-          specialtyId: topic.specialty_id as number,
-          pageId: audioPage.id,
-        });
-        emitted = true;
+        hasMaterial = true;
+        const lessonId = lessonIdOfLink(mv?.question_filter);
+        const info = lessonId != null ? catalog?.medvoiceLessons.get(lessonId) : undefined;
+        const done = info ? completedLessons.has(lessonId as number) : quizMastered;
+        const heard = lessonId != null ? (signals.audioPositions?.get(lessonId) ?? 0) / 60 : 0;
+        if ((done && info) || heard > 0) started = true;
+        if (!done) {
+          const total = info?.durationSeconds ? info.durationSeconds / 60 : settings.medvoiceFallbackMinutes;
+          queue.push({
+            kind: "audio",
+            topicId: topic.id,
+            // What is left to hear (the player saves the position), never less than a minute.
+            unitsRemaining: Math.max(1, total - Math.min(heard, total)),
+            minutesPerUnit: 1,
+            divisible: false,
+            minChunkUnits: 1,
+          });
+          const pageLink = pageHref(audioPage, specInfo.slug);
+          meta.push({
+            ...base,
+            href: info && lessonId != null ? `${pageLink}#section-${lessonId}` : pageLink,
+            pageId: audioPage.id,
+            unitsTotal: Math.round(total),
+          });
+        }
       }
     }
 
-    if (emitted) surfaced++;
+    if (hasMaterial) {
+      topicsInScope++;
+      if (queue.length > 0) work.push({ topic, started, acts: queue, metas: meta });
+      else if (questionsInRevisao) inReviewTopics++;
+    }
+  }
+  const ordered = [...work.filter((w) => w.started), ...work.filter((w) => !w.started)];
+  const queue: WorkActivity[] = ordered.flatMap((w) => w.acts);
+  const meta: QueueMeta[] = ordered.flatMap((w) => w.metas);
+  for (const w of ordered) pendingTopics.push(w.topic);
+
+  // ── Minutes already studied today (estimated from today's answers) ───────
+  const revalidaUpLessonInsights = new Map<number, number>();
+  for (const r of catalog?.revalidaUpPages.values() ?? []) revalidaUpLessonInsights.set(r.lessonId, r.insights);
+  let doneMinutes =
+    todayAttempts.length * pace.minutesPerQuestion +
+    ((signals.flashcards?.attemptsToday ?? 0) * pace.secondsPerFlashcard) / 60;
+  for (const c of todayCompletions) {
+    const insights = revalidaUpLessonInsights.get(c.lesson_id);
+    const mv = catalog?.medvoiceLessons.get(c.lesson_id);
+    if (insights != null) doneMinutes += insights * pace.minutesPerRevalidaUpInsight;
+    else if (mv) doneMinutes += mv.durationSeconds ? mv.durationSeconds / 60 : settings.medvoiceFallbackMinutes;
+  }
+  // Time spent in the Revisão today. A review session writes no attempt row, so it
+  // is read from the schedule (items graded today) minus the items answered today
+  // in the players, which grade the schedule too and are already counted above.
+  const answeredTodayItems =
+    new Set(todayAttempts.map((a) => a.question_id).filter((q) => q != null)).size +
+    (signals.flashcards?.attemptsToday ?? 0);
+  const reviewOnlyToday = Math.max(0, (signals.reviewedToday ?? 0) - answeredTodayItems);
+  doneMinutes += (reviewOnlyToday * settings.reviewSecondsPerItem) / 60;
+
+  // Simulado questions answered since Monday (the study week runs Mon → Sun).
+  const weekStartKey = addDaysKey(todayKey, dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+  const simuladoPages = signals.simuladoPageIds;
+  const simuladoAnswersThisWeek = simuladoPages
+    ? signals.quizAttempts.filter((a) => simuladoPages.has(a.page_id) && toDateKeyBR(a.created_at) >= weekStartKey).length
+    : 0;
+
+  const inEarlierDaysOfWeek = (iso: string) => {
+    const k = toDateKeyBR(iso);
+    return k >= weekStartKey && k < todayKey;
+  };
+  const studiedEarlierThisWeek =
+    signals.quizAttempts.some((a) => inEarlierDaysOfWeek(a.created_at)) ||
+    signals.lessonCompletions.some((c) => inEarlierDaysOfWeek(c.completed_at));
+
+  // A regular mini simulado: its questions at the student's own time per question.
+  // It may take at most a share of the week's study time; a student with little
+  // time gets one every 2, 3… weeks instead of every week.
+  const simuladoMinutes = settings.simuladoQuestions * pace.minutesPerQuestion;
+  const weeklyStudyMinutes = dailyMinutes * daysAvailable;
+  const simuladoEveryWeeks = weeklyStudyMinutes > 0
+    ? Math.max(1, Math.ceil(
+        (simuladoMinutes * settings.simuladoDaysPerWeek) / (settings.simuladoMaxWeeklyShare * weeklyStudyMinutes)))
+    : 1;
+
+  // ── Schedule: today + every study day until the exam ─────────────────────
+  // Only an exam still AHEAD is planned towards. A turma whose exam date has
+  // passed (or is today) keeps its daily list, but a forecast "until the exam"
+  // would count down to a day that is gone.
+  const examDateKey = cohort?.test_date ? cohort.test_date.slice(0, 10) : null;
+  const examKey = examDateKey && examDateKey > todayKey ? examDateKey : null;
+  // The forecast holds back, on every future day, the share of the day the
+  // Revisão takes TODAY (never less than the settings' minimum, never more than
+  // the daily review limit) — the same rule the day itself follows, so forecast
+  // and execution are computed alike.
+  const todayReviewShare = dailyMinutes > 0
+    ? (signals.reviewDueToday * settings.reviewSecondsPerItem) / 60 / dailyMinutes
+    : 0;
+  const futureReviewShare = Math.min(
+    Math.max(settings.reviewReserveShare, settings.reviewMaxShare),
+    Math.max(settings.reviewReserveShare, todayReviewShare),
+  );
+  const calendar: DayCalendar = { studyDayMask, pauses: signals.pauses, minutesForDay };
+  const scheduleInput: ScheduleInput = {
+    todayKey,
+    examKey,
+    calendar,
+    settings,
+    intensificationStartDays: prefs.intensification_start_days,
+    queue,
+    today: {
+      reviewDue: signals.reviewDueToday,
+      reviewItemCap: prefs.flashcard_daily_cap,
+      doneMinutes,
+      extraMinutes: Math.max(0, args.extraMinutesToday ?? 0),
+      simuladoDoneThisWeekMinutes: simuladoAnswersThisWeek * pace.minutesPerQuestion,
+      studiedEarlierThisWeek,
+    },
+    simuladoEnabled: allowedTypes.has("simulado"),
+    simuladoMinutes,
+    simuladoEveryWeeks,
+    futureReviewShare,
+  };
+  const sched = simulateSchedule(scheduleInput);
+  const today = sched.today;
+
+  // ── Today's list ─────────────────────────────────────────────────────────
+  // Each item carries its exact minutes while the list is built; they are turned
+  // into whole minutes at the end so the list still adds up to the day's total.
+  const minutesOf = (m: number) => m;
+  const items: PlanItem[] = [];
+
+  // Revisão first: it is what the day's time is spent on first (and in the
+  // final stretch it outranks everything). Not gated by the content types —
+  // review keeps already-studied content fresh.
+  if (today.reviewItems > 0) {
+    const due = signals.reviewDueToday;
+    const cap = prefs.flashcard_daily_cap;
+    items.push({
+      kind: "flashcards",
+      title: `${today.reviewItems} ${today.reviewItems === 1 ? "item" : "itens"} para revisar`,
+      subtitle: today.reviewItems >= due
+        ? "Repetição espaçada · SM-2"
+        : cap != null && cap <= today.reviewItems
+          ? `${due} devidos · limite diário: ${cap}`
+          : `${due} devidos · ${today.reviewItems} cabem no tempo de hoje`,
+      href: "/app/revisao",
+      estimatedMinutes: minutesOf(today.reviewMinutes),
+      iconHint: "flashcards",
+      reason: phase === "taper"
+        ? "Reta final — revisão é prioridade"
+        : "Itens devidos hoje pelo algoritmo SM-2",
+    });
   }
 
-  // Simulado — a standalone timed mock (not topic-anchored). Surfaced in the
-  // practice-heavy phases when the student opted into Simulados. Answers already
-  // enroll into SM-2 via /api/quiz-attempt, so no extra review wiring is needed.
-  if (allowedTypes.has("simulado") && (phase === "intensification" || phase === "taper")) {
+  for (const chunk of today.chunks) {
+    const act = queue[chunk.index];
+    const m = meta[chunk.index];
+    const topic = m.topic;
+    const common = {
+      title: topic.name,
+      href: m.href,
+      estimatedMinutes: minutesOf(chunk.minutes),
+      specialtyId: topic.specialty_id as number,
+      pageId: m.pageId,
+      topicId: topic.id,
+      units: chunk.units,
+    };
+    if (act.kind === "quiz") {
+      const units = Math.round(chunk.units);
+      const total = m.unitsTotal;
+      const answered = Math.min(m.progress?.answered ?? 0, total);
+      const inProgress = answered > 0;
+      const accuracyPct = inProgress ? Math.round(((m.progress?.correct ?? 0) / (m.progress?.answered ?? 1)) * 100) : 0;
+      const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
+      // Only part of what is left fits today → say how many.
+      const todayNote = chunk.completes ? "" : ` · ${units} hoje`;
+      items.push({
+        ...common,
+        kind: "quiz",
+        iconHint: "quiz",
+        subtitle: m.redo
+          ? `${m.specName} · ${accuracyPct}% de acerto · revise os erros${todayNote}`
+          : inProgress
+            ? `${m.specName} · ${answered} de ${total} questões${todayNote}`
+            : chunk.completes
+              ? `${m.specName} · ${tierLabel} · ${topic.incidence_count} no exame`
+              : `${m.specName} · ${units} de ${total} questões hoje`,
+        reason: m.redo
+          ? `Você respondeu tudo, mas ainda está em ${accuracyPct}% — refaça para fixar`
+          : inProgress
+            ? "Retome de onde parou neste tema"
+            : m.gapWeight >= 0.5
+              ? "Você tem errado por conteúdo aqui — reforce este tema"
+              : m.weakness > 0.5
+                ? "Ponto fraco + alta incidência no Revalida"
+                : topic.priority_tier === "A"
+                  ? "Tema de altíssima incidência no Revalida"
+                  : "Próximo tema por incidência no exame",
+      });
+    } else if (act.kind === "revalida_up") {
+      items.push({
+        ...common,
+        kind: "revalida_up",
+        iconHint: "revalida_up",
+        subtitle: `${m.specName} · Revalida Up${chunk.completes ? "" : " · comece hoje"}`,
+        reason: "Veja como o tema cai na prova",
+      });
+    } else if (act.kind === "flashcards") {
+      const units = Math.round(chunk.units);
+      items.push({
+        ...common,
+        kind: "flashcards",
+        iconHint: "flashcards",
+        subtitle: `${m.specName} · flashcards · ${units} ${units === 1 ? "cartão" : "cartões"}${chunk.completes ? "" : " hoje"}`,
+        reason: "Memorize os pontos-chave do tema",
+      });
+    } else {
+      items.push({
+        ...common,
+        kind: "audio",
+        iconHint: "audio",
+        subtitle: `${m.specName} · áudio${chunk.completes ? "" : " · comece hoje"}`,
+        reason: "Reforço em áudio para o tema de hoje",
+      });
+    }
+  }
+
+  // Mini simulado — the regular 25-question ones under Questões › Simulados
+  // (never a MedHelp 60D Simulado 100Q), inside the day's time. Answers already
+  // enroll into SM-2 via /api/quiz-attempt.
+  if (today.simuladoMinutes >= 1) {
+    const weekly = settings.simuladoDaysPerWeek < 7;
     items.push({
       kind: "simulado",
-      title: "Simulado do dia",
-      subtitle: "Treino cronometrado · prova completa",
-      href: "/app/estudo-por-questoes",
-      estimatedMinutes: Math.round(40 * minutesScale),
+      title: weekly || simuladoEveryWeeks > 1 ? "Mini simulado da semana" : "Mini simulado do dia",
+      subtitle: today.simuladoPartial
+        ? `${settings.simuladoQuestions} questões · continue no próximo dia de estudo`
+        : `${settings.simuladoQuestions} questões · escolha um mini simulado`,
+      href: "/app/estudo-por-questoes?tab=simulados",
+      estimatedMinutes: minutesOf(today.simuladoMinutes),
       iconHint: "simulado",
       reason: phase === "taper"
         ? "Reta final — simule as condições da prova"
@@ -762,73 +1170,131 @@ export function derivePlan(args: {
     });
   }
 
-  // Spaced-repetition review queue (all due items, any type). Shown whenever
-  // something is due — review keeps already-studied content fresh, so it's not
-  // gated by the new-content type prefs. In TAPER it leads the plan (review
-  // outranks new content in the final stretch).
-  if (signals.reviewDueToday > 0) {
-    const cap = prefs.flashcard_daily_cap ?? signals.reviewDueToday;
-    const toShow = Math.min(signals.reviewDueToday, cap);
-    const reviewItem: PlanItem = {
-      kind: "flashcards",
-      title: `${toShow} ${toShow === 1 ? "item" : "itens"} para revisar`,
-      subtitle: cap < signals.reviewDueToday
-        ? `${signals.reviewDueToday} devidos · limite diário: ${cap}`
-        : "Repetição espaçada · SM-2",
-      href: "/app/revisao",
-      estimatedMinutes: Math.min(25, Math.ceil(toShow * 0.5)),
-      iconHint: "flashcards",
-      reason: phase === "taper"
-        ? "Reta final — revisão é prioridade"
-        : "Itens devidos hoje pelo algoritmo SM-2",
-    };
-    if (phase === "taper") items.unshift(reviewItem);
-    else items.push(reviewItem);
-  }
+  // The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are
+  // deliberately NOT scheduled here: they will have their own schedule on the 60D
+  // page (Karina 2026-11-17), so two programmings never compete for the same day.
 
-  // Memorecards (intensification phase + opt-in via content type + include_60d toggle)
-  if (
-    phase === "intensification" &&
-    prefs.include_60d &&
-    allowedTypes.has("memorecards")
-  ) {
-    const memoPage = pages.find((p) => isMemorecardsPage(p));
-    if (memoPage) {
-      const memoSpec = memoPage.specialty_id ? specialtyById.get(memoPage.specialty_id) : null;
-      items.push({
-        kind: "memorecards",
-        title: "Memorecards de hoje",
-        subtitle: "MedHelp 60D · revisão intensiva",
-        href: memoSpec
-          ? `/app/${memoSpec.slug}/${memoPage.slug}`
-          : `/app/${memoPage.slug}`,
-        estimatedMinutes: Math.round(10 * minutesScale),
-        iconHint: "memorecards",
-        reason: "Reta final — memorização de alto rendimento",
-        pageId: memoPage.id,
-      });
+  wholeMinutes(items);
+
+  // ── Forecast: what is expected before the exam ───────────────────────────
+  let forecast: PlanForecast | null = null;
+  if (examKey) {
+    const expectedCount = (r: ScheduleResult) =>
+      pendingTopics.reduce((n, t) => n + (r.topicFinishDay.has(t.id) ? 1 : 0), 0);
+    const expected = expectedCount(sched);
+    const hints: ForecastHint[] = [];
+    if (expected < pendingTopics.length) {
+      // What would widen the coverage: the SAME schedule, re-run with more time.
+      const variant = (cal: DayCalendar) =>
+        simulateSchedule({ ...scheduleInput, calendar: cal, today: { ...scheduleInput.today, extraMinutes: 0 } });
+      const steps: Extract<ForecastHint, { kind: "minutes" }>[] = [];
+      for (const extra of EXTRA_MINUTES_LADDER) {
+        const n = expectedCount(variant({ ...calendar, minutesForDay: (d) => minutesForDay(d) + extra }));
+        if (n <= expected) continue;
+        const coversAll = n >= pendingTopics.length;
+        steps.push({ kind: "minutes", extraMinutesPerDay: extra, expectedTopics: n, coversAll });
+        if (coversAll) break;
+      }
+      // The smallest step that covers everything; failing that, a realistic one (+30 min).
+      const minutesHint =
+        steps.find((h) => h.coversAll) ?? steps.find((h) => h.extraMinutesPerDay === 30) ?? steps[steps.length - 1];
+      if (minutesHint) hints.push(minutesHint);
+      // One more study day a week (Saturday first, then Sunday, then the first free weekday).
+      const freeDay = [6, 0, 1, 2, 3, 4, 5].find(
+        (d) => (studyDayMask & (1 << d)) === 0 && (prefs.recurring_off_days & (1 << d)) === 0,
+      );
+      if (freeDay != null) {
+        const n = expectedCount(variant({ ...calendar, studyDayMask: studyDayMask | (1 << freeDay) }));
+        if (n > expected) {
+          hints.push({ kind: "day", dayName: DAY_NAMES_PT[freeDay], expectedTopics: n, coversAll: n >= pendingTopics.length });
+        }
+      }
     }
+    forecast = {
+      pendingTopics: pendingTopics.length,
+      expectedTopics: expected,
+      notExpected: pendingTopics
+        .filter((t) => !sched.topicFinishDay.has(t.id))
+        .map((t) => ({
+          id: t.id,
+          name: t.name,
+          specialtyName: specialtyById.get(t.specialty_id as number)?.name ?? "",
+          tier: t.priority_tier,
+        })),
+      completedTopics: topicsInScope - pendingTopics.length - inReviewTopics,
+      partialTopics: pendingTopics.reduce(
+        (n, t) => n + (sched.topicsTouched.has(t.id) && !sched.topicFinishDay.has(t.id) ? 1 : 0), 0),
+      inReviewTopics,
+      studyDaysLeft: sched.studyDaysLeft,
+      minutesPerStudyDay: dailyMinutes,
+      pendingMinutes: Math.round(sched.pendingMinutes),
+      capacityMinutes: Math.round(sched.capacityMinutes),
+      scheduledMinutes: Math.round(sched.scheduledMinutes),
+      finishDay: sched.finishDay,
+      hints,
+      scope: {
+        countedTypes: FORECAST_TYPES.filter((t) => allowedTypes.has(t)),
+        audioLeftOutTopics: sched.audioLeftOut.size,
+        excludedSpecialties: prefs.excluded_specialty_ids.length,
+      },
+    };
   }
 
-  const totalEstimatedMinutes = items.reduce((sum, it) => sum + it.estimatedMinutes, 0);
+  const weakestSpecialties = (paused
+    ? allRanked.slice().sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
+    : ranked
+  ).slice(0, 5).map((r) => ({ id: r.id, name: r.name, accuracy: r.accuracy, attempts: r.attempts }));
 
   return {
     phase,
     daysToExam,
     intensity: effectiveIntensity,
     baseIntensity: prefs.intensity,
-    intensitySpec: effectiveSpec,
-    items,
-    totalEstimatedMinutes,
-    weakestSpecialties: ranked.slice(0, 5).map((r) => ({
-      id: r.id, name: r.name, accuracy: r.accuracy, attempts: r.attempts,
-    })),
-    paused: false,
-    pauseReason: null,
-    nextAvailableDate: null,
+    intensitySpec: paused ? spec : effectiveSpec,
+    items: paused ? [] : items,
+    totalEstimatedMinutes: paused ? 0 : items.reduce((sum, it) => sum + it.estimatedMinutes, 0),
+    weakestSpecialties,
+    paused,
+    pauseReason,
+    nextAvailableDate,
     progressToday,
     coverageWarning,
+    todayBudgetMinutes: paused ? 0 : Math.round(today.budgetMinutes),
+    todayDoneMinutes: Math.round(doneMinutes),
+    // The day's time is used up while work remains — as opposed to "nothing left to study".
+    dayComplete: !paused && today.isStudyDay && items.length === 0 && (queue.length > 0 || signals.reviewDueToday > 0),
+    pace,
+    forecast,
+    scheduleDays: sched.days,
   };
+}
+
+/**
+ * Exact minutes → whole minutes, in place, keeping the SUM equal to the rounded
+ * total (largest remainder). Rounding each item on its own drifts: twelve items
+ * of 2.5 min would show 36 min on a 30-minute day. No item shows less than 1.
+ */
+function wholeMinutes(items: PlanItem[]): void {
+  const exact = items.map((it) => it.estimatedMinutes);
+  const target = Math.round(exact.reduce((s, m) => s + m, 0));
+  const floors = exact.map((m) => Math.floor(m));
+  let missing = target - floors.reduce((s, m) => s + m, 0);
+  const byRemainder = exact
+    .map((m, i) => ({ i, r: m - Math.floor(m) }))
+    .sort((a, b) => b.r - a.r);
+  for (const { i } of byRemainder) {
+    if (missing <= 0) break;
+    floors[i]++;
+    missing--;
+  }
+  items.forEach((it, i) => { it.estimatedMinutes = Math.max(1, floors[i]); });
+}
+
+/** topic_content.question_filter of a MedVoice link → the lesson it points at. */
+function lessonIdOfLink(filter: unknown): number | null {
+  if (!filter || typeof filter !== "object") return null;
+  const n = Number((filter as { lesson_id?: unknown }).lesson_id);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

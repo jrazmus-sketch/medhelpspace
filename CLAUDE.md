@@ -246,6 +246,25 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   Content: `scripts/prepare-memorecards.py` → `scripts/import-memorecards.js --upload` then `--apply`
   (replaces only delivered themes; bump the Bunny path version on a re-delivery). Sequence rules in
   `lib/memorecards-shared.ts`. Patch: `schema-patch-memorecards-v2.sql`.
+- **Meu Plano = a time-budgeted schedule with a forecast to the exam — LIVE prod + local (Karina 2026-11-17).**
+  `lib/study-plan/`: `derive.ts` builds a queue of per-material activities → `schedule.ts` fills every study day
+  by MINUTES (never above the student's time: Revisão first ≤ half the day, no limit in the last 14 days → the
+  week's MINI simulado in the last 60 days → new content) → today's list + the forecast on `/app/plano`
+  ("Previstos até a prova: X de Y", partial progress, hints; her wording is "não previstos até a prova", NEVER
+  "ficam de fora" — a test refuses it). Nothing is stored: re-derived from real progress on every load.
+  **Each material finishes on its own evidence** (Questões all answered ≥70%; Flashcards every card of the group
+  seen; Revalida Up page concluded; MedVoice lesson concluded) and a topic leaves only when every selected one is
+  done. **Below 70%:** the wrong questions already in the Revisão are never asked again by the plan
+  (`review-outcomes.ts` — a Revisão answer writes NO `quiz_attempts` row, so review outcomes are merged in for
+  mastery, in the plan AND the Roteiro). Times live in `study_plan_settings` (one row, edited at `/admin/plano`,
+  audited `plan_settings_update`); student "Ritmo de estudo" = `study_plans.pace_mode` (auto learns from the gaps
+  between answers, clamped 0.5×–2×). MedVoice uses `lessons.audio_duration_seconds`
+  (`scripts/measure-audio-durations.js` → re-run after new audios). **The MedHelp 60D materials (Fórmula,
+  MemoreCards, Simulados 100Q) are NOT scheduled by Meu Plano** — she wants an own 60D schedule later (after her
+  reorganization + a consolidated survey); the plan's "simulado" is the regular 25-question mini simulado, at most
+  25% of the week's study time. Attempts are read paginated (`user-rows.ts`). Validation:
+  `node --import ./app/tests/helpers/alias-hook.mjs scripts/plano-cenarios.ts [<DATABASE_URL>]` (read-only).
+  Patches: `schema-patch-plano-cobertura.sql` (+ rollback), `schema-patch-medvoice-audio-durations.sql`.
 
 ## Schema (see schema.sql for full DDL)
 

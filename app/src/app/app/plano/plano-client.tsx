@@ -18,6 +18,8 @@ import type {
   Intensity, ContentType, WeaknessSensitivity,
 } from "@/lib/study-plan/derive";
 import { CalibrateWizard } from "./calibrate-wizard";
+import { ForecastPanel } from "./forecast-panel";
+import { PaceEditor, type PaceOptions } from "./pace-editor";
 import { useAutosave, type SaveStatus } from "@/lib/use-autosave";
 
 const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
@@ -40,10 +42,12 @@ const ITEM_COLOR: Record<PlanItem["iconHint"], string> = {
   revalida_up: "var(--c-revalida)",
 };
 
+// The day is filled by minutes (Karina 2026-11-17) — the old "N especialidades"
+// part of these labels no longer described anything.
 const INTENSITY_LABEL: Record<Intensity, { label: string; sub: string }> = {
-  leve:    { label: "Leve",    sub: "~30 min/dia base · 2 especialidades" },
-  padrao:  { label: "Padrão",  sub: "~60 min/dia base · 3 especialidades" },
-  intenso: { label: "Intenso", sub: "~120 min/dia base · 4 especialidades" },
+  leve:    { label: "Leve",    sub: "30 min por dia de estudo" },
+  padrao:  { label: "Padrão",  sub: "60 min por dia de estudo" },
+  intenso: { label: "Intenso", sub: "120 min por dia de estudo" },
 };
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -52,11 +56,13 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 // checkbox for it changed nothing. AudioCards are never scheduled either — audio
 // is passive and repeats the Flashcards (Karina, 2026-06-30). Same list as the
 // calibration wizard, plus the 60D MemoreCards.
-const PLAN_CONTENT_TYPES: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
+// MemoreCards are a MedHelp 60D material: the plan does not schedule 60D
+// materials (they get their own schedule on the 60D page — Karina 2026-11-17).
+const PLAN_CONTENT_TYPES: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio"];
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   quiz: "Questões",
-  simulado: "Simulados",
+  simulado: "Mini simulados",
   lesson: "Resumos / Fórmula",
   audio: "MedVoice (áudio)",
   flashcards: "Flashcards",
@@ -76,6 +82,10 @@ export function PlanoClient({
   examDate,
   examDateLabel,
   cohortName,
+  dateConfirmed,
+  paceOptions,
+  extraMinutes,
+  nextExtraMinutes,
 }: {
   plan: DerivedPlan | null;
   prefs: StudyPlanPrefs;
@@ -85,6 +95,11 @@ export function PlanoClient({
   examDate: string | null;
   examDateLabel: string | null;
   cohortName: string | null;
+  dateConfirmed: boolean;
+  paceOptions: PaceOptions;
+  /** "Adiantar" minutes already added to today / the next step offered (null = none left). */
+  extraMinutes: number;
+  nextExtraMinutes: number | null;
 }) {
   const [showWizard, setShowWizard] = useState(false);
 
@@ -136,18 +151,25 @@ export function PlanoClient({
             <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)" }}>
               Hoje · ~{plan.totalEstimatedMinutes} min
             </h2>
-            <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
-              {plan.progressToday.questionsAnswered} questões · {plan.progressToday.lessonsCompleted} {plan.progressToday.lessonsCompleted === 1 ? "conteúdo" : "conteúdos"}
+            <span style={{ fontSize: 12, color: "var(--muted-foreground)", textAlign: "right" }}>
+              {plan.todayBudgetMinutes > 0 && plan.todayDoneMinutes > 0
+                ? `~${Math.min(plan.todayDoneMinutes, 999)} de ${plan.todayBudgetMinutes + extraMinutes} min feitos`
+                : `${plan.progressToday.questionsAnswered} questões · ${plan.progressToday.lessonsCompleted} ${plan.progressToday.lessonsCompleted === 1 ? "conteúdo" : "conteúdos"}`}
             </span>
           </div>
           {plan.paused ? (
             <PausedState plan={plan} />
+          ) : plan.dayComplete ? (
+            <DayCompleteState minutes={plan.todayBudgetMinutes + extraMinutes} nextExtraMinutes={nextExtraMinutes} />
           ) : plan.items.length === 0 ? (
             <EmptyPlanState />
           ) : (
             <PlanItemsList items={plan.items} onSkipToday={() => skipToday("Folga de hoje")} />
           )}
         </section>
+
+        {/* ── Forecast: what is expected before the exam ───────────────────── */}
+        {plan.forecast && <ForecastPanel forecast={plan.forecast} dateConfirmed={dateConfirmed} />}
 
         {/* ── Coverage warning (if user excluded too many specialties) ────── */}
         {plan.coverageWarning && (
@@ -186,6 +208,9 @@ export function PlanoClient({
           summary={availabilitySummary(prefs)}
         >
           <AvailabilityEditor prefs={prefs} pauses={pauses} />
+          <div style={{ marginTop: 24 }}>
+            <PaceEditor mode={prefs.pace_mode} pace={plan.pace} options={paceOptions} />
+          </div>
         </CollapsibleSection>
 
         {/* ── Section 2: Conteúdo ──────────────────────────────────────────── */}
@@ -216,7 +241,7 @@ export function PlanoClient({
           icon={Sliders}
           open={openSections.avancado}
           onToggle={() => toggleSection("avancado")}
-          summary="Sensibilidade, MedHelp 60D, limites"
+          summary="Sensibilidade e limites"
         >
           <AdvancedEditor prefs={prefs} />
         </CollapsibleSection>
@@ -320,7 +345,8 @@ function PlanItemsList({ items, onSkipToday }: { items: PlanItem[]; onSkipToday:
                 <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.title}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {/* Wraps instead of truncating: on a phone the ellipsis used to eat the minutes. */}
+                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 3, lineHeight: 1.4, overflowWrap: "anywhere" }}>
                   {item.subtitle} · ~{item.estimatedMinutes} min
                 </div>
               </div>
@@ -384,6 +410,41 @@ function PausedState({ plan }: { plan: DerivedPlan }) {
         <p style={{ fontSize: 12, color: "var(--brand)", fontWeight: 600 }}>
           Próximo dia de estudo: {formatDate(plan.nextAvailableDate)}
         </p>
+      )}
+    </div>
+  );
+}
+
+/** Today's time is used up while there is still content to study — offer to get ahead. */
+function DayCompleteState({ minutes, nextExtraMinutes }: { minutes: number; nextExtraMinutes: number | null }) {
+  return (
+    <div
+      style={{
+        padding: "28px 20px",
+        background: "var(--surface-1)",
+        border: "1px solid var(--surface-2)",
+        borderRadius: "var(--radius)",
+        textAlign: "center",
+      }}
+    >
+      <Check size={30} style={{ color: "var(--brand)", margin: "0 auto 10px" }} />
+      <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>Meta de hoje concluída</h3>
+      <p style={{ fontSize: 13, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+        Você usou os {minutes} min de estudo de hoje. O plano continua amanhã de onde você parou.
+      </p>
+      {nextExtraMinutes != null && (
+        <Link
+          href={`/app/plano?adiantar=${nextExtraMinutes}`}
+          className="min-h-11"
+          style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            marginTop: 16, padding: "10px 18px",
+            borderRadius: "var(--radius-sm)", border: "1px solid var(--brand)",
+            fontSize: 13, fontWeight: 600, color: "var(--brand-text, var(--brand))", textDecoration: "none",
+          }}
+        >
+          Quero adiantar mais 30 min
+        </Link>
       )}
     </div>
   );
@@ -1060,7 +1121,6 @@ function AdvancedEditor({ prefs }: { prefs: StudyPlanPrefs }) {
     (v) => setAdvancedPrefs({ weakness_sensitivity: v }),
     300,
   );
-  const include60d = useAutosave(prefs.include_60d, (v) => setAdvancedPrefs({ include_60d: v }), 300);
   // The box holds what is TYPED; only a valid number (5 to 500) or an empty box
   // ("sem limite") is saved, after a pause, so "30" is never saved as "3" first.
   const [capText, setCapText] = useState(prefs.flashcard_daily_cap == null ? "" : String(prefs.flashcard_daily_cap));
@@ -1096,21 +1156,14 @@ function AdvancedEditor({ prefs }: { prefs: StudyPlanPrefs }) {
       </div>
 
       <div>
-        <label className="min-h-11" style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, cursor: "pointer" }}>
-          <input
-            type="checkbox"
-            checked={include60d.value}
-            onChange={(e) => include60d.setValue(e.target.checked)}
-            style={{ width: 16, height: 16, accentColor: "var(--brand)" }}
-          />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>Incluir MedHelp 60D no plano</div>
-            <div style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
-              Quando o módulo desbloquear, ele entra automaticamente na sua rotina diária.
-            </div>
+        {/* The 60D materials are not part of this plan (they get their own schedule on the 60D page). */}
+        <div style={{ fontSize: 13 }}>
+          <div style={{ fontWeight: 600 }}>MedHelp 60D</div>
+          <div style={{ fontSize: 12, color: "var(--muted-foreground)", lineHeight: 1.5, marginTop: 2 }}>
+            A Fórmula MedHelp, os MemoreCards e os Simulados 100Q ficam na página do MedHelp 60D e não são
+            programados pelo Meu Plano.
           </div>
-          <SaveNote status={include60d.status} />
-        </label>
+        </div>
       </div>
 
       <div>

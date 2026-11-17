@@ -160,6 +160,8 @@ test("D3b the same page survives correctly once the view IS applied", () => {
     topics: [...UROLOGY_SUBTOPICS, ...TOPICS],
     topicContent: [...UROLOGY_CONTENT, ...TOPIC_CONTENT],
     signals: { quizAttempts: attempts, questionCountsByPageId: new Map([[90242, 30]]) },
+    // Enough time for every topic to reach today's list (the day is filled by minutes).
+    prefs: { weekly_hours: 70 },
   }));
   assert.equal(plan.items.some((i) => i.pageId === 90242), true);
 });
@@ -349,6 +351,9 @@ test("ACCEPTED TRADEOFF: a denominator larger than the answerable set pins a top
   for (let d = 0; d < 180; d++) {
     const plan = withFrozenTime(`${key}T13:00:00Z`, () => run({
       signals: { quizAttempts: attempts, questionCountsByPageId: new Map([[100, viewCount], [200, 10]]) },
+      // Questions only: the weekly mini simulado (last 60 days) would take whole days of
+      // this never-studying student and hide what is being measured here.
+      prefs: { preferred_content_types: ["quiz"] },
     }));
     const item = plan.items.find((i) => i.pageId === 100);
     if (item) { daysStillScheduled++; lastSubtitle = item.subtitle; }

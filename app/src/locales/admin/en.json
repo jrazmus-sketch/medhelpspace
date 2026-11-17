@@ -29,7 +29,8 @@
       "system": "System"
     },
     "clinact": "ClinAct",
-    "errors": "Errors"
+    "errors": "Errors",
+    "planSettings": "Meu Plano"
   },
   "simReview": {
     "title": "Simulado 100Q review",
@@ -821,7 +822,8 @@
       "clinact_topic_delete": "ClinAct: topic deleted",
       "nfse_test_marked": "Record marked as internal test",
       "nfse_test_unmarked": "Internal test unmarked",
-      "clinact_page_video": "ClinAct: sales page video changed"
+      "clinact_page_video": "ClinAct: sales page video changed",
+      "plan_settings_update": "Meu Plano settings changed"
     }
   },
   "pageNew": {
@@ -2357,5 +2359,109 @@
     "invalidHelp": "The topic below opens a page that is not published as a Revalida Up page.",
     "topic": "Topic: {{name}}",
     "edit": "Open the page"
+  },
+  "planSettings": {
+    "title": "Meu Plano — times and pace",
+    "intro": "The numbers the study plan uses to fill each day and to forecast what fits before the exam. A change applies to every student's plan right away.",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "saved": "Saved. Plans already use the new values.",
+    "errors": {
+      "forbidden": "Only content admins can change these settings.",
+      "invalid": "One of the values is outside the accepted range. Nothing was saved.",
+      "failed": "Could not save. Try again.",
+      "unavailable": "These settings are not available yet in this environment (database patch not applied). The plan is using the default values shown below."
+    },
+    "range": "{{min}} to {{max}}",
+    "typical": "Typical across students: {{value}} ({{samples}} answers, {{students}} students)",
+    "typicalNone": "Typical across students: not enough answers yet",
+    "units": {
+      "minutes": "min",
+      "seconds": "s",
+      "percent": "%",
+      "times": "×",
+      "perWeek": "per week",
+      "answers": "answers",
+      "questions": "questions"
+    },
+    "groups": {
+      "materials": {
+        "title": "Time per material",
+        "help": "How long the plan reserves for each activity when the student's pace is the standard one."
+      },
+      "review": {
+        "title": "Review",
+        "help": "Review goes into the day first. The forecast holds back part of every future day for reviews, by the same rule the day follows."
+      },
+      "phase": {
+        "title": "Mini simulado",
+        "help": "The weekly mini simulado counts inside the student's daily time. The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are not scheduled by Meu Plano — they will have their own schedule on the 60D page."
+      },
+      "pace": {
+        "title": "Study pace",
+        "help": "With the switch on, a student on “Automático” gets time estimates learned from their own answers (always between half and double the default)."
+      }
+    },
+    "fields": {
+      "minutesPerQuestion": {
+        "label": "Per question still to answer",
+        "help": "Answering and reading the commentary."
+      },
+      "secondsPerFlashcard": {
+        "label": "Per flashcard not seen yet",
+        "help": ""
+      },
+      "minutesPerRevalidaUpInsight": {
+        "label": "Per Revalida Up insight",
+        "help": "A page takes this times its number of insights."
+      },
+      "medvoiceFallbackMinutes": {
+        "label": "MedVoice without a measured audio",
+        "help": "MedVoice uses the real length of each audio; this is only for a lesson whose audio could not be measured."
+      },
+      "reviewSecondsPerItem": {
+        "label": "Per item due in the Review",
+        "help": ""
+      },
+      "reviewMaxShare": {
+        "label": "Most of a day the Review may take",
+        "help": "Not applied in the last 14 days, when review has no limit."
+      },
+      "reviewReserveShare": {
+        "label": "Held back for future reviews (forecast), at least",
+        "help": "Share of each future day the forecast does not fill with new content. When the student's review queue of today takes more than this, the forecast uses that share (up to the daily limit above)."
+      },
+      "simuladoDaysPerWeek": {
+        "label": "Mini simulados",
+        "help": "In the last 60 days: placed on the first study days of the week and kept on the list until the student does it. 0 = never; 7 = every study day."
+      },
+      "paceSlowFactor": {
+        "label": "“Mais devagar” multiplies the times by",
+        "help": ""
+      },
+      "paceFastFactor": {
+        "label": "“Mais rápido” multiplies the times by",
+        "help": ""
+      },
+      "paceMinSamples": {
+        "label": "Answers before a student's own pace is used",
+        "help": ""
+      },
+      "simuladoQuestions": {
+        "label": "Questions in one mini simulado",
+        "help": "The regular mini simulados (Questões › Simulados). Its time is this number × the time per question."
+      },
+      "simuladoMaxWeeklyShare": {
+        "label": "Most of the week's study time mini simulados may take",
+        "help": "When one a week would take more than this (a student with little time), they come every 2, 3… weeks instead."
+      }
+    },
+    "adaptive": {
+      "label": "Adapt to each student's pace",
+      "on": "On",
+      "off": "Off",
+      "help": "Off: every student on “Automático” goes back to the default times."
+    },
+    "perHour": "≈ {{n}} questions per hour"
   }
 }

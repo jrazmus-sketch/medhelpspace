@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { todayKeyBR } from "@/lib/br-date";
+import { todayKeyBR, startOfDayBRIso } from "@/lib/br-date";
 import {
   derivePlan,
   defaultPrefs,
@@ -12,6 +12,57 @@ import {
 } from "./derive";
 import { loadTopicQuestionIndex } from "./topic-questions-server";
 import { fetchTopicContent } from "./topic-content";
+import { loadPlanSettings } from "./settings-server";
+import { isPaceMode } from "./pace";
+import { fetchAllForUser, loadQuestionReviewRows } from "./user-rows";
+
+type Admin = ReturnType<typeof createAdminClient>;
+
+/**
+ * Sizes of each material (views from schema-patch-plano-cobertura.sql). Returns
+ * null when any of them is unavailable: the plan then runs without per-material
+ * completion (each material follows the questions) instead of on half a catalog.
+ */
+async function loadPlanCatalog(admin: Admin): Promise<NonNullable<Signals["catalog"]> | null> {
+  const [groups, ru, mv] = await Promise.all([
+    admin.from("study_plan_flashcard_groups").select("group_id, cards"),
+    admin.from("study_plan_revalida_up_pages").select("page_id, lesson_id, insights"),
+    admin.from("study_plan_medvoice_lessons").select("lesson_id, duration_seconds"),
+  ]);
+  if (groups.error || ru.error || mv.error) return null;
+  return {
+    flashcardGroupSizes: new Map((groups.data ?? []).map((r) => [Number(r.group_id), Number(r.cards)])),
+    revalidaUpPages: new Map(
+      (ru.data ?? []).map((r) => [Number(r.page_id), { lessonId: Number(r.lesson_id), insights: Number(r.insights) }]),
+    ),
+    medvoiceLessons: new Map(
+      (mv.data ?? []).map((r) => [
+        Number(r.lesson_id),
+        { durationSeconds: r.duration_seconds == null ? null : Number(r.duration_seconds) },
+      ]),
+    ),
+  };
+}
+
+/** The student's Flashcards facts in one call (null when the function is unavailable). */
+async function loadFlashcardFacts(
+  admin: Admin,
+  userId: string,
+  todayStartIso: string,
+): Promise<NonNullable<Signals["flashcards"]> | null> {
+  const { data, error } = await admin.rpc("study_plan_flashcard_facts", {
+    p_user: userId,
+    p_today_start: todayStartIso,
+  });
+  if (error || !data) return null;
+  const d = data as { seen?: Record<string, number>; pace_seconds?: number | null; pace_samples?: number; today?: number };
+  return {
+    seenByGroup: new Map(Object.entries(d.seen ?? {}).map(([k, v]) => [Number(k), Number(v)])),
+    paceSeconds: d.pace_seconds == null ? null : Number(d.pace_seconds),
+    paceSamples: Number(d.pace_samples ?? 0),
+    attemptsToday: Number(d.today ?? 0),
+  };
+}
 
 /**
  * Fetch ALL published pages that carry a specialty, paginating past PostgREST's
@@ -44,7 +95,10 @@ export async function fetchAllSpecialtyPages(
 /**
  * Server-side helper: fetches all V2 signals + preferences for a user, derives today's plan.
  */
-export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan | null> {
+export async function getDerivedPlanForUser(
+  userId: string,
+  opts: { extraMinutesToday?: number } = {},
+): Promise<DerivedPlan | null> {
   const admin = createAdminClient();
 
   // The student's day in Brazil — NOT the server's UTC day (see lib/br-date.ts).
@@ -58,12 +112,20 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     membershipRes,
     specialtiesRes,
     pagesArr,
-    quizAttemptsRes,
-    completionsRes,
+    quizAttempts,
+    completions,
     topicsRes,
     topicContentRes,
     questionCountsRes,
     topicIndex,
+    settings,
+    paceRes,
+    catalog,
+    flashcardFacts,
+    audioRes,
+    simuladoPagesRes,
+    questionReview,
+    reviewedTodayRes,
   ] = await Promise.all([
     admin
       .from("study_plans")
@@ -96,20 +158,18 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
       .eq("user_id", userId),
     admin.from("specialties").select("id, name, slug").order("display_order"),
     fetchAllSpecialtyPages(admin),
-    admin
-      .from("quiz_attempts")
-      // question_id drives the mastery check (distinct questions answered, latest
-      // attempt each) — without it a page can never be judged complete. The
-      // explicit order makes "latest attempt wins" deterministic when two
-      // attempts on one question share a timestamp.
-      .select("specialty_id, is_correct, created_at, page_id, question_id, error_category")
-      .eq("user_id", userId)
-      .order("created_at")
-      .order("id"),
-    admin
-      .from("lesson_completions")
-      .select("lesson_id, page_id, completed_at")
-      .eq("user_id", userId),
+    // question_id drives the mastery check (distinct questions answered, latest
+    // attempt each) — without it a page can never be judged complete. The
+    // explicit order makes "latest attempt wins" deterministic when two
+    // attempts on one question share a timestamp.
+    fetchAllForUser<Signals["quizAttempts"][number]>(
+      admin, "quiz_attempts",
+      "specialty_id, is_correct, created_at, page_id, question_id, error_category",
+      userId, ["created_at", "id"],
+    ),
+    fetchAllForUser<Signals["lessonCompletions"][number]>(
+      admin, "lesson_completions", "lesson_id, page_id, completed_at", userId, ["lesson_id"],
+    ),
     admin
       .from("topics")
       .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier, is_pinned"),
@@ -122,6 +182,27 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     admin.from("quiz_page_question_counts").select("page_id, question_count"),
     // R1: topic → its own original questions (null → section-based fallback).
     loadTopicQuestionIndex(admin),
+    // Time estimates Karina edits at /admin/plano (defaults when the row is missing).
+    loadPlanSettings(admin),
+    // Read apart from the big select above: a missing column there would null
+    // EVERY preference; here it only means "auto".
+    admin.from("study_plans").select("pace_mode").eq("user_id", userId).maybeSingle(),
+    loadPlanCatalog(admin),
+    loadFlashcardFacts(admin, userId, startOfDayBRIso(todayKey)),
+    // Where each MedVoice audio was left (the player saves it).
+    admin.from("lesson_progress").select("lesson_id, position_seconds").eq("user_id", userId),
+    // Simulado pages (~165), to know whether this week's simulado was done.
+    admin.from("pages").select("id").eq("view", "simulados").eq("status", "publish"),
+    // What the Revisão knows about each answered question (review-outcomes.ts).
+    loadQuestionReviewRows(admin, userId),
+    // Items graded today — a Revisão session writes no attempt row, so this is
+    // the only trace of the time spent reviewing today.
+    admin
+      .from("review_schedule")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .in("item_type", ["flashcard", "quiz_question", "memorecard"])
+      .gte("last_reviewed_at", startOfDayBRIso(todayKey)),
   ]);
 
   // Build prefs object, applying defaults for missing fields
@@ -149,6 +230,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     excluded_specialty_ids: excludedIds,
     email_weekly_summary: raw?.email_weekly_summary ?? defaults.email_weekly_summary,
     email_daily_plan: raw?.email_daily_plan ?? defaults.email_daily_plan,
+    pace_mode: isPaceMode(paceRes.data?.pace_mode) ? paceRes.data.pace_mode : defaults.pace_mode,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -169,7 +251,7 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     .lte("due_date", todayKey);
 
   // Lessons per page (for "fully completed" detection)
-  const pageIds = (completionsRes.data ?? []).map((c) => c.page_id);
+  const pageIds = completions.map((c) => c.page_id);
   const uniquePageIds = [...new Set(pageIds)];
   const lessonsByPageId = new Map<number, number>();
   if (uniquePageIds.length > 0) {
@@ -188,13 +270,21 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
   }
 
   const signals: Signals = {
-    quizAttempts: (quizAttemptsRes.data ?? []) as Signals["quizAttempts"],
-    lessonCompletions: (completionsRes.data ?? []) as Signals["lessonCompletions"],
+    quizAttempts,
+    lessonCompletions: completions,
     reviewDueToday: reviewDueToday ?? 0,
     lessonsByPageId,
     pauses: (pausesRes.data ?? []) as Signals["pauses"],
     questionCountsByPageId,
     topicIndex,
+    catalog,
+    flashcards: flashcardFacts,
+    audioPositions: new Map(
+      (audioRes.data ?? []).map((r) => [Number(r.lesson_id), Number(r.position_seconds ?? 0)]),
+    ),
+    simuladoPageIds: new Set((simuladoPagesRes.data ?? []).map((r) => Number(r.id))),
+    questionReview,
+    reviewedToday: reviewedTodayRes.count ?? 0,
   };
 
   return derivePlan({
@@ -208,6 +298,8 @@ export async function getDerivedPlanForUser(userId: string): Promise<DerivedPlan
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     topicContent: (topicContentRes.data ?? []) as any,
     signals,
+    settings,
+    extraMinutesToday: opts.extraMinutesToday,
   });
 }
 
@@ -219,7 +311,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
   welcomedAt: string | null;
 }> {
   const admin = createAdminClient();
-  const [planRes, focusRes, excludedRes] = await Promise.all([
+  const [planRes, focusRes, excludedRes, paceRes] = await Promise.all([
     admin
       .from("study_plans")
       .select(`
@@ -239,6 +331,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       .from("study_plan_excluded_specialties")
       .select("specialty_id")
       .eq("user_id", userId),
+    admin.from("study_plans").select("pace_mode").eq("user_id", userId).maybeSingle(),
   ]);
 
   const defaults = defaultPrefs();
@@ -266,6 +359,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       excluded_specialty_ids: excludedIds,
       email_weekly_summary: raw?.email_weekly_summary ?? defaults.email_weekly_summary,
       email_daily_plan: raw?.email_daily_plan ?? defaults.email_daily_plan,
+      pace_mode: isPaceMode(paceRes.data?.pace_mode) ? paceRes.data.pace_mode : defaults.pace_mode,
     },
     welcomedAt: (raw?.welcomed_at as string | null) ?? null,
   };

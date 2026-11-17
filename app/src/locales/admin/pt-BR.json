@@ -29,7 +29,8 @@
       "system": "Sistema"
     },
     "clinact": "ClinAct",
-    "errors": "Erros"
+    "errors": "Erros",
+    "planSettings": "Meu Plano"
   },
   "simReview": {
     "title": "Revisão do Simulado 100Q",
@@ -821,7 +822,8 @@
       "clinact_topic_delete": "ClinAct: tema excluído",
       "nfse_test_marked": "Registro marcado como teste interno",
       "nfse_test_unmarked": "Teste interno desmarcado",
-      "clinact_page_video": "ClinAct: vídeo da página de vendas alterado"
+      "clinact_page_video": "ClinAct: vídeo da página de vendas alterado",
+      "plan_settings_update": "Configurações do Meu Plano alteradas"
     }
   },
   "pageNew": {
@@ -2357,5 +2359,109 @@
     "invalidHelp": "O tema abaixo abre uma página que não está publicada como Revalida Up.",
     "topic": "Tema: {{name}}",
     "edit": "Abrir a página"
+  },
+  "planSettings": {
+    "title": "Meu Plano — tempos e ritmo",
+    "intro": "Os números que o plano de estudos usa para preencher cada dia e prever o que cabe até a prova. Uma alteração vale na hora para o plano de todos os alunos.",
+    "save": "Salvar alterações",
+    "saving": "Salvando…",
+    "saved": "Salvo. Os planos já usam os novos valores.",
+    "errors": {
+      "forbidden": "Só administradores de conteúdo podem alterar estas configurações.",
+      "invalid": "Um dos valores está fora do intervalo aceito. Nada foi salvo.",
+      "failed": "Não foi possível salvar. Tente de novo.",
+      "unavailable": "Estas configurações ainda não estão disponíveis neste ambiente (patch do banco não aplicado). O plano está usando os valores padrão mostrados abaixo."
+    },
+    "range": "{{min}} a {{max}}",
+    "typical": "Típico entre os alunos: {{value}} ({{samples}} respostas, {{students}} alunos)",
+    "typicalNone": "Típico entre os alunos: ainda sem respostas suficientes",
+    "units": {
+      "minutes": "min",
+      "seconds": "s",
+      "percent": "%",
+      "times": "×",
+      "perWeek": "por semana",
+      "answers": "respostas",
+      "questions": "questões"
+    },
+    "groups": {
+      "materials": {
+        "title": "Tempo por material",
+        "help": "Quanto tempo o plano reserva para cada atividade quando o ritmo do aluno é o padrão."
+      },
+      "review": {
+        "title": "Revisão",
+        "help": "A Revisão entra primeiro no dia. A previsão reserva parte de cada dia futuro para revisões, pela mesma regra que o dia segue."
+      },
+      "phase": {
+        "title": "Mini simulado",
+        "help": "O mini simulado semanal conta dentro do tempo diário do aluno. Os materiais do MedHelp 60D (Fórmula MedHelp, MemoreCards, Simulados 100Q) não são programados pelo Meu Plano — terão um cronograma próprio na página do 60D."
+      },
+      "pace": {
+        "title": "Ritmo de estudo",
+        "help": "Com a chave ligada, o aluno em “Automático” recebe tempos aprendidos com as próprias respostas (sempre entre a metade e o dobro do padrão)."
+      }
+    },
+    "fields": {
+      "minutesPerQuestion": {
+        "label": "Por questão ainda não respondida",
+        "help": "Responder e ler o comentário."
+      },
+      "secondsPerFlashcard": {
+        "label": "Por flashcard ainda não visto",
+        "help": ""
+      },
+      "minutesPerRevalidaUpInsight": {
+        "label": "Por insight do Revalida Up",
+        "help": "Uma página leva este tempo vezes o número de insights."
+      },
+      "medvoiceFallbackMinutes": {
+        "label": "MedVoice sem áudio medido",
+        "help": "O MedVoice usa a duração real de cada áudio; este valor vale só para a aula cujo áudio não pôde ser medido."
+      },
+      "reviewSecondsPerItem": {
+        "label": "Por item devido na Revisão",
+        "help": ""
+      },
+      "reviewMaxShare": {
+        "label": "Máximo do dia que a Revisão pode ocupar",
+        "help": "Não se aplica nos últimos 14 dias, quando a revisão não tem limite."
+      },
+      "reviewReserveShare": {
+        "label": "Reserva para revisões futuras (previsão), no mínimo",
+        "help": "Parte de cada dia futuro que a previsão não preenche com conteúdo novo. Quando a fila de revisão de hoje do aluno ocupa mais do que isso, a previsão usa essa parcela (até o limite diário acima)."
+      },
+      "simuladoDaysPerWeek": {
+        "label": "Mini simulados",
+        "help": "Nos últimos 60 dias: entram nos primeiros dias de estudo da semana e ficam na lista até o aluno fazer. 0 = nunca; 7 = todo dia de estudo."
+      },
+      "paceSlowFactor": {
+        "label": "“Mais devagar” multiplica os tempos por",
+        "help": ""
+      },
+      "paceFastFactor": {
+        "label": "“Mais rápido” multiplica os tempos por",
+        "help": ""
+      },
+      "paceMinSamples": {
+        "label": "Respostas antes de usar o ritmo do próprio aluno",
+        "help": ""
+      },
+      "simuladoQuestions": {
+        "label": "Questões de um mini simulado",
+        "help": "Os mini simulados regulares (Questões › Simulados). O tempo é este número × o tempo por questão."
+      },
+      "simuladoMaxWeeklyShare": {
+        "label": "Máximo do tempo de estudo da semana para mini simulados",
+        "help": "Quando um por semana passaria disso (aluno com pouco tempo), eles passam a vir a cada 2, 3… semanas."
+      }
+    },
+    "adaptive": {
+      "label": "Adaptar ao ritmo do aluno",
+      "on": "Ligado",
+      "off": "Desligado",
+      "help": "Desligado: todo aluno em “Automático” volta aos tempos padrão."
+    },
+    "perHour": "≈ {{n}} questões por hora"
   }
 }

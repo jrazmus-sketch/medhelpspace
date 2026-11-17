@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildPageProgress, isPageMastered, type Signals } from "./derive";
 import { buildTopicProgress, topicQuizHref } from "./topic-questions";
+import { withReviewOutcomes } from "./review-outcomes";
+import { fetchAllForUser, loadQuestionReviewRows } from "./user-rows";
 import { loadTopicQuestionIndex } from "./topic-questions-server";
 
 /**
@@ -67,23 +69,22 @@ const TIER_LABEL: Record<string, string> = {
 export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
   const admin = createAdminClient();
 
-  const [topicsRes, specialtiesRes, attemptsRes, questionCountsRes, topicIndex] = await Promise.all([
+  const [topicsRes, specialtiesRes, rawAttempts, questionCountsRes, topicIndex, questionReview] = await Promise.all([
     admin
       .from("topics")
       .select("id, name, slug, specialty_id, source_page_id, incidence_count, priority_tier")
       .not("priority_tier", "is", null)
       .order("incidence_count", { ascending: false }),
     admin.from("specialties").select("id, name, slug"),
-    admin
-      .from("quiz_attempts")
-      .select("page_id, is_correct, created_at, question_id")
-      .eq("user_id", userId)
-      .order("created_at")
-      .order("id"),
+    // Paginated: a plain read stops at 1,000 rows and drops the newest answers.
+    fetchAllForUser<Signals["quizAttempts"][number]>(
+      admin, "quiz_attempts", "page_id, is_correct, created_at, question_id", userId, ["created_at", "id"],
+    ),
     // Real per-page question totals. If the view is unavailable each topic falls
     // back to its own incidence_count (correct for 199 of 211).
     admin.from("quiz_page_question_counts").select("page_id, question_count"),
     loadTopicQuestionIndex(admin),
+    loadQuestionReviewRows(admin, userId),
   ]);
 
   const specialties = (specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[];
@@ -112,7 +113,9 @@ export async function getRoadmapForUser(userId: string): Promise<RoadmapData> {
   const specSlugById = new Map(specialties.map((s) => [s.id, s.slug]));
 
   // Per-page progress — the SAME computation the daily plan uses.
-  const attempts = (attemptsRes.data ?? []) as Signals["quizAttempts"];
+  // A question answered right later, inside the Revisão, counts as right here
+  // too — the same rule the daily plan uses (review-outcomes.ts).
+  const attempts = withReviewOutcomes(rawAttempts, questionReview);
   const byPage = buildPageProgress(attempts);
   const byTopic = topicIndex ? buildTopicProgress(attempts, topicIndex) : null;
   const questionCounts = new Map<number, number>();

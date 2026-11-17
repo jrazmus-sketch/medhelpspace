@@ -7,11 +7,22 @@ import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ListOrdered } from "lucide-react";
 import { getAuthUser } from "@/lib/viewer";
+import { loadPlanSettings } from "@/lib/study-plan/settings-server";
+import type { PaceOptions } from "./pace-editor";
+
+/** "Adiantar": the extra minutes a student may add to a finished day (?adiantar=30). */
+const EXTRA_STEPS = [30, 60, 90, 120];
 
 export const metadata = { title: "Meu Plano de Estudos — MedHelpSpace" };
 
-export default async function PlanoPage() {
+export default async function PlanoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ adiantar?: string }>;
+}) {
   await requireActiveMembership();
+  const { adiantar } = await searchParams;
+  const extraMinutes = EXTRA_STEPS.includes(Number(adiantar)) ? Number(adiantar) : 0;
 
   if (USE_MOCK_DATA) {
     return (
@@ -27,8 +38,8 @@ export default async function PlanoPage() {
 
   const admin = createAdminClient();
 
-  const [plan, { prefs, welcomedAt }, pauses, specialtiesRes, membershipRes] = await Promise.all([
-    getDerivedPlanForUser(user.id),
+  const [plan, { prefs, welcomedAt }, pauses, specialtiesRes, membershipRes, settings] = await Promise.all([
+    getDerivedPlanForUser(user.id, { extraMinutesToday: extraMinutes }),
     getStudyPlanPrefs(user.id),
     getStudyPlanPauses(user.id),
     admin.from("specialties").select("id, name, slug").order("display_order"),
@@ -38,7 +49,16 @@ export default async function PlanoPage() {
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle(),
+    loadPlanSettings(admin),
   ]);
+
+  // What each "Ritmo de estudo" choice means in practice (questions per hour).
+  const paceOptions: PaceOptions = {
+    slow: Math.round(60 / (settings.minutesPerQuestion * settings.paceSlowFactor)),
+    standard: Math.round(60 / settings.minutesPerQuestion),
+    fast: Math.round(60 / (settings.minutesPerQuestion * settings.paceFastFactor)),
+    adaptiveEnabled: settings.adaptivePaceEnabled,
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cohort = (membershipRes.data as any)?.cohort as
@@ -89,7 +109,8 @@ export default async function PlanoPage() {
       <Coachmark coachKey="plano" className="mt-0" />
 
       <PlanoClient
-        plan={plan}
+        // The per-day trace is for checks and reports — never sent to the browser.
+        plan={plan ? { ...plan, scheduleDays: [] } : plan}
         prefs={prefs}
         specialties={(specialtiesRes.data ?? []) as { id: number; name: string; slug: string }[]}
         pauses={pauses}
@@ -97,6 +118,10 @@ export default async function PlanoPage() {
         examDate={examDate}
         examDateLabel={examDateLabel}
         cohortName={cohort?.name ?? null}
+        dateConfirmed={dateConfirmed}
+        paceOptions={paceOptions}
+        extraMinutes={extraMinutes}
+        nextExtraMinutes={EXTRA_STEPS.find((m) => m > extraMinutes) ?? null}
       />
     </div>
   );

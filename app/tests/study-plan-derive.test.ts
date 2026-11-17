@@ -452,12 +452,17 @@ test("a revalida_up link to a page that is not a Revalida Up page is ignored", (
 });
 
 // ── A mastered topic frees its slot (bug found 2026-11-16) ──────────────────
+// These fixtures carry NO catalog (signals.catalog), which is the funnel-preview
+// situation: a material then has no "done" signal of its own and follows the
+// questions, so it can never stall the plan. With the catalog (every real
+// student) each material finishes on its own evidence — Karina 2026-11-17, see
+// tests/plano-cobertura.test.ts.
 
 const MASTERED_100 = Array.from({ length: 20 }, (_, i) => ({
   specialty_id: 1, is_correct: i < 15, created_at: "2026-07-20T10:00:00Z", page_id: 100, question_id: i + 1,
 })); // 15/20 = 75%
 
-test("a topic with mastered questions leaves the plan entirely, Revalida Up and Flashcards included", () => {
+test("without the catalog, a topic with mastered questions leaves the plan entirely", () => {
   const plan = withFrozenTime(MORNING_BRT, () =>
     run({ pages: RU_PAGES, topicContent: RU_CONTENT, signals: { quizAttempts: MASTERED_100 } }));
   assert.deepEqual(plan.items.filter((i) => i.title === "Arritmias").map((i) => i.kind), []);
@@ -495,5 +500,6 @@ test("the plan advances past mastered topics instead of stalling on them", () =>
     signals: emptySignals({ quizAttempts: attempts, questionCountsByPageId: new Map(pages.map((p) => [p.id, 5])) }),
   }));
   const titles = [...new Set(plan.items.map((i) => i.title))];
-  assert.deepEqual(titles, ["Tema4", "Tema5", "Tema6"]);
+  // 30 minutes: Tema4 whole (5 questions + Revalida Up), then the start of Tema5.
+  assert.deepEqual(titles, ["Tema4", "Tema5"]);
 });

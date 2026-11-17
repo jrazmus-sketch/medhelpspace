@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { todayKeyBR } from "@/lib/br-date";
 import type { Intensity, ContentType, WeaknessSensitivity } from "@/lib/study-plan/derive";
+import { isPaceMode, type PaceMode } from "@/lib/study-plan/pace";
 
 // NOTE: A "use server" module may only export async functions. Do NOT re-export
 // types from here — the server-actions compiler turns `export type { … }` into a
@@ -27,6 +28,7 @@ type StudyPlansPatch = Partial<{
   intensification_start_days: number;
   email_weekly_summary: boolean;
   email_daily_plan: boolean;
+  pace_mode: PaceMode;
 }>;
 
 async function upsertStudyPlan(userId: string, patch: StudyPlansPatch) {
@@ -72,6 +74,15 @@ export async function setIntensity(intensity: Intensity): Promise<void> {
   const user = await getUser();
   if (!user) return;
   await upsertStudyPlan(user.id, { intensity });
+  revalidatePath("/app", "layout");
+}
+
+/** "Ritmo de estudo": auto (the plan learns the student's pace) or a manual step. */
+export async function setPaceMode(mode: PaceMode): Promise<void> {
+  if (!isPaceMode(mode)) return;
+  const user = await getUser();
+  if (!user) return;
+  await upsertStudyPlan(user.id, { pace_mode: mode });
   revalidatePath("/app", "layout");
 }
 
