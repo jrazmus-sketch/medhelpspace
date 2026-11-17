@@ -88,14 +88,20 @@ export type ScheduleInput = {
     /** Extra minutes the student asked for ("adiantar"). */
     extraMinutes: number;
     /**
-     * The student already studied on an earlier day of this week. A session not
-     * BEGUN on its day is offered again later in the week ONLY when that day was
-     * missed altogether — a student who studied and skipped it is not chased with
-     * it day after day. (One that was begun is always continued — see below.)
+     * The latest EARLIER day of this week on which the student studied without
+     * answering any simulado (null = none). Sessions that fell up to that day and
+     * were not begun are dropped: a student who studied and skipped a session is
+     * not chased with it day after day. A session stays owed when its day was
+     * missed altogether, or when the plan itself postponed it (the day went to
+     * finishing the mini simulado in progress — that day has simulado answers).
      */
-    studiedEarlierThisWeek: boolean;
-    /** Simulados with at least one answer today: a session of today already taken up is not asked again. */
-    simuladoTouchedToday: number;
+    simuladoSkippedThrough: string | null;
+    /**
+     * One entry per simulado the student answered this week (today included): the
+     * day of its first answer this week, and whether that sitting was begun in an
+     * EARLIER week. Each one takes up a session of the week, so it is not asked again.
+     */
+    simuladoTouches: { dayKey: string; carried: boolean }[];
     /** Minutes left of the mini simulado the student is in the middle of (0 = none). */
     simuladoResumeMinutes: number;
     /** That mini simulado was begun in an EARLIER week: it stands in for this week's first session. */
@@ -226,7 +232,7 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
   const lastKey = eve < todayKey ? todayKey : eve;
   // Start on the Monday of this week: the week's sessions are spread over its
   // study days. A missed day does not lose a session (see
-  // today.studiedEarlierThisWeek) and one already taken up is not asked for again.
+  // today.simuladoSkippedThrough) and one already taken up is not asked for again.
   const startKey = mondayOf(todayKey);
 
   // ── Mini simulado bookkeeping ────────────────────────────────────────────
@@ -242,6 +248,10 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
   let simCarry = 0;
   let studyDayIndex = 0;
   let accruedBefore = 0;
+  /** The week's first session fell on a day that still counts (today or a kept earlier day). */
+  let firstSlotKept = false;
+  const skippedThrough = input.today.simuladoSkippedThrough;
+  const keptDay = (dayKey: string) => skippedThrough == null || dayKey > skippedThrough;
   /** A session left unfinished at the end of a (future) week replaces the next week's first one. */
   let substituteNext = false;
   let studyDaysLeft = 0;
@@ -281,24 +291,33 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     const simuladoActive = input.simuladoEnabled && sessions > 0 && phase !== "foundation";
     const simuladoWeek = simuladoActive && isSimuladoWeek(dayKey, examKey, input.simuladoEveryWeeks);
     const accruedToday = simuladoWeek ? sessionSlots.filter((slot) => slot === studyDayIndex).length : 0;
+    const isFirstSlot = accruedToday > 0 && studyDayIndex === 0;
     studyDayIndex++;
     if (past) {
-      accruedBefore += accruedToday;
-      continue; // earlier this week: only what is owed matters
+      // Earlier this week: only what is still owed matters. Sessions up to a day
+      // the student studied without touching a simulado were skipped — dropped.
+      if (keptDay(dayKey)) {
+        accruedBefore += accruedToday;
+        if (isFirstSlot) firstSlotKept = true;
+      }
+      continue;
     }
     let simResumeOwed = 0;
     if (isToday) {
       // What the plan still asks for, from what the student REALLY did:
-      //  - sessions of earlier days never begun are kept only when those days were missed;
-      //  - a session of today already taken up (any simulado answered today) is not asked again;
-      //  - the mini simulado in progress is always finished, and when it comes from an
-      //    earlier week it stands in for this week's first session.
+      //  - the week's sessions so far (earlier days still kept + today's)…
+      //  - …minus every simulado begun this week since the last skipped day (each takes up one);
+      //  - the mini simulado in progress is always finished, and one that comes from an
+      //    earlier week stands in for this week's first session (also after it is finished).
+      // A session the plan postponed (the day went to finishing the one in progress)
+      // is therefore still owed on the next study day — never lost.
       const t = input.today;
-      let open = Math.max(0, (t.studiedEarlierThisWeek ? 0 : accruedBefore) + accruedToday - Math.max(0, t.simuladoTouchedToday));
+      if (isFirstSlot) firstSlotKept = true;
       simResumeOwed = simuladoActive ? Math.max(0, t.simuladoResumeMinutes) : 0;
-      const firstSlotStillOpen =
-        (accruedBefore > 0 && !t.studiedEarlierThisWeek) || (accruedBefore === 0 && accruedToday > 0);
-      if (simResumeOwed > EPS && t.simuladoResumeCarried && firstSlotStillOpen) open = Math.max(0, open - 1);
+      const begun = t.simuladoTouches.filter((x) => !x.carried && keptDay(x.dayKey)).length;
+      const carriedSitting =
+        t.simuladoTouches.some((x) => x.carried) || (simResumeOwed > EPS && t.simuladoResumeCarried);
+      const open = Math.max(0, accruedBefore + accruedToday - begun - (carriedSitting && firstSlotKept ? 1 : 0));
       simCarry = open * input.simuladoMinutes + simResumeOwed;
     } else {
       for (let k = 0; k < accruedToday; k++) {

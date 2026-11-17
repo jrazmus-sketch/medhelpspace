@@ -133,7 +133,7 @@ function input(
     ...over,
     today: {
       reviewDue: 0, reviewItemCap: null, doneMinutes: 0, extraMinutes: 0,
-      studiedEarlierThisWeek: false, simuladoTouchedToday: 0, simuladoResumeMinutes: 0, simuladoResumeCarried: false,
+      simuladoSkippedThrough: null, simuladoTouches: [], simuladoResumeMinutes: 0, simuladoResumeCarried: false,
       ...(over.today ?? {}),
     },
   };
@@ -231,7 +231,7 @@ test("schedule: the weekly mini simulado counts INSIDE the day (last 60 days)", 
 });
 
 test("schedule: a simulado already taken up today is not asked for again", () => {
-  const r = simulateSchedule(input({ queue: [quiz(1, 400)], examKey: "2026-09-01", today: { simuladoTouchedToday: 1 } }));
+  const r = simulateSchedule(input({ queue: [quiz(1, 400)], examKey: "2026-09-01", today: { simuladoTouches: [{ dayKey: TODAY, carried: false }] } }));
   assert.equal(r.today.simuladoMinutes, 0);
 });
 
@@ -571,14 +571,14 @@ test("the settings action is restricted to content roles and audited", () => {
 test("schedule: a simulado skipped on its day is not chased all week — unless that day was missed altogether", () => {
   // Wednesday of an intensification week; the simulado belonged to Monday.
   const wed = { todayKey: "2026-07-29", examKey: "2026-09-01", queue: [quiz(1, 400)] };
-  const missedMonday = simulateSchedule(input({ ...wed, today: { studiedEarlierThisWeek: false } }));
+  const missedMonday = simulateSchedule(input({ ...wed, today: { simuladoSkippedThrough: null } }));
   assert.equal(missedMonday.today.simuladoMinutes, 40, "nothing studied yet this week: it is offered now");
-  const skippedIt = simulateSchedule(input({ ...wed, today: { studiedEarlierThisWeek: true } }));
+  const skippedIt = simulateSchedule(input({ ...wed, today: { simuladoSkippedThrough: "2026-07-27" } }));
   assert.equal(skippedIt.today.simuladoMinutes, 0, "studied on Monday and skipped it: not asked again");
 });
 
 test("schedule: with 'every N weeks' the simulado weeks are counted back from the exam week", () => {
-  const r = simulateSchedule(input({ queue: [quiz(1, 4000)], examKey: "2026-09-01", simuladoEveryWeeks: 3, today: { studiedEarlierThisWeek: true } }));
+  const r = simulateSchedule(input({ queue: [quiz(1, 4000)], examKey: "2026-09-01", simuladoEveryWeeks: 3 }));
   const simDays = r.days.filter((d) => d.simulado > 0).map((d) => d.key);
   // Exam week starts Monday 2026-08-31; simulado weeks: that one, 3 weeks before (08-10), 6 weeks before (07-20, past).
   assert.deepEqual(simDays, ["2026-08-10", "2026-08-31"]);

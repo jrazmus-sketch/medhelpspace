@@ -141,7 +141,7 @@ function input(
     ...over,
     today: {
       reviewDue: 0, reviewItemCap: null, doneMinutes: 0, extraMinutes: 0,
-      studiedEarlierThisWeek: false, simuladoTouchedToday: 0, simuladoResumeMinutes: 0, simuladoResumeCarried: false,
+      simuladoSkippedThrough: null, simuladoTouches: [], simuladoResumeMinutes: 0, simuladoResumeCarried: false,
       ...(over.today ?? {}),
     },
   };
@@ -154,7 +154,7 @@ function assertNoDayOverBudget(r: ReturnType<typeof simulateSchedule>) {
 
 test("schedule: the mini simulado in progress is continued — even after the student studied on its day", () => {
   // Monday: 12 of 25 answered. Tuesday: 13 left (20.8 min). A session merely SKIPPED would not come back; one begun does.
-  const r = simulateSchedule(input({ today: { studiedEarlierThisWeek: true, simuladoResumeMinutes: 13 * 1.6 } }));
+  const r = simulateSchedule(input({ today: { simuladoTouches: [{ dayKey: "2026-08-03", carried: false }], simuladoResumeMinutes: 13 * 1.6 }, todayKey: "2026-08-04" }));
   assert.ok(near(r.today.simuladoMinutes, 20.8));
   assert.ok(near(r.today.simuladoResumeMinutes, 20.8));
   assert.equal(r.today.simuladoPartial, false);
@@ -185,7 +185,7 @@ test("schedule: in the forecast too, a session that does not fit its week contin
 });
 
 test("schedule: two a week are spread over the week (Monday and Thursday when every day is a study day)", () => {
-  const r = simulateSchedule(input({ simuladoSessionsPerWeek: 2, today: { studiedEarlierThisWeek: true } }));
+  const r = simulateSchedule(input({ simuladoSessionsPerWeek: 2 }));
   const days = r.days.filter((d) => d.key >= "2026-08-03" && d.key <= "2026-08-09" && d.simulado > 0).map((d) => d.key);
   assert.deepEqual(days, ["2026-08-03", "2026-08-06"]);
   assert.ok(near(weekTotal(r, "2026-08-03", "2026-08-09"), 80));
@@ -194,8 +194,54 @@ test("schedule: two a week are spread over the week (Monday and Thursday when ev
 
 test("schedule: today's second session of the week is asked for after the first one was done on Monday", () => {
   // Thursday 2026-07-30, two a week: Monday's session was done (studied earlier), today's is new.
-  const r = simulateSchedule(input({ todayKey: "2026-07-30", simuladoSessionsPerWeek: 2, today: { studiedEarlierThisWeek: true } }));
+  const r = simulateSchedule(input({ todayKey: "2026-07-30", simuladoSessionsPerWeek: 2, today: { simuladoTouches: [{ dayKey: "2026-07-27", carried: false }] } }));
   assert.ok(near(r.today.simuladoMinutes, 40));
+});
+
+test("schedule: a session the plan postponed (the day went to finishing the one in progress) is still owed the next day", () => {
+  // Two a week, every day a study day: sessions on Monday and Thursday. 25-minute days hold 15 questions.
+  // Thursday: 13 questions left of Monday's simulado. Only 2 questions of the new session would fit after them,
+  // so the new one is not opened today…
+  const two = { simuladoSessionsPerWeek: 2, minutes: 25 };
+  const monday = { dayKey: "2026-07-27", carried: false };
+  const thu = simulateSchedule(input({ ...two, todayKey: "2026-07-30", today: { simuladoTouches: [monday], simuladoResumeMinutes: 13 * 1.6 } }));
+  assert.ok(near(thu.today.simuladoMinutes, 20.8), "the 13 questions left, nothing else");
+  assert.equal(thu.today.simuladoPartial, true, "the week's second session is still owed");
+  // …and on Friday it is asked for: the week's second session is NOT lost (Thursday had simulado answers).
+  const fri = simulateSchedule(input({ ...two, todayKey: "2026-07-31", today: { simuladoTouches: [monday] } }));
+  assert.ok(near(fri.today.simuladoMinutes, 24), "15 questions of the new session");
+  // A student who studied on Thursday WITHOUT touching a simulado skipped it: not chased on Friday.
+  const skipped = simulateSchedule(input({ ...two, todayKey: "2026-07-31", today: { simuladoTouches: [monday], simuladoSkippedThrough: "2026-07-30" } }));
+  assert.equal(skipped.today.simuladoMinutes, 0);
+  // Once the second one is begun, nothing more is owed this week.
+  const both = simulateSchedule(input({ ...two, todayKey: "2026-08-01", today: { simuladoTouches: [monday, { dayKey: "2026-07-31", carried: false }] } }));
+  assert.equal(both.today.simuladoMinutes, 0);
+});
+
+test("schedule: a simulado carried from last week and finished on Monday still stands for this week's first session", () => {
+  const carriedDone = [{ dayKey: "2026-07-27", carried: true }];
+  // One a week: nothing new is opened later in the week.
+  assert.equal(simulateSchedule(input({ todayKey: "2026-07-29", today: { simuladoTouches: carriedDone } })).today.simuladoMinutes, 0);
+  // Two a week: Thursday's second session is a new one — exactly one, not two.
+  const thu = simulateSchedule(input({ todayKey: "2026-07-30", simuladoSessionsPerWeek: 2, today: { simuladoTouches: carriedDone } }));
+  assert.ok(near(thu.today.simuladoMinutes, 40));
+});
+
+test("facts: every simulado answered this week takes up one session — with the day it was first answered this week", () => {
+  // Begun last Friday (12 answers), continued this Monday; and a 60D Simulado 100Q answered today.
+  const rows = [
+    ...simAnswers(12, "2026-07-24T12:00:00Z"),
+    ...simAnswers(15, "2026-07-27T12:00:00Z"),
+    { page_id: 9100, question_id: 99001, is_correct: true, created_at: "2026-07-28T12:00:00Z" },
+  ];
+  const f = simuladoFacts(rows, catalog(), TODAY, WEEK_START);
+  assert.deepEqual(
+    [...f.touches].sort((a, b) => a.dayKey.localeCompare(b.dayKey)),
+    [{ dayKey: "2026-07-27", carried: true }, { dayKey: "2026-07-28", carried: false }],
+  );
+  assert.deepEqual([...f.answerDays].sort(), ["2026-07-27", "2026-07-28"]);
+  // Nothing answered this week → nothing taken up.
+  assert.deepEqual(simuladoFacts(simAnswers(12, "2026-07-24T12:00:00Z"), catalog(), TODAY, WEEK_START).touches, []);
 });
 
 // ── the plan ─────────────────────────────────────────────────────────────────

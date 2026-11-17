@@ -1041,13 +1041,18 @@ export function derivePlan(args: {
   // was already taken up today (from the answers themselves).
   const simFacts = simuladoFacts(signals.quizAttempts, signals.simulados, todayKey, weekStartKey);
 
-  const inEarlierDaysOfWeek = (iso: string) => {
+  // The latest earlier day of this week on which the student studied WITHOUT
+  // answering any simulado: a session offered up to that day and not begun was
+  // skipped, and is not chased day after day. (A missed day, or a day spent
+  // finishing the mini simulado in progress, keeps its session owed.)
+  let simuladoSkippedThrough: string | null = null;
+  const noteStudyDay = (iso: string) => {
     const k = toDateKeyBR(iso);
-    return k >= weekStartKey && k < todayKey;
+    if (k < weekStartKey || k >= todayKey || simFacts.answerDays.has(k)) return;
+    if (simuladoSkippedThrough == null || k > simuladoSkippedThrough) simuladoSkippedThrough = k;
   };
-  const studiedEarlierThisWeek =
-    signals.quizAttempts.some((a) => inEarlierDaysOfWeek(a.created_at)) ||
-    signals.lessonCompletions.some((c) => inEarlierDaysOfWeek(c.completed_at));
+  for (const a of signals.quizAttempts) noteStudyDay(a.created_at);
+  for (const c of signals.lessonCompletions) noteStudyDay(c.completed_at);
 
   // A regular mini simulado: its questions at the student's own time per question.
   // Frequency: automatic (at most a share of the week's study time — with little
@@ -1092,8 +1097,8 @@ export function derivePlan(args: {
       reviewItemCap: prefs.flashcard_daily_cap,
       doneMinutes,
       extraMinutes: Math.max(0, args.extraMinutesToday ?? 0),
-      studiedEarlierThisWeek,
-      simuladoTouchedToday: simFacts.touchedToday,
+      simuladoSkippedThrough,
+      simuladoTouches: simFacts.touches,
       simuladoResumeMinutes: (simFacts.inProgress?.remaining ?? 0) * pace.minutesPerQuestion,
       simuladoResumeCarried: simFacts.inProgress?.carried ?? false,
     },

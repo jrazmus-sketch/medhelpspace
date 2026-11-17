@@ -72,6 +72,14 @@ export type SimuladoFacts = {
   inProgress: SimuladoInProgress | null;
   /** Simulado pages with at least one answer today. */
   touchedToday: number;
+  /**
+   * One entry per simulado page answered THIS WEEK (in its current run): the day
+   * of the first answer this week, and whether that run was begun in an earlier
+   * week. Each one takes up a session of the week.
+   */
+  touches: { dayKey: string; carried: boolean }[];
+  /** Days of this week (today included) with at least one simulado answer. */
+  answerDays: Set<string>;
 };
 
 /**
@@ -112,7 +120,7 @@ export function simuladoFacts(
   todayKey: string,
   weekStartKey: string,
 ): SimuladoFacts {
-  if (!catalog || catalog.pages.size === 0) return { inProgress: null, touchedToday: 0 };
+  if (!catalog || catalog.pages.size === 0) return { inProgress: null, touchedToday: 0, touches: [], answerDays: new Set() };
   const byPage = new Map<number, AttemptLike[]>();
   for (const a of attempts) {
     if (!catalog.pages.has(a.page_id)) continue;
@@ -121,10 +129,26 @@ export function simuladoFacts(
     else byPage.set(a.page_id, [a]);
   }
   let touchedToday = 0;
+  const touches: { dayKey: string; carried: boolean }[] = [];
+  const answerDays = new Set<string>();
   let best: { p: SimuladoInProgress; lastAt: number } | null = null;
   for (const [pageId, list] of byPage) {
     if (list.some((a) => toDateKeyBR(a.created_at) === todayKey)) touchedToday++;
     const page = catalog.pages.get(pageId)!;
+    // This week's answers of the page's CURRENT run (a 60D Simulado 100Q has no runs: every answer counts).
+    const runStartIso = page.isMini ? catalog.runStarts.get(pageId) : null;
+    const runStartMs = runStartIso ? Date.parse(runStartIso) : -Infinity;
+    let firstThisWeek: string | null = null;
+    let runFirstKey: string | null = null;
+    for (const a of list) {
+      if (!(Date.parse(a.created_at) >= runStartMs)) continue;
+      const k = toDateKeyBR(a.created_at);
+      if (runFirstKey == null || k < runFirstKey) runFirstKey = k;
+      if (k < weekStartKey || k > todayKey) continue;
+      answerDays.add(k);
+      if (firstThisWeek == null || k < firstThisWeek) firstThisWeek = k;
+    }
+    if (firstThisWeek != null) touches.push({ dayKey: firstThisWeek, carried: runFirstKey != null && runFirstKey < weekStartKey });
     if (!page.isMini || page.questionIds.length === 0) continue;
     const run = runProgress(list, page.questionIds, catalog.runStarts.get(pageId));
     const answered = run.results.size;
@@ -142,7 +166,7 @@ export function simuladoFacts(
       },
     };
   }
-  return { inProgress: best?.p ?? null, touchedToday };
+  return { inProgress: best?.p ?? null, touchedToday, touches, answerDays };
 }
 
 export type SimuladoCadence = {
