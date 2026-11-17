@@ -627,33 +627,34 @@ export function derivePlan(args: {
       topicIndex && topicOrigins && topicOrigins.size > 0
         ? topicQuizHref(topicIndex, topic, pageById, specialtySlugById, specInfo.slug)
         : null;
-    if (allowedTypes.has("quiz") && topicLink && topicOrigins) {
-      const totalQuestions = topicOrigins.size;
-      const progress = topicProgress.get(topic.id);
-      if (!isPageMastered(progress, totalQuestions)) {
-        items.push(quizItem(topic, specInfo.name, progress, totalQuestions, topicLink.href, topicLink.pageId, weakness, gapWeight));
-        emitted = true;
-      }
-    } else if (allowedTypes.has("quiz")) {
-      const quizPage = contentPageFor(topic, "quiz");
-      if (quizPage && !emittedQuizPages.has(quizPage.id)) {
-        const progress = pageProgress.get(quizPage.id);
-        // The page's real question count, falling back to the topic's incidence
-        // (equal for 199 of 211 topics) when the view is unavailable or returns
-        // something unusable. A total of 0 means the page has nothing to answer:
-        // scheduling it would pin an item that can never be completed, so it is
-        // skipped rather than shown forever.
-        const viewCount = questionCounts.get(quizPage.id);
-        const totalQuestions =
-          typeof viewCount === "number" && Number.isFinite(viewCount) && viewCount > 0
-            ? viewCount
-            : topic.incidence_count;
-        if (totalQuestions > 0 && !isPageMastered(progress, totalQuestions)) {
-          items.push(quizItem(topic, specInfo.name, progress, totalQuestions, pageHref(quizPage, specInfo.slug), quizPage.id, weakness, gapWeight));
-          emittedQuizPages.add(quizPage.id);
-          emitted = true;
-        }
-      }
+    const quizPage = topicLink ? null : contentPageFor(topic, "quiz");
+    const quizProgress = topicLink ? topicProgress.get(topic.id) : quizPage ? pageProgress.get(quizPage.id) : undefined;
+    // The page's real question count, falling back to the topic's incidence
+    // (equal for 199 of 211 topics) when the view is unavailable or returns
+    // something unusable. A total of 0 means the page has nothing to answer:
+    // scheduling it would pin an item that can never be completed, so it is
+    // skipped rather than shown forever.
+    const viewCount = quizPage ? questionCounts.get(quizPage.id) : undefined;
+    const quizTotal = topicLink && topicOrigins
+      ? topicOrigins.size
+      : typeof viewCount === "number" && Number.isFinite(viewCount) && viewCount > 0
+        ? viewCount
+        : topic.incidence_count;
+
+    // A topic whose questions are MASTERED leaves the plan entirely — Revalida Up,
+    // Flashcards and MedVoice included — whatever content types are selected. Before
+    // (bug found 2026-11-16) only the quiz item was retired: the topic's other items
+    // kept its slot every day, so the plan stalled on the same top 3–5 topics forever.
+    // What the student already studied keeps coming back through the Revisão.
+    if ((topicLink || quizPage) && isPageMastered(quizProgress, quizTotal)) continue;
+
+    if (allowedTypes.has("quiz") && topicLink) {
+      items.push(quizItem(topic, specInfo.name, quizProgress, quizTotal, topicLink.href, topicLink.pageId, weakness, gapWeight));
+      emitted = true;
+    } else if (allowedTypes.has("quiz") && quizPage && !emittedQuizPages.has(quizPage.id) && quizTotal > 0) {
+      items.push(quizItem(topic, specInfo.name, quizProgress, quizTotal, pageHref(quizPage, specInfo.slug), quizPage.id, weakness, gapWeight));
+      emittedQuizPages.add(quizPage.id);
+      emitted = true;
     }
 
     // REVALIDA UP — the topic's exam patterns, between Questões and Flashcards

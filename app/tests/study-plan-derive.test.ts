@@ -450,3 +450,50 @@ test("a revalida_up link to a page that is not a Revalida Up page is ignored", (
   const plan = withFrozenTime(MORNING_BRT, () => run({ topicContent: content }));
   assert.equal(plan.items.some((i) => i.kind === "revalida_up"), false);
 });
+
+// ── A mastered topic frees its slot (bug found 2026-11-16) ──────────────────
+
+const MASTERED_100 = Array.from({ length: 20 }, (_, i) => ({
+  specialty_id: 1, is_correct: i < 15, created_at: "2026-07-20T10:00:00Z", page_id: 100, question_id: i + 1,
+})); // 15/20 = 75%
+
+test("a topic with mastered questions leaves the plan entirely, Revalida Up and Flashcards included", () => {
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ pages: RU_PAGES, topicContent: RU_CONTENT, signals: { quizAttempts: MASTERED_100 } }));
+  assert.deepEqual(plan.items.filter((i) => i.title === "Arritmias").map((i) => i.kind), []);
+  assert.equal(plan.items.some((i) => i.title === "Asma"), true, "the next topic takes the slot");
+});
+
+test("the mastered topic stays out even when Questões is unchecked", () => {
+  const types: ContentType[] = ["revalida_up", "flashcards", "audio"];
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ pages: RU_PAGES, topicContent: RU_CONTENT, prefs: { preferred_content_types: types }, signals: { quizAttempts: MASTERED_100 } }));
+  assert.equal(plan.items.some((i) => i.title === "Arritmias"), false);
+});
+
+test("an unmastered topic still shows all its items", () => {
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ pages: RU_PAGES, topicContent: RU_CONTENT, signals: { quizAttempts: MASTERED_100.slice(0, 10) } }));
+  assert.deepEqual(plan.items.filter((i) => i.title === "Arritmias").map((i) => i.kind), ["quiz", "revalida_up", "flashcards"]);
+});
+
+test("the plan advances past mastered topics instead of stalling on them", () => {
+  const SPECS: SpecialtyRow[] = [{ id: 1, name: "Cardiologia", slug: "cardiologia" }];
+  const pages: PageRow[] = []; const topics: TopicRow[] = []; const content: TopicContentRow[] = [];
+  for (let i = 1; i <= 6; i++) {
+    pages.push({ id: 100 + i, slug: `q${i}`, title: `Q${i}`, type: "h5p-quiz", specialty_id: 1, track_id: null, content_module_id: null, view: "quiz" });
+    pages.push({ id: 300 + i, slug: `ru${i}`, title: `RU${i}`, type: "plain-content", specialty_id: 1, track_id: null, content_module_id: null, view: "revalida-up" });
+    topics.push({ id: i, name: `Tema${i}`, slug: `t${i}`, specialty_id: 1, source_page_id: 100 + i, incidence_count: 100 - i, priority_tier: "A", is_pinned: false });
+    content.push({ topic_id: i, resource_type: "quiz", page_id: 100 + i, question_filter: null });
+    content.push({ topic_id: i, resource_type: "revalida_up", page_id: 300 + i, question_filter: null });
+  }
+  const attempts = [1, 2, 3].flatMap((t) => Array.from({ length: 5 }, (_, q) => ({
+    specialty_id: 1, is_correct: true, created_at: "2026-07-20T10:00:00Z", page_id: 100 + t, question_id: t * 100 + q,
+  })));
+  const plan = withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: prefs({ intensity: "leve" }), cohort: { test_date: "2027-01-15" }, specialties: SPECS, pages, topics, topicContent: content,
+    signals: emptySignals({ quizAttempts: attempts, questionCountsByPageId: new Map(pages.map((p) => [p.id, 5])) }),
+  }));
+  const titles = [...new Set(plan.items.map((i) => i.title))];
+  assert.deepEqual(titles, ["Tema4", "Tema5", "Tema6"]);
+});
