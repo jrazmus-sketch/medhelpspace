@@ -62,9 +62,11 @@ export function TipText({
     );
   }
 
+  // pre-line: a tip may hold paragraphs separated by line breaks (Karina's welcome text,
+  // 2026-11-16); without it HTML collapses them into one run-on paragraph.
   const Tag = as;
   return (
-    <Tag className={className}>
+    <Tag className={className ? `whitespace-pre-line ${className}` : "whitespace-pre-line"}>
       <Emphasis text={value} tone={tone} />
     </Tag>
   );

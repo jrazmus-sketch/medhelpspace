@@ -55,7 +55,7 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "welcome",
     title: "Bem-vindo ao MedHelpSpace",
     body:
-      "Há duas formas de estudar: escolha um **tipo** de conteúdo (questões, flashcards, resumos, áudios…) ou entre direto numa **especialidade** e veja tudo dela reunido. O cartão *Continuar* sempre te traz de volta de onde parou.",
+      "Comece pelo **Meu Plano**: defina seus dias e tempo de estudo e receba um cronograma com temas por prioridade para estudar, praticar e revisar.\n\nVocê também pode explorar os materiais por **tipo de conteúdo** — questões, simulados, flashcards, resumos, áudios e outros — ou por **especialidade**.\n\nPara retomar de onde parou, use o cartão **Continuar**.",
     reviewNote:
       "Tudo que você pratica entra automaticamente na **Revisão** e volta na hora certa para fixar na memória.",
     href: "/app/comecar",
