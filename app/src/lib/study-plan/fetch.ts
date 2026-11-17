@@ -15,6 +15,7 @@ import { fetchTopicContent } from "./topic-content";
 import { loadPlanSettings } from "./settings-server";
 import { isPaceMode } from "./pace";
 import { fetchAllForUser, loadQuestionReviewRows } from "./user-rows";
+import { frequencyFromColumn, type SimuladoCatalog, type SimuladoPage } from "./simulado";
 
 type Admin = ReturnType<typeof createAdminClient>;
 
@@ -42,6 +43,33 @@ async function loadPlanCatalog(admin: Admin): Promise<NonNullable<Signals["catal
       ]),
     ),
   };
+}
+
+/**
+ * The simulado pages with their questions (view study_plan_simulado_pages, ~170
+ * rows) and where the student's current run of each begins (quiz_runs). Null
+ * when the view is unavailable: the plan then never asks to continue a simulado.
+ */
+export async function loadSimuladoCatalog(admin: Admin, userId: string): Promise<SimuladoCatalog | null> {
+  const [pagesRes, runsRes] = await Promise.all([
+    admin.from("study_plan_simulado_pages").select("page_id, slug, title, specialty_slug, is_mini, question_ids"),
+    admin.from("quiz_runs").select("page_id, started_at").eq("user_id", userId),
+  ]);
+  if (pagesRes.error) return null;
+  const pages = new Map<number, SimuladoPage>();
+  for (const r of pagesRes.data ?? []) {
+    pages.set(Number(r.page_id), {
+      pageId: Number(r.page_id),
+      slug: String(r.slug),
+      title: String(r.title),
+      specialtySlug: String(r.specialty_slug ?? "geral"),
+      isMini: r.is_mini === true,
+      questionIds: ((r.question_ids as unknown[] | null) ?? []).map(Number),
+    });
+  }
+  const runStarts = new Map<number, string>();
+  for (const r of runsRes.data ?? []) runStarts.set(Number(r.page_id), String(r.started_at));
+  return { pages, runStarts };
 }
 
 /** The student's Flashcards facts in one call (null when the function is unavailable). */
@@ -123,7 +151,8 @@ export async function getDerivedPlanForUser(
     catalog,
     flashcardFacts,
     audioRes,
-    simuladoPagesRes,
+    simulados,
+    simuladoFreqRes,
     questionReview,
     reviewedTodayRes,
   ] = await Promise.all([
@@ -191,8 +220,10 @@ export async function getDerivedPlanForUser(
     loadFlashcardFacts(admin, userId, startOfDayBRIso(todayKey)),
     // Where each MedVoice audio was left (the player saves it).
     admin.from("lesson_progress").select("lesson_id, position_seconds").eq("user_id", userId),
-    // Simulado pages (~165), to know whether this week's simulado was done.
-    admin.from("pages").select("id").eq("view", "simulados").eq("status", "publish"),
+    // Simulado pages with their questions + the student's current runs.
+    loadSimuladoCatalog(admin, userId),
+    // Read apart, like pace_mode: a missing column must only mean "auto".
+    admin.from("study_plans").select("simulados_per_week").eq("user_id", userId).maybeSingle(),
     // What the Revisão knows about each answered question (review-outcomes.ts).
     loadQuestionReviewRows(admin, userId),
     // Items graded today — a Revisão session writes no attempt row, so this is
@@ -231,6 +262,7 @@ export async function getDerivedPlanForUser(
     email_weekly_summary: raw?.email_weekly_summary ?? defaults.email_weekly_summary,
     email_daily_plan: raw?.email_daily_plan ?? defaults.email_daily_plan,
     pace_mode: isPaceMode(paceRes.data?.pace_mode) ? paceRes.data.pace_mode : defaults.pace_mode,
+    simulado_frequency: frequencyFromColumn(simuladoFreqRes.data?.simulados_per_week),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -282,7 +314,7 @@ export async function getDerivedPlanForUser(
     audioPositions: new Map(
       (audioRes.data ?? []).map((r) => [Number(r.lesson_id), Number(r.position_seconds ?? 0)]),
     ),
-    simuladoPageIds: new Set((simuladoPagesRes.data ?? []).map((r) => Number(r.id))),
+    simulados,
     questionReview,
     reviewedToday: reviewedTodayRes.count ?? 0,
   };
@@ -311,7 +343,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
   welcomedAt: string | null;
 }> {
   const admin = createAdminClient();
-  const [planRes, focusRes, excludedRes, paceRes] = await Promise.all([
+  const [planRes, focusRes, excludedRes, paceRes, simuladoFreqRes] = await Promise.all([
     admin
       .from("study_plans")
       .select(`
@@ -332,6 +364,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       .select("specialty_id")
       .eq("user_id", userId),
     admin.from("study_plans").select("pace_mode").eq("user_id", userId).maybeSingle(),
+    admin.from("study_plans").select("simulados_per_week").eq("user_id", userId).maybeSingle(),
   ]);
 
   const defaults = defaultPrefs();
@@ -360,6 +393,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       email_weekly_summary: raw?.email_weekly_summary ?? defaults.email_weekly_summary,
       email_daily_plan: raw?.email_daily_plan ?? defaults.email_daily_plan,
       pace_mode: isPaceMode(paceRes.data?.pace_mode) ? paceRes.data.pace_mode : defaults.pace_mode,
+      simulado_frequency: frequencyFromColumn(simuladoFreqRes.data?.simulados_per_week),
     },
     welcomedAt: (raw?.welcomed_at as string | null) ?? null,
   };

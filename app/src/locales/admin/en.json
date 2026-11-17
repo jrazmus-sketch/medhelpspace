@@ -2395,7 +2395,7 @@
       },
       "phase": {
         "title": "Mini simulado",
-        "help": "The weekly mini simulado counts inside the student's daily time. The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are not scheduled by Meu Plano — they will have their own schedule on the 60D page."
+        "help": "The mini simulado counts inside the student's daily time; when it does not fit one day it is split between study days and resumes where it stopped. The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are not scheduled by Meu Plano — they will have their own schedule on the 60D page."
       },
       "pace": {
         "title": "Study pace",
@@ -2433,7 +2433,7 @@
       },
       "simuladoDaysPerWeek": {
         "label": "Mini simulados",
-        "help": "In the last 60 days: placed on the first study days of the week and kept on the list until the student does it. 0 = never; 7 = every study day."
+        "help": "AUTOMATIC frequency, per week, in the last 60 days (sessions are spread over the week's study days). The student may choose 1 or 2 a week in Meu Plano › Disponibilidade; then this number and the limit below do not apply. 0 = never."
       },
       "paceSlowFactor": {
         "label": "“Mais devagar” multiplies the times by",

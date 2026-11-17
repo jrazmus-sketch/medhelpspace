@@ -127,12 +127,14 @@ function input(
     queue: [],
     simuladoEnabled: true,
     simuladoMinutes: 40,
+    simuladoSessionsPerWeek: 1,
     simuladoEveryWeeks: 1,
     futureReviewShare: 0.2,
     ...over,
     today: {
       reviewDue: 0, reviewItemCap: null, doneMinutes: 0, extraMinutes: 0,
-      simuladoDoneThisWeekMinutes: 0, studiedEarlierThisWeek: false, ...(over.today ?? {}),
+      studiedEarlierThisWeek: false, simuladoTouchedToday: 0, simuladoResumeMinutes: 0, simuladoResumeCarried: false,
+      ...(over.today ?? {}),
     },
   };
 }
@@ -228,16 +230,18 @@ test("schedule: the weekly mini simulado counts INSIDE the day (last 60 days)", 
   assert.equal(r.days.find((d) => d.key === "2026-08-03")!.simulado, 40, "next Monday");
 });
 
-test("schedule: a simulado already done this week is not asked for again", () => {
-  const r = simulateSchedule(input({ queue: [quiz(1, 400)], examKey: "2026-09-01", today: { simuladoDoneThisWeekMinutes: 40 } }));
+test("schedule: a simulado already taken up today is not asked for again", () => {
+  const r = simulateSchedule(input({ queue: [quiz(1, 400)], examKey: "2026-09-01", today: { simuladoTouchedToday: 1 } }));
   assert.equal(r.today.simuladoMinutes, 0);
 });
 
-test("schedule: a day shorter than a simulado takes what fits and the rest stays owed", () => {
+test("schedule: a day shorter than a simulado takes the whole questions that fit and the rest stays owed", () => {
+  // 40 min ÷ 25 questions = 1.6 min each. A 30-minute day holds 18 questions (28.8 min); 7 are left (11.2 min).
   const r = simulateSchedule(input({ queue: [], examKey: "2026-09-01", minutes: 30 }));
-  assert.equal(r.today.simuladoMinutes, 30);
+  assert.ok(Math.abs(r.today.simuladoMinutes - 28.8) < 0.01);
   assert.equal(r.today.simuladoPartial, true);
-  assert.equal(r.days[1].simulado, 10);
+  assert.ok(Math.abs(r.days[1].simulado - 11.2) < 0.01, "continued on the next study day");
+  assert.equal(r.days[2].simulado, 0);
 });
 
 test("schedule: no simulado before the last 60 days, nor when the student unchecked it", () => {
@@ -441,7 +445,7 @@ test("MedHelp 60D materials are never scheduled by Meu Plano", () => {
   assert.equal(p.items.some((i) => i.kind === "memorecards"), false);
   const sim = p.items.find((i) => i.kind === "simulado")!;
   assert.match(sim.title, /^Mini simulado/);
-  assert.match(sim.subtitle, /25 questões/);
+  assert.match(sim.title, /25 questões/);
   assert.equal(sim.href, "/app/estudo-por-questoes?tab=simulados");
   assert.ok(p.totalEstimatedMinutes <= 60);
 });

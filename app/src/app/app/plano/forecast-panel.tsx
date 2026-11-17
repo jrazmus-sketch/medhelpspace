@@ -207,7 +207,7 @@ export function ForecastPanel({
           Entram no cálculo: {counted.length > 0 ? joinPt(counted) : "nenhum material selecionado"}
           {forecast.scope.excludedSpecialties > 0 ? ", das especialidades que você manteve no plano" : ""}
           .{hasAudio ? " O MedVoice é programado só a mais de 60 dias da prova." : ""} A Revisão e, nos últimos 60
-          dias, o mini simulado semanal ocupam parte do tempo de cada dia. Resumos Narrativos e os materiais do
+          dias, os mini simulados ocupam parte do tempo de estudo. Resumos Narrativos e os materiais do
           MedHelp 60D (Fórmula MedHelp, MemoreCards e Simulados 100Q) não estão incluídos. A previsão é
           recalculada todos os dias a partir do que você já estudou.
         </p>

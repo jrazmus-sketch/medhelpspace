@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { todayKeyBR } from "@/lib/br-date";
 import type { Intensity, ContentType, WeaknessSensitivity } from "@/lib/study-plan/derive";
 import { isPaceMode, type PaceMode } from "@/lib/study-plan/pace";
+import { frequencyToColumn, isSimuladoFrequency, type SimuladoFrequency } from "@/lib/study-plan/simulado";
+import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 
 // NOTE: A "use server" module may only export async functions. Do NOT re-export
 // types from here — the server-actions compiler turns `export type { … }` into a
@@ -29,6 +31,7 @@ type StudyPlansPatch = Partial<{
   email_weekly_summary: boolean;
   email_daily_plan: boolean;
   pace_mode: PaceMode;
+  simulados_per_week: number | null;
 }>;
 
 async function upsertStudyPlan(userId: string, patch: StudyPlansPatch) {
@@ -84,6 +87,37 @@ export async function setPaceMode(mode: PaceMode): Promise<void> {
   if (!user) return;
   await upsertStudyPlan(user.id, { pace_mode: mode });
   revalidatePath("/app", "layout");
+}
+
+/**
+ * Mini simulados per week: "auto" or the student's own 1 / 2 (Karina 2026-11-17).
+ * The screen shows the impact BEFORE this is called; the feasibility is checked
+ * again here, against the student's real availability and pace — a frequency
+ * whose sessions alone exceed the week's study time is refused, never saved.
+ * Returns a value (Server Action errors are redacted in production).
+ */
+export async function setSimuladoFrequency(
+  frequency: SimuladoFrequency,
+): Promise<{ ok: true } | { ok: false; error: "invalid" | "infeasible" | "failed" }> {
+  if (!isSimuladoFrequency(frequency)) return { ok: false, error: "invalid" };
+  const user = await getUser();
+  if (!user) return { ok: false, error: "failed" };
+  if (frequency !== "auto") {
+    const plan = await getDerivedPlanForUser(user.id);
+    const option = plan?.simulado.options.find((o) => o.frequency === frequency);
+    if (!option) return { ok: false, error: "failed" };
+    if (!option.feasible) return { ok: false, error: "infeasible" };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("study_plans")
+    .upsert(
+      { user_id: user.id, simulados_per_week: frequencyToColumn(frequency), updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+  if (error) return { ok: false, error: "failed" };
+  revalidatePath("/app", "layout");
+  return { ok: true };
 }
 
 // ── Temporary intensity (reduce intensity for N days) ────────────────────────

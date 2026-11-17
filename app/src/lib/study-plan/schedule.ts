@@ -4,8 +4,15 @@
  * PURE module. Given the ordered work still to do and the student's calendar, it
  * fills every study day from TODAY to the eve of the exam by MINUTES:
  *
- *   day's time  →  Revisão first  →  the week's mini simulado (last 60 days)
+ *   day's time  →  Revisão first  →  the mini simulado (last 60 days)
  *               →  new content, in priority order, until the day is full
+ *
+ * Mini simulados (Karina 2026-11-17, second round). A session is 25 questions; the
+ * week's sessions are spread over its study days, and one that does not fit a day
+ * is CONTINUED on the next study days (the player reopens on the first unanswered
+ * question). A mini simulado already begun is always finished first, and one begun
+ * in an earlier week takes the place of the new week's first session — so it is
+ * never lost and never programmed twice.
  *
  * The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are NOT
  * scheduled here: they will have their own schedule on the 60D page (Karina
@@ -80,19 +87,25 @@ export type ScheduleInput = {
     doneMinutes: number;
     /** Extra minutes the student asked for ("adiantar"). */
     extraMinutes: number;
-    /** Minutes of simulado already done since Monday (so the week's simulado is not asked twice). */
-    simuladoDoneThisWeekMinutes: number;
     /**
-     * The student already studied on an earlier day of this week. A simulado not
-     * done on its day is offered again later in the week ONLY when that day was
+     * The student already studied on an earlier day of this week. A session not
+     * BEGUN on its day is offered again later in the week ONLY when that day was
      * missed altogether — a student who studied and skipped it is not chased with
-     * it day after day.
+     * it day after day. (One that was begun is always continued — see below.)
      */
     studiedEarlierThisWeek: boolean;
+    /** Simulados with at least one answer today: a session of today already taken up is not asked again. */
+    simuladoTouchedToday: number;
+    /** Minutes left of the mini simulado the student is in the middle of (0 = none). */
+    simuladoResumeMinutes: number;
+    /** That mini simulado was begun in an EARLIER week: it stands in for this week's first session. */
+    simuladoResumeCarried: boolean;
   };
   simuladoEnabled: boolean;
   /** One mini simulado in minutes (its questions × the student's time per question). */
   simuladoMinutes: number;
+  /** Sessions in a simulado week: the student's choice, or the settings' value in the automatic mode. */
+  simuladoSessionsPerWeek: number;
   /** A simulado week every N weeks (1 = every week), counted back from the exam week. */
   simuladoEveryWeeks: number;
   /**
@@ -111,8 +124,11 @@ export type TodaySchedule = {
   doneMinutes: number;
   reviewItems: number;
   reviewMinutes: number;
+  /** Simulado minutes placed on today (resume + new). Always whole questions. */
   simuladoMinutes: number;
-  /** The simulado continues from / into another day (the day is shorter than one simulado). */
+  /** Of those, the part that continues the mini simulado already in progress. */
+  simuladoResumeMinutes: number;
+  /** Simulado still owed after today's part (it continues on the next study day). */
   simuladoPartial: boolean;
   chunks: ScheduledChunk[];
   /** Everything placed on today, in minutes. Never above budget − done (+ extra). */
@@ -153,6 +169,8 @@ const EPS = 0.01;
 const LOOKAHEAD = 12;
 /** A one-sitting item is only started (to be continued) when at least this much of the day is left. */
 const MIN_START_MINUTES = 5;
+/** On the day a mini simulado is finished, a NEW one is only begun when at least this many questions fit. */
+const MIN_NEW_SIMULADO_QUESTIONS = 5;
 
 export function phaseForDay(dayKey: string, examKey: string | null, intensificationStartDays: number): Phase {
   if (!examKey) return "foundation";
@@ -180,6 +198,12 @@ function isSimuladoWeek(dayKey: string, examKey: string | null, everyWeeks: numb
   return weeksToExam >= 0 && weeksToExam % everyWeeks === 0;
 }
 
+function bitCount(mask: number): number {
+  let n = 0;
+  for (let i = 0; i < 7; i++) if (mask & (1 << i)) n++;
+  return n;
+}
+
 export function simulateSchedule(input: ScheduleInput): ScheduleResult {
   const { todayKey, examKey, calendar, settings, queue } = input;
   const remaining = queue.map((a) => Math.max(0, a.unitsRemaining));
@@ -200,13 +224,26 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
   // (An exam today or in the past still schedules today.)
   const eve = examKey ? addDaysKey(examKey, -1) : todayKey;
   const lastKey = eve < todayKey ? todayKey : eve;
-  // Start on the Monday of this week: the week's simulado belongs to the first
-  // study day(s) of the week. A missed day does not lose it (see
-  // today.studiedEarlierThisWeek) and one already done is not asked for again.
+  // Start on the Monday of this week: the week's sessions are spread over its
+  // study days. A missed day does not lose a session (see
+  // today.studiedEarlierThisWeek) and one already taken up is not asked for again.
   const startKey = mondayOf(todayKey);
 
+  // ── Mini simulado bookkeeping ────────────────────────────────────────────
+  const sessions = Math.max(0, Math.floor(input.simuladoSessionsPerWeek));
+  const studyDaysPerWeek = Math.max(1, bitCount(calendar.studyDayMask));
+  // Study-day index (0-based, within the week) of each session: 1 → the first
+  // study day; 2 → the first and the middle of the week; and so on.
+  const sessionSlots = Array.from({ length: sessions }, (_, k) => Math.floor((k * studyDaysPerWeek) / sessions));
+  const minutesPerSimQuestion =
+    settings.simuladoQuestions > 0 ? input.simuladoMinutes / settings.simuladoQuestions : input.simuladoMinutes;
+  // More sessions than study days in a week → more than one may share a day.
+  const simPerDayCap = input.simuladoMinutes * Math.max(1, Math.ceil(sessions / studyDaysPerWeek));
   let simCarry = 0;
-  let simDaysThisWeek = 0;
+  let studyDayIndex = 0;
+  let accruedBefore = 0;
+  /** A session left unfinished at the end of a (future) week replaces the next week's first one. */
+  let substituteNext = false;
   let studyDaysLeft = 0;
   let capacityMinutes = 0;
   let finishDay: string | null = null;
@@ -216,7 +253,7 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     isStudyDay: false,
     phase: phaseForDay(todayKey, examKey, input.intensificationStartDays),
     budgetMinutes: 0, doneMinutes: input.today.doneMinutes,
-    reviewItems: 0, reviewMinutes: 0, simuladoMinutes: 0, simuladoPartial: false,
+    reviewItems: 0, reviewMinutes: 0, simuladoMinutes: 0, simuladoResumeMinutes: 0, simuladoPartial: false,
     chunks: [], plannedMinutes: 0,
   };
 
@@ -228,29 +265,46 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
   };
 
   for (let dayKey = startKey; dayKey <= lastKey; dayKey = addDaysKey(dayKey, 1)) {
-    if (dayOfWeekForKey(dayKey) === 1) {
-      // New study week: what was not done last week is not carried over.
-      simCarry = 0;
-      simDaysThisWeek = 0;
-    }
     const isToday = dayKey === todayKey;
     const past = dayKey < todayKey;
+    if (dayOfWeekForKey(dayKey) === 1) {
+      // New study week. A session still unfinished (it did not fit the days left)
+      // is NOT dropped: it continues, in place of the new week's first session.
+      studyDayIndex = 0;
+      substituteNext = !past && !isToday && simCarry > EPS;
+    }
     if (!isStudyDay(dayKey, calendar)) continue;
 
     const phase = phaseForDay(dayKey, examKey, input.intensificationStartDays);
-    const simuladoPhase =
-      input.simuladoEnabled && settings.simuladoDaysPerWeek > 0 && phase !== "foundation" &&
-      isSimuladoWeek(dayKey, examKey, input.simuladoEveryWeeks);
-    let accruedToday = 0;
-    if (simuladoPhase && simDaysThisWeek < settings.simuladoDaysPerWeek) {
-      simCarry += input.simuladoMinutes;
-      accruedToday = input.simuladoMinutes;
-      simDaysThisWeek++;
+    // Mini simulados belong to the last-60-days phases. `simuladoActive`: one may
+    // be placed today; `simuladoWeek`: this week opens new sessions.
+    const simuladoActive = input.simuladoEnabled && sessions > 0 && phase !== "foundation";
+    const simuladoWeek = simuladoActive && isSimuladoWeek(dayKey, examKey, input.simuladoEveryWeeks);
+    const accruedToday = simuladoWeek ? sessionSlots.filter((slot) => slot === studyDayIndex).length : 0;
+    studyDayIndex++;
+    if (past) {
+      accruedBefore += accruedToday;
+      continue; // earlier this week: only what is owed matters
     }
-    if (past) continue; // earlier this week: only what is owed matters
+    let simResumeOwed = 0;
     if (isToday) {
-      if (input.today.studiedEarlierThisWeek) simCarry = accruedToday;
-      simCarry = Math.max(0, simCarry - Math.max(0, input.today.simuladoDoneThisWeekMinutes));
+      // What the plan still asks for, from what the student REALLY did:
+      //  - sessions of earlier days never begun are kept only when those days were missed;
+      //  - a session of today already taken up (any simulado answered today) is not asked again;
+      //  - the mini simulado in progress is always finished, and when it comes from an
+      //    earlier week it stands in for this week's first session.
+      const t = input.today;
+      let open = Math.max(0, (t.studiedEarlierThisWeek ? 0 : accruedBefore) + accruedToday - Math.max(0, t.simuladoTouchedToday));
+      simResumeOwed = simuladoActive ? Math.max(0, t.simuladoResumeMinutes) : 0;
+      const firstSlotStillOpen =
+        (accruedBefore > 0 && !t.studiedEarlierThisWeek) || (accruedBefore === 0 && accruedToday > 0);
+      if (simResumeOwed > EPS && t.simuladoResumeCarried && firstSlotStillOpen) open = Math.max(0, open - 1);
+      simCarry = open * input.simuladoMinutes + simResumeOwed;
+    } else {
+      for (let k = 0; k < accruedToday; k++) {
+        if (substituteNext) substituteNext = false;
+        else simCarry += input.simuladoMinutes;
+      }
     }
 
     const budget = Math.max(0, calendar.minutesForDay(dayKey));
@@ -274,16 +328,27 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     }
     avail -= reviewMinutes;
 
-    // ── Simulado: the first N study days of each week, last 60 days ────────
+    // ── Mini simulado (last 60 days) ───────────────────────────────────────
     let simMinutes = 0;
+    let simResumeMinutes = 0;
     let simPartial = false;
-    if (simuladoPhase && simCarry > EPS) {
-      // At most one simulado a day; a day shorter than one takes what fits and
-      // the rest stays owed for the next study day.
-      const want = Math.min(simCarry, input.simuladoMinutes);
-      simMinutes = Math.min(want, avail);
-      simPartial = simMinutes + EPS < want;
-      simCarry -= simMinutes;
+    if (simuladoActive && simCarry > EPS) {
+      // A day shorter than one simulado takes the whole QUESTIONS that fit; the
+      // rest stays owed and continues on the next study day.
+      const want = Math.min(simCarry, simPerDayCap);
+      let questions = Math.floor(Math.min(want, avail) / minutesPerSimQuestion + EPS);
+      if (simResumeOwed > EPS) {
+        // Today finishes the one in progress: a new simulado is not opened for a
+        // couple of questions — it waits for the next study day.
+        const resumeQuestions = Math.min(questions, Math.round(simResumeOwed / minutesPerSimQuestion));
+        const newQuestions = questions - resumeQuestions;
+        const newOwed = Math.round((simCarry - simResumeOwed) / minutesPerSimQuestion);
+        if (newQuestions > 0 && newQuestions < Math.min(MIN_NEW_SIMULADO_QUESTIONS, newOwed)) questions = resumeQuestions;
+      }
+      simMinutes = Math.min(questions * minutesPerSimQuestion, avail);
+      simResumeMinutes = Math.min(simMinutes, simResumeOwed);
+      simCarry = Math.max(0, simCarry - simMinutes);
+      simPartial = simCarry > EPS;
       avail -= simMinutes;
     }
 
@@ -346,7 +411,7 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
         isStudyDay: true, phase,
         budgetMinutes: budget, doneMinutes: input.today.doneMinutes,
         reviewItems, reviewMinutes,
-        simuladoMinutes: simMinutes, simuladoPartial: simPartial,
+        simuladoMinutes: simMinutes, simuladoResumeMinutes: simResumeMinutes, simuladoPartial: simPartial,
         chunks,
         plannedMinutes: reviewMinutes + simMinutes + contentMinutes,
       };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { safe } from "@/lib/sanitize";
@@ -58,6 +58,12 @@ interface Props {
   nextQuizTitle: string | null;
   specialtyHref: string;
   specialtyName: string;
+  /**
+   * Mini simulados only (Karina 2026-11-17): the student's current run of this
+   * page — question id → last answer correct? — so a simulado left half-way
+   * reopens on the first unanswered question. Absent → always starts on question 1.
+   */
+  run?: { results: Record<number, boolean> } | null;
 }
 
 export function QuizPlayer({
@@ -68,10 +74,25 @@ export function QuizPlayer({
   nextQuizTitle,
   specialtyHref,
   specialtyName,
+  run,
 }: Props) {
   const { active: editActive } = useEditMode();
-  const [results, setResults] = useState<Record<number, boolean>>({});
-  const [activeIds, setActiveIds] = useState<number[]>(() => questions.map((q) => q.id));
+  // ── Where the run stands when the page opens ───────────────────────────────
+  const tracked = run != null;
+  const answeredBefore = tracked ? questions.filter((q) => q.id in run.results) : [];
+  // Some answered, not all → continue. All answered → a finished simulado being
+  // taken again: it starts on question 1 and its first answer begins a new run.
+  const resuming = answeredBefore.length > 0 && answeredBefore.length < questions.length;
+  const [results, setResults] = useState<Record<number, boolean>>(() =>
+    resuming ? Object.fromEntries(answeredBefore.map((q) => [q.id, run!.results[q.id]])) : {},
+  );
+  const [activeIds, setActiveIds] = useState<number[]>(() =>
+    (resuming ? questions.filter((q) => !(q.id in run!.results)) : questions).map((q) => q.id),
+  );
+  // "resume": only the questions not answered yet. "retry": only the wrong ones.
+  const [mode, setMode] = useState<"full" | "resume" | "retry">(resuming ? "resume" : "full");
+  // The next answer begins a new run (the earlier attempts stay in the history).
+  const newRunPending = useRef(tracked && answeredBefore.length >= questions.length && questions.length > 0);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [phase, setPhase] = useState<"quiz" | "summary">("quiz");
@@ -83,7 +104,11 @@ export function QuizPlayer({
   const activeQuestions = activeIds.map((id) => questions.find((q) => q.id === id)!);
   const question = activeQuestions[currentIdx];
   const answered = selectedIdx !== null;
-  const isRetry = activeIds.length < questions.length;
+  const isRetry = mode === "retry";
+  // The question's own number in the simulado ("Questão 13 de 25" when continuing),
+  // except while redoing the wrong ones, which is a list of its own.
+  const position = isRetry ? currentIdx + 1 : questions.findIndex((q) => q.id === question?.id) + 1;
+  const positionTotal = isRetry ? activeQuestions.length : questions.length;
   const correctAnswer = question?.answers.find((a) => a.correct);
   const selectedAnswer = answered ? question?.answers[selectedIdx] : null;
   // Per-distractor feedback ("why this wrong answer is wrong") is often empty in
@@ -128,8 +153,10 @@ export function QuizPlayer({
             pageId: question.page_id ?? pageId,
             specialtyId: question.page_id != null ? question.specialty_id ?? null : specialtyId,
             isCorrect: correct,
+            ...(tracked && newRunPending.current ? { newRun: true } : {}),
           }),
         });
+        if (res.ok) newRunPending.current = false;
         // Only wrong answers can be error-tagged; capture the attempt id for it.
         if (!correct && res.ok) {
           const data = await res.json();
@@ -163,12 +190,17 @@ export function QuizPlayer({
   function handleRetry() {
     const wrongIds = questions.filter((q) => results[q.id] === false).map((q) => q.id);
     setActiveIds(wrongIds);
+    setMode("retry");
     setCurrentIdx(0);
     resetAnswerState();
     setPhase("quiz");
   }
 
   function handleRestart() {
+    // The earlier attempts are never deleted: the next answer only marks where
+    // the new run begins (quiz_runs), so the history is preserved.
+    newRunPending.current = tracked;
+    setMode("full");
     setResults({});
     setActiveIds(questions.map((q) => q.id));
     setCurrentIdx(0);
@@ -290,17 +322,37 @@ export function QuizPlayer({
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>
             {isRetry && <span className="text-brand font-medium mr-1">Refazendo erradas —</span>}
-            Questão {currentIdx + 1} de {activeQuestions.length}
+            Questão {position} de {positionTotal}
           </span>
           <span>{Object.values(results).filter(Boolean).length} corretas</span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-surface-2 overflow-hidden">
           <div
             className="h-full rounded-full bg-brand transition-all duration-300"
-            style={{ width: `${(currentIdx / activeQuestions.length) * 100}%` }}
+            style={{ width: `${((position - 1) / positionTotal) * 100}%` }}
           />
         </div>
       </div>
+
+      {/* Continuing a mini simulado left half-way (Karina 2026-11-17). */}
+      {mode === "resume" && (
+        <div className="rounded-xl border border-brand/30 bg-brand/5 px-4 py-3 text-sm">
+          <p className="font-medium text-foreground">Continuando de onde você parou</p>
+          <p className="mt-0.5 text-muted-foreground">
+            {answeredBefore.length} de {questions.length} questões já respondidas. Suas respostas continuam salvas.
+          </p>
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="mt-1 inline-flex min-h-11 items-center text-brand-text underline-offset-4 hover:underline"
+          >
+            Recomeçar do início
+          </button>
+          <p className="text-xs text-muted-foreground">
+            Recomeçar não apaga o histórico das tentativas anteriores.
+          </p>
+        </div>
+      )}
 
       {/* Media image (ECG strips, diagrams, etc.) */}
       {question.media_url && (

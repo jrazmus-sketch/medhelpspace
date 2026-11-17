@@ -47,6 +47,11 @@ import { buildTopicProgress, topicQuizHref, type TopicQuestionIndex } from "./to
 import { DEFAULT_PLAN_SETTINGS, type PlanSettings } from "./settings";
 import { withReviewOutcomes, questionsInReview, type QuestionReviewRow } from "./review-outcomes";
 import {
+  simuladoCadence, simuladoFacts, SIMULADO_FREQUENCIES,
+  type SimuladoCatalog, type SimuladoFrequency, type SimuladoCadence,
+} from "./simulado";
+import { collectionForSlug } from "@/lib/simulado-collections";
+import {
   medianGapSeconds, resolvePace, QUESTION_GAP_MIN_S, QUESTION_GAP_MAX_S,
   type PaceMode, type ResolvedPace,
 } from "./pace";
@@ -87,6 +92,44 @@ export type PlanItem = {
   /** The topic this item belongs to, and how many of its units (questions, cards) are on today. */
   topicId?: number;
   units?: number;
+  /**
+   * Mini simulado block (Karina 2026-11-17): its own lines — total estimated time,
+   * today's part when it is split between days — and the action's label. When
+   * present the list shows these instead of `subtitle · ~N min`.
+   */
+  lines?: string[];
+  cta?: string;
+};
+
+/** One frequency the student may choose, with what it costs and what it does to the forecast. */
+export type SimuladoOption = {
+  frequency: SimuladoFrequency;
+  sessionsPerWeek: number;
+  everyWeeks: number;
+  /** Average minutes a week the mini simulados take at this frequency. */
+  weeklyMinutes: number;
+  /** false → the sessions alone exceed the week's study time: never offered as viable. */
+  feasible: boolean;
+  /** Topics expected before the exam with this frequency (null: no exam date ahead). */
+  expectedTopics: number | null;
+};
+
+export type SimuladoPlanInfo = {
+  /** "Mini simulados" is selected in Conteúdo. */
+  enabled: boolean;
+  /** Today is inside the phases that schedule mini simulados (the last N days before the exam). */
+  inPhase: boolean;
+  /** Days of that window (study_plans.intensification_start_days). */
+  phaseDays: number;
+  /** What the student saved / what the schedule is using (auto when the saved choice no longer fits). */
+  chosen: SimuladoFrequency;
+  inForce: SimuladoFrequency;
+  /** One session: questions and minutes at the student's pace (an estimate — sessions are not timed). */
+  questions: number;
+  sessionMinutes: number;
+  weeklyStudyMinutes: number;
+  pendingTopics: number | null;
+  options: SimuladoOption[];
 };
 
 export type PauseReason =
@@ -123,6 +166,8 @@ export type DerivedPlan = {
   forecast: PlanForecast | null;
   /** Every study day from today to the exam with the minutes placed on it (checks/reports; not rendered). */
   scheduleDays: ScheduledDay[];
+  /** Mini simulados: the frequency in force and what each choice would mean. */
+  simulado: SimuladoPlanInfo;
 };
 
 export type ForecastTopic = { id: number; name: string; specialtyName: string; tier: string | null };
@@ -188,6 +233,7 @@ export type StudyPlanPrefs = {
   email_weekly_summary: boolean;      // Monday recap email (default on)
   email_daily_plan: boolean;          // opt-in daily plan email (default off)
   pace_mode: PaceMode;                // "Ritmo de estudo" (default auto)
+  simulado_frequency: SimuladoFrequency; // mini simulados per week: auto (default) | 1 | 2
 };
 
 export type SpecialtyRow = { id: number; name: string; slug: string };
@@ -270,8 +316,12 @@ export type Signals = {
   } | null;
   /** MedVoice lesson → seconds already heard (lesson_progress). */
   audioPositions?: Map<number, number>;
-  /** Ids of the simulado pages (pages.view = 'simulados'), to know the week's simulado was done. */
-  simuladoPageIds?: Set<number>;
+  /**
+   * The simulado pages with their questions, and where the student's current run
+   * of each begins (lib/study-plan/simulado.ts). Absent → the plan cannot tell a
+   * mini simulado in progress and never asks to continue one.
+   */
+  simulados?: SimuladoCatalog | null;
   /**
    * The student's questions in the Revisão (review_schedule). Absent → the plan
    * knows nothing about the Revisão and asks again itself for questions answered
@@ -392,6 +442,7 @@ export function defaultPrefs(): StudyPlanPrefs {
     email_weekly_summary: true,
     email_daily_plan: false,
     pace_mode: "auto",
+    simulado_frequency: "auto",
   };
 }
 
@@ -411,6 +462,8 @@ export function derivePlan(args: {
   paceMode?: PaceMode;
   /** "Adiantar": extra minutes the student asked for today. */
   extraMinutesToday?: number;
+  /** Mini simulado frequency. Omitted → the student's saved choice (prefs). */
+  simuladoFrequency?: SimuladoFrequency;
 }): DerivedPlan {
   const { prefs, cohort, specialties, pages, topics, topicContent, signals } = args;
 
@@ -982,12 +1035,11 @@ export function derivePlan(args: {
   const reviewOnlyToday = Math.max(0, (signals.reviewedToday ?? 0) - answeredTodayItems);
   doneMinutes += (reviewOnlyToday * settings.reviewSecondsPerItem) / 60;
 
-  // Simulado questions answered since Monday (the study week runs Mon → Sun).
+  // The study week runs Mon → Sun.
   const weekStartKey = addDaysKey(todayKey, dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
-  const simuladoPages = signals.simuladoPageIds;
-  const simuladoAnswersThisWeek = simuladoPages
-    ? signals.quizAttempts.filter((a) => simuladoPages.has(a.page_id) && toDateKeyBR(a.created_at) >= weekStartKey).length
-    : 0;
+  // Which mini simulado the student is in the middle of, and whether a simulado
+  // was already taken up today (from the answers themselves).
+  const simFacts = simuladoFacts(signals.quizAttempts, signals.simulados, todayKey, weekStartKey);
 
   const inEarlierDaysOfWeek = (iso: string) => {
     const k = toDateKeyBR(iso);
@@ -998,14 +1050,17 @@ export function derivePlan(args: {
     signals.lessonCompletions.some((c) => inEarlierDaysOfWeek(c.completed_at));
 
   // A regular mini simulado: its questions at the student's own time per question.
-  // It may take at most a share of the week's study time; a student with little
-  // time gets one every 2, 3… weeks instead of every week.
+  // Frequency: automatic (at most a share of the week's study time — with little
+  // time, one every 2, 3… weeks) or the student's own choice of 1 / 2 a week. A
+  // choice whose sessions alone exceed the whole week is never used: the plan
+  // falls back to the automatic frequency and the screen asks for an adjustment.
   const simuladoMinutes = settings.simuladoQuestions * pace.minutesPerQuestion;
   const weeklyStudyMinutes = dailyMinutes * daysAvailable;
-  const simuladoEveryWeeks = weeklyStudyMinutes > 0
-    ? Math.max(1, Math.ceil(
-        (simuladoMinutes * settings.simuladoDaysPerWeek) / (settings.simuladoMaxWeeklyShare * weeklyStudyMinutes)))
-    : 1;
+  const chosenFrequency: SimuladoFrequency = args.simuladoFrequency ?? prefs.simulado_frequency ?? "auto";
+  const cadenceOf = (f: SimuladoFrequency) => simuladoCadence(f, settings, simuladoMinutes, weeklyStudyMinutes);
+  const chosenCadence = cadenceOf(chosenFrequency);
+  const cadence: SimuladoCadence = chosenCadence.feasible ? chosenCadence : cadenceOf("auto");
+  const simuladoEveryWeeks = cadence.everyWeeks;
 
   // ── Schedule: today + every study day until the exam ─────────────────────
   // Only an exam still AHEAD is planned towards. A turma whose exam date has
@@ -1037,11 +1092,14 @@ export function derivePlan(args: {
       reviewItemCap: prefs.flashcard_daily_cap,
       doneMinutes,
       extraMinutes: Math.max(0, args.extraMinutesToday ?? 0),
-      simuladoDoneThisWeekMinutes: simuladoAnswersThisWeek * pace.minutesPerQuestion,
       studiedEarlierThisWeek,
+      simuladoTouchedToday: simFacts.touchedToday,
+      simuladoResumeMinutes: (simFacts.inProgress?.remaining ?? 0) * pace.minutesPerQuestion,
+      simuladoResumeCarried: simFacts.inProgress?.carried ?? false,
     },
     simuladoEnabled: allowedTypes.has("simulado"),
     simuladoMinutes,
+    simuladoSessionsPerWeek: cadence.sessionsPerWeek,
     simuladoEveryWeeks,
     futureReviewShare,
   };
@@ -1152,22 +1210,51 @@ export function derivePlan(args: {
 
   // Mini simulado — the regular 25-question ones under Questões › Simulados
   // (never a MedHelp 60D Simulado 100Q), inside the day's time. Answers already
-  // enroll into SM-2 via /api/quiz-attempt.
-  if (today.simuladoMinutes >= 1) {
-    const weekly = settings.simuladoDaysPerWeek < 7;
-    items.push({
+  // enroll into SM-2 via /api/quiz-attempt. The plan reserves the time; the
+  // student picks the simulado (Karina 2026-11-17). Two blocks are possible:
+  //   - "Continuar mini simulado": the one in progress, straight to its page
+  //     (the player reopens on the first unanswered question);
+  //   - "Mini simulado — 25 questões": a new session, opening the library.
+  // Each shows the TOTAL estimated time and, when the day is shorter, today's part.
+  const simReason = phase === "taper" ? "Reta final — simule as condições da prova" : "Ganhe volume e ritmo de prova";
+  const simBlocks: { item: PlanItem; head: string[]; totalMinutes: number; continues: boolean }[] = [];
+  const resumeToday = today.simuladoResumeMinutes;
+  const newToday = today.simuladoMinutes - resumeToday;
+  const inProgress = simFacts.inProgress;
+  if (inProgress && resumeToday >= pace.minutesPerQuestion - 0.01) {
+    const collection = collectionForSlug(inProgress.slug);
+    const label = collection ? `${collection.title} · ${inProgress.title}` : inProgress.title;
+    const totalMinutes = inProgress.remaining * pace.minutesPerQuestion;
+    const item: PlanItem = {
       kind: "simulado",
-      title: weekly || simuladoEveryWeeks > 1 ? "Mini simulado da semana" : "Mini simulado do dia",
-      subtitle: today.simuladoPartial
-        ? `${settings.simuladoQuestions} questões · continue no próximo dia de estudo`
-        : `${settings.simuladoQuestions} questões · escolha um mini simulado`,
-      href: "/app/estudo-por-questoes?tab=simulados",
-      estimatedMinutes: minutesOf(today.simuladoMinutes),
+      title: "Continuar mini simulado",
+      subtitle: label,
+      href: `/app/${inProgress.specialtySlug}/${inProgress.slug}`,
+      estimatedMinutes: minutesOf(resumeToday),
       iconHint: "simulado",
-      reason: phase === "taper"
-        ? "Reta final — simule as condições da prova"
-        : "Ganhe volume e ritmo de prova",
+      reason: "Retome de onde parou",
+      pageId: inProgress.pageId,
+      cta: "Continuar de onde parou",
+    };
+    items.push(item);
+    simBlocks.push({
+      item, totalMinutes, continues: resumeToday + 0.01 < totalMinutes,
+      head: [`${label} · ${inProgress.remaining === 1 ? "falta 1" : `faltam ${inProgress.remaining}`} de ${inProgress.total} questões`],
     });
+  }
+  if (newToday >= pace.minutesPerQuestion - 0.01) {
+    const item: PlanItem = {
+      kind: "simulado",
+      title: `Mini simulado — ${settings.simuladoQuestions} questões`,
+      subtitle: "Escolha um mini simulado",
+      href: "/app/estudo-por-questoes?tab=simulados",
+      estimatedMinutes: minutesOf(newToday),
+      iconHint: "simulado",
+      reason: simReason,
+      cta: "Escolher simulado",
+    };
+    items.push(item);
+    simBlocks.push({ item, totalMinutes: simuladoMinutes, continues: newToday + 0.01 < simuladoMinutes, head: [] });
   }
 
   // The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are
@@ -1175,6 +1262,19 @@ export function derivePlan(args: {
   // page (Karina 2026-11-17), so two programmings never compete for the same day.
 
   wholeMinutes(items);
+  // The mini simulado lines are written AFTER the rounding, so "Hoje: cerca de N
+  // min" is the same number the day's total was built from.
+  for (const b of simBlocks) {
+    const todayQuestions = Math.max(1, Math.round((b.item.estimatedMinutes) / pace.minutesPerQuestion));
+    b.item.lines = [
+      ...b.head,
+      `Tempo estimado: ${minutesLabel(b.totalMinutes)}`,
+      ...(b.continues
+        ? [`Hoje: cerca de ${b.item.estimatedMinutes} min (${todayQuestions} ${todayQuestions === 1 ? "questão" : "questões"}). Continue no próximo dia de estudo.`]
+        : []),
+    ];
+    b.item.subtitle = b.item.lines.join(" · ");
+  }
 
   // ── Forecast: what is expected before the exam ───────────────────────────
   let forecast: PlanForecast | null = null;
@@ -1240,6 +1340,41 @@ export function derivePlan(args: {
     };
   }
 
+  // ── Mini simulados: what each frequency would mean (shown BEFORE the student confirms) ──
+  const simuladoEnabled = allowedTypes.has("simulado");
+  const expectedWith = (c: SimuladoCadence): number | null => {
+    if (!examKey) return null;
+    if (c.sessionsPerWeek === cadence.sessionsPerWeek && c.everyWeeks === cadence.everyWeeks) {
+      return forecast?.expectedTopics ?? null;
+    }
+    const r = simulateSchedule({
+      ...scheduleInput, simuladoSessionsPerWeek: c.sessionsPerWeek, simuladoEveryWeeks: c.everyWeeks,
+    });
+    return pendingTopics.reduce((n, t) => n + (r.topicFinishDay.has(t.id) ? 1 : 0), 0);
+  };
+  const simulado: SimuladoPlanInfo = {
+    enabled: simuladoEnabled,
+    inPhase: phase !== "foundation",
+    phaseDays: prefs.intensification_start_days,
+    chosen: chosenFrequency,
+    inForce: cadence.frequency,
+    questions: settings.simuladoQuestions,
+    sessionMinutes: simuladoMinutes,
+    weeklyStudyMinutes,
+    pendingTopics: forecast?.pendingTopics ?? null,
+    options: SIMULADO_FREQUENCIES.map((f) => {
+      const c = cadenceOf(f);
+      return {
+        frequency: f,
+        sessionsPerWeek: c.sessionsPerWeek,
+        everyWeeks: c.everyWeeks,
+        weeklyMinutes: c.weeklyMinutes,
+        feasible: c.feasible,
+        expectedTopics: simuladoEnabled && c.feasible ? expectedWith(c) : null,
+      };
+    }),
+  };
+
   const weakestSpecialties = (paused
     ? allRanked.slice().sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
     : ranked
@@ -1266,7 +1401,17 @@ export function derivePlan(args: {
     pace,
     forecast,
     scheduleDays: sched.days,
+    simulado,
   };
+}
+
+/** Minutes → "62 min" / "1 h 05 min" (an exact half rounds down: 62.5 → 62). */
+function minutesLabel(minutes: number): string {
+  const m = Math.max(1, Math.round(minutes - 1e-6));
+  if (m < 90) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const r = m - h * 60;
+  return r === 0 ? `${h} h` : `${h} h ${String(r).padStart(2, "0")} min`;
 }
 
 /**

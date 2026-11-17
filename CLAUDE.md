@@ -265,6 +265,25 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   25% of the week's study time. Attempts are read paginated (`user-rows.ts`). Validation:
   `node --import ./app/tests/helpers/alias-hook.mjs scripts/plano-cenarios.ts [<DATABASE_URL>]` (read-only).
   Patches: `schema-patch-plano-cobertura.sql` (+ rollback), `schema-patch-medvoice-audio-durations.sql`.
+- **Mini simulados no Meu Plano — o plano reserva o tempo, o aluno escolhe o simulado (Karina 2026-11-17, second round).**
+  `lib/study-plan/simulado.ts` (pure). **Frequency** = `study_plans.simulados_per_week` (NULL = Automática, the 25%
+  reference of `/admin/plano`; 1 | 2 = the student's choice, no 25% limit), picked in Meu Plano › Disponibilidade
+  (`simulado-frequency-editor.tsx`): the impact (weekly time + forecast "de N para M") is shown BEFORE Confirmar, and a
+  frequency whose sessions alone exceed the week's study time is **never viable** — refused in the editor AND in
+  `setSimuladoFrequency`; a saved one that stops fitting falls back to Automática with a notice (`simulado.inForce`).
+  **Split + resume:** a session that does not fit a day takes the whole QUESTIONS that fit and continues on the next
+  study days; the block always shows the TOTAL "Tempo estimado" plus "Hoje: cerca de N min". A mini simulado in
+  progress (answered in the last 7 days) becomes **"Continuar mini simulado"**, straight to its page; while one is open
+  no new one is asked for, and one begun in an EARLIER week stands in for the new week's first session (never lost,
+  never programmed twice). **Runs:** `quiz_runs(user_id, page_id, started_at)` — the current run is every answer since
+  `started_at` (no row = whole history). The player (`QuizPlayer` `run` prop, mini simulados only — never a 60D
+  Simulado 100Q or a `?tema=` view) reopens on the first unanswered question; "Recomeçar" / retaking a finished one
+  sends `newRun` on the next answer and `/api/quiz-attempt` moves `started_at` to that answer's own DB timestamp —
+  **`quiz_attempts` rows are never deleted**. Times are ESTIMATES (answers × pace; sessions are not timed) and the
+  screens say so. Simulados stay inside the last-60-days phases. View `study_plan_simulado_pages` (question ids per
+  page). Scenarios 7–10 in `scripts/plano-cenarios.ts`. Patch: `schema-patch-mini-simulado-frequencia.sql` (+ rollback).
+  **MedVoice (her note, same day):** the current set is outdated — she will send a full replacement and ALL old
+  MedVoice get removed together with it; do not recover the 4 missing recordings (481, 579, 582, 583).
 
 ## Schema (see schema.sql for full DDL)
 

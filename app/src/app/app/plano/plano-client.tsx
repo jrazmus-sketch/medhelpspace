@@ -20,6 +20,7 @@ import type {
 import { CalibrateWizard } from "./calibrate-wizard";
 import { ForecastPanel } from "./forecast-panel";
 import { PaceEditor, type PaceOptions } from "./pace-editor";
+import { SimuladoFrequencyEditor } from "./simulado-frequency-editor";
 import { useAutosave, type SaveStatus } from "@/lib/use-autosave";
 
 const ICON_MAP: Record<PlanItem["iconHint"], React.ComponentType<{ size?: number; className?: string; style?: React.CSSProperties }>> = {
@@ -211,6 +212,9 @@ export function PlanoClient({
           <div style={{ marginTop: 24 }}>
             <PaceEditor mode={prefs.pace_mode} pace={plan.pace} options={paceOptions} />
           </div>
+          <div style={{ marginTop: 24 }}>
+            <SimuladoFrequencyEditor info={plan.simulado} />
+          </div>
         </CollapsibleSection>
 
         {/* ── Section 2: Conteúdo ──────────────────────────────────────────── */}
@@ -346,15 +350,34 @@ function PlanItemsList({ items, onSkipToday }: { items: PlanItem[]; onSkipToday:
                   {item.title}
                 </div>
                 {/* Wraps instead of truncating: on a phone the ellipsis used to eat the minutes. */}
-                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 3, lineHeight: 1.4, overflowWrap: "anywhere" }}>
-                  {item.subtitle} · ~{item.estimatedMinutes} min
-                </div>
+                {item.lines ? (
+                  // Mini simulado block: total estimated time, today's part when it is
+                  // split between days, and the action — each on its own line.
+                  <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 3, lineHeight: 1.5, overflowWrap: "anywhere" }}>
+                    {item.lines.map((line, j) => (
+                      <div key={j}>{line}</div>
+                    ))}
+                    {item.cta && (
+                      <div style={{ marginTop: 4, fontSize: 13, fontWeight: 600, color: "var(--brand-text, var(--brand))" }}>
+                        {item.cta}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 3, lineHeight: 1.4, overflowWrap: "anywhere" }}>
+                    {item.subtitle} · ~{item.estimatedMinutes} min
+                  </div>
+                )}
               </div>
               <ChevronRight size={16} style={{ color: "var(--muted-foreground)", flexShrink: 0 }} />
             </Link>
           );
         })}
       </div>
+      {/* The plan does not time the sessions — say what the minutes are. */}
+      <p style={{ marginTop: 10, fontSize: 12, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+        Os tempos são estimativas, calculadas pelas suas respostas e pelo seu ritmo. As sessões não são cronometradas.
+      </p>
       <button
         onClick={() => {
           if (confirm("Pular o estudo de hoje? O plano vai redistribuir o conteúdo nos próximos dias.")) {
@@ -362,7 +385,7 @@ function PlanItemsList({ items, onSkipToday }: { items: PlanItem[]; onSkipToday:
           }
         }}
         style={{
-          marginTop: 12, fontSize: 12, color: "var(--muted-foreground)",
+          marginTop: 6, fontSize: 12, color: "var(--muted-foreground)",
           background: "transparent", border: "none", cursor: "pointer",
           textDecoration: "underline",
         }}

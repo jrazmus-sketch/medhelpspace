@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPageSiblings } from "@/lib/page-siblings";
+import { getAuthUser } from "@/lib/viewer";
+import { runProgress } from "@/lib/study-plan/simulado";
 import { QuizPlayer } from "./quiz-player";
 
 export interface QuizQuestionData {
@@ -75,6 +77,39 @@ async function loadTopicQuestions(pageId: number, temaSlug: string): Promise<Top
   return { topic: { id: Number(topic.id), name: topic.name as string }, questions };
 }
 
+/**
+ * Mini simulados (Karina 2026-11-17): where the student's CURRENT run of this page
+ * stands — the latest answer to each question since the run began (quiz_runs; no
+ * row = the whole history). The player uses it to reopen on the first unanswered
+ * question. Null when it cannot be read: the player then starts on question 1.
+ */
+async function loadSimuladoRun(pageId: number, questionIds: number[]): Promise<Record<number, boolean> | null> {
+  const user = await getAuthUser();
+  if (!user) return null;
+  const admin = createAdminClient();
+  const { data: run } = await admin
+    .from("quiz_runs")
+    .select("started_at")
+    .eq("user_id", user.id)
+    .eq("page_id", pageId)
+    .maybeSingle();
+  const startedAt = (run?.started_at as string | undefined) ?? null;
+  // Newest first, so the 1000-row cap can only ever drop the OLDEST answers.
+  let query = admin
+    .from("quiz_attempts")
+    .select("page_id, question_id, is_correct, created_at")
+    .eq("user_id", user.id)
+    .eq("page_id", pageId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1000);
+  if (startedAt) query = query.gte("created_at", startedAt);
+  const { data, error } = await query;
+  if (error) return null;
+  const rows = ((data ?? []) as { page_id: number; question_id: number | null; is_correct: boolean; created_at: string }[]).reverse();
+  return Object.fromEntries(runProgress(rows, questionIds, startedAt).results);
+}
+
 export async function QuizRenderer({
   pageId,
   tema,
@@ -95,7 +130,7 @@ export async function QuizRenderer({
       .order("position"),
     admin
       .from("pages")
-      .select("specialty_id, title")
+      .select("specialty_id, title, view, content_module_id")
       .eq("id", pageId)
       .single(),
     getPageSiblings(pageId),
@@ -107,6 +142,10 @@ export async function QuizRenderer({
     return <p className="text-muted-foreground text-sm">Conteúdo em preparação.</p>;
   }
   const sectionCount = questions?.length ?? 0;
+  // A regular mini simulado (never a MedHelp 60D Simulado 100Q, never a topic view)
+  // is continued where the student stopped.
+  const isMiniSimulado = !topicView && page?.view === "simulados" && page?.content_module_id == null;
+  const simuladoRun = isMiniSimulado ? await loadSimuladoRun(pageId, shown.map((q) => q.id)) : null;
 
   return (
     <>
@@ -136,6 +175,7 @@ export async function QuizRenderer({
         nextQuizTitle={siblings.nextTitle}
         specialtyHref={siblings.specialtyHref}
         specialtyName={siblings.specialtyName}
+        run={simuladoRun ? { results: simuladoRun } : null}
       />
     </>
   );

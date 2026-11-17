@@ -2395,7 +2395,7 @@
       },
       "phase": {
         "title": "Mini simulado",
-        "help": "O mini simulado semanal conta dentro do tempo diário do aluno. Os materiais do MedHelp 60D (Fórmula MedHelp, MemoreCards, Simulados 100Q) não são programados pelo Meu Plano — terão um cronograma próprio na página do 60D."
+        "help": "O mini simulado conta dentro do tempo diário do aluno; quando não cabe em um dia, é dividido entre dias de estudo e continua de onde parou. Os materiais do MedHelp 60D (Fórmula MedHelp, MemoreCards, Simulados 100Q) não são programados pelo Meu Plano — terão um cronograma próprio na página do 60D."
       },
       "pace": {
         "title": "Ritmo de estudo",
@@ -2433,7 +2433,7 @@
       },
       "simuladoDaysPerWeek": {
         "label": "Mini simulados",
-        "help": "Nos últimos 60 dias: entram nos primeiros dias de estudo da semana e ficam na lista até o aluno fazer. 0 = nunca; 7 = todo dia de estudo."
+        "help": "Frequência AUTOMÁTICA, por semana, nos últimos 60 dias (as sessões são distribuídas pelos dias de estudo da semana). O aluno pode escolher 1 ou 2 por semana em Meu Plano › Disponibilidade; nesse caso este número e o limite abaixo não se aplicam. 0 = nunca."
       },
       "paceSlowFactor": {
         "label": "“Mais devagar” multiplica os tempos por",
