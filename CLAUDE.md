@@ -290,6 +290,22 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   the study time left before the exam (`simRoomAfter` in schedule.ts) — a session already begun is always continued. Patch: `schema-patch-mini-simulado-frequencia.sql` (+ rollback).
   **MedVoice (her note, same day):** the current set is outdated — she will send a full replacement and ALL old
   MedVoice get removed together with it; do not recover the 4 missing recordings (481, 579, 582, 583).
+- **Meu Plano — tempo de estudo POR DIA + page presentation (Karina 2026-11-18, 12h00).** The student types hours and
+  minutes per study day (`study_plans.daily_minutes`, 10–960, NULL = 60) and picks the days; the weekly total is derived
+  and only shown ("Sua disponibilidade: 5 h por dia de estudo · 3 dias por semana · 15 h semanais"). `weekly_hours`,
+  `intensity`, `temp_intensity*` are no longer read for the plan (kept in the table for rollback); "Intensidade base" is
+  gone; "Reduzir o tempo de estudo por um período" = `temp_daily_minutes` + `temp_daily_until` (must be below the
+  regular time). Saved plans were converted keeping their load (weekly × 60 ÷ study days, else leve 30 / padrão 60 /
+  intenso 120 — never weekly hours turned into daily hours). One wording source: `lib/study-plan/availability.ts`
+  (pure, client-safe); `DerivedPlan.routine` + `examDate` are what the page summary shows ("Sua rotina / Prova
+  considerada / Editar meu plano" — the routine ACTUALLY used; an unconfirmed date is shown as "data estimada, ainda não
+  confirmada"). The phase subtitle is not shown to the student (rules unchanged). Forecast = three separate lines
+  (conclusão integral · avanço parcial · tempo que cabe); "Restante para hoje" vs "Tempo realizado hoje (estimativa)";
+  cards say "N de M questões respondidas · K programadas para hoje"; "Áreas que você deseja priorizar" / "Áreas excluídas
+  do planejamento" (her sentences, tested verbatim); "Onde focar": under 10 answers = "dados iniciais", none = "Ainda sem
+  respostas para avaliar". Quick tip `onboarding.plano.body` = her text (DB row + `tips.ts`). Scenarios 14–16 in
+  `scripts/plano-cenarios.ts`; tests `app/tests/plano-tempo-diario.test.ts`. Patch: `schema-patch-plano-tempo-diario.sql`
+  (+ rollback).
 - **Fase 1 — Karina's 27 question decisions + 24 definitive Revalida Up — LIVE prod + local (2026-11-18).**
   `schema-patch-fase1-2026-11-17.sql` (+ `-rollback.sql`), run AFTER the generated `parsed/revalida-up-fase1-import.sql`
   (`scripts/import-revalida-up-fase1.js`; rollback order is the reverse). 17 records moved to another section (slot by

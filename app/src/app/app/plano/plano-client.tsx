@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ClipboardList, ScrollText, Headphones, Layers, Sparkles, ChevronRight,
@@ -8,15 +8,18 @@ import {
   Trash2, Sparkles as Star, ChevronDown, ChevronUp, Sliders, Pause, X, FileStack,
 } from "lucide-react";
 import {
-  setIntensity, setTempIntensity, setAvailableDays, setRecurringOffDays,
-  setWeeklyHours, addPause, removePause, skipToday,
+  setDailyMinutes, setStudyTimeReduction, setAvailableDays, setRecurringOffDays,
+  addPause, removePause, skipToday,
   setFocusSpecialties, setExcludedSpecialties,
   setContentTypes, setEmailPrefs, setAdvancedPrefs,
 } from "@/actions/study-plan";
 import type {
   DerivedPlan, PlanItem, StudyPlanPrefs,
-  Intensity, ContentType, WeaknessSensitivity,
+  ContentType, WeaknessSensitivity,
 } from "@/lib/study-plan/derive";
+import { availabilityLine, formatDuration } from "@/lib/study-plan/availability";
+import { DailyTimeFields } from "./daily-time-fields";
+import { EDIT_PLAN_EVENT } from "./routine-summary";
 import { CalibrateWizard } from "./calibrate-wizard";
 import { ForecastPanel } from "./forecast-panel";
 import { PaceEditor, type PaceOptions } from "./pace-editor";
@@ -43,13 +46,8 @@ const ITEM_COLOR: Record<PlanItem["iconHint"], string> = {
   revalida_up: "var(--c-revalida)",
 };
 
-// The day is filled by minutes (Karina 2026-11-17) — the old "N especialidades"
-// part of these labels no longer described anything.
-const INTENSITY_LABEL: Record<Intensity, { label: string; sub: string }> = {
-  leve:    { label: "Leve",    sub: "30 min por dia de estudo" },
-  padrao:  { label: "Padrão",  sub: "60 min por dia de estudo" },
-  intenso: { label: "Intenso", sub: "120 min por dia de estudo" },
-};
+/** Fewer answers than this in an area are "dados iniciais", not a consolidated result. */
+const INITIAL_DATA_BELOW = 10;
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 // What the plan can actually schedule. "lesson" (Resumos / Fórmula) is NOT here:
@@ -116,6 +114,17 @@ export function PlanoClient({
     setOpenSections((prev) => ({ ...prev, [name]: !prev[name] }));
   }
 
+  // "Editar meu plano" (the summary under the title) opens Disponibilidade and goes to it.
+  const availabilityRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const open = () => {
+      setOpenSections((prev) => ({ ...prev, disponibilidade: true }));
+      requestAnimationFrame(() => availabilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    };
+    window.addEventListener(EDIT_PLAN_EVENT, open);
+    return () => window.removeEventListener(EDIT_PLAN_EVENT, open);
+  }, []);
+
   if (!plan) {
     return (
       <div style={{ padding: 20, borderRadius: "var(--radius)", background: "var(--surface-1)", border: "1px solid var(--surface-2)", textAlign: "center" }}>
@@ -133,7 +142,7 @@ export function PlanoClient({
           cohortName={cohortName}
           specialties={specialties}
           initialAvailableDays={prefs.available_days}
-          initialWeeklyHours={prefs.weekly_hours}
+          initialDailyMinutes={prefs.daily_minutes}
           initialFocusIds={prefs.focus_specialty_ids}
           initialResourceTypes={prefs.preferred_content_types}
           onClose={() => setShowWizard(false)}
@@ -148,15 +157,22 @@ export function PlanoClient({
 
         {/* ── Today's plan ─────────────────────────────────────────────────── */}
         <section>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+          {/* What is LEFT for today and what was already done are two numbers,
+              each named (Karina 2026-11-18). Both are estimates. */}
+          <div style={{ marginBottom: 12 }}>
             <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)" }}>
-              Hoje · ~{plan.totalEstimatedMinutes} min
+              Hoje
             </h2>
-            <span style={{ fontSize: 12, color: "var(--muted-foreground)", textAlign: "right" }}>
-              {plan.todayBudgetMinutes > 0 && plan.todayDoneMinutes > 0
-                ? `~${Math.min(plan.todayDoneMinutes, 999)} de ${plan.todayBudgetMinutes + extraMinutes} min feitos`
-                : `${plan.progressToday.questionsAnswered} questões · ${plan.progressToday.lessonsCompleted} ${plan.progressToday.lessonsCompleted === 1 ? "conteúdo" : "conteúdos"}`}
-            </span>
+            {!plan.paused && plan.items.length > 0 && (
+              <p style={{ fontSize: 15, fontWeight: 600, marginTop: 4, lineHeight: 1.4 }}>
+                Restante para hoje: aproximadamente {plan.totalEstimatedMinutes} min
+              </p>
+            )}
+            {plan.todayBudgetMinutes > 0 && plan.todayDoneMinutes > 0 && (
+              <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2, lineHeight: 1.5 }}>
+                Tempo realizado hoje (estimativa): cerca de {Math.min(plan.todayDoneMinutes, 999)} de {plan.todayBudgetMinutes + extraMinutes} min
+              </p>
+            )}
           </div>
           {plan.paused ? (
             <PausedState plan={plan} />
@@ -201,21 +217,23 @@ export function PlanoClient({
         )}
 
         {/* ── Section 1: Disponibilidade ───────────────────────────────────── */}
-        <CollapsibleSection
-          title="Disponibilidade"
-          icon={Calendar}
-          open={openSections.disponibilidade}
-          onToggle={() => toggleSection("disponibilidade")}
-          summary={availabilitySummary(prefs)}
-        >
-          <AvailabilityEditor prefs={prefs} pauses={pauses} />
-          <div style={{ marginTop: 24 }}>
-            <PaceEditor mode={prefs.pace_mode} pace={plan.pace} options={paceOptions} />
-          </div>
-          <div style={{ marginTop: 24 }}>
-            <SimuladoFrequencyEditor info={plan.simulado} />
-          </div>
-        </CollapsibleSection>
+        <div ref={availabilityRef} id="plano-disponibilidade" style={{ scrollMarginTop: 88 }}>
+          <CollapsibleSection
+            title="Disponibilidade"
+            icon={Calendar}
+            open={openSections.disponibilidade}
+            onToggle={() => toggleSection("disponibilidade")}
+            summary={availabilityLine(plan.routine.dailyMinutes, plan.routine.studyDayMask)}
+          >
+            <AvailabilityEditor prefs={prefs} pauses={pauses} />
+            <div style={{ marginTop: 24 }}>
+              <PaceEditor mode={prefs.pace_mode} pace={plan.pace} options={paceOptions} />
+            </div>
+            <div style={{ marginTop: 24 }}>
+              <SimuladoFrequencyEditor info={plan.simulado} />
+            </div>
+          </CollapsibleSection>
+        </div>
 
         {/* ── Section 2: Conteúdo ──────────────────────────────────────────── */}
         <CollapsibleSection
@@ -288,8 +306,8 @@ function CalibrationBanner({ onOpen }: { onOpen: () => void }) {
           Personalize seu plano em 90 segundos
         </div>
         <div style={{ fontSize: 13, opacity: 0.85, lineHeight: 1.4 }}>
-          Diga quantas horas você consegue estudar por semana e quais especialidades são suas mais fracas.
-          O plano se adapta automaticamente.
+          Informe seus dias de estudo, o tempo disponível por dia e as áreas que deseja priorizar.
+          O plano se ajusta automaticamente.
         </div>
       </div>
       <button
@@ -515,9 +533,14 @@ function EmptyPlanState() {
 function WeakestSpecialties({ stats }: { stats: DerivedPlan["weakestSpecialties"] }) {
   return (
     <section>
-      <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 12 }}>
+      <h2 style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 6 }}>
         Onde focar
       </h2>
+      {/* Why an area is here (Karina 2026-11-18): study priority, not a grade. */}
+      <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 12, lineHeight: 1.5 }}>
+        Áreas que o plano está colocando à frente no seu estudo: primeiro as que você marcou para priorizar; depois,
+        as que ainda não têm respostas e as de menor acerto nas questões.
+      </p>
       <div style={{
         background: "var(--surface-1)",
         border: "1px solid var(--surface-2)",
@@ -525,26 +548,41 @@ function WeakestSpecialties({ stats }: { stats: DerivedPlan["weakestSpecialties"
         overflow: "hidden",
       }}>
         {stats.map((s, i) => {
+          const consolidated = s.attempts >= INITIAL_DATA_BELOW;
           const pct = s.accuracy != null ? Math.round(s.accuracy * 100) : null;
           const color = pct == null ? "var(--muted-foreground)" : pct >= 70 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444";
+          // One answer at 0% is not an assessment: few answers are shown as counts, never as a coloured percentage.
+          const detail =
+            s.attempts === 0
+              ? "Ainda sem respostas para avaliar."
+              : consolidated
+                ? `${pct}% de acerto em ${s.attempts} questões.`
+                : `${s.correct} ${s.correct === 1 ? "acerto" : "acertos"} em ${s.attempts} ${s.attempts === 1 ? "questão" : "questões"} — dados iniciais.`;
           return (
             <div
               key={s.id}
               style={{
-                display: "flex", alignItems: "center", gap: 16,
+                display: "flex", alignItems: "center", gap: 12,
                 padding: "12px 18px",
                 borderTop: i > 0 ? "1px solid var(--surface-2)" : undefined,
               }}
             >
-              <span style={{ fontSize: 14, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {s.name}
-              </span>
-              <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
-                {s.attempts > 0 ? `${s.attempts} questões` : "sem dados"}
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 700, color, width: 50, textAlign: "right" }}>
-                {pct != null ? `${pct}%` : "—"}
-              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, overflowWrap: "anywhere" }}>
+                  {s.name}
+                  {s.prioritized && (
+                    <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 600, color: "var(--brand-text, var(--brand))" }}>
+                      · priorizada por você
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2, lineHeight: 1.5 }}>
+                  {detail}
+                </div>
+              </div>
+              {consolidated && pct != null && (
+                <span style={{ fontSize: 14, fontWeight: 700, color, flexShrink: 0 }}>{pct}%</span>
+              )}
             </div>
           );
         })}
@@ -610,45 +648,49 @@ function CollapsibleSection({
 function AvailabilityEditor({ prefs, pauses }: { prefs: StudyPlanPrefs; pauses: PauseRow[] }) {
   // Each control changes on screen at once and saves in the background — never
   // locked while the plan re-renders (see lib/use-autosave.ts).
-  const hours = useAutosave<number | null>(prefs.weekly_hours, (h) => setWeeklyHours(h), 600);
+  const daily = useAutosave<number>(prefs.daily_minutes, (m) => setDailyMinutes(m), 800);
   const days = useAutosave(prefs.available_days, (m) => setAvailableDays(m));
   const offDays = useAutosave(prefs.recurring_off_days, (m) => setRecurringOffDays(m));
+  // The study days the plan uses: the selected ones minus the recurring days off.
+  const studyMask = days.value & ~offDays.value;
+  const offRemoves = (days.value & offDays.value) !== 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Weekly hours */}
+      {/* Time per study day (Karina 2026-11-18): typed in hours and minutes; the
+          weekly total is calculated and only shown in the summary below. */}
       <div>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-          <label htmlFor="plano-horas" style={{ fontSize: 13, fontWeight: 600 }}>Horas por semana</label>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--brand)", fontFamily: "var(--font-geist-mono)" }}>
-            {hours.value ?? "—"}{hours.value ? "h" : ""}
-          </span>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Quanto tempo você pode estudar por dia?</span>
+          <SaveNote status={daily.status} />
         </div>
-        <input
-          id="plano-horas"
-          type="range"
-          min={3} max={40} step={1}
-          value={hours.value ?? 15}
-          onChange={(e) => hours.setValue(Number(e.target.value))}
-          style={{ width: "100%", accentColor: "var(--brand)" }}
-          className="min-h-11"
-        />
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 4 }}>
-          <p style={{ fontSize: 11, color: "var(--muted-foreground)" }}>
-            {hours.value == null ? "Usando intensidade padrão" : `Distribuído nos dias disponíveis`}
-          </p>
-          <SaveNote status={hours.status} />
-        </div>
+        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10, lineHeight: 1.5 }}>
+          Informe o tempo de cada dia de estudo. O total da semana é calculado automaticamente.
+        </p>
+        <DailyTimeFields idPrefix="plano-tempo" minutes={prefs.daily_minutes} onChange={(m) => daily.setValue(m)} />
       </div>
 
-      {/* Available days */}
+      {/* Study days */}
       <DayToggles
-        label="Dias disponíveis para estudar"
+        label="Dias de estudo"
         mask={days.value}
         onToggle={(bit) => days.setValue((m) => m ^ bit)}
         color="var(--brand)"
         status={days.status}
       />
+
+      {/* The weekly total, calculated — the same numbers the plan uses. */}
+      <p
+        role="status"
+        style={{
+          margin: 0, padding: "12px 14px", fontSize: 13, lineHeight: 1.5,
+          background: "color-mix(in srgb, var(--brand) 8%, transparent)",
+          borderRadius: "var(--radius-sm)",
+        }}
+      >
+        <strong>Sua disponibilidade:</strong> {availabilityLine(daily.value, studyMask)}
+        {offRemoves ? " (dias de folga recorrente já descontados)" : ""}
+      </p>
 
       {/* Recurring off-days (plantão) */}
       <DayToggles
@@ -663,8 +705,12 @@ function AvailabilityEditor({ prefs, pauses }: { prefs: StudyPlanPrefs; pauses: 
       {/* Date-range pauses */}
       <DateRangePauses pauses={pauses} />
 
-      {/* Intensity (lives here because it interacts with availability) */}
-      <IntensityEditor currentIntensity={prefs.intensity} tempIntensity={prefs.temp_intensity} tempUntil={prefs.temp_intensity_until} />
+      {/* A shorter study day for a period */}
+      <StudyTimeReductionEditor
+        baseMinutes={daily.value}
+        reducedMinutes={prefs.temp_daily_minutes}
+        reducedUntil={prefs.temp_daily_until}
+      />
     </div>
   );
 }
@@ -835,120 +881,115 @@ function DateRangePauses({ pauses }: { pauses: PauseRow[] }) {
   );
 }
 
-function IntensityEditor({
-  currentIntensity, tempIntensity, tempUntil,
+/**
+ * "Reduzir o tempo de estudo por um período": a shorter study day up to a date,
+ * in the same hours-and-minutes field. It replaces the old Leve/Padrão/Intenso levels —
+ * there is one time setting now, the daily one (Karina 2026-11-18).
+ */
+function StudyTimeReductionEditor({
+  baseMinutes, reducedMinutes, reducedUntil,
 }: {
-  currentIntensity: Intensity;
-  tempIntensity: Intensity | null;
-  tempUntil: string | null;
+  baseMinutes: number;
+  reducedMinutes: number | null;
+  reducedUntil: string | null;
 }) {
   const [pending, startTransition] = useTransition();
-  const base = useAutosave(currentIntensity, (v) => setIntensity(v), 300);
-  const [showTemp, setShowTemp] = useState(!!tempIntensity);
-  const [tempVal, setTempVal] = useState<Intensity>(tempIntensity ?? "leve");
-  const [tempUntilVal, setTempUntilVal] = useState<string>(tempUntil ?? "");
+  const active = reducedMinutes != null && reducedUntil != null;
+  const [show, setShow] = useState(active);
+  // Suggested: half of the regular time, in steps of 5 minutes.
+  const suggested = Math.max(10, Math.round(baseMinutes / 2 / 5) * 5);
+  // null while what is typed is not a valid time — "Aplicar" then stays off.
+  const [minutes, setMinutes] = useState<number | null>(reducedMinutes ?? suggested);
+  const [until, setUntil] = useState<string>(reducedUntil ?? "");
+  const valid = minutes != null && minutes < baseMinutes && until !== "";
+
+  if (!show) {
+    // Nothing shorter than the minimum to offer.
+    if (baseMinutes <= 10) return null;
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setShow(true)}
+          className="min-h-11 hover:text-foreground"
+          style={{
+            fontSize: 13, color: "var(--muted-foreground)", textAlign: "left",
+            background: "transparent", border: "none", cursor: "pointer", padding: 0,
+            textDecoration: "underline",
+          }}
+        >
+          Reduzir o tempo de estudo por um período (semana corrida, prova na faculdade…)
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-        <label style={{ fontSize: 13, fontWeight: 600 }}>Intensidade base</label>
-        <SaveNote status={base.status} />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" style={{ marginBottom: 12 }}>
-        {(["leve", "padrao", "intenso"] as const).map((i) => {
-          const active = base.value === i;
-          return (
-            <button
-              key={i}
-              type="button"
-              aria-pressed={active}
-              onClick={() => base.setValue(i)}
-              style={{
-                padding: "12px 14px",
-                borderRadius: "var(--radius)",
-                border: active ? "2px solid var(--brand)" : "1px solid var(--surface-2)",
-                background: active ? "color-mix(in srgb, var(--brand) 10%, transparent)" : "var(--background)",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, color: active ? "var(--brand)" : "var(--foreground)" }}>
-                {INTENSITY_LABEL[i].label}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--muted-foreground)", marginTop: 2 }}>
-                {INTENSITY_LABEL[i].sub}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {!showTemp ? (
-        <button
-          onClick={() => setShowTemp(true)}
-          style={{
-            fontSize: 12, color: "var(--muted-foreground)",
-            background: "transparent", border: "none", cursor: "pointer",
-            textDecoration: "underline",
-          }}
-          className="hover:text-foreground"
-        >
-          Reduzir intensidade temporariamente (semana corrida, prova na faculdade…)
-        </button>
-      ) : (
-        <div style={{
-          padding: 14, background: "var(--background)",
-          border: "1px solid var(--surface-2)", borderRadius: "var(--radius-sm)",
-        }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-foreground)", marginBottom: 6, display: "block" }}>
-            Intensidade temporária
-          </label>
-          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-            {(["leve", "padrao", "intenso"] as const).map((i) => (
-              <button
-                key={i}
-                onClick={() => setTempVal(i)}
-                style={{
-                  flex: 1, padding: "8px 0",
-                  borderRadius: "var(--radius-sm)",
-                  border: tempVal === i ? "1px solid var(--brand)" : "1px solid var(--surface-2)",
-                  background: tempVal === i ? "color-mix(in srgb, var(--brand) 10%, transparent)" : "transparent",
-                  color: tempVal === i ? "var(--brand)" : "var(--foreground)",
-                  fontSize: 12, fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                {INTENSITY_LABEL[i].label}
-              </button>
-            ))}
-          </div>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-foreground)", marginBottom: 6, display: "block" }}>Até</label>
-          <input type="date" value={tempUntilVal} onChange={(e) => setTempUntilVal(e.target.value)} style={{ ...inputStyle, marginBottom: 10 }} />
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button
-              onClick={() => {
-                startTransition(async () => {
-                  await setTempIntensity(null, null);
-                  setShowTemp(false);
-                });
-              }}
-              disabled={pending}
-              style={btnGhostStyle}
-            >
-              Remover
-            </button>
-            <button
-              onClick={() => {
-                if (!tempUntilVal) return;
-                startTransition(() => setTempIntensity(tempVal, tempUntilVal));
-              }}
-              disabled={pending || !tempUntilVal}
-              style={btnPrimaryStyle}
-            >
-              Aplicar
-            </button>
-          </div>
+      <span style={{ fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>
+        Reduzir o tempo de estudo por um período
+      </span>
+      <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10, lineHeight: 1.5 }}>
+        {active
+          ? `Tempo reduzido para ${formatDuration(reducedMinutes)} por dia de estudo até ${formatDateLong(reducedUntil)}. Depois, o plano volta a ${formatDuration(baseMinutes)} por dia.`
+          : `Até a data escolhida, o plano usa o tempo reduzido. Depois, volta a ${formatDuration(baseMinutes)} por dia de estudo.`}
+      </p>
+      <div style={{
+        padding: 14, background: "var(--background)",
+        border: "1px solid var(--surface-2)", borderRadius: "var(--radius-sm)",
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-foreground)", marginBottom: 6, display: "block" }}>
+          Tempo por dia de estudo nesse período
+        </span>
+        <DailyTimeFields
+          idPrefix="plano-tempo-reduzido"
+          minutes={minutes ?? suggested}
+          onChange={setMinutes}
+          onInvalid={() => setMinutes(null)}
+          shortcuts={false}
+          maxMinutes={baseMinutes - 1}
+          maxMessage={`Informe um tempo menor que o seu tempo diário (${formatDuration(baseMinutes)}).`}
+        />
+        <label htmlFor="plano-tempo-reduzido-ate" style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-foreground)", margin: "12px 0 6px", display: "block" }}>
+          Até
+        </label>
+        <input
+          id="plano-tempo-reduzido-ate"
+          type="date"
+          value={until}
+          onChange={(e) => setUntil(e.target.value)}
+          className="min-h-11"
+          style={{ ...inputStyle, fontSize: 16, maxWidth: 220, marginBottom: 12 }}
+        />
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            onClick={() => {
+              startTransition(async () => {
+                await setStudyTimeReduction(null, null);
+                setShow(false);
+              });
+            }}
+            disabled={pending}
+            className="min-h-11"
+            style={btnGhostStyle}
+          >
+            {active ? "Remover" : "Cancelar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!valid || minutes == null) return;
+              startTransition(() => setStudyTimeReduction(minutes, until));
+            }}
+            disabled={pending || !valid}
+            className="min-h-11"
+            style={{ ...btnPrimaryStyle, opacity: pending || !valid ? 0.5 : 1 }}
+          >
+            Aplicar
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -958,26 +999,27 @@ function IntensityEditor({
 function ContentEditor({ prefs, specialties }: { prefs: StudyPlanPrefs; specialties: Specialty[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+      {/* Karina's wording (2026-11-18). */}
       <SpecialtyMultiSelect
-        label="Especialidades fracas (priorizar)"
-        description="O plano vai dedicar mais tempo a estas. Selecione quantas quiser."
-        helpText="O sistema também identifica fracas automaticamente conforme você responde questões."
+        label="Áreas que você deseja priorizar"
+        description="Selecione as áreas em que sente mais dificuldade ou às quais deseja dedicar mais atenção. As demais continuam participando do plano."
         currentIds={prefs.focus_specialty_ids}
         specialties={specialties}
         onSave={setFocusSpecialties}
         chipColor="var(--brand)"
-        emptyText="Nenhuma marcada · plano automático por desempenho"
+        emptyText="Nenhuma área priorizada manualmente. O plano segue os critérios automáticos de prioridade."
+        selectedText={(n) => `${n} ${n === 1 ? "área priorizada" : "áreas priorizadas"} manualmente. As demais continuam participando do plano.`}
       />
 
       <SpecialtyMultiSelect
-        label="Especialidades excluídas"
-        description="Nunca serão agendadas. Cuidado: a prova cobre todas as áreas."
-        helpText="Use só se você tem certeza (ex: prova R1 só de clínica)."
+        label="Áreas excluídas do planejamento"
+        description="As áreas marcadas não entram na programação nem na previsão. Excluir uma área do planejamento não impede seu acesso livre a ela na plataforma."
         currentIds={prefs.excluded_specialty_ids}
         specialties={specialties}
         onSave={setExcludedSpecialties}
         chipColor="#ef4444"
-        emptyText="Nenhuma excluída · plano cobre tudo"
+        emptyText="Nenhuma área excluída. Todas as áreas disponíveis serão consideradas no planejamento."
+        selectedText={(n) => `${n} ${n === 1 ? "área excluída" : "áreas excluídas"} do planejamento. A previsão considera apenas as áreas mantidas.`}
       />
 
       <ContentTypesEditor prefs={prefs} />
@@ -986,16 +1028,17 @@ function ContentEditor({ prefs, specialties }: { prefs: StudyPlanPrefs; specialt
 }
 
 function SpecialtyMultiSelect({
-  label, description, helpText, currentIds, specialties, onSave, chipColor, emptyText,
+  label, description, currentIds, specialties, onSave, chipColor, emptyText, selectedText,
 }: {
   label: string;
   description: string;
-  helpText: string;
   currentIds: number[];
   specialties: Specialty[];
   onSave: (ids: number[]) => Promise<void>;
   chipColor: string;
   emptyText: string;
+  /** What the line under the chips says when N areas are selected. */
+  selectedText: (count: number) => string;
 }) {
   // The chip flips at once and the list saves itself; quick clicks are coalesced
   // into one save of the final selection. (It used to start the save INSIDE the
@@ -1010,8 +1053,7 @@ function SpecialtyMultiSelect({
   return (
     <div>
       <label style={{ fontSize: 13, fontWeight: 600, marginBottom: 4, display: "block" }}>{label}</label>
-      <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 6, lineHeight: 1.4 }}>{description}</p>
-      <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10 }}>{helpText}</p>
+      <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 10, lineHeight: 1.5 }}>{description}</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {specialties.map((s) => {
           const active = selected.has(s.id);
@@ -1038,9 +1080,9 @@ function SpecialtyMultiSelect({
           );
         })}
       </div>
-      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-        <span style={{ color: "var(--muted-foreground)" }}>
-          {selected.size === 0 ? emptyText : `${selected.size} selecionada${selected.size !== 1 ? "s" : ""}`}
+      <div style={{ marginTop: 8, display: "flex", alignItems: "baseline", gap: 8, fontSize: 12, lineHeight: 1.5 }}>
+        <span style={{ color: "var(--muted-foreground)", flex: 1, minWidth: 0 }}>
+          {selected.size === 0 ? emptyText : selectedText(selected.size)}
         </span>
         <SaveNote status={status} />
       </div>
@@ -1244,25 +1286,13 @@ function AdvancedEditor({ prefs }: { prefs: StudyPlanPrefs }) {
 
 // ── Summary helpers ───────────────────────────────────────────────────────────
 
-function availabilitySummary(p: StudyPlanPrefs): string {
-  const days = countBits(p.available_days);
-  const offDays = countBits(p.recurring_off_days);
-  const hours = p.weekly_hours ?? "—";
-  const parts = [
-    `${hours}h/semana`,
-    `${days} dia${days !== 1 ? "s" : ""}`,
-  ];
-  if (offDays > 0) parts.push(`${offDays} de plantão`);
-  return parts.join(" · ");
-}
-
 function contentSummary(p: StudyPlanPrefs, specialties: Specialty[]): string {
   const focusCount = p.focus_specialty_ids.length;
   const excludedCount = p.excluded_specialty_ids.length;
   // Count only what the picker offers (an old row may still carry "lesson").
   const typeCount = p.preferred_content_types.filter((t) => PLAN_CONTENT_TYPES.includes(t)).length;
   const parts: string[] = [];
-  if (focusCount > 0) parts.push(`${focusCount} focada${focusCount !== 1 ? "s" : ""}`);
+  if (focusCount > 0) parts.push(`${focusCount} priorizada${focusCount !== 1 ? "s" : ""}`);
   if (excludedCount > 0) parts.push(`${excludedCount} excluída${excludedCount !== 1 ? "s" : ""}`);
   parts.push(`${typeCount}/${PLAN_CONTENT_TYPES.length} tipos`);
   return parts.join(" · ");
@@ -1311,10 +1341,9 @@ const btnGhostStyle: React.CSSProperties = {
 
 // ── Tiny utils ────────────────────────────────────────────────────────────────
 
-function countBits(mask: number): number {
-  let n = 0;
-  for (let i = 0; i < 7; i++) if (mask & (1 << i)) n++;
-  return n;
+/** "30 de novembro" — for a sentence (the short form ends in a period: "30 de nov."). */
+function formatDateLong(dateKey: string): string {
+  return new Date(dateKey + "T12:00:00").toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
 }
 
 function formatDate(dateKey: string): string {

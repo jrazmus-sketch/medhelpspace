@@ -32,6 +32,11 @@
  *    expected before the exam, what is not, and what would widen the coverage;
  *  - nothing is stored: the plan is re-derived from real progress on every load.
  *
+ * V4 (Karina 2026-11-18 — the student sets the time PER STUDY DAY):
+ *  - `daily_minutes` replaces the weekly hours and the Leve/Padrão/Intenso
+ *    levels; the weekly total is only a summary (lib/study-plan/availability.ts);
+ *  - `temp_daily_minutes` + `temp_daily_until`: a shorter day for a period.
+ *
  * V2.1 (planner audit fixes):
  *  - every "today" is the STUDENT's day in America/São_Paulo, never the server's
  *    UTC day (see lib/br-date.ts). Vercel runs UTC, so the old code rolled over
@@ -45,6 +50,7 @@ import { todayKeyBR, toDateKeyBR, dayOfWeekForKey, addDaysKey, diffDaysKey } fro
 import { flashcardGroupSlug } from "@/lib/flashcard-group-slug";
 import { buildTopicProgress, topicQuizHref, type TopicQuestionIndex } from "./topic-questions";
 import { DEFAULT_PLAN_SETTINGS, type PlanSettings } from "./settings";
+import { DEFAULT_DAILY_MINUTES } from "./availability";
 import { withReviewOutcomes, questionsInReview, type QuestionReviewRow } from "./review-outcomes";
 import {
   simuladoCadence, simuladoFacts, SIMULADO_FREQUENCIES,
@@ -60,23 +66,26 @@ import {
   type DayCalendar, type ScheduleInput, type ScheduleResult, type ScheduledDay, type WorkActivity,
 } from "./schedule";
 
-export type Intensity = "leve" | "padrao" | "intenso";
 export type Phase = "foundation" | "intensification" | "taper";
 export type ContentType =
   | "quiz" | "simulado" | "lesson" | "audio" | "flashcards" | "memorecards" | "revalida_up";
 export type WeaknessSensitivity = "strict" | "balanced" | "off";
 
-export type IntensitySpec = {
-  minutesPerDay: number;
-  questionsTarget: number;
-  lessonsTarget: number;
-  specialtiesPerDay: number;
-};
-
-export const INTENSITY: Record<Intensity, IntensitySpec> = {
-  leve:    { minutesPerDay: 30,  questionsTarget: 10, lessonsTarget: 1, specialtiesPerDay: 2 },
-  padrao:  { minutesPerDay: 60,  questionsTarget: 20, lessonsTarget: 2, specialtiesPerDay: 3 },
-  intenso: { minutesPerDay: 120, questionsTarget: 40, lessonsTarget: 3, specialtiesPerDay: 4 },
+/**
+ * The routine the calculations are using — what the page shows as "Sua rotina"
+ * (Karina 2026-11-18: the summary must be the configuration actually in force).
+ */
+export type PlanRoutine = {
+  /** Minutes per study day in force today (the reduced time while a reduction is active). */
+  dailyMinutes: number;
+  /** The student's regular minutes per study day. */
+  baseDailyMinutes: number;
+  /** A temporary reduction is active today, and its last day. */
+  reducedUntil: string | null;
+  /** Study days of the week (bit0 = Sunday … bit6 = Saturday), recurring days off removed. */
+  studyDayMask: number;
+  studyDays: number;
+  weeklyMinutes: number;
 };
 
 export type PlanItem = {
@@ -138,12 +147,17 @@ export type PauseReason =
 export type DerivedPlan = {
   phase: Phase;
   daysToExam: number | null;
-  intensity: Intensity;          // effective intensity (after temp_intensity check)
-  baseIntensity: Intensity;       // user's set intensity (for display)
-  intensitySpec: IntensitySpec;
+  /** The exam date the calculations use (the turma's date, confirmed or estimated). null: none. */
+  examDate: string | null;
+  routine: PlanRoutine;
   items: PlanItem[];
   totalEstimatedMinutes: number;
-  weakestSpecialties: { id: number; name: string; accuracy: number | null; attempts: number }[];
+  /**
+   * "Onde focar": the areas the plan is putting first — the ones the student
+   * marked (`prioritized`), then the lowest accuracy. `attempts` = answers given,
+   * `correct` = right ones; an area with no answers has accuracy null.
+   */
+  weakestSpecialties: { id: number; name: string; accuracy: number | null; attempts: number; correct: number; prioritized: boolean }[];
   paused: boolean;
   pauseReason: PauseReason | null;
   nextAvailableDate: string | null;  // when plan resumes if currently paused
@@ -214,12 +228,11 @@ export type PlanForecast = {
 // ── Inputs ────────────────────────────────────────────────────────────────────
 
 export type StudyPlanPrefs = {
-  intensity: Intensity;
   available_days: number;          // bitmask: bit0=Sun .. bit6=Sat
   recurring_off_days: number;       // bitmask
-  weekly_hours: number | null;      // overrides INTENSITY.minutesPerDay if set
-  temp_intensity: Intensity | null;
-  temp_intensity_until: string | null;
+  daily_minutes: number;            // time per study day (the weekly total is derived)
+  temp_daily_minutes: number | null; // "Reduzir o tempo de estudo por um período"
+  temp_daily_until: string | null;   // last day of the reduction (inclusive)
   weakness_sensitivity: WeaknessSensitivity;
   include_60d: boolean;
   flashcard_daily_cap: number | null;
@@ -422,12 +435,11 @@ export function isPageMastered(
 
 export function defaultPrefs(): StudyPlanPrefs {
   return {
-    intensity: "padrao",
     available_days: 127,         // all 7 days
     recurring_off_days: 0,
-    weekly_hours: null,
-    temp_intensity: null,
-    temp_intensity_until: null,
+    daily_minutes: DEFAULT_DAILY_MINUTES,
+    temp_daily_minutes: null,
+    temp_daily_until: null,
     weakness_sensitivity: "balanced",
     include_60d: true,
     flashcard_daily_cap: null,
@@ -485,16 +497,6 @@ export function derivePlan(args: {
     else phase = "foundation";
   }
 
-  // ── Effective intensity (check temp override) ────────────────────────────
-  const tempActive =
-    prefs.temp_intensity != null &&
-    prefs.temp_intensity_until != null &&
-    prefs.temp_intensity_until >= todayKey;
-  const effectiveIntensity: Intensity = tempActive
-    ? prefs.temp_intensity!
-    : prefs.intensity;
-  const spec = INTENSITY[effectiveIntensity];
-
   // ── Per-specialty accuracy ───────────────────────────────────────────────
   const accuracyBySpec = new Map<number, { total: number; correct: number }>();
   for (const a of signals.quizAttempts) {
@@ -508,7 +510,7 @@ export function derivePlan(args: {
 
   // ── Build weakest-specialties list (always present, used by UI) ──────────
   const excludedSet = new Set(prefs.excluded_specialty_ids);
-  type SpecRank = { id: number; name: string; accuracy: number | null; attempts: number; weight: number };
+  type SpecRank = { id: number; name: string; accuracy: number | null; attempts: number; correct: number; weight: number };
   const weaknessFloor =
     prefs.weakness_sensitivity === "strict" ? 0.25 :
     prefs.weakness_sensitivity === "off" ? 1.0 :
@@ -521,7 +523,7 @@ export function derivePlan(args: {
       const weight = prefs.weakness_sensitivity === "off"
         ? 1.0
         : accuracy == null ? 1.0 : Math.max(weaknessFloor, 1.0 - accuracy);
-      return { id: s.id, name: s.name, accuracy, attempts: b?.total ?? 0, weight };
+      return { id: s.id, name: s.name, accuracy, attempts: b?.total ?? 0, correct: b?.correct ?? 0, weight };
     });
 
   // ── Coverage warning (Algorithm Engineer's required guard) ───────────────
@@ -583,17 +585,21 @@ export function derivePlan(args: {
   const settings = args.settings ?? DEFAULT_PLAN_SETTINGS;
   const studyDayMask = prefs.available_days & ~prefs.recurring_off_days;
   const daysAvailable = countBits(studyDayMask);
-  const minutesForDay = (dayKey: string): number => {
-    if (prefs.weekly_hours != null && daysAvailable > 0) {
-      return Math.round((prefs.weekly_hours * 60) / daysAvailable);
-    }
-    const temp =
-      prefs.temp_intensity != null &&
-      prefs.temp_intensity_until != null &&
-      prefs.temp_intensity_until >= dayKey;
-    return INTENSITY[temp ? prefs.temp_intensity! : prefs.intensity].minutesPerDay;
-  };
+  // The student's time on each study day; a temporary reduction replaces it up
+  // to its last day (inclusive, on the Brazilian calendar).
+  const reducedOn = (dayKey: string): boolean =>
+    prefs.temp_daily_minutes != null && prefs.temp_daily_until != null && prefs.temp_daily_until >= dayKey;
+  const minutesForDay = (dayKey: string): number =>
+    reducedOn(dayKey) ? (prefs.temp_daily_minutes as number) : prefs.daily_minutes;
   const dailyMinutes = minutesForDay(todayKey);
+  const routine: PlanRoutine = {
+    dailyMinutes,
+    baseDailyMinutes: prefs.daily_minutes,
+    reducedUntil: reducedOn(todayKey) ? prefs.temp_daily_until : null,
+    studyDayMask,
+    studyDays: daysAvailable,
+    weeklyMinutes: dailyMinutes * daysAvailable,
+  };
 
   // ── The student's pace (lib/study-plan/pace.ts) ──────────────────────────
   const pace = resolvePace({
@@ -609,13 +615,6 @@ export function derivePlan(args: {
       samples: signals.flashcards?.paceSamples ?? 0,
     },
   });
-
-  const effectiveSpec: IntensitySpec = {
-    minutesPerDay: dailyMinutes,
-    questionsTarget: Math.round(dailyMinutes / pace.minutesPerQuestion),
-    lessonsTarget: spec.lessonsTarget,
-    specialtiesPerDay: spec.specialtiesPerDay,
-  };
 
   // ── Rank specialties for today's plan ────────────────────────────────────
   // Multi-focus: pinned to front (in order), each at weight 1.5
@@ -1159,8 +1158,9 @@ export function derivePlan(args: {
       const inProgress = answered > 0;
       const accuracyPct = inProgress ? Math.round(((m.progress?.correct ?? 0) / (m.progress?.answered ?? 1)) * 100) : 0;
       const tierLabel = topic.priority_tier ? `prioridade ${topic.priority_tier}` : "tema";
-      // Only part of what is left fits today → say how many.
-      const todayNote = chunk.completes ? "" : ` · ${units} hoje`;
+      // The card says what each number is (Karina 2026-11-18): how many were
+      // answered, and how many are on today's programme.
+      const todayNote = ` · ${units} ${units === 1 ? "programada" : "programadas"} para hoje`;
       items.push({
         ...common,
         kind: "quiz",
@@ -1168,10 +1168,10 @@ export function derivePlan(args: {
         subtitle: m.redo
           ? `${m.specName} · ${accuracyPct}% de acerto · revise os erros${todayNote}`
           : inProgress
-            ? `${m.specName} · ${answered} de ${total} questões${todayNote}`
+            ? `${m.specName} · ${answered} de ${total} ${total === 1 ? "questão respondida" : "questões respondidas"}${todayNote}`
             : chunk.completes
-              ? `${m.specName} · ${tierLabel} · ${topic.incidence_count} no exame`
-              : `${m.specName} · ${units} de ${total} questões hoje`,
+              ? `${m.specName} · ${tierLabel} · ${units} ${units === 1 ? "questão programada" : "questões programadas"} para hoje`
+              : `${m.specName} · ${units} de ${total} questões programadas para hoje`,
         reason: m.redo
           ? `Você respondeu tudo, mas ainda está em ${accuracyPct}% — refaça para fixar`
           : inProgress
@@ -1198,7 +1198,7 @@ export function derivePlan(args: {
         ...common,
         kind: "flashcards",
         iconHint: "flashcards",
-        subtitle: `${m.specName} · flashcards · ${units} ${units === 1 ? "cartão" : "cartões"}${chunk.completes ? "" : " hoje"}`,
+        subtitle: `${m.specName} · flashcards · ${units} ${units === 1 ? "cartão programado" : "cartões programados"} para hoje`,
         reason: "Memorize os pontos-chave do tema",
       });
     } else {
@@ -1390,14 +1390,16 @@ export function derivePlan(args: {
   const weakestSpecialties = (paused
     ? allRanked.slice().sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
     : ranked
-  ).slice(0, 5).map((r) => ({ id: r.id, name: r.name, accuracy: r.accuracy, attempts: r.attempts }));
+  ).slice(0, 5).map((r) => ({
+    id: r.id, name: r.name, accuracy: r.accuracy, attempts: r.attempts, correct: r.correct,
+    prioritized: prefs.focus_specialty_ids.includes(r.id),
+  }));
 
   return {
     phase,
     daysToExam,
-    intensity: effectiveIntensity,
-    baseIntensity: prefs.intensity,
-    intensitySpec: paused ? spec : effectiveSpec,
+    examDate: examDateKey,
+    routine,
     items: paused ? [] : items,
     totalEstimatedMinutes: paused ? 0 : items.reduce((sum, it) => sum + it.estimatedMinutes, 0),
     weakestSpecialties,

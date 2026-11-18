@@ -25,6 +25,7 @@ import type { PaceMode } from "@/lib/study-plan/pace";
 import type { QuestionReviewRow } from "@/lib/study-plan/review-outcomes";
 import { runProgress, type SimuladoPage } from "@/lib/study-plan/simulado";
 import { addDaysKey } from "@/lib/br-date";
+import { availabilityLine, legacyDailyMinutes, studyDayNames } from "@/lib/study-plan/availability";
 import { withFrozenTime } from "../app/tests/helpers/freeze-time";
 
 const require = createRequire(import.meta.url);
@@ -159,9 +160,7 @@ function newStudent(over: Partial<Student> & { prefs?: Partial<StudyPlanPrefs> }
 function planFor(c: Content, s: Student, dayKey: string): DerivedPlan {
   const index = buildTopicQuestionIndex(c.links);
   const studied = s.attempts.length > 0;
-  const budgetGuess = s.prefs.weekly_hours != null
-    ? (s.prefs.weekly_hours * 60) / Math.max(1, bits(s.prefs.available_days & ~s.prefs.recurring_off_days))
-    : { leve: 30, padrao: 60, intenso: 120 }[s.prefs.intensity];
+  const budgetGuess = s.prefs.daily_minutes;
   // The queue of the day: the usual load of old items + the questions currently wrong.
   const wrongDue = [...s.review.values()].filter((r) => r.repetitions === 0 && !r.suspended).length;
   const baseline = studied ? Math.round((budgetGuess * s.reviewShare * 60) / c.settings.reviewSecondsPerItem) : 0;
@@ -439,10 +438,10 @@ async function main() {
     () => newStudent({ prefs: { available_days: SIX_DAYS, preferred_content_types: all } }));
 
   run("2. Poucas semanas", "Prova em 08/12/2026 (21 dias). 120 min por dia, todos os dias. Todos os materiais. Aluno novo.",
-    () => newStudent({ examDate: "2026-12-08", prefs: { intensity: "intenso", preferred_content_types: all } }));
+    () => newStudent({ examDate: "2026-12-08", prefs: { daily_minutes: 120, preferred_content_types: all } }));
 
   run("3. Tempo insuficiente", "Prova em 17/12/2026 (30 dias). 30 min por dia, segunda, quarta e sexta. Todos os materiais. Aluno novo.",
-    () => newStudent({ examDate: "2026-12-17", prefs: { intensity: "leve", available_days: THREE_DAYS, preferred_content_types: all } }));
+    () => newStudent({ examDate: "2026-12-17", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all } }));
 
   run("6. Desempenho abaixo de 70%", "Como o cenário 1, mas o aluno acerta só 55% das questões na primeira tentativa. As questões erradas voltam pela Revisão.",
     () => newStudent({ firstTryAccuracy: 0.55, prefs: { available_days: SIX_DAYS, preferred_content_types: all } }));
@@ -533,7 +532,7 @@ async function main() {
 
   // 7. A day shorter than the simulado: it is split between study days and continued.
   {
-    const mk = () => newStudent({ examDate: "2026-12-29", prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const mk = () => newStudent({ examDate: "2026-12-29", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     const s = mk();
     const day0 = planFor(c, s, TODAY);
     const f = followPlan(c, s, TODAY);
@@ -556,7 +555,7 @@ async function main() {
 
   // 8. Two a week with short days: a session begun in one week ends in the next.
   {
-    const s = newStudent({ examDate: "2026-12-29", prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 2 } });
+    const s = newStudent({ examDate: "2026-12-29", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 2 } });
     const day0 = planFor(c, s, TODAY);
     // Follow day by day, noting every Monday on which a simulado begun the week before is still open.
     let carriedMondays = 0;
@@ -593,7 +592,7 @@ async function main() {
   // 9. Frequency × availability: what each choice costs, and the one that is not viable.
   {
     const mk = (freq: "auto" | 1 | 2) => newStudent({
-      examDate: "2026-12-17", prefs: { intensity: "leve", available_days: THREE_DAYS, preferred_content_types: all, simulado_frequency: freq },
+      examDate: "2026-12-17", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all, simulado_frequency: freq },
     });
     const auto = planFor(c, mk("auto"), TODAY);
     const one = planFor(c, mk(1), TODAY);
@@ -717,7 +716,7 @@ async function main() {
   // 12. Back after a pause of more than 7 days: the pending mini simulado is still in the plan,
   //     with the choice to continue it or pick another — never two sessions at once.
   {
-    const mk = () => newStudent({ examDate: "2027-05-30", prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const mk = () => newStudent({ examDate: "2027-05-30", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     // Tuesday: 30 minutes hold 12 of the 25 questions. Then the student disappears for 10 days.
     const begin = (s: Student) => { followPlan(c, s, TODAY, TODAY); return s.attempts.find((a) => c.simuladoPages.get(a.page_id)?.isMini)!.page_id; };
     const back = addDaysKey(TODAY, 10); // Friday of the following week
@@ -790,7 +789,7 @@ async function main() {
   {
     // Exam on a Wednesday: the last week has Monday and Tuesday, 30 min each = 24 of the 25 questions.
     const exam = "2026-12-16";
-    const s = newStudent({ examDate: exam, prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const s = newStudent({ examDate: exam, prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     const lastMonday = "2026-12-14";
     let lastWeekBlocks = 0, lastWeekContent = 0;
     const checks: Check[] = [];
@@ -804,7 +803,7 @@ async function main() {
       checks.push(...followPlan(c, s, day, day).checks);
     }
     // Same calendar, but the student begins a mini simulado on the eve by their own choice: it is still continued.
-    const t = newStudent({ examDate: exam, prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const t = newStudent({ examDate: exam, prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     const own = [...c.simuladoPages.values()].find((p) => p.isMini)!;
     let clock = Date.parse(`${lastMonday}T13:00:00Z`);
     for (const q of own.questionIds.slice(0, 20)) {
@@ -832,6 +831,122 @@ async function main() {
           name: "Um mini simulado já iniciado continua sendo oferecido, mesmo na véspera",
           ok: simBlocks(eve).length === 1 && simBlocks(eve)[0].pageId === own.pageId && /faltam 5 de 25/.test((simBlocks(eve)[0].lines ?? []).join(" ")),
           detail: `véspera, com 20 de 25 respondidas na segunda-feira: ${simBlocks(eve).map((i) => i.title + " — " + (i.lines ?? [])[0]).join("; ") || "nenhum bloco"}`,
+        },
+      ],
+    });
+  }
+
+  // ── Tempo de estudo por dia (Karina 2026-11-18) ────────────────────────────────────────────────────────────
+  const placedOn = (d: { review: number; simulado: number; content: number }) => d.review + d.simulado + d.content;
+
+  // 14. The student informs the time of each study day; the weekly total is calculated.
+  {
+    const monday = "2026-11-23";
+    const mk = (minutes: number) => newStudent({ prefs: { daily_minutes: minutes, available_days: THREE_DAYS, preferred_content_types: all } });
+    const five = planFor(c, mk(300), monday);
+    const one = planFor(c, mk(60), monday);
+    const maxDay = Math.max(...five.scheduleDays.map(placedOn));
+    const offDays = five.scheduleDays.filter((d) => placedOn(d) > 0 && ![1, 3, 5].includes(dow(d.key))).length;
+    report.push({
+      title: "14. Tempo de estudo por dia",
+      description: "Prova em 30/05/2027. O aluno informa 5 horas e 0 minutos por dia e marca segunda, quarta e sexta. O total semanal é calculado. Comparação com o mesmo aluno informando 1 hora por dia.",
+      day0: summary(five),
+      checks: [
+        checkBudget(five),
+        {
+          name: "Resumo da disponibilidade: 5 h por dia de estudo · 3 dias por semana · 15 h semanais",
+          ok: availabilityLine(five.routine.dailyMinutes, five.routine.studyDayMask) === "5 h por dia de estudo · 3 dias por semana · 15 h semanais"
+            && studyDayNames(five.routine.studyDayMask) === "segunda, quarta e sexta" && five.routine.weeklyMinutes === 900,
+          detail: `${availabilityLine(five.routine.dailyMinutes, five.routine.studyDayMask)} (${studyDayNames(five.routine.studyDayMask)})`,
+        },
+        {
+          name: "O tempo diário é o tempo de cada dia de estudo: 300 min hoje e nunca mais de 300 min em nenhum dia",
+          ok: five.todayBudgetMinutes === 300 && five.totalEstimatedMinutes <= 300 && maxDay <= 300.01 && offDays === 0,
+          detail: `hoje: ${five.totalEstimatedMinutes} de ${five.todayBudgetMinutes} min; dia mais cheio até a prova: ${Math.round(maxDay)} min; atividades fora de segunda, quarta e sexta: ${offDays}`,
+        },
+        {
+          name: "A previsão de cobertura usa o tempo diário (5 h por dia prevê mais do que 1 h por dia)",
+          ok: five.forecast!.minutesPerStudyDay === 300 && five.forecast!.expectedTopics > one.forecast!.expectedTopics
+            && five.forecast!.scheduledMinutes > one.forecast!.scheduledMinutes,
+          detail: `5 h por dia: ${five.forecast!.expectedTopics} de ${five.forecast!.pendingTopics} temas, ${Math.round(five.forecast!.scheduledMinutes / 60)} h programadas; 1 h por dia: ${one.forecast!.expectedTopics} temas, ${Math.round(one.forecast!.scheduledMinutes / 60)} h programadas`,
+        },
+        {
+          name: "O orçamento dos mini simulados usa o tempo diário, e a frequência continua semanal",
+          ok: five.simulado.weeklyStudyMinutes === 900 && one.simulado.weeklyStudyMinutes === 180
+            && five.simulado.options.every((o) => o.sessionsPerWeek <= 2),
+          detail: `tempo de estudo por semana: ${five.simulado.weeklyStudyMinutes} min (5 h por dia) e ${one.simulado.weeklyStudyMinutes} min (1 h por dia); opções: ${five.simulado.options.map((o) => `${o.frequency}=${o.everyWeeks > 1 ? `1 a cada ${o.everyWeeks} semanas` : `${o.sessionsPerWeek} por semana`}`).join(", ")}`,
+        },
+      ],
+    });
+  }
+
+  // 15. Settings saved before the change keep the load they had.
+  {
+    const monday = "2026-11-23";
+    const converted = legacyDailyMinutes({ weekly_hours: 6, intensity: "intenso", studyDays: 3 });
+    const kept = planFor(c, newStudent({ prefs: { daily_minutes: converted, available_days: THREE_DAYS, preferred_content_types: all } }), monday);
+    const wrong = planFor(c, newStudent({ prefs: { daily_minutes: 360, available_days: THREE_DAYS, preferred_content_types: all } }), monday);
+    const levels = (["leve", "padrao", "intenso"] as const).map((i) => legacyDailyMinutes({ weekly_hours: null, intensity: i, studyDays: 5 }));
+    report.push({
+      title: "15. Conversão das configurações existentes",
+      description: "Uma configuração antiga de 6 horas por semana em 3 dias (segunda, quarta e sexta) passa a 2 horas por dia de estudo — não a 6 horas por dia. Quem não tinha horas semanais mantém os minutos do nível antigo.",
+      day0: summary(kept),
+      checks: [
+        checkBudget(kept),
+        {
+          name: "6 horas semanais em 3 dias = 2 horas por dia; o total semanal continua 6 horas",
+          ok: converted === 120 && kept.todayBudgetMinutes === 120 && kept.routine.weeklyMinutes === 360,
+          detail: `convertido: ${converted} min por dia; ${availabilityLine(kept.routine.dailyMinutes, kept.routine.studyDayMask)}`,
+        },
+        {
+          name: "A carga não é multiplicada: a previsão é a de 2 h por dia, não a de 6 h por dia",
+          ok: kept.forecast!.scheduledMinutes < wrong.forecast!.scheduledMinutes && Math.max(...kept.scheduleDays.map(placedOn)) <= 120.01,
+          detail: `com 2 h por dia: ${Math.round(kept.forecast!.scheduledMinutes / 60)} h programadas até a prova; se virasse 6 h por dia seriam ${Math.round(wrong.forecast!.scheduledMinutes / 60)} h`,
+        },
+        {
+          name: "Sem horas semanais salvas, valem os minutos do nível antigo (Leve 30, Padrão 60, Intenso 120)",
+          ok: levels.join(",") === "30,60,120",
+          detail: `Leve, Padrão, Intenso → ${levels.join(", ")} min por dia de estudo`,
+        },
+      ],
+    });
+  }
+
+  // 16. "Reduzir o tempo de estudo por um período".
+  {
+    const monday = "2026-11-23";
+    const until = "2026-12-06";
+    const mk = (reduce: boolean) => newStudent({ prefs: {
+      daily_minutes: 120, available_days: FIVE_DAYS, preferred_content_types: all,
+      ...(reduce ? { temp_daily_minutes: 30, temp_daily_until: until } : {}),
+    } });
+    const reduced = planFor(c, mk(true), monday);
+    const regular = planFor(c, mk(false), monday);
+    const during = reduced.scheduleDays.filter((d) => d.key <= until);
+    const after = reduced.scheduleDays.filter((d) => d.key > until);
+    const back = planFor(c, mk(true), "2026-12-07");
+    report.push({
+      title: "16. Redução do tempo de estudo por um período",
+      description: "2 horas por dia, segunda a sexta. O aluno reduz para 30 min por dia de estudo até 06/12/2026. Depois do período, o plano volta sozinho às 2 horas.",
+      day0: summary(reduced),
+      checks: [
+        checkBudget(reduced),
+        {
+          name: "Durante o período, cada dia de estudo tem no máximo o tempo reduzido",
+          ok: reduced.todayBudgetMinutes === 30 && reduced.routine.reducedUntil === until && during.length > 0
+            && during.every((d) => placedOn(d) <= 30.01),
+          detail: `hoje: ${reduced.todayBudgetMinutes} min; dias de estudo no período: ${during.length}; dia mais cheio no período: ${Math.round(Math.max(...during.map(placedOn)))} min`,
+        },
+        {
+          name: "Depois do período, o plano volta ao tempo diário habitual",
+          ok: after.some((d) => placedOn(d) > 100) && after.every((d) => placedOn(d) <= 120.01)
+            && back.todayBudgetMinutes === 120 && back.routine.reducedUntil === null,
+          detail: `dia mais cheio depois de 06/12: ${Math.round(Math.max(...after.map(placedOn)))} min; em 07/12 o dia volta a ${back.todayBudgetMinutes} min`,
+        },
+        {
+          name: "A previsão já considera a redução (menos tempo programado do que sem ela)",
+          ok: reduced.forecast!.scheduledMinutes < regular.forecast!.scheduledMinutes,
+          detail: `com a redução: ${(reduced.forecast!.scheduledMinutes / 60).toFixed(1)} h programadas até a prova; sem ela: ${(regular.forecast!.scheduledMinutes / 60).toFixed(1)} h`,
         },
       ],
     });

@@ -3,25 +3,25 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { todayKeyBR } from "@/lib/br-date";
-import type { Intensity, ContentType, WeaknessSensitivity } from "@/lib/study-plan/derive";
+import type { ContentType, WeaknessSensitivity } from "@/lib/study-plan/derive";
+import { isValidDailyMinutes } from "@/lib/study-plan/availability";
 import { isPaceMode, type PaceMode } from "@/lib/study-plan/pace";
 import { frequencyToColumn, isSimuladoFrequency, type SimuladoFrequency } from "@/lib/study-plan/simulado";
 import { getDerivedPlanForUser } from "@/lib/study-plan/fetch";
 
 // NOTE: A "use server" module may only export async functions. Do NOT re-export
 // types from here — the server-actions compiler turns `export type { … }` into a
-// runtime value re-export, which crashes with "Intensity is not defined".
+// runtime value re-export, which crashes with "<Type> is not defined".
 // Client code imports these types directly from "@/lib/study-plan/derive".
 
 // ── Generic study_plans upsert helper ────────────────────────────────────────
 
 type StudyPlansPatch = Partial<{
-  intensity: Intensity;
   available_days: number;
   recurring_off_days: number;
-  weekly_hours: number | null;
-  temp_intensity: Intensity | null;
-  temp_intensity_until: string | null;
+  daily_minutes: number;
+  temp_daily_minutes: number | null;
+  temp_daily_until: string | null;
   weakness_sensitivity: WeaknessSensitivity;
   include_60d: boolean;
   flashcard_daily_cap: number | null;
@@ -66,17 +66,15 @@ export async function setRecurringOffDays(mask: number): Promise<void> {
   revalidatePath("/app", "layout");
 }
 
-export async function setWeeklyHours(hours: number | null): Promise<void> {
+/**
+ * "Tempo de estudo por dia" (Karina 2026-11-18): the minutes the student can
+ * study on EACH selected day. The weekly total is derived, never stored.
+ */
+export async function setDailyMinutes(minutes: number): Promise<void> {
+  if (!isValidDailyMinutes(minutes)) return;
   const user = await getUser();
   if (!user) return;
-  await upsertStudyPlan(user.id, { weekly_hours: hours });
-  revalidatePath("/app", "layout");
-}
-
-export async function setIntensity(intensity: Intensity): Promise<void> {
-  const user = await getUser();
-  if (!user) return;
-  await upsertStudyPlan(user.id, { intensity });
+  await upsertStudyPlan(user.id, { daily_minutes: minutes });
   revalidatePath("/app", "layout");
 }
 
@@ -120,18 +118,21 @@ export async function setSimuladoFrequency(
   return { ok: true };
 }
 
-// ── Temporary intensity (reduce intensity for N days) ────────────────────────
+// ── "Reduzir o tempo de estudo por um período" ───────────────────────────────
 
-export async function setTempIntensity(
-  intensity: Intensity | null,
+/** A shorter study day up to `untilDate` (inclusive). Both null → back to the regular time. */
+export async function setStudyTimeReduction(
+  minutes: number | null,
   untilDate: string | null,
 ): Promise<void> {
+  let patch: StudyPlansPatch = { temp_daily_minutes: null, temp_daily_until: null };
+  if (minutes != null && untilDate != null) {
+    if (!isValidDailyMinutes(minutes) || !/^\d{4}-\d{2}-\d{2}$/.test(untilDate)) return;
+    patch = { temp_daily_minutes: minutes, temp_daily_until: untilDate };
+  }
   const user = await getUser();
   if (!user) return;
-  await upsertStudyPlan(user.id, {
-    temp_intensity: intensity,
-    temp_intensity_until: untilDate,
-  });
+  await upsertStudyPlan(user.id, patch);
   revalidatePath("/app", "layout");
 }
 
@@ -262,7 +263,7 @@ export async function setEmailPrefs(prefs: {
 // ── Onboarding wizard completion ─────────────────────────────────────────────
 
 export async function completeCalibration(params: {
-  weeklyHours: number;
+  dailyMinutes: number;
   availableDays: number;
   focusSpecialtyIds: number[];
   resourceTypes?: ContentType[];
@@ -271,7 +272,7 @@ export async function completeCalibration(params: {
   if (!user) return;
   const supabase = await createClient();
 
-  // Update study_plans with weekly hours + days + welcomed_at. When the wizard
+  // Update study_plans with the daily time + days + welcomed_at. When the wizard
   // sends resource picks, persist them as preferred_content_types — always
   // keeping "memorecards" (a 60D auto-feature, not a picker toggle).
   await supabase
@@ -279,7 +280,7 @@ export async function completeCalibration(params: {
     .upsert(
       {
         user_id: user.id,
-        weekly_hours: params.weeklyHours,
+        ...(isValidDailyMinutes(params.dailyMinutes) ? { daily_minutes: params.dailyMinutes } : {}),
         available_days: params.availableDays,
         welcomed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

@@ -462,7 +462,7 @@ test("MedHelp 60D materials are never scheduled by Meu Plano", () => {
 
 test("forecast: zero topics concluded in full is told apart from partial progress", () => {
   // One study day of 30 min: Tema1 does not fit whole, but the plan does advance in it.
-  const p = plan({ testDate: "2026-07-29", prefs: { intensity: "leve", preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
+  const p = plan({ testDate: "2026-07-29", prefs: { daily_minutes: 30, preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
   const f = p.forecast!;
   assert.equal(f.expectedTopics, 0);
   assert.equal(f.partialTopics, 1);
@@ -502,7 +502,7 @@ test("forecast: everything fits → all expected, with the day the last topic en
 
 test("forecast: not enough time → says what is not expected and what would widen the coverage", () => {
   // Exam in 3 days, 30 min a day.
-  const p = plan({ testDate: "2026-07-31", prefs: { intensity: "leve", preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
+  const p = plan({ testDate: "2026-07-31", prefs: { daily_minutes: 30, preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
   const f = p.forecast!;
   assert.ok(f.expectedTopics < f.pendingTopics);
   assert.equal(f.notExpected.length, f.pendingTopics - f.expectedTopics);
@@ -560,7 +560,11 @@ test("the forecast uses Karina's wording: 'não previstos até a prova', never '
   assert.match(panel, /não previstos até a prova/);
   assert.match(panel, /Resumos Narrativos e os materiais do\s+MedHelp 60D/);
   assert.match(panel, /não estão incluídos/);
-  assert.match(panel, /avança parcialmente/);
+  // Three separate facts (Karina 2026-11-18): full conclusion, partial advance, time that fits.
+  assert.match(panel, /Temas com conclusão integral prevista/);
+  assert.match(panel, /Temas com avanço parcial previsto/);
+  assert.match(panel, /Tempo de materiais pendentes que cabe até a prova/);
+  assert.match(panel, /temas sem conclusão integral prevista/);
   assert.doesNotMatch(panel, /ficam de fora|fica de fora/);
 });
 
@@ -596,7 +600,7 @@ test("schedule: with 'every N weeks' the simulado weeks are counted back from th
 
 test("plan: mini simulados take at most a quarter of the week's study time (little time → every few weeks)", () => {
   // 30 min × 3 days = 90 min a week; one mini simulado = 62.5 min → every 3 weeks, not every week.
-  const little = plan({ testDate: "2026-09-01", prefs: { ...WITH_SIMULADO, intensity: "leve", available_days: (1 << 2) | (1 << 3) | (1 << 5) } }); // Tue, Wed, Fri
+  const little = plan({ testDate: "2026-09-01", prefs: { ...WITH_SIMULADO, daily_minutes: 30, available_days: (1 << 2) | (1 << 3) | (1 << 5) } }); // Tue, Wed, Fri
   const simDays = little.scheduleDays.filter((d) => d.simulado > 0).length;
   const weeks = 5;
   assert.ok(simDays > 0 && simDays <= weeks, `simulado on ${simDays} days in ~${weeks} weeks`);

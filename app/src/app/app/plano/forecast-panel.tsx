@@ -38,6 +38,11 @@ function hours(minutes: number): string {
   return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
+/** "cerca de": from 3 hours up, whole hours are enough (38 h 51 min → 39 h). */
+function approxHours(minutes: number): string {
+  return minutes >= 180 ? `${Math.round(minutes / 60)} h` : hours(minutes);
+}
+
 function hintText(h: ForecastHint, pending: number): string {
   const reach = h.coversAll
     ? "todos os temas ficam com conclusão prevista"
@@ -100,20 +105,48 @@ export function ForecastPanel({
                   ? dateConfirmed && forecast.finishDay
                     ? `No seu ritmo atual, tudo o que falta cabe até a prova — o último tema termina por volta de ${formatDay(forecast.finishDay)}.`
                     : "No seu ritmo atual, tudo o que falta cabe até a prova."
-                  : expectedTopics === 0
-                    ? "Com a disponibilidade atual, nenhum tema tem conclusão integral prevista até a prova."
-                    : `${notExpected.length} ${notExpected.length === 1 ? "tema não tem" : "temas não têm"} conclusão integral prevista até a prova com a disponibilidade atual. Os de maior incidência vêm primeiro.`}
-              </p>
-            )}
-            {/* "Not concluded in full" is not "not studied": say how far the plan gets. */}
-            {!nothingLeft && !allFit && forecast.partialTopics > 0 && (
-              <p style={{ fontSize: 13, color: "var(--foreground)", marginTop: 6, lineHeight: 1.5 }}>
-                O plano avança parcialmente em {forecast.partialTopics} {forecast.partialTopics === 1 ? "tema" : "temas"}:
-                {" "}cabem cerca de {hours(forecast.scheduledMinutes)} das {hours(forecast.pendingMinutes)} de materiais pendentes.
+                  : "Com a disponibilidade atual, nem todos os temas pendentes têm conclusão integral prevista até a prova. Os de maior incidência vêm primeiro."}
               </p>
             )}
           </div>
         </div>
+
+        {/* Three separate facts, each on its own line (Karina 2026-11-18): topics
+            concluded in full, topics the plan only advances in, and how much of the
+            pending study time fits — the hours belong to the whole plan, never to
+            the partially advanced topics. */}
+        {!nothingLeft && (
+          <dl
+            style={{
+              margin: "14px 0 0", padding: "12px 14px",
+              background: "var(--background)", border: "1px solid var(--surface-2)", borderRadius: "var(--radius-sm)",
+              display: "flex", flexDirection: "column", gap: 10, fontSize: 13, lineHeight: 1.5,
+            }}
+          >
+            <div>
+              <dt style={{ color: "var(--muted-foreground)" }}>Temas com conclusão integral prevista</dt>
+              <dd style={{ margin: 0, fontWeight: 600 }}>
+                {expectedTopics} {expectedTopics === 1 ? "tema" : "temas"}
+              </dd>
+            </div>
+            <div>
+              <dt style={{ color: "var(--muted-foreground)" }}>Temas com avanço parcial previsto</dt>
+              <dd style={{ margin: 0, fontWeight: 600 }}>
+                {forecast.partialTopics === 0
+                  ? "Nenhum"
+                  : `${forecast.partialTopics} ${forecast.partialTopics === 1 ? "tema" : "temas"}`}
+              </dd>
+            </div>
+            <div>
+              <dt style={{ color: "var(--muted-foreground)" }}>Tempo de materiais pendentes que cabe até a prova</dt>
+              <dd style={{ margin: 0, fontWeight: 600 }}>
+                {allFit
+                  ? `Cerca de ${approxHours(forecast.pendingMinutes)} — tudo o que está pendente`
+                  : `Cerca de ${approxHours(forecast.scheduledMinutes)} de ${approxHours(forecast.pendingMinutes)}, somando todos os temas`}
+              </dd>
+            </div>
+          </dl>
+        )}
 
         {!nothingLeft && (
           <div
@@ -132,7 +165,7 @@ export function ForecastPanel({
           {dateConfirmed
             ? `${forecast.studyDaysLeft} ${forecast.studyDaysLeft === 1 ? "dia de estudo" : "dias de estudo"} até a prova · `
             : ""}
-          {forecast.minutesPerStudyDay} min por dia de estudo
+          {hours(forecast.minutesPerStudyDay)} por dia de estudo
           {completedTopics > 0 ? ` · ${completedTopics} ${completedTopics === 1 ? "tema já concluído" : "temas já concluídos"}` : ""}
           {forecast.inReviewTopics > 0
             ? ` · ${forecast.inReviewTopics} ${forecast.inReviewTopics === 1 ? "tema com acerto abaixo de 70% segue" : "temas com acerto abaixo de 70% seguem"} na Revisão`
@@ -179,11 +212,15 @@ export function ForecastPanel({
                 fontSize: 13, fontWeight: 600, color: "var(--brand-text, var(--brand))", textAlign: "left",
               }}
             >
-              {open ? "Ocultar" : "Ver"} os {notExpected.length} temas não previstos até a prova
+              {open ? "Ocultar" : "Ver"} temas sem conclusão integral prevista ({notExpected.length})
               {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
             </button>
             {open && (
               <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 12 }}>
+                <p style={{ fontSize: 12, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+                  Temas não previstos até a prova com a disponibilidade atual, por ordem de prioridade.
+                  Eles continuam disponíveis para estudo livre.
+                </p>
                 {[...bySpecialty.entries()].map(([spec, topics]) => (
                   <div key={spec}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-foreground)", marginBottom: 4 }}>{spec}</p>
@@ -205,7 +242,7 @@ export function ForecastPanel({
         {/* What is counted */}
         <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--surface-2)", lineHeight: 1.55 }}>
           Entram no cálculo: {counted.length > 0 ? joinPt(counted) : "nenhum material selecionado"}
-          {forecast.scope.excludedSpecialties > 0 ? ", das especialidades que você manteve no plano" : ""}
+          {forecast.scope.excludedSpecialties > 0 ? ", apenas das áreas que você manteve no planejamento" : ""}
           .{hasAudio ? " O MedVoice é programado só a mais de 60 dias da prova." : ""} A Revisão e os mini
           simulados ocupam parte do tempo de estudo. Resumos Narrativos e os materiais do
           MedHelp 60D (Fórmula MedHelp, MemoreCards e Simulados 100Q) não estão incluídos. A previsão é

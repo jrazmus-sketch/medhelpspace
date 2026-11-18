@@ -7,13 +7,13 @@ import {
   type StudyPlanPrefs,
   type Signals,
   type ContentType,
-  type Intensity,
   type WeaknessSensitivity,
 } from "./derive";
 import { loadTopicQuestionIndex } from "./topic-questions-server";
 import { fetchTopicContent } from "./topic-content";
 import { loadPlanSettings } from "./settings-server";
 import { isPaceMode } from "./pace";
+import { countDays, isValidDailyMinutes, legacyDailyMinutes } from "./availability";
 import { fetchAllForUser, loadQuestionReviewRows } from "./user-rows";
 import { frequencyFromColumn, type SimuladoCatalog, type SimuladoPage } from "./simulado";
 
@@ -155,6 +155,7 @@ export async function getDerivedPlanForUser(
     simuladoFreqRes,
     questionReview,
     reviewedTodayRes,
+    dailyRes,
   ] = await Promise.all([
     admin
       .from("study_plans")
@@ -234,6 +235,9 @@ export async function getDerivedPlanForUser(
       .eq("user_id", userId)
       .in("item_type", ["flashcard", "quiz_question", "memorecard"])
       .gte("last_reviewed_at", startOfDayBRIso(todayKey)),
+    // Time per study day — read apart, like pace_mode (a missing column must
+    // only mean "use what the row said before the daily field existed").
+    admin.from("study_plans").select(DAILY_COLUMNS).eq("user_id", userId).maybeSingle(),
   ]);
 
   // Build prefs object, applying defaults for missing fields
@@ -243,12 +247,9 @@ export async function getDerivedPlanForUser(
 
   const raw = prefsRes.data;
   const prefs: StudyPlanPrefs = {
-    intensity: (raw?.intensity as Intensity) ?? defaults.intensity,
     available_days: raw?.available_days ?? defaults.available_days,
     recurring_off_days: raw?.recurring_off_days ?? defaults.recurring_off_days,
-    weekly_hours: raw?.weekly_hours ?? null,
-    temp_intensity: (raw?.temp_intensity as Intensity | null) ?? null,
-    temp_intensity_until: raw?.temp_intensity_until ?? null,
+    ...dailyTimePrefs(raw, dailyRes.data),
     weakness_sensitivity: (raw?.weakness_sensitivity as WeaknessSensitivity) ?? defaults.weakness_sensitivity,
     include_60d: raw?.include_60d ?? defaults.include_60d,
     flashcard_daily_cap: raw?.flashcard_daily_cap ?? null,
@@ -343,7 +344,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
   welcomedAt: string | null;
 }> {
   const admin = createAdminClient();
-  const [planRes, focusRes, excludedRes, paceRes, simuladoFreqRes] = await Promise.all([
+  const [planRes, focusRes, excludedRes, paceRes, simuladoFreqRes, dailyRes] = await Promise.all([
     admin
       .from("study_plans")
       .select(`
@@ -365,6 +366,7 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       .eq("user_id", userId),
     admin.from("study_plans").select("pace_mode").eq("user_id", userId).maybeSingle(),
     admin.from("study_plans").select("simulados_per_week").eq("user_id", userId).maybeSingle(),
+    admin.from("study_plans").select(DAILY_COLUMNS).eq("user_id", userId).maybeSingle(),
   ]);
 
   const defaults = defaultPrefs();
@@ -374,12 +376,9 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
 
   return {
     prefs: {
-      intensity: (raw?.intensity as Intensity) ?? defaults.intensity,
       available_days: raw?.available_days ?? defaults.available_days,
       recurring_off_days: raw?.recurring_off_days ?? defaults.recurring_off_days,
-      weekly_hours: raw?.weekly_hours ?? null,
-      temp_intensity: (raw?.temp_intensity as Intensity | null) ?? null,
-      temp_intensity_until: raw?.temp_intensity_until ?? null,
+      ...dailyTimePrefs(raw, dailyRes.data),
       weakness_sensitivity: (raw?.weakness_sensitivity as WeaknessSensitivity) ?? defaults.weakness_sensitivity,
       include_60d: raw?.include_60d ?? defaults.include_60d,
       flashcard_daily_cap: raw?.flashcard_daily_cap ?? null,
@@ -396,6 +395,36 @@ export async function getStudyPlanPrefs(userId: string): Promise<{
       simulado_frequency: frequencyFromColumn(simuladoFreqRes.data?.simulados_per_week),
     },
     welcomedAt: (raw?.welcomed_at as string | null) ?? null,
+  };
+}
+
+const DAILY_COLUMNS = "daily_minutes, temp_daily_minutes, temp_daily_until";
+
+/**
+ * The student's time per study day (Karina 2026-11-18). A row that predates the
+ * daily field — or a database where the patch is not applied yet — keeps the
+ * load it had: the old weekly hours spread over its study days, else the old
+ * Leve/Padrão/Intenso minutes (lib/study-plan/availability.ts).
+ */
+function dailyTimePrefs(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  legacy: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  daily: any,
+): Pick<StudyPlanPrefs, "daily_minutes" | "temp_daily_minutes" | "temp_daily_until"> {
+  const defaults = defaultPrefs();
+  const mask =
+    (legacy?.available_days ?? defaults.available_days) & ~(legacy?.recurring_off_days ?? defaults.recurring_off_days);
+  const daily_minutes = isValidDailyMinutes(daily?.daily_minutes)
+    ? daily.daily_minutes
+    : legacy
+      ? legacyDailyMinutes({ weekly_hours: legacy.weekly_hours, intensity: legacy.intensity, studyDays: countDays(mask) })
+      : defaults.daily_minutes;
+  const temp = isValidDailyMinutes(daily?.temp_daily_minutes) && typeof daily?.temp_daily_until === "string";
+  return {
+    daily_minutes,
+    temp_daily_minutes: temp ? daily.temp_daily_minutes : null,
+    temp_daily_until: temp ? daily.temp_daily_until : null,
   };
 }
 

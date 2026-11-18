@@ -273,13 +273,16 @@ test("phase boundaries: taper <=14, intensification <=60", () => {
   assert.equal(withFrozenTime(MORNING_BRT, () => run({ testDate: "2026-09-27" })).phase, "foundation");      // 61
 });
 
-test("temp_intensity expires on the Brazilian day, not the UTC one", () => {
+test("a temporary reduction of the study time expires on the Brazilian day, not the UTC one", () => {
   const plan = withFrozenTime(EVENING_BRT, () =>
-    run({ prefs: { intensity: "intenso", temp_intensity: "leve", temp_intensity_until: "2026-07-28" } }));
-  assert.equal(plan.intensity, "leve", "still valid through the 28th in Brazil");
+    run({ prefs: { daily_minutes: 120, temp_daily_minutes: 30, temp_daily_until: "2026-07-28" } }));
+  assert.equal(plan.routine.dailyMinutes, 30, "still valid through the 28th in Brazil");
+  assert.equal(plan.routine.reducedUntil, "2026-07-28");
+  assert.equal(plan.routine.baseDailyMinutes, 120);
   const expired = withFrozenTime(MORNING_BRT, () =>
-    run({ prefs: { intensity: "intenso", temp_intensity: "leve", temp_intensity_until: "2026-07-27" } }));
-  assert.equal(expired.intensity, "intenso");
+    run({ prefs: { daily_minutes: 120, temp_daily_minutes: 30, temp_daily_until: "2026-07-27" } }));
+  assert.equal(expired.routine.dailyMinutes, 120);
+  assert.equal(expired.routine.reducedUntil, null);
 });
 
 // ── P0-3: mastery, not one-and-done ──────────────────────────────────────────
@@ -500,7 +503,7 @@ test("the plan advances past mastered topics instead of stalling on them", () =>
     specialty_id: 1, is_correct: true, created_at: "2026-07-20T10:00:00Z", page_id: 100 + t, question_id: t * 100 + q,
   })));
   const plan = withFrozenTime(MORNING_BRT, () => derivePlan({
-    prefs: prefs({ intensity: "leve" }), cohort: { test_date: "2027-01-15" }, specialties: SPECS, pages, topics, topicContent: content,
+    prefs: prefs({ daily_minutes: 30 }), cohort: { test_date: "2027-01-15" }, specialties: SPECS, pages, topics, topicContent: content,
     signals: emptySignals({ quizAttempts: attempts, questionCountsByPageId: new Map(pages.map((p) => [p.id, 5])) }),
   }));
   const titles = [...new Set(plan.items.map((i) => i.title))];

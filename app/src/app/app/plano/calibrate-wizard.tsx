@@ -6,6 +6,8 @@ import { X, ChevronRight, ChevronLeft, Calendar, Target, Clock, Check, Layers } 
 import { completeCalibration, dismissCalibrationBanner } from "@/actions/study-plan";
 import type { ContentType } from "@/lib/study-plan/derive";
 import { todayKeyBR, diffDaysKey } from "@/lib/br-date";
+import { availabilityLine } from "@/lib/study-plan/availability";
+import { DailyTimeFields } from "./daily-time-fields";
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -27,7 +29,7 @@ export function CalibrateWizard({
   cohortName,
   specialties,
   initialAvailableDays,
-  initialWeeklyHours,
+  initialDailyMinutes,
   initialFocusIds,
   initialResourceTypes,
   onClose,
@@ -39,7 +41,7 @@ export function CalibrateWizard({
   cohortName: string | null;
   specialties: Specialty[];
   initialAvailableDays: number;
-  initialWeeklyHours: number | null;
+  initialDailyMinutes: number;
   initialFocusIds: number[];
   initialResourceTypes: ContentType[];
   onClose: () => void;
@@ -51,8 +53,9 @@ export function CalibrateWizard({
   // Step 1: exam date — just confirm (cohort-managed). No editable field for V2.
   // Step 2: weak specialties (multi-select, optional, max 5)
   const [focusIds, setFocusIds] = useState<number[]>(initialFocusIds);
-  // Step 3: weekly hours + days
-  const [weeklyHours, setWeeklyHours] = useState<number>(initialWeeklyHours ?? 15);
+  // Step 3: time per study day + days
+  // null while what is typed is not a valid time — the step cannot be passed then.
+  const [dailyMinutes, setDailyMinutes] = useState<number | null>(initialDailyMinutes);
   const [availableDays, setAvailableDays] = useState<number>(initialAvailableDays);
   // Step 4: resources to schedule (default: all four picker resources)
   const [resources, setResources] = useState<Set<ContentType>>(() => {
@@ -86,7 +89,7 @@ export function CalibrateWizard({
   function finish() {
     startTransition(async () => {
       await completeCalibration({
-        weeklyHours,
+        dailyMinutes: dailyMinutes ?? initialDailyMinutes,
         availableDays,
         focusSpecialtyIds: focusIds,
         resourceTypes: [...resources],
@@ -105,7 +108,6 @@ export function CalibrateWizard({
   }
 
   const daysSelected = countBits(availableDays);
-  const avgPerDay = daysSelected > 0 ? Math.round((weeklyHours * 60) / daysSelected) : 0;
 
   return (
     <div
@@ -178,7 +180,7 @@ export function CalibrateWizard({
                     Sua prova é em…
                   </h2>
                   <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 24, lineHeight: 1.5 }}>
-                    Esta data vem do seu cohort e é o que orienta todas as fases do plano (fundação, intensificação e reta final).
+                    Esta data vem da sua turma e orienta o seu plano e a previsão do que cabe até a prova.
                   </p>
                   <div style={{
                     padding: "20px 24px",
@@ -282,29 +284,20 @@ export function CalibrateWizard({
             <>
               <Clock size={32} style={{ color: "var(--brand)", marginBottom: 16 }} />
               <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.025em", marginBottom: 8 }}>
-                Quanto tempo por semana você consegue estudar?
+                Quanto tempo você pode estudar por dia?
               </h2>
-              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 24, lineHeight: 1.5 }}>
-                Seja realista — o plano vai distribuir esse tempo nos dias que você marcar como disponíveis.
+              <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 20, lineHeight: 1.5 }}>
+                Seja realista — informe o tempo de cada dia de estudo e marque os dias. O total da semana é calculado automaticamente.
               </p>
 
               <div style={{ marginBottom: 28 }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8 }}>
-                  <label style={{ fontSize: 13, fontWeight: 600 }}>Horas por semana</label>
-                  <span style={{ fontSize: 22, fontWeight: 700, color: "var(--brand)", fontFamily: "var(--font-geist-mono)" }}>
-                    {weeklyHours}h
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={3} max={40} step={1}
-                  value={weeklyHours}
-                  onChange={(e) => setWeeklyHours(Number(e.target.value))}
-                  style={{ width: "100%", accentColor: "var(--brand)" }}
+                <span style={{ fontSize: 13, fontWeight: 600, marginBottom: 10, display: "block" }}>Tempo de estudo por dia</span>
+                <DailyTimeFields
+                  idPrefix="calibrar-tempo"
+                  minutes={initialDailyMinutes}
+                  onChange={setDailyMinutes}
+                  onInvalid={() => setDailyMinutes(null)}
                 />
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--muted-foreground)", marginTop: 4 }}>
-                  <span>3h</span><span>20h</span><span>40h</span>
-                </div>
               </div>
 
               <div>
@@ -338,9 +331,11 @@ export function CalibrateWizard({
                   })}
                 </div>
                 {daysSelected > 0 ? (
-                  <p style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
-                    Aproximadamente <strong style={{ color: "var(--foreground)" }}>{avgPerDay} min/dia</strong> em {daysSelected} dia{daysSelected !== 1 ? "s" : ""} por semana.
-                  </p>
+                  dailyMinutes != null && (
+                    <p style={{ fontSize: 13, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+                      <strong style={{ color: "var(--foreground)" }}>Sua disponibilidade:</strong> {availabilityLine(dailyMinutes, availableDays)}
+                    </p>
+                  )
                 ) : (
                   <p style={{ fontSize: 12, color: "#f59e0b" }}>
                     Selecione pelo menos 1 dia disponível.
@@ -443,14 +438,14 @@ export function CalibrateWizard({
           {step < 4 ? (
             <button
               onClick={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
-              disabled={pending || (step === 1 && !examDate && !cohortName) || (step === 3 && daysSelected === 0)}
+              disabled={pending || (step === 1 && !examDate && !cohortName) || (step === 3 && (daysSelected === 0 || dailyMinutes == null))}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
                 padding: "10px 18px", borderRadius: "var(--radius-sm)",
                 background: "var(--brand)", color: "var(--brand-fg)",
                 border: "none", fontSize: 13, fontWeight: 600,
                 cursor: pending ? "not-allowed" : "pointer",
-                opacity: step === 3 && daysSelected === 0 ? 0.5 : 1,
+                opacity: step === 3 && (daysSelected === 0 || dailyMinutes == null) ? 0.5 : 1,
               }}
             >
               {step === 2 && focusIds.length === 0 ? "Pular esta etapa" : "Continuar"}

@@ -3,6 +3,7 @@ import { requireActiveMembership } from "@/lib/membership-gate";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getDerivedPlanForUser, getStudyPlanPrefs, getStudyPlanPauses } from "@/lib/study-plan/fetch";
 import { PlanoClient } from "./plano-client";
+import { RoutineSummary } from "./routine-summary";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ListOrdered } from "lucide-react";
@@ -86,14 +87,18 @@ export default async function PlanoPage({
         Voltar ao início
       </Link>
 
-      <h1 style={{ fontSize: "clamp(22px, 5vw, 30px)", fontWeight: 700, letterSpacing: "-.03em", marginBottom: 4 }}>
+      <h1 style={{ fontSize: "clamp(22px, 5vw, 30px)", fontWeight: 700, letterSpacing: "-.03em", marginBottom: 12 }}>
         Meu Plano de Estudos
       </h1>
+      {/* The routine and the exam date the calculations use (Karina 2026-11-18). The
+          phase name is no longer shown to the student — the planning rules are unchanged. */}
       {plan && (
-        <p style={{ fontSize: 14, color: "var(--muted-foreground)", marginBottom: 16 }}>
-          {dateConfirmed && plan.daysToExam !== null ? `${plan.daysToExam} dias para a prova · ` : ""}
-          Fase: {phaseLabel(plan.phase)}
-        </p>
+        <RoutineSummary
+          routine={plan.routine}
+          examDate={plan.examDate}
+          examConfirmed={dateConfirmed}
+          daysToExam={plan.daysToExam}
+        />
       )}
 
       <Link
@@ -125,13 +130,4 @@ export default async function PlanoPage({
       />
     </div>
   );
-}
-
-function phaseLabel(phase: string) {
-  switch (phase) {
-    case "foundation":      return "Fundação (cobertura ampla + interleaving)";
-    case "intensification": return "Intensificação (MedHelp 60D + alta densidade de questões)";
-    case "taper":           return "Reta final (revisão e descanso)";
-    default:                return phase;
-  }
 }

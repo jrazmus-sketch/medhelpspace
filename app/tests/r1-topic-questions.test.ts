@@ -72,7 +72,7 @@ const at = (q: number, page: number, ok: boolean, t = "2026-07-20T10:00:00Z") =>
 
 function run(signals: Partial<Signals>, prefs: Partial<StudyPlanPrefs> = {}) {
   return withFrozenTime(MORNING_BRT, () => derivePlan({
-    prefs: { ...defaultPrefs(), intensity: "intenso", ...prefs },
+    prefs: { ...defaultPrefs(), daily_minutes: 120, ...prefs },
     cohort: { test_date: "2027-01-15" },
     specialties: SPECIALTIES,
     pages: PAGES,
@@ -187,7 +187,7 @@ test("a flashcards link that names no group never opens the whole deck (Karina 2
     { topic_id: 103, resource_type: "flashcards", page_id: 700, question_filter: null },
   ];
   const plan = withFrozenTime(MORNING_BRT, () => derivePlan({
-    prefs: { ...defaultPrefs(), intensity: "intenso" },
+    prefs: { ...defaultPrefs(), daily_minutes: 120 },
     cohort: { test_date: "2027-01-15" },
     specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: content,
     signals: {
@@ -210,7 +210,7 @@ test("the deck says no Flashcards are linked when ?grupo= names no group (never 
 
 function runWith(content: TopicContentRow[], pages: PageRow[] = PAGES) {
   return withFrozenTime(MORNING_BRT, () => derivePlan({
-    prefs: { ...defaultPrefs(), intensity: "intenso" },
+    prefs: { ...defaultPrefs(), daily_minutes: 120 },
     cohort: { test_date: "2027-01-15" },
     specialties: SPECIALTIES, pages, topics: TOPICS, topicContent: content,
     signals: {

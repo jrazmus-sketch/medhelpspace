@@ -290,7 +290,7 @@ test("plan: the block shows the total estimated time and today's part when the d
 });
 
 test("plan: a day that holds the whole simulado shows no 'Hoje' line", () => {
-  const [sim] = simItems(plan({ prefs: { intensity: "intenso" } }));
+  const [sim] = simItems(plan({ prefs: { daily_minutes: 120 } }));
   assert.deepEqual(sim.lines, ["Tempo estimado: 62 min"]);
 });
 
@@ -361,7 +361,7 @@ test("plan: every option carries its weekly time and its forecast, so the impact
 
 test("plan: a saved frequency that no longer fits is not used — the plan falls back to Automática and says so", () => {
   // 30 min × 3 days = 90 min a week; two simulados = 125 min.
-  const p = plan({ prefs: { simulado_frequency: 2, intensity: "leve", available_days: (1 << 2) | (1 << 3) | (1 << 5) } });
+  const p = plan({ prefs: { simulado_frequency: 2, daily_minutes: 30, available_days: (1 << 2) | (1 << 3) | (1 << 5) } });
   assert.equal(p.simulado.chosen, 2);
   assert.equal(p.simulado.inForce, "auto");
   const two = p.simulado.options.find((o) => o.frequency === 2)!;
@@ -460,7 +460,7 @@ test("r3.2 facts: a mini simulado left long ago is the pending one only while no
 });
 
 test("r3.2 plan: back after more than 7 days → 'Continuar' with the choice to pick another, and ONE session", () => {
-  const p = plan({ prefs: { intensity: "intenso", simulado_frequency: 2 }, signals: { quizAttempts: simAnswers(12, "2026-07-10T12:00:00Z") } });
+  const p = plan({ prefs: { daily_minutes: 120, simulado_frequency: 2 }, signals: { quizAttempts: simAnswers(12, "2026-07-10T12:00:00Z") } });
   const sims = simItems(p);
   assert.equal(sims.length, 1, "the pending one only — no second session next to it, even with 2 a week and a long day");
   assert.equal(sims[0].title, "Continuar mini simulado");

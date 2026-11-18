@@ -161,7 +161,7 @@ test("D3b the same page survives correctly once the view IS applied", () => {
     topicContent: [...UROLOGY_CONTENT, ...TOPIC_CONTENT],
     signals: { quizAttempts: attempts, questionCountsByPageId: new Map([[90242, 30]]) },
     // Enough time for every topic to reach today's list (the day is filled by minutes).
-    prefs: { weekly_hours: 70 },
+    prefs: { daily_minutes: 600 },
   }));
   assert.equal(plan.items.some((i) => i.pageId === 90242), true);
 });

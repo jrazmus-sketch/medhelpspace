@@ -191,7 +191,9 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "plano",
     title: "Seu plano de estudos",
     body:
-      "Um cronograma diário montado a partir das suas metas e do seu desempenho. Faça a **calibração rápida** — data da prova, especialidades fracas, horas por semana e os tipos de conteúdo que quer treinar — e o plano organiza o que estudar a cada dia, com **links diretos** para o próximo conteúdo. Ative os **lembretes por email** (resumo semanal e plano do dia) para saber quando e o que estudar. Pode pausar ou ajustar quando precisar — ele se reequilibra sozinho.",
+      // Karina's text (2026-11-18). The live copy is the site_content row
+      // `onboarding.plano.body` (schema-patch-plano-tempo-diario.sql) — keep both equal.
+      "Configure seus dias de estudo, o tempo disponível por dia e os conteúdos que deseja incluir. O Meu Plano organiza suas atividades por prioridade, inclui revisões e estima o que cabe até a prova. A programação se ajusta conforme seu progresso e as mudanças na sua disponibilidade.",
     reviewNote: "O plano já prioriza as suas revisões pendentes do dia.",
     href: "/app/plano",
     hrefLabel: "Ver meu plano",
