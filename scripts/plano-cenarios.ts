@@ -671,6 +671,172 @@ async function main() {
     });
   }
 
+  // ── Third round (Karina 2026-11-17, 23h06) ──────────────────────────────────────────────────────
+  const dow = (day: string) => new Date(day + "T12:00:00Z").getUTCDay();
+  const simBlocks = (p: DerivedPlan) => p.items.filter((i) => i.kind === "simulado");
+
+  // 11. Exam more than 60 days away: the regular mini simulados are in the plan from the start.
+  {
+    const s = newStudent({ examDate: "2027-05-30", prefs: { available_days: SIX_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const day0 = planFor(c, s, TODAY);
+    const weeks = 8;
+    const until = addDaysKey(TODAY, weeks * 7 - 2); // the Sunday that closes the 8th week
+    const f = followPlan(c, s, TODAY, until);
+    const end = planFor(c, s, addDaysKey(until, 1));
+    const opt = (fq: "auto" | 1 | 2) => day0.simulado.options.find((o) => o.frequency === fq)!;
+    // The same student without "Mini simulados" selected: what the sessions cost in forecast.
+    const without = planFor(c, newStudent({ examDate: "2027-05-30", prefs: { available_days: SIX_DAYS, preferred_content_types: all.filter((t) => t !== "simulado") } }), TODAY);
+    report.push({
+      title: "11. Prova a mais de 60 dias: mini simulados desde o início da preparação",
+      description: `Prova em 30/05/2027 (${day0.daysToExam} dias). 60 min por dia, segunda a sábado (360 min por semana). Frequência escolhida: 1 por semana. O aluno segue o plano por ${weeks} semanas, todas a mais de 60 dias da prova.`,
+      day0: summary(day0), end: summary(end), simulado: s.log,
+      checks: [
+        checkBudget(day0),
+        ...simChecks(s, f),
+        {
+          name: "A mais de 60 dias da prova o mini simulado já está no plano do dia",
+          ok: (day0.daysToExam ?? 0) > 60 && (end.daysToExam ?? 0) > 60 && simBlocks(day0).length === 1,
+          detail: `dia 0: ${day0.daysToExam} dias para a prova, ${simBlocks(day0).length} bloco de mini simulado; depois de ${weeks} semanas: ${end.daysToExam} dias para a prova`,
+        },
+        {
+          name: "Uma sessão por semana, todas as semanas, com a frequência escolhida",
+          ok: s.log.simBegun === weeks && s.log.simFinished === weeks,
+          detail: `mini simulados iniciados em ${weeks} semanas: ${s.log.simBegun}; concluídos: ${s.log.simFinished}`,
+        },
+        {
+          name: "Frequência, limite de disponibilidade e previsão de impacto continuam valendo",
+          ok: opt(2).feasible && opt(1).feasible && opt(2).weeklyMinutes > opt(1).weeklyMinutes &&
+              opt(1).expectedTopics != null && opt(2).expectedTopics != null && opt(2).expectedTopics! <= opt(1).expectedTopics! &&
+              opt(1).expectedTopics === day0.forecast!.expectedTopics,
+          detail: `1 por semana: ${opt(1).weeklyMinutes.toFixed(1)} min, ${opt(1).expectedTopics} temas previstos; 2 por semana: ${opt(2).weeklyMinutes.toFixed(1)} min, ${opt(2).expectedTopics} temas previstos; automática: ${opt("auto").weeklyMinutes.toFixed(1)} min por semana; sem mini simulados selecionados: ${without.forecast!.expectedTopics} temas previstos`,
+        },
+      ],
+    });
+  }
+
+  // 12. Back after a pause of more than 7 days: the pending mini simulado is still in the plan,
+  //     with the choice to continue it or pick another — never two sessions at once.
+  {
+    const mk = () => newStudent({ examDate: "2027-05-30", prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    // Tuesday: 30 minutes hold 12 of the 25 questions. Then the student disappears for 10 days.
+    const begin = (s: Student) => { followPlan(c, s, TODAY, TODAY); return s.attempts.find((a) => c.simuladoPages.get(a.page_id)?.isMini)!.page_id; };
+    const back = addDaysKey(TODAY, 10); // Friday of the following week
+    const A = mk(); const oldA = begin(A);
+    A.flashcardsToday = 0; A.reviewedToday = 0;
+    const onReturn = planFor(c, A, back);
+    const blocks = simBlocks(onReturn);
+    const answeredOld = (s: Student, page: number) => new Set(s.attempts.filter((a) => a.page_id === page).map((a) => a.question_id)).size;
+    // Path A — continue: the student follows the plan from the return day on.
+    const fA = followPlan(c, A, back, addDaysKey(back, 14));
+    const total = c.simuladoPages.get(oldA)!.questionIds.length;
+    // Path B — pick another: on the return day the student opens the library and answers 5 questions of another one.
+    const B = mk(); const oldB = begin(B);
+    const other = [...c.simuladoPages.values()].find((p) => p.isMini && p.pageId !== oldB && !B.attempts.some((a) => a.page_id === p.pageId))!;
+    let clock = Date.parse(`${back}T13:00:00Z`);
+    for (const q of other.questionIds.slice(0, 5)) {
+      clock += B.secondsPerQuestion * 1000;
+      B.attempts.push({ specialty_id: null, is_correct: true, created_at: new Date(clock).toISOString(), page_id: other.pageId, question_id: q });
+    }
+    const nextDay = addDaysKey(back, 3); // Monday
+    B.flashcardsToday = 0; B.reviewedToday = 0;
+    const afterPick = planFor(c, B, nextDay);
+    let oldAskedAgain = 0, twoAtOnce = 0;
+    for (let day = nextDay; day <= addDaysKey(nextDay, 18); day = addDaysKey(day, 1)) {
+      B.flashcardsToday = 0; B.reviewedToday = 0;
+      const p = planFor(c, B, day);
+      const sb = simBlocks(p);
+      if (sb.some((i) => i.pageId === oldB)) oldAskedAgain++;
+      if (sb.length > 1) twoAtOnce++;
+      followPlan(c, B, day, day);
+    }
+    report.push({
+      title: "12. Retorno após uma pausa superior a 7 dias",
+      description: "30 min por dia, segunda a sexta; 1 mini simulado por semana. O aluno responde 12 das 25 questões na terça-feira e fica 10 dias sem estudar. No retorno, um caminho continua o simulado pendente; o outro escolhe um simulado diferente na biblioteca.",
+      afterGap: summary(onReturn), simulado: { continuar: A.log, escolherOutro: B.log },
+      checks: [
+        checkBudget(onReturn), ...fA.checks,
+        {
+          name: "Depois de 10 dias sem respostas o mini simulado pendente continua no plano, identificado",
+          ok: blocks.length === 1 && blocks[0].pageId === oldA && blocks[0].title === "Continuar mini simulado" &&
+              (blocks[0].lines ?? []).some((l) => /Sem respostas há 10 dias\. Continue de onde parou ou escolha outro mini simulado\./.test(l)),
+          detail: `blocos de mini simulado no retorno: ${blocks.length}; texto: ${(blocks[0]?.lines ?? []).join(" | ")}`,
+        },
+        {
+          name: "O plano oferece continuar ou escolher outro, e reserva uma única sessão",
+          ok: blocks[0]?.cta === "Continuar de onde parou" && blocks[0]?.secondary?.label === "Escolher outro mini simulado" &&
+              blocks[0]?.secondary?.href === "/app/estudo-por-questoes?tab=simulados",
+          detail: `ações do bloco: "${blocks[0]?.cta}" e "${blocks[0]?.secondary?.label}"`,
+        },
+        {
+          name: "Continuar: o simulado é retomado na primeira questão não respondida e concluído, sem perder respostas",
+          ok: answeredOld(A, oldA) === total && A.log.simRepeatedAnswers === 0 && A.log.simMaxOpen <= 1,
+          detail: `questões respondidas do simulado pendente: 12 → ${answeredOld(A, oldA)} de ${total}; respostas repetidas: ${A.log.simRepeatedAnswers}; máximo em andamento ao mesmo tempo: ${A.log.simMaxOpen}`,
+        },
+        {
+          name: "Escolher outro: o plano passa a acompanhar o simulado escolhido e não programa os dois",
+          ok: simBlocks(afterPick).length === 1 && simBlocks(afterPick)[0].pageId === other.pageId && oldAskedAgain === 0 && twoAtOnce === 0,
+          detail: `no dia seguinte o bloco é do simulado escolhido: ${simBlocks(afterPick)[0]?.pageId === other.pageId ? "sim" : "não"}; dias em que o simulado antigo voltou a ser pedido: ${oldAskedAgain}; dias com dois blocos de simulado: ${twoAtOnce}`,
+        },
+        {
+          name: "O histórico do simulado deixado é preservado",
+          ok: answeredOld(B, oldB) === 12,
+          detail: `respostas do simulado antigo depois de escolher outro e seguir o plano: ${answeredOld(B, oldB)} de 12`,
+        },
+      ],
+    });
+  }
+
+  // 13. New sessions close to the exam: a session that cannot be finished is not opened.
+  {
+    // Exam on a Wednesday: the last week has Monday and Tuesday, 30 min each = 24 of the 25 questions.
+    const exam = "2026-12-16";
+    const s = newStudent({ examDate: exam, prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const lastMonday = "2026-12-14";
+    let lastWeekBlocks = 0, lastWeekContent = 0;
+    const checks: Check[] = [];
+    for (let day = TODAY; day < exam; day = addDaysKey(day, 1)) {
+      s.flashcardsToday = 0; s.reviewedToday = 0;
+      if (day >= lastMonday && dow(day) >= 1 && dow(day) <= 5) {
+        const p = planFor(c, s, day);
+        lastWeekBlocks += simBlocks(p).length;
+        lastWeekContent += p.items.filter((i) => i.kind !== "simulado").reduce((n, i) => n + i.estimatedMinutes, 0);
+      }
+      checks.push(...followPlan(c, s, day, day).checks);
+    }
+    // Same calendar, but the student begins a mini simulado on the eve by their own choice: it is still continued.
+    const t = newStudent({ examDate: exam, prefs: { intensity: "leve", available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const own = [...c.simuladoPages.values()].find((p) => p.isMini)!;
+    let clock = Date.parse(`${lastMonday}T13:00:00Z`);
+    for (const q of own.questionIds.slice(0, 20)) {
+      clock += t.secondsPerQuestion * 1000;
+      t.attempts.push({ specialty_id: null, is_correct: true, created_at: new Date(clock).toISOString(), page_id: own.pageId, question_id: q });
+    }
+    const eve = planFor(c, t, "2026-12-15");
+    report.push({
+      title: "13. Novas sessões perto da prova",
+      description: "Prova em 16/12/2026 (quarta-feira). 30 min por dia, segunda a sexta; 1 mini simulado por semana (62 min). A última semana tem só segunda e terça: 24 das 25 questões, sem tempo para concluir uma sessão nova.",
+      simulado: s.log,
+      checks: [
+        ...simChecks(s, { checks }),
+        {
+          name: "Todo mini simulado que o plano abriu foi concluído antes da prova",
+          ok: s.log.simBegun > 0 && s.log.simBegun === s.log.simFinished,
+          detail: `iniciados pelo plano: ${s.log.simBegun}; concluídos: ${s.log.simFinished}`,
+        },
+        {
+          name: "Sem tempo para concluir, a sessão nova não é aberta e o dia vai para atividades que cabem",
+          ok: lastWeekBlocks === 0 && lastWeekContent > 0,
+          detail: `blocos de mini simulado na última semana (segunda e terça): ${lastWeekBlocks}; minutos de outras atividades nesses dias: ${lastWeekContent}`,
+        },
+        {
+          name: "Um mini simulado já iniciado continua sendo oferecido, mesmo na véspera",
+          ok: simBlocks(eve).length === 1 && simBlocks(eve)[0].pageId === own.pageId && /faltam 5 de 25/.test((simBlocks(eve)[0].lines ?? []).join(" ")),
+          detail: `véspera, com 20 de 25 respondidas na segunda-feira: ${simBlocks(eve).map((i) => i.title + " — " + (i.lines ?? [])[0]).join("; ") || "nenhum bloco"}`,
+        },
+      ],
+    });
+  }
+
   let failed = 0;
   for (const r of report) {
     console.log(`\n══ ${r.title} ══\n${r.description}`);

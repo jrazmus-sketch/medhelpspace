@@ -4,7 +4,7 @@
  * PURE module. Given the ordered work still to do and the student's calendar, it
  * fills every study day from TODAY to the eve of the exam by MINUTES:
  *
- *   day's time  →  Revisão first  →  the mini simulado (last 60 days)
+ *   day's time  →  Revisão first  →  the mini simulado
  *               →  new content, in priority order, until the day is full
  *
  * Mini simulados (Karina 2026-11-17, second round). A session is 25 questions; the
@@ -13,6 +13,16 @@
  * question). A mini simulado already begun is always finished first, and one begun
  * in an earlier week takes the place of the new week's first session — so it is
  * never lost and never programmed twice.
+ *
+ * Third round (Karina 2026-11-17, 23h06):
+ *   - the regular mini simulados are scheduled through the WHOLE preparation, not
+ *     only in the last 60 days — that window belongs to the MedHelp 60D;
+ *   - a NEW session is only opened when it can be finished in the study time left
+ *     before the exam (a session begun on the eve was left half-way in the tests).
+ *     The time goes to activities that fit; the student stays free in the library.
+ *     A session already begun is always continued;
+ *   - a mini simulado left for more than 7 days is still offered ("continuar ou
+ *     escolher outro"): that day opens no second session next to it.
  *
  * The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are NOT
  * scheduled here: they will have their own schedule on the 60D page (Karina
@@ -106,6 +116,11 @@ export type ScheduleInput = {
     simuladoResumeMinutes: number;
     /** That mini simulado was begun in an EARLIER week: it stands in for this week's first session. */
     simuladoResumeCarried: boolean;
+    /**
+     * It was left for more than 7 days: the plan offers "continue it or pick
+     * another", so no NEW session is opened next to it today (never two at once).
+     */
+    simuladoResumeStale?: boolean;
   };
   simuladoEnabled: boolean;
   /** One mini simulado in minutes (its questions × the student's time per question). */
@@ -245,6 +260,23 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     settings.simuladoQuestions > 0 ? input.simuladoMinutes / settings.simuladoQuestions : input.simuladoMinutes;
   // More sessions than study days in a week → more than one may share a day.
   const simPerDayCap = input.simuladoMinutes * Math.max(1, Math.ceil(sessions / studyDaysPerWeek));
+  // Room for simulado questions from a day to the eve of the exam: what each study
+  // day can hold after the Revisão (whole questions, at most the day's cap). A new
+  // session is opened only when it fits in that room on top of what is already owed.
+  const simRoomAfter = new Map<string, number>(); // day → room on the study days AFTER it
+  {
+    let acc = 0;
+    for (let k = lastKey; k >= todayKey; k = addDaysKey(k, -1)) {
+      simRoomAfter.set(k, acc);
+      if (k > todayKey && isStudyDay(k, calendar)) {
+        const b = Math.max(0, calendar.minutesForDay(k));
+        const afterReview = b - Math.min(b, input.futureReviewShare * b);
+        acc += Math.floor(Math.min(afterReview, simPerDayCap) / minutesPerSimQuestion + EPS) * minutesPerSimQuestion;
+      }
+    }
+  }
+  const simRoomOn = (availAfterReview: number) =>
+    Math.floor(Math.min(Math.max(0, availAfterReview), simPerDayCap) / minutesPerSimQuestion + EPS) * minutesPerSimQuestion;
   let simCarry = 0;
   let studyDayIndex = 0;
   let accruedBefore = 0;
@@ -286,9 +318,10 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     if (!isStudyDay(dayKey, calendar)) continue;
 
     const phase = phaseForDay(dayKey, examKey, input.intensificationStartDays);
-    // Mini simulados belong to the last-60-days phases. `simuladoActive`: one may
-    // be placed today; `simuladoWeek`: this week opens new sessions.
-    const simuladoActive = input.simuladoEnabled && sessions > 0 && phase !== "foundation";
+    // Mini simulados run through the whole preparation (the last-60-days window is
+    // the MedHelp 60D's). `simuladoActive`: one may be placed today; `simuladoWeek`:
+    // this week opens new sessions.
+    const simuladoActive = input.simuladoEnabled && sessions > 0;
     const simuladoWeek = simuladoActive && isSimuladoWeek(dayKey, examKey, input.simuladoEveryWeeks);
     const accruedToday = simuladoWeek ? sessionSlots.filter((slot) => slot === studyDayIndex).length : 0;
     const isFirstSlot = accruedToday > 0 && studyDayIndex === 0;
@@ -303,6 +336,8 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
       continue;
     }
     let simResumeOwed = 0;
+    let simOpenToday = 0; // today: sessions still owed this week (before the room check)
+    let simNewToday = 0;  // a future day: sessions falling on it
     if (isToday) {
       // What the plan still asks for, from what the student REALLY did:
       //  - the week's sessions so far (earlier days still kept + today's)…
@@ -317,12 +352,13 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
       const begun = t.simuladoTouches.filter((x) => !x.carried && keptDay(x.dayKey)).length;
       const carriedSitting =
         t.simuladoTouches.some((x) => x.carried) || (simResumeOwed > EPS && t.simuladoResumeCarried);
-      const open = Math.max(0, accruedBefore + accruedToday - begun - (carriedSitting && firstSlotKept ? 1 : 0));
-      simCarry = open * input.simuladoMinutes + simResumeOwed;
+      simOpenToday = Math.max(0, accruedBefore + accruedToday - begun - (carriedSitting && firstSlotKept ? 1 : 0));
+      // Left for more than 7 days: today offers "continue it or pick another" — one session, not two.
+      if (simResumeOwed > EPS && t.simuladoResumeStale) simOpenToday = 0;
     } else {
       for (let k = 0; k < accruedToday; k++) {
         if (substituteNext) substituteNext = false;
-        else simCarry += input.simuladoMinutes;
+        else simNewToday++;
       }
     }
 
@@ -347,7 +383,21 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     }
     avail -= reviewMinutes;
 
-    // ── Mini simulado (last 60 days) ───────────────────────────────────────
+    // ── Mini simulado ──────────────────────────────────────────────────────
+    // New sessions are opened only when they can be finished before the exam: the
+    // room is what today and the study days left can hold after the Revisão. What
+    // is already begun is always owed (it is continued, never dropped).
+    if (simuladoActive) {
+      const room = examKey ? simRoomOn(avail) + (simRoomAfter.get(dayKey) ?? 0) : Infinity;
+      if (isToday) {
+        const fits = Math.max(0, Math.floor((room - simResumeOwed) / input.simuladoMinutes + EPS));
+        simCarry = Math.min(simOpenToday, fits) * input.simuladoMinutes + simResumeOwed;
+      } else {
+        for (let k = 0; k < simNewToday; k++) {
+          if (room - simCarry >= input.simuladoMinutes - EPS) simCarry += input.simuladoMinutes;
+        }
+      }
+    }
     let simMinutes = 0;
     let simResumeMinutes = 0;
     let simPartial = false;
@@ -367,6 +417,15 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
       simMinutes = Math.min(questions * minutesPerSimQuestion, avail);
       simResumeMinutes = Math.min(simMinutes, simResumeOwed);
       simCarry = Math.max(0, simCarry - simMinutes);
+      // Today finished (or continued) the one in progress and opened nothing new: a
+      // session still waiting must fit in the days that are left, or it is not asked for.
+      if (isToday && examKey && simMinutes - simResumeMinutes <= EPS) {
+        const resumeLeft = Math.max(0, simResumeOwed - simResumeMinutes);
+        const roomAfter = (simRoomAfter.get(dayKey) ?? 0) - resumeLeft;
+        while (simCarry - resumeLeft > EPS && simCarry - resumeLeft > roomAfter + EPS) {
+          simCarry = Math.max(resumeLeft, simCarry - input.simuladoMinutes);
+        }
+      }
       simPartial = simCarry > EPS;
       avail -= simMinutes;
     }

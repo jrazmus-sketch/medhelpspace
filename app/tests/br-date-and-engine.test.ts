@@ -201,13 +201,16 @@ function emptySignals(over: Partial<Signals> = {}): Signals {
     ...over,
   };
 }
+// These tests are not about mini simulados. Since 2026-11-17 (Karina, 23h06) the plan schedules them through the
+// whole preparation, so the fixture says explicitly that the student did not select them.
+const NO_SIMULADO = { preferred_content_types: defaultPrefs().preferred_content_types.filter((t) => t !== "simulado") };
 function run(args: {
   prefs?: Partial<StudyPlanPrefs>; signals?: Partial<Signals>;
   testDate?: string | null; topics?: TopicRow[];
   topicContent?: TopicContentRow[]; pages?: PageRow[];
 }) {
   return derivePlan({
-    prefs: { ...defaultPrefs(), ...args.prefs },
+    prefs: { ...defaultPrefs(), ...NO_SIMULADO, ...args.prefs },
     cohort: { test_date: args.testDate === undefined ? "2027-01-15" : args.testDate },
     specialties: SPECIALTIES,
     pages: args.pages ?? PAGES,
@@ -370,7 +373,7 @@ test("A9c a topic with specialty_id null never reaches the ranker", () => {
 test("A9d empty universes produce an empty plan, never a throw", () => {
   const plan = withFrozenTime("2026-07-28T13:00:00Z", () =>
     derivePlan({
-      prefs: defaultPrefs(), cohort: null, specialties: [], pages: [],
+      prefs: { ...defaultPrefs(), ...NO_SIMULADO }, cohort: null, specialties: [], pages: [],
       topics: [], topicContent: [], signals: emptySignals(),
     }));
   assert.equal(plan.items.length, 0);

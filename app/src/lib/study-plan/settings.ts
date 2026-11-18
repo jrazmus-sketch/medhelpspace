@@ -33,7 +33,7 @@ export type PlanSettings = {
    * never schedules). Its time is this × the student's time per question.
    */
   simuladoQuestions: number;
-  /** Mini simulados per week in the last 60 days (placed on the first study days of the week). 0 = never. */
+  /** Mini simulados per week, through the whole preparation (spread over the week's study days). 0 = never. */
   simuladoDaysPerWeek: number;
   /**
    * Largest share of a week's study time the mini simulados may take. When one a

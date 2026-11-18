@@ -130,12 +130,6 @@ export function SimuladoFrequencyEditor({ info }: { info: SimuladoPlanInfo }) {
             })}
           </div>
 
-          {!info.inPhase && !preview && (
-            <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 8, lineHeight: 1.5 }}>
-              Os mini simulados entram no plano nos últimos {info.phaseDays} dias antes da prova.
-            </p>
-          )}
-
           {/* The impact, BEFORE the choice is saved. */}
           {preview && (
             <div
@@ -163,9 +157,6 @@ export function SimuladoFrequencyEditor({ info }: { info: SimuladoPlanInfo }) {
                       </li>
                     )}
                     <li>As outras atividades são distribuídas no tempo que sobra; o que você já fez é preservado.</li>
-                    {!info.inPhase && (
-                      <li>Os mini simulados entram no plano nos últimos {info.phaseDays} dias antes da prova.</li>
-                    )}
                   </ul>
                   {preview.expectedTopics != null && current.expectedTopics != null && preview.expectedTopics < current.expectedTopics && (
                     <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 8, lineHeight: 1.5 }}>

@@ -445,13 +445,16 @@ const TOPIC_CONTENT: TopicContentRow[] = [
   { topic_id: 2, resource_type: "quiz", page_id: 200, question_filter: null },
 ];
 
+// These tests are not about mini simulados. Since 2026-11-17 (Karina, 23h06) the plan schedules them through the
+// whole preparation, so the fixture says explicitly that the student did not select them.
+const NO_SIMULADO = { preferred_content_types: defaultPrefs().preferred_content_types.filter((t) => t !== "simulado") };
 function run(args: {
   prefs?: Partial<StudyPlanPrefs>; signals?: Partial<Signals>;
   testDate?: string | null; topics?: TopicRow[];
   topicContent?: TopicContentRow[]; pages?: PageRow[];
 }) {
   return derivePlan({
-    prefs: { ...defaultPrefs(), ...args.prefs },
+    prefs: { ...defaultPrefs(), ...NO_SIMULADO, ...args.prefs },
     cohort: { test_date: args.testDate === undefined ? "2027-01-15" : args.testDate },
     specialties: SPECIALTIES,
     pages: args.pages ?? PAGES,

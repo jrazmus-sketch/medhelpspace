@@ -320,8 +320,8 @@ function PlanItemsList({ items, onSkipToday }: { items: PlanItem[]; onSkipToday:
           const Icon = ICON_MAP[item.iconHint];
           const color = ITEM_COLOR[item.iconHint];
           return (
+            <div key={i}>
             <Link
-              key={i}
               href={item.href}
               style={{
                 display: "flex",
@@ -371,6 +371,20 @@ function PlanItemsList({ items, onSkipToday }: { items: PlanItem[]; onSkipToday:
               </div>
               <ChevronRight size={16} style={{ color: "var(--muted-foreground)", flexShrink: 0 }} />
             </Link>
+            {/* A second way out, outside the card (a link cannot hold another link). */}
+            {item.secondary && (
+              <Link
+                href={item.secondary.href}
+                className="min-h-11"
+                style={{
+                  display: "inline-flex", alignItems: "center", padding: "0 6px", marginTop: 2,
+                  fontSize: 14, fontWeight: 600, color: "var(--brand-text, var(--brand))", textDecoration: "underline",
+                }}
+              >
+                {item.secondary.label}
+              </Link>
+            )}
+            </div>
           );
         })}
       </div>

@@ -2433,7 +2433,7 @@
       },
       "simuladoDaysPerWeek": {
         "label": "Mini simulados",
-        "help": "AUTOMATIC frequency, per week, in the last 60 days (sessions are spread over the week's study days). The student may choose 1 or 2 a week in Meu Plano › Disponibilidade; then this number and the limit below do not apply. 0 = never."
+        "help": "AUTOMATIC frequency, per week, through the whole preparation (sessions are spread over the week's study days). The student may choose 1 or 2 a week in Meu Plano › Disponibilidade; then this number and the limit below do not apply. 0 = never."
       },
       "paceSlowFactor": {
         "label": "“Mais devagar” multiplies the times by",

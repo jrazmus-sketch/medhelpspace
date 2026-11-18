@@ -175,8 +175,11 @@ function emptySignals(over: Partial<Signals> = {}): Signals {
     ...over,
   };
 }
+// These tests are not about mini simulados. Since 2026-11-17 (Karina, 23h06) the plan schedules them through the
+// whole preparation, so the fixture says explicitly that the student did not select them.
+const NO_SIMULADO = { preferred_content_types: defaultPrefs().preferred_content_types.filter((t) => t !== "simulado") };
 function prefs(over: Partial<StudyPlanPrefs> = {}): StudyPlanPrefs {
-  return { ...defaultPrefs(), ...over };
+  return { ...defaultPrefs(), ...NO_SIMULADO, ...over };
 }
 function run(args: {
   prefs?: Partial<StudyPlanPrefs>;
@@ -349,7 +352,8 @@ test("topics sharing one quiz page produce exactly one item", () => {
 // ── P0-2: content-type gating ────────────────────────────────────────────────
 
 test("simulado appears in intensification when opted in", () => {
-  const plan = withFrozenTime(MORNING_BRT, () => run({ testDate: "2026-09-01" })); // 35 days
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ testDate: "2026-09-01", prefs: { preferred_content_types: defaultPrefs().preferred_content_types } })); // 35 days
   assert.equal(plan.phase, "intensification");
   assert.equal(plan.items.some((i) => i.kind === "simulado"), true);
 });
@@ -432,7 +436,7 @@ test("Revalida Up is on by default and sits between Questões and Flashcards", (
 });
 
 test("unchecking Revalida Up removes it and leaves the rest of the topic alone", () => {
-  const types: ContentType[] = ["quiz", "simulado", "flashcards", "audio", "memorecards"];
+  const types: ContentType[] = ["quiz", "flashcards", "audio", "memorecards"];
   const plan = withFrozenTime(MORNING_BRT, () =>
     run({ pages: RU_PAGES, topicContent: RU_CONTENT, prefs: { preferred_content_types: types } }));
   assert.equal(plan.items.some((i) => i.kind === "revalida_up"), false);

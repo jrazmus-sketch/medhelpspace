@@ -22,7 +22,7 @@
  *
  * V3 (Karina 2026-11-17 — a schedule, not a list of suggestions):
  *  - the day is filled by MINUTES, never above the student's time: Revisão first,
- *    then the week's simulado and MemoreCards (last 60 days), then new content
+ *    then the week's mini simulado (through the whole preparation), then new content
  *    (lib/study-plan/schedule.ts);
  *  - each material of a topic finishes on its own evidence and the topic leaves
  *    only when every selected one is done;
@@ -99,6 +99,8 @@ export type PlanItem = {
    */
   lines?: string[];
   cta?: string;
+  /** A second way out, shown under the block (a mini simulado left for days: "pick another"). */
+  secondary?: { label: string; href: string };
 };
 
 /** One frequency the student may choose, with what it costs and what it does to the forecast. */
@@ -117,10 +119,6 @@ export type SimuladoOption = {
 export type SimuladoPlanInfo = {
   /** "Mini simulados" is selected in Conteúdo. */
   enabled: boolean;
-  /** Today is inside the phases that schedule mini simulados (the last N days before the exam). */
-  inPhase: boolean;
-  /** Days of that window (study_plans.intensification_start_days). */
-  phaseDays: number;
   /** What the student saved / what the schedule is using (auto when the saved choice no longer fits). */
   chosen: SimuladoFrequency;
   inForce: SimuladoFrequency;
@@ -1101,6 +1099,7 @@ export function derivePlan(args: {
       simuladoTouches: simFacts.touches,
       simuladoResumeMinutes: (simFacts.inProgress?.remaining ?? 0) * pace.minutesPerQuestion,
       simuladoResumeCarried: simFacts.inProgress?.carried ?? false,
+      simuladoResumeStale: simFacts.inProgress?.stale ?? false,
     },
     simuladoEnabled: allowedTypes.has("simulado"),
     simuladoMinutes,
@@ -1240,11 +1239,21 @@ export function derivePlan(args: {
       reason: "Retome de onde parou",
       pageId: inProgress.pageId,
       cta: "Continuar de onde parou",
+      // Left for more than 7 days (Karina 2026-11-17, 23h06): still the pending one,
+      // with the choice to pick another. The plan reserves ONE session either way.
+      ...(inProgress.stale
+        ? { secondary: { label: "Escolher outro mini simulado", href: "/app/estudo-por-questoes?tab=simulados" } }
+        : {}),
     };
     items.push(item);
     simBlocks.push({
       item, totalMinutes, continues: resumeToday + 0.01 < totalMinutes,
-      head: [`${label} · ${inProgress.remaining === 1 ? "falta 1" : `faltam ${inProgress.remaining}`} de ${inProgress.total} questões`],
+      head: [
+        `${label} · ${inProgress.remaining === 1 ? "falta 1" : `faltam ${inProgress.remaining}`} de ${inProgress.total} questões`,
+        ...(inProgress.stale
+          ? [`Sem respostas há ${inProgress.idleDays} dias. Continue de onde parou ou escolha outro mini simulado.`]
+          : []),
+      ],
     });
   }
   if (newToday >= pace.minutesPerQuestion - 0.01) {
@@ -1359,8 +1368,6 @@ export function derivePlan(args: {
   };
   const simulado: SimuladoPlanInfo = {
     enabled: simuladoEnabled,
-    inPhase: phase !== "foundation",
-    phaseDays: prefs.intensification_start_days,
     chosen: chosenFrequency,
     inForce: cadence.frequency,
     questions: settings.simuladoQuestions,

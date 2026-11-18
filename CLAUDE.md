@@ -280,8 +280,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   Simulado 100Q or a `?tema=` view) reopens on the first unanswered question; "Recomeçar" / retaking a finished one
   sends `newRun` on the next answer and `/api/quiz-attempt` moves `started_at` to that answer's own DB timestamp —
   **`quiz_attempts` rows are never deleted**. Times are ESTIMATES (answers × pace; sessions are not timed) and the
-  screens say so. Simulados stay inside the last-60-days phases. View `study_plan_simulado_pages` (question ids per
-  page). Scenarios 7–10 in `scripts/plano-cenarios.ts`. Patch: `schema-patch-mini-simulado-frequencia.sql` (+ rollback).
+  screens say so. View `study_plan_simulado_pages` (question ids per
+  page). Scenarios 7–13 in `scripts/plano-cenarios.ts`.
+  **Third round (Karina 2026-11-17, 23h06):** (1) the regular mini simulados are scheduled through the WHOLE preparation — the
+  last-60-days window belongs to the MedHelp 60D, never tie them to the phase again; (2) a mini simulado left for more than 7 days
+  is still the pending one (`inProgress.stale`): the block keeps "Continuar" and adds "Escolher outro mini simulado" under the card
+  (`PlanItem.secondary`), that day opens no second session, and once ANY other mini simulado was answered after it the old one is
+  no longer offered (the choice was made; `quiz_attempts` untouched); (3) a NEW session is opened only when it can be finished in
+  the study time left before the exam (`simRoomAfter` in schedule.ts) — a session already begun is always continued. Patch: `schema-patch-mini-simulado-frequencia.sql` (+ rollback).
   **MedVoice (her note, same day):** the current set is outdated — she will send a full replacement and ALL old
   MedVoice get removed together with it; do not recover the 4 missing recordings (481, 579, 582, 583).
 - **Fase 1 — Karina's 27 question decisions + 24 definitive Revalida Up — LIVE prod + local (2026-11-18).**

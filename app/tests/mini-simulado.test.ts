@@ -70,11 +70,14 @@ test("facts: a mini simulado left half-way is the one in progress; a finished or
   assert.equal(simuladoFacts([], catalog(), TODAY, WEEK_START).inProgress, null);
 });
 
-test("facts: begun in an earlier week → carried; untouched for more than a week → no longer asked for", () => {
+test("facts: begun in an earlier week → carried; left for more than 7 days → still the pending one, marked stale", () => {
   const lastFriday = simuladoFacts(simAnswers(12, "2026-07-24T12:00:00Z"), catalog(), TODAY, WEEK_START);
   assert.equal(lastFriday.inProgress?.carried, true);
+  assert.equal(lastFriday.inProgress?.stale, false);
+  // Karina 2026-11-17, 23h06: the mere passing of 7 days must not make it vanish from the plan.
   const stale = simuladoFacts(simAnswers(12, "2026-07-10T12:00:00Z"), catalog(), TODAY, WEEK_START);
-  assert.equal(stale.inProgress, null);
+  assert.deepEqual(stale.inProgress && [stale.inProgress.remaining, stale.inProgress.stale, stale.inProgress.carried], [13, true, true]);
+  assert.ok((stale.inProgress?.idleDays ?? 0) > 7);
 });
 
 test("facts: after 'Recomeçar' only the answers of the new run count", () => {
@@ -327,11 +330,10 @@ test("plan: 'Mini simulados' unchecked → no block, and the frequency is marked
   assert.equal(p.simulado.enabled, false);
 });
 
-test("plan: more than 60 days before the exam there is no mini simulado, whatever the frequency", () => {
+test("plan: more than 60 days before the exam the mini simulados are scheduled too (the 60-day window is the MedHelp 60D's)", () => {
   const p = plan({ testDate: "2027-01-15", prefs: { simulado_frequency: 2 } });
-  assert.equal(simItems(p).length, 0);
-  assert.equal(p.simulado.inPhase, false);
-  assert.equal(p.simulado.phaseDays, 60);
+  assert.equal(simItems(p).length, 1, "the week's first session falls on today");
+  assert.equal(p.simulado.inForce, 2);
 });
 
 test("plan: the student's frequency is used, and the other activities get the time that is left", () => {
@@ -404,4 +406,111 @@ test("screen: the frequency is confirmed after seeing the impact, and an unviabl
   assert.match(editor, /Dividir a sessão entre dias não resolve/);
   const action = src("actions", "study-plan.ts");
   assert.match(action, /if \(!option\.feasible\) return \{ ok: false, error: "infeasible" \}/, "refused on the server too");
+});
+
+// ── third round (Karina 2026-11-17, 23h06) ──────────────────────────────────
+//   1. the regular mini simulados are scheduled through the WHOLE preparation;
+//   2. a mini simulado left for more than 7 days is still offered: continue it or pick another, never two at once;
+//   3. a NEW session is not opened when it cannot be finished in the study time left before the exam.
+
+test("r3.1 schedule: exam more than 60 days away → one session every week, from the first week", () => {
+  // Exam on 2027-01-15, today Tuesday 2026-07-28 (171 days). Monday is the week's slot.
+  const r = simulateSchedule(input({ examKey: "2027-01-15" }));
+  assertNoDayOverBudget(r);
+  assert.equal(r.today.phase, "foundation");
+  assert.equal(r.today.simuladoMinutes, 40, "this week's session was not begun on Monday: owed today");
+  for (const monday of ["2026-08-03", "2026-09-07", "2026-10-05", "2026-11-09"]) {
+    assert.equal(r.days.find((d) => d.key === monday)!.simulado, 40, monday);
+  }
+  // 2 a week, far from the exam: the first and the middle study day of each week.
+  const two = simulateSchedule(input({ examKey: "2027-01-15", simuladoSessionsPerWeek: 2 }));
+  assert.ok(near(weekTotal(two, "2026-08-03", "2026-08-09"), 80));
+});
+
+test("r3.1 plan: far from the exam the frequency, the impact and the forecast keep working", () => {
+  const p = plan({ testDate: "2027-01-15" });
+  assert.equal(p.phase, "foundation");
+  assert.equal(simItems(p).length, 1);
+  const auto = p.simulado.options.find((o) => o.frequency === "auto")!;
+  const two = p.simulado.options.find((o) => o.frequency === 2)!;
+  assert.ok(two.weeklyMinutes > auto.weeklyMinutes);
+  assert.ok(two.expectedTopics != null && auto.expectedTopics != null && two.expectedTopics <= auto.expectedTopics,
+    "more simulado time never raises the forecast");
+  assert.equal(two.feasible, true);
+});
+
+test("r3.2 facts: a mini simulado left long ago is the pending one only while no other was answered after it", () => {
+  const OTHER = 9002;
+  const OTHER_Q = Array.from({ length: 25 }, (_, i) => 91001 + i);
+  const cat = catalog();
+  cat.pages.set(OTHER, { pageId: OTHER, slug: "simulado-geral-4", title: "Simulado 4", specialtySlug: "geral", isMini: true, questionIds: OTHER_Q });
+  const old = simAnswers(12, "2026-07-10T12:00:00Z"); // 18 days ago
+  const other = (n: number, iso: string) => Array.from({ length: n }, (_, i) => ({
+    specialty_id: null, is_correct: true, page_id: OTHER, question_id: OTHER_Q[i], created_at: new Date(Date.parse(iso) + i * 1000).toISOString(),
+  }));
+  // Nothing after it: still the pending one, flagged for the choice.
+  assert.equal(simuladoFacts(old, cat, TODAY, WEEK_START).inProgress?.stale, true);
+  // The student picked another and is in the middle of it: THAT is the one in progress.
+  const picking = simuladoFacts([...old, ...other(5, "2026-07-28T11:00:00Z")], cat, TODAY, WEEK_START).inProgress;
+  assert.deepEqual(picking && [picking.pageId, picking.stale], [OTHER, false]);
+  // …and once the other one is finished the old one does not come back: the choice was made. History is untouched.
+  const rows = [...old, ...other(25, "2026-07-28T11:00:00Z")];
+  assert.equal(simuladoFacts(rows, cat, TODAY, WEEK_START).inProgress, null);
+  assert.equal(rows.filter((a) => a.page_id === SIM_PAGE).length, 12);
+});
+
+test("r3.2 plan: back after more than 7 days → 'Continuar' with the choice to pick another, and ONE session", () => {
+  const p = plan({ prefs: { intensity: "intenso", simulado_frequency: 2 }, signals: { quizAttempts: simAnswers(12, "2026-07-10T12:00:00Z") } });
+  const sims = simItems(p);
+  assert.equal(sims.length, 1, "the pending one only — no second session next to it, even with 2 a week and a long day");
+  assert.equal(sims[0].title, "Continuar mini simulado");
+  assert.equal(sims[0].href, "/app/geral/simulado-geral-3");
+  assert.deepEqual(sims[0].secondary, { label: "Escolher outro mini simulado", href: "/app/estudo-por-questoes?tab=simulados" });
+  assert.match(sims[0].lines![0], /faltam 13 de 25 questões/);
+  assert.match(sims[0].lines![1], /^Sem respostas há 18 dias\. Continue de onde parou ou escolha outro mini simulado\.$/);
+  assert.ok(p.totalEstimatedMinutes <= p.todayBudgetMinutes);
+  // A recent one keeps the screen Karina approved: no second action.
+  const fresh = simItems(plan({ signals: { quizAttempts: simAnswers(12, "2026-07-27T12:00:00Z") } }));
+  assert.equal(fresh[0].secondary, undefined);
+});
+
+test("r3.3 schedule: no NEW session is opened when it cannot be finished before the exam", () => {
+  // Exam tomorrow: today is the last study day and holds 18 of the 25 questions (30 min ÷ 1.6).
+  const eve = simulateSchedule(input({ examKey: "2026-07-29", minutes: 30 }));
+  assert.equal(eve.today.simuladoMinutes, 0, "not begun: it could not be finished");
+  assert.equal(eve.today.chunks.reduce((n, c) => n + c.minutes, 0), 30, "the day goes to what fits");
+  // Two days left hold 36 questions: the session is opened and finished.
+  const two = simulateSchedule(input({ examKey: "2026-07-30", minutes: 30 }));
+  assert.ok(near(two.today.simuladoMinutes, 28.8) && near(two.days[1].simulado, 11.2));
+});
+
+test("r3.3 schedule: a session already begun is continued even on the eve; no second one is opened next to it", () => {
+  const r = simulateSchedule(input({
+    examKey: "2026-07-29", minutes: 60, simuladoSessionsPerWeek: 2,
+    today: { simuladoResumeMinutes: 10 * 1.6, simuladoTouches: [{ dayKey: TODAY, carried: false }] },
+  }));
+  assert.ok(near(r.today.simuladoResumeMinutes, 16), "the 10 questions left are asked for");
+  assert.ok(near(r.today.simuladoMinutes, 16), "and nothing new: 44 min left hold 27 questions, but the day after is the exam");
+});
+
+test("r3.3 schedule: over months of short days every session opened is finished — at 1 and at 2 a week", () => {
+  for (const sessions of [1, 2]) {
+    for (const exam of ["2026-08-19", "2026-09-01", "2026-09-03", "2026-10-06", "2026-10-09"]) {
+      for (const minutes of [20, 30, 45]) {
+        const r = simulateSchedule(input({ examKey: exam, minutes, simuladoSessionsPerWeek: sessions, mask: 0b0111110 }));
+        assertNoDayOverBudget(r);
+        const total = r.days.reduce((n, d) => n + d.simulado, 0);
+        const whole = total / 40;
+        assert.ok(near(whole, Math.round(whole)), `${sessions}/week, exam ${exam}, ${minutes} min: ${total} min of simulado is not a whole number of sessions`);
+        assert.ok(total > 0);
+      }
+    }
+  }
+});
+
+test("r3 screen: the plan no longer says the mini simulados wait for the last 60 days", () => {
+  const editor = src("app", "app", "plano", "simulado-frequency-editor.tsx");
+  assert.doesNotMatch(editor, /últimos .{0,30}dias antes da prova/);
+  assert.doesNotMatch(src("app", "app", "plano", "forecast-panel.tsx"), /nos últimos 60\s+dias, os mini simulados/);
+  assert.match(src("app", "app", "plano", "plano-client.tsx"), /item\.secondary/);
 });

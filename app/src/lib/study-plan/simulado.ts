@@ -52,7 +52,11 @@ export type SimuladoCatalog = {
 
 export type AttemptLike = { page_id: number; question_id?: number | null; created_at: string; is_correct?: boolean };
 
-/** A mini simulado the plan asks to finish goes stale after this many days without an answer. */
+/**
+ * A mini simulado left for more than this many days is still the student's pending
+ * one (Karina 2026-11-17, 23h06: the mere passing of 7 days must not make it vanish
+ * from the plan) — but from then on the plan offers "continue it or pick another".
+ */
 export const IN_PROGRESS_STALE_DAYS = 7;
 
 export type SimuladoInProgress = {
@@ -65,6 +69,10 @@ export type SimuladoInProgress = {
   remaining: number;
   /** The run was begun in an earlier week than today's. */
   carried: boolean;
+  /** Days since its last answer. */
+  idleDays: number;
+  /** Left for more than IN_PROGRESS_STALE_DAYS: offered with the choice to pick another. */
+  stale: boolean;
 };
 
 export type SimuladoFacts = {
@@ -132,6 +140,14 @@ export function simuladoFacts(
   const touches: { dayKey: string; carried: boolean }[] = [];
   const answerDays = new Set<string>();
   let best: { p: SimuladoInProgress; lastAt: number } | null = null;
+  // The latest answer to ANY simulado: a mini simulado left long ago is only the
+  // pending one while nothing came after it — a student who answered another
+  // simulado since then has already chosen another.
+  let latestAny = -Infinity;
+  for (const [pageId, list] of byPage) {
+    if (!catalog.pages.get(pageId)!.isMini) continue;
+    for (const a of list) latestAny = Math.max(latestAny, Date.parse(a.created_at));
+  }
   for (const [pageId, list] of byPage) {
     if (list.some((a) => toDateKeyBR(a.created_at) === todayKey)) touchedToday++;
     const page = catalog.pages.get(pageId)!;
@@ -155,7 +171,9 @@ export function simuladoFacts(
     const total = page.questionIds.length;
     if (answered === 0 || answered >= total || run.firstAt == null || run.lastAt == null) continue;
     const lastKey = toDateKeyBR(new Date(run.lastAt).toISOString());
-    if (diffDaysKey(lastKey, todayKey) > IN_PROGRESS_STALE_DAYS) continue;
+    const idleDays = Math.max(0, diffDaysKey(lastKey, todayKey));
+    const stale = idleDays > IN_PROGRESS_STALE_DAYS;
+    if (stale && latestAny > run.lastAt) continue;
     if (best && best.lastAt >= run.lastAt) continue;
     best = {
       lastAt: run.lastAt,
@@ -163,6 +181,7 @@ export function simuladoFacts(
         pageId, slug: page.slug, title: page.title, specialtySlug: page.specialtySlug,
         answered, total, remaining: total - answered,
         carried: toDateKeyBR(new Date(run.firstAt).toISOString()) < weekStartKey,
+        idleDays, stale,
       },
     };
   }

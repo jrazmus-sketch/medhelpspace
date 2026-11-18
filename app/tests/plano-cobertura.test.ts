@@ -158,7 +158,7 @@ test("schedule: no day ever holds more than the student's time (months of mixed 
 });
 
 test("schedule: Revisão goes in first and takes at most half the day", () => {
-  const r = simulateSchedule(input({ queue: [quiz(1, 40)], today: { reviewDue: 500 } }));
+  const r = simulateSchedule(input({ queue: [quiz(1, 40)], today: { reviewDue: 500 }, simuladoEnabled: false }));
   assert.equal(r.today.reviewMinutes, 30, "half of 60 min");
   assert.equal(r.today.reviewItems, 60);
   assert.equal(r.today.chunks[0].minutes, 30, "the rest goes to new content");
@@ -187,7 +187,7 @@ test("schedule: every future day holds back the same share for reviews, the last
 });
 
 test("schedule: a topic bigger than a day continues on the next study day", () => {
-  const r = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null }));
+  const r = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, simuladoEnabled: false }));
   assert.equal(r.today.chunks.length, 1);
   assert.equal(r.today.chunks[0].units, 24, "60 min ÷ 2.5 min");
   assert.equal(r.today.chunks[0].completes, false);
@@ -195,24 +195,24 @@ test("schedule: a topic bigger than a day continues on the next study day", () =
 
 test("schedule: a one-sitting item that does not fit waits; the day is filled with what comes next", () => {
   // 20 questions (50 min) leave 10 min: the 12-min Revalida Up waits, the flashcards fill the day.
-  const r = simulateSchedule(input({ queue: [quiz(1, 20), ru(1, 12), cards(1, 30)], examKey: null }));
+  const r = simulateSchedule(input({ queue: [quiz(1, 20), ru(1, 12), cards(1, 30)], examKey: null, simuladoEnabled: false }));
   assert.deepEqual(r.today.chunks.map((c) => c.index), [0, 2]);
   assert.equal(r.today.chunks[1].units, 20);
 });
 
 test("schedule: a one-sitting item no day could hold is started and continued", () => {
-  const r = simulateSchedule(input({ queue: [audio(1, 90)], minutes: 30, examKey: null }));
+  const r = simulateSchedule(input({ queue: [audio(1, 90)], minutes: 30, examKey: null, simuladoEnabled: false }));
   assert.equal(r.today.chunks.length, 1);
   assert.equal(r.today.chunks[0].minutes, 30);
   assert.equal(r.today.chunks[0].completes, false);
 });
 
 test("schedule: what was done today is taken off the day's time; 'adiantar' adds to it", () => {
-  const half = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, today: { doneMinutes: 35 } }));
+  const half = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, simuladoEnabled: false, today: { doneMinutes: 35 } }));
   assert.equal(half.today.chunks[0].units, 10, "25 min left");
-  const done = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, today: { doneMinutes: 70 } }));
+  const done = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, simuladoEnabled: false, today: { doneMinutes: 70 } }));
   assert.equal(done.today.chunks.length, 0);
-  const extra = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, today: { doneMinutes: 70, extraMinutes: 30 } }));
+  const extra = simulateSchedule(input({ queue: [quiz(1, 40)], examKey: null, simuladoEnabled: false, today: { doneMinutes: 70, extraMinutes: 30 } }));
   assert.equal(extra.today.chunks[0].units, 12);
 });
 
@@ -244,8 +244,14 @@ test("schedule: a day shorter than a simulado takes the whole questions that fit
   assert.equal(r.days[2].simulado, 0);
 });
 
-test("schedule: no simulado before the last 60 days, nor when the student unchecked it", () => {
-  assert.equal(simulateSchedule(input({ queue: [quiz(1, 10)] })).today.simuladoMinutes, 0);
+test("schedule: the mini simulado is scheduled far from the exam too; never when the student unchecked it", () => {
+  // Karina 2026-11-17, 23h06: the regular mini simulados run through the whole preparation
+  // (the last-60-days window belongs to the MedHelp 60D). Exam on 2027-01-15, today 2026-07-27.
+  const far = simulateSchedule(input({ queue: [quiz(1, 10)] }));
+  assert.equal(far.today.phase, "foundation");
+  assert.equal(far.today.simuladoMinutes, 40);
+  assertNoDayOverBudget(far);
+  assert.equal(simulateSchedule(input({ queue: [quiz(1, 10)], simuladoEnabled: false })).today.simuladoMinutes, 0);
   assert.equal(simulateSchedule(input({ queue: [quiz(1, 10)], examKey: "2026-09-01", simuladoEnabled: false })).today.simuladoMinutes, 0);
 });
 
@@ -305,11 +311,15 @@ const answers = (topic: number, n: number, right = n) => Array.from({ length: n 
   specialty_id: 1, is_correct: q < right, created_at: "2026-07-20T10:00:00Z", page_id: 100 + topic, question_id: topic * 100 + q,
 }));
 
+// These tests are not about mini simulados. Since 2026-11-17 (Karina, 23h06) the plan schedules them through the
+// whole preparation, so the fixture says explicitly that the student did not select them.
+const NO_SIMULADO = { preferred_content_types: defaultPrefs().preferred_content_types.filter((t) => t !== "simulado") };
+const WITH_SIMULADO = { preferred_content_types: defaultPrefs().preferred_content_types };
 function plan(over: {
   prefs?: Partial<StudyPlanPrefs>; signals?: Partial<Signals>; testDate?: string | null; extra?: number;
 } = {}) {
   return withFrozenTime(MORNING_BRT, () => derivePlan({
-    prefs: { ...defaultPrefs(), pace_mode: "standard", ...over.prefs },
+    prefs: { ...defaultPrefs(), ...NO_SIMULADO, pace_mode: "standard", ...over.prefs },
     cohort: { test_date: over.testDate === undefined ? "2027-01-15" : over.testDate },
     specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: CONTENT,
     signals: {
@@ -586,7 +596,7 @@ test("schedule: with 'every N weeks' the simulado weeks are counted back from th
 
 test("plan: mini simulados take at most a quarter of the week's study time (little time → every few weeks)", () => {
   // 30 min × 3 days = 90 min a week; one mini simulado = 62.5 min → every 3 weeks, not every week.
-  const little = plan({ testDate: "2026-09-01", prefs: { intensity: "leve", available_days: (1 << 2) | (1 << 3) | (1 << 5) } }); // Tue, Wed, Fri
+  const little = plan({ testDate: "2026-09-01", prefs: { ...WITH_SIMULADO, intensity: "leve", available_days: (1 << 2) | (1 << 3) | (1 << 5) } }); // Tue, Wed, Fri
   const simDays = little.scheduleDays.filter((d) => d.simulado > 0).length;
   const weeks = 5;
   assert.ok(simDays > 0 && simDays <= weeks, `simulado on ${simDays} days in ~${weeks} weeks`);
@@ -594,7 +604,7 @@ test("plan: mini simulados take at most a quarter of the week's study time (litt
   const simulado = little.scheduleDays.reduce((s, d) => s + d.simulado, 0);
   assert.ok(content > simulado, "new content keeps most of the time");
   // 60 min × 7 days: one every week.
-  const plenty = plan({ testDate: "2026-09-01" });
+  const plenty = plan({ testDate: "2026-09-01", prefs: WITH_SIMULADO });
   const mondays = plenty.scheduleDays.filter((d) => d.simulado > 0 && d.key > TODAY).length;
   assert.ok(mondays >= 4);
 });
