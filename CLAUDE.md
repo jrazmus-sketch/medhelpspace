@@ -306,6 +306,25 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   respostas para avaliar". Quick tip `onboarding.plano.body` = her text (DB row + `tips.ts`). Scenarios 14–16 in
   `scripts/plano-cenarios.ts`; tests `app/tests/plano-tempo-diario.test.ts`. Patch: `schema-patch-plano-tempo-diario.sql`
   (+ rollback).
+- **Fase 2 — Karina's definitive Flashcards + AudioCards + recordings — PARTLY LIVE prod + local (2026-11-18).**
+  `scripts/apply-fase2-2026-11-18.js` (`--db <url>` | `--prod`, `--apply`; one transaction, deck + group NAME lookups, 15
+  checks; without `--apply` it runs and rolls back) + `scripts/rollback-fase2-2026-11-18.sql` (exact restore from
+  `*_bk_fase2`, proven on the rehearsal copy). Inputs in gitignored `parsed/fase2/` (delivery.json, audio-urls.json).
+  LIVE: 16 themes rewritten in place through `import-cards-single-source.js` (468 cards, same ids) with their recordings
+  (Bunny `AudioCards-Audio/v3/<spec>/<slug>-A.mp3` — a NEW folder per delivery, so no cached old file plays); "Ortopedia" =
+  the old group "Trauma e Infecções Musculoesqueléticas" renamed (Outros), "Artrite Infecciosa" archived, both topics open
+  Ortopedia; Espondiloartrites new in Reumatologia + Meu Plano link; cards a definitive file no longer has (Urologia 31–55,
+  Cirurgia Pediátrica 29–30) MOVED to archive groups in `retirados-*` decks (never deleted, Revisão rows suspended); old
+  `artrite-infecciosa-revalida-up` unpublished; Urologia Revalida Up via `scripts/import-revalida-up-fase2.js`.
+  **HELD, untouched, waiting for Karina:** (1) the NINE groups whose cards 1–2 are in the frozen free deck
+  (`free_flashcard_deck` stores card IDS — a rewrite in place changes the free deck): Perioperatório, Assistência Pré-Natal
+  (also came without a recording), Doenças Hepatobiliares, Anticoncepção, Ética Médica e Medicina Legal, Assistência Clínica ao
+  Parto, Diarreia e Desidratação, Sangramento Uterino Anormal, Hérnia; (2) the new recordings of Triagem Neonatal and
+  Cardiopatia Congênita — they say "ecocardiograma nas 24 horas seguintes" where the published Teste do Coraçãozinho card says
+  "antes da alta"; (3) Anemia Falciforme (her order: touch nothing). **Before any card import, check the free deck** — the
+  script's first check is "free deck identical". Narration check = Whisper `.srt` per recording + `audiocards-asr-check.js
+  --srt-dir`. **Never `SET default_transaction_read_only` on the pooler connection** (transaction pooling: it sticks to the
+  server connection and the next client's write fails) — use `sql.begin('read only', …)`.
 - **Fase 1 — Karina's 27 question decisions + 24 definitive Revalida Up — LIVE prod + local (2026-11-18).**
   `schema-patch-fase1-2026-11-17.sql` (+ `-rollback.sql`), run AFTER the generated `parsed/revalida-up-fase1-import.sql`
   (`scripts/import-revalida-up-fase1.js`; rollback order is the reverse). 17 records moved to another section (slot by

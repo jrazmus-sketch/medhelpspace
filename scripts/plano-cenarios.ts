@@ -377,9 +377,124 @@ function followPlan(c: Content, s: Student, from: string, until?: string): { las
 const SIX_DAYS = 0b1111110; // Mon–Sat
 const THREE_DAYS = (1 << 1) | (1 << 3) | (1 << 5); // Mon, Wed, Fri
 
+/**
+ * Hypothesis run (Karina 2026-11-18): the same availability scenarios with a SIMULATED exam date, counted from a given
+ * day. Nothing is read from or written to any turma — the date exists only inside this run.
+ *   … plano-cenarios.ts [<DATABASE_URL>] --hipotese 2027-04-15 [--hoje 2026-11-18] [--json out.json]
+ */
+function hipotese(c: Content, exam: string, start: string): Record<string, unknown> {
+  const all: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
+  const noSim = all.filter((t) => t !== "simulado");
+  const DAYS: { label: string; mask: number; n: number }[] = [
+    { label: "segunda, quarta e sexta", mask: THREE_DAYS, n: 3 },
+    { label: "segunda a sexta", mask: 0b0111110, n: 5 },
+    { label: "segunda a sábado", mask: SIX_DAYS, n: 6 },
+  ];
+  const eve = addDaysKey(exam, -1);
+  type Row = Record<string, string | number | null>;
+  /** Day-0 forecast, then the student follows the plan to the eve of the exam. `steps` may change things on the way. */
+  const simulate = (
+    prefs: Partial<StudyPlanPrefs>,
+    over: Partial<Student> = {},
+    steps: { until: string; then?: (s: Student) => void; resume?: string }[] = [],
+  ) => {
+    const s = newStudent({ examDate: exam, ...over, prefs: { preferred_content_types: all, ...prefs } });
+    const day0 = planFor(c, s, start);
+    const f0 = day0.forecast!;
+    let from = start;
+    for (const st of steps) {
+      followPlan(c, s, from, st.until);
+      st.then?.(s);
+      from = st.resume ?? addDaysKey(st.until, 1);
+    }
+    followPlan(c, s, from);
+    s.flashcardsToday = 0; s.reviewedToday = 0;
+    const end = planFor(c, s, eve).forecast!;
+    const done = end.completedTopics + end.inReviewTopics;
+    const leftScope = Math.max(0, f0.pendingTopics - (done + end.pendingTopics));
+    return {
+      day0, f0,
+      row: {
+        temas: f0.pendingTopics,
+        previstosIntegral: f0.expectedTopics,
+        previstosParcial: f0.partialTopics,
+        horasPendentes: +(f0.pendingMinutes / 60).toFixed(0),
+        horasProgramadas: +(f0.scheduledMinutes / 60).toFixed(0),
+        diasDeEstudo: f0.studyDaysLeft,
+        concluidos: done,
+        pendentesNaVespera: end.pendingTopics,
+        foraDoEscopo: leftScope,
+        miniSimuladosFeitos: s.log.simFinished,
+      } as Row,
+    };
+  };
+
+  // 1. The grid: hours per day × days per week (new student, every material, automatic mini simulados).
+  const grid: Row[] = [];
+  for (const d of DAYS) {
+    for (const minutes of [30, 60, 90, 120, 180, 240, 300]) {
+      const r = simulate({ daily_minutes: minutes, available_days: d.mask });
+      grid.push({ horasPorDia: minutes / 60, minutosPorDia: minutes, diasPorSemana: d.n, dias: d.label, ...r.row });
+    }
+  }
+
+  // 2. The daily time that gives every topic a full conclusion in the forecast, for 5 and 6 days a week.
+  const needed: Row[] = [];
+  for (const d of DAYS.filter((x) => x.n >= 5)) {
+    let found: number | null = null;
+    for (let minutes = 60; minutes <= 600; minutes += 15) {
+      const s = newStudent({ examDate: exam, prefs: { preferred_content_types: all, daily_minutes: minutes, available_days: d.mask } });
+      const f = planFor(c, s, start).forecast!;
+      if (f.expectedTopics >= f.pendingTopics) { found = minutes; break; }
+    }
+    const check = found != null ? simulate({ daily_minutes: found, available_days: d.mask }).row : null;
+    needed.push({ diasPorSemana: d.n, dias: d.label, minutosPorDia: found, concluidosNaSimulacao: check ? check.concluidos : null, temas: check ? check.temas : null });
+  }
+
+  // 3. Variations on one reference routine where time is the limit (1 h a day, Monday to Friday), so each
+  //    factor's effect on the coverage can be seen.
+  const ref = { daily_minutes: 60, available_days: 0b0111110 };
+  const variations: Row[] = [];
+  const add = (grupo: string, variacao: string, r: { row: Row }) => variations.push({ grupo, variacao, ...r.row });
+  add("Referência", "1 h por dia, segunda a sexta, mini simulados na frequência automática", simulate(ref));
+  add("Revisão", "Revisão ocupando cerca de 10% do dia", simulate(ref, { reviewShare: 0.1 }));
+  add("Revisão", "Revisão ocupando cerca de 20% do dia (referência)", simulate(ref, { reviewShare: 0.2 }));
+  add("Revisão", "Revisão ocupando cerca de 40% do dia", simulate(ref, { reviewShare: 0.4 }));
+  add("Revisão", "Aluno que acerta 55% na primeira tentativa (mais questões voltam pela Revisão)", simulate(ref, { firstTryAccuracy: 0.55 }));
+  add("Mini simulados", "Sem mini simulados no plano", simulate({ ...ref, preferred_content_types: noSim }));
+  add("Mini simulados", "Frequência automática", simulate({ ...ref, simulado_frequency: "auto" }));
+  add("Mini simulados", "1 por semana", simulate({ ...ref, simulado_frequency: 1 }));
+  add("Mini simulados", "2 por semana", simulate({ ...ref, simulado_frequency: 2 }));
+  const w = (n: number) => addDaysKey(start, n * 7);
+  add("Dias perdidos", "2 semanas sem estudar (da 5ª à 6ª semana), sem avisar o plano",
+    simulate(ref, {}, [{ until: addDaysKey(w(4), -1), resume: w(6) }]));
+  add("Dias perdidos", "4 semanas sem estudar (da 5ª à 8ª semana), sem avisar o plano",
+    simulate(ref, {}, [{ until: addDaysKey(w(4), -1), resume: w(8) }]));
+  add("Mudança de disponibilidade", "Começa com 1 h por dia e passa a 2 h por dia depois de 4 semanas",
+    simulate(ref, {}, [{ until: addDaysKey(w(4), -1), then: (s) => { s.prefs.daily_minutes = 120; } }]));
+  add("Mudança de disponibilidade", "Começa com 2 h por dia e cai para 1 h por dia depois de 8 semanas",
+    simulate({ ...ref, daily_minutes: 120 }, {}, [{ until: addDaysKey(w(8), -1), then: (s) => { s.prefs.daily_minutes = 60; } }]));
+  add("Mudança de disponibilidade", "Começa de segunda a sexta e passa a estudar também aos sábados depois de 4 semanas",
+    simulate(ref, {}, [{ until: addDaysKey(w(4), -1), then: (s) => { s.prefs.available_days = SIX_DAYS; } }]));
+
+  return { exam, start, daysToExam: planFor(c, newStudent({ examDate: exam }), start).daysToExam, grid, needed, variations };
+}
+
 async function main() {
   const c = await loadContent();
   await sql.end();
+  const hAt = args.indexOf("--hipotese");
+  if (hAt >= 0) {
+    const tAt = args.indexOf("--hoje");
+    const out = hipotese(c, args[hAt + 1], tAt >= 0 ? args[tAt + 1] : TODAY);
+    const cols = (r: Record<string, unknown>) => Object.entries(r).map(([k, v]) => `${k}=${v}`).join(" · ");
+    console.log(`Hipótese: prova em ${out.exam}, contando de ${out.start} (${out.daysToExam} dias)`);
+    for (const r of out.grid as Record<string, unknown>[]) console.log("  grade   " + cols(r));
+    for (const r of out.needed as Record<string, unknown>[]) console.log("  carga   " + cols(r));
+    for (const r of out.variations as Record<string, unknown>[]) console.log("  variação " + cols(r));
+    if (jsonOut) writeFileSync(jsonOut, JSON.stringify(out, null, 1));
+    process.exit(0);
+  }
   const report: Record<string, unknown>[] = [];
   const all: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
 
