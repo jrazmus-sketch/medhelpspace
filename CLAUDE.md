@@ -284,6 +284,20 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   page). Scenarios 7–10 in `scripts/plano-cenarios.ts`. Patch: `schema-patch-mini-simulado-frequencia.sql` (+ rollback).
   **MedVoice (her note, same day):** the current set is outdated — she will send a full replacement and ALL old
   MedVoice get removed together with it; do not recover the 4 missing recordings (481, 579, 582, 583).
+- **Fase 1 — Karina's 27 question decisions + 24 definitive Revalida Up — LIVE prod + local (2026-11-18).**
+  `schema-patch-fase1-2026-11-17.sql` (+ `-rollback.sql`), run AFTER the generated `parsed/revalida-up-fase1-import.sql`
+  (`scripts/import-revalida-up-fase1.js`; rollback order is the reverse). 17 records moved to another section (slot by
+  edition/number, residents keep their order), 9 redundant copies UNPUBLISHED — a copy is never deleted: it goes to the
+  draft page `questoes-copias-despublicadas` (same ids). **The Revisão does not look at the page status**, so history of
+  an unpublished copy goes to the kept copy, or its Revisão row is `suspended`; same for cards of an archived group.
+  Primary topic of the 27 originals set + `aprovado`; incidence/bands only via the P20 triggers. Topic 201 renamed
+  "Saúde do Trabalhador"; new section + topic Hematologia › `reacoes-transfusionais` (questions only); new topic Outros ›
+  `corpo-estranho-nasal` (section Otorrinolaringologia). **Archived, kept:** Microangiopatias Trombóticas (section, Revalida
+  Up, Flashcards + AudioCard, topic out of Meu Plano), Ventilação Mecânica and Delirium (Revalida Up, Flashcards +
+  AudioCard) on `retirados-<specialty>-flashcards/-audiocards`; Demências had none. Revalida Up: the FILE NAME picks the
+  live page (id, address and specialty kept), the title comes from the file header; "Ortopedia" reuses the old "Trauma e
+  Infecções Musculoesqueléticas" page (now `ortopedia-revalida-up`, Outros); Espondiloartrites is new. Fase 2 = her
+  Flashcards/AudioCards/recordings, imported together per group. Ledger v12 (P26–P30).
 
 ## Schema (see schema.sql for full DDL)
 

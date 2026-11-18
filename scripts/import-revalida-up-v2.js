@@ -442,4 +442,6 @@ GROUP BY s.slug ORDER BY s.slug;
   console.log(`    node scripts/check-revalida-up-links.js   (same DATABASE_URL as the apply)\n`);
 }
 
-main();
+// Run only as a CLI: import-revalida-up-fase1.js requires this file for the converters.
+if (require.main === module) main();
+module.exports = { convert, convertMd, fixTitle, sqlStr, SPECIALTIES };
