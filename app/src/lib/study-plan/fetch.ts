@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { todayKeyBR, startOfDayBRIso } from "@/lib/br-date";
+import { todayKeyBR, startOfDayBRIso, diffDaysKey } from "@/lib/br-date";
 import {
   derivePlan,
   defaultPrefs,
@@ -319,6 +319,31 @@ export async function getDerivedPlanForUser(
     questionReview,
     reviewedToday: reviewedTodayRes.count ?? 0,
   };
+
+  // MedHelp 60D: inside the 60 days before the exam, the plan gives the 60D schedule its time first.
+  // Loaded only then (a dynamic import: that module reads the prefs through this one).
+  const examKey = cohort?.test_date ? cohort.test_date.slice(0, 10) : null;
+  const daysLeft = examKey ? diffDaysKey(todayKey, examKey) : null;
+  if (daysLeft != null && daysLeft > 0 && daysLeft <= 60) {
+    try {
+      const { loadD60 } = await import("@/lib/medhelp60/cronograma-server");
+      const d60 = await loadD60(userId, admin);
+      if (d60 && !d60.preview) {
+        const ticked = new Set(d60.checked);
+        signals.sixtyD = {
+          weeks: d60.cronograma.weeks.filter((w) => w.endKey >= todayKey).map((w) => {
+            const open = w.items.filter((i) => !i.pending && !ticked.has(i.key));
+            return {
+              n: w.n, startKey: w.startKey, endKey: w.endKey, hasSimulado: w.hasSimulado,
+              pendingItems: open.length, pendingMinutes: open.reduce((s, i) => s + i.minutes, 0),
+            };
+          }),
+        };
+      }
+    } catch {
+      // The 60D schedule is an addition: if it cannot be read, the plan still runs on its own.
+    }
+  }
 
   return derivePlan({
     prefs,

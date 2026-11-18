@@ -51,8 +51,9 @@ test("settings: a row value outside its range falls back to the default (never a
 });
 
 test("settings: the patch's column defaults match the code defaults", () => {
+  // The 60D estimates were added later, by their own patch (their defaults are checked in medhelp60-cronograma.test.ts).
   const sql = readFileSync(path.join(process.cwd(), "..", "schema-patch-plano-cobertura.sql"), "utf8");
-  for (const f of PLAN_SETTING_FIELDS) {
+  for (const f of PLAN_SETTING_FIELDS.filter((x) => !x.column.startsWith("d60_"))) {
     const m = sql.match(new RegExp(`${f.column}\\s+\\S+\\s+NOT NULL DEFAULT ([0-9.]+)`));
     assert.ok(m, `column ${f.column} missing from the patch`);
     assert.equal(Number(m![1]), S[f.key], `${f.column} default`);

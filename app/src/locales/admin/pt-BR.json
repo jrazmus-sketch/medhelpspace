@@ -2395,11 +2395,15 @@
       },
       "phase": {
         "title": "Mini simulado",
-        "help": "O mini simulado conta dentro do tempo diário do aluno; quando não cabe em um dia, é dividido entre dias de estudo e continua de onde parou. Os materiais do MedHelp 60D (Fórmula MedHelp, MemoreCards, Simulados 100Q) não são programados pelo Meu Plano — terão um cronograma próprio na página do 60D."
+        "help": "O mini simulado conta dentro do tempo diário do aluno; quando não cabe em um dia, é dividido entre dias de estudo e continua de onde parou. Os materiais do MedHelp 60D (Fórmula MedHelp, MemoreCards, Simulados 100Q) seguem o cronograma próprio da página do 60D: nas semanas do 60D, o Meu Plano reserva primeiro o tempo desse cronograma e não abre mini simulado na semana que tem um Simulado 100Q."
       },
       "pace": {
         "title": "Ritmo de estudo",
         "help": "Com a chave ligada, o aluno em “Automático” recebe tempos aprendidos com as próprias respostas (sempre entre a metade e o dobro do padrão)."
+      },
+      "d60": {
+        "title": "MedHelp 60D",
+        "help": "Tempos usados no cronograma da página do MedHelp 60D (oito semanas e reta final). O tempo para responder um Simulado 100Q é o número de questões × o tempo por questão acima; aqui fica o tempo de correção."
       }
     },
     "fields": {
@@ -2454,6 +2458,18 @@
       "simuladoMaxWeeklyShare": {
         "label": "Máximo do tempo de estudo da semana para mini simulados",
         "help": "Quando um por semana passaria disso (aluno com pouco tempo), eles passam a vir a cada 2, 3… semanas."
+      },
+      "d60MinutesPerFormulaPage": {
+        "label": "Fórmula MedHelp: tempo por página",
+        "help": "Tempo estimado para estudar uma página da Fórmula MedHelp no cronograma do 60D."
+      },
+      "d60SecondsPerMemorecard": {
+        "label": "MemoreCards: tempo por cartão",
+        "help": "Tempo estimado por cartão dos MemoreCards no cronograma do 60D."
+      },
+      "d60CorrectionMinutesPerQuestion": {
+        "label": "Simulado 100Q: correção por questão",
+        "help": "Tempo estimado para corrigir cada questão de um Simulado 100Q (revisão dos comentários)."
       }
     },
     "adaptive": {

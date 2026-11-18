@@ -6,12 +6,18 @@ import { VoltarButton } from "@/components/layout/voltar-button";
 import { Medhelp60Accordion } from "@/components/content/medhelp-60d-accordion";
 import { Medhelp60NextCycle } from "@/components/content/medhelp-60d-next-cycle";
 import { Coachmark } from "@/components/onboarding/coachmark";
+import { Medhelp60Cronograma } from "@/components/content/medhelp-60d-cronograma";
+import { loadD60 } from "@/lib/medhelp60/cronograma-server";
+import { getAuthUser } from "@/lib/viewer";
 
 export const metadata = { title: "MedHelp 60D" };
 
 export default async function Medhelp60dPage() {
   await requireActiveMembership();
   const { unlocked, daysUntilUnlock, nextCycle } = await get60dAccess();
+  // The schedule is read only for whoever has the module open (the gate above decides).
+  const user = unlocked ? await getAuthUser() : null;
+  const d60 = user ? await loadD60(user.id) : null;
 
   return (
     <div style={{ maxWidth: 880, margin: "0 auto" }} className="px-[10px] sm:px-8 pt-7 pb-16">
@@ -45,7 +51,21 @@ export default async function Medhelp60dPage() {
       <Coachmark coachKey="medhelp-60d" className="mb-6 mt-0" />
 
       {unlocked ? (
-        <Medhelp60Accordion />
+        <>
+          <Medhelp60Accordion />
+          {d60 && (
+            <Medhelp60Cronograma
+              cronograma={d60.cronograma}
+              checked={d60.checked}
+              todayKey={d60.todayKey}
+              weeklyMinutes={d60.weeklyMinutes}
+              dailyMinutes={d60.dailyMinutes}
+              studyDays={d60.studyDays}
+              examConfirmed={d60.examConfirmed}
+              preview={d60.preview}
+            />
+          )}
+        </>
       ) : nextCycle ? (
         <Medhelp60NextCycle
           cohortName={nextCycle.cohortName}

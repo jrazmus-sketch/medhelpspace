@@ -12,11 +12,12 @@ const FIELD: Record<PlanSettingNumberKey, Field> = Object.fromEntries(
   PLAN_SETTING_FIELDS.map((f) => [f.key, f]),
 ) as Record<PlanSettingNumberKey, Field>;
 
-const GROUPS: { id: "materials" | "review" | "phase" | "pace"; keys: PlanSettingNumberKey[] }[] = [
+const GROUPS: { id: "materials" | "review" | "phase" | "pace" | "d60"; keys: PlanSettingNumberKey[] }[] = [
   { id: "materials", keys: ["minutesPerQuestion", "secondsPerFlashcard", "minutesPerRevalidaUpInsight", "medvoiceFallbackMinutes"] },
   { id: "review", keys: ["reviewSecondsPerItem", "reviewMaxShare", "reviewReserveShare"] },
   { id: "phase", keys: ["simuladoQuestions", "simuladoDaysPerWeek", "simuladoMaxWeeklyShare"] },
   { id: "pace", keys: ["paceSlowFactor", "paceFastFactor", "paceMinSamples"] },
+  { id: "d60", keys: ["d60MinutesPerFormulaPage", "d60SecondsPerMemorecard", "d60CorrectionMinutesPerQuestion"] },
 ];
 
 /** Which unit label goes after each input. */
@@ -26,6 +27,7 @@ const UNIT: Record<PlanSettingNumberKey, "minutes" | "seconds" | "percent" | "ti
   reviewReserveShare: "percent", simuladoQuestions: "questions",
   simuladoDaysPerWeek: "perWeek", simuladoMaxWeeklyShare: "percent", paceSlowFactor: "times", paceFastFactor: "times",
   paceMinSamples: "answers",
+  d60MinutesPerFormulaPage: "minutes", d60SecondsPerMemorecard: "seconds", d60CorrectionMinutesPerQuestion: "minutes",
 };
 
 // Shares are stored 0–1 and typed as a percentage.

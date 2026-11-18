@@ -401,13 +401,15 @@ function hipotese(c: Content, exam: string, start: string): Record<string, unkno
     const s = newStudent({ examDate: exam, ...over, prefs: { preferred_content_types: all, ...prefs } });
     const day0 = planFor(c, s, start);
     const f0 = day0.forecast!;
+    // Every day of the run is checked: no day may hold more than the student's time.
+    const overTime: Check[] = [checkBudget(day0)].filter((k) => !k.ok);
     let from = start;
     for (const st of steps) {
-      followPlan(c, s, from, st.until);
+      overTime.push(...followPlan(c, s, from, st.until).checks);
       st.then?.(s);
       from = st.resume ?? addDaysKey(st.until, 1);
     }
-    followPlan(c, s, from);
+    overTime.push(...followPlan(c, s, from).checks);
     s.flashcardsToday = 0; s.reviewedToday = 0;
     const end = planFor(c, s, eve).forecast!;
     const done = end.completedTopics + end.inReviewTopics;
@@ -425,6 +427,7 @@ function hipotese(c: Content, exam: string, start: string): Record<string, unkno
         pendentesNaVespera: end.pendingTopics,
         foraDoEscopo: leftScope,
         miniSimuladosFeitos: s.log.simFinished,
+        diasAcimaDoTempo: overTime.length,
       } as Row,
     };
   };
@@ -535,7 +538,10 @@ async function main() {
     out.followed = { ...(out.followed as object), done, expected: expected0 };
     checks.push({
       name: "Previsão × execução: seguindo o plano, o aluno conclui o que foi previsto, sem grande subestimação",
-      ok: done >= expected0 - 2 && (expected0 === 0 ? done <= 3 : done <= Math.ceil(expected0 * 1.25) + 2),
+      // "Approximately what was forecast" (Karina 2026-11-18): the day-0 forecast of a NEW student cannot know how
+      // many questions will come back through the Revisão, so the student may end a little short of it — the
+      // tolerance is 2% of the forecast (never less than 2 topics). The forecast itself is redone every day.
+      ok: done >= expected0 - Math.max(2, Math.ceil(expected0 * 0.02)) && (expected0 === 0 ? done <= 3 : done <= Math.ceil(expected0 * 1.25) + 2),
       detail: `previstos no dia 0: ${expected0}; concluídos na véspera da prova: ${done} (${stillPending} ainda pendentes)`,
     });
     checks.push({

@@ -123,6 +123,11 @@ export type ScheduleInput = {
     simuladoResumeStale?: boolean;
   };
   simuladoEnabled: boolean;
+  /**
+   * Days on which no NEW mini simulado session is opened: the MedHelp 60D weeks that hold a Simulado 100Q
+   * (Karina 2026-11-17: never two simulados in the same week). One already begun is still continued.
+   */
+  noNewSimuladoOn?: (dayKey: string) => boolean;
   /** One mini simulado in minutes (its questions × the student's time per question). */
   simuladoMinutes: number;
   /** Sessions in a simulado week: the student's choice, or the settings' value in the automatic mode. */
@@ -322,7 +327,8 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
     // the MedHelp 60D's). `simuladoActive`: one may be placed today; `simuladoWeek`:
     // this week opens new sessions.
     const simuladoActive = input.simuladoEnabled && sessions > 0;
-    const simuladoWeek = simuladoActive && isSimuladoWeek(dayKey, examKey, input.simuladoEveryWeeks);
+    const simuladoWeek = simuladoActive && isSimuladoWeek(dayKey, examKey, input.simuladoEveryWeeks)
+      && !(input.noNewSimuladoOn?.(dayKey) ?? false);
     const accruedToday = simuladoWeek ? sessionSlots.filter((slot) => slot === studyDayIndex).length : 0;
     const isFirstSlot = accruedToday > 0 && studyDayIndex === 0;
     studyDayIndex++;

@@ -2395,11 +2395,15 @@
       },
       "phase": {
         "title": "Mini simulado",
-        "help": "The mini simulado counts inside the student's daily time; when it does not fit one day it is split between study days and resumes where it stopped. The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) are not scheduled by Meu Plano — they will have their own schedule on the 60D page."
+        "help": "The mini simulado counts inside the student's daily time; when it does not fit one day it is split between study days and resumes where it stopped. The MedHelp 60D materials (Fórmula MedHelp, MemoreCards, Simulados 100Q) follow their own schedule on the 60D page: during the 60D weeks Meu Plano reserves that schedule's time first and opens no mini simulado in a week that has a Simulado 100Q."
       },
       "pace": {
         "title": "Study pace",
         "help": "With the switch on, a student on “Automático” gets time estimates learned from their own answers (always between half and double the default)."
+      },
+      "d60": {
+        "title": "MedHelp 60D",
+        "help": "Times used by the schedule on the MedHelp 60D page (eight weeks and the final stretch). The time to answer a Simulado 100Q is its questions × the time per question above; this is the correction time."
       }
     },
     "fields": {
@@ -2454,6 +2458,18 @@
       "simuladoMaxWeeklyShare": {
         "label": "Most of the week's study time mini simulados may take",
         "help": "When one a week would take more than this (a student with little time), they come every 2, 3… weeks instead."
+      },
+      "d60MinutesPerFormulaPage": {
+        "label": "Fórmula MedHelp: time per page",
+        "help": "Estimated time to study one Fórmula MedHelp page in the 60D schedule."
+      },
+      "d60SecondsPerMemorecard": {
+        "label": "MemoreCards: time per card",
+        "help": "Estimated time per MemoreCard in the 60D schedule."
+      },
+      "d60CorrectionMinutesPerQuestion": {
+        "label": "Simulado 100Q: correction per question",
+        "help": "Estimated time to correct each question of a Simulado 100Q (reading the commentary)."
       }
     },
     "adaptive": {

@@ -317,6 +317,15 @@ export type Signals = {
     /** MedVoice lesson → measured audio length (null = not measured) */
     medvoiceLessons: Map<number, { durationSeconds: number | null }>;
   } | null;
+  /**
+   * MedHelp 60D (Karina 2026-11-17): the weeks of the 60D schedule that are still ahead or running, with the
+   * minutes of their UNTICKED activities. Present only when the student's exam is within the 60 days. The plan
+   * reserves that time first on each study day of the week and fills the rest with its own queue — one
+   * availability, no activity listed twice (the 60D items stay on the 60D page; here they are one block).
+   */
+  sixtyD?: {
+    weeks: { n: number; startKey: string; endKey: string; pendingMinutes: number; pendingItems: number; hasSimulado: boolean }[];
+  } | null;
   /** The student's Flashcards facts (function study_plan_flashcard_facts). */
   flashcards?: {
     /** group → distinct cards answered at least once */
@@ -592,6 +601,29 @@ export function derivePlan(args: {
   const minutesForDay = (dayKey: string): number =>
     reducedOn(dayKey) ? (prefs.temp_daily_minutes as number) : prefs.daily_minutes;
   const dailyMinutes = minutesForDay(todayKey);
+
+  // ── MedHelp 60D first, inside the same daily time ────────────────────────
+  // The week's unticked 60D minutes are spread over the week's study days still ahead (today included); each of
+  // those days gives that share to the 60D and the plan's own queue gets what is left. When the week's load is
+  // bigger than the week's time the 60D takes the whole day — the 60D page and the block below SAY so; nothing
+  // is removed from either schedule.
+  const d60Weeks = signals.sixtyD?.weeks ?? [];
+  const isOpenStudyDay = (k: string) =>
+    (studyDayMask & (1 << dayOfWeekForKey(k))) !== 0 && !signals.pauses.some((p) => p.pause_from <= k && p.pause_until >= k);
+  const d60WeekOf = (k: string) => d60Weeks.find((w) => k >= w.startKey && k <= w.endKey) ?? null;
+  const d60Share = (w: (typeof d60Weeks)[number]): { perDay: number; days: number; time: number } => {
+    const from = w.startKey > todayKey ? w.startKey : todayKey;
+    let days = 0, time = 0;
+    for (let k = from; k <= w.endKey; k = addDaysKey(k, 1)) if (isOpenStudyDay(k)) { days++; time += minutesForDay(k); }
+    return { perDay: days > 0 ? w.pendingMinutes / days : 0, days, time };
+  };
+  const d60Reserve = (k: string): number => {
+    const w = k >= todayKey ? d60WeekOf(k) : null;
+    if (!w || w.pendingMinutes <= 0 || !isOpenStudyDay(k)) return 0;
+    return Math.min(minutesForDay(k), d60Share(w).perDay);
+  };
+  /** What the plan's own queue may use on a day: the student's time minus the 60D's share. */
+  const planMinutesForDay = (k: string): number => Math.max(0, minutesForDay(k) - d60Reserve(k));
   const routine: PlanRoutine = {
     dailyMinutes,
     baseDailyMinutes: prefs.daily_minutes,
@@ -1081,7 +1113,7 @@ export function derivePlan(args: {
     Math.max(settings.reviewReserveShare, settings.reviewMaxShare),
     Math.max(settings.reviewReserveShare, todayReviewShare),
   );
-  const calendar: DayCalendar = { studyDayMask, pauses: signals.pauses, minutesForDay };
+  const calendar: DayCalendar = { studyDayMask, pauses: signals.pauses, minutesForDay: planMinutesForDay };
   const scheduleInput: ScheduleInput = {
     todayKey,
     examKey,
@@ -1101,6 +1133,8 @@ export function derivePlan(args: {
       simuladoResumeStale: simFacts.inProgress?.stale ?? false,
     },
     simuladoEnabled: allowedTypes.has("simulado"),
+    // Never a mini simulado in a 60D week that holds a Simulado 100Q.
+    noNewSimuladoOn: (k) => d60WeekOf(k)?.hasSimulado ?? false,
     simuladoMinutes,
     simuladoSessionsPerWeek: cadence.sessionsPerWeek,
     simuladoEveryWeeks,
@@ -1275,7 +1309,36 @@ export function derivePlan(args: {
   // deliberately NOT scheduled here: they will have their own schedule on the 60D
   // page (Karina 2026-11-17), so two programmings never compete for the same day.
 
+  // MedHelp 60D block — first in the day, ONE item that opens the 60D page (the activities are listed there).
+  const d60Today = paused ? 0 : d60Reserve(todayKey);
+  const d60Week = d60WeekOf(todayKey);
+  if (d60Week && d60Today >= 0.5) {
+    const share = d60Share(d60Week);
+    const over = d60Week.pendingMinutes > share.time + 0.5;
+    items.unshift({
+      kind: "memorecards",
+      iconHint: "memorecards",
+      title: `MedHelp 60D — semana ${d60Week.n}`,
+      subtitle: "Cronograma do MedHelp 60D",
+      href: "/app/medhelp-60d",
+      estimatedMinutes: minutesOf(d60Today),
+      reason: "Cronograma do MedHelp 60D: vem primeiro no seu dia",
+      lines: [
+        `${d60Week.pendingItems} ${d60Week.pendingItems === 1 ? "atividade por concluir" : "atividades por concluir"} nesta semana · cerca de ${minutesLabel(d60Week.pendingMinutes)}`,
+        `Hoje: cerca de ${Math.max(1, Math.round(d60Today))} min`,
+        ...(over
+          ? [`A carga desta semana é maior que o seu tempo de estudo até ${shortDay(d60Week.endKey)}. Nenhuma atividade foi retirada.`]
+          : []),
+      ],
+      cta: "Abrir o cronograma",
+    });
+  }
+
   wholeMinutes(items);
+  // Same for the 60D block: its "Hoje" line shows the rounded minutes the day's total is built from.
+  for (const it of items) {
+    if (it.href === "/app/medhelp-60d" && it.lines) it.lines[1] = `Hoje: cerca de ${it.estimatedMinutes} min`;
+  }
   // The mini simulado lines are written AFTER the rounding, so "Hoje: cerca de N
   // min" is the same number the day's total was built from.
   for (const b of simBlocks) {
@@ -1303,7 +1366,7 @@ export function derivePlan(args: {
         simulateSchedule({ ...scheduleInput, calendar: cal, today: { ...scheduleInput.today, extraMinutes: 0 } });
       const steps: Extract<ForecastHint, { kind: "minutes" }>[] = [];
       for (const extra of EXTRA_MINUTES_LADDER) {
-        const n = expectedCount(variant({ ...calendar, minutesForDay: (d) => minutesForDay(d) + extra }));
+        const n = expectedCount(variant({ ...calendar, minutesForDay: (d) => planMinutesForDay(d) + extra }));
         if (n <= expected) continue;
         const coversAll = n >= pendingTopics.length;
         steps.push({ kind: "minutes", extraMinutesPerDay: extra, expectedTopics: n, coversAll });
@@ -1408,7 +1471,7 @@ export function derivePlan(args: {
     nextAvailableDate,
     progressToday,
     coverageWarning,
-    todayBudgetMinutes: paused ? 0 : Math.round(today.budgetMinutes),
+    todayBudgetMinutes: paused ? 0 : Math.round(today.budgetMinutes + d60Today),
     todayDoneMinutes: Math.round(doneMinutes),
     // The day's time is used up while work remains — as opposed to "nothing left to study".
     dayComplete: !paused && today.isStudyDay && items.length === 0 && (queue.length > 0 || signals.reviewDueToday > 0),
@@ -1417,6 +1480,11 @@ export function derivePlan(args: {
     scheduleDays: sched.days,
     simulado,
   };
+}
+
+/** "2027-04-06" → "06/04". */
+function shortDay(key: string): string {
+  return `${key.slice(8, 10)}/${key.slice(5, 7)}`;
 }
 
 /** Minutes → "62 min" / "1 h 05 min" (an exact half rounds down: 62.5 → 62). */

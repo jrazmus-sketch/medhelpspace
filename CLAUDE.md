@@ -306,6 +306,27 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   respostas para avaliar". Quick tip `onboarding.plano.body` = her text (DB row + `tips.ts`). Scenarios 14–16 in
   `scripts/plano-cenarios.ts`; tests `app/tests/plano-tempo-diario.test.ts`. Patch: `schema-patch-plano-tempo-diario.sql`
   (+ rollback).
+- **MedHelp 60D — cronograma na página, checklist manual, uma só disponibilidade com o Meu Plano (Karina 2026-11-17 23h06;
+  built 2026-11-18).** `lib/medhelp60/cronograma.ts` (PURE: `buildCronograma`, `d60Position`, `matchFormulaPages`) builds a
+  FIXED sequence from the turma's exam date: 8 weeks of 7 days from the unlock day (exam − 60) + a final stretch of 4 days.
+  Units = topics with a Fórmula MedHelp page and/or MemoreCards, in ranking order (frequency desc, then name; Fórmula pages
+  that match no topic last), dealt evenly over the 8 weeks; Simulados 100Q 1–7 in weeks 2–8, each followed by its correction.
+  **Nothing is stored except the ticks** (`medhelp60_checks`, keys `formula:<page id>` / `memore:<Revalida Up page id>` /
+  `sim:<n>` / `sim-correcao:<n>`, RLS own rows) — the schedule is rebuilt on every load, so a material delivered later appears
+  in its place with the same key. A material not delivered = item shown as "Material pendente", not tickable, 0 minutes
+  (today: Simulados 1, 2, 4–7 — only `simulado-100q-3` has questions). Fórmula pages have NO stored topic link: matched by
+  address (slug minus `-formula` = topic slug or the stem of the topic's quiz / Revalida Up / resumo page). Loader
+  `lib/medhelp60/cronograma-server.ts loadD60()`; action `actions/medhelp60.ts setD60Check`; UI
+  `components/content/medhelp-60d-cronograma.tsx` on `/app/medhelp-60d` (week load × the student's weekly time; when it does
+  not fit the page SAYS so — never removes or reorders). **Meu Plano:** inside the 60 days `fetch.ts` passes
+  `signals.sixtyD` (weeks with their UNTICKED minutes) and `derive.ts` reserves that time FIRST on each study day
+  (`d60Reserve` / `planMinutesForDay`), shows ONE block "MedHelp 60D — semana N" (kind/iconHint `memorecards`, href
+  `/app/medhelp-60d`) and fills the rest with its own queue; `schedule.ts noNewSimuladoOn` = no new mini simulado in a 60D
+  week that holds an available Simulado 100Q. Time estimates: three `d60_*` columns on `study_plan_settings`, in
+  `PLAN_SETTING_FIELDS` (group "d60" at /admin/plano); answering a Simulado 100Q = its questions × `minutesPerQuestion`.
+  Distribution from any database: `node --import ./app/tests/helpers/alias-hook.mjs scripts/medhelp60-distribuicao.ts
+  [<DATABASE_URL>] --exame <date>` (read-only). Tests: `app/tests/medhelp60-cronograma.test.ts`. Patch:
+  `schema-patch-medhelp60-cronograma.sql` (+ rollback).
 - **Fase 2 — Karina's definitive Flashcards + AudioCards + recordings — PARTLY LIVE prod + local (2026-11-18).**
   `scripts/apply-fase2-2026-11-18.js` (`--db <url>` | `--prod`, `--apply`; one transaction, deck + group NAME lookups, 15
   checks; without `--apply` it runs and rolls back) + `scripts/rollback-fase2-2026-11-18.sql` (exact restore from

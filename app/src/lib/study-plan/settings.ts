@@ -49,6 +49,12 @@ export type PlanSettings = {
   adaptivePaceEnabled: boolean;
   /** Answers needed before a student's own pace replaces the default. */
   paceMinSamples: number;
+  /** MedHelp 60D schedule: minutes to study one Fórmula MedHelp page. */
+  d60MinutesPerFormulaPage: number;
+  /** MedHelp 60D schedule: seconds per MemoreCard. */
+  d60SecondsPerMemorecard: number;
+  /** MedHelp 60D schedule: minutes to correct one question of a Simulado 100Q (answering uses minutesPerQuestion). */
+  d60CorrectionMinutesPerQuestion: number;
 };
 
 export const DEFAULT_PLAN_SETTINGS: PlanSettings = {
@@ -66,6 +72,9 @@ export const DEFAULT_PLAN_SETTINGS: PlanSettings = {
   paceFastFactor: 0.7,
   adaptivePaceEnabled: true,
   paceMinSamples: 30,
+  d60MinutesPerFormulaPage: 5,
+  d60SecondsPerMemorecard: 60,
+  d60CorrectionMinutesPerQuestion: 1,
 };
 
 /** Column name ↔ field, with the accepted range. The admin form and the loader share this list. */
@@ -83,6 +92,10 @@ export const PLAN_SETTING_FIELDS = [
   { key: "paceSlowFactor",              column: "pace_slow_factor",                min: 1,    max: 3,   step: 0.05, kind: "number" },
   { key: "paceFastFactor",              column: "pace_fast_factor",                min: 0.3,  max: 1,   step: 0.05, kind: "number" },
   { key: "paceMinSamples",              column: "pace_min_samples",                min: 5,    max: 500, step: 5,    kind: "integer" },
+  // MedHelp 60D schedule (schema-patch-medhelp60-cronograma.sql)
+  { key: "d60MinutesPerFormulaPage",        column: "d60_minutes_per_formula_page",        min: 0.5, max: 60,  step: 0.5,  kind: "number" },
+  { key: "d60SecondsPerMemorecard",         column: "d60_seconds_per_memorecard",          min: 5,   max: 600, step: 5,    kind: "integer" },
+  { key: "d60CorrectionMinutesPerQuestion", column: "d60_correction_minutes_per_question", min: 0,   max: 15,  step: 0.25, kind: "number" },
 ] as const satisfies readonly {
   key: Exclude<keyof PlanSettings, "adaptivePaceEnabled">;
   column: string; min: number; max: number; step: number; kind: "number" | "integer" | "share";
