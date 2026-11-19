@@ -151,22 +151,6 @@ export function PlanoClient({
       )}
 
       <div className="space-y-8">
-        {/* ── MedHelp 60D period: her opening text (Karina 2026-11-19) ─────── */}
-        {plan.inD60Period && (
-          <p
-            role="note"
-            style={{
-              padding: "14px 16px", fontSize: 14, lineHeight: 1.55,
-              background: "color-mix(in srgb, var(--brand) 8%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--brand) 22%, transparent)",
-              borderRadius: "var(--radius)",
-            }}
-          >
-            Nos últimos 60 dias, sua programação acompanha o cronograma do MedHelp 60D. Você continua livre para estudar
-            pelos recursos do curso regular. Seu progresso nas duas partes fica registrado abaixo.
-          </p>
-        )}
-
         {/* ── Calibration banner ───────────────────────────────────────────── */}
         {!welcomedAt && (
           <CalibrationBanner onOpen={() => setShowWizard(true)} />
@@ -185,7 +169,9 @@ export function PlanoClient({
                 Restante para hoje: aproximadamente {plan.totalEstimatedMinutes} min
               </p>
             )}
-            {plan.todayBudgetMinutes > 0 && plan.todayDoneMinutes > 0 && (
+            {/* Not in the 60D period: the day then holds only the 60D schedule, whose checklist has no time count, and
+                what the student studies by choice is the student's own time (it goes to the regular record). */}
+            {!plan.inD60Period && plan.todayBudgetMinutes > 0 && plan.todayDoneMinutes > 0 && (
               <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2, lineHeight: 1.5 }}>
                 Tempo realizado hoje (estimativa): cerca de {Math.min(plan.todayDoneMinutes, 999)} de {plan.todayBudgetMinutes + extraMinutes} min
               </p>
@@ -254,7 +240,7 @@ export function PlanoClient({
               <PaceEditor mode={prefs.pace_mode} pace={plan.pace} options={paceOptions} />
             </div>
             <div style={{ marginTop: 24 }}>
-              <SimuladoFrequencyEditor info={plan.simulado} />
+              <SimuladoFrequencyEditor info={plan.simulado} inD60Period={plan.inD60Period} />
             </div>
           </CollapsibleSection>
         </div>

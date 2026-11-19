@@ -68,7 +68,8 @@ export function RegistroMedhelp60({ record }: { record: NonNullable<DerivedPlan[
           atualizar este registro.
         </p>
         <p style={{ fontSize: 15, fontWeight: 600, marginTop: 12, lineHeight: 1.4 }}>
-          {record.done} de {record.available} atividades concluídas ({record.percent}%)
+          {record.done} de {record.available} atividades concluídas (
+          {record.done > 0 && record.percent === 0 ? "menos de 1%" : `${record.percent}%`})
         </p>
         <div
           role="progressbar"

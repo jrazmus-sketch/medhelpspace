@@ -16,9 +16,12 @@ import { TipText } from "./tip-text";
 export function Coachmark({
   coachKey,
   className,
+  hideReviewNote = false,
 }: {
   coachKey: CoachKey;
   className?: string;
+  /** Leave out the Revisão line (Meu Plano in the MedHelp 60D period puts no Revisão on the day). */
+  hideReviewNote?: boolean;
 }) {
   const { ready, isDismissed, dismiss } = useOnboarding();
   const tip = TIPS[coachKey];
@@ -47,7 +50,7 @@ export function Coachmark({
         <TipText k={`onboarding.${coachKey}.body`} fallback={tip.body} multiline />
       </p>
 
-      {tip.reviewNote && (
+      {tip.reviewNote && !hideReviewNote && (
         <p className="mt-2.5 flex items-start gap-2 rounded-lg bg-brand/10 px-3 py-2 text-[12.5px] leading-relaxed text-foreground/85">
           <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} />
           <TipText as="span" k={`onboarding.${coachKey}.review`} fallback={tip.reviewNote} multiline />

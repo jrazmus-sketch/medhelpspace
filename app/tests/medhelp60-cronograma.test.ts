@@ -308,7 +308,7 @@ test("Meu Plano: the forecast counts the regular course only up to the day the 6
 });
 
 test("Meu Plano page in the 60D: her opening text and the two records, with her sentences, and no 'free minutes'", () => {
-  const page = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "plano-client.tsx"), "utf8").replace(/\s+/g, " ");
+  const page = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "page.tsx"), "utf8").replace(/\s+/g, " ");
   const recs = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "registros-60d.tsx"), "utf8").replace(/\s+/g, " ");
   assert.ok(page.includes("Nos últimos 60 dias, sua programação acompanha o cronograma do MedHelp 60D. Você continua livre para estudar pelos recursos do curso regular. Seu progresso nas duas partes fica registrado abaixo."));
   assert.ok(recs.includes("Registro do curso regular"));

@@ -90,6 +90,21 @@ export default async function PlanoPage({
       <h1 style={{ fontSize: "clamp(22px, 5vw, 30px)", fontWeight: 700, letterSpacing: "-.03em", marginBottom: 12 }}>
         Meu Plano de Estudos
       </h1>
+      {/* MedHelp 60D period: her opening text, first thing on the page (Karina 2026-11-19). */}
+      {plan?.inD60Period && (
+        <p
+          role="note"
+          style={{
+            margin: "0 0 16px", padding: "14px 16px", fontSize: 14, lineHeight: 1.55,
+            background: "color-mix(in srgb, var(--brand) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--brand) 22%, transparent)",
+            borderRadius: "var(--radius)",
+          }}
+        >
+          Nos últimos 60 dias, sua programação acompanha o cronograma do MedHelp 60D. Você continua livre para estudar
+          pelos recursos do curso regular. Seu progresso nas duas partes fica registrado abaixo.
+        </p>
+      )}
       {/* The routine and the exam date the calculations use (Karina 2026-11-18). The
           phase name is no longer shown to the student — the planning rules are unchanged. */}
       {plan && (
@@ -111,7 +126,8 @@ export default async function PlanoPage({
         <ChevronRight size={14} />
       </Link>
 
-      <Coachmark coachKey="plano" className="mt-0" />
+      {/* In the 60D period the plan puts no Revisão on the day, so the tip's Revisão line is left out. */}
+      <Coachmark coachKey="plano" className="mt-0" hideReviewNote={!!plan?.inD60Period} />
 
       <PlanoClient
         // The per-day trace is for checks and reports — never sent to the browser.

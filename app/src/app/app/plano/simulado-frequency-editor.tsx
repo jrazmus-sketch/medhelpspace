@@ -40,7 +40,7 @@ function cadenceText(o: SimuladoOption): string {
   return o.sessionsPerWeek === 1 ? "1 mini simulado por semana" : `${o.sessionsPerWeek} mini simulados por semana`;
 }
 
-export function SimuladoFrequencyEditor({ info }: { info: SimuladoPlanInfo }) {
+export function SimuladoFrequencyEditor({ info, inD60Period = false }: { info: SimuladoPlanInfo; inD60Period?: boolean }) {
   const [pending, setPending] = useState<SimuladoFrequency | null>(null);
   const [status, setStatus] = useState<"idle" | "saved" | "infeasible" | "failed">("idle");
   const [saving, startTransition] = useTransition();
@@ -78,6 +78,12 @@ export function SimuladoFrequencyEditor({ info }: { info: SimuladoPlanInfo }) {
         seu ritmo. Os tempos são estimativas, calculadas pelas suas respostas e pelo seu ritmo; as sessões não são
         cronometradas.
       </p>
+      {/* Karina 2026-11-19: in the 60D period the plan schedules no mini simulado; the frequency applies before it. */}
+      {inD60Period && (
+        <p style={{ fontSize: 12, marginBottom: 10, lineHeight: 1.5, fontWeight: 600 }}>
+          Durante o MedHelp 60D, o Meu Plano não programa mini simulados. Você pode fazê-los por escolha própria.
+        </p>
+      )}
 
       {!info.enabled ? (
         <p style={{ fontSize: 13, lineHeight: 1.5, padding: "12px 14px", background: "var(--surface-1)", border: "1px solid var(--surface-2)", borderRadius: "var(--radius-sm)" }}>
