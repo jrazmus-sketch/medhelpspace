@@ -346,6 +346,28 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   script's first check is "free deck identical". Narration check = Whisper `.srt` per recording + `audiocards-asr-check.js
   --srt-dir`. **Never `SET default_transaction_read_only` on the pooler connection** (transaction pooling: it sticks to the
   server connection and the next client's write fails) — use `sql.begin('read only', …)`.
+- **Fase 2b + MedVoice of Cirurgia Geral / Emergência / Ginecologia — LIVE prod + local (Karina 2026-11-18 19h19).**
+  Everything the Fase 2 bullet above lists as HELD is now published (`df2c914`, `scripts/apply-fase2b-2026-11-18.js`, 17
+  checks): the nine free-deck themes (she authorized it — **the free deck keeps THE SAME 50 card ids, selection and order;
+  its 17 cards of those themes only got the new texts; never recalculate it by ranking**), Assistência Pré-Natal and Anemia
+  Falciforme (Flashcards + AudioCards + recording; their Revalida Up pages are now "Assistência Pré-Natal Revalida Up" and
+  "Doença Falciforme Revalida Up", same pages), Triagem Neonatal card 7 = "nas 24 horas seguintes" + the two Teste do
+  Coraçãozinho recordings. Reações Transfusionais stays questions-only; Sepse Neonatal card 17 unchanged.
+  **MedVoice (her item 8, live 2026-11-19 00h24 BRT):** `scripts/apply-medvoice-2026-11-18.js` (`--db`/`--prod`, `--apply`,
+  `--report`; 10 checks; rollback `scripts/rollback-medvoice-2026-11-18.sql` from `lessons_bk_medvoice_20261118`). 47 lessons
+  UPDATED IN PLACE by page + title (same ids — `lesson_completions` / `lesson_progress` cascade and Meu Plano links point at
+  the lesson id) + 2 NEW lessons: the old "Diverticulite" and "Hérnia" each held two scripts under one recording, so
+  "Diverticulite Complicada" and "Hérnia Estrangulada" are now their own lessons right after the parent (no topic of their
+  own → not in Meu Plano until she says so). Recordings on Bunny `MedVoice-Audio/v2/<spec>/<stem>-m.mp3` (a NEW folder, as
+  with AudioCards v3); durations by ffprobe into `audio_duration_seconds`. Inputs in gitignored `parsed/medvoice-2026-11-18/`.
+  The MedVoice of every other specialty is untouched and still the old set. Narration check = Whisper `.srt` per recording
+  against the script; **a stretch Whisper "does not hear" is usually a transcription gap** (a cue far longer than its text):
+  cut that stretch with ffmpeg and transcribe the clip alone before calling it a difference (all 8 such stretches were in the
+  recordings). **Whisper (CPU) + a simulation + `next dev` + Chrome at once locked the machine — run them one at a time.**
+  **Meu Plano (same commit):** a topic that has ONLY MedVoice keeps its place in the count in every phase, and one whose
+  audio does not fit before the last 60 days shows as "não previsto até a prova" (forecast and simulation use one rule);
+  a lesson with `lessons.audio_unavailable` (Pediatria: Maus-tratos…, Neuroblastoma — 404, not recovered, her order) is
+  never scheduled as an audio activity (`schema-patch-medvoice-audio-unavailable.sql`). Ledger v14 (P36–P40).
 - **Fase 1 — Karina's 27 question decisions + 24 definitive Revalida Up — LIVE prod + local (2026-11-18).**
   `schema-patch-fase1-2026-11-17.sql` (+ `-rollback.sql`), run AFTER the generated `parsed/revalida-up-fase1-import.sql`
   (`scripts/import-revalida-up-fase1.js`; rollback order is the reverse). 17 records moved to another section (slot by
