@@ -271,11 +271,12 @@ test("Onde focar: few answers are 'dados iniciais', none is 'Ainda sem respostas
 
 test("quick tip: Karina's text, with no weekly hours — in the code fallback and in the patch", () => {
   const body = TIPS.plano.body;
+  // Her 2026-11-18 text with "até a prova" turned into the regular course's deadline (her e-mail of 2026-11-19).
   assert.equal(
     body,
-    "Configure seus dias de estudo, o tempo disponível por dia e os conteúdos que deseja incluir. O Meu Plano organiza suas atividades por prioridade, inclui revisões e estima o que cabe até a prova. A programação se ajusta conforme seu progresso e as mudanças na sua disponibilidade.",
+    "Configure seus dias de estudo, o tempo disponível por dia e os conteúdos que deseja incluir. O Meu Plano organiza suas atividades por prioridade, inclui revisões e estima o que cabe do curso regular até a abertura do MedHelp 60D. A programação se ajusta conforme seu progresso e as mudanças na sua disponibilidade.",
   );
-  const sql = readFileSync(path.join(process.cwd(), "..", "schema-patch-plano-tempo-diario.sql"), "utf8");
+  const sql = readFileSync(path.join(process.cwd(), "..", "schema-patch-revisao-escolha-60d.sql"), "utf8");
   assert.ok(sql.includes(body), "the live row (site_content) gets the same text");
   assert.match(sql, /ON CONFLICT \(key\) DO UPDATE/);
 });

@@ -50,6 +50,17 @@ export function Coachmark({
         <TipText k={`onboarding.${coachKey}.body`} fallback={tip.body} multiline />
       </p>
 
+      {tip.section && (
+        <div className="mt-3 border-t border-brand/15 pt-3">
+          <p className="text-[13.5px] font-semibold leading-snug text-foreground">
+            <TipText k={`onboarding.${coachKey}.${tip.section.field}.title`} fallback={tip.section.title} />
+          </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+            <TipText k={`onboarding.${coachKey}.${tip.section.field}.body`} fallback={tip.section.body} multiline />
+          </p>
+        </div>
+      )}
+
       {tip.reviewNote && !hideReviewNote && (
         <p className="mt-2.5 flex items-start gap-2 rounded-lg bg-brand/10 px-3 py-2 text-[12.5px] leading-relaxed text-foreground/85">
           <RotateCcw className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} />

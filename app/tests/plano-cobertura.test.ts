@@ -567,11 +567,15 @@ test("the forecast uses Karina's wording: 'não previstos', with the regular cou
   const panel = src("app", "app", "plano", "forecast-panel.tsx");
   assert.match(panel, /Temas não previstos \{ate\}/);
   assert.match(panel, /"até a abertura do MedHelp 60D"/);
-  // The deadline is said where the forecast is read (Karina 2026-11-19), and that the student may still study after it.
-  assert.match(panel.replace(/\s+/g, " "), /O Meu Plano programa o curso regular até a abertura do MedHelp 60D/);
-  assert.match(panel.replace(/\s+/g, " "), /Depois dessa data, você continua podendo estudar os materiais do curso regular por conta própria\./);
-  assert.match(panel, /Resumos Narrativos e os materiais do\s+MedHelp 60D/);
-  assert.match(panel, /não estão incluídos/);
+  // The transition to the 60D is explained in Karina's words (2026-11-19, 13h27 EST), verbatim.
+  assert.match(panel, /Esta previsão mostra quantos temas do curso regular têm conclusão prevista até a abertura do MedHelp 60D, considerando sua disponibilidade e os conteúdos selecionados\./);
+  assert.match(panel, /O curso regular reúne os recursos disponíveis na plataforma antes da abertura do MedHelp 60D\. Esses recursos continuam acessíveis durante o MedHelp 60D\./);
+  assert.match(panel, /Quando o MedHelp 60D abrir, 60 dias antes da prova, o Meu Plano continuará acompanhando sua preparação: a programação passará a seguir o cronograma do MedHelp 60D\./);
+  assert.match(panel, /Seu histórico permanece salvo\. As atividades do curso regular que você fizer por escolha própria continuarão sendo contabilizadas no “Registro do curso regular”\. As atividades marcadas no checklist do 60D aparecerão no “Registro do MedHelp 60D”\. Você poderá acompanhar os dois registros no Meu Plano\./);
+  // The old deadline sentence and the "what is counted" footer are gone (her item 2 — the rules stay).
+  assert.doesNotMatch(panel, /O Meu Plano programa o curso regular até a abertura/);
+  assert.doesNotMatch(panel, /Entram no cálculo/);
+  assert.doesNotMatch(panel, /recalculada todos os dias/);
   // Three separate facts (Karina 2026-11-18): full conclusion, partial advance, time that fits.
   assert.match(panel, /Temas com conclusão integral prevista/);
   assert.match(panel, /Temas com avanço parcial previsto/);

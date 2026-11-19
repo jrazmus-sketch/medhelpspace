@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPageSiblings } from "@/lib/page-siblings";
 import { getAuthUser } from "@/lib/viewer";
 import { runProgress } from "@/lib/study-plan/simulado";
+import { isSimulado100Page } from "@/lib/review/revisao-escolha";
 import { QuizPlayer } from "./quiz-player";
 
 export interface QuizQuestionData {
@@ -110,6 +111,24 @@ async function loadSimuladoRun(pageId: number, questionIds: number[]): Promise<R
   return Object.fromEntries(runProgress(rows, questionIds, startedAt).results);
 }
 
+/**
+ * Simulados 100Q (Karina 2026-11-19): the questions of this page the student has in the Revisão right now (chosen
+ * with "Quero revisar", not undone, not "Já domino"). Empty when it cannot be read: every box starts unticked.
+ */
+async function loadChosenForReview(questionIds: number[]): Promise<number[]> {
+  const user = await getAuthUser();
+  if (!user || questionIds.length === 0) return [];
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("review_schedule")
+    .select("item_id")
+    .eq("user_id", user.id)
+    .eq("item_type", "quiz_question")
+    .eq("suspended", false)
+    .in("item_id", questionIds);
+  return (data ?? []).map((r) => r.item_id as number);
+}
+
 export async function QuizRenderer({
   pageId,
   tema,
@@ -146,6 +165,8 @@ export async function QuizRenderer({
   // is continued where the student stopped.
   const isMiniSimulado = !topicView && page?.view === "simulados" && page?.content_module_id == null;
   const simuladoRun = isMiniSimulado ? await loadSimuladoRun(pageId, shown.map((q) => q.id)) : null;
+  const isSimulado100 = !topicView && isSimulado100Page(page);
+  const chosenForReview = isSimulado100 ? await loadChosenForReview(shown.map((q) => q.id)) : null;
 
   return (
     <>
@@ -176,6 +197,7 @@ export async function QuizRenderer({
         specialtyHref={siblings.specialtyHref}
         specialtyName={siblings.specialtyName}
         run={simuladoRun ? { results: simuladoRun } : null}
+        reviewChoice={chosenForReview ? { chosen: chosenForReview } : null}
       />
     </>
   );

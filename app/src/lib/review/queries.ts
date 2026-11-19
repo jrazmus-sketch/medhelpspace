@@ -433,6 +433,54 @@ export async function getMemorecardRereadDue(userId: string): Promise<RereadDeck
   });
 }
 
+// ── Fórmula MedHelp re-read (the student's choice, Karina 2026-11-19) ─────────
+
+/**
+ * Fórmula MedHelp pages the student chose to review ("Quero revisar") whose re-read is due. Same shape as the
+ * MemoreCards re-read; never part of the question/flashcard session.
+ */
+export async function getFormulaRereadDue(userId: string): Promise<RereadDeck[]> {
+  const admin = createAdminClient();
+  const today = todayKey();
+
+  const { data: rows } = await admin
+    .from("review_schedule")
+    .select("item_id")
+    .eq("user_id", userId)
+    .eq("item_type", "formula")
+    .eq("suspended", false)
+    .lte("due_date", today)
+    .order("due_date", { ascending: true })
+    .limit(20);
+
+  const ids = (rows ?? []).map((r) => r.item_id as number);
+  if (ids.length === 0) return [];
+
+  const { data: pages } = await admin
+    .from("pages")
+    .select("id, slug, title, specialty_id, status")
+    .in("id", ids)
+    .eq("status", "publish");
+
+  const specIds = [...new Set((pages ?? []).map((p) => p.specialty_id).filter(Boolean))] as number[];
+  const { data: specs } = specIds.length
+    ? await admin.from("specialties").select("id, slug").in("id", specIds)
+    : { data: [] as { id: number; slug: string }[] };
+  const specSlug = new Map((specs ?? []).map((s) => [s.id as number, s.slug as string]));
+  const order = new Map(ids.map((id, i) => [id, i]));
+
+  return (pages ?? [])
+    .map((p) => {
+      const ss = p.specialty_id ? specSlug.get(p.specialty_id as number) : null;
+      return {
+        pageId: p.id as number,
+        title: (p.title as string) ?? "Fórmula MedHelp",
+        href: ss ? `/app/${ss}/${p.slug}` : `/app/${p.slug}`,
+      };
+    })
+    .sort((a, b) => (order.get(a.pageId) ?? 0) - (order.get(b.pageId) ?? 0));
+}
+
 // ── Stats (for /relatorio) ───────────────────────────────────────────────────
 
 export interface ReviewStats {

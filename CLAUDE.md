@@ -334,6 +334,21 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   Distribution from any database: `node --import ./app/tests/helpers/alias-hook.mjs scripts/medhelp60-distribuicao.ts
   [<DATABASE_URL>] --exame <date>` (read-only). Tests: `app/tests/medhelp60-cronograma.test.ts`. Patch:
   `schema-patch-medhelp60-cronograma.sql` (+ rollback).
+- **Revisão by the student's CHOICE for the 60D materials (Karina 2026-11-19, 13h27 EST).** Fórmula MedHelp: ONE
+  "Quero revisar" box between "Concluir leitura" and "Próximo tópico" (`page-complete-footer.tsx`, Fórmula pages only) →
+  `review_schedule` item_type **`formula`** (item_id = page id), re-reads on the MemoreCards ladder 3/7/14/30 capped at the exam;
+  a due re-read is done when the student reaches the page's footer; listed in the Revisão as "Reler Fórmula MedHelp" with
+  "Já domino isto" per row. **Concluding the page or ticking the 60D checklist NEVER enrols it.** Simulados 100Q: an answer NEVER
+  enters the Revisão (`/api/quiz-attempt` skips `gradeReviewItem` by the question's OWN page); only a WRONG question the student
+  ticks (correction step or result list) enters — next day, then SM-2. Unticking = `suspended = true` (same as "Já domino", so the
+  box follows it); re-ticking an active item changes nothing (no duplicate, no reset); re-answering never touches it. MemoreCards
+  stay automatic. Rules in `lib/review/revisao-escolha.ts` + `actions/review.ts` (`setSimuladoQuestionReviewChoice`,
+  `setFormulaReviewChoice`, `completeFormulaReread`). The patch suspended every 100Q row created automatically before (backup
+  `review_schedule_bk_100q_20261119`) — those were never a student's choice. Same e-mail: her 4-paragraph 60D transition text in
+  the Meu Plano forecast (replaces the deadline sentence), the "Entram no cálculo…" footer REMOVED (rules unchanged), Meu Plano tip
+  "estima o que cabe do curso regular até a abertura do MedHelp 60D", 60D tip section "Escolha o que deseja revisar"
+  (`Tip.section`, site_content `onboarding.medhelp-60d.escolha.*`). Patch: `schema-patch-revisao-escolha-60d.sql` (+ rollback).
+  Tests: `app/tests/revisao-escolha-60d.test.ts`.
 - **Fase 2 — Karina's definitive Flashcards + AudioCards + recordings — PARTLY LIVE prod + local (2026-11-18).**
   `scripts/apply-fase2-2026-11-18.js` (`--db <url>` | `--prod`, `--apply`; one transaction, deck + group NAME lookups, 15
   checks; without `--apply` it runs and rolls back) + `scripts/rollback-fase2-2026-11-18.sql` (exact restore from

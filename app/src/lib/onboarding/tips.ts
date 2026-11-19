@@ -45,6 +45,11 @@ export interface Tip {
   body: string;
   /** Optional "Como entra na Revisão" line, tinted + icon-led. Supports **bold**. */
   reviewNote?: string;
+  /**
+   * Optional titled section under the body (site_content `onboarding.<key>.<section.field>.title|body`).
+   * Paragraphs separated by blank lines.
+   */
+  section?: { field: string; title: string; body: string };
   /** Optional deep link rendered from the guide page. */
   href?: string;
   hrefLabel?: string;
@@ -191,9 +196,10 @@ export const TIPS: Record<CoachKey, Tip> = {
     key: "plano",
     title: "Seu plano de estudos",
     body:
-      // Karina's text (2026-11-18). The live copy is the site_content row
-      // `onboarding.plano.body` (schema-patch-plano-tempo-diario.sql) — keep both equal.
-      "Configure seus dias de estudo, o tempo disponível por dia e os conteúdos que deseja incluir. O Meu Plano organiza suas atividades por prioridade, inclui revisões e estima o que cabe até a prova. A programação se ajusta conforme seu progresso e as mudanças na sua disponibilidade.",
+      // Karina's text (2026-11-18); since 2026-11-19 the forecast is said to cover the regular course up to the
+      // MedHelp 60D opening. The live copy is the site_content row `onboarding.plano.body`
+      // (schema-patch-revisao-escolha-60d.sql) — keep both equal.
+      "Configure seus dias de estudo, o tempo disponível por dia e os conteúdos que deseja incluir. O Meu Plano organiza suas atividades por prioridade, inclui revisões e estima o que cabe do curso regular até a abertura do MedHelp 60D. A programação se ajusta conforme seu progresso e as mudanças na sua disponibilidade.",
     reviewNote: "O plano já prioriza as suas revisões pendentes do dia.",
     href: "/app/plano",
     hrefLabel: "Ver meu plano",
@@ -213,6 +219,14 @@ export const TIPS: Record<CoachKey, Tip> = {
     title: "O que é o MedHelp 60D",
     body:
       "Módulo de revisão intensiva que **abre sozinho** nos últimos ~60 dias antes da sua prova. Reúne a Fórmula MedHelp, os MemoreCards e os Simulados 100Q. Não é preciso fazer nada — o cadeado se solta na data certa.",
+    // Karina's text (2026-11-19, 13h27 EST), verbatim — live copy in site_content
+    // `onboarding.medhelp-60d.escolha.title|body` (schema-patch-revisao-escolha-60d.sql).
+    section: {
+      field: "escolha",
+      title: "Escolha o que deseja revisar",
+      body:
+        "Ao terminar uma página do Fórmula MedHelp, marque “Quero revisar” se desejar retomá-la pela revisão espaçada. Nos Simulados 100Q, você pode selecionar individualmente as questões que errou.\n\nOs conteúdos selecionados ficam disponíveis pelo menu Revisão. Você pode desmarcar sua escolha a qualquer momento, sem perder seu histórico ou progresso no cronograma.\n\nOs MemoreCards continuam sendo incluídos automaticamente após a conclusão de cada tema. Durante o MedHelp 60D, essas revisões são opcionais e não são acrescentadas à programação diária do Meu Plano.",
+    },
     href: "/app/medhelp-60d",
     hrefLabel: "Abrir MedHelp 60D",
   },

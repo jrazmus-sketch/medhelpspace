@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getPageSiblings } from "@/lib/page-siblings";
 import { safe } from "@/lib/sanitize";
+import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
 import { TocPanel } from "./toc-panel";
 import { PageCompleteFooter } from "./page-complete-footer";
 import { EditableText } from "@/components/admin/editable-text";
@@ -107,6 +108,8 @@ export async function PlainContentRenderer({
   // row done. Reuses lesson_completions (feeds dashboard count + study-plan
   // progress, identical to text-lesson sections).
   let done = false;
+  // Fórmula MedHelp (Karina 2026-11-19): the student's "Quero revisar" choice and whether a re-read is due today.
+  let review: { chosen: boolean; rereadDue: boolean } | null = view === "formula" ? { chosen: false, rereadDue: false } : null;
   if (!USE_MOCK_DATA) {
     try {
       const userClient = await createClient();
@@ -119,6 +122,18 @@ export async function PlainContentRenderer({
           .eq("lesson_id", lesson.id)
           .maybeSingle();
         done = !!completion;
+        if (review) {
+          const { data: sched } = await userClient
+            .from("review_schedule")
+            .select("suspended, due_date")
+            .eq("user_id", user.id)
+            .eq("item_type", "formula")
+            .eq("item_id", pageId)
+            .maybeSingle();
+          if (sched && !sched.suspended) {
+            review = { chosen: true, rereadDue: toDateKeyBR(sched.due_date as string) <= todayKeyBR() };
+          }
+        }
       }
     } catch {
       // Non-critical — footer starts un-completed; the write still records.
@@ -149,6 +164,7 @@ export async function PlainContentRenderer({
         backName={siblings.hubName ?? siblings.specialtyName}
         nextHref={siblings.nextHref}
         nextTitle={siblings.nextTitle}
+        review={review}
       />
     </>
   );

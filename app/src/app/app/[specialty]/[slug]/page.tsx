@@ -10,6 +10,7 @@ import { FlashcardRenderer } from "@/components/content/flashcard-renderer";
 import { BlurbNavHubRenderer } from "@/components/content/blurb-nav-hub-renderer";
 import { PageTracker } from "@/components/content/page-tracker";
 import { Coachmark } from "@/components/onboarding/coachmark";
+import { isSimulado100Page } from "@/lib/review/revisao-escolha";
 import type { CoachKey } from "@/lib/onboarding/tips";
 import { SpecialtyIcon } from "@/components/content/specialty-icon";
 import { TypeChip } from "@/components/content/type-chip";
@@ -163,7 +164,9 @@ export default async function ContentPage({
         const coachKey = coachmarkKeyForPage(page);
         return coachKey ? (
           <div className={chromeClass}>
-            <Coachmark coachKey={coachKey} />
+            {/* A Simulado 100Q answer does not enter the Revisão by itself (Karina 2026-11-19): the simulados
+                tip's "cada questão respondida entra na Revisão" line is left out there. */}
+            <Coachmark coachKey={coachKey} hideReviewNote={isSimulado100Page(page)} />
           </div>
         ) : null;
       })()}

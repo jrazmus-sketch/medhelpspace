@@ -8,6 +8,8 @@ import { EditableText } from "@/components/admin/editable-text";
 import { useEditMode } from "@/providers/edit-mode-provider";
 import { QUIZ_ERROR_CATEGORIES, type QuizErrorCategory } from "@/lib/quiz-errors";
 import { setQuizErrorTag } from "@/actions/quiz-attempts";
+import { setSimuladoQuestionReviewChoice } from "@/actions/review";
+import { ReviewChoiceBox } from "./review-choice-box";
 import type { QuizQuestionData } from "./quiz-renderer";
 
 // Builds the "Análise das alternativas incorretas:" block from each wrong
@@ -64,6 +66,13 @@ interface Props {
    * reopens on the first unanswered question. Absent → always starts on question 1.
    */
   run?: { results: Record<number, boolean> } | null;
+  /**
+   * Simulados 100Q only (Karina 2026-11-19): answers never enter the Revisão by themselves; each WRONG question
+   * gets a "Quero revisar" box in its correction and in the result list. `chosen` = the questions of this page
+   * already in the student's Revisão (not suspended) — so a choice made earlier, or undone with "Já domino isto",
+   * shows as it is.
+   */
+  reviewChoice?: { chosen: number[] } | null;
 }
 
 export function QuizPlayer({
@@ -75,6 +84,7 @@ export function QuizPlayer({
   specialtyHref,
   specialtyName,
   run,
+  reviewChoice,
 }: Props) {
   const { active: editActive } = useEditMode();
   // ── Where the run stands when the page opens ───────────────────────────────
@@ -100,6 +110,34 @@ export function QuizPlayer({
   // the student's chosen "why I missed it" tag.
   const [attemptId, setAttemptId] = useState<number | null>(null);
   const [errorTag, setErrorTag] = useState<QuizErrorCategory | null>(null);
+  // Simulados 100Q: the questions the student chose to review, and the ones being saved.
+  const choosing = reviewChoice != null;
+  const [chosen, setChosen] = useState<Set<number>>(() => new Set(reviewChoice?.chosen ?? []));
+  const [saving, setSaving] = useState<Set<number>>(() => new Set());
+
+  function toggleChosen(questionId: number, next: boolean) {
+    const flip = (on: boolean) =>
+      setChosen((prev) => {
+        const s = new Set(prev);
+        if (on) s.add(questionId);
+        else s.delete(questionId);
+        return s;
+      });
+    flip(next);
+    setSaving((prev) => new Set(prev).add(questionId));
+    setSimuladoQuestionReviewChoice(questionId, next)
+      .then((r) => {
+        if (!r.ok) flip(!next);
+      })
+      .catch(() => flip(!next))
+      .finally(() =>
+        setSaving((prev) => {
+          const s = new Set(prev);
+          s.delete(questionId);
+          return s;
+        }),
+      );
+  }
 
   const activeQuestions = activeIds.map((id) => questions.find((q) => q.id === id)!);
   const question = activeQuestions[currentIdx];
@@ -254,10 +292,21 @@ export function QuizPlayer({
                 >
                   {ok ? "✓" : "✗"}
                 </span>
-                <div
-                  className="min-w-0 flex-1 text-muted-foreground line-clamp-2 [&_h3]:inline [&_h3]:text-xs [&_h3]:font-normal [&_p]:inline [&_strong]:font-normal"
-                  dangerouslySetInnerHTML={{ __html: safe(q.question) }}
-                />
+                <div className="min-w-0 flex-1">
+                  <div
+                    className="text-muted-foreground line-clamp-2 [&_h3]:inline [&_h3]:text-xs [&_h3]:font-normal [&_p]:inline [&_strong]:font-normal"
+                    dangerouslySetInnerHTML={{ __html: safe(q.question) }}
+                  />
+                  {choosing && (results[q.id] === false || chosen.has(q.id)) && (
+                    <ReviewChoiceBox
+                      id={`revisar-resultado-${q.id}`}
+                      className="mt-2"
+                      checked={chosen.has(q.id)}
+                      disabled={saving.has(q.id)}
+                      onChange={(v) => toggleChosen(q.id, v)}
+                    />
+                  )}
+                </div>
               </div>
             );
           })}
@@ -302,12 +351,14 @@ export function QuizPlayer({
             >
               Recomeçar do zero
             </button>
-            <Link
-              href={`/app/revisao/sessao?page=${pageId}`}
-              className="hover:text-brand underline-offset-4 hover:underline transition-colors"
-            >
-              Revisar com repetição espaçada
-            </Link>
+            {!choosing && (
+              <Link
+                href={`/app/revisao/sessao?page=${pageId}`}
+                className="hover:text-brand underline-offset-4 hover:underline transition-colors"
+              >
+                Revisar com repetição espaçada
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -462,6 +513,17 @@ export function QuizPlayer({
             editHtml={explanationHtml ?? ""}
           />
         </div>
+      )}
+
+      {/* Simulados 100Q: "Quero revisar" in the correction of a WRONG question, once its answer is saved (the
+          server accepts only a question whose latest answer was wrong) — or on one already chosen, to undo it. */}
+      {choosing && answered && selectedAnswer && ((!selectedAnswer.correct && attemptId) || chosen.has(question.id)) && (
+        <ReviewChoiceBox
+          id={`revisar-correcao-${question.id}`}
+          checked={chosen.has(question.id)}
+          disabled={saving.has(question.id)}
+          onChange={(v) => toggleChosen(question.id, v)}
+        />
       )}
 
       {/* Error classification (Phase 4) — only after a WRONG answer, once the

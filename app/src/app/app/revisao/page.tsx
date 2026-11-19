@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Layers, CalendarCheck, RotateCcw, ClipboardList, Target, Brain } from "lucide-react";
-import { getReviewCounts, getWeakAreaForReview, getMemorecardRereadDue } from "@/lib/review/queries";
+import { getReviewCounts, getWeakAreaForReview, getMemorecardRereadDue, getFormulaRereadDue } from "@/lib/review/queries";
+import { FormulaRereadList } from "./formula-reread-list";
 import { Coachmark } from "@/components/onboarding/coachmark";
 import { getAuthUser } from "@/lib/viewer";
 
@@ -9,15 +10,17 @@ export const metadata = { title: "Revisão" };
 export default async function RevisaoHubPage() {
   const user = await getAuthUser();
 
-  const [counts, weakArea, rereadDecks] = user
+  const [counts, weakArea, rereadDecks, formulaRereads] = user
     ? await Promise.all([
         getReviewCounts(user.id),
         getWeakAreaForReview(user.id),
         getMemorecardRereadDue(user.id),
+        getFormulaRereadDue(user.id),
       ])
     : [
         { dueTotal: 0, dueFlashcards: 0, dueQuiz: 0, wrongTotal: 0 },
         { count: 0, names: [], specialtyIds: [] },
+        [],
         [],
       ];
   const due = counts.dueTotal;
@@ -156,6 +159,9 @@ export default async function RevisaoHubPage() {
           </div>
         </div>
       )}
+
+      {/* Fórmula MedHelp pages the student chose to review ("Quero revisar", Karina 2026-11-19). */}
+      <FormulaRereadList items={formulaRereads} />
 
       {/* How it works */}
       <div className="mt-8 rounded-xl border border-border bg-surface-1 p-5">

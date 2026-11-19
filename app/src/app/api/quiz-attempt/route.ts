@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { gradeReviewItem } from "@/actions/review";
+import { isSimulado100Page } from "@/lib/review/revisao-escolha";
 
 // IDs arrive as numbers from the quiz player (JSON.stringify of numeric props);
 // specialtyId is optional (the route stores `specialtyId ?? null`).
@@ -61,7 +62,19 @@ export async function POST(request: Request) {
 
   // Enroll/schedule the question for spaced-repetition review. Answering it (in
   // the normal player) is what makes it "completed" and thus reviewable later.
-  await gradeReviewItem("quiz_question", questionId, isCorrect ? "correct" : "incorrect", specialtyId ?? null);
+  // EXCEPT a Simulado 100Q question (Karina 2026-11-19): it enters the Revisão only when the student ticks
+  // "Quero revisar" on it after getting it wrong (setSimuladoQuestionReviewChoice) — an answer, right or wrong,
+  // never enrols it, and re-answering one already chosen leaves its schedule alone. Decided by the question's
+  // OWN page, never the page the client names.
+  const { data: own } = await admin
+    .from("quiz_questions")
+    .select("page:pages(view, content_module_id)")
+    .eq("id", questionId)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!isSimulado100Page((own as any)?.page)) {
+    await gradeReviewItem("quiz_question", questionId, isCorrect ? "correct" : "incorrect", specialtyId ?? null);
+  }
 
   // attemptId lets the player attach an error-classification tag to THIS attempt.
   return NextResponse.json({ ok: true, attemptId: inserted.id });

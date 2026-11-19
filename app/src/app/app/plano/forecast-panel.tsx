@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { CalendarCheck, ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
-import type { PlanForecast, ContentType, ForecastHint } from "@/lib/study-plan/derive";
+import type { PlanForecast, ForecastHint } from "@/lib/study-plan/derive";
 
 /**
  * "Previsão até a prova" (Karina 2026-11-17): how many of the topics still to
  * study the schedule reaches before the exam, which ones it does not, what the
- * student could change to widen the coverage, and what is counted.
+ * student could change to widen the coverage. (The "what is counted" footer was removed at Karina's request,
+ * 2026-11-19 — the counting rules themselves are unchanged.)
  *
  * Wording is hers: topics are "previstos" / "não previstos até a prova" (since 2026-11-19 "até a abertura do
  * MedHelp 60D", the regular course's deadline) — never
@@ -15,23 +16,16 @@ import type { PlanForecast, ContentType, ForecastHint } from "@/lib/study-plan/d
  * test refuses the old phrasing in this file).
  */
 
-const TYPE_LABEL: Partial<Record<ContentType, string>> = {
-  quiz: "Questões",
-  revalida_up: "Revalida Up",
-  flashcards: "Flashcards",
-  audio: "MedVoice",
-};
-
-function joinPt(parts: string[]): string {
-  if (parts.length <= 1) return parts.join("");
-  return `${parts.slice(0, -1).join(", ")} e ${parts[parts.length - 1]}`;
-}
+/** Karina's text for the transition to the MedHelp 60D (2026-11-19, 13h27 EST) — verbatim, tested. */
+export const D60_TRANSITION = [
+  "Esta previsão mostra quantos temas do curso regular têm conclusão prevista até a abertura do MedHelp 60D, considerando sua disponibilidade e os conteúdos selecionados.",
+  "O curso regular reúne os recursos disponíveis na plataforma antes da abertura do MedHelp 60D. Esses recursos continuam acessíveis durante o MedHelp 60D.",
+  "Quando o MedHelp 60D abrir, 60 dias antes da prova, o Meu Plano continuará acompanhando sua preparação: a programação passará a seguir o cronograma do MedHelp 60D.",
+  "Seu histórico permanece salvo. As atividades do curso regular que você fizer por escolha própria continuarão sendo contabilizadas no “Registro do curso regular”. As atividades marcadas no checklist do 60D aparecerão no “Registro do MedHelp 60D”. Você poderá acompanhar os dois registros no Meu Plano.",
+];
 
 function formatDay(dayKey: string): string {
   return new Date(dayKey + "T12:00:00").toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
-}
-function formatDayYear(dayKey: string): string {
-  return new Date(dayKey + "T12:00:00").toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
 }
 
 /** Minutes → "X h" / "X h Y min" / "Y min". */
@@ -70,8 +64,6 @@ export function ForecastPanel({
   const nothingLeft = pendingTopics === 0;
   const pct = pendingTopics > 0 ? Math.round((expectedTopics / pendingTopics) * 100) : 100;
 
-  const counted = forecast.scope.countedTypes.map((t) => TYPE_LABEL[t]).filter((s): s is string => Boolean(s));
-  const hasAudio = forecast.scope.countedTypes.includes("audio");
   // The deadline of the regular course (Karina 2026-11-19): the plan schedules it up to the MedHelp 60D opening, and
   // the screen says so in every sentence that names a deadline.
   const ate = forecast.endsAtD60 ? "até a abertura do MedHelp 60D" : "até a prova";
@@ -118,19 +110,21 @@ export function ForecastPanel({
           </div>
         </div>
 
-        {/* The deadline, said where the forecast is read (Karina 2026-11-19): the plan schedules the regular course up
-            to the MedHelp 60D opening; after it the student may still study the regular materials by choice. */}
+        {/* The transition to the MedHelp 60D, explained where the forecast is read — Karina's text verbatim
+            (2026-11-19, 13h27 EST): the plan does not stop when the 60D opens, its programme follows the 60D
+            schedule, and both records stay on Meu Plano. */}
         {forecast.endsAtD60 && (
-          <p
+          <div
             style={{
               margin: "12px 0 0", padding: "10px 12px", fontSize: 13, lineHeight: 1.5,
               background: "color-mix(in srgb, var(--brand) 8%, transparent)", borderRadius: "var(--radius-sm)",
+              display: "flex", flexDirection: "column", gap: 8,
             }}
           >
-            O Meu Plano programa o curso regular até a abertura do MedHelp 60D
-            {dateConfirmed && forecast.d60StartKey ? `, em ${formatDayYear(forecast.d60StartKey)}` : ""}, 60 dias antes da prova.
-            Depois dessa data, você continua podendo estudar os materiais do curso regular por conta própria.
-          </p>
+            {D60_TRANSITION.map((para) => (
+              <p key={para} style={{ margin: 0 }}>{para}</p>
+            ))}
+          </div>
         )}
 
         {/* Three separate facts, each on its own line (Karina 2026-11-18): topics
@@ -261,15 +255,6 @@ export function ForecastPanel({
           </div>
         )}
 
-        {/* What is counted */}
-        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--surface-2)", lineHeight: 1.55 }}>
-          Entram no cálculo: {counted.length > 0 ? joinPt(counted) : "nenhum material selecionado"}
-          {forecast.scope.excludedSpecialties > 0 ? ", apenas das áreas que você manteve no planejamento" : ""}
-          .{hasAudio ? " O MedVoice é programado só a mais de 60 dias da prova." : ""} A Revisão e os mini
-          simulados ocupam parte do tempo de estudo. Resumos Narrativos e os materiais do
-          MedHelp 60D (Fórmula MedHelp, MemoreCards e Simulados 100Q) não estão incluídos. A previsão é
-          recalculada todos os dias a partir do que você já estudou.
-        </p>
       </div>
     </section>
   );
