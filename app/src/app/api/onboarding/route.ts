@@ -7,6 +7,7 @@ import { COACH_KEYS } from "@/lib/onboarding/tips";
  *
  *   POST { action: "dismiss", key }  → add a tip key to profiles.onboarding_dismissed
  *   POST { action: "reset" }         → clear it (re-enables every coachmark)
+ *   POST { action: "restore", key }  → remove ONE key (that tip shows again in its original place)
  *
  * Uses the USER-SCOPED client on purpose: the existing profiles_update_own RLS
  * policy (id = auth.uid(), role unchanged) is the access control. Writing
@@ -34,6 +35,26 @@ export async function POST(request: Request) {
     const { error } = await supabase
       .from("profiles")
       .update({ onboarding_dismissed: [] })
+      .eq("id", user.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  }
+
+  // One tip back in its original place (Karina 2026-11-19, "Dicas da plataforma"). Same read-modify-write as dismiss.
+  if (action === "restore") {
+    if (!key || !COACH_KEYS.has(key)) {
+      return NextResponse.json({ error: "Unknown tip key" }, { status: 400 });
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_dismissed")
+      .eq("id", user.id)
+      .single();
+    const current: string[] = profile?.onboarding_dismissed ?? [];
+    if (!current.includes(key)) return NextResponse.json({ ok: true });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_dismissed: current.filter((k) => k !== key) })
       .eq("id", user.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true });

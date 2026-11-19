@@ -259,12 +259,41 @@ export type OnboardingContentMap = Record<string, { id: number; value: string }>
 
 /** Ordered layout for the permanent guide at /app/comecar. */
 export const GUIDE_GROUPS: { title: string; keys: CoachKey[] }[] = [
-  { title: "Visão geral", keys: ["welcome", "nav"] },
+  { title: "Visão geral", keys: ["welcome", "nav", "progresso"] },
   {
     title: "Como estudar",
-    keys: ["dash-study-types", "dash-specialties", "quiz", "simulados", "flashcards", "lesson", "audio", "audiocards", "revalida-up"],
+    keys: [
+      "dash-study-types", "dash-specialties", "specialty-hub", "type-hub",
+      "quiz", "simulados", "flashcards", "lesson", "audio", "audiocards", "revalida-up",
+    ],
   },
   { title: "A Revisão espaçada", keys: ["revisao"] },
   { title: "Planejamento", keys: ["plano", "roteiro"] },
   { title: "MedHelp 60D", keys: ["medhelp-60d", "memorecards"] },
 ];
+
+/**
+ * Where each tip's box appears on the platform, shown on "Dicas da plataforma" (/app/comecar) next to each tip
+ * (Karina 2026-11-19). `null` = the tip has no box of its own; it lives only on that page.
+ */
+export const TIP_PLACES: Record<CoachKey, string | null> = {
+  welcome: "Início (cartão de boas-vindas)",
+  nav: null,
+  progresso: "Início",
+  "dash-study-types": "Início",
+  "dash-specialties": "Início",
+  "specialty-hub": "Página de cada especialidade",
+  "type-hub": "Índice de cada tipo de conteúdo",
+  quiz: "Questões de cada tema",
+  simulados: "Mini simulados",
+  flashcards: "Flashcards",
+  lesson: "Páginas de leitura (Resumos, Fórmula MedHelp)",
+  audio: "MedVoice",
+  audiocards: "AudioCards",
+  "revalida-up": "Revalida Up",
+  revisao: "Revisão",
+  plano: "Meu Plano",
+  roteiro: "Meu Plano › Roteiro",
+  "medhelp-60d": "MedHelp 60D",
+  memorecards: "MemoreCards",
+};

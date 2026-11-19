@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { Lightbulb, RotateCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TIPS, type CoachKey } from "@/lib/onboarding/tips";
@@ -23,10 +25,44 @@ export function Coachmark({
   /** Leave out the Revisão line (Meu Plano in the MedHelp 60D period puts no Revisão on the day). */
   hideReviewNote?: boolean;
 }) {
-  const { ready, isDismissed, dismiss } = useOnboarding();
+  const { ready, isDismissed, dismiss, restore } = useOnboarding();
   const tip = TIPS[coachKey];
+  // Closed on THIS visit: a one-line note says where the tip lives now (Karina 2026-11-19 — a closed tip must not
+  // look gone for good). Gone on the next visit; the tip stays closed until the student restores it.
+  const [justClosed, setJustClosed] = useState(false);
 
-  if (!tip || !ready || isDismissed(coachKey)) return null;
+  if (!tip || !ready) return null;
+  if (isDismissed(coachKey)) {
+    if (!justClosed) return null;
+    return (
+      <p
+        role="status"
+        className={cn(
+          "my-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-lg px-3 py-2 text-[12.5px] leading-relaxed text-muted-foreground ring-1 ring-border",
+          className,
+        )}
+      >
+        <Lightbulb className="h-3.5 w-3.5 shrink-0 text-brand" strokeWidth={2} aria-hidden />
+        <span>
+          Dica fechada. Você pode reabri-la em{" "}
+          <Link href="/app/comecar" className="font-semibold text-brand underline-offset-2 hover:underline">
+            Dicas
+          </Link>
+          , no topo da tela.
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            restore(coachKey);
+            setJustClosed(false);
+          }}
+          className="inline-flex min-h-[32px] items-center font-semibold text-foreground underline-offset-2 hover:underline"
+        >
+          Desfazer
+        </button>
+      </p>
+    );
+  }
 
   return (
     <aside
@@ -70,7 +106,10 @@ export function Coachmark({
 
       <button
         type="button"
-        onClick={() => dismiss(coachKey)}
+        onClick={() => {
+          setJustClosed(true);
+          dismiss(coachKey);
+        }}
         aria-label="Fechar dica"
         className="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors before:absolute before:-inset-1.5 before:content-[''] hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >

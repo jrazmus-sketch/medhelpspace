@@ -59,6 +59,10 @@ interface OnboardingContextValue {
   dismiss: (key: CoachKey) => void;
   /** Re-enable every coachmark (used by "Reativar dicas" on the guide). */
   reset: () => void;
+  /** Re-enable ONE coachmark: it shows again in its original place (Karina 2026-11-19, "Dicas da plataforma"). */
+  restore: (key: CoachKey) => void;
+  /** The tips the student has closed (ignores the admin preview toggle). */
+  dismissedKeys: ReadonlySet<string>;
   /** Super-admin preview: when true, every tip shows regardless of dismissals. */
   previewMode: boolean;
   setPreviewMode: (on: boolean) => void;
@@ -102,6 +106,8 @@ export function OnboardingProvider({
   // from the dismiss()/reset() handlers below.
   const [extra, setExtra] = useState<Set<string>>(new Set());
   const [cleared, setCleared] = useState(false);
+  // Keys restored one by one in this session (subtracted from the persisted set until the profile reloads).
+  const [restored, setRestored] = useState<Set<string>>(new Set());
 
   // Persisted source, read during render (no effect). In mock mode this reads
   // localStorage once hydrated; in real mode it reflects the loaded profile.
@@ -119,13 +125,19 @@ export function OnboardingProvider({
   }, [hydrated, profile]);
 
   const effective = useMemo<Set<string>>(() => {
-    if (cleared) return extra;
-    return new Set([...persisted, ...extra]);
-  }, [cleared, persisted, extra]);
+    const base = cleared ? extra : new Set([...persisted, ...extra]);
+    return new Set([...base].filter((k) => !restored.has(k)));
+  }, [cleared, persisted, extra, restored]);
 
   const ready = USE_MOCK_DATA ? hydrated : hydrated && !loading;
 
   const dismiss = useCallback((key: CoachKey) => {
+    setRestored((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
     setExtra((prev) => {
       if (prev.has(key)) return prev;
       const next = new Set(prev).add(key);
@@ -150,6 +162,7 @@ export function OnboardingProvider({
   const reset = useCallback(() => {
     setCleared(true);
     setExtra(new Set());
+    setRestored(new Set());
     if (USE_MOCK_DATA) {
       try {
         window.localStorage.removeItem(LS_KEY);
@@ -165,6 +178,31 @@ export function OnboardingProvider({
     }
   }, []);
 
+  const restore = useCallback((key: CoachKey) => {
+    setRestored((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+    setExtra((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    if (USE_MOCK_DATA) {
+      try {
+        const raw = window.localStorage.getItem(LS_KEY);
+        const list = raw ? (JSON.parse(raw) as string[]) : [];
+        window.localStorage.setItem(LS_KEY, JSON.stringify(list.filter((k) => k !== key)));
+      } catch {
+        /* ignore */
+      }
+    } else {
+      void fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restore", key }),
+      });
+    }
+  }, []);
+
   // Preview mode short-circuits dismissals so admins see the full experience.
   const isDismissed = useCallback(
     (key: CoachKey) => (previewMode ? false : effective.has(key)),
@@ -172,8 +210,8 @@ export function OnboardingProvider({
   );
 
   const value = useMemo<OnboardingContextValue>(
-    () => ({ ready, isDismissed, dismiss, reset, previewMode, setPreviewMode, content }),
-    [ready, isDismissed, dismiss, reset, previewMode, setPreviewMode, content],
+    () => ({ ready, isDismissed, dismiss, reset, restore, dismissedKeys: effective, previewMode, setPreviewMode, content }),
+    [ready, isDismissed, dismiss, reset, restore, effective, previewMode, setPreviewMode, content],
   );
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;

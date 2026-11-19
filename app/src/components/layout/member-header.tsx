@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar, Hourglass, ChevronDown, Compass, LifeBuoy } from "lucide-react";
+import { LogOut, Settings, User, Shield, Sun, Moon, Monitor, Search, Calendar, Hourglass, ChevronDown, Lightbulb, LifeBuoy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -219,6 +219,20 @@ export function MemberHeader({
                 MedHelp 60D
               </Link>
             )}
+            {/* Dicas da plataforma (Karina 2026-11-19): every quick tip, and the ones the student closed. */}
+            <Link
+              href="/app/comecar"
+              aria-current={pathname.startsWith("/app/comecar") ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
+                pathname.startsWith("/app/comecar")
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+            >
+              <Lightbulb className="h-3.5 w-3.5" />
+              Dicas
+            </Link>
           </div>
 
           {/* Divider between personal and content */}
@@ -237,6 +251,21 @@ export function MemberHeader({
             className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
           >
             <Search className="h-4 w-4" />
+          </Link>
+
+          {/* Below lg the text nav is hidden: the tips are one tap away on the lamp, as on the tip boxes. */}
+          <Link
+            href="/app/comecar"
+            aria-label="Dicas da plataforma"
+            title="Dicas da plataforma"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-md transition-colors lg:hidden",
+              pathname.startsWith("/app/comecar")
+                ? "bg-accent text-brand"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            <Lightbulb className="h-4 w-4" />
           </Link>
 
           {bellSlot}
@@ -280,8 +309,8 @@ export function MemberHeader({
                   Configurações
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/app/comecar")}>
-                  <Compass className="mr-2 h-4 w-4" />
-                  Comece por aqui
+                  <Lightbulb className="mr-2 h-4 w-4" />
+                  Dicas da plataforma
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/suporte")}>
                   <LifeBuoy className="mr-2 h-4 w-4" />

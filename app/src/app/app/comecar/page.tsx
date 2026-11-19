@@ -1,19 +1,19 @@
 import Link from "next/link";
-import { ArrowRight, Compass, RotateCcw } from "lucide-react";
+import { ArrowRight, Lightbulb, RotateCcw } from "lucide-react";
 import { requireActiveMembership } from "@/lib/membership-gate";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { VoltarButton } from "@/components/layout/voltar-button";
 import { TipText } from "@/components/onboarding/tip-text";
-import { ResetTipsButton } from "@/components/onboarding/reset-tips-button";
-import { TIPS, GUIDE_GROUPS } from "@/lib/onboarding/tips";
+import { TipStatus, RestoreAllTips } from "@/components/onboarding/tip-status";
+import { TIPS, GUIDE_GROUPS, TIP_PLACES } from "@/lib/onboarding/tips";
 import type { Crumb } from "@/lib/breadcrumbs";
 
-export const metadata = { title: "Comece por aqui" };
+export const metadata = { title: "Dicas da plataforma" };
 
 export default async function ComecarPage() {
   await requireActiveMembership();
 
-  const crumbs: Crumb[] = [{ label: "Início", href: "/app" }, { label: "Comece por aqui" }];
+  const crumbs: Crumb[] = [{ label: "Início", href: "/app" }, { label: "Dicas da plataforma" }];
 
   return (
     <div className="mx-auto max-w-3xl px-[10px] pt-7 pb-16 sm:px-6">
@@ -25,18 +25,21 @@ export default async function ComecarPage() {
       {/* ── Header ── */}
       <header className="mb-8">
         <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-brand">
-          <Compass className="h-3.5 w-3.5" strokeWidth={2} />
-          Comece por aqui
+          <Lightbulb className="h-3.5 w-3.5" strokeWidth={2} />
+          Dicas da plataforma
         </div>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           <TipText k="onboarding.guide.h1" fallback="Como usar a plataforma" />
         </h1>
         <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
-          Um tour rápido por tudo que você precisa para começar a estudar hoje. As mesmas dicas
-          também aparecem em caixas pelas seções do site — feche cada uma no{" "}
-          <span className="font-semibold text-foreground">X</span> quando não precisar mais. Pode
-          voltar aqui quando quiser.
+          Todas as dicas rápidas da plataforma em um só lugar. Elas também aparecem em caixas nas
+          páginas indicadas em cada uma. Feche uma caixa no{" "}
+          <span className="font-semibold text-foreground">X</span> quando não precisar mais: aqui você
+          consulta o conteúdo a qualquer momento e pode fazer a dica voltar à página de origem.
         </p>
+        <div className="mt-4">
+          <RestoreAllTips />
+        </div>
       </header>
 
       {/* ── Sections ── */}
@@ -89,6 +92,8 @@ export default async function ComecarPage() {
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Link>
                     )}
+
+                    <TipStatus coachKey={key} place={TIP_PLACES[key]} />
                   </article>
                 );
               })}
@@ -97,12 +102,9 @@ export default async function ComecarPage() {
         ))}
       </div>
 
-      {/* ── Footer: replay the inline tips ── */}
+      {/* ── Footer: bring every closed tip back to its page ── */}
       <div className="mt-12 flex flex-col items-start gap-3 border-t border-border pt-6">
-        <p className="text-sm text-muted-foreground">
-          Quer rever as dicas que já fechou? Reative as caixas e elas voltam a aparecer pelas seções.
-        </p>
-        <ResetTipsButton />
+        <RestoreAllTips />
       </div>
     </div>
   );
