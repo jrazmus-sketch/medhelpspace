@@ -2,7 +2,8 @@
  * MedHelp 60D — the schedule (Karina 2026-11-17 23h06 + 2026-11-18). Her rules under test:
  *   1. the sequence is fixed in advance: it comes from the exam date and the priorities, never from the student;
  *   2. subjects are distributed by weeks, each with its Fórmula MedHelp page and MemoreCards;
- *   3. the seven Simulados 100Q are programmed, each with time for correction;
+ *   3. the seven Simulados 100Q are programmed, each with time for correction — weeks 1 to 7, Simulado N in week N;
+ *      week 8 programmes no new simulado and its time stays free (her e-mail of 2026-11-19);
  *   4. a material not delivered yet is shown as pending, in its place — nothing is removed or reordered silently;
  *   5. every item has a stable key, so the manual checklist survives a new delivery.
  */
@@ -27,14 +28,14 @@ const SIMS: D60SimuladoInput[] = Array.from({ length: 7 }, (_, i) => ({
 const build = (over: Partial<Parameters<typeof buildCronograma>[0]> = {}) =>
   buildCronograma({ examKey: "2027-05-30", units: UNITS, simulados: SIMS, settings: DEFAULT_D60_SETTINGS, ...over });
 
-test("calendar: 60 days before the exam — eight weeks of seven days and a final stretch of four", () => {
+test("calendar: 60 days before the exam — eight weeks of seven days; four days remain after week 8", () => {
   const c = build();
   assert.equal(c.startKey, "2027-03-31");
   assert.equal(c.endKey, "2027-05-29");
   assert.equal(c.weeks.length, 8);
   assert.deepEqual([c.weeks[0].startKey, c.weeks[0].endKey], ["2027-03-31", "2027-04-06"]);
   assert.deepEqual([c.weeks[7].startKey, c.weeks[7].endKey], ["2027-05-19", "2027-05-25"]);
-  assert.deepEqual(c.finalStretch, { startKey: "2027-05-26", endKey: "2027-05-29", days: 4 });
+  assert.deepEqual(c.lastDays, { startKey: "2027-05-26", endKey: "2027-05-29", days: 4 });
 });
 
 test("sequence: fixed by priority — highest frequency first, the same for every student", () => {
@@ -54,14 +55,21 @@ test("sequence: a page that matches no topic comes last; ties in frequency go by
   assert.deepEqual(ordered.map((u) => u.name), ["Pneumonia", "Asma", "Zika", "Bioestatística"]);
 });
 
-test("simulados: the seven Simulados 100Q in weeks 2 to 8, each followed by its correction, with time", () => {
+test("simulados: Simulado N in week N, weeks 1 to 7, each followed by its correction; week 8 has no new simulado", () => {
   const c = build();
-  assert.equal(c.weeks[0].items.some((i) => i.kind === "sim"), false, "week 1 has no simulado");
-  for (let w = 2; w <= 8; w++) {
+  const w8 = c.weeks[7];
+  assert.equal(w8.items.some((i) => i.kind === "sim" || i.kind === "sim-correcao"), false, "week 8 programmes no new simulado");
+  assert.equal(w8.hasSimulado, false);
+  assert.deepEqual(w8.items.map((i) => i.kind), ["formula", "formula"], "week 8 keeps its topics");
+  assert.equal(w8.minutes, 10, "week 8's load is its topics only: 2 × 5 min");
+  assert.equal(w8.freeMinutes, 350, "the space of a Simulado 100Q and its correction stays free: 250 + 100 min");
+  assert.deepEqual(c.weeks.slice(0, 7).map((w) => w.freeMinutes), [0, 0, 0, 0, 0, 0, 0]);
+  for (let w = 1; w <= 7; w++) {
     const items = c.weeks[w - 1].items;
     const sim = items.find((i) => i.kind === "sim")!; const cor = items.find((i) => i.kind === "sim-correcao")!;
-    assert.equal(sim.key, `sim:${w - 1}`);
-    assert.equal(cor.key, `sim-correcao:${w - 1}`);
+    assert.equal(sim.key, `sim:${w}`);
+    assert.equal(cor.key, `sim-correcao:${w}`);
+    assert.equal(sim.title, `Simulado 100Q — Simulado ${w}`);
     assert.equal(items.indexOf(cor), items.indexOf(sim) + 1, "the correction comes right after its simulado");
     assert.equal(sim.minutes, 250, "100 questions × 2.5 min");
     assert.equal(cor.minutes, 100, "100 questions × 1 min of correction");
@@ -76,13 +84,15 @@ test("pending: a simulado without questions stays in its place, marked pending, 
   const all = c.weeks.flatMap((w) => w.items);
   assert.equal(all.filter((i) => i.kind === "sim").length, 7, "nothing is removed");
   assert.deepEqual(all.filter((i) => i.kind === "sim" && !i.pending).map((i) => i.key), ["sim:3"]);
-  const w2 = c.weeks[1];
-  assert.equal(w2.items.find((i) => i.key === "sim:1")!.pending, true);
-  assert.equal(w2.items.find((i) => i.key === "sim:1")!.href, null);
-  assert.equal(w2.items.find((i) => i.key === "sim:1")!.detail, "Material pendente");
-  assert.equal(w2.hasSimulado, false);
-  assert.equal(w2.minutes, 15, "only the three Fórmula pages count: 3 × 5 min");
-  assert.equal(c.weeks[3].hasSimulado, true, "week 4 holds Simulado 3");
+  const w1 = c.weeks[0];
+  assert.equal(w1.items.find((i) => i.key === "sim:1")!.pending, true, "the space of a simulado not delivered yet is in week 1 too");
+  assert.equal(w1.items.find((i) => i.key === "sim:1")!.href, null);
+  assert.equal(w1.items.find((i) => i.key === "sim:1")!.detail, "Material pendente");
+  assert.equal(w1.hasSimulado, false);
+  assert.equal(w1.minutes, 15, "only the three Fórmula pages count: 3 × 5 min");
+  assert.equal(c.weeks[2].hasSimulado, true, "week 3 holds Simulado 3");
+  assert.equal(c.weeks[3].hasSimulado, false);
+  assert.equal(c.weeks[7].items.some((i) => i.kind === "sim"), false, "no space for a simulado in week 8");
   assert.equal(c.totals.pendingItems, 12);
 });
 
@@ -90,6 +100,14 @@ test("pending → delivered: the keys do not move, so the checklist is kept", ()
   const before = build({ simulados: SIMS.map((s) => ({ ...s, questions: 0 })) });
   const after = build();
   assert.deepEqual(before.weeks.map((w) => w.items.map((i) => i.key)), after.weeks.map((w) => w.items.map((i) => i.key)));
+});
+
+test("moving the simulados one week earlier keeps every tick: the keys are the simulado's number, not its week", () => {
+  const keys = new Set(build().weeks.flatMap((w) => w.items).map((i) => i.key));
+  // every key a student could have ticked under the previous distribution (weeks 2 to 8) still exists
+  for (let n = 1; n <= 7; n++) { assert.ok(keys.has(`sim:${n}`)); assert.ok(keys.has(`sim-correcao:${n}`)); }
+  for (const u of UNITS) assert.ok(keys.has(`formula:${1000 + u.topicId!}`));
+  assert.equal(keys.size, 20 + 14, "20 Fórmula pages + 7 simulados + 7 corrections: nothing added, nothing dropped");
 });
 
 test("materials: Fórmula and MemoreCards of a topic sit together; a topic with neither is not in the schedule", () => {
@@ -109,13 +127,13 @@ test("materials: Fórmula and MemoreCards of a topic sit together; a topic with 
   assert.equal(c.totals.memorecards, 7);
 });
 
-test("position: before the 60 days, each week, the final stretch and the exam day", () => {
+test("position: before the 60 days, each week, the days after week 8 and the exam day", () => {
   const c = build();
   assert.deepEqual(d60Position(c, "2027-03-30"), { phase: "before", week: null });
   assert.deepEqual(d60Position(c, "2027-03-31"), { phase: "week", week: 1 });
   assert.deepEqual(d60Position(c, "2027-04-07"), { phase: "week", week: 2 });
   assert.deepEqual(d60Position(c, "2027-05-25"), { phase: "week", week: 8 });
-  assert.deepEqual(d60Position(c, "2027-05-26"), { phase: "final", week: null });
+  assert.deepEqual(d60Position(c, "2027-05-26"), { phase: "last-days", week: null });
   assert.deepEqual(d60Position(c, "2027-05-30"), { phase: "over", week: null });
 });
 
@@ -182,8 +200,8 @@ for (let i = 1; i <= 30; i++) {
   CONTENT.push({ topic_id: i, resource_type: "quiz", page_id: 100 + i, question_filter: null });
 }
 type Weeks = NonNullable<NonNullable<Signals["sixtyD"]>["weeks"]>;
-const week = (n: number, startKey: string, endKey: string, pendingMinutes: number, hasSimulado = false): Weeks[number] =>
-  ({ n, startKey, endKey, pendingMinutes, pendingItems: pendingMinutes > 0 ? 3 : 0, hasSimulado });
+const week = (n: number, startKey: string, endKey: string, pendingMinutes: number, hasSimulado = false, freeMinutes = 0): Weeks[number] =>
+  ({ n, startKey, endKey, pendingMinutes, pendingItems: pendingMinutes > 0 ? 3 : 0, hasSimulado, freeMinutes });
 function plan(weeks: Weeks | null, prefs: Partial<StudyPlanPrefs> = {}) {
   return withFrozenTime(MORNING_BRT, () => derivePlan({
     prefs: { ...defaultPrefs(), pace_mode: "standard", preferred_content_types: ["quiz"], ...prefs },
@@ -250,4 +268,48 @@ test("Meu Plano: no new mini simulado in a 60D week that holds a Simulado 100Q",
   assert.equal(sim(withSim, "2026-07-29", "2026-08-04"), 0, "week 5 holds a Simulado 100Q: no mini simulado");
   assert.ok(sim(withSim, "2026-08-05", "2026-08-11") > 0, "week 6 has none available: the mini simulado stays");
   assert.equal(withSim.items.some((i) => i.kind === "simulado"), false, "today is in week 4, which holds a Simulado 100Q");
+});
+
+// ── Week 8 (Karina 2026-11-19): no new simulado, and the time it would take stays the student's ───────────────
+test("Meu Plano: the free time of week 8 is not filled — no mini simulado, no regular activity in it", () => {
+  const all = { preferred_content_types: defaultPrefs().preferred_content_types, simulado_frequency: 1 as const, daily_minutes: 120 };
+  // today (28/07) is the last day of week 7; week 8 = 29/07 to 04/08, 70 unticked minutes and 350 free minutes
+  const weeks = [week(7, "2026-07-22", "2026-07-28", 0, false), week(8, "2026-07-29", "2026-08-04", 70, false, 350)];
+  const p = plan(weeks, all);
+  const w8 = p.scheduleDays.filter((d) => d.key >= "2026-07-29" && d.key <= "2026-08-04");
+  assert.equal(w8.length, 7);
+  // 120 min a day − 10 of the 60D (70 ÷ 7) − 50 free (350 ÷ 7) = 60 for the plan's own queue
+  for (const d of w8) assert.ok(placed(d) <= 60.01, `${d.key}: ${placed(d)}`);
+  assert.equal(w8.reduce((s, d) => s + d.simulado, 0), 0, "no mini simulado takes the place of the simulado");
+  const without = plan([week(7, "2026-07-22", "2026-07-28", 0, false), week(8, "2026-07-29", "2026-08-04", 70, false, 0)], all);
+  assert.ok(without.scheduleDays.filter((d) => d.key >= "2026-07-29" && d.key <= "2026-08-04").some((d) => placed(d) > 100),
+    "without the free time the plan would use the rest of the day");
+  assert.ok(p.scheduleDays.filter((d) => d.key > "2026-08-04").some((d) => placed(d) > 100), "after week 8 the day is the plan's again");
+});
+
+test("Meu Plano: in week 8 the page is told how much of today stays free, and the day never goes above the student's time", () => {
+  // today is the last day of week 8: 30 unticked minutes of the 60D, 350 free minutes over the week's 7 study days
+  const p = plan([week(8, "2026-07-22", "2026-07-28", 30, false, 350)], { daily_minutes: 120 });
+  assert.equal(p.items[0].title, "MedHelp 60D — semana 8");
+  assert.equal(p.items[0].estimatedMinutes, 30);
+  assert.equal(p.d60FreeMinutesToday, 50, "350 min over the week's seven study days");
+  assert.equal(p.todayBudgetMinutes, 70, "120 − 50 free: what is programmed today");
+  assert.equal(p.totalEstimatedMinutes, 70);
+  assert.equal(p.items.some((i) => i.kind === "simulado"), false);
+  // a short day: the 60D first, the free time takes what is left, the plan's queue gets nothing
+  const short = plan([week(8, "2026-07-22", "2026-07-28", 30, false, 350)], { daily_minutes: 60 });
+  assert.equal(short.d60FreeMinutesToday, 30);
+  assert.equal(short.totalEstimatedMinutes, 30);
+  assert.equal(short.items.length, 1);
+  // every other week: nothing is left free
+  assert.equal(plan([week(4, "2026-07-22", "2026-07-28", 30, true)]).d60FreeMinutesToday, 0);
+  assert.equal(plan(null).d60FreeMinutesToday, 0);
+});
+
+test("the schedule's presentation is her text, with no separate 'reta final' (Karina 2026-11-19)", () => {
+  const src = readFileSync(path.join(process.cwd(), "src", "components", "content", "medhelp-60d-cronograma.tsx"), "utf8");
+  const text = src.replace(/\s+/g, " ");
+  assert.ok(text.includes("Sequência definida para os 60 dias antes da prova, organizada em oito semanas. Os temas seguem a ordem de prioridade (os mais cobrados primeiro). Marque cada atividade ao concluir."));
+  const rendered = src.split("\n").filter((l) => !/^\s*(\*|\/\/|\/\*)/.test(l)).join("\n");
+  assert.equal(/reta final/i.test(rendered), false, "no 'reta final' on the schedule");
 });

@@ -1,14 +1,18 @@
 /**
- * MedHelp 60D — the schedule (Karina 2026-11-17 23h06 + 2026-11-18).
+ * MedHelp 60D — the schedule (Karina 2026-11-17 23h06 + 2026-11-18; simulados in weeks 1–7, 2026-11-19).
  *
- * The 60 days before the exam as a FIXED sequence: eight weeks of study and a final stretch. Every student of a
+ * The 60 days before the exam as a FIXED sequence organised in eight weeks (the whole 60D IS the final stretch of
+ * the preparation — the page never names a separate "reta final"). Every student of a
  * turma sees the same sequence — it comes from the exam date, the topics' priorities (the consolidated survey:
  * frequency of charging, highest first) and the materials that exist; it does NOT adapt to the student. The
  * student only ticks what was done (manual checklist) and sees, week by week, whether the load fits their time.
  *
  *   - content of a week: the Fórmula MedHelp page and the MemoreCards of each topic of that week;
- *   - weeks 2 to 8: one Simulado 100Q each, followed by its correction (seven simulados);
- *   - the last days: no new item — what is still unticked stays listed in its own week.
+ *   - weeks 1 to 7: one Simulado 100Q each (Simulado N in week N), followed by its correction;
+ *   - week 8: its topics and NO new simulado. The time a simulado and its correction would take stays FREE
+ *     (`freeMinutes`): the student uses it to return to difficulties, finish corrections or sit a simulado they
+ *     postponed — nothing fills it, neither here nor in Meu Plano;
+ *   - the days after week 8: no new item — what is still unticked stays listed in its own week.
  * A material not delivered yet is shown as PENDING in its place and counts no time; when it is delivered it
  * simply becomes an ordinary item. Nothing is removed or reordered silently.
  *
@@ -87,6 +91,11 @@ export type D60Week = {
   minutes: number;
   /** A Simulado 100Q with questions is programmed this week (no mini simulado of Meu Plano in it). */
   hasSimulado: boolean;
+  /**
+   * Minutes of the week left free ON PURPOSE (week 8: the space of one Simulado 100Q and its correction, with no
+   * new simulado programmed). Not part of `minutes`; Meu Plano keeps it out of its own queue too.
+   */
+  freeMinutes: number;
 };
 
 export type D60Cronograma = {
@@ -95,8 +104,8 @@ export type D60Cronograma = {
   startKey: string;
   endKey: string;
   weeks: D60Week[];
-  /** The days after week 8, up to the eve of the exam. */
-  finalStretch: { startKey: string; endKey: string; days: number };
+  /** The days after week 8, up to the eve of the exam: no block of their own on the page, no new item. */
+  lastDays: { startKey: string; endKey: string; days: number };
   totals: { items: number; pendingItems: number; minutes: number; units: number; formulaPages: number; memorecards: number };
 };
 
@@ -152,11 +161,11 @@ export function buildCronograma(input: {
       }
     }
     at += take;
-    // Weeks 2 to 8: Simulado 1 to 7, each followed by its correction.
-    const sim = w >= 2 ? simulados[w - 2] : undefined;
+    // Weeks 1 to 7: Simulado 1 to 7, each followed by its correction. Week 8 programmes no new simulado.
+    const sim = w <= D60_SIMULADOS ? simulados[w - 1] : undefined;
     let hasSimulado = false;
-    if (w >= 2) {
-      const n = w - 1;
+    if (w <= D60_SIMULADOS) {
+      const n = w;
       const ready = !!sim && sim.questions > 0;
       hasSimulado = ready;
       const questions = ready ? sim!.questions : D60_SIMULADO_QUESTIONS;
@@ -174,6 +183,9 @@ export function buildCronograma(input: {
     const wStart = addDaysKey(startKey, (w - 1) * 7);
     weeks.push({
       n: w, startKey: wStart, endKey: addDaysKey(wStart, 6), items, hasSimulado,
+      freeMinutes: w > D60_SIMULADOS
+        ? D60_SIMULADO_QUESTIONS * (settings.minutesPerQuestion + settings.correctionMinutesPerQuestion)
+        : 0,
       minutes: items.reduce((s, i) => s + (i.pending ? 0 : i.minutes), 0),
     });
   }
@@ -181,7 +193,7 @@ export function buildCronograma(input: {
   const all = weeks.flatMap((w) => w.items);
   return {
     examKey, startKey, endKey, weeks,
-    finalStretch: { startKey: fsStart, endKey, days: Math.max(0, diffDaysKey(fsStart, endKey) + 1) },
+    lastDays: { startKey: fsStart, endKey, days: Math.max(0, diffDaysKey(fsStart, endKey) + 1) },
     totals: {
       items: all.length, pendingItems: all.filter((i) => i.pending).length,
       minutes: weeks.reduce((s, w) => s + w.minutes, 0), units: units.length,
@@ -191,12 +203,12 @@ export function buildCronograma(input: {
   };
 }
 
-/** Where a day falls: before the 60 days, in week N, in the final stretch, or on/after the exam. */
-export function d60Position(c: D60Cronograma, dayKey: string): { phase: "before" | "week" | "final" | "over"; week: number | null } {
+/** Where a day falls: before the 60 days, in week N, in the days after week 8, or on/after the exam. */
+export function d60Position(c: D60Cronograma, dayKey: string): { phase: "before" | "week" | "last-days" | "over"; week: number | null } {
   if (dayKey < c.startKey) return { phase: "before", week: null };
   if (dayKey >= c.examKey) return { phase: "over", week: null };
   const w = c.weeks.find((x) => dayKey >= x.startKey && dayKey <= x.endKey);
-  return w ? { phase: "week", week: w.n } : { phase: "final", week: null };
+  return w ? { phase: "week", week: w.n } : { phase: "last-days", week: null };
 }
 
 /**

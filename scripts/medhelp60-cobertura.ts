@@ -11,7 +11,7 @@
  *   3. the same by frequency of charging (1, 2, 3, 4–5, 6–8, 9 or more);
  *   4. load: the schedule with the materials available today and with the full planned structure (seven Simulados
  *      100Q + corrections), and how much of it fits with a given daily time, 5 or 6 days a week, in the eight weeks
- *      (the final days of the 60 hold no new item and are left free).
+ *      (the days after week 8 hold no new item and are left free; simulados in weeks 1 to 7 since 2026-11-19).
  */
 import { createRequire } from "node:module";
 import { writeFileSync } from "node:fs";
@@ -114,7 +114,7 @@ async function main() {
       atividades: c.totals.items, pendentes: c.totals.pendingItems, totalMin: total, total: d60Duration(total),
       formula: { paginas: kind("formula").length, min: part("formula") }, memorecards: { temas: kind("memore").length, cartoes: c.totals.memorecards, min: part("memore") },
       simulados: { disponiveis: kind("sim").length, min: part("sim") }, correcoes: { min: part("sim-correcao") }, semanasMin: weeks, cabe: fit, necessario: needed,
-      retaFinalDias: c.finalStretch.days,
+      diasDepoisDaSemana8: c.lastDays.days,
     };
   };
 

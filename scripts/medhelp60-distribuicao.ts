@@ -64,12 +64,12 @@ async function main() {
         first: f[0]?.title ?? "", last: f[f.length - 1]?.title ?? "",
       };
     }),
-    finalStretch: c.finalStretch,
+    lastDays: c.lastDays,
     noTopicPages: (unmatched as (typeof formula)).map((f) => f.title),
     topicsWithout60d: topics.filter((t: (typeof topics)[number]) => t.n > 0 && !byTopic.has(t.id) && !(ruOf.get(t.id) && (cards.get(ruOf.get(t.id)!.pageId) ?? 0) > 0)).length,
   };
   for (const w of out.weeks) console.log(`Semana ${w.n} ${w.from}→${w.to} | Fórmula ${w.formula} (A ${w.tiers.A} B ${w.tiers.B} C ${w.tiers.C} D ${w.tiers.D} sem ${w.tiers.sem}) | MemoreCards ${w.memoreThemes} temas / ${w.memoreCards} cartões | ${w.simulado} | carga ${w.load} | ${w.first} … ${w.last}`);
-  console.log(`Reta final ${out.finalStretch.startKey}→${out.finalStretch.endKey} (${out.finalStretch.days} dias) | total ${out.totals.items} atividades, ${out.totals.pendingItems} pendentes, ${d60Duration(out.totals.minutes)} | Fórmula ${out.totals.formulaPages} páginas | MemoreCards ${out.totals.memorecards} cartões | temas com questões sem material do 60D: ${out.topicsWithout60d}`);
+  console.log(`Dias depois da semana 8 ${out.lastDays.startKey}→${out.lastDays.endKey} (${out.lastDays.days} dias) | total ${out.totals.items} atividades, ${out.totals.pendingItems} pendentes, ${d60Duration(out.totals.minutes)} | Fórmula ${out.totals.formulaPages} páginas | MemoreCards ${out.totals.memorecards} cartões | temas com questões sem material do 60D: ${out.topicsWithout60d}`);
   const j = arg("--json"); if (j) writeFileSync(j, JSON.stringify(out, null, 1));
 }
 main().catch((e) => { console.error(e); process.exit(1); });

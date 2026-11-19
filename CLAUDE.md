@@ -308,9 +308,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   (+ rollback).
 - **MedHelp 60D — cronograma na página, checklist manual, uma só disponibilidade com o Meu Plano (Karina 2026-11-17 23h06;
   built 2026-11-18).** `lib/medhelp60/cronograma.ts` (PURE: `buildCronograma`, `d60Position`, `matchFormulaPages`) builds a
-  FIXED sequence from the turma's exam date: 8 weeks of 7 days from the unlock day (exam − 60) + a final stretch of 4 days.
+  FIXED sequence from the turma's exam date: 8 weeks of 7 days from the unlock day (exam − 60); the 4 days after week 8 hold no new item.
   Units = topics with a Fórmula MedHelp page and/or MemoreCards, in ranking order (frequency desc, then name; Fórmula pages
-  that match no topic last), dealt evenly over the 8 weeks; Simulados 100Q 1–7 in weeks 2–8, each followed by its correction.
+  that match no topic last), dealt evenly over the 8 weeks; Simulados 100Q 1–7 in weeks 1–7 (Simulado N in week N), each followed by its correction; **week 8 programmes NO new simulado
+  (Karina 2026-11-19)**: it keeps its topics, and the time a simulado + correction would take (`D60Week.freeMinutes`, 350 min at the
+  default estimates) stays FREE — Meu Plano spreads it over that week's study days and fills it with nothing (no mini simulado,
+  no regular activity; `d60Free` / `d60FreeMinutesToday` in derive.ts, one line on /app/plano). The page says "organizada em oito
+  semanas" (her sentence, tested verbatim) and never names a separate "reta final": the whole 60D IS the reta final, and there is
+  no block after week 8. Checklist keys carry the simulado's NUMBER, not its week, so moving a simulado between weeks keeps the ticks.
   **Nothing is stored except the ticks** (`medhelp60_checks`, keys `formula:<page id>` / `memore:<Revalida Up page id>` /
   `sim:<n>` / `sim-correcao:<n>`, RLS own rows) — the schedule is rebuilt on every load, so a material delivered later appears
   in its place with the same key. A material not delivered = item shown as "Material pendente", not tickable, 0 minutes

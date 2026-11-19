@@ -7,9 +7,10 @@ import { setD60Check } from "@/actions/medhelp60";
 import { d60Duration, d60Position, type D60Cronograma, type D60Item, type D60Week } from "@/lib/medhelp60/cronograma";
 
 /**
- * MedHelp 60D — the schedule, inside the 60D page (Karina 2026-11-17 23h06). A fixed sequence of eight weeks and a
- * final stretch; the student ticks what was done (manual checklist) and sees whether each week's load fits their
- * time. Nothing is removed or reordered when it does not fit — the page says so.
+ * MedHelp 60D — the schedule, inside the 60D page (Karina 2026-11-17 23h06). A fixed sequence of eight weeks; the
+ * student ticks what was done (manual checklist) and sees whether each week's load fits their time. Nothing is
+ * removed or reordered when it does not fit — the page says so. The whole 60D is the final stretch of the
+ * preparation: the page names no separate "reta final" and shows no block after week 8 (Karina 2026-11-19).
  */
 
 function dayMonth(key: string): string {
@@ -65,8 +66,8 @@ export function Medhelp60Cronograma({
         <h2 id="cronograma-60d" className="text-xl font-bold">Cronograma</h2>
       </div>
       <p className="mt-2 max-w-prose text-sm text-muted-foreground" style={{ lineHeight: 1.6 }}>
-        Sequência definida para os 60 dias antes da prova: oito semanas de estudo e a reta final. Os temas seguem a ordem de
-        prioridade (os mais cobrados primeiro). Marque cada atividade ao concluir.
+        Sequência definida para os 60 dias antes da prova, organizada em oito semanas. Os temas seguem a ordem de prioridade
+        (os mais cobrados primeiro). Marque cada atividade ao concluir.
       </p>
 
       <div
@@ -81,7 +82,7 @@ export function Medhelp60Cronograma({
         <p>
           <strong>Hoje:</strong>{" "}
           {pos.phase === "week" ? `semana ${pos.week} de ${cronograma.weeks.length}`
-            : pos.phase === "final" ? "reta final"
+            : pos.phase === "last-days" ? "últimos dias antes da prova"
             : pos.phase === "before" ? "o período ainda não começou"
             : "período encerrado"}
           {" · "}{doneCount} de {all.length} atividades concluídas
@@ -123,20 +124,6 @@ export function Medhelp60Cronograma({
             weeklyMinutes={weeklyMinutes}
           />
         ))}
-
-        <div
-          className="rounded-[var(--radius)] px-4 py-4 text-sm"
-          style={{ background: "var(--surface-1)", boxShadow: "inset 0 0 0 1px var(--surface-2)", lineHeight: 1.6 }}
-        >
-          <p className="font-semibold">
-            Reta final · {dayMonth(cronograma.finalStretch.startKey)} a {dayMonth(cronograma.finalStretch.endKey)}
-            {pos.phase === "final" ? " · período atual" : ""}
-          </p>
-          <p className="mt-1 text-muted-foreground">
-            Sem conteúdo novo. Use estes {cronograma.finalStretch.days} dias para concluir o que ficou sem marcar nas semanas
-            anteriores e para as suas revisões.
-          </p>
-        </div>
       </div>
     </section>
   );

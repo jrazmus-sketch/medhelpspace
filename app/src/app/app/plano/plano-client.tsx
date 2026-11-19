@@ -173,6 +173,12 @@ export function PlanoClient({
                 Tempo realizado hoje (estimativa): cerca de {Math.min(plan.todayDoneMinutes, 999)} de {plan.todayBudgetMinutes + extraMinutes} min
               </p>
             )}
+            {/* MedHelp 60D, week 8: the time of the simulado that is no longer programmed stays the student's. */}
+            {!plan.paused && plan.d60FreeMinutesToday > 0 && (
+              <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2, lineHeight: 1.5 }}>
+                Semana 8 do MedHelp 60D: cerca de {plan.d60FreeMinutesToday} min do seu dia ficam livres, sem atividade programada.
+              </p>
+            )}
           </div>
           {plan.paused ? (
             <PausedState plan={plan} />

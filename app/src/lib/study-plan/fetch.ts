@@ -334,7 +334,7 @@ export async function getDerivedPlanForUser(
           weeks: d60.cronograma.weeks.filter((w) => w.endKey >= todayKey).map((w) => {
             const open = w.items.filter((i) => !i.pending && !ticked.has(i.key));
             return {
-              n: w.n, startKey: w.startKey, endKey: w.endKey, hasSimulado: w.hasSimulado,
+              n: w.n, startKey: w.startKey, endKey: w.endKey, hasSimulado: w.hasSimulado, freeMinutes: w.freeMinutes,
               pendingItems: open.length, pendingMinutes: open.reduce((s, i) => s + i.minutes, 0),
             };
           }),

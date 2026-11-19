@@ -169,6 +169,11 @@ export type DerivedPlan = {
   coverageWarning: { excludedCount: number; percentOfExam: number } | null;
   /** The day's time (minutes) and how much of it today's answers already used. */
   todayBudgetMinutes: number;
+  /**
+   * Minutes of today left free on purpose by the MedHelp 60D (week 8: no new simulado programmed). Nothing is
+   * scheduled in them; the page says so. 0 on every other day.
+   */
+  d60FreeMinutesToday: number;
   todayDoneMinutes: number;
   /** Today's time is used up while work remains (≠ "nothing left to study"). */
   dayComplete: boolean;
@@ -325,9 +330,14 @@ export type Signals = {
    * minutes of their UNTICKED activities. Present only when the student's exam is within the 60 days. The plan
    * reserves that time first on each study day of the week and fills the rest with its own queue — one
    * availability, no activity listed twice (the 60D items stay on the 60D page; here they are one block).
+   * `freeMinutes` (week 8, Karina 2026-11-19): time the 60D leaves free on purpose — the space of a Simulado 100Q
+   * with no new simulado programmed. The plan keeps it free too: no mini simulado, no regular activity fills it.
    */
   sixtyD?: {
-    weeks: { n: number; startKey: string; endKey: string; pendingMinutes: number; pendingItems: number; hasSimulado: boolean }[];
+    weeks: {
+      n: number; startKey: string; endKey: string; pendingMinutes: number; pendingItems: number; hasSimulado: boolean;
+      freeMinutes?: number;
+    }[];
   } | null;
   /** The student's Flashcards facts (function study_plan_flashcard_facts). */
   flashcards?: {
@@ -625,8 +635,18 @@ export function derivePlan(args: {
     if (!w || w.pendingMinutes <= 0 || !isOpenStudyDay(k)) return 0;
     return Math.min(minutesForDay(k), d60Share(w).perDay);
   };
-  /** What the plan's own queue may use on a day: the student's time minus the 60D's share. */
-  const planMinutesForDay = (k: string): number => Math.max(0, minutesForDay(k) - d60Reserve(k));
+  // The week's FREE time (week 8: no new simulado) is the same every study day of that week — the week's free
+  // minutes over ALL its study days, so it never piles up on the last ones — and comes after the 60D's own share.
+  const d60Free = (k: string): number => {
+    const w = k >= todayKey ? d60WeekOf(k) : null;
+    const free = w?.freeMinutes ?? 0;
+    if (!w || free <= 0 || !isOpenStudyDay(k)) return 0;
+    let days = 0;
+    for (let d = w.startKey; d <= w.endKey; d = addDaysKey(d, 1)) if (isOpenStudyDay(d)) days++;
+    return Math.max(0, Math.min(minutesForDay(k) - d60Reserve(k), free / Math.max(1, days)));
+  };
+  /** What the plan's own queue may use on a day: the student's time minus the 60D's share and its free time. */
+  const planMinutesForDay = (k: string): number => Math.max(0, minutesForDay(k) - d60Reserve(k) - d60Free(k));
   const routine: PlanRoutine = {
     dailyMinutes,
     baseDailyMinutes: prefs.daily_minutes,
@@ -1151,8 +1171,9 @@ export function derivePlan(args: {
       simuladoResumeStale: simFacts.inProgress?.stale ?? false,
     },
     simuladoEnabled: allowedTypes.has("simulado"),
-    // Never a mini simulado in a 60D week that holds a Simulado 100Q.
-    noNewSimuladoOn: (k) => d60WeekOf(k)?.hasSimulado ?? false,
+    // Never a mini simulado in a 60D week that holds a Simulado 100Q, nor in the week whose simulado time was
+    // left free (week 8): that time is the student's, not a slot for a mini simulado.
+    noNewSimuladoOn: (k) => { const w = d60WeekOf(k); return !!w && (w.hasSimulado || (w.freeMinutes ?? 0) > 0); },
     simuladoMinutes,
     simuladoSessionsPerWeek: cadence.sessionsPerWeek,
     simuladoEveryWeeks,
@@ -1490,6 +1511,7 @@ export function derivePlan(args: {
     progressToday,
     coverageWarning,
     todayBudgetMinutes: paused ? 0 : Math.round(today.budgetMinutes + d60Today),
+    d60FreeMinutesToday: paused ? 0 : Math.round(d60Free(todayKey)),
     todayDoneMinutes: Math.round(doneMinutes),
     // The day's time is used up while work remains — as opposed to "nothing left to study".
     dayComplete: !paused && today.isStudyDay && items.length === 0 && (queue.length > 0 || signals.reviewDueToday > 0),
