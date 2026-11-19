@@ -379,8 +379,15 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   `--report`; 10 checks; rollback `scripts/rollback-medvoice-2026-11-18.sql` from `lessons_bk_medvoice_20261118`). 47 lessons
   UPDATED IN PLACE by page + title (same ids — `lesson_completions` / `lesson_progress` cascade and Meu Plano links point at
   the lesson id) + 2 NEW lessons: the old "Diverticulite" and "Hérnia" each held two scripts under one recording, so
-  "Diverticulite Complicada" and "Hérnia Estrangulada" are now their own lessons right after the parent (no topic of their
-  own → not in Meu Plano until she says so). Recordings on Bunny `MedVoice-Audio/v2/<spec>/<stem>-m.mp3` (a NEW folder, as
+  "Diverticulite Complicada" and "Hérnia Estrangulada" are now their own lessons right after the parent; **since 19/11
+  (her 01h08 e-mail) they ARE in Meu Plano as ADDITIONAL lessons of the topics Diverticulite / Hérnias** — a second
+  `topic_content` medvoice link each (`schema-patch-medvoice-aulas-adicionais.sql`, by page + title). **A topic may have
+  several MedVoice links**: derive.ts schedules each as its own audio (link-id order, main first; the card names the
+  lesson only when there are several) and the topic concludes only when all are heard.
+  **Obstetrícia (same e-mail):** `scripts/apply-medvoice-obstetricia-2026-11-19.js` (15 of 16 lessons in place, Bunny
+  `MedVoice-Audio/v2/obstetricia/`; rollback `scripts/rollback-medvoice-obstetricia-2026-11-19.sql` from
+  `lessons_bk_medvoice_obst_20261119`). "Sífilis E Gestação" came WITHOUT a recording → left untouched (old text + old
+  audio) until it arrives; never a new text over an old audio. Recordings on Bunny `MedVoice-Audio/v2/<spec>/<stem>-m.mp3` (a NEW folder, as
   with AudioCards v3); durations by ffprobe into `audio_duration_seconds`. Inputs in gitignored `parsed/medvoice-2026-11-18/`.
   The MedVoice of every other specialty is untouched and still the old set. Narration check = Whisper `.srt` per recording
   against the script; **a stretch Whisper "does not hear" is usually a transcription gap** (a cue far longer than its text):

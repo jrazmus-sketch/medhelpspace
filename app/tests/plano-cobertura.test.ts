@@ -719,3 +719,69 @@ test("the plan reads the recording's availability from the view, and the patch m
   assert.match(patch, /BEFORE UPDATE OF audio_url ON lessons/, "a new recording clears the mark by itself");
   assert.doesNotMatch(patch, /DELETE FROM|audio_url\s*=\s*NULL/i);
 });
+
+// ── A topic with more than one MedVoice lesson (Karina 2026-11-19, 01h08) ─────────────────────────────────────────
+// "Diverticulite Complicada" and "Hérnia Estrangulada" are ADDITIONAL lessons of the existing topics Diverticulite and
+// Hérnias: no new topic; each is its own audio activity after the main lesson; the topic ends when both are heard.
+
+const EXTRA_CONTENT: TopicContentRow[] = [
+  ...CONTENT.map((c) => (c.topic_id === 1 && c.resource_type === "medvoice" ? { ...c, question_filter: { lesson_id: "701", lesson_title: "Principal" } } : c)),
+  { topic_id: 1, resource_type: "medvoice", page_id: 600, question_filter: { lesson_id: "760", lesson_title: "Adicional" } },
+];
+const EXTRA_CATALOG: NonNullable<Signals["catalog"]> = { ...CATALOG, medvoiceLessons: new Map([...CATALOG.medvoiceLessons, [760, { durationSeconds: 300 }]]) };
+function extraPlan(over: { signals?: Partial<Signals>; minutes?: number } = {}) {
+  return withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: { ...defaultPrefs(), ...NO_SIMULADO, pace_mode: "standard", daily_minutes: over.minutes ?? 120 },
+    cohort: { test_date: "2027-01-15" },
+    specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: EXTRA_CONTENT,
+    signals: {
+      quizAttempts: [], lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],
+      questionCountsByPageId: new Map(Array.from({ length: N }, (_, i) => [101 + i, 10])),
+      catalog: EXTRA_CATALOG,
+      flashcards: { seenByGroup: new Map(), paceSeconds: null, paceSamples: 0, attemptsToday: 0 },
+      ...over.signals,
+    },
+  }));
+}
+
+test("additional MedVoice lesson: scheduled in the same topic, right after the main lesson, each with its own length and link", () => {
+  const p = extraPlan();
+  const t1 = p.items.filter((i) => i.title === "Tema1");
+  assert.deepEqual(t1.map((i) => i.kind), ["quiz", "revalida_up", "flashcards", "audio", "audio"]);
+  const audios = t1.filter((i) => i.kind === "audio");
+  assert.deepEqual(audios.map((i) => i.estimatedMinutes), [10, 5]);
+  assert.deepEqual(audios.map((i) => i.href.split("#")[1]), ["section-701", "section-760"]);
+  assert.match(audios[0].subtitle, /áudio: Principal/);
+  assert.match(audios[1].subtitle, /áudio: Adicional/);
+  // No new topic: the count is the same as without the additional lesson.
+  assert.equal(p.forecast!.pendingTopics, plan().forecast!.pendingTopics);
+});
+
+test("additional MedVoice lesson: the topic is concluded only when BOTH lessons are heard", () => {
+  const rest = {
+    quizAttempts: answers(1, 10),
+    flashcards: { seenByGroup: new Map([[901, 20]]), paceSeconds: null, paceSamples: 0, attemptsToday: 0 },
+  };
+  const ru = { lesson_id: 801, page_id: 301, completed_at: "2026-07-20T10:00:00Z" };
+  const main = { lesson_id: 701, page_id: 600, completed_at: "2026-07-20T10:00:00Z" };
+  const extra = { lesson_id: 760, page_id: 600, completed_at: "2026-07-20T10:00:00Z" };
+  const onlyMain = extraPlan({ signals: { ...rest, lessonCompletions: [ru, main] } });
+  assert.deepEqual(kindsOf(onlyMain, "Tema1"), ["audio"], "the additional lesson is still pending");
+  assert.equal(onlyMain.forecast!.completedTopics, 0);
+  const both = extraPlan({ signals: { ...rest, lessonCompletions: [ru, main, extra] } });
+  assert.deepEqual(kindsOf(both, "Tema1"), []);
+  assert.equal(both.forecast!.completedTopics, 1);
+});
+
+test("a topic with ONE MedVoice lesson keeps its card exactly as before (no lesson title)", () => {
+  const audio1 = plan().items.find((i) => i.title === "Tema1" && i.kind === "audio")!;
+  assert.equal(audio1.subtitle, "Cardiologia · áudio");
+});
+
+test("the patch adds the two links by page + title, never touching the main links, re-run safe", () => {
+  const patch = readFileSync(path.join(process.cwd(), "..", "schema-patch-medvoice-aulas-adicionais.sql"), "utf8");
+  assert.match(patch, /\('diverticulite', 'Diverticulite',\s+'Diverticulite Complicada'\)/);
+  assert.match(patch, /\('hernias',\s+'Hérnia',\s+'Hérnia Estrangulada'\)/);
+  assert.match(patch, /AND NOT EXISTS \(/);
+  assert.doesNotMatch(patch.replace(/--.*$/gm, ""), /DELETE|UPDATE topic_content|incidence|priority_tier/i);
+});

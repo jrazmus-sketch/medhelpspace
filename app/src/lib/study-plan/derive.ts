@@ -865,6 +865,8 @@ export function derivePlan(args: {
     progress?: PageProgress;
     /** Questões: everything answered but below the bar → only the wrong ones are redone. */
     redo?: boolean;
+    /** MedVoice of a topic with several lessons: the lesson's title, shown on the card. */
+    audioTitle?: string | null;
   };
   // Collected per topic first: a topic the student has STARTED stays ahead of the
   // ones not started yet, so what was begun is finished before something new
@@ -1050,17 +1052,22 @@ export function derivePlan(args: {
     //     audio pending: the schedule cannot place it any more, so the forecast
     //     shows the topic as "não previsto até a prova" instead of dropping it.
     // A lesson whose recording is not available is never scheduled.
-    const mv = allowedTypes.has("audio") ? topicRows.find((c) => c.resource_type === "medvoice") : undefined;
-    const audioPage = mv?.page_id != null ? pageById.get(mv.page_id) ?? null : null;
-    const mvLessonId = lessonIdOfLink(mv?.question_filter);
+    // A topic may have MORE THAN ONE MedVoice lesson (Karina 2026-11-19, 01h08: "Diverticulite Complicada" and
+    // "Hérnia Estrangulada" are additional lessons of Diverticulite and Hérnias): each is its own audio activity,
+    // in link order (fetchTopicContent reads by id, so the main lesson's link comes first), and the topic is
+    // concluded only when every one of them is heard.
+    const mvLinks = allowedTypes.has("audio") ? topicRows.filter((c) => c.resource_type === "medvoice") : [];
+    // No questions, Revalida Up or Flashcards of this topic are in the plan.
+    const soleMaterial = !hasMaterial;
+    for (const mv of mvLinks) {
+    const audioPage = mv.page_id != null ? pageById.get(mv.page_id) ?? null : null;
+    const mvLessonId = lessonIdOfLink(mv.question_filter);
     const mvInfo = mvLessonId != null ? catalog?.medvoiceLessons.get(mvLessonId) : undefined;
     if (audioPage && mvInfo?.hasAudio !== false) {
       const lessonId = mvLessonId;
       const info = mvInfo;
       const done = info ? completedLessons.has(lessonId as number) : quizMastered;
       const heard = lessonId != null ? (signals.audioPositions?.get(lessonId) ?? 0) / 60 : 0;
-      // No questions, Revalida Up or Flashcards of this topic are in the plan.
-      const soleMaterial = !hasMaterial;
       if (phase !== "foundation" && done && info) {
         hasMaterial = true;
         started = true;
@@ -1085,9 +1092,12 @@ export function derivePlan(args: {
             href: info && lessonId != null ? `${pageLink}#section-${lessonId}` : pageLink,
             pageId: audioPage.id,
             unitsTotal: Math.round(total),
+            // Only when the topic has more than one lesson: the card names which one.
+            audioTitle: mvLinks.length > 1 ? lessonTitleOfLink(mv.question_filter) : null,
           });
         }
       }
+    }
     }
 
     if (hasMaterial) {
@@ -1299,7 +1309,7 @@ export function derivePlan(args: {
         ...common,
         kind: "audio",
         iconHint: "audio",
-        subtitle: `${m.specName} · áudio${chunk.completes ? "" : " · comece hoje"}`,
+        subtitle: `${m.specName} · áudio${m.audioTitle ? `: ${m.audioTitle}` : ""}${chunk.completes ? "" : " · comece hoje"}`,
         reason: "Reforço em áudio para o tema de hoje",
       });
     }
@@ -1632,6 +1642,13 @@ function lessonIdOfLink(filter: unknown): number | null {
   if (!filter || typeof filter !== "object") return null;
   const n = Number((filter as { lesson_id?: unknown }).lesson_id);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** topic_content.question_filter of a MedVoice link → the title of the lesson it points at (as stored on the link). */
+function lessonTitleOfLink(filter: unknown): string | null {
+  if (!filter || typeof filter !== "object") return null;
+  const t = (filter as { lesson_title?: unknown }).lesson_title;
+  return typeof t === "string" && t.trim() ? t.trim() : null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
