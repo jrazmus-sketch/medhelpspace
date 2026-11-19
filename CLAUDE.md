@@ -336,7 +336,7 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   `schema-patch-medhelp60-cronograma.sql` (+ rollback).
 - **Revisão by the student's CHOICE for the 60D materials (Karina 2026-11-19, 13h27 EST).** Fórmula MedHelp: ONE
   "Quero revisar" box between "Concluir leitura" and "Próximo tópico" (`page-complete-footer.tsx`, Fórmula pages only) →
-  `review_schedule` item_type **`formula`** (item_id = page id), re-reads on the MemoreCards ladder 3/7/14/30 capped at the exam;
+  `review_schedule` item_type **`formula`** (item_id = page id), re-reads on the MemoreCards ladder 3/7/14/30 but **NEVER moved to the eve** (her 19/11 20h21 rule: a step on/after the exam is simply not offered — `formulaRereadNext` / `formulaRereadOffered`, offered only while the student has an exam ahead; MemoreCards keep the eve cap);
   a due re-read is done when the student reaches the page's footer; listed in the Revisão as "Reler Fórmula MedHelp" with
   "Já domino isto" per row. **Concluding the page or ticking the 60D checklist NEVER enrols it.** Simulados 100Q: an answer NEVER
   enters the Revisão (`/api/quiz-attempt` skips `gradeReviewItem` by the question's OWN page); only a WRONG question the student

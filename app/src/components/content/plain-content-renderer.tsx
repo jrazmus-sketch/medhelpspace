@@ -4,6 +4,8 @@ import { USE_MOCK_DATA } from "@/lib/mock-data";
 import { getPageSiblings } from "@/lib/page-siblings";
 import { safe } from "@/lib/sanitize";
 import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
+import { formulaRereadOffered } from "@/lib/review/memorecard-reread";
+import { examAheadFor } from "@/lib/review/queries";
 import { TocPanel } from "./toc-panel";
 import { PageCompleteFooter } from "./page-complete-footer";
 import { EditableText } from "@/components/admin/editable-text";
@@ -131,7 +133,9 @@ export async function PlainContentRenderer({
             .eq("item_id", pageId)
             .maybeSingle();
           if (sched && !sched.suspended) {
-            review = { chosen: true, rereadDue: toDateKeyBR(sched.due_date as string) <= todayKeyBR() };
+            const today = todayKeyBR();
+            const due = toDateKeyBR(sched.due_date as string);
+            review = { chosen: true, rereadDue: due <= today && formulaRereadOffered(due, today, await examAheadFor(user.id, today)) };
           }
         }
       }

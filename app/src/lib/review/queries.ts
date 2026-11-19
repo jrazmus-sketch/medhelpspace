@@ -1,6 +1,6 @@
 import { themeSlug, themeTitle } from "@/lib/memorecards-shared";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { todayKeyBR } from "@/lib/br-date";
+import { todayKeyBR, toDateKeyBR } from "@/lib/br-date";
 import {
   REMEDIATION_LABELS,
   pickRemediation,
@@ -22,6 +22,22 @@ import {
 // disagreed with the plan card, which counts due items on the Brazilian day.
 function todayKey(): string {
   return todayKeyBR();
+}
+
+/**
+ * The student's nearest exam date AFTER today (BR day key), or null. A Fórmula MedHelp re-read is offered only
+ * while there is one (formulaRereadOffered — Karina 2026-11-19, 20h21).
+ */
+export async function examAheadFor(userId: string, today: string = todayKey()): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("user_cohort_memberships").select("cohort:cohorts(test_date)").eq("user_id", userId);
+  return (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ((data ?? []) as any[])
+      .map((m) => (m.cohort?.test_date ? toDateKeyBR(m.cohort.test_date as string) : ""))
+      .filter((d) => d && d > today)
+      .sort()[0] ?? null
+  );
 }
 
 // ── Counts ─────────────────────────────────────────────────────────────────────
@@ -78,16 +94,26 @@ export async function getReviewCounts(userId: string): Promise<ReviewCounts> {
   };
 }
 
-/** Single lightweight count for the nav badge: items due on/before today. */
+/**
+ * Single lightweight count for the nav badge: items due on/before today. Fórmula re-reads count only while the
+ * student has an exam ahead — the same rule as the Revisão list (formulaRereadOffered).
+ */
 export async function getDueReviewCount(userId: string): Promise<number> {
   const admin = createAdminClient();
-  const { count } = await admin
-    .from("review_schedule")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("suspended", false)
-    .lte("due_date", todayKey());
-  return count ?? 0;
+  const today = todayKey();
+  const due = () =>
+    admin
+      .from("review_schedule")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("suspended", false)
+      .lte("due_date", today);
+  const [{ count }, { count: formula }, examAhead] = await Promise.all([
+    due().neq("item_type", "formula"),
+    due().eq("item_type", "formula"),
+    examAheadFor(userId, today),
+  ]);
+  return (count ?? 0) + (examAhead ? (formula ?? 0) : 0);
 }
 
 // ── Items ──────────────────────────────────────────────────────────────────────
@@ -442,6 +468,9 @@ export async function getMemorecardRereadDue(userId: string): Promise<RereadDeck
 export async function getFormulaRereadDue(userId: string): Promise<RereadDeck[]> {
   const admin = createAdminClient();
   const today = todayKey();
+  // Offered only while the student has an exam ahead (Karina 2026-11-19, 20h21): a step that fell on or after the
+  // exam day was never moved to the eve, and is not offered once that exam is past.
+  if (!(await examAheadFor(userId, today))) return [];
 
   const { data: rows } = await admin
     .from("review_schedule")

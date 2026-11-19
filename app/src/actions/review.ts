@@ -5,7 +5,7 @@ import { nextSm2, dueDateAfter, SM2_DEFAULTS, type ReviewResult } from "@/lib/re
 import { todayKeyBR, toDateKeyBR, addDaysKey } from "@/lib/br-date";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isSimulado100Page } from "@/lib/review/revisao-escolha";
-import { memorecardRereadDue } from "@/lib/review/memorecard-reread";
+import { memorecardRereadDue, formulaRereadNext, formulaRereadOffered } from "@/lib/review/memorecard-reread";
 
 export type ReviewItemType = "flashcard" | "quiz_question" | "memorecard" | "formula";
 
@@ -260,7 +260,8 @@ export async function setSimuladoQuestionReviewChoice(questionId: number, chosen
 
 /**
  * "Quero revisar" at the end of a Fórmula MedHelp page. Ticking enrols the page as a re-read (first one in 3 days,
- * then 7, 14, 30 — never after the exam); ticking an enrolled page changes nothing. Unticking suspends it, keeping
+ * then 7, 14, 30 — a step on/after the exam is never moved to the eve, just not offered); ticking an enrolled page
+ * changes nothing. Unticking suspends it, keeping
  * the row (history). Independent of "Concluir leitura" and of the 60D checklist.
  */
 export async function setFormulaReviewChoice(pageId: number, chosen: boolean): Promise<ReviewChoiceResult> {
@@ -297,7 +298,8 @@ export async function setFormulaReviewChoice(pageId: number, chosen: boolean): P
     if (current && !current.suspended) return { ok: true, chosen: true };
 
     const today = todayKeyBR();
-    const { interval, due } = memorecardRereadDue(0, today, await nearestExamDate(supabase, user.id, today));
+    // Plain step, never moved to the eve (Karina 2026-11-19, 20h21): a date past the exam is simply never offered.
+    const { interval, due } = formulaRereadNext(0, today);
     const { error } = await supabase.from("review_schedule").upsert(
       {
         user_id: user.id,
@@ -337,9 +339,10 @@ export async function completeFormulaReread(pageId: number): Promise<void> {
       .eq("item_id", pageId)
       .maybeSingle();
     const today = todayKeyBR();
-    if (!current || current.suspended || toDateKeyBR(current.due_date as string) > today) return;
+    if (!current || current.suspended) return;
+    if (!formulaRereadOffered(toDateKeyBR(current.due_date as string), today, await nearestExamDate(supabase, user.id, today))) return;
     const reps = (current.repetitions as number) ?? 1;
-    const { interval, due } = memorecardRereadDue(reps, today, await nearestExamDate(supabase, user.id, today));
+    const { interval, due } = formulaRereadNext(reps, today);
     await supabase
       .from("review_schedule")
       .update({ repetitions: reps + 1, interval_days: interval, due_date: due, last_reviewed_at: new Date().toISOString() })

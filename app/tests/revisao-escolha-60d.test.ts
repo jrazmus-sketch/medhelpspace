@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { isSimulado100Page, QUERO_REVISAR, FORMULA_REVISAR_APOIO } from "@/lib/review/revisao-escolha";
-import { memorecardRereadDue, MEMORECARD_REREAD_INTERVALS } from "@/lib/review/memorecard-reread";
+import { memorecardRereadDue, MEMORECARD_REREAD_INTERVALS, formulaRereadNext, formulaRereadOffered } from "@/lib/review/memorecard-reread";
 import { TIPS } from "@/lib/onboarding/tips";
 
 const src = (...p: string[]) => readFileSync(path.join(process.cwd(), "src", ...p), "utf8");
@@ -58,9 +58,11 @@ test("the choice actions: only a wrong 100Q question; no duplicate; unticking su
   assert.match(f, /if \(current && !current\.suspended\) return \{ ok: true, chosen: true \}/);
   assert.match(f, /\.update\(\{ suspended: true \}\)/);
   assert.doesNotMatch(f, /\.delete\(/);
-  // A re-read before its date changes nothing; a suspended page is never re-read into the queue.
+  // A re-read before its date changes nothing; a suspended page is never re-read into the queue; a re-read is
+  // counted only when it is offered (exam ahead — Karina 2026-11-19, 20h21).
   const r = a.slice(a.indexOf("export async function completeFormulaReread"));
-  assert.match(r, /current\.suspended \|\| toDateKeyBR\(current\.due_date as string\) > today\) return/);
+  assert.match(r, /if \(!current \|\| current\.suspended\) return;/);
+  assert.match(r, /if \(!formulaRereadOffered\(toDateKeyBR\(current\.due_date as string\), today, await nearestExamDate\(supabase, user\.id, today\)\)\) return;/);
 });
 
 test("Fórmula footer: Concluir leitura → Quero revisar → Próximo tópico, and concluding never enrols", () => {
@@ -113,4 +115,42 @@ test("the patch moves the automatic 100Q rows out of the queue with a backup, ne
   assert.match(patch, /SET suspended = true/);
   assert.doesNotMatch(patch.replace(/--.*$/gm, ""), /DELETE FROM review_schedule\b/);
   assert.match(patch, /'flashcard', 'quiz_question', 'memorecard', 'clinact_case', 'formula'/);
+});
+
+// ── Fórmula re-reads never moved to the eve (Karina 2026-11-19, 20h21 BRT) ───────────────────────────────────────
+// "Não antecipe essas releituras automaticamente para a véspera. Se o próximo intervalo cair depois da prova, não
+// programe essa próxima releitura." MemoreCards keep their rule (the eve).
+
+test("Fórmula: the next re-read is the plain ladder step — never moved to the eve of the exam", () => {
+  assert.deepEqual(formulaRereadNext(0, "2027-03-01"), { interval: 3, due: "2027-03-04" });
+  assert.deepEqual(formulaRereadNext(1, "2027-03-04"), { interval: 7, due: "2027-03-11" });
+  // 30 days from 10/04 = 10/05, after the exam of 25/04: kept as is (MemoreCards would move it to 24/04).
+  assert.deepEqual(formulaRereadNext(3, "2027-04-10"), { interval: 30, due: "2027-05-10" });
+  assert.deepEqual(memorecardRereadDue(3, "2027-04-10", "2027-04-25"), { interval: 14, due: "2027-04-24" }, "MemoreCards unchanged");
+});
+
+test("Fórmula: a re-read on or after the exam day is never offered; one before it is offered on its day", () => {
+  const exam = "2027-04-25";
+  assert.equal(formulaRereadOffered("2027-04-20", "2027-04-20", exam), true, "due before the exam, on its day");
+  assert.equal(formulaRereadOffered("2027-04-20", "2027-04-19", exam), false, "not before its date");
+  assert.equal(formulaRereadOffered("2027-05-10", "2027-04-24", exam), false, "a date after the exam does not come up on the eve");
+  // After the exam the student has no exam ahead: nothing is offered (the date that fell after the exam included).
+  assert.equal(formulaRereadOffered("2027-05-10", "2027-05-10", null), false);
+  assert.equal(formulaRereadOffered("2027-04-25", "2027-04-25", null), false, "the exam day itself");
+});
+
+test("Fórmula: the actions and every reader use the rule (choice, re-read, Revisão list, page footer, nav badge)", () => {
+  const a = src("actions", "review.ts");
+  const f = a.slice(a.indexOf("export async function setFormulaReviewChoice"), a.indexOf("export async function completeFormulaReread"));
+  assert.match(f, /formulaRereadNext\(0, today\)/);
+  assert.doesNotMatch(f, /memorecardRereadDue/);
+  const r = a.slice(a.indexOf("export async function completeFormulaReread"));
+  assert.match(r, /formulaRereadNext\(reps, today\)/);
+  assert.doesNotMatch(r, /memorecardRereadDue/);
+  const q = src("lib", "review", "queries.ts");
+  const list = q.slice(q.indexOf("export async function getFormulaRereadDue"));
+  assert.match(list, /if \(!\(await examAheadFor\(userId, today\)\)\) return \[\];/);
+  const badge = q.slice(q.indexOf("export async function getDueReviewCount"), q.indexOf("// ── Items"));
+  assert.match(badge, /\(examAhead \? \(formula \?\? 0\) : 0\)/);
+  assert.match(src("components", "content", "plain-content-renderer.tsx"), /formulaRereadOffered\(due, today, await examAheadFor\(user\.id, today\)\)/);
 });

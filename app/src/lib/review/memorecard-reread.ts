@@ -29,3 +29,26 @@ export function memorecardRereadDue(
   if (lastDay <= today || due <= lastDay) return { interval: step, due };
   return { interval: diffDaysKey(today, lastDay), due: lastDay };
 }
+
+// ── Fórmula MedHelp re-reads (Karina 2026-11-19, 20h21 BRT) ─────────────────────────────────────────────────────
+// Same ladder (3 → 7 → 14 → 30), but a step is NEVER moved to the eve of the exam: "Não antecipe essas releituras
+// automaticamente para a véspera. Se o próximo intervalo cair depois da prova, não programe essa próxima releitura."
+// (so several re-reads do not pile up on the last day). The row keeps the plain step as its date — history and the
+// student's choice are untouched — and a re-read is OFFERED only while the student has an exam ahead: a step that
+// falls on or after the exam day never comes up before it, and after it only if the student is preparing for a new
+// exam (e.g. moved to the next turma). MemoreCards keep memorecardRereadDue above (unchanged).
+
+/** The next Fórmula re-read: the plain ladder step, never moved. */
+export function formulaRereadNext(reps: number, today: string): { interval: number; due: string } {
+  const step = MEMORECARD_REREAD_INTERVALS[Math.min(Math.max(reps, 0), MEMORECARD_REREAD_INTERVALS.length - 1)];
+  return { interval: step, due: addDaysKey(today, step) };
+}
+
+/**
+ * Whether a Fórmula re-read with this date is offered today. `examAhead` = the student's nearest exam date AFTER
+ * today (null = none). Due today or earlier, and an exam still ahead — so a date on/after the exam day, which can
+ * only arrive once that exam is no longer ahead, is never offered.
+ */
+export function formulaRereadOffered(due: string, today: string, examAhead: string | null): boolean {
+  return due <= today && examAhead != null && examAhead > today;
+}
