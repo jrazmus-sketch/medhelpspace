@@ -204,6 +204,14 @@ export function d60Position(c: D60Cronograma, dayKey: string): { phase: "before"
  * the page's slug without "-formula" is the topic's slug, or the stem of one of the topic's own pages
  * (Questões section, Revalida Up, Resumo). Returns topic id → page, and the pages that match no topic.
  */
+/**
+ * Fórmula pages whose address was typed differently from their topic's: page stem → topic slug. Without this the
+ * page still appears in the schedule, but at the end, as a page without topic, and its topic counts as not covered.
+ */
+const FORMULA_STEM_ALIASES: Record<string, string> = {
+  "trauma-atendimento-inicial-e-vias-areas": "trauma-atendimento-inicial-e-vias-aereas",
+};
+
 export function matchFormulaPages<P extends { slug: string }>(
   pages: P[],
   topics: { id: number; slug: string }[],
@@ -223,7 +231,8 @@ export function matchFormulaPages<P extends { slug: string }>(
   const byTopic = new Map<number, P>();
   const unmatched: P[] = [];
   for (const p of pages) {
-    const stem = p.slug.endsWith("-formula") ? p.slug.slice(0, -"-formula".length) : p.slug;
+    const raw = p.slug.endsWith("-formula") ? p.slug.slice(0, -"-formula".length) : p.slug;
+    const stem = FORMULA_STEM_ALIASES[raw] ?? raw;
     const ids = bySlug.has(stem) ? [bySlug.get(stem)!] : byStem.get(stem) ?? [];
     const free = ids.filter((id) => !byTopic.has(id));
     if (free.length === 0) { unmatched.push(p); continue; }

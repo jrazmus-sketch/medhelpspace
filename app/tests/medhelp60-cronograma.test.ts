@@ -131,6 +131,15 @@ test("Fórmula pages are matched to topics by address; what matches nothing is r
   assert.deepEqual(unmatched.map((p) => p.slug), ["bioestatistica-formula"]);
 });
 
+test("Fórmula page whose address was typed differently from its topic's is still that topic's page (Karina 2026-11-18)", () => {
+  // Production: the page is "…-vias-areas-formula", the topic "…-vias-aereas". It showed at the end, as a page without topic.
+  const { byTopic, unmatched } = matchFormulaPages(
+    [{ slug: "trauma-atendimento-inicial-e-vias-areas-formula" }],
+    [{ id: 131, slug: "trauma-atendimento-inicial-e-vias-aereas" }], []);
+  assert.equal(byTopic.get(131)!.slug, "trauma-atendimento-inicial-e-vias-areas-formula");
+  assert.equal(unmatched.length, 0);
+});
+
 test("settings: defaults, range check, and the patch's column defaults match the code", () => {
   assert.deepEqual(d60SettingsOf(DEFAULT_PLAN_SETTINGS), DEFAULT_D60_SETTINGS, "the plan's defaults are the schedule's defaults");
   const s = d60SettingsOf(settingsFromRow({
