@@ -314,8 +314,11 @@ export type Signals = {
     flashcardGroupSizes: Map<number, number>;
     /** Revalida Up page → its one lesson and its number of insights */
     revalidaUpPages: Map<number, { lessonId: number; insights: number }>;
-    /** MedVoice lesson → measured audio length (null = not measured) */
-    medvoiceLessons: Map<number, { durationSeconds: number | null }>;
+    /**
+     * MedVoice lesson → measured audio length (null = not measured). `hasAudio: false` = the lesson has no
+     * recording, or its file is marked unavailable: the plan never schedules it (absent = available).
+     */
+    medvoiceLessons: Map<number, { durationSeconds: number | null; hasAudio?: boolean }>;
   } | null;
   /**
    * MedHelp 60D (Karina 2026-11-17): the weeks of the 60D schedule that are still ahead or running, with the
@@ -999,16 +1002,30 @@ export function derivePlan(args: {
     // MEDVOICE — its real length; scheduled only in the foundation phase (the
     // schedule leaves it out on days closer to the exam).
     // Once today is past that phase it will never be scheduled again, so it is
-    // not counted as pending either.
-    if (phase === "foundation" && allowedTypes.has("audio")) {
-      const mv = topicRows.find((c) => c.resource_type === "medvoice");
-      const audioPage = mv?.page_id != null ? pageById.get(mv.page_id) ?? null : null;
-      if (audioPage) {
+    // not counted as pending either — with two exceptions (Karina 2026-11-18):
+    //   • an audio already HEARD stays a concluded material in every phase. Before,
+    //     a topic whose only material is its MedVoice left the count on the day the
+    //     phase ended, heard or not (the forecast said 220 topics, the eve said 217);
+    //   • a topic whose ONLY material is its MedVoice stays in the plan with that
+    //     audio pending: the schedule cannot place it any more, so the forecast
+    //     shows the topic as "não previsto até a prova" instead of dropping it.
+    // A lesson whose recording is not available is never scheduled.
+    const mv = allowedTypes.has("audio") ? topicRows.find((c) => c.resource_type === "medvoice") : undefined;
+    const audioPage = mv?.page_id != null ? pageById.get(mv.page_id) ?? null : null;
+    const mvLessonId = lessonIdOfLink(mv?.question_filter);
+    const mvInfo = mvLessonId != null ? catalog?.medvoiceLessons.get(mvLessonId) : undefined;
+    if (audioPage && mvInfo?.hasAudio !== false) {
+      const lessonId = mvLessonId;
+      const info = mvInfo;
+      const done = info ? completedLessons.has(lessonId as number) : quizMastered;
+      const heard = lessonId != null ? (signals.audioPositions?.get(lessonId) ?? 0) / 60 : 0;
+      // No questions, Revalida Up or Flashcards of this topic are in the plan.
+      const soleMaterial = !hasMaterial;
+      if (phase !== "foundation" && done && info) {
         hasMaterial = true;
-        const lessonId = lessonIdOfLink(mv?.question_filter);
-        const info = lessonId != null ? catalog?.medvoiceLessons.get(lessonId) : undefined;
-        const done = info ? completedLessons.has(lessonId as number) : quizMastered;
-        const heard = lessonId != null ? (signals.audioPositions?.get(lessonId) ?? 0) / 60 : 0;
+        started = true;
+      } else if (phase === "foundation" || (soleMaterial && !done)) {
+        hasMaterial = true;
         if ((done && info) || heard > 0) started = true;
         if (!done) {
           const total = info?.durationSeconds ? info.durationSeconds / 60 : settings.medvoiceFallbackMinutes;
@@ -1020,6 +1037,7 @@ export function derivePlan(args: {
             minutesPerUnit: 1,
             divisible: false,
             minChunkUnits: 1,
+            soleMaterial,
           });
           const pageLink = pageHref(audioPage, specInfo.slug);
           meta.push({

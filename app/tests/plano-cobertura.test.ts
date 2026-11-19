@@ -622,3 +622,82 @@ test("an exam date that has passed (or is today) gives no forecast, and today is
     assert.ok(p.totalEstimatedMinutes <= p.todayBudgetMinutes);
   }
 });
+
+// ── MedVoice: a topic whose ONLY material is its audio; recordings that are not available (Karina 2026-11-18) ──
+// Three topics have no questions, Revalida Up or Flashcards — only a MedVoice. The count used to drop them on the
+// day the foundation phase ended, heard or not: the forecast said 220 topics and the eve of the exam said 217.
+
+const SOLO: TopicRow = { id: 50, name: "SoAudio", slug: "so-audio", specialty_id: 1, source_page_id: null, incidence_count: 0, priority_tier: null, is_pinned: false };
+const SOLO_CATALOG = (hasAudio = true): NonNullable<Signals["catalog"]> => ({
+  ...CATALOG, medvoiceLessons: new Map([...CATALOG.medvoiceLessons, [750, { durationSeconds: 600, hasAudio }]]),
+});
+function soloPlan(over: { testDate?: string; signals?: Partial<Signals>; minutes?: number } = {}) {
+  return withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: { ...defaultPrefs(), ...NO_SIMULADO, pace_mode: "standard", daily_minutes: over.minutes ?? 240 },
+    cohort: { test_date: over.testDate ?? "2027-01-15" },
+    specialties: SPECIALTIES, pages: PAGES, topics: [...TOPICS, SOLO],
+    topicContent: [...CONTENT, { topic_id: 50, resource_type: "medvoice", page_id: 600, question_filter: { lesson_id: "750" } }],
+    signals: {
+      quizAttempts: [], lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],
+      questionCountsByPageId: new Map(Array.from({ length: N }, (_, i) => [101 + i, 10])),
+      catalog: SOLO_CATALOG(),
+      flashcards: { seenByGroup: new Map(), paceSeconds: null, paceSamples: 0, attemptsToday: 0 },
+      ...over.signals,
+    },
+  }));
+}
+const HEARD = [{ lesson_id: 750, page_id: 600, completed_at: "2026-07-20T10:00:00Z" }];
+
+test("MedVoice-only topic: with time before the last 60 days it is scheduled and expected like any other", () => {
+  const f = soloPlan().forecast!;
+  assert.equal(f.pendingTopics, N + 1);
+  assert.equal(f.expectedTopics, N + 1);
+  assert.equal(f.notExpected.length, 0);
+});
+
+test("MedVoice-only topic: once heard it stays CONCLUDED after the foundation phase (it used to leave the count)", () => {
+  const before = soloPlan({ signals: { lessonCompletions: HEARD } }).forecast!;
+  const after = soloPlan({ testDate: "2026-09-01", signals: { lessonCompletions: HEARD } });
+  assert.equal(after.phase, "intensification");
+  assert.equal(before.completedTopics, 1);
+  assert.equal(after.forecast!.completedTopics, 1, "the same progress gives the same conclusion in every phase");
+  assert.equal(after.forecast!.pendingTopics + after.forecast!.completedTopics, before.pendingTopics + before.completedTopics, "no topic vanishes");
+});
+
+test("MedVoice-only topic: not heard and past the foundation phase → 'não previsto até a prova', never dropped or counted as concluded", () => {
+  const p = soloPlan({ testDate: "2026-09-01" });
+  const f = p.forecast!;
+  assert.equal(f.pendingTopics, N + 1, "the topic is still counted");
+  assert.equal(f.expectedTopics, N, "every other topic fits");
+  assert.deepEqual(f.notExpected.map((t) => t.name), ["SoAudio"]);
+  assert.equal(f.completedTopics, 0);
+  assert.equal(p.items.some((i) => i.kind === "audio"), false, "the audio is not put on a day");
+});
+
+test("schedule: an audio left out closes its topic only when the topic has other materials", () => {
+  const r = simulateSchedule(input({
+    queue: [quiz(1, 4), audio(1, 10), { ...audio(2, 10), soleMaterial: true }], examKey: "2026-09-01", simuladoEnabled: false,
+  }));
+  assert.ok(r.audioLeftOut.has(1) && r.audioLeftOut.has(2));
+  assert.equal(r.topicFinishDay.get(1), TODAY, "questions done → the topic ends");
+  assert.equal(r.topicFinishDay.has(2), false, "nothing of topic 2 was studied → it is not a conclusion");
+});
+
+test("a MedVoice whose recording is not available is never scheduled, and is not required for the topic to conclude", () => {
+  const catalog = { ...CATALOG, medvoiceLessons: new Map([...CATALOG.medvoiceLessons, [701, { durationSeconds: 600, hasAudio: false }]]) };
+  const p = plan({ signals: { catalog } });
+  assert.deepEqual(kindsOf(p, "Tema1"), ["quiz", "revalida_up", "flashcards"], "no audio item for the lesson without a recording");
+  assert.ok(kindsOf(p, "Tema2").length > 0);
+  // The only material of a topic is an unavailable recording → the topic has nothing to schedule: it is not counted.
+  const solo = soloPlan({ signals: { catalog: SOLO_CATALOG(false) } }).forecast!;
+  assert.equal(solo.pendingTopics, N);
+  assert.equal(solo.notExpected.length, 0);
+});
+
+test("the plan reads the recording's availability from the view, and the patch marks by address, never deleting", () => {
+  assert.match(src("lib", "study-plan", "fetch.ts"), /study_plan_medvoice_lessons"\)\.select\("lesson_id, duration_seconds, has_audio"\)/);
+  const patch = readFileSync(path.join(process.cwd(), "..", "schema-patch-medvoice-audio-unavailable.sql"), "utf8");
+  assert.match(patch, /audio_url IS NOT NULL AND NOT l\.audio_unavailable\) AS has_audio/);
+  assert.match(patch, /BEFORE UPDATE OF audio_url ON lessons/, "a new recording clears the mark by itself");
+  assert.doesNotMatch(patch, /DELETE FROM|audio_url\s*=\s*NULL/i);
+});

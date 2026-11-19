@@ -59,6 +59,11 @@ export type WorkActivity = {
    *         the next day unless it is the first thing of the day.
    */
   divisible: boolean;
+  /**
+   * An audio that is the ONLY material its topic has in the plan. When the schedule leaves it out (MedVoice is
+   * placed only in the foundation phase), the topic is NOT concluded: it stays "não previsto até a prova".
+   */
+  soleMaterial?: boolean;
   /** Smallest piece (in units) worth putting on a day. */
   minChunkUnits: number;
 };
@@ -449,7 +454,8 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
       if (act.kind === "audio" && phase !== "foundation") {
         audioLeftOut.add(act.topicId);
         remaining[j] = 0;
-        closeTopic(j, dayKey);
+        // The topic's other materials decide its conclusion — unless this audio is all it has.
+        if (!act.soleMaterial) closeTopic(j, dayKey);
         continue;
       }
       const need = remaining[j] * act.minutesPerUnit;

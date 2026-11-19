@@ -28,7 +28,7 @@ async function loadPlanCatalog(admin: Admin): Promise<NonNullable<Signals["catal
   const [groups, ru, mv] = await Promise.all([
     admin.from("study_plan_flashcard_groups").select("group_id, cards"),
     admin.from("study_plan_revalida_up_pages").select("page_id, lesson_id, insights"),
-    admin.from("study_plan_medvoice_lessons").select("lesson_id, duration_seconds"),
+    admin.from("study_plan_medvoice_lessons").select("lesson_id, duration_seconds, has_audio"),
   ]);
   if (groups.error || ru.error || mv.error) return null;
   return {
@@ -39,7 +39,7 @@ async function loadPlanCatalog(admin: Admin): Promise<NonNullable<Signals["catal
     medvoiceLessons: new Map(
       (mv.data ?? []).map((r) => [
         Number(r.lesson_id),
-        { durationSeconds: r.duration_seconds == null ? null : Number(r.duration_seconds) },
+        { durationSeconds: r.duration_seconds == null ? null : Number(r.duration_seconds), hasAudio: r.has_audio !== false },
       ]),
     ),
   };

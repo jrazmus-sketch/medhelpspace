@@ -84,9 +84,9 @@ async function loadContent(): Promise<Content> {
           num(r.page_id), { lessonId: num(r.lesson_id), insights: num(r.insights) },
         ]),
       ),
-      medvoiceLessons: new Map<number, { durationSeconds: number | null }>(
-        (await tx`select lesson_id, duration_seconds from study_plan_medvoice_lessons`).map((r: Record<string, unknown>) => [
-          num(r.lesson_id), { durationSeconds: r.duration_seconds == null ? null : num(r.duration_seconds) },
+      medvoiceLessons: new Map<number, { durationSeconds: number | null; hasAudio?: boolean }>(
+        (await tx`select lesson_id, duration_seconds, has_audio from study_plan_medvoice_lessons`).map((r: Record<string, unknown>) => [
+          num(r.lesson_id), { durationSeconds: r.duration_seconds == null ? null : num(r.duration_seconds), hasAudio: r.has_audio !== false },
         ]),
       ),
     };
@@ -380,9 +380,10 @@ const THREE_DAYS = (1 << 1) | (1 << 3) | (1 << 5); // Mon, Wed, Fri
 /**
  * Hypothesis run (Karina 2026-11-18): the same availability scenarios with a SIMULATED exam date, counted from a given
  * day. Nothing is read from or written to any turma — the date exists only inside this run.
- *   … plano-cenarios.ts [<DATABASE_URL>] --hipotese 2027-04-15 [--hoje 2026-11-18] [--json out.json]
+ *   … plano-cenarios.ts [<DATABASE_URL>] --hipotese 2027-04-15 [--hoje 2026-11-18] [--json out.json] [--so-carga]
+ *   (--so-carga: only the "needed daily time" part, a minute instead of a quarter of an hour)
  */
-function hipotese(c: Content, exam: string, start: string): Record<string, unknown> {
+function hipotese(c: Content, exam: string, start: string, onlyNeeded = false): Record<string, unknown> {
   const all: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
   const noSim = all.filter((t) => t !== "simulado");
   const DAYS: { label: string; mask: number; n: number }[] = [
@@ -434,25 +435,34 @@ function hipotese(c: Content, exam: string, start: string): Record<string, unkno
 
   // 1. The grid: hours per day × days per week (new student, every material, automatic mini simulados).
   const grid: Row[] = [];
-  for (const d of DAYS) {
+  for (const d of onlyNeeded ? [] : DAYS) {
     for (const minutes of [30, 60, 90, 120, 180, 240, 300]) {
       const r = simulate({ daily_minutes: minutes, available_days: d.mask });
       grid.push({ horasPorDia: minutes / 60, minutosPorDia: minutes, diasPorSemana: d.n, dias: d.label, ...r.row });
     }
   }
 
-  // 2. The daily time that gives every topic a full conclusion in the forecast, for 5 and 6 days a week.
+  // 2. The daily time that gives a full conclusion in the forecast, for 5 and 6 days a week — twice: for every
+  //    topic, and for every topic that has Questões, Revalida Up or Flashcards. The difference are the topics whose
+  //    ONLY material is a MedVoice: they rank last (no questions) and MedVoice is scheduled only more than 60 days
+  //    before the exam, so they need the whole plan finished before that window.
+  const withoutAudio = planFor(c, newStudent({ examDate: exam, prefs: { preferred_content_types: all.filter((t) => t !== "audio") } }), start).forecast!.pendingTopics;
   const needed: Row[] = [];
   for (const d of DAYS.filter((x) => x.n >= 5)) {
-    let found: number | null = null;
-    for (let minutes = 60; minutes <= 600; minutes += 15) {
-      const s = newStudent({ examDate: exam, prefs: { preferred_content_types: all, daily_minutes: minutes, available_days: d.mask } });
-      const f = planFor(c, s, start).forecast!;
-      if (f.expectedTopics >= f.pendingTopics) { found = minutes; break; }
+    for (const alvo of ["todos os temas", "temas com Questões, Revalida Up ou Flashcards"]) {
+      let found: number | null = null;
+      for (let minutes = 60; minutes <= 600; minutes += 15) {
+        const s = newStudent({ examDate: exam, prefs: { preferred_content_types: all, daily_minutes: minutes, available_days: d.mask } });
+        const f = planFor(c, s, start).forecast!;
+        const target = alvo === "todos os temas" ? f.pendingTopics : withoutAudio;
+        if (f.expectedTopics >= target) { found = minutes; break; }
+      }
+      const check = found != null ? simulate({ daily_minutes: found, available_days: d.mask }).row : null;
+      needed.push({ diasPorSemana: d.n, dias: d.label, alvo, minutosPorDia: found, previstosIntegral: check ? check.previstosIntegral : null,
+        concluidosNaSimulacao: check ? check.concluidos : null, temas: check ? check.temas : null, temasSoComMedVoice: check ? Number(check.temas) - withoutAudio : null });
     }
-    const check = found != null ? simulate({ daily_minutes: found, available_days: d.mask }).row : null;
-    needed.push({ diasPorSemana: d.n, dias: d.label, minutosPorDia: found, concluidosNaSimulacao: check ? check.concluidos : null, temas: check ? check.temas : null });
   }
+  if (onlyNeeded) return { exam, start, daysToExam: planFor(c, newStudent({ examDate: exam }), start).daysToExam, grid, needed, variations: [] };
 
   // 3. Variations on one reference routine where time is the limit (1 h a day, Monday to Friday), so each
   //    factor's effect on the coverage can be seen.
@@ -489,7 +499,7 @@ async function main() {
   const hAt = args.indexOf("--hipotese");
   if (hAt >= 0) {
     const tAt = args.indexOf("--hoje");
-    const out = hipotese(c, args[hAt + 1], tAt >= 0 ? args[tAt + 1] : TODAY);
+    const out = hipotese(c, args[hAt + 1], tAt >= 0 ? args[tAt + 1] : TODAY, args.includes("--so-carga"));
     const cols = (r: Record<string, unknown>) => Object.entries(r).map(([k, v]) => `${k}=${v}`).join(" · ");
     console.log(`Hipótese: prova em ${out.exam}, contando de ${out.start} (${out.daysToExam} dias)`);
     for (const r of out.grid as Record<string, unknown>[]) console.log("  grade   " + cols(r));
@@ -501,7 +511,10 @@ async function main() {
   const report: Record<string, unknown>[] = [];
   const all: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
 
-  const run = (title: string, description: string, mk: () => Student, extra?: (s: Student, out: Record<string, unknown>, checks: Check[]) => void) => {
+  // `shortfall` = how far below the day-0 forecast the student may end (share of the forecast, never less than 2
+  // topics). 2% for a student who performs like the forecast assumes; a scenario that changes the student's
+  // PERFORMANCE on purpose (below 70% on the first try) says so and gets its own margin.
+  const run = (title: string, description: string, mk: () => Student, extra?: (s: Student, out: Record<string, unknown>, checks: Check[]) => void, shortfall = 0.02) => {
     const s = mk();
     const day0 = planFor(c, s, TODAY);
     const checks: Check[] = [checkBudget(day0)];
@@ -530,19 +543,25 @@ async function main() {
       expectedButNotDone: missed,
     };
     // Forecast vs execution (Karina 2026-11-17): the forecast must not promise more than the
-    // student gets done, and must not underestimate it by much either. Topics that left the
-    // scope on the way (MedVoice-only topics once the foundation phase ends) are discounted.
+    // student gets done, and must not underestimate it by much either.
+    // No topic may leave the count on the way (Karina 2026-11-18): until then a topic whose only material is its
+    // MedVoice vanished when the foundation phase ended, so the day-0 forecast counted topics the eve did not.
     const leftScope = day0.forecast!.pendingTopics - (end.forecast!.completedTopics + end.forecast!.inReviewTopics + stillPending);
     const done = end.forecast!.completedTopics + end.forecast!.inReviewTopics;
-    const expected0 = day0.forecast!.expectedTopics - Math.max(0, leftScope);
+    const expected0 = day0.forecast!.expectedTopics;
     out.followed = { ...(out.followed as object), done, expected: expected0 };
+    checks.push({
+      name: "Nenhum tema sai da contagem entre o primeiro dia e a véspera da prova",
+      ok: leftScope === 0,
+      detail: `temas no dia 0: ${day0.forecast!.pendingTopics}; na véspera: ${done} concluídos + ${stillPending} pendentes`,
+    });
     checks.push({
       name: "Previsão × execução: seguindo o plano, o aluno conclui o que foi previsto, sem grande subestimação",
       // "Approximately what was forecast" (Karina 2026-11-18): the day-0 forecast of a NEW student cannot know how
       // many questions will come back through the Revisão, so the student may end a little short of it — the
       // tolerance is 2% of the forecast (never less than 2 topics). The forecast itself is redone every day.
-      ok: done >= expected0 - Math.max(2, Math.ceil(expected0 * 0.02)) && (expected0 === 0 ? done <= 3 : done <= Math.ceil(expected0 * 1.25) + 2),
-      detail: `previstos no dia 0: ${expected0}; concluídos na véspera da prova: ${done} (${stillPending} ainda pendentes)`,
+      ok: done >= expected0 - Math.max(2, Math.ceil(expected0 * shortfall)) && (expected0 === 0 ? done <= 3 : done <= Math.ceil(expected0 * 1.25) + 2),
+      detail: `previstos no dia 0: ${expected0}; concluídos na véspera da prova: ${done} (${stillPending} ainda pendentes); margem: ${Math.max(2, Math.ceil(expected0 * shortfall))} temas`,
     });
     checks.push({
       name: "Nenhuma atividade de duração zero; questões abaixo de 70% não são pedidas em duplicidade com a Revisão",
@@ -565,7 +584,11 @@ async function main() {
     () => newStudent({ examDate: "2026-12-17", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all } }));
 
   run("6. Desempenho abaixo de 70%", "Como o cenário 1, mas o aluno acerta só 55% das questões na primeira tentativa. As questões erradas voltam pela Revisão.",
-    () => newStudent({ firstTryAccuracy: 0.55, prefs: { available_days: SIX_DAYS, preferred_content_types: all } }));
+    () => newStudent({ firstTryAccuracy: 0.55, prefs: { available_days: SIX_DAYS, preferred_content_types: all } }),
+    // The day-0 forecast of a NEW student cannot know that this one will miss 45% of the questions: more of them
+    // come back through the Revisão than the forecast holds back, so fewer new topics fit. This is a variation of
+    // PERFORMANCE, not a limit the system knows on day 0 — the forecast is redone every day with the real Revisão.
+    undefined, 0.05);
 
   // 4. Missed days: study 3 weeks, miss 2 weeks, come back.
   {
