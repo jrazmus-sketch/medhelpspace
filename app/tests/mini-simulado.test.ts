@@ -265,7 +265,8 @@ function plan(over: { prefs?: Partial<StudyPlanPrefs>; signals?: Partial<Signals
       ...defaultPrefs(), pace_mode: "standard",
       preferred_content_types: ["quiz", "simulado"], ...over.prefs,
     },
-    cohort: { test_date: over.testDate ?? "2026-09-01" },
+    // More than 60 days ahead: inside the MedHelp 60D period the plan programmes no mini simulado at all.
+    cohort: { test_date: over.testDate ?? "2027-01-15" },
     specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: CONTENT,
     signals: {
       quizAttempts: [], lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],

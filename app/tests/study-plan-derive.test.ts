@@ -354,18 +354,23 @@ test("topics sharing one quiz page produce exactly one item", () => {
 
 // ── P0-2: content-type gating ────────────────────────────────────────────────
 
-test("simulado appears in intensification when opted in", () => {
+test("simulado appears when opted in — before the MedHelp 60D period, never inside it", () => {
   const plan = withFrozenTime(MORNING_BRT, () =>
-    run({ testDate: "2026-09-01", prefs: { preferred_content_types: defaultPrefs().preferred_content_types } })); // 35 days
-  assert.equal(plan.phase, "intensification");
+    run({ prefs: { preferred_content_types: defaultPrefs().preferred_content_types } })); // exam 2027-01-15
   assert.equal(plan.items.some((i) => i.kind === "simulado"), true);
+  // 35 days from the exam = inside the 60D: the plan programmes no mini simulado (Karina 2026-11-19).
+  const inside = withFrozenTime(MORNING_BRT, () =>
+    run({ testDate: "2026-09-01", prefs: { preferred_content_types: defaultPrefs().preferred_content_types } }));
+  assert.equal(inside.phase, "intensification");
+  assert.equal(inside.inD60Period, true);
+  assert.equal(inside.items.some((i) => i.kind === "simulado"), false);
 });
 
 test("the legacy DB default (no 'simulado') silences the simulado item", () => {
   // Exactly what the wrong column default produced, before the schema patch.
   const legacy: ContentType[] = ["quiz", "lesson", "audio", "flashcards", "memorecards"];
   const plan = withFrozenTime(MORNING_BRT, () =>
-    run({ testDate: "2026-09-01", prefs: { preferred_content_types: legacy } }));
+    run({ prefs: { preferred_content_types: legacy } }));
   assert.equal(plan.items.some((i) => i.kind === "simulado"), false,
     "regression guard: this is exactly what the wrong column default produced");
 });
@@ -390,16 +395,24 @@ test("excluded specialties never appear", () => {
   assert.equal(plan.items.some((i) => i.specialtyId === 1), false);
 });
 
-test("review item is capped by flashcard_daily_cap and leads in taper", () => {
+test("review item is capped by flashcard_daily_cap and leads the day", () => {
   const plan = withFrozenTime(MORNING_BRT, () =>
-    run({ testDate: "2026-08-05", signals: { reviewDueToday: 300 }, prefs: { flashcard_daily_cap: 50 } }));
-  assert.equal(plan.phase, "taper");
+    run({ signals: { reviewDueToday: 300 }, prefs: { flashcard_daily_cap: 50, daily_minutes: 120 } }));
   assert.match(plan.items[0].title, /^50 itens para revisar/);
   assert.match(plan.items[0].subtitle, /300 devidos · limite diário: 50/);
 });
 
+test("inside the MedHelp 60D period the plan puts no Revisão on the day (Karina 2026-11-19)", () => {
+  const plan = withFrozenTime(MORNING_BRT, () =>
+    run({ testDate: "2026-08-05", signals: { reviewDueToday: 300 }, prefs: { flashcard_daily_cap: 50 } }));
+  assert.equal(plan.phase, "taper");
+  assert.equal(plan.inD60Period, true);
+  assert.equal(plan.items.length, 0);
+  assert.equal(plan.dayComplete, false);
+});
+
 test("every emitted item has a usable href and a positive duration", () => {
-  const plan = withFrozenTime(MORNING_BRT, () => run({ testDate: "2026-09-01", signals: { reviewDueToday: 5 } }));
+  const plan = withFrozenTime(MORNING_BRT, () => run({ signals: { reviewDueToday: 5 } }));
   assert.ok(plan.items.length > 0);
   for (const it of plan.items) {
     assert.match(it.href, /^\/app\//, `bad href: ${it.href}`);

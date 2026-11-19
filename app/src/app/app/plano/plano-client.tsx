@@ -173,10 +173,12 @@ export function PlanoClient({
                 Tempo realizado hoje (estimativa): cerca de {Math.min(plan.todayDoneMinutes, 999)} de {plan.todayBudgetMinutes + extraMinutes} min
               </p>
             )}
-            {/* MedHelp 60D, week 8: the time of the simulado that is no longer programmed stays the student's. */}
-            {!plan.paused && plan.d60FreeMinutesToday > 0 && (
-              <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 2, lineHeight: 1.5 }}>
-                Semana 8 do MedHelp 60D: cerca de {plan.d60FreeMinutesToday} min do seu dia ficam livres, sem atividade programada.
+            {/* Inside the 60D period the plan programmes only the 60D schedule (Karina 2026-11-19). No number of
+                "free minutes" is shown: the rest of the day is simply the student's. */}
+            {!plan.paused && plan.inD60Period && (
+              <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4, lineHeight: 1.55 }}>
+                Durante o MedHelp 60D, o Meu Plano programa somente as atividades do cronograma do MedHelp 60D. Os recursos do
+                curso regular continuam disponíveis para você usar quando quiser.
               </p>
             )}
           </div>
@@ -184,6 +186,8 @@ export function PlanoClient({
             <PausedState plan={plan} />
           ) : plan.dayComplete ? (
             <DayCompleteState minutes={plan.todayBudgetMinutes + extraMinutes} nextExtraMinutes={nextExtraMinutes} />
+          ) : plan.items.length === 0 && plan.inD60Period ? (
+            <D60EmptyState />
           ) : plan.items.length === 0 ? (
             <EmptyPlanState />
           ) : (
@@ -192,7 +196,8 @@ export function PlanoClient({
         </section>
 
         {/* ── Forecast: what is expected before the exam ───────────────────── */}
-        {plan.forecast && <ForecastPanel forecast={plan.forecast} dateConfirmed={dateConfirmed} />}
+        {/* Not inside the MedHelp 60D period: the plan programmes nothing of the regular course then. */}
+        {plan.forecast && !plan.inD60Period && <ForecastPanel forecast={plan.forecast} dateConfirmed={dateConfirmed} />}
 
         {/* ── Coverage warning (if user excluded too many specialties) ────── */}
         {plan.coverageWarning && (
@@ -507,6 +512,36 @@ function DayCompleteState({ minutes, nextExtraMinutes }: { minutes: number; next
           Quero adiantar mais 30 min
         </Link>
       )}
+    </div>
+  );
+}
+
+/** Inside the 60D period with nothing of the 60D schedule left for today: said plainly, with the way to the schedule. */
+function D60EmptyState() {
+  return (
+    <div
+      style={{
+        padding: "28px 20px",
+        background: "var(--surface-1)",
+        border: "1px solid var(--surface-2)",
+        borderRadius: "var(--radius)",
+        textAlign: "center",
+      }}
+    >
+      <p style={{ fontSize: 14, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
+        Nenhuma atividade programada para hoje.
+      </p>
+      <Link
+        href="/app/medhelp-60d"
+        className="min-h-11"
+        style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          marginTop: 8, padding: "10px 14px", fontSize: 14, fontWeight: 600,
+          color: "var(--brand-text, var(--brand))", textDecoration: "underline",
+        }}
+      >
+        Abrir o cronograma do MedHelp 60D
+      </Link>
     </div>
   );
 }

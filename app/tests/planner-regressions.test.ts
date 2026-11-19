@@ -350,6 +350,8 @@ test("ACCEPTED TRADEOFF: a denominator larger than the answerable set pins a top
   let lastSubtitle = "";
   for (let d = 0; d < 180; d++) {
     const plan = withFrozenTime(`${key}T13:00:00Z`, () => run({
+      // An exam far enough for the 180 days to stay outside the MedHelp 60D period (the plan schedules nothing in it).
+      testDate: "2027-06-30",
       signals: { quizAttempts: attempts, questionCountsByPageId: new Map([[100, viewCount], [200, 10]]) },
       // Questions only: the weekly mini simulado (last 60 days) would take whole days of
       // this never-studying student and hide what is being measured here.

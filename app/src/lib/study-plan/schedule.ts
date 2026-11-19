@@ -378,7 +378,8 @@ export function simulateSchedule(input: ScheduleInput): ScheduleResult {
       ? Math.max(0, budget - input.today.doneMinutes) + Math.max(0, input.today.extraMinutes)
       : budget;
     const availableAtStart = avail;
-    studyDaysLeft++;
+    // A study day counts for the plan only when the plan has time on it (inside the MedHelp 60D period it has none).
+    if (budget > EPS) studyDaysLeft++;
 
     // ── Revisão first ──────────────────────────────────────────────────────
     let reviewItems = 0;

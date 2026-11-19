@@ -577,11 +577,11 @@ async function main() {
   run("1. Vários meses", "Prova em 30/05/2027 (194 dias). 60 min por dia, segunda a sábado. Todos os materiais. Aluno novo.",
     () => newStudent({ prefs: { available_days: SIX_DAYS, preferred_content_types: all } }));
 
-  run("2. Poucas semanas", "Prova em 08/12/2026 (21 dias). 120 min por dia, todos os dias. Todos os materiais. Aluno novo.",
-    () => newStudent({ examDate: "2026-12-08", prefs: { daily_minutes: 120, preferred_content_types: all } }));
+  run("2. Poucas semanas", "Prova em 06/02/2027: o MedHelp 60D começa em 08/12/2026, e o curso regular é programado até a véspera (21 dias). 120 min por dia, todos os dias. Todos os materiais. Aluno novo.",
+    () => newStudent({ examDate: "2027-02-06", prefs: { daily_minutes: 120, preferred_content_types: all } }));
 
-  run("3. Tempo insuficiente", "Prova em 17/12/2026 (30 dias). 30 min por dia, segunda, quarta e sexta. Todos os materiais. Aluno novo.",
-    () => newStudent({ examDate: "2026-12-17", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all } }));
+  run("3. Tempo insuficiente", "Prova em 15/02/2027: o MedHelp 60D começa em 17/12/2026, e o curso regular é programado até a véspera (30 dias). 30 min por dia, segunda, quarta e sexta. Todos os materiais. Aluno novo.",
+    () => newStudent({ examDate: "2027-02-15", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all } }));
 
   run("6. Desempenho abaixo de 70%", "Como o cenário 1, mas o aluno acerta só 55% das questões na primeira tentativa. As questões erradas voltam pela Revisão.",
     () => newStudent({ firstTryAccuracy: 0.55, prefs: { available_days: SIX_DAYS, preferred_content_types: all } }),
@@ -676,14 +676,14 @@ async function main() {
 
   // 7. A day shorter than the simulado: it is split between study days and continued.
   {
-    const mk = () => newStudent({ examDate: "2026-12-29", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    const mk = () => newStudent({ examDate: "2027-02-27", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     const s = mk();
     const day0 = planFor(c, s, TODAY);
     const f = followPlan(c, s, TODAY);
     const weeks = 6;
     report.push({
       title: "7. Mini simulado dividido entre dias",
-      description: "Prova em 29/12/2026 (42 dias). 30 min por dia, segunda a sexta (150 min por semana). Frequência escolhida: 1 por semana (62 min). Cada sessão é dividida em dias seguidos.",
+      description: "Prova em 27/02/2027: o MedHelp 60D começa em 29/12/2026, e o curso regular é programado até a véspera (42 dias). 30 min por dia, segunda a sexta (150 min por semana). Frequência escolhida: 1 por semana (62 min). Cada sessão é dividida em dias seguidos.",
       day0: summary(day0), simulado: s.log,
       checks: [
         checkBudget(day0),
@@ -699,7 +699,7 @@ async function main() {
 
   // 8. Two a week with short days: a session begun in one week ends in the next.
   {
-    const s = newStudent({ examDate: "2026-12-29", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 2 } });
+    const s = newStudent({ examDate: "2027-02-27", prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 2 } });
     const day0 = planFor(c, s, TODAY);
     // Follow day by day, noting every Monday on which a simulado begun the week before is still open.
     let carriedMondays = 0;
@@ -720,7 +720,7 @@ async function main() {
     }
     report.push({
       title: "8. Mini simulado que começa em uma semana e termina na seguinte",
-      description: "Prova em 29/12/2026 (42 dias). 30 min por dia, segunda a sexta. Frequência escolhida: 2 por semana (125 dos 150 min da semana). A segunda sessão da semana não cabe até sexta e continua na segunda-feira.",
+      description: "Prova em 27/02/2027: o MedHelp 60D começa em 29/12/2026, e o curso regular é programado até a véspera (42 dias). 30 min por dia, segunda a sexta. Frequência escolhida: 2 por semana (125 dos 150 min da semana). A segunda sessão da semana não cabe até sexta e continua na segunda-feira.",
       day0: summary(day0), simulado: s.log,
       checks: [
         ...simChecks(s, { checks }),
@@ -736,7 +736,7 @@ async function main() {
   // 9. Frequency × availability: what each choice costs, and the one that is not viable.
   {
     const mk = (freq: "auto" | 1 | 2) => newStudent({
-      examDate: "2026-12-17", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all, simulado_frequency: freq },
+      examDate: "2027-02-15", prefs: { daily_minutes: 30, available_days: THREE_DAYS, preferred_content_types: all, simulado_frequency: freq },
     });
     const auto = planFor(c, mk("auto"), TODAY);
     const one = planFor(c, mk(1), TODAY);
@@ -744,7 +744,7 @@ async function main() {
     const opt = (f: "auto" | 1 | 2) => auto.simulado.options.find((o) => o.frequency === f)!;
     report.push({
       title: "9. Frequência escolhida × disponibilidade",
-      description: "Prova em 17/12/2026 (30 dias). 30 min por dia, segunda, quarta e sexta (90 min por semana). Um mini simulado = 62 min.",
+      description: "Prova em 15/02/2027: o MedHelp 60D começa em 17/12/2026, e o curso regular é programado até a véspera (30 dias). 30 min por dia, segunda, quarta e sexta (90 min por semana). Um mini simulado = 62 min.",
       day0: summary(auto),
       options: auto.simulado.options,
       checks: [
@@ -771,7 +771,7 @@ async function main() {
 
   // 10. A simulado taken outside the schedule: counted once, nothing lost.
   {
-    const s = newStudent({ examDate: "2026-12-29", prefs: { available_days: SIX_DAYS, preferred_content_types: all } });
+    const s = newStudent({ examDate: "2027-02-27", prefs: { available_days: SIX_DAYS, preferred_content_types: all } });
     followPlan(c, s, TODAY, addDaysKey(TODAY, 7)); // a week of study: this week's simulado is done
     const day = addDaysKey(TODAY, 9); // Thursday of the second week — not a simulado day
     s.flashcardsToday = 0; s.reviewedToday = 0;
@@ -929,11 +929,14 @@ async function main() {
     });
   }
 
-  // 13. New sessions close to the exam: a session that cannot be finished is not opened.
+  // 13. New sessions close to the end of the regular course (the day the MedHelp 60D begins): a session that cannot
+  //     be finished is not opened. Inside the 60D the plan programmes no mini simulado and no regular activity.
   {
-    // Exam on a Wednesday: the last week has Monday and Tuesday, 30 min each = 24 of the 25 questions.
-    const exam = "2026-12-16";
-    const s = newStudent({ examDate: exam, prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    // The 60D begins on a Wednesday (exam 2027-02-14): the last regular week has Monday and Tuesday, 30 min each =
+    // 24 of the 25 questions.
+    const examDate = "2027-02-14";
+    const exam = addDaysKey(examDate, -60); // 2026-12-16: the first day of the MedHelp 60D
+    const s = newStudent({ examDate, prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     const lastMonday = "2026-12-14";
     let lastWeekBlocks = 0, lastWeekContent = 0;
     const checks: Check[] = [];
@@ -946,8 +949,12 @@ async function main() {
       }
       checks.push(...followPlan(c, s, day, day).checks);
     }
-    // Same calendar, but the student begins a mini simulado on the eve by their own choice: it is still continued.
-    const t = newStudent({ examDate: exam, prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
+    // Inside the 60D (its first day, a Monday four weeks in, and the eve of the exam): nothing of the regular course.
+    let inside60 = 0;
+    const insideDays = [exam, "2027-01-11", addDaysKey(examDate, -1)];
+    for (const day of insideDays) inside60 += planFor(c, s, day).items.filter((i) => i.href !== "/app/medhelp-60d").length;
+    // Same calendar, but the student begins a mini simulado on the last regular day by their own choice: it is still continued.
+    const t = newStudent({ examDate, prefs: { daily_minutes: 30, available_days: FIVE_DAYS, preferred_content_types: all, simulado_frequency: 1 } });
     const own = [...c.simuladoPages.values()].find((p) => p.isMini)!;
     let clock = Date.parse(`${lastMonday}T13:00:00Z`);
     for (const q of own.questionIds.slice(0, 20)) {
@@ -956,13 +963,13 @@ async function main() {
     }
     const eve = planFor(c, t, "2026-12-15");
     report.push({
-      title: "13. Novas sessões perto da prova",
-      description: "Prova em 16/12/2026 (quarta-feira). 30 min por dia, segunda a sexta; 1 mini simulado por semana (62 min). A última semana tem só segunda e terça: 24 das 25 questões, sem tempo para concluir uma sessão nova.",
+      title: "13. Novas sessões perto do início do MedHelp 60D",
+      description: "Prova em 14/02/2027: o MedHelp 60D começa em 16/12/2026 (quarta-feira). 30 min por dia, segunda a sexta; 1 mini simulado por semana (62 min). A última semana do curso regular tem só segunda e terça: 24 das 25 questões, sem tempo para concluir uma sessão nova.",
       simulado: s.log,
       checks: [
         ...simChecks(s, { checks }),
         {
-          name: "Todo mini simulado que o plano abriu foi concluído antes da prova",
+          name: "Todo mini simulado que o plano abriu foi concluído antes do início do MedHelp 60D",
           ok: s.log.simBegun > 0 && s.log.simBegun === s.log.simFinished,
           detail: `iniciados pelo plano: ${s.log.simBegun}; concluídos: ${s.log.simFinished}`,
         },
@@ -972,9 +979,14 @@ async function main() {
           detail: `blocos de mini simulado na última semana (segunda e terça): ${lastWeekBlocks}; minutos de outras atividades nesses dias: ${lastWeekContent}`,
         },
         {
-          name: "Um mini simulado já iniciado continua sendo oferecido, mesmo na véspera",
+          name: "Um mini simulado já iniciado continua sendo oferecido, mesmo no último dia antes do MedHelp 60D",
           ok: simBlocks(eve).length === 1 && simBlocks(eve)[0].pageId === own.pageId && /faltam 5 de 25/.test((simBlocks(eve)[0].lines ?? []).join(" ")),
-          detail: `véspera, com 20 de 25 respondidas na segunda-feira: ${simBlocks(eve).map((i) => i.title + " — " + (i.lines ?? [])[0]).join("; ") || "nenhum bloco"}`,
+          detail: `último dia antes do MedHelp 60D, com 20 de 25 respondidas na segunda-feira: ${simBlocks(eve).map((i) => i.title + " — " + (i.lines ?? [])[0]).join("; ") || "nenhum bloco"}`,
+        },
+        {
+          name: "Durante o MedHelp 60D o Meu Plano não programa mini simulado nem atividade do curso regular",
+          ok: inside60 === 0,
+          detail: `atividades do curso regular programadas no primeiro dia do MedHelp 60D, em 11/01/2027 e na véspera da prova: ${inside60}`,
         },
       ],
     });

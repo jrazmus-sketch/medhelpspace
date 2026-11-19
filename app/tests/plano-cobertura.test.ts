@@ -16,7 +16,7 @@ import { withFrozenTime, MORNING_BRT } from "./helpers/freeze-time";
 import {
   derivePlan, defaultPrefs,
   type StudyPlanPrefs, type Signals, type TopicRow, type PageRow, type TopicContentRow, type SpecialtyRow,
-} from "@/lib/study-plan/derive";
+  type ContentType } from "@/lib/study-plan/derive";
 import { DEFAULT_PLAN_SETTINGS, settingsFromRow, PLAN_SETTING_FIELDS } from "@/lib/study-plan/settings";
 import { medianGapSeconds, resolvePace } from "@/lib/study-plan/pace";
 import { simulateSchedule, type ScheduleInput, type WorkActivity } from "@/lib/study-plan/schedule";
@@ -443,16 +443,22 @@ test("time spent in the Revisão today counts against today's time", () => {
 });
 
 test("the forecast holds back for reviews what the Revisão takes today (never below the minimum, never above the daily limit)", () => {
-  const light = plan({ testDate: "2026-08-20", signals: { reviewDueToday: 0 } });
-  const heavy = plan({ testDate: "2026-08-20", signals: { reviewDueToday: 80 } });   // 40 min of a 60-min day → capped at 50%
+  const light = plan({ signals: { reviewDueToday: 0 } });
+  const heavy = plan({ signals: { reviewDueToday: 80 } });   // 40 min of a 60-min day → capped at 50%
   const future = (p: ReturnType<typeof plan>) => p.scheduleDays.filter((d) => d.key > TODAY && d.available === 60);
+  assert.ok(future(light).length > 50, "the days before the MedHelp 60D period");
   assert.ok(future(light).every((d) => d.review === 12));
   assert.ok(future(heavy).every((d) => d.review === 30));
 });
 
 test("MedHelp 60D materials are never scheduled by Meu Plano", () => {
-  const p = plan({ testDate: "2026-09-01", prefs: { include_60d: true, preferred_content_types: ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"] } });
-  assert.equal(p.phase, "intensification");
+  const prefs = { include_60d: true, preferred_content_types: ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"] as ContentType[] };
+  // Inside the 60 days (and without the 60D schedule's own block) the plan puts NOTHING on the day.
+  const inside = plan({ testDate: "2026-09-01", prefs });
+  assert.equal(inside.phase, "intensification");
+  assert.equal(inside.inD60Period, true);
+  assert.equal(inside.items.length, 0);
+  const p = plan({ prefs });
   assert.equal(p.items.some((i) => i.kind === "memorecards"), false);
   const sim = p.items.find((i) => i.kind === "simulado")!;
   assert.match(sim.title, /^Mini simulado/);
@@ -463,7 +469,8 @@ test("MedHelp 60D materials are never scheduled by Meu Plano", () => {
 
 test("forecast: zero topics concluded in full is told apart from partial progress", () => {
   // One study day of 30 min: Tema1 does not fit whole, but the plan does advance in it.
-  const p = plan({ testDate: "2026-07-29", prefs: { daily_minutes: 30, preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
+  // (Exam on 2026-09-27: the MedHelp 60D begins on 2026-07-29, so today is the regular course's only day.)
+  const p = plan({ testDate: "2026-09-27", prefs: { daily_minutes: 30, preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
   const f = p.forecast!;
   assert.equal(f.expectedTopics, 0);
   assert.equal(f.partialTopics, 1);
@@ -502,8 +509,8 @@ test("forecast: everything fits → all expected, with the day the last topic en
 });
 
 test("forecast: not enough time → says what is not expected and what would widen the coverage", () => {
-  // Exam in 3 days, 30 min a day.
-  const p = plan({ testDate: "2026-07-31", prefs: { daily_minutes: 30, preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
+  // The MedHelp 60D begins in 3 days (exam 2026-09-29): 3 study days for the regular course, 30 min a day.
+  const p = plan({ testDate: "2026-09-29", prefs: { daily_minutes: 30, preferred_content_types: ["quiz", "revalida_up", "flashcards"] } });
   const f = p.forecast!;
   assert.ok(f.expectedTopics < f.pendingTopics);
   assert.equal(f.notExpected.length, f.pendingTopics - f.expectedTopics);
@@ -601,15 +608,16 @@ test("schedule: with 'every N weeks' the simulado weeks are counted back from th
 
 test("plan: mini simulados take at most a quarter of the week's study time (little time → every few weeks)", () => {
   // 30 min × 3 days = 90 min a week; one mini simulado = 62.5 min → every 3 weeks, not every week.
-  const little = plan({ testDate: "2026-09-01", prefs: { ...WITH_SIMULADO, daily_minutes: 30, available_days: (1 << 2) | (1 << 3) | (1 << 5) } }); // Tue, Wed, Fri
-  const simDays = little.scheduleDays.filter((d) => d.simulado > 0).length;
-  const weeks = 5;
-  assert.ok(simDays > 0 && simDays <= weeks, `simulado on ${simDays} days in ~${weeks} weeks`);
+  // (Exam 2026-10-31: the MedHelp 60D begins on 2026-09-01, so the regular course has the same ~5 weeks.)
+  const little = plan({ testDate: "2026-10-31", prefs: { ...WITH_SIMULADO, daily_minutes: 30, available_days: (1 << 2) | (1 << 3) | (1 << 5) } }); // Tue, Wed, Fri
   const content = little.scheduleDays.reduce((s, d) => s + d.content, 0);
   const simulado = little.scheduleDays.reduce((s, d) => s + d.simulado, 0);
+  // ~5 weeks before the 60D: every 3 weeks = at most 2 sessions (each spread over three 30-minute days), never 5.
+  const sessions = simulado / 62.5;
+  assert.ok(sessions > 0 && sessions <= 2.01, `${sessions} mini simulados in ~5 weeks`);
   assert.ok(content > simulado, "new content keeps most of the time");
   // 60 min × 7 days: one every week.
-  const plenty = plan({ testDate: "2026-09-01", prefs: WITH_SIMULADO });
+  const plenty = plan({ testDate: "2026-10-31", prefs: WITH_SIMULADO });
   const mondays = plenty.scheduleDays.filter((d) => d.simulado > 0 && d.key > TODAY).length;
   assert.ok(mondays >= 4);
 });
@@ -664,12 +672,14 @@ test("MedVoice-only topic: once heard it stays CONCLUDED after the foundation ph
   assert.equal(after.forecast!.pendingTopics + after.forecast!.completedTopics, before.pendingTopics + before.completedTopics, "no topic vanishes");
 });
 
-test("MedVoice-only topic: not heard and past the foundation phase → 'não previsto até a prova', never dropped or counted as concluded", () => {
+test("MedVoice-only topic: not heard when the regular course's time is over → 'não previsto até a prova', never dropped or counted as concluded", () => {
+  // 35 days from the exam = inside the MedHelp 60D period: the plan schedules nothing of the regular course.
   const p = soloPlan({ testDate: "2026-09-01" });
   const f = p.forecast!;
   assert.equal(f.pendingTopics, N + 1, "the topic is still counted");
-  assert.equal(f.expectedTopics, N, "every other topic fits");
-  assert.deepEqual(f.notExpected.map((t) => t.name), ["SoAudio"]);
+  assert.equal(f.expectedTopics, 0, "nothing of the regular course is scheduled inside the 60D");
+  assert.ok(f.notExpected.map((t) => t.name).includes("SoAudio"));
+  assert.equal(f.notExpected.length, N + 1);
   assert.equal(f.completedTopics, 0);
   assert.equal(p.items.some((i) => i.kind === "audio"), false, "the audio is not put on a day");
 });

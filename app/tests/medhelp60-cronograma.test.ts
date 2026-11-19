@@ -3,7 +3,9 @@
  *   1. the sequence is fixed in advance: it comes from the exam date and the priorities, never from the student;
  *   2. subjects are distributed by weeks, each with its Fórmula MedHelp page and MemoreCards;
  *   3. the seven Simulados 100Q are programmed, each with time for correction — weeks 1 to 7, Simulado N in week N;
- *      week 8 programmes no new simulado and its time stays free (her e-mail of 2026-11-19);
+ *      week 8 programmes no new simulado (her e-mail of 2026-11-19), and no reserve of time is computed for it;
+ *   6. during the WHOLE 60D period Meu Plano adds nothing of the regular course to the day — no mini simulado, no
+ *      Revisão, no content — in every week, whether its Simulado 100Q is available or pending (2026-11-19, 01h12);
  *   4. a material not delivered yet is shown as pending, in its place — nothing is removed or reordered silently;
  *   5. every item has a stable key, so the manual checklist survives a new delivery.
  */
@@ -62,8 +64,7 @@ test("simulados: Simulado N in week N, weeks 1 to 7, each followed by its correc
   assert.equal(w8.hasSimulado, false);
   assert.deepEqual(w8.items.map((i) => i.kind), ["formula", "formula"], "week 8 keeps its topics");
   assert.equal(w8.minutes, 10, "week 8's load is its topics only: 2 × 5 min");
-  assert.equal(w8.freeMinutes, 350, "the space of a Simulado 100Q and its correction stays free: 250 + 100 min");
-  assert.deepEqual(c.weeks.slice(0, 7).map((w) => w.freeMinutes), [0, 0, 0, 0, 0, 0, 0]);
+  assert.equal("freeMinutes" in w8, false, "no fixed reserve of time is attached to week 8");
   for (let w = 1; w <= 7; w++) {
     const items = c.weeks[w - 1].items;
     const sim = items.find((i) => i.kind === "sim")!; const cor = items.find((i) => i.kind === "sim-correcao")!;
@@ -200,8 +201,8 @@ for (let i = 1; i <= 30; i++) {
   CONTENT.push({ topic_id: i, resource_type: "quiz", page_id: 100 + i, question_filter: null });
 }
 type Weeks = NonNullable<NonNullable<Signals["sixtyD"]>["weeks"]>;
-const week = (n: number, startKey: string, endKey: string, pendingMinutes: number, hasSimulado = false, freeMinutes = 0): Weeks[number] =>
-  ({ n, startKey, endKey, pendingMinutes, pendingItems: pendingMinutes > 0 ? 3 : 0, hasSimulado, freeMinutes });
+const week = (n: number, startKey: string, endKey: string, pendingMinutes: number, hasSimulado = false): Weeks[number] =>
+  ({ n, startKey, endKey, pendingMinutes, pendingItems: pendingMinutes > 0 ? 3 : 0, hasSimulado });
 function plan(weeks: Weeks | null, prefs: Partial<StudyPlanPrefs> = {}) {
   return withFrozenTime(MORNING_BRT, () => derivePlan({
     prefs: { ...defaultPrefs(), pace_mode: "standard", preferred_content_types: ["quiz"], ...prefs },
@@ -216,32 +217,71 @@ function plan(weeks: Weeks | null, prefs: Partial<StudyPlanPrefs> = {}) {
 }
 const placed = (d: { review: number; simulado: number; content: number }) => d.review + d.simulado + d.content;
 
-test("Meu Plano: outside the 60D (or with everything ticked) the day is the plan's own, with no 60D block", () => {
-  for (const weeks of [null, [week(4, "2026-07-22", "2026-07-28", 0), week(5, "2026-07-29", "2026-08-04", 0)]]) {
-    const p = plan(weeks);
-    assert.equal(p.items.some((i) => i.href === "/app/medhelp-60d"), false);
-    assert.equal(p.todayBudgetMinutes, 60);
-    assert.equal(p.totalEstimatedMinutes, 60);
+// Outside the 60 days the plan is its own. A far exam: 2027-05-30 (the 60 days begin on 2027-03-31).
+function farPlan(prefs: Partial<StudyPlanPrefs> = {}) {
+  return withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: { ...defaultPrefs(), pace_mode: "standard", preferred_content_types: ["quiz"], ...prefs },
+    cohort: { test_date: "2027-05-30" },
+    specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: CONTENT,
+    signals: {
+      quizAttempts: [], lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],
+      questionCountsByPageId: new Map(Array.from({ length: 30 }, (_, i) => [101 + i, 40])),
+    },
+  }));
+}
+
+test("Meu Plano: before the 60 days the day is the plan's own, with no 60D block", () => {
+  const p = farPlan();
+  assert.equal(p.inD60Period, false);
+  assert.equal(p.items.some((i) => i.href === "/app/medhelp-60d"), false);
+  assert.equal(p.todayBudgetMinutes, 60);
+  assert.equal(p.totalEstimatedMinutes, 60);
+});
+
+test("Meu Plano: inside the 60D the day shows ONE 60D block and nothing of the regular course (Karina 2026-11-19)", () => {
+  const p = plan([week(4, "2026-07-22", "2026-07-28", 30), week(5, "2026-07-29", "2026-08-04", 210)]);
+  assert.equal(p.inD60Period, true);
+  assert.equal(p.items.length, 1, "only the 60D block — the rest of the day is not filled");
+  const block = p.items[0];
+  assert.equal(block.title, "MedHelp 60D — semana 4");
+  assert.equal(block.href, "/app/medhelp-60d");
+  assert.equal(block.estimatedMinutes, 30, "the 30 unticked minutes fall on today, the week's last day");
+  assert.equal(block.lines![1], "Hoje: cerca de 30 min");
+  assert.equal(p.totalEstimatedMinutes, 30);
+  assert.equal(p.todayBudgetMinutes, 30, "what is programmed today: the 60D's share, not the whole availability");
+  assert.equal(p.dayComplete, false);
+  // every day from today to the eve of the exam: the plan's own queue places nothing
+  assert.ok(p.scheduleDays.length > 20);
+  for (const d of p.scheduleDays) assert.equal(placed(d), 0, `${d.key}: ${placed(d)}`);
+});
+
+test("Meu Plano: the rule holds in EVERY 60D week — Simulado 100Q available, pending, or none (week 8) — and after week 8", () => {
+  const all = { preferred_content_types: defaultPrefs().preferred_content_types, simulado_frequency: 1 as const, daily_minutes: 180 };
+  for (const weeks of [
+    [week(4, "2026-07-22", "2026-07-28", 0, true), week(5, "2026-07-29", "2026-08-04", 0, false), week(6, "2026-08-05", "2026-08-11", 60, false)],
+    [week(8, "2026-07-22", "2026-07-28", 20, false)],
+    null, // the schedule could not be read: the plan still adds nothing inside the 60 days
+  ] as (Weeks | null)[]) {
+    const p = plan(weeks, all);
+    assert.equal(p.inD60Period, true);
+    assert.equal(p.items.some((i) => i.kind === "simulado"), false, "no mini simulado");
+    assert.equal(p.items.filter((i) => i.href !== "/app/medhelp-60d").length, 0, "no regular-course activity");
+    for (const d of p.scheduleDays) {
+      assert.equal(d.simulado, 0, `${d.key}: mini simulado`);
+      assert.equal(d.content, 0, `${d.key}: content`);
+      assert.equal(d.review, 0, `${d.key}: Revisão`);
+    }
   }
 });
 
-test("Meu Plano: the 60D comes first in the day, as ONE block, and the plan fills the rest of the same time", () => {
-  const p = plan([week(4, "2026-07-22", "2026-07-28", 30), week(5, "2026-07-29", "2026-08-04", 210)]);
-  const first = p.items[0];
-  assert.equal(first.title, "MedHelp 60D — semana 4");
-  assert.equal(first.href, "/app/medhelp-60d");
-  assert.equal(first.estimatedMinutes, 30, "the 30 unticked minutes fall on today, the week's last day");
-  assert.equal(first.lines![1], "Hoje: cerca de 30 min");
-  assert.equal(p.items.filter((i) => i.href === "/app/medhelp-60d").length, 1, "the activities are not listed again here");
-  assert.equal(p.todayBudgetMinutes, 60, "one availability: the day is still the student's 60 minutes");
-  assert.equal(p.totalEstimatedMinutes, 60);
-  assert.ok(p.items.length > 1, "the plan's own queue takes the other 30 minutes");
-  // week 5: 210 min over 7 study days = 30 a day for the 60D → the plan places at most 30 on each of those days
-  const w5 = p.scheduleDays.filter((d) => d.key >= "2026-07-29" && d.key <= "2026-08-04");
-  assert.equal(w5.length, 7);
-  for (const d of w5) assert.ok(placed(d) <= 30.01, `${d.key}: ${placed(d)}`);
-  // after the weeks given, the plan has the whole day again
-  assert.ok(p.scheduleDays.filter((d) => d.key > "2026-08-04").some((d) => placed(d) > 50));
+test("Meu Plano: with everything of the week ticked (or in the days after week 8) the day is empty, and it is not 'time used up'", () => {
+  for (const weeks of [null, [week(4, "2026-07-22", "2026-07-28", 0), week(5, "2026-07-29", "2026-08-04", 0)]]) {
+    const p = plan(weeks);
+    assert.equal(p.inD60Period, true);
+    assert.equal(p.items.length, 0);
+    assert.equal(p.totalEstimatedMinutes, 0);
+    assert.equal(p.dayComplete, false, "the page shows the 60D notice, not 'Meta de hoje concluída'");
+  }
 });
 
 test("Meu Plano: when the 60D week does not fit, the block says so and nothing is removed", () => {
@@ -254,56 +294,23 @@ test("Meu Plano: when the 60D week does not fit, the block says so and nothing i
   assert.match(block.lines![0], /3 atividades por concluir nesta semana/);
 });
 
-test("Meu Plano: no new mini simulado in a 60D week that holds a Simulado 100Q", () => {
-  const all = { preferred_content_types: defaultPrefs().preferred_content_types, simulado_frequency: 1 as const, daily_minutes: 120 };
-  const weeks = [
-    week(4, "2026-07-22", "2026-07-28", 0, true), week(5, "2026-07-29", "2026-08-04", 0, true),
-    week(6, "2026-08-05", "2026-08-11", 0, false),
-  ];
-  const withSim = plan(weeks, all);
-  const without = plan(null, all);
-  const sim = (p: ReturnType<typeof plan>, from: string, to: string) =>
-    p.scheduleDays.filter((d) => d.key >= from && d.key <= to).reduce((s, d) => s + d.simulado, 0);
-  assert.ok(sim(without, "2026-07-29", "2026-08-04") > 0, "normally that week has its mini simulado");
-  assert.equal(sim(withSim, "2026-07-29", "2026-08-04"), 0, "week 5 holds a Simulado 100Q: no mini simulado");
-  assert.ok(sim(withSim, "2026-08-05", "2026-08-11") > 0, "week 6 has none available: the mini simulado stays");
-  assert.equal(withSim.items.some((i) => i.kind === "simulado"), false, "today is in week 4, which holds a Simulado 100Q");
+test("Meu Plano: the forecast counts the regular course only up to the day the 60D begins", () => {
+  // 30 topics × 40 questions × 2.5 min = 50 h. Exam 2027-05-30, today 2026-07-28: far more than 50 h before 31/03.
+  const far = farPlan();
+  assert.ok(far.forecast, "an exam ahead has a forecast");
+  const last = far.scheduleDays.filter((d) => placed(d) > 0).map((d) => d.key).sort().pop()!;
+  assert.ok(last < "2027-03-31", `the last day with a regular activity (${last}) is before the 60D`);
+  for (const d of far.scheduleDays.filter((x) => x.key >= "2027-03-31")) assert.equal(placed(d), 0, d.key);
+  // a short daily time: what does not fit before the 60D is "não previsto", never pushed into the 60 days
+  const short = farPlan({ daily_minutes: 10 });
+  assert.ok(short.forecast!.expectedTopics < short.forecast!.pendingTopics);
+  for (const d of short.scheduleDays.filter((x) => x.key >= "2027-03-31")) assert.equal(placed(d), 0, d.key);
 });
 
-// ── Week 8 (Karina 2026-11-19): no new simulado, and the time it would take stays the student's ───────────────
-test("Meu Plano: the free time of week 8 is not filled — no mini simulado, no regular activity in it", () => {
-  const all = { preferred_content_types: defaultPrefs().preferred_content_types, simulado_frequency: 1 as const, daily_minutes: 120 };
-  // today (28/07) is the last day of week 7; week 8 = 29/07 to 04/08, 70 unticked minutes and 350 free minutes
-  const weeks = [week(7, "2026-07-22", "2026-07-28", 0, false), week(8, "2026-07-29", "2026-08-04", 70, false, 350)];
-  const p = plan(weeks, all);
-  const w8 = p.scheduleDays.filter((d) => d.key >= "2026-07-29" && d.key <= "2026-08-04");
-  assert.equal(w8.length, 7);
-  // 120 min a day − 10 of the 60D (70 ÷ 7) − 50 free (350 ÷ 7) = 60 for the plan's own queue
-  for (const d of w8) assert.ok(placed(d) <= 60.01, `${d.key}: ${placed(d)}`);
-  assert.equal(w8.reduce((s, d) => s + d.simulado, 0), 0, "no mini simulado takes the place of the simulado");
-  const without = plan([week(7, "2026-07-22", "2026-07-28", 0, false), week(8, "2026-07-29", "2026-08-04", 70, false, 0)], all);
-  assert.ok(without.scheduleDays.filter((d) => d.key >= "2026-07-29" && d.key <= "2026-08-04").some((d) => placed(d) > 100),
-    "without the free time the plan would use the rest of the day");
-  assert.ok(p.scheduleDays.filter((d) => d.key > "2026-08-04").some((d) => placed(d) > 100), "after week 8 the day is the plan's again");
-});
-
-test("Meu Plano: in week 8 the page is told how much of today stays free, and the day never goes above the student's time", () => {
-  // today is the last day of week 8: 30 unticked minutes of the 60D, 350 free minutes over the week's 7 study days
-  const p = plan([week(8, "2026-07-22", "2026-07-28", 30, false, 350)], { daily_minutes: 120 });
-  assert.equal(p.items[0].title, "MedHelp 60D — semana 8");
-  assert.equal(p.items[0].estimatedMinutes, 30);
-  assert.equal(p.d60FreeMinutesToday, 50, "350 min over the week's seven study days");
-  assert.equal(p.todayBudgetMinutes, 70, "120 − 50 free: what is programmed today");
-  assert.equal(p.totalEstimatedMinutes, 70);
-  assert.equal(p.items.some((i) => i.kind === "simulado"), false);
-  // a short day: the 60D first, the free time takes what is left, the plan's queue gets nothing
-  const short = plan([week(8, "2026-07-22", "2026-07-28", 30, false, 350)], { daily_minutes: 60 });
-  assert.equal(short.d60FreeMinutesToday, 30);
-  assert.equal(short.totalEstimatedMinutes, 30);
-  assert.equal(short.items.length, 1);
-  // every other week: nothing is left free
-  assert.equal(plan([week(4, "2026-07-22", "2026-07-28", 30, true)]).d60FreeMinutesToday, 0);
-  assert.equal(plan(null).d60FreeMinutesToday, 0);
+test("Meu Plano page: the 60D notice is the sentence agreed, and no number of 'free minutes' is shown", () => {
+  const src = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "plano-client.tsx"), "utf8").replace(/\s+/g, " ");
+  assert.ok(src.includes("Durante o MedHelp 60D, o Meu Plano programa somente as atividades do cronograma do MedHelp 60D. Os recursos do curso regular continuam disponíveis para você usar quando quiser."));
+  assert.equal(/ficam livres/.test(src), false);
 });
 
 test("the schedule's presentation is her text, with no separate 'reta final' (Karina 2026-11-19)", () => {

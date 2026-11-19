@@ -320,7 +320,7 @@ export async function getDerivedPlanForUser(
     reviewedToday: reviewedTodayRes.count ?? 0,
   };
 
-  // MedHelp 60D: inside the 60 days before the exam, the plan gives the 60D schedule its time first.
+  // MedHelp 60D: inside the 60 days before the exam, the plan's day is the 60D schedule's and nothing else.
   // Loaded only then (a dynamic import: that module reads the prefs through this one).
   const examKey = cohort?.test_date ? cohort.test_date.slice(0, 10) : null;
   const daysLeft = examKey ? diffDaysKey(todayKey, examKey) : null;
@@ -334,7 +334,7 @@ export async function getDerivedPlanForUser(
           weeks: d60.cronograma.weeks.filter((w) => w.endKey >= todayKey).map((w) => {
             const open = w.items.filter((i) => !i.pending && !ticked.has(i.key));
             return {
-              n: w.n, startKey: w.startKey, endKey: w.endKey, hasSimulado: w.hasSimulado, freeMinutes: w.freeMinutes,
+              n: w.n, startKey: w.startKey, endKey: w.endKey, hasSimulado: w.hasSimulado,
               pendingItems: open.length, pendingMinutes: open.reduce((s, i) => s + i.minutes, 0),
             };
           }),

@@ -161,9 +161,14 @@ export function ForecastPanel({
           </div>
         )}
 
-        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 10, lineHeight: 1.5 }}>
+        {forecast.endsAtD60 && (
+          <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 10, lineHeight: 1.5 }}>
+            O curso regular é programado até o início do MedHelp 60D, 60 dias antes da prova.
+          </p>
+        )}
+        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: forecast.endsAtD60 ? 4 : 10, lineHeight: 1.5 }}>
           {dateConfirmed
-            ? `${forecast.studyDaysLeft} ${forecast.studyDaysLeft === 1 ? "dia de estudo" : "dias de estudo"} até a prova · `
+            ? `${forecast.studyDaysLeft} ${forecast.studyDaysLeft === 1 ? "dia de estudo" : "dias de estudo"} até ${forecast.endsAtD60 ? "o início do MedHelp 60D" : "a prova"} · `
             : ""}
           {hours(forecast.minutesPerStudyDay)} por dia de estudo
           {completedTopics > 0 ? ` · ${completedTopics} ${completedTopics === 1 ? "tema já concluído" : "temas já concluídos"}` : ""}

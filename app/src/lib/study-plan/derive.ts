@@ -51,6 +51,7 @@ import { flashcardGroupSlug } from "@/lib/flashcard-group-slug";
 import { buildTopicProgress, topicQuizHref, type TopicQuestionIndex } from "./topic-questions";
 import { DEFAULT_PLAN_SETTINGS, type PlanSettings } from "./settings";
 import { DEFAULT_DAILY_MINUTES } from "./availability";
+import { D60_DAYS } from "@/lib/medhelp60/cronograma";
 import { withReviewOutcomes, questionsInReview, type QuestionReviewRow } from "./review-outcomes";
 import {
   simuladoCadence, simuladoFacts, SIMULADO_FREQUENCIES,
@@ -170,10 +171,11 @@ export type DerivedPlan = {
   /** The day's time (minutes) and how much of it today's answers already used. */
   todayBudgetMinutes: number;
   /**
-   * Minutes of today left free on purpose by the MedHelp 60D (week 8: no new simulado programmed). Nothing is
-   * scheduled in them; the page says so. 0 on every other day.
+   * Today is inside the MedHelp 60D period (the 60 days before the exam): the plan programmes ONLY the 60D
+   * schedule — no mini simulado, no Revisão, no regular-course activity fills the rest of the day (Karina
+   * 2026-11-19). The page says so; the regular resources stay open for the student to use by choice.
    */
-  d60FreeMinutesToday: number;
+  inD60Period: boolean;
   todayDoneMinutes: number;
   /** Today's time is used up while work remains (≠ "nothing left to study"). */
   dayComplete: boolean;
@@ -212,6 +214,11 @@ export type PlanForecast = {
    */
   inReviewTopics: number;
   studyDaysLeft: number;
+  /**
+   * The regular course is scheduled up to the day before the MedHelp 60D begins (60 days before the exam): the
+   * study days counted are the ones up to there, and the panel says so.
+   */
+  endsAtD60: boolean;
   minutesPerStudyDay: number;
   /** Minutes still to study / of new content that fit before the exam / actually placed on days. */
   pendingMinutes: number;
@@ -328,16 +335,11 @@ export type Signals = {
   /**
    * MedHelp 60D (Karina 2026-11-17): the weeks of the 60D schedule that are still ahead or running, with the
    * minutes of their UNTICKED activities. Present only when the student's exam is within the 60 days. The plan
-   * reserves that time first on each study day of the week and fills the rest with its own queue — one
-   * availability, no activity listed twice (the 60D items stay on the 60D page; here they are one block).
-   * `freeMinutes` (week 8, Karina 2026-11-19): time the 60D leaves free on purpose — the space of a Simulado 100Q
-   * with no new simulado programmed. The plan keeps it free too: no mini simulado, no regular activity fills it.
+   * shows that time on each study day of the week as ONE block (the 60D items stay on the 60D page) — and, during
+   * the whole 60D period, adds NOTHING of its own to the rest of the day (Karina 2026-11-19).
    */
   sixtyD?: {
-    weeks: {
-      n: number; startKey: string; endKey: string; pendingMinutes: number; pendingItems: number; hasSimulado: boolean;
-      freeMinutes?: number;
-    }[];
+    weeks: { n: number; startKey: string; endKey: string; pendingMinutes: number; pendingItems: number; hasSimulado: boolean }[];
   } | null;
   /** The student's Flashcards facts (function study_plan_flashcard_facts). */
   flashcards?: {
@@ -615,11 +617,16 @@ export function derivePlan(args: {
     reducedOn(dayKey) ? (prefs.temp_daily_minutes as number) : prefs.daily_minutes;
   const dailyMinutes = minutesForDay(todayKey);
 
-  // ── MedHelp 60D first, inside the same daily time ────────────────────────
-  // The week's unticked 60D minutes are spread over the week's study days still ahead (today included); each of
-  // those days gives that share to the 60D and the plan's own queue gets what is left. When the week's load is
-  // bigger than the week's time the 60D takes the whole day — the 60D page and the block below SAY so; nothing
-  // is removed from either schedule.
+  // ── MedHelp 60D: inside the 60 days, the day is the 60D schedule's ───────
+  // The week's unticked 60D minutes are spread over the week's study days still ahead (today included). The
+  // plan's own queue gets NO time on any day of the 60D period — every week, whether the week's Simulado 100Q is
+  // available or still pending, and the days after week 8 too (Karina 2026-11-19): no mini simulado, no Revisão,
+  // no regular-course activity is added to fill what is left of the day. That time is the student's; the regular
+  // resources stay open by choice. When a week's load is bigger than the week's time the 60D takes the whole
+  // day — the 60D page and the block below SAY so; nothing is removed from the schedule.
+  const d60ExamKey = cohort?.test_date ? cohort.test_date.slice(0, 10) : null;
+  const d60StartKey = d60ExamKey ? addDaysKey(d60ExamKey, -D60_DAYS) : null;
+  const inD60 = (k: string): boolean => d60StartKey != null && d60ExamKey != null && k >= d60StartKey && k < d60ExamKey;
   const d60Weeks = signals.sixtyD?.weeks ?? [];
   const isOpenStudyDay = (k: string) =>
     (studyDayMask & (1 << dayOfWeekForKey(k))) !== 0 && !signals.pauses.some((p) => p.pause_from <= k && p.pause_until >= k);
@@ -635,18 +642,8 @@ export function derivePlan(args: {
     if (!w || w.pendingMinutes <= 0 || !isOpenStudyDay(k)) return 0;
     return Math.min(minutesForDay(k), d60Share(w).perDay);
   };
-  // The week's FREE time (week 8: no new simulado) is the same every study day of that week — the week's free
-  // minutes over ALL its study days, so it never piles up on the last ones — and comes after the 60D's own share.
-  const d60Free = (k: string): number => {
-    const w = k >= todayKey ? d60WeekOf(k) : null;
-    const free = w?.freeMinutes ?? 0;
-    if (!w || free <= 0 || !isOpenStudyDay(k)) return 0;
-    let days = 0;
-    for (let d = w.startKey; d <= w.endKey; d = addDaysKey(d, 1)) if (isOpenStudyDay(d)) days++;
-    return Math.max(0, Math.min(minutesForDay(k) - d60Reserve(k), free / Math.max(1, days)));
-  };
-  /** What the plan's own queue may use on a day: the student's time minus the 60D's share and its free time. */
-  const planMinutesForDay = (k: string): number => Math.max(0, minutesForDay(k) - d60Reserve(k) - d60Free(k));
+  /** What the plan's own queue may use on a day: the student's time — and nothing inside the 60D period. */
+  const planMinutesForDay = (k: string): number => (inD60(k) ? 0 : Math.max(0, minutesForDay(k)));
   const routine: PlanRoutine = {
     dailyMinutes,
     baseDailyMinutes: prefs.daily_minutes,
@@ -1166,14 +1163,14 @@ export function derivePlan(args: {
       extraMinutes: Math.max(0, args.extraMinutesToday ?? 0),
       simuladoSkippedThrough,
       simuladoTouches: simFacts.touches,
-      simuladoResumeMinutes: (simFacts.inProgress?.remaining ?? 0) * pace.minutesPerQuestion,
+      // Inside the 60D period a mini simulado in progress is not put on the day either (it stays open for the student).
+      simuladoResumeMinutes: inD60(todayKey) ? 0 : (simFacts.inProgress?.remaining ?? 0) * pace.minutesPerQuestion,
       simuladoResumeCarried: simFacts.inProgress?.carried ?? false,
       simuladoResumeStale: simFacts.inProgress?.stale ?? false,
     },
     simuladoEnabled: allowedTypes.has("simulado"),
-    // Never a mini simulado in a 60D week that holds a Simulado 100Q, nor in the week whose simulado time was
-    // left free (week 8): that time is the student's, not a slot for a mini simulado.
-    noNewSimuladoOn: (k) => { const w = d60WeekOf(k); return !!w && (w.hasSimulado || (w.freeMinutes ?? 0) > 0); },
+    // No mini simulado on any day of the 60D period — whatever the state of that week's Simulado 100Q.
+    noNewSimuladoOn: inD60,
     simuladoMinutes,
     simuladoSessionsPerWeek: cadence.sessionsPerWeek,
     simuladoEveryWeeks,
@@ -1361,7 +1358,7 @@ export function derivePlan(args: {
       subtitle: "Cronograma do MedHelp 60D",
       href: "/app/medhelp-60d",
       estimatedMinutes: minutesOf(d60Today),
-      reason: "Cronograma do MedHelp 60D: vem primeiro no seu dia",
+      reason: "Cronograma do MedHelp 60D",
       lines: [
         `${d60Week.pendingItems} ${d60Week.pendingItems === 1 ? "atividade por concluir" : "atividades por concluir"} nesta semana · cerca de ${minutesLabel(d60Week.pendingMinutes)}`,
         `Hoje: cerca de ${Math.max(1, Math.round(d60Today))} min`,
@@ -1393,6 +1390,8 @@ export function derivePlan(args: {
   }
 
   // ── Forecast: what is expected before the exam ───────────────────────────
+  // (Inside the 60D period the plan schedules nothing of the regular course: the numbers are still computed —
+  // conclusions never leave the count — but the page does not show the forecast panel then.)
   let forecast: PlanForecast | null = null;
   if (examKey) {
     const expectedCount = (r: ScheduleResult) =>
@@ -1405,7 +1404,8 @@ export function derivePlan(args: {
         simulateSchedule({ ...scheduleInput, calendar: cal, today: { ...scheduleInput.today, extraMinutes: 0 } });
       const steps: Extract<ForecastHint, { kind: "minutes" }>[] = [];
       for (const extra of EXTRA_MINUTES_LADDER) {
-        const n = expectedCount(variant({ ...calendar, minutesForDay: (d) => planMinutesForDay(d) + extra }));
+        // More time a day widens the coverage only on the days the plan schedules (never inside the 60D period).
+        const n = expectedCount(variant({ ...calendar, minutesForDay: (d) => (inD60(d) ? 0 : planMinutesForDay(d) + extra) }));
         if (n <= expected) continue;
         const coversAll = n >= pendingTopics.length;
         steps.push({ kind: "minutes", extraMinutesPerDay: extra, expectedTopics: n, coversAll });
@@ -1442,6 +1442,7 @@ export function derivePlan(args: {
         (n, t) => n + (sched.topicsTouched.has(t.id) && !sched.topicFinishDay.has(t.id) ? 1 : 0), 0),
       inReviewTopics,
       studyDaysLeft: sched.studyDaysLeft,
+      endsAtD60: d60StartKey != null && d60StartKey > todayKey,
       minutesPerStudyDay: dailyMinutes,
       pendingMinutes: Math.round(sched.pendingMinutes),
       capacityMinutes: Math.round(sched.capacityMinutes),
@@ -1511,10 +1512,11 @@ export function derivePlan(args: {
     progressToday,
     coverageWarning,
     todayBudgetMinutes: paused ? 0 : Math.round(today.budgetMinutes + d60Today),
-    d60FreeMinutesToday: paused ? 0 : Math.round(d60Free(todayKey)),
+    inD60Period: inD60(todayKey),
     todayDoneMinutes: Math.round(doneMinutes),
     // The day's time is used up while work remains — as opposed to "nothing left to study".
-    dayComplete: !paused && today.isStudyDay && items.length === 0 && (queue.length > 0 || signals.reviewDueToday > 0),
+    // (Inside the 60D period an empty day is not "time used up": the plan programmes only the 60D schedule.)
+    dayComplete: !paused && !inD60(todayKey) && today.isStudyDay && items.length === 0 && (queue.length > 0 || signals.reviewDueToday > 0),
     pace,
     forecast,
     scheduleDays: sched.days,

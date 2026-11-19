@@ -9,9 +9,8 @@
  *
  *   - content of a week: the Fórmula MedHelp page and the MemoreCards of each topic of that week;
  *   - weeks 1 to 7: one Simulado 100Q each (Simulado N in week N), followed by its correction;
- *   - week 8: its topics and NO new simulado. The time a simulado and its correction would take stays FREE
- *     (`freeMinutes`): the student uses it to return to difficulties, finish corrections or sit a simulado they
- *     postponed — nothing fills it, neither here nor in Meu Plano;
+ *   - week 8: its topics and NO new simulado — the rest of the student's time is theirs (to return to
+ *     difficulties, finish corrections, sit a simulado they postponed). No reserve of any size is computed for it;
  *   - the days after week 8: no new item — what is still unticked stays listed in its own week.
  * A material not delivered yet is shown as PENDING in its place and counts no time; when it is delivered it
  * simply becomes an ordinary item. Nothing is removed or reordered silently.
@@ -89,13 +88,8 @@ export type D60Week = {
   items: D60Item[];
   /** Estimated minutes of the week's available items. */
   minutes: number;
-  /** A Simulado 100Q with questions is programmed this week (no mini simulado of Meu Plano in it). */
+  /** A Simulado 100Q with questions is programmed this week. */
   hasSimulado: boolean;
-  /**
-   * Minutes of the week left free ON PURPOSE (week 8: the space of one Simulado 100Q and its correction, with no
-   * new simulado programmed). Not part of `minutes`; Meu Plano keeps it out of its own queue too.
-   */
-  freeMinutes: number;
 };
 
 export type D60Cronograma = {
@@ -183,9 +177,6 @@ export function buildCronograma(input: {
     const wStart = addDaysKey(startKey, (w - 1) * 7);
     weeks.push({
       n: w, startKey: wStart, endKey: addDaysKey(wStart, 6), items, hasSimulado,
-      freeMinutes: w > D60_SIMULADOS
-        ? D60_SIMULADO_QUESTIONS * (settings.minutesPerQuestion + settings.correctionMinutesPerQuestion)
-        : 0,
       minutes: items.reduce((s, i) => s + (i.pending ? 0 : i.minutes), 0),
     });
   }

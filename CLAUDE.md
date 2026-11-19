@@ -311,11 +311,9 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   FIXED sequence from the turma's exam date: 8 weeks of 7 days from the unlock day (exam − 60); the 4 days after week 8 hold no new item.
   Units = topics with a Fórmula MedHelp page and/or MemoreCards, in ranking order (frequency desc, then name; Fórmula pages
   that match no topic last), dealt evenly over the 8 weeks; Simulados 100Q 1–7 in weeks 1–7 (Simulado N in week N), each followed by its correction; **week 8 programmes NO new simulado
-  (Karina 2026-11-19)**: it keeps its topics, and the time a simulado + correction would take (`D60Week.freeMinutes`, 350 min at the
-  default estimates) stays FREE — Meu Plano spreads it over that week's study days and fills it with nothing (no mini simulado,
-  no regular activity; `d60Free` / `d60FreeMinutesToday` in derive.ts, one line on /app/plano). The page says "organizada em oito
-  semanas" (her sentence, tested verbatim) and never names a separate "reta final": the whole 60D IS the reta final, and there is
-  no block after week 8. Checklist keys carry the simulado's NUMBER, not its week, so moving a simulado between weeks keeps the ticks.
+  (Karina 2026-11-19)** and keeps its topics — NO reserve of time is computed for it (she refused a fixed 5 h 50 min). The page
+  says "organizada em oito semanas" (her sentence, tested verbatim) and never names a separate "reta final": the whole 60D IS
+  the reta final, and there is no block after week 8. Checklist keys carry the simulado's NUMBER, not its week, so moving a simulado between weeks keeps the ticks.
   **Nothing is stored except the ticks** (`medhelp60_checks`, keys `formula:<page id>` / `memore:<Revalida Up page id>` /
   `sim:<n>` / `sim-correcao:<n>`, RLS own rows) — the schedule is rebuilt on every load, so a material delivered later appears
   in its place with the same key. A material not delivered = item shown as "Material pendente", not tickable, 0 minutes
@@ -323,11 +321,15 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   address (slug minus `-formula` = topic slug or the stem of the topic's quiz / Revalida Up / resumo page). Loader
   `lib/medhelp60/cronograma-server.ts loadD60()`; action `actions/medhelp60.ts setD60Check`; UI
   `components/content/medhelp-60d-cronograma.tsx` on `/app/medhelp-60d` (week load × the student's weekly time; when it does
-  not fit the page SAYS so — never removes or reorders). **Meu Plano:** inside the 60 days `fetch.ts` passes
-  `signals.sixtyD` (weeks with their UNTICKED minutes) and `derive.ts` reserves that time FIRST on each study day
-  (`d60Reserve` / `planMinutesForDay`), shows ONE block "MedHelp 60D — semana N" (kind/iconHint `memorecards`, href
-  `/app/medhelp-60d`) and fills the rest with its own queue; `schedule.ts noNewSimuladoOn` = no new mini simulado in a 60D
-  week that holds an available Simulado 100Q. Time estimates: three `d60_*` columns on `study_plan_settings`, in
+  not fit the page SAYS so — never removes or reorders). **Meu Plano (Karina 2026-11-19, 01h12 — binding):** during the WHOLE 60D period (`inD60` in derive.ts: exam − 60 days up to
+  the eve, every week, Simulado 100Q available or pending, and the days after week 8) the plan adds NOTHING of the regular course:
+  no mini simulado (not even one in progress), no Revisão, no content — `planMinutesForDay` is 0 there, so the FORECAST counts the
+  regular course only up to the day before the 60D begins ("N dias de estudo até o início do MedHelp 60D"; panel hidden inside
+  the 60D). The day shows ONE block "MedHelp 60D — semana N" (the week's unticked minutes over its study days, `signals.sixtyD`
+  from `fetch.ts`, href `/app/medhelp-60d`), her notice "Durante o MedHelp 60D, o Meu Plano programa somente…", and never a
+  number of "free minutes" (any such number would have to be the real balance of the day). Regular resources stay open by the
+  student's choice. **Tests and `plano-cenarios.ts` that exercise the regular plan must use an exam MORE than 60 days away.**
+  Time estimates: three `d60_*` columns on `study_plan_settings`, in
   `PLAN_SETTING_FIELDS` (group "d60" at /admin/plano); answering a Simulado 100Q = its questions × `minutesPerQuestion`.
   Distribution from any database: `node --import ./app/tests/helpers/alias-hook.mjs scripts/medhelp60-distribuicao.ts
   [<DATABASE_URL>] --exame <date>` (read-only). Tests: `app/tests/medhelp60-cronograma.test.ts`. Patch:
