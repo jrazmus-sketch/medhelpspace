@@ -563,15 +563,19 @@ test("MedVoice is not counted once today is past the foundation phase", () => {
 
 const src = (...p: string[]) => readFileSync(path.join(process.cwd(), "src", ...p), "utf8");
 
-test("the forecast uses Karina's wording: 'não previstos até a prova', never 'ficam de fora'", () => {
+test("the forecast uses Karina's wording: 'não previstos', with the regular course's deadline, never 'ficam de fora'", () => {
   const panel = src("app", "app", "plano", "forecast-panel.tsx");
-  assert.match(panel, /não previstos até a prova/);
+  assert.match(panel, /Temas não previstos \{ate\}/);
+  assert.match(panel, /"até a abertura do MedHelp 60D"/);
+  // The deadline is said where the forecast is read (Karina 2026-11-19), and that the student may still study after it.
+  assert.match(panel.replace(/\s+/g, " "), /O Meu Plano programa o curso regular até a abertura do MedHelp 60D/);
+  assert.match(panel.replace(/\s+/g, " "), /Depois dessa data, você continua podendo estudar os materiais do curso regular por conta própria\./);
   assert.match(panel, /Resumos Narrativos e os materiais do\s+MedHelp 60D/);
   assert.match(panel, /não estão incluídos/);
   // Three separate facts (Karina 2026-11-18): full conclusion, partial advance, time that fits.
   assert.match(panel, /Temas com conclusão integral prevista/);
   assert.match(panel, /Temas com avanço parcial previsto/);
-  assert.match(panel, /Tempo de materiais pendentes que cabe até a prova/);
+  assert.match(panel, /Tempo de materiais pendentes que cabe \{ate\}/);
   assert.match(panel, /temas sem conclusão integral prevista/);
   assert.doesNotMatch(panel, /ficam de fora|fica de fora/);
 });

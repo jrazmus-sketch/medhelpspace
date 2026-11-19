@@ -9,7 +9,8 @@ import type { PlanForecast, ContentType, ForecastHint } from "@/lib/study-plan/d
  * study the schedule reaches before the exam, which ones it does not, what the
  * student could change to widen the coverage, and what is counted.
  *
- * Wording is hers: topics are "previstos" / "não previstos até a prova" — never
+ * Wording is hers: topics are "previstos" / "não previstos até a prova" (since 2026-11-19 "até a abertura do
+ * MedHelp 60D", the regular course's deadline) — never
  * described as left out, because the forecast is recalculated every day (a
  * test refuses the old phrasing in this file).
  */
@@ -28,6 +29,9 @@ function joinPt(parts: string[]): string {
 
 function formatDay(dayKey: string): string {
   return new Date(dayKey + "T12:00:00").toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
+}
+function formatDayYear(dayKey: string): string {
+  return new Date(dayKey + "T12:00:00").toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
 }
 
 /** Minutes → "X h" / "X h Y min" / "Y min". */
@@ -68,6 +72,9 @@ export function ForecastPanel({
 
   const counted = forecast.scope.countedTypes.map((t) => TYPE_LABEL[t]).filter((s): s is string => Boolean(s));
   const hasAudio = forecast.scope.countedTypes.includes("audio");
+  // The deadline of the regular course (Karina 2026-11-19): the plan schedules it up to the MedHelp 60D opening, and
+  // the screen says so in every sentence that names a deadline.
+  const ate = forecast.endsAtD60 ? "até a abertura do MedHelp 60D" : "até a prova";
 
   // Group the not-expected topics by specialty, keeping the priority order inside each.
   const bySpecialty = new Map<string, typeof notExpected>();
@@ -83,7 +90,7 @@ export function ForecastPanel({
         id="previsao-titulo"
         style={{ fontSize: 11, fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted-foreground)", marginBottom: 12 }}
       >
-        Previsão até a prova
+        {forecast.endsAtD60 ? "Previsão do curso regular" : "Previsão até a prova"}
       </h2>
 
       <div style={{ padding: "18px 18px 16px", background: "var(--surface-1)", border: "1px solid var(--surface-2)", borderRadius: "var(--radius)" }}>
@@ -96,20 +103,35 @@ export function ForecastPanel({
               </p>
             ) : (
               <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>
-                Previstos até a prova: {expectedTopics} de {pendingTopics} {pendingTopics === 1 ? "tema pendente" : "temas pendentes"}
+                Previstos {ate}: {expectedTopics} de {pendingTopics} {pendingTopics === 1 ? "tema pendente" : "temas pendentes"}
               </p>
             )}
             {!nothingLeft && (
               <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4, lineHeight: 1.5 }}>
                 {allFit
                   ? dateConfirmed && forecast.finishDay
-                    ? `No seu ritmo atual, tudo o que falta cabe até a prova — o último tema termina por volta de ${formatDay(forecast.finishDay)}.`
-                    : "No seu ritmo atual, tudo o que falta cabe até a prova."
-                  : "Com a disponibilidade atual, nem todos os temas pendentes têm conclusão integral prevista até a prova. Os de maior incidência vêm primeiro."}
+                    ? `No seu ritmo atual, tudo o que falta cabe ${ate} — o último tema termina por volta de ${formatDay(forecast.finishDay)}.`
+                    : `No seu ritmo atual, tudo o que falta cabe ${ate}.`
+                  : `Com a disponibilidade atual, nem todos os temas pendentes têm conclusão integral prevista ${ate}. Os de maior incidência vêm primeiro.`}
               </p>
             )}
           </div>
         </div>
+
+        {/* The deadline, said where the forecast is read (Karina 2026-11-19): the plan schedules the regular course up
+            to the MedHelp 60D opening; after it the student may still study the regular materials by choice. */}
+        {forecast.endsAtD60 && (
+          <p
+            style={{
+              margin: "12px 0 0", padding: "10px 12px", fontSize: 13, lineHeight: 1.5,
+              background: "color-mix(in srgb, var(--brand) 8%, transparent)", borderRadius: "var(--radius-sm)",
+            }}
+          >
+            O Meu Plano programa o curso regular até a abertura do MedHelp 60D
+            {dateConfirmed && forecast.d60StartKey ? `, em ${formatDayYear(forecast.d60StartKey)}` : ""}, 60 dias antes da prova.
+            Depois dessa data, você continua podendo estudar os materiais do curso regular por conta própria.
+          </p>
+        )}
 
         {/* Three separate facts, each on its own line (Karina 2026-11-18): topics
             concluded in full, topics the plan only advances in, and how much of the
@@ -138,7 +160,7 @@ export function ForecastPanel({
               </dd>
             </div>
             <div>
-              <dt style={{ color: "var(--muted-foreground)" }}>Tempo de materiais pendentes que cabe até a prova</dt>
+              <dt style={{ color: "var(--muted-foreground)" }}>Tempo de materiais pendentes que cabe {ate}</dt>
               <dd style={{ margin: 0, fontWeight: 600 }}>
                 {allFit
                   ? `Cerca de ${approxHours(forecast.pendingMinutes)} — tudo o que está pendente`
@@ -154,19 +176,14 @@ export function ForecastPanel({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={pct}
-            aria-label="Temas previstos até a prova"
+            aria-label={`Temas previstos ${ate}`}
             style={{ height: 8, borderRadius: 999, background: "var(--surface-2)", marginTop: 14, overflow: "hidden" }}
           >
             <div style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "var(--brand)" }} />
           </div>
         )}
 
-        {forecast.endsAtD60 && (
-          <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 10, lineHeight: 1.5 }}>
-            O curso regular é programado até o início do MedHelp 60D, 60 dias antes da prova.
-          </p>
-        )}
-        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: forecast.endsAtD60 ? 4 : 10, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 12, color: "var(--muted-foreground)", marginTop: 10, lineHeight: 1.5 }}>
           {dateConfirmed
             ? `${forecast.studyDaysLeft} ${forecast.studyDaysLeft === 1 ? "dia de estudo" : "dias de estudo"} até ${forecast.endsAtD60 ? "o início do MedHelp 60D" : "a prova"} · `
             : ""}
@@ -223,7 +240,7 @@ export function ForecastPanel({
             {open && (
               <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 12 }}>
                 <p style={{ fontSize: 12, color: "var(--muted-foreground)", lineHeight: 1.5 }}>
-                  Temas não previstos até a prova com a disponibilidade atual, por ordem de prioridade.
+                  Temas não previstos {ate} com a disponibilidade atual, por ordem de prioridade.
                   Eles continuam disponíveis para estudo livre.
                 </p>
                 {[...bySpecialty.entries()].map(([spec, topics]) => (

@@ -7,6 +7,7 @@ import { VIEWAS_COOKIE, parseViewAs } from "@/lib/viewas";
 import type { Cohort } from "@/types/supabase";
 import { formatDateKeyBR } from "@/lib/cohort-promotions-shared";
 import { getAuthUser, isViewerStaff } from "@/lib/viewer";
+import { diffDaysKey, todayKeyBR } from "@/lib/br-date";
 
 export const MEDHELP_60D_MODULE_ID = 1;
 
@@ -90,11 +91,14 @@ export const get60dAccess = cache(async (): Promise<Medhelp60Access> => {
     .maybeSingle();
   if (!access) return { unlocked: false, daysUntilUnlock: null, nextCycle: null };
 
-  const days = Math.max(
-    0,
-    Math.ceil((new Date(access.unlock_date as string).getTime() - Date.now()) / 86_400_000),
-  );
-  const unlocked = days === 0;
+  // The release is a DAY in Brasília (Karina 2026-11-19: correct on the eve, on the day and after). The day comes from
+  // the database's br_today() — the same day the content pages' gate (user_has_module_access) uses, so the two never
+  // disagree. Comparing the release date with the UTC clock opened the module at 21:00 Brasília time on the eve.
+  const { data: dbToday } = await admin.rpc("br_today");
+  const today = typeof dbToday === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dbToday) ? dbToday : todayKeyBR();
+  const unlockKey = String(access.unlock_date).slice(0, 10);
+  const days = Math.max(0, diffDaysKey(today, unlockKey));
+  const unlocked = unlockKey <= today;
   // "Already open" is safe to state even on an unconfirmed date — it reveals nothing.
   // The pre-open countdown is what leaks the guessed exam date (unlock = exam - 60),
   // so it's withheld until the exam board actually confirms cohort.test_date.

@@ -152,8 +152,8 @@ export function SimuladoFrequencyEditor({ info }: { info: SimuladoPlanInfo }) {
                     {preview.expectedTopics != null && current.expectedTopics != null && info.pendingTopics != null && (
                       <li>
                         {preview.expectedTopics === current.expectedTopics
-                          ? `A previsão de cobertura não muda: ${current.expectedTopics} de ${info.pendingTopics} temas pendentes previstos até a prova.`
-                          : `Previstos até a prova: de ${current.expectedTopics} para ${preview.expectedTopics} dos ${info.pendingTopics} temas pendentes.`}
+                          ? `A previsão de cobertura não muda: ${current.expectedTopics} de ${info.pendingTopics} temas pendentes previstos até a abertura do MedHelp 60D.`
+                          : `Previstos até a abertura do MedHelp 60D: de ${current.expectedTopics} para ${preview.expectedTopics} dos ${info.pendingTopics} temas pendentes.`}
                       </li>
                     )}
                     <li>As outras atividades são distribuídas no tempo que sobra; o que você já fez é preservado.</li>

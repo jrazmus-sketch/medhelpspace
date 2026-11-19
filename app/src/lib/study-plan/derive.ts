@@ -176,6 +176,22 @@ export type DerivedPlan = {
    * 2026-11-19). The page says so; the regular resources stay open for the student to use by choice.
    */
   inD60Period: boolean;
+  /**
+   * "Registro do curso regular" (Karina 2026-11-19): what the student has done in the regular course, rebuilt on
+   * every load from the real history — never frozen at the 60D opening. Each resource counts by its own rule;
+   * nothing done in the MedHelp 60D (Simulados 100Q, Fórmula, MemoreCards, checklist ticks) counts here.
+   */
+  regularRecord: {
+    topicsConcluded: number;
+    topicsTotal: number;
+    questionsAnswered: number;
+    miniSimuladosConcluded: number;
+    flashcardsStudied: number;
+    revalidaUpConcluded: number;
+    medvoiceConcluded: number;
+  };
+  /** "Registro do MedHelp 60D": the 60D checklist (ticks on the 60D page). null outside the 60D period. */
+  d60Record: { done: number; available: number; notDelivered: number; percent: number } | null;
   todayDoneMinutes: number;
   /** Today's time is used up while work remains (≠ "nothing left to study"). */
   dayComplete: boolean;
@@ -219,6 +235,8 @@ export type PlanForecast = {
    * study days counted are the ones up to there, and the panel says so.
    */
   endsAtD60: boolean;
+  /** The day the MedHelp 60D opens (exam − 60): the regular course is scheduled up to the day before. */
+  d60StartKey: string | null;
   minutesPerStudyDay: number;
   /** Minutes still to study / of new content that fit before the exam / actually placed on days. */
   pendingMinutes: number;
@@ -340,6 +358,11 @@ export type Signals = {
    */
   sixtyD?: {
     weeks: { n: number; startKey: string; endKey: string; pendingMinutes: number; pendingItems: number; hasSimulado: boolean }[];
+    /**
+     * The whole schedule's checklist (all eight weeks): activities ticked on the 60D page, activities available to
+     * tick, and materials not delivered yet (shown on the schedule, not tickable, out of the percentage).
+     */
+    record?: { done: number; available: number; notDelivered: number };
   } | null;
   /** The student's Flashcards facts (function study_plan_flashcard_facts). */
   flashcards?: {
@@ -1443,6 +1466,7 @@ export function derivePlan(args: {
       inReviewTopics,
       studyDaysLeft: sched.studyDaysLeft,
       endsAtD60: d60StartKey != null && d60StartKey > todayKey,
+      d60StartKey,
       minutesPerStudyDay: dailyMinutes,
       pendingMinutes: Math.round(sched.pendingMinutes),
       capacityMinutes: Math.round(sched.capacityMinutes),
@@ -1490,6 +1514,48 @@ export function derivePlan(args: {
     }),
   };
 
+  // ── Registros (Karina 2026-11-19) ────────────────────────────────────────
+  // The regular course's record counts what the student did, by each resource's own rule, from the whole history
+  // (so it keeps growing when the student studies by choice during the 60D). Questions and mini simulados come from
+  // quiz_attempts, minus every page of the MedHelp 60D (its Simulados 100Q never count here).
+  const d60QuizPages = new Set<number>();
+  for (const p of pages) if (p.content_module_id != null) d60QuizPages.add(p.id);
+  for (const sp of signals.simulados?.pages.values() ?? []) if (!sp.isMini) d60QuizPages.add(sp.pageId);
+  const answeredQuestions = new Set<number>();
+  const answeredByPage = new Map<number, Set<number>>();
+  for (const a of signals.quizAttempts) {
+    if (a.question_id == null || d60QuizPages.has(a.page_id)) continue;
+    answeredQuestions.add(Number(a.question_id));
+    const set = answeredByPage.get(a.page_id) ?? new Set<number>();
+    set.add(Number(a.question_id));
+    answeredByPage.set(a.page_id, set);
+  }
+  let miniSimuladosConcluded = 0;
+  for (const sp of signals.simulados?.pages.values() ?? []) {
+    if (!sp.isMini || sp.questionIds.length === 0) continue;
+    const got = answeredByPage.get(sp.pageId);
+    if (got && sp.questionIds.every((q) => got.has(q))) miniSimuladosConcluded++;
+  }
+  let flashcardsStudied = 0;
+  for (const n of seenByGroup.values()) flashcardsStudied += n;
+  let revalidaUpConcluded = 0;
+  for (const r of catalog?.revalidaUpPages.values() ?? []) if (completedLessons.has(r.lessonId)) revalidaUpConcluded++;
+  let medvoiceConcluded = 0;
+  for (const id of catalog?.medvoiceLessons.keys() ?? []) if (completedLessons.has(id)) medvoiceConcluded++;
+  const regularRecord = {
+    topicsConcluded: topicsInScope - pendingTopics.length - inReviewTopics,
+    topicsTotal: topicsInScope,
+    questionsAnswered: answeredQuestions.size,
+    miniSimuladosConcluded,
+    flashcardsStudied,
+    revalidaUpConcluded,
+    medvoiceConcluded,
+  };
+  const rec = signals.sixtyD?.record;
+  const d60Record = inD60(todayKey) && rec
+    ? { ...rec, percent: rec.available > 0 ? Math.round((rec.done / rec.available) * 100) : 0 }
+    : null;
+
   const weakestSpecialties = (paused
     ? allRanked.slice().sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
     : ranked
@@ -1513,6 +1579,8 @@ export function derivePlan(args: {
     coverageWarning,
     todayBudgetMinutes: paused ? 0 : Math.round(today.budgetMinutes + d60Today),
     inD60Period: inD60(todayKey),
+    regularRecord,
+    d60Record,
     todayDoneMinutes: Math.round(doneMinutes),
     // The day's time is used up while work remains — as opposed to "nothing left to study".
     // (Inside the 60D period an empty day is not "time used up": the plan programmes only the 60D schedule.)

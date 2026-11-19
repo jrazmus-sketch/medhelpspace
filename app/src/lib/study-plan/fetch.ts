@@ -330,7 +330,14 @@ export async function getDerivedPlanForUser(
       const d60 = await loadD60(userId, admin);
       if (d60 && !d60.preview) {
         const ticked = new Set(d60.checked);
+        const allItems = d60.cronograma.weeks.flatMap((w) => w.items);
+        const availableItems = allItems.filter((i) => !i.pending);
         signals.sixtyD = {
+          record: {
+            done: availableItems.filter((i) => ticked.has(i.key)).length,
+            available: availableItems.length,
+            notDelivered: allItems.length - availableItems.length,
+          },
           weeks: d60.cronograma.weeks.filter((w) => w.endKey >= todayKey).map((w) => {
             const open = w.items.filter((i) => !i.pending && !ticked.has(i.key));
             return {

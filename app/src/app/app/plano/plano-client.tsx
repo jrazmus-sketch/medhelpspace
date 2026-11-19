@@ -22,6 +22,7 @@ import { DailyTimeFields } from "./daily-time-fields";
 import { EDIT_PLAN_EVENT } from "./routine-summary";
 import { CalibrateWizard } from "./calibrate-wizard";
 import { ForecastPanel } from "./forecast-panel";
+import { RegistroCursoRegular, RegistroMedhelp60 } from "./registros-60d";
 import { PaceEditor, type PaceOptions } from "./pace-editor";
 import { SimuladoFrequencyEditor } from "./simulado-frequency-editor";
 import { useAutosave, type SaveStatus } from "@/lib/use-autosave";
@@ -150,6 +151,22 @@ export function PlanoClient({
       )}
 
       <div className="space-y-8">
+        {/* ── MedHelp 60D period: her opening text (Karina 2026-11-19) ─────── */}
+        {plan.inD60Period && (
+          <p
+            role="note"
+            style={{
+              padding: "14px 16px", fontSize: 14, lineHeight: 1.55,
+              background: "color-mix(in srgb, var(--brand) 8%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--brand) 22%, transparent)",
+              borderRadius: "var(--radius)",
+            }}
+          >
+            Nos últimos 60 dias, sua programação acompanha o cronograma do MedHelp 60D. Você continua livre para estudar
+            pelos recursos do curso regular. Seu progresso nas duas partes fica registrado abaixo.
+          </p>
+        )}
+
         {/* ── Calibration banner ───────────────────────────────────────────── */}
         {!welcomedAt && (
           <CalibrationBanner onOpen={() => setShowWizard(true)} />
@@ -173,14 +190,6 @@ export function PlanoClient({
                 Tempo realizado hoje (estimativa): cerca de {Math.min(plan.todayDoneMinutes, 999)} de {plan.todayBudgetMinutes + extraMinutes} min
               </p>
             )}
-            {/* Inside the 60D period the plan programmes only the 60D schedule (Karina 2026-11-19). No number of
-                "free minutes" is shown: the rest of the day is simply the student's. */}
-            {!plan.paused && plan.inD60Period && (
-              <p style={{ fontSize: 13, color: "var(--muted-foreground)", marginTop: 4, lineHeight: 1.55 }}>
-                Durante o MedHelp 60D, o Meu Plano programa somente as atividades do cronograma do MedHelp 60D. Os recursos do
-                curso regular continuam disponíveis para você usar quando quiser.
-              </p>
-            )}
           </div>
           {plan.paused ? (
             <PausedState plan={plan} />
@@ -198,6 +207,10 @@ export function PlanoClient({
         {/* ── Forecast: what is expected before the exam ───────────────────── */}
         {/* Not inside the MedHelp 60D period: the plan programmes nothing of the regular course then. */}
         {plan.forecast && !plan.inD60Period && <ForecastPanel forecast={plan.forecast} dateConfirmed={dateConfirmed} />}
+
+        {/* ── MedHelp 60D period: the two records, each by its own criteria (Karina 2026-11-19) ── */}
+        {plan.inD60Period && <RegistroCursoRegular record={plan.regularRecord} />}
+        {plan.inD60Period && plan.d60Record && <RegistroMedhelp60 record={plan.d60Record} />}
 
         {/* ── Coverage warning (if user excluded too many specialties) ────── */}
         {plan.coverageWarning && (

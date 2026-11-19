@@ -382,8 +382,10 @@ const THREE_DAYS = (1 << 1) | (1 << 3) | (1 << 5); // Mon, Wed, Fri
  * day. Nothing is read from or written to any turma — the date exists only inside this run.
  *   … plano-cenarios.ts [<DATABASE_URL>] --hipotese 2027-04-15 [--hoje 2026-11-18] [--json out.json] [--so-carga]
  *   (--so-carga: only the "needed daily time" part, a minute instead of a quarter of an hour)
+ *   … --hipotese 2027-04-15 --perfis 105x5,90x6   (only these profiles: <minutes a day>x<days a week, 5 = Mon–Fri,
+ *   6 = Mon–Sat>, with what is left of the regular course when the MedHelp 60D opens — Karina 2026-11-19, 01h09)
  */
-function hipotese(c: Content, exam: string, start: string, onlyNeeded = false): Record<string, unknown> {
+function hipotese(c: Content, exam: string, start: string, onlyNeeded = false, profiles: { minutes: number; days: number }[] = []): Record<string, unknown> {
   const all: ContentType[] = ["quiz", "simulado", "revalida_up", "flashcards", "audio", "memorecards"];
   const noSim = all.filter((t) => t !== "simulado");
   const DAYS: { label: string; mask: number; n: number }[] = [
@@ -416,7 +418,7 @@ function hipotese(c: Content, exam: string, start: string, onlyNeeded = false): 
     const done = end.completedTopics + end.inReviewTopics;
     const leftScope = Math.max(0, f0.pendingTopics - (done + end.pendingTopics));
     return {
-      day0, f0,
+      day0, f0, end,
       row: {
         temas: f0.pendingTopics,
         previstosIntegral: f0.expectedTopics,
@@ -432,6 +434,24 @@ function hipotese(c: Content, exam: string, start: string, onlyNeeded = false): 
       } as Row,
     };
   };
+
+  // 0. Only the profiles asked for: the regular course up to the day the MedHelp 60D opens, and what is left then.
+  if (profiles.length > 0) {
+    const d60Start = addDaysKey(exam, -60);
+    const perfis = profiles.map((pf) => {
+      const d = DAYS.find((x) => x.n === pf.days)!;
+      const r = simulate({ daily_minutes: pf.minutes, available_days: d.mask });
+      const tiers = (list: { tier: string | null }[]) => list.reduce<Record<string, number>>((m, t) => { const k = t.tier ?? "—"; m[k] = (m[k] ?? 0) + 1; return m; }, {});
+      return {
+        minutosPorDia: pf.minutes, diasPorSemana: pf.days, dias: d.label, inicio60D: d60Start, ...r.row,
+        naoConcluidosPorPrioridade: tiers(r.end.notExpected),
+        comAvancoParcialNaAbertura: r.end.partialTopics,
+        horasPendentesNaAbertura: +(r.end.pendingMinutes / 60).toFixed(1),
+        naoConcluidosNomes: r.end.notExpected.map((t) => `${t.name} (${t.specialtyName}${t.tier ? `, ${t.tier}` : ""})`),
+      };
+    });
+    return { exam, start, daysToExam: planFor(c, newStudent({ examDate: exam }), start).daysToExam, perfis, grid: [], needed: [], variations: [] };
+  }
 
   // 1. The grid: hours per day × days per week (new student, every material, automatic mini simulados).
   const grid: Row[] = [];
@@ -499,7 +519,12 @@ async function main() {
   const hAt = args.indexOf("--hipotese");
   if (hAt >= 0) {
     const tAt = args.indexOf("--hoje");
-    const out = hipotese(c, args[hAt + 1], tAt >= 0 ? args[tAt + 1] : TODAY, args.includes("--so-carga"));
+    const pAt = args.indexOf("--perfis");
+    const profiles = pAt >= 0
+      ? args[pAt + 1].split(",").map((x) => { const [m, d] = x.split("x").map(Number); return { minutes: m, days: d }; })
+      : [];
+    const out = hipotese(c, args[hAt + 1], tAt >= 0 ? args[tAt + 1] : TODAY, args.includes("--so-carga"), profiles);
+    for (const r of ((out as { perfis?: Record<string, unknown>[] }).perfis ?? [])) console.log("  perfil  " + Object.entries(r).filter(([k]) => k !== "naoConcluidosNomes").map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · "));
     const cols = (r: Record<string, unknown>) => Object.entries(r).map(([k, v]) => `${k}=${v}`).join(" · ");
     console.log(`Hipótese: prova em ${out.exam}, contando de ${out.start} (${out.daysToExam} dias)`);
     for (const r of out.grid as Record<string, unknown>[]) console.log("  grade   " + cols(r));

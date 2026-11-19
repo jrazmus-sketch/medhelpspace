@@ -3,6 +3,7 @@
  * (Karina 2026-11-18, 19h40). READ-ONLY. Uses the same pure builder as the page (app/src/lib/medhelp60/cronograma.ts).
  *
  *   node --import ./app/tests/helpers/alias-hook.mjs scripts/medhelp60-cobertura.ts [<DATABASE_URL>] [--exame 2027-04-25] [--json out.json]
+ *        [--perfis 105x5,90x6]   (week by week, on the real calendar of that exam date: <minutes a day>x<5 = Mon–Fri | 6 = Mon–Sat>)
  *
  * What it answers:
  *   1. topics: how many of the platform's topics have a 60D material (Fórmula MedHelp and/or MemoreCards), each once;
@@ -20,6 +21,7 @@ import {
   type D60Unit, type D60SimuladoInput,
 } from "@/lib/medhelp60/cronograma";
 import { settingsFromRow } from "@/lib/study-plan/settings";
+import { addDaysKey, dayOfWeekForKey } from "@/lib/br-date";
 
 const require = createRequire(import.meta.url);
 const postgres = require("postgres");
@@ -110,7 +112,35 @@ async function main() {
       let m = 5; for (; m <= 600; m += 5) { let left = 0; for (const w of weeks) left = Math.max(0, left + w - m * days); if (left <= 0.5) break; }
       return { diasPorSemana: days, minutosPorDia: m, mediaSimples: Math.ceil(total / (days * D60_WEEKS)), semanaMaisPesadaMin: Math.max(...weeks) };
     });
+    // The profiles asked for, on the real calendar: each week's study days (Mon–Fri or Mon–Sat), the week's load, what
+    // is done in it and what is left. What is left of a week stays in that week, open: the student may use the free
+    // time of a later week (or of the days after week 8) to finish it — that is the hypothesis behind "fits".
+    const profileArg = arg("--perfis");
+    const perfis = !profileArg ? [] : profileArg.split(",").map((x) => {
+      const [minutes, days] = x.split("x").map(Number);
+      const mask = days === 6 ? 0b1111110 : 0b0111110;
+      const studyDays = (from: string, to: string) => { let n = 0; for (let k = from; k <= to; k = addDaysKey(k, 1)) if (mask & (1 << dayOfWeekForKey(k))) n++; return n; };
+      let carry = 0;
+      const semanas = c.weeks.map((w, i) => {
+        const cap = studyDays(w.startKey, w.endKey) * minutes;
+        const own = weeks[i];
+        const ownDone = Math.min(own, cap);
+        const spare = cap - ownDone;
+        const fromBefore = Math.min(carry, spare);
+        carry = carry - fromBefore + (own - ownDone);
+        return { semana: w.n, de: w.startKey, ate: w.endKey, diasDeEstudo: studyDays(w.startKey, w.endKey), capacidadeMin: cap, cargaMin: own,
+          feitoDaSemanaMin: ownDone, sobraDaSemanaMin: own - ownDone, livreMin: spare - fromBefore, usadoParaPendenciasMin: fromBefore };
+      });
+      const lastDays = studyDays(c.lastDays.startKey, c.lastDays.endKey);
+      const fromLast = Math.min(carry, lastDays * minutes);
+      carry -= fromLast;
+      const doneOnSchedule = semanas.reduce((s, w) => s + w.feitoDaSemanaMin, 0);
+      return { minutosPorDia: minutes, diasPorSemana: days, semanas, diasDepoisDaSemana8: { de: c.lastDays.startKey, ate: c.lastDays.endKey, diasDeEstudo: lastDays, usadoParaPendenciasMin: fromLast },
+        totalMin: total, feitoNaSemanaPrevistaMin: doneOnSchedule, pctNaSemanaPrevista: pct(doneOnSchedule, total),
+        feitoComPendenciasRetomadasMin: total - carry, pctComPendenciasRetomadas: pct(total - carry, total), faltamMin: carry };
+    });
     return {
+      perfis,
       atividades: c.totals.items, pendentes: c.totals.pendingItems, totalMin: total, total: d60Duration(total),
       formula: { paginas: kind("formula").length, min: part("formula") }, memorecards: { temas: kind("memore").length, cartoes: c.totals.memorecards, min: part("memore") },
       simulados: { disponiveis: kind("sim").length, min: part("sim") }, correcoes: { min: part("sim-correcao") }, semanasMin: weeks, cabe: fit, necessario: needed,
@@ -137,6 +167,11 @@ async function main() {
     console.log(`Carga ${k}: ${c.total} — Fórmula ${c.formula.paginas} pág. ${d60Duration(c.formula.min)} · MemoreCards ${c.memorecards.cartoes} cartões ${d60Duration(c.memorecards.min)} · Simulados ${c.simulados.disponiveis} ${d60Duration(c.simulados.min)} · correções ${d60Duration(c.correcoes.min)} | semanas ${c.semanasMin.join(", ")}`);
     for (const f of c.cabe) console.log(`    ${f.minutosPorDia} min × ${f.diasPorSemana} dias: ${f.pct}% (${d60Duration(f.percorridoMin)}), semanas em dia ${f.semanasEmDia}, faltam ${d60Duration(f.faltamMin)}`);
     for (const n of c.necessario) console.log(`    necessário ${n.diasPorSemana} dias/semana: ${n.minutosPorDia} min por dia (média ${n.mediaSimples}; semana mais pesada ${d60Duration(n.semanaMaisPesadaMin)})`);
+    for (const p of c.perfis) {
+      console.log(`    PERFIL ${p.minutosPorDia} min × ${p.diasPorSemana}: na semana prevista ${p.pctNaSemanaPrevista}% · retomando pendências ${p.pctComPendenciasRetomadas}% · faltam ${d60Duration(p.faltamMin)}`);
+      for (const w of p.semanas) console.log(`      semana ${w.semana} ${w.de}→${w.ate}: ${w.diasDeEstudo} dias, capacidade ${d60Duration(w.capacidadeMin)}, carga ${d60Duration(w.cargaMin)}, sobra ${w.sobraDaSemanaMin} min, livre ${w.livreMin} min, pendências retomadas ${w.usadoParaPendenciasMin} min`);
+      console.log(`      dias depois da semana 8 ${p.diasDepoisDaSemana8.de}→${p.diasDepoisDaSemana8.ate}: ${p.diasDepoisDaSemana8.diasDeEstudo} dias, pendências retomadas ${p.diasDepoisDaSemana8.usadoParaPendenciasMin} min`);
+    }
   }
   console.log(`Fora (${out.fora.length}): com questões ${out.fora.filter((t) => t.vezes > 0).length} | páginas de Fórmula sem tema: ${out.temas.paginasFormulaSemTema.length}`);
   const j = arg("--json"); if (j) writeFileSync(j, JSON.stringify(out, null, 1));

@@ -307,10 +307,64 @@ test("Meu Plano: the forecast counts the regular course only up to the day the 6
   for (const d of short.scheduleDays.filter((x) => x.key >= "2027-03-31")) assert.equal(placed(d), 0, d.key);
 });
 
-test("Meu Plano page: the 60D notice is the sentence agreed, and no number of 'free minutes' is shown", () => {
-  const src = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "plano-client.tsx"), "utf8").replace(/\s+/g, " ");
-  assert.ok(src.includes("Durante o MedHelp 60D, o Meu Plano programa somente as atividades do cronograma do MedHelp 60D. Os recursos do curso regular continuam disponíveis para você usar quando quiser."));
-  assert.equal(/ficam livres/.test(src), false);
+test("Meu Plano page in the 60D: her opening text and the two records, with her sentences, and no 'free minutes'", () => {
+  const page = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "plano-client.tsx"), "utf8").replace(/\s+/g, " ");
+  const recs = readFileSync(path.join(process.cwd(), "src", "app", "app", "plano", "registros-60d.tsx"), "utf8").replace(/\s+/g, " ");
+  assert.ok(page.includes("Nos últimos 60 dias, sua programação acompanha o cronograma do MedHelp 60D. Você continua livre para estudar pelos recursos do curso regular. Seu progresso nas duas partes fica registrado abaixo."));
+  assert.ok(recs.includes("Registro do curso regular"));
+  assert.ok(recs.includes("Seu progresso no curso regular continua sendo registrado. Tudo o que você já realizou permanece salvo, e as atividades que fizer por escolha própria também atualizam este registro."));
+  assert.ok(recs.includes("Registro do MedHelp 60D"));
+  assert.ok(recs.includes("Acompanhe aqui seu progresso no cronograma do MedHelp 60D. Marque as atividades concluídas no checklist para atualizar este registro."));
+  assert.equal(/ficam livres/.test(page + recs), false);
+});
+
+// ── The two records (Karina 2026-11-19): live, each by its own criteria ────────────────────────────────────────
+const MINI = 900, SIM100 = 901;
+const SIMULADOS = { pages: new Map([
+  [MINI, { pageId: MINI, slug: "mini-1", title: "Mini 1", specialtySlug: "geral", isMini: true, questionIds: [9001, 9002] }],
+  [SIM100, { pageId: SIM100, slug: "simulado-100q-3", title: "Simulado 3", specialtySlug: "geral", isMini: false, questionIds: [9101, 9102] }],
+]), runStarts: new Map<number, string>() };
+function recPlan(attempts: Signals["quizAttempts"], record?: { done: number; available: number; notDelivered: number }) {
+  return withFrozenTime(MORNING_BRT, () => derivePlan({
+    prefs: { ...defaultPrefs(), pace_mode: "standard", preferred_content_types: ["quiz"] },
+    cohort: { test_date: EXAM },
+    specialties: SPECIALTIES, pages: PAGES, topics: TOPICS, topicContent: CONTENT,
+    signals: {
+      quizAttempts: attempts, lessonCompletions: [], reviewDueToday: 0, lessonsByPageId: new Map(), pauses: [],
+      questionCountsByPageId: new Map(Array.from({ length: 30 }, (_, i) => [101 + i, 40])),
+      simulados: SIMULADOS,
+      sixtyD: { weeks: [week(4, "2026-07-22", "2026-07-28", 30)], ...(record ? { record } : {}) },
+    },
+  }));
+}
+const at = (page: number, q: number, ok = true) => ({ specialty_id: 1, is_correct: ok, created_at: "2026-07-20T12:00:00Z", page_id: page, question_id: q });
+
+test("Registro do curso regular: rebuilt from the whole history, so an activity by choice in the 60D updates it", () => {
+  const before = recPlan([at(101, 1), at(101, 2)]);
+  assert.equal(before.inD60Period, true);
+  assert.equal(before.regularRecord.questionsAnswered, 2, "history from before the 60D opening is kept");
+  assert.equal(before.regularRecord.miniSimuladosConcluded, 0);
+  // during the 60D the student answers two more questions and a whole mini simulado, by choice
+  const after = recPlan([at(101, 1), at(101, 2), at(102, 3), at(MINI, 9001), at(MINI, 9002, false)]);
+  assert.equal(after.regularRecord.questionsAnswered, 5);
+  assert.equal(after.regularRecord.miniSimuladosConcluded, 1, "every question of the mini simulado answered");
+  assert.equal(after.items.length, 1, "nothing extra is put on the day because of it — only the 60D block");
+  assert.equal(after.items[0].href, "/app/medhelp-60d");
+});
+
+test("the records keep separate criteria: a Simulado 100Q answer never counts in the regular course", () => {
+  const p = recPlan([at(SIM100, 9101), at(SIM100, 9102)]);
+  assert.equal(p.regularRecord.questionsAnswered, 0);
+  assert.equal(p.regularRecord.miniSimuladosConcluded, 0);
+  assert.equal(p.regularRecord.topicsConcluded, 0);
+});
+
+test("Registro do MedHelp 60D: the ticks of the 60D page, as count and percentage of the available activities", () => {
+  const p = recPlan([], { done: 12, available: 48, notDelivered: 12 });
+  assert.deepEqual(p.d60Record, { done: 12, available: 48, notDelivered: 12, percent: 25 });
+  assert.equal(recPlan([]).d60Record, null, "without the checklist totals there is no 60D record");
+  // outside the 60D there is none, whatever the loader passes
+  assert.equal(farPlan().d60Record, null);
 });
 
 test("the schedule's presentation is her text, with no separate 'reta final' (Karina 2026-11-19)", () => {
