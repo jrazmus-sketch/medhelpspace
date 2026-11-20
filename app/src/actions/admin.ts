@@ -1367,20 +1367,8 @@ export async function markAnnouncementsRead(ids: number[]) {
   );
 }
 
-// Member-facing — dismiss a welcome announcement for the current user. Distinct
-// from "read": opening the strip marks items read but must not dismiss the
-// welcome, which stays pinned to the top until the member explicitly closes it.
-export async function dismissAnnouncement(id: number) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-  const admin = createAdminClient();
-  await admin.from("announcement_dismissals").upsert(
-    { announcement_id: id, user_id: user.id },
-    { onConflict: "announcement_id,user_id" },
-  );
-  revalidatePath("/app", "layout");
-}
+// (dismissAnnouncement removed 2026-11-20: the X on the home box now only HIDES the box —
+// actions/home-notifications.ts — and never dismisses an announcement. announcement_dismissals is history.)
 
 // ── Nav items (hub page cards) ────────────────────────────────────────────────
 

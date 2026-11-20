@@ -386,9 +386,7 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   lesson only when there are several) and the topic concludes only when all are heard.
   **Obstetrícia (same e-mail):** `scripts/apply-medvoice-obstetricia-2026-11-19.js` (14 of 16 lessons in place, Bunny
   `MedVoice-Audio/v2/obstetricia/`; rollback `scripts/rollback-medvoice-obstetricia-2026-11-19.sql` from
-  `lessons_bk_medvoice_obst_20261119`). "Sífilis E Gestação" came WITHOUT a recording → left untouched (old text + old
-  audio) until it arrives; never a new text over an old audio. "Prematuridade" HELD too: at 01:46 Whisper hears
-  "36 horas e 6 dias" (also on the clip alone) where the script says "trinta e seis e seis dias" — Karina listens first. Recordings on Bunny `MedVoice-Audio/v2/<spec>/<stem>-m.mp3` (a NEW folder, as
+  `lessons_bk_medvoice_obst_20261119`). **All 16 Obstetrícia lessons are definitive since 20/11** (`scripts/apply-medvoice-obstetricia-2026-11-20.js`, her 00h12 e-mail: "Prematuridade" re-recorded — 01:46 now matches the script — and the missing "Sífilis E Gestação" recording; Bunny `MedVoice-Audio/v3/obstetricia/` because v2 holds the superseded Prematuridade; rollback `scripts/rollback-medvoice-obstetricia-2026-11-20.sql`; its check proves each of the 16 has its definitive script + recording). Narration check tip: the script spells numbers ("trinta e sete") and Whisper writes digits ("37") — merge "tens e units" before comparing or the match % looks 10 points low. Recordings on Bunny `MedVoice-Audio/v2/<spec>/<stem>-m.mp3` (a NEW folder, as
   with AudioCards v3); durations by ffprobe into `audio_duration_seconds`. Inputs in gitignored `parsed/medvoice-2026-11-18/`.
   The MedVoice of every other specialty is untouched and still the old set. Narration check = Whisper `.srt` per recording
   against the script; **a stretch Whisper "does not hear" is usually a transcription gap** (a cue far longer than its text):
@@ -420,6 +418,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   (`;`, decimal comma, UTF-8 BOM — Excel pt-BR). **A test is `orders.internal_test` — the SAME flag as the Notas Fiscais
   screen** (one meaning everywhere: not a sale); marked/unmarked in bulk with a confirmation by `/api/admin/billing/test`
   (billing roles, writes only that flag, audited `nfse_test_marked/unmarked` with `source: financeiro`). Never delete an order.
+
+- **Notificações box on the Revalida home — the X only HIDES it (Karina 2026-11-20).** `profiles.home_notifications_hidden`
+  (account-level, every device) via `actions/home-notifications.ts`; the bell shows "Mostrar notificações na página inicial"
+  while it is hidden (BellFeed.homeHidden, only when there are announcements); the X leaves a notice with "Desfazer". Hiding
+  NEVER dismisses, deletes or marks read: `announcement_dismissals` no longer filters anything (history; the patch turned the
+  one earlier welcome dismissal into "box hidden"). Box ↔ bell sync through the `mhs:home-notifications` window event; for 10 s
+  after a local change the bell ignores a stale feed. On phones the bell popover is `fixed inset-x-2` under the bell (a fixed
+  right offset broke when the header icons changed). Patch: `schema-patch-home-notifications-hidden.sql` (+ rollback).
 
 ## Schema (see schema.sql for full DDL)
 

@@ -5,6 +5,6 @@ import { NotificationBell } from "./notification-bell";
 export type { UserNotification } from "@/lib/notifications-feed";
 
 export async function NotificationBellServer() {
-  const { notifications, unreadCount } = await getBellFeed();
-  return <NotificationBell notifications={notifications} unreadCount={unreadCount} />;
+  const { notifications, unreadCount, homeHidden } = await getBellFeed();
+  return <NotificationBell notifications={notifications} unreadCount={unreadCount} homeHidden={homeHidden} />;
 }

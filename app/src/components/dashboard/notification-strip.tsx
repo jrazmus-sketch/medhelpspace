@@ -27,10 +27,23 @@ export async function NotificationStrip() {
   const announcements = await getLiveAnnouncementsForUser(userId);
   if (announcements.length === 0) return null;
 
+  // The member may have hidden the box with its X (Karina 2026-11-20). It still renders — hidden — so the bell can
+  // bring it back in place without a reload.
+  let hidden = false;
+  if (userId) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("home_notifications_hidden")
+      .eq("id", userId)
+      .maybeSingle();
+    hidden = Boolean(profile?.home_notifications_hidden);
+  }
+
   return (
     <NotificationStripClient
       announcements={announcements}
       tickerLabel={tickerLabel}
+      initiallyHidden={hidden}
     />
   );
 }

@@ -66,9 +66,8 @@ export async function getLiveAnnouncementsForUser(
     dismissedIds = new Set((dismissals ?? []).map((r: { announcement_id: number }) => r.announcement_id));
   }
 
-  // A dismissed welcome disappears entirely for that member (strip + bell).
-  // Non-welcome rows are never affected by dismissals.
-  return rows
-    .filter((r) => !(r.is_welcome && dismissedIds.has(r.id)))
-    .map((r) => ({ ...r, is_read: readIds.has(r.id), is_dismissed: dismissedIds.has(r.id) }));
+  // Nothing is filtered out by a dismissal any more (Karina 2026-11-20): the X on the home box only HIDES the box
+  // (profiles.home_notifications_hidden) and every announcement stays in the box and the bell. Old
+  // announcement_dismissals rows are history; schema-patch-home-notifications-hidden.sql turned them into "box hidden".
+  return rows.map((r) => ({ ...r, is_read: readIds.has(r.id), is_dismissed: dismissedIds.has(r.id) }));
 }

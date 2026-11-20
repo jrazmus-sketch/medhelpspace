@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell, BellRing, Calendar, Trophy, Lock, Mail, AlertTriangle,
-  TrendingUp, X as XIcon,
+  TrendingUp, X as XIcon, Eye, Check,
 } from "lucide-react";
 import {
   markNotificationsRead, markAllNotificationsRead, dismissNotification,
 } from "@/actions/notifications";
 import { markAnnouncementsRead } from "@/actions/admin";
+import { setHomeNotificationsHidden } from "@/actions/home-notifications";
+import { announceHomeNotifications, onHomeNotifications } from "@/lib/home-notifications-event";
 import type { UserNotification, BellFeed } from "@/lib/notifications-feed";
 
 // How often to poll for new notifications while the tab is visible.
@@ -72,21 +75,56 @@ function relTime(iso: string): string {
 export function NotificationBell({
   notifications,
   unreadCount,
+  homeHidden = false,
 }: {
   notifications: UserNotification[];
   unreadCount: number;
+  homeHidden?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [localUnread, setLocalUnread] = useState(unreadCount);
   const [localList, setLocalList] = useState(notifications);
+  // Home Notificações box hidden with its X → offer to bring it back (Karina 2026-11-20).
+  const [boxHidden, setBoxHidden] = useState(homeHidden);
+  const [boxRestored, setBoxRestored] = useState(false);
+  // A feed fetched just before an X / restore was saved still carries the old value: for a few seconds after a change
+  // made here, what just happened wins over the feed (the server has it by then).
+  const lastBoxChange = useRef(0);
+  const pathname = usePathname();
   const popoverRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  // Phones: the popover spans the screen (8px each side) under the bell, wherever the bell sits in the header — a fixed
+  // offset broke whenever the header's icons changed. Desktop (md+) keeps the 340px panel anchored to the bell.
+  const [phoneTop, setPhoneTop] = useState<number | null>(null);
 
   // Sync with server props on prop change
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalUnread(unreadCount);
     setLocalList(notifications);
-  }, [unreadCount, notifications]);
+    if (Date.now() - lastBoxChange.current > 10_000) setBoxHidden(homeHidden);
+  }, [unreadCount, notifications, homeHidden]);
+
+  // The box on the home was just hidden (its X) or restored (its Desfazer): follow it at once.
+  useEffect(
+    () =>
+      onHomeNotifications((h) => {
+        lastBoxChange.current = Date.now();
+        setBoxHidden(h);
+        if (h) setBoxRestored(false);
+      }),
+    [],
+  );
+
+  function restoreHomeBox(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    lastBoxChange.current = Date.now();
+    setBoxHidden(false);
+    setBoxRestored(true);
+    announceHomeNotifications(false);
+    setHomeNotificationsHidden(false).catch(() => { /* the next poll shows the saved state */ });
+  }
 
   // Pull the latest feed from our own API route (a plain fetch — NOT the browser
   // Supabase client, which is banned in this app). Same merge as the SSR render.
@@ -97,6 +135,7 @@ export function NotificationBell({
       const feed: BellFeed = await res.json();
       setLocalList(feed.notifications);
       setLocalUnread(feed.unreadCount);
+      if (Date.now() - lastBoxChange.current > 10_000) setBoxHidden(feed.homeHidden);
     } catch {
       /* transient — next tick retries */
     }
@@ -136,6 +175,8 @@ export function NotificationBell({
     const willOpen = !open;
     setOpen(willOpen);
     if (willOpen) {
+      const r = buttonRef.current?.getBoundingClientRect();
+      setPhoneTop(r && window.innerWidth < 768 ? Math.round(r.bottom + 8) : null);
       // Optimistic mark-all-read when opening (server calls fire async)
       const unread = localList.filter((n) => !n.read_at);
       if (unread.length > 0) {
@@ -189,6 +230,7 @@ export function NotificationBell({
   return (
     <div className="relative" ref={popoverRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleToggleOpen}
         aria-label={`Notificações${localUnread > 0 ? ` (${localUnread} não lidas)` : ""}`}
@@ -207,7 +249,12 @@ export function NotificationBell({
 
       {open && (
         <div
-          className="absolute right-[-82px] top-full z-50 mt-2 w-[calc(100vw-16px)] overflow-hidden rounded-lg border border-border bg-background shadow-2xl md:right-0 md:w-[340px]"
+          className={
+            phoneTop != null
+              ? "fixed inset-x-2 z-50 overflow-y-auto rounded-lg border border-border bg-background shadow-2xl"
+              : "absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-lg border border-border bg-background shadow-2xl"
+          }
+          style={phoneTop != null ? { top: phoneTop, maxHeight: `calc(100dvh - ${phoneTop + 8}px)` } : undefined}
           role="dialog"
           aria-label="Notificações"
         >
@@ -223,6 +270,32 @@ export function NotificationBell({
               </button>
             )}
           </div>
+
+          {/* Bring back the home box hidden with its X — only while it is hidden (Karina 2026-11-20). */}
+          {boxHidden && (
+            <button
+              type="button"
+              onClick={restoreHomeBox}
+              className="flex min-h-11 w-full items-center gap-2.5 border-b border-border bg-brand/5 px-4 py-2.5 text-left text-sm font-medium text-brand transition-colors hover:bg-brand/10"
+            >
+              <Eye className="h-4 w-4 shrink-0" />
+              Mostrar notificações na página inicial
+            </button>
+          )}
+          {!boxHidden && boxRestored && (
+            <p
+              role="status"
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-border bg-brand/5 px-4 py-2.5 text-[13px] text-foreground"
+            >
+              <Check className="h-4 w-4 shrink-0 text-brand" />
+              As notificações voltaram para a página inicial.
+              {pathname !== "/app" && (
+                <Link href="/app" onClick={() => setOpen(false)} className="font-semibold text-brand hover:underline">
+                  Ir para a página inicial
+                </Link>
+              )}
+            </p>
+          )}
 
           {/* List */}
           <div className="max-h-[480px] overflow-y-auto">

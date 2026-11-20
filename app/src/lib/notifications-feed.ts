@@ -19,9 +19,12 @@ export type UserNotification = {
 export type BellFeed = {
   notifications: UserNotification[];
   unreadCount: number;
+  // The member hid the Notificações box of the home with its X and there is something to show in it: the bell
+  // offers "Mostrar notificações na página inicial" (Karina 2026-11-20).
+  homeHidden: boolean;
 };
 
-const EMPTY_FEED: BellFeed = { notifications: [], unreadCount: 0 };
+const EMPTY_FEED: BellFeed = { notifications: [], unreadCount: 0, homeHidden: false };
 const FEED_LIMIT = 15;
 
 // Admin announcements are authored as HTML; the bell renders plain text.
@@ -88,5 +91,15 @@ export async function getBellFeed(): Promise<BellFeed> {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, FEED_LIMIT);
 
-  return { notifications: list, unreadCount: list.filter((n) => !n.read_at).length };
+  let homeHidden = false;
+  if (announcements.length > 0) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("home_notifications_hidden")
+      .eq("id", user.id)
+      .maybeSingle();
+    homeHidden = Boolean(profile?.home_notifications_hidden);
+  }
+
+  return { notifications: list, unreadCount: list.filter((n) => !n.read_at).length, homeHidden };
 }

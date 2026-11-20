@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Bell, ChevronDown, ChevronUp, X } from "lucide-react";
-import { markAnnouncementsRead, dismissAnnouncement } from "@/actions/admin";
+import { markAnnouncementsRead } from "@/actions/admin";
+import { setHomeNotificationsHidden } from "@/actions/home-notifications";
+import { announceHomeNotifications, onHomeNotifications } from "@/lib/home-notifications-event";
 import { safe } from "@/lib/sanitize";
 import type { AnnouncementWithCategory } from "@/types/supabase";
 
@@ -23,22 +25,34 @@ function htmlProps(html: string): React.HTMLAttributes<HTMLDivElement> {
 export function NotificationStripClient({
   announcements,
   tickerLabel,
+  initiallyHidden = false,
 }: {
   announcements: AnnouncementWithCategory[];
   tickerLabel: string;
+  initiallyHidden?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [readSet, setReadSet] = useState<Set<number>>(
     () => new Set(announcements.filter((a) => a.is_read).map((a) => a.id)),
   );
-  // Welcome messages the user has dismissed this session — removed from the strip
-  // immediately (the server also filters them out on the next load).
-  const [dismissedSet, setDismissedSet] = useState<Set<number>>(new Set());
+  // The X HIDES THE BOX for this member (Karina 2026-11-20) — saved on the account, nothing is dismissed, deleted or
+  // marked read. The bell's "Mostrar notificações na página inicial" (or Desfazer, here) brings it back in place.
+  const [hidden, setHidden] = useState(initiallyHidden);
+  const [justHidden, setJustHidden] = useState(false);
   const [, startTransition] = useTransition();
 
-  // Server already orders the welcome first and drops previously-dismissed ones;
-  // this only strips out anything dismissed during this session. Order is preserved.
-  const visible = announcements.filter((a) => !dismissedSet.has(a.id));
+  // The bell restores (or another tab hides) the box: follow it at once.
+  useEffect(
+    () =>
+      onHomeNotifications((h) => {
+        setHidden(h);
+        if (!h) setJustHidden(false);
+      }),
+    [],
+  );
+
+  // Server orders the welcome first. Order is preserved.
+  const visible = announcements;
 
   const unreadCount = visible.filter((a) => !readSet.has(a.id)).length;
   const hasUrgentUnread = visible.some(
@@ -48,8 +62,35 @@ export function NotificationStripClient({
   const accentColor = hasUrgentUnread ? "var(--color-amber-500, #f59e0b)" : "var(--brand)";
   const latest = visible[0];
 
-  // Everything dismissed → nothing to show.
   if (!latest) return null;
+
+  function setBoxHidden(next: boolean) {
+    setHidden(next);
+    setJustHidden(next);
+    announceHomeNotifications(next);
+    startTransition(() => {
+      setHomeNotificationsHidden(next).catch((e) => console.error("setHomeNotificationsHidden failed:", e));
+    });
+  }
+
+  if (hidden) {
+    if (!justHidden) return null;
+    return (
+      <p
+        role="status"
+        className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border bg-surface-1 px-3 py-2 text-[12.5px] leading-relaxed text-muted-foreground"
+      >
+        <span>Notificações ocultadas da página inicial. Você pode restaurá-las pelo sininho no topo da tela.</span>
+        <button
+          type="button"
+          onClick={() => setBoxHidden(false)}
+          className="min-h-11 px-1 font-semibold text-brand hover:underline"
+        >
+          Desfazer
+        </button>
+      </p>
+    );
+  }
 
   function handleExpand() {
     const next = !expanded;
@@ -63,14 +104,6 @@ export function NotificationStripClient({
         });
       }
     }
-  }
-
-  // Dismiss the welcome for this member — it won't come back on refresh.
-  function handleDismiss(id: number) {
-    setDismissedSet((prev) => new Set(prev).add(id));
-    startTransition(() => {
-      dismissAnnouncement(id).catch((e) => console.error("dismissAnnouncement failed:", e));
-    });
   }
 
   return (
@@ -183,16 +216,17 @@ export function NotificationStripClient({
         </div>
       </button>
 
-      {latest.is_welcome && (
+      {(
         <button
           type="button"
-          onClick={() => handleDismiss(latest.id)}
-          title="Dispensar mensagem de boas-vindas"
-          aria-label="Dispensar"
+          onClick={() => setBoxHidden(true)}
+          title="Ocultar notificações da página inicial"
+          aria-label="Ocultar notificações da página inicial"
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            minWidth: 44,
             padding: "0 12px",
             background: "transparent",
             border: "none",
