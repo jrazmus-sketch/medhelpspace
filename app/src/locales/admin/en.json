@@ -823,7 +823,8 @@
       "nfse_test_marked": "Record marked as internal test",
       "nfse_test_unmarked": "Internal test unmarked",
       "clinact_page_video": "ClinAct: sales page video changed",
-      "plan_settings_update": "Meu Plano settings changed"
+      "plan_settings_update": "Meu Plano settings changed",
+      "orders_test_deleted": "Test orders permanently deleted"
     }
   },
   "pageNew": {

@@ -823,7 +823,8 @@
       "nfse_test_marked": "Registro marcado como teste interno",
       "nfse_test_unmarked": "Teste interno desmarcado",
       "clinact_page_video": "ClinAct: vídeo da página de vendas alterado",
-      "plan_settings_update": "Configurações do Meu Plano alteradas"
+      "plan_settings_update": "Configurações do Meu Plano alteradas",
+      "orders_test_deleted": "Pedidos de teste excluídos definitivamente"
     }
   },
   "pageNew": {
