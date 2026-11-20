@@ -76,6 +76,15 @@ test("CSV for the accountant: date, order, client, product/turma, values, method
   assert.ok(lines[2].includes(";Pendente;"));
 });
 
+test("a buyer-typed value can never run as a spreadsheet formula", () => {
+  const csv = buildBillingCsv([row({ clientName: '=HYPERLINK("http://x","clique")', email: "+5511@x.com", tomadorName: "@SUM(A1)" })]);
+  const line = csv.slice(1).split("\r\n")[1];
+  assert.ok(line.includes(`"'=HYPERLINK(""http://x"",""clique"")"`), line);
+  assert.ok(line.includes(";'+5511@x.com;"));
+  assert.ok(line.includes(";'@SUM(A1);"));
+  assert.ok(line.includes(";3177,00;"), "money untouched");
+});
+
 test("indicators: tests never count; a R$ 0 enrollment is not a paid sale; revenue = paid charges only", () => {
   const s = billingStats([
     { status: "paid", amountCents: 299700, internalTest: false },

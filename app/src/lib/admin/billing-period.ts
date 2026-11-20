@@ -99,7 +99,10 @@ export function buildBillingCsv(rows: BillingCsvRow[]): string {
     "Acréscimo do parcelamento (R$)", "Valor cobrado (R$)", "Método de pagamento", "Parcelas", "Status", "Teste interno",
   ];
   const cell = (v: string | number) => {
-    const s = String(v);
+    // Names and e-mails are typed by buyers at checkout: a value starting with = + - @ (or a tab / CR) would run as
+    // a formula when the accountant opens the file in Excel — prefix ' so it stays text. (Money is never negative.)
+    let s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = rows.map((r) => {
