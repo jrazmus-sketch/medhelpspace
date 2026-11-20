@@ -413,6 +413,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   Infecções Musculoesqueléticas" page (now `ortopedia-revalida-up`, Outros); Espondiloartrites is new. Fase 2 = her
   Flashcards/AudioCards/recordings, imported together per group. Ledger v12 (P26–P30).
 
+- **Financeiro (Administração → Comercial) — period, CSV, internal tests (Karina 2026-11-19).** `/admin/billing` reads EVERY
+  order (paged past the 1000-row cap) and filters in the browser by the ORDER date in Brasília (`lib/admin/billing-period.ts`,
+  pure): todo o período / mês e ano / data / intervalo, combined with status, search and "Pedidos reais | Testes internos".
+  Indicators follow the period only and never count a test or a R$ 0 enrollment. "Exportar CSV" = exactly the listed rows
+  (`;`, decimal comma, UTF-8 BOM — Excel pt-BR). **A test is `orders.internal_test` — the SAME flag as the Notas Fiscais
+  screen** (one meaning everywhere: not a sale); marked/unmarked in bulk with a confirmation by `/api/admin/billing/test`
+  (billing roles, writes only that flag, audited `nfse_test_marked/unmarked` with `source: financeiro`). Never delete an order.
+
 ## Schema (see schema.sql for full DDL)
 
 Tables and their purpose:
