@@ -419,6 +419,14 @@ Content language: Brazilian Portuguese. Preserve all original text exactly.
   screen** (one meaning everywhere: not a sale); marked/unmarked in bulk with a confirmation by `/api/admin/billing/test`
   (billing roles, writes only that flag, audited `nfse_test_marked/unmarked` with `source: financeiro`). Never delete an order.
 
+- **Deleting a member who paid ClinAct (2026-11-20).** `clinact_invoices.user_id` is nullable + ON DELETE SET NULL (was
+  RESTRICT → "Database error deleting user"): the invoice is a fiscal record and stays, like orders. `deleteMember` REFUSES
+  (returned `{ok:false, reason:"clinact_subscription_active"}`, never thrown) while a ClinAct subscription is not
+  CANCELED/EXPIRED — the cascade would drop our row while PagBank kept charging. An invoice without an account cannot be
+  refunded from the screen (refund at PagBank). Patch: `schema-patch-clinact-invoices-keep-on-delete.sql` (+ rollback).
+  The 10 never-paid June test orders were permanently deleted at Karina's request (`scripts/delete-test-orders-2026-11-20.js`,
+  backup `parsed/financeiro/`).
+
 - **Notificações box on the Revalida home — the X only HIDES it (Karina 2026-11-20).** `profiles.home_notifications_hidden`
   (account-level, every device) via `actions/home-notifications.ts`; the bell shows "Mostrar notificações na página inicial"
   while it is hidden (BellFeed.homeHidden, only when there are announcements); the X leaves a notice with "Desfazer". Hiding

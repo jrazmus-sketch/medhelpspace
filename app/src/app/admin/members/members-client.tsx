@@ -132,7 +132,10 @@ export function MembersClient({
       const { userId } = pendingModal;
       startTransition(async () => {
         try {
-          await deleteMember(userId);
+          const res = await deleteMember(userId);
+          if (!res.ok) {
+            setActionResult({ userId, message: t("members.deleteBlockedClinact") });
+          }
           // revalidatePath refreshes the server component with the row gone;
           // close the modal and let the table re-render without it.
           setPendingModal(null);

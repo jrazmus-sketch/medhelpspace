@@ -562,6 +562,7 @@
     "deleteDesc": "Permanently delete {{email}}'s account? This cannot be undone.",
     "deleteNote": "Payment history and audit records are kept (anonymized). Profile, enrollment, progress, and active sessions are removed.",
     "deleteConfirm": "Delete permanently",
+    "deleteBlockedClinact": "This account has a ClinAct subscription that is still active at PagBank. Cancel the subscription before deleting the account.",
     "create": "Add member",
     "createTitle": "New member",
     "createPassword": "Password",

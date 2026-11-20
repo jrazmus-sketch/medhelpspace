@@ -562,6 +562,7 @@
     "deleteDesc": "Excluir definitivamente a conta de {{email}}? Esta ação não pode ser desfeita.",
     "deleteNote": "O histórico de pagamentos e os registros de auditoria são mantidos (anonimizados). Perfil, matrícula, progresso e sessões ativas são removidos.",
     "deleteConfirm": "Excluir definitivamente",
+    "deleteBlockedClinact": "Esta conta tem uma assinatura do ClinAct ainda ativa no PagBank. Cancele a assinatura antes de excluir a conta.",
     "create": "Adicionar membro",
     "createTitle": "Novo membro",
     "createPassword": "Senha",

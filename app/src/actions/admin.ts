@@ -602,12 +602,21 @@ export async function resendWelcomeEmail(
   return { ok: true };
 }
 
-// Hard-delete a member. Records are preserved, not destroyed: orders, audit-log
-// entries, and created coupons keep their rows with the user reference nulled
-// (ON DELETE SET NULL — see schema-patch-delete-member.sql). The auth.users row
-// is deleted, which CASCADE-clears the profile, memberships, progress, and all
-// active sessions. super_admin only; you cannot delete yourself.
-export async function deleteMember(targetUserId: string) {
+// Hard-delete a member. Records are preserved, not destroyed: orders, ClinAct invoices,
+// audit-log entries, and created coupons keep their rows with the user reference nulled
+// (ON DELETE SET NULL — see schema-patch-delete-member.sql and
+// schema-patch-clinact-invoices-keep-on-delete.sql). The auth.users row is deleted,
+// which CASCADE-clears the profile, memberships, progress, and all active sessions.
+// super_admin only; you cannot delete yourself.
+//
+// REFUSED (returned, not thrown — prod redacts thrown Server Action messages) while the
+// member has a ClinAct subscription still live at PagBank: the cascade would remove our
+// subscription row while PagBank kept charging the card.
+const CLINACT_SUBSCRIPTION_ENDED = ["CANCELED", "EXPIRED"];
+
+export async function deleteMember(
+  targetUserId: string,
+): Promise<{ ok: true } | { ok: false; reason: "clinact_subscription_active" }> {
   const { user, role } = await requireAdmin();
   if (role !== "super_admin") throw new Error("Only super admins can delete members");
   if (targetUserId === user.id) throw new Error("You cannot delete your own account");
@@ -620,6 +629,15 @@ export async function deleteMember(targetUserId: string) {
     .eq("id", targetUserId)
     .single();
   if (!target) throw new Error("Member not found");
+
+  const { data: subs, error: subsErr } = await admin
+    .from("clinact_subscriptions")
+    .select("status")
+    .eq("user_id", targetUserId);
+  if (subsErr) throw new Error(subsErr.message);
+  if ((subs ?? []).some((s) => !CLINACT_SUBSCRIPTION_ENDED.includes(String(s.status ?? "").toUpperCase()))) {
+    return { ok: false, reason: "clinact_subscription_active" };
+  }
 
   // Snapshot the email onto any of the user's orders before the FK SET NULL
   // fires, so anonymized order rows still show who they belonged to.
@@ -643,6 +661,7 @@ export async function deleteMember(targetUserId: string) {
     deleted_display_name: target.display_name,
   });
   revalidatePath("/admin/members");
+  return { ok: true };
 }
 
 export async function createMember(input: {

@@ -66,6 +66,11 @@ export async function refundClinactInvoice(invoiceId: string, actorId: string): 
     .eq("id", invoiceId)
     .maybeSingle();
   if (!invoice) return { ok: false, status: 404, error: "Cobrança não encontrada." };
+  // The account was deleted (user_id SET NULL — the invoice is a fiscal record and stays):
+  // there is no access to revoke nor subscription row to read, so this screen cannot refund it.
+  if (!invoice.user_id) {
+    return { ok: false, status: 409, error: "A conta deste aluno foi excluída. Faça o estorno diretamente no PagBank." };
+  }
   if (invoice.refunded_at) return { ok: false, status: 409, error: "Esta cobrança já foi reembolsada." };
   if (invoice.environment !== env) {
     return { ok: false, status: 409, error: "Esta cobrança é de outro ambiente do PagBank." };
