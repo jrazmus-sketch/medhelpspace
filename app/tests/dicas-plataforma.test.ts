@@ -52,8 +52,11 @@ test("restore ONE tip: the API removes only that key, validated, on the user's o
 test("the top menu has Dicas next to Revisão on desktop and a lamp below desktop width", () => {
   const h = src("components", "layout", "member-header.tsx");
   const nav = h.slice(h.indexOf('<nav className="hidden items-center lg:flex">'), h.indexOf("<EstudarMenu"));
-  assert.match(nav, /href="\/app\/comecar"[\s\S]*Dicas\s*<\/Link>/);
+  // The word from xl (at lg the lamp alone, so the row still fits with MedHelp 60D).
+  assert.match(nav, /href="\/app\/comecar"[\s\S]*aria-label="Dicas da plataforma"[\s\S]*<span className="hidden xl:inline">Dicas<\/span>/);
   assert.match(h, /aria-label="Dicas da plataforma"[\s\S]{0,200}lg:hidden/);
+  // Below 420px the theme icon yields its room to the lamp (the theme stays in the user menu).
+  assert.match(h, /<span className="hidden min-\[420px\]:contents">\s*<ThemeToggle \/>/);
 });
 
 test("closing a tip leaves a note saying where to reopen it, with Desfazer; the X still closes it", () => {

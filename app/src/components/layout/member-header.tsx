@@ -223,15 +223,18 @@ export function MemberHeader({
             <Link
               href="/app/comecar"
               aria-current={pathname.startsWith("/app/comecar") ? "page" : undefined}
+              aria-label="Dicas da plataforma"
+              title="Dicas da plataforma"
               className={cn(
-                "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13.5px] font-medium transition-colors",
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13.5px] font-medium transition-colors xl:px-3",
                 pathname.startsWith("/app/comecar")
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >
               <Lightbulb className="h-3.5 w-3.5" />
-              Dicas
+              {/* The word from xl: at lg (1024) the nav + MedHelp 60D + icons fill the row; the lamp alone fits. */}
+              <span className="hidden xl:inline">Dicas</span>
             </Link>
           </div>
 
@@ -270,7 +273,10 @@ export function MemberHeader({
 
           {bellSlot}
 
-          <ThemeToggle />
+          {/* Below 420px the lamp (Dicas) takes this icon's room: the theme stays in the user menu (Claro/Escuro/Sistema). */}
+          <span className="hidden min-[420px]:contents">
+            <ThemeToggle />
+          </span>
 
           <DropdownMenu>
             <DropdownMenuTrigger

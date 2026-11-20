@@ -13,8 +13,10 @@
  * Rules (same as apply-medvoice-2026-11-18.js):
  *   • every lesson is UPDATED IN PLACE (same id): lesson_completions and lesson_progress CASCADE on delete, and the
  *     Meu Plano links point at the lesson id. Title, page and position stay; text, recording and its length change;
- *   • "Sífilis E Gestação" came WITHOUT its recording: it is left exactly as it is (old text with its old recording,
- *     which still match) until the recording arrives — never a new text over an old audio;
+ *   • HELD lessons are left exactly as they are (old text with its old recording, which still match):
+ *       – "Sífilis E Gestação" came WITHOUT its recording — never a new text over an old audio;
+ *       – "Prematuridade": at 01:46 the narration check hears "36 horas e 6 dias" (twice, also on the clip alone) where the
+ *         script reads "trinta e seis e seis dias" — held for Karina to listen to before it is published;
  *   • the MedVoice of every other specialty is not touched.
  * Rollback: scripts/rollback-medvoice-obstetricia-2026-11-19.sql.
  */
@@ -38,18 +40,17 @@ const local = /@(127\.0\.0\.1|localhost)[:/]/.test(URL);
 const TAG = 'medvoice_obst_20261119';
 const PAGE = 'obstetricia-medvoice';
 const EXPECT_LESSONS = 16;
-const EXPECT_DELIVERED = 15;
-const HELD = ['Sífilis E Gestação'];
+const HELD = ['Sífilis E Gestação', 'Prematuridade'];
+const EXPECT_DELIVERED = 16 - HELD.length;
 
 (async () => {
   const dir = path.join(ROOT, 'parsed', 'medvoice-obstetricia-2026-11-19');
   const delivery = JSON.parse(fs.readFileSync(path.join(dir, 'delivery.json'), 'utf8'));
   const urls = new Map(JSON.parse(fs.readFileSync(path.join(dir, 'audio-urls.json'), 'utf8')).map((a) => [`${a.page}|${a.stem}`, a]));
-  const lessons = delivery.lessons.map((l) => ({ ...l, audio: urls.get(`${l.page}|${l.stem}`) }));
+  const lessons = delivery.lessons.filter((l) => !HELD.includes(l.title)).map((l) => ({ ...l, audio: urls.get(`${l.page}|${l.stem}`) }));
   if (lessons.length !== EXPECT_DELIVERED || lessons.some((l) => l.page !== PAGE || l.new || !l.audio || l.audio.cdn_status !== 200 || l.audio.cdn_bytes !== l.audio_bytes || !/\/MedVoice-Audio\/v2\/obstetricia\//.test(l.audio.audio_url))) {
     throw new Error(`expected ${EXPECT_DELIVERED} lessons of ${PAGE}, each with its recording verified on the CDN`);
   }
-  if (lessons.some((l) => HELD.includes(l.title))) throw new Error('a held lesson is in the delivery');
 
   const sql = postgres(URL, { max: 1, prepare: false, onnotice: () => {} });
   const out = { database: PROD ? 'production' : URL.replace(/.*@/, ''), applied: APPLY };
@@ -101,7 +102,7 @@ const HELD = ['Sífilis E Gestação'];
       const delivered = lessons.map((l) => ({ l, row: byTitle.get(l.title) }));
       check(`As ${EXPECT_DELIVERED} aulas têm exatamente o roteiro entregue`, delivered.every((d) => d.row && d.row.body_html === d.l.body_html), `${delivered.filter((d) => d.row && d.row.body_html === d.l.body_html).length} de ${EXPECT_DELIVERED}`);
       check(`As ${EXPECT_DELIVERED} aulas tocam a gravação nova (pasta v2), com a duração medida`, delivered.every((d) => d.row && d.row.audio_url === d.l.audio.audio_url && d.row.dur === d.l.duration_seconds && !d.row.audio_unavailable), `${delivered.length} aulas`);
-      check('Sífilis e Gestação sem nenhuma alteração (roteiro e gravação atuais, que continuam correspondentes)', (await held()) === heldBefore, HELD.join(', '));
+      check('Sífilis e Gestação e Prematuridade sem nenhuma alteração (roteiro e gravação atuais, que continuam correspondentes)', (await held()) === heldBefore, HELD.join(', '));
       const kept = before.every((b) => { const a = after.find((x) => String(x.id) === String(b.id)); return a && a.title === b.title && a.position === b.position; });
       check('Nenhuma aula criada ou apagada: as 16 aulas mantêm identificador, título e posição', kept && after.length === EXPECT_LESSONS, `${before.length} → ${after.length} aulas`);
       check('Nenhuma aula duplicada', new Set(after.map((l) => l.title)).size === after.length, 'títulos únicos');
