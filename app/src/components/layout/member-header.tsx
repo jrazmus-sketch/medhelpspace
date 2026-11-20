@@ -138,6 +138,24 @@ function EstudarMenu({
             })}
           </DropdownMenuGroup>
         ))}
+        {/* Same entry as the phone's Estudar sheet (Karina 2026-11-19: Dicas reachable from the menus). */}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => router.push("/app/comecar")}
+          className="cursor-pointer items-start gap-2.5 px-2 py-2"
+        >
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+            <Lightbulb className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[13.5px] font-semibold leading-tight text-foreground">
+              Dicas da plataforma
+            </span>
+            <span className="mt-0.5 block text-[11.5px] leading-snug text-muted-foreground">
+              Todas as dicas e como reabrir as que você fechou
+            </span>
+          </span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -59,6 +59,14 @@ test("the top menu has Dicas next to Revisão on desktop and a lamp below deskto
   assert.match(h, /<span className="hidden min-\[420px\]:contents">\s*<ThemeToggle \/>/);
 });
 
+test("Dicas da plataforma is in the Estudar menu on desktop AND on the phone (the reply to Karina says so)", () => {
+  const h = src("components", "layout", "member-header.tsx");
+  const desk = h.slice(h.indexOf("function EstudarMenu"), h.indexOf("export function MemberHeader"));
+  assert.match(desk, /router\.push\("\/app\/comecar"\)[\s\S]*Dicas da plataforma/);
+  const sheet = src("components", "layout", "mobile-estudar-sheet.tsx");
+  assert.match(sheet, /go\("\/app\/comecar"\)[\s\S]*Dicas da plataforma/);
+});
+
 test("closing a tip leaves a note saying where to reopen it, with Desfazer; the X still closes it", () => {
   const c = src("components", "onboarding", "coachmark.tsx");
   assert.match(c, /Dica fechada\. Você pode reabri-la em/);
